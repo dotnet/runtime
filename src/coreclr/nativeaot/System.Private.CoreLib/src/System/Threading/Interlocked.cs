@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.LoongArch;
 
 namespace System.Threading
 {
@@ -15,9 +16,13 @@ namespace System.Threading
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
+            if (LAM.CAS.IsSupported)
+            {
+                return LAM.CAS.CompareExchange(ref location1, value, comparand); // Must expand intrinsic
+            }
             if (Unsafe.IsNullRef(ref location1))
                 ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
@@ -33,9 +38,13 @@ namespace System.Threading
         [Intrinsic]
         internal static unsafe int CompareExchange(int* location1, int value, int comparand)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
             return CompareExchange(location1, value, comparand); // Must expand intrinsic
 #else
+            if (LAM.CAS.IsSupported)
+            {
+                return LAM.CAS.CompareExchange(location1, value, comparand); // Must expand intrinsic
+            }
             Debug.Assert(location1 != null);
             return RuntimeImports.InterlockedCompareExchange(location1, value, comparand);
 #endif
@@ -45,9 +54,13 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
-#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
+            if (LAM.CAS.IsSupported)
+            {
+                return LAM.CAS.CompareExchange(ref location1, value, comparand); // Must expand intrinsic
+            }
             if (Unsafe.IsNullRef(ref location1))
                 ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);

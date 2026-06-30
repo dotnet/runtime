@@ -1325,8 +1325,8 @@ namespace Internal.JitInterface
                     break;
 
                 case TargetArchitecture.LoongArch64:
-                    yield return new InstructionSetInfo("lam_bh", "", InstructionSet.LOONGARCH64_LAM_BH, true);
-                    yield return new InstructionSetInfo("lam_cas", "", InstructionSet.LOONGARCH64_LAM_CAS, true);
+                    yield return new InstructionSetInfo("lam_bh", "LAM_BH", InstructionSet.LOONGARCH64_LAM_BH, true);
+                    yield return new InstructionSetInfo("lam_cas", "LAM_CAS", InstructionSet.LOONGARCH64_LAM_CAS, true);
                     break;
             }
         }
