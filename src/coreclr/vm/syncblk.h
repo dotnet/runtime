@@ -912,17 +912,6 @@ class ObjHeader
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
 
-    // These must match the values in ObjectHeader.CoreCLR.cs
-    enum class HeaderLockResult : int32_t {
-        Success = 0,
-        Failure = 1,
-        UseSlowPath = 2
-    };
-
-    HeaderLockResult AcquireHeaderThinLock(Thread* pCurThread);
-
-    HeaderLockResult ReleaseHeaderThinLock(Thread* pCurThread);
-
     friend struct ::cdac_data<ObjHeader>;
 };
 

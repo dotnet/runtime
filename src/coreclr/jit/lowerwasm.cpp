@@ -458,6 +458,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         return;
     }
 
+    if (indirNode->OperIs(GT_IND) && ((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0))
+    {
+        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
+    }
+
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
 }
@@ -820,8 +825,17 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
-    return node;
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->GetHWIntrinsicId());
+    switch (category)
+    {
+        case HWIntrinsicCategory::HW_Category_SIMD:
+        {
+            break;
+        }
+        default:
+            NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
+    }
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -832,5 +846,5 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_WASM_SIMD("Lowering::ContainCheckHWIntrinsic");
+    // TODO-WASM: implement containment for hardware intrinsics, currently a no-op
 }

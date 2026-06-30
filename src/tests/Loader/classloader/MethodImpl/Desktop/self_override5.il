@@ -79,7 +79,6 @@
         01 00 00 00
     )
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Tests that expect TypeLoadException') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtime/issues/120708') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsBrowser') }
     .entrypoint
 
     .locals init (bool V_0,
@@ -125,6 +124,30 @@ L0:
 
 L1:
 
+    // Test delegate path: create a delegate to DoBar on a MyBar instance.
+    // Since DoBarOverride .overrides DoBar, invoking the delegate should
+    // execute MyBar::DoBarOverride and return 5.
+    ldc.i4.5
+    newobj     instance void MyBar::.ctor()
+    call       bool CMain::TestDelegateDoBar(int32, class MyBar)
+    brtrue.s   L2
+    ldc.i4.0
+    stloc.0
+
+L2:
+
+    // Test delegate path: create a delegate to DoBar on a MyFoo instance.
+    // Virtual dispatch through the delegate should execute
+    // MyFoo::DoBarOverride and return 6.
+    ldc.i4.6
+    newobj     instance void MyFoo::.ctor()
+    call       bool CMain::TestDelegateDoBar(int32, class MyBar)
+    brtrue.s   L3
+    ldc.i4.0
+    stloc.0
+
+L3:
+
     // return a status
     IL_0034:  ldloc.0
     IL_0035:  brtrue.s   IL_003b
@@ -144,6 +167,43 @@ L1:
     IL_0040:  ldloc.3
     IL_0041:  ret
   } // end of method CMain::Main
+
+  // Helper method: creates a Func<int> delegate targeting MyBar::DoBar on the
+  // given object, invokes it, and checks the result against the expected value.
+  .method public hidebysig static bool TestDelegateDoBar(int32 expected, class MyBar obj) cil managed
+  {
+    .maxstack 8
+    .locals init (class [mscorlib]System.Func`1<int32> del,
+                  int32 result)
+
+    // Func<int> del = (Func<int>)Delegate.CreateDelegate(typeof(Func<int>), obj, "DoBar");
+    ldtoken    class [mscorlib]System.Func`1<int32>
+    call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+    ldarg.1
+    ldstr      "DoBar"
+    call       class [mscorlib]System.Delegate [mscorlib]System.Delegate::CreateDelegate(class [mscorlib]System.Type, object, string)
+    castclass  class [mscorlib]System.Func`1<int32>
+    stloc.0
+
+    // int result = del();
+    ldloc.0
+    callvirt   instance !0 class [mscorlib]System.Func`1<int32>::Invoke()
+    stloc.1
+
+    // if (result == expected) return true;
+    ldloc.1
+    ldarg.0
+    beq.s      DELEGATE_PASS
+
+    ldstr      "FAIL: delegate to DoBar returned wrong value"
+    call       void [mscorlib]System.Console::WriteLine(string)
+    ldc.i4.0
+    ret
+
+DELEGATE_PASS:
+    ldc.i4.1
+    ret
+  } // end of method CMain::TestDelegateDoBar
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
