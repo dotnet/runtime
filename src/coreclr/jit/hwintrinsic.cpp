@@ -2913,6 +2913,9 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             return nullptr;
         }
     }
+#elif defined(TARGET_WASM)
+    // TODO-WASM-SIMD: Finish adding xplat intrinsic lightup
+    return nullptr;
 #endif
 
     if (simdSize != 0)
