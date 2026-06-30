@@ -4870,21 +4870,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (!m_isSynchronized && !m_isAsyncMethodWithContextSaveRestore)
             NO_WAY("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC used in a non-synchronized or async method");
 
-        if (m_synchronizedOrAsyncRetValVarIndex == -1)
-        {
-            // Code inside for-loops, for example, is not emitted in the first pass, so we can reach the async
-            // epilog with m_synchronizedOrAsyncRetValVarIndex uninitialized.
-            CORINFO_SIG_INFO sig = m_methodInfo->args;
-            InterpType retType = GetInterpType(sig.retType);
-            if (retType != InterpTypeVoid)
-            {
-                CORINFO_CLASS_HANDLE retClsHnd = (retType == InterpTypeVT) ? sig.retTypeClass : NULL;
-                PushInterpType(retType, retClsHnd);
-                m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
-                m_pStackPointer--;
-                INTERP_DUMP("Created ret val var V%d (pre-created in epilog)\n", m_synchronizedOrAsyncRetValVarIndex);
-            }
-        }
+        // Code inside for-loops, for example, is not emitted in the first pass, so we can reach the async
+        // epilog with m_synchronizedOrAsyncRetValVarIndex uninitialized.
+        CreateSynchronizedRetValVar();
 
         INTERP_DUMP("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC with ret val var V%d\n", (int)m_synchronizedOrAsyncRetValVarIndex);
         if (m_synchronizedOrAsyncRetValVarIndex != -1)
@@ -5762,7 +5750,9 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
     CORINFO_SIG_INFO sig = methodInfo->args;
     InterpType retType = GetInterpType(sig.retType);
 
-    if (m_isAsyncVersionOfSyncMethod)
+    // Wrap top of stack in await. For async versions that are synchronized,
+    // only wrap the outer most return in await.
+    if (m_isAsyncVersionOfSyncMethod && (!m_isSynchronized || m_currentILOffset >= m_ILCodeSizeFromILHeader))
     {
         if (m_asyncVersionIsTailCalling)
         {
@@ -5798,16 +5788,11 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
         int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
         int32_t target = m_synchronizedOrAsyncPostFinallyOffset;
 
-        if (retType != InterpTypeVoid)
+        CreateSynchronizedRetValVar();
+
+        if ((retType != InterpTypeVoid) || m_isAsyncVersionOfSyncMethod)
         {
             CheckStackExact(1);
-            if (m_synchronizedOrAsyncRetValVarIndex == -1)
-            {
-                PushInterpType(retType, m_pVars[m_pStackPointer[-1].var].clsHnd);
-                m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
-                m_pStackPointer--;
-                INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
-            }
             INTERP_DUMP("Store to ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
             EmitStoreVar(m_synchronizedOrAsyncRetValVarIndex);
         }
@@ -7591,7 +7576,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
 
 bool InterpCompiler::IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
-    if (!m_isAsyncVersionOfSyncMethod)
+    if (!m_isAsyncVersionOfSyncMethod || m_isSynchronized)
     {
         return false;
     }
@@ -8318,6 +8303,47 @@ int InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement*
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
     return -1;
+}
+
+void InterpCompiler::CreateSynchronizedRetValVar()
+{
+    if (m_synchronizedOrAsyncRetValVarIndex != -1)
+    {
+        return;
+    }
+
+    if (m_methodInfo->args.retType == CORINFO_TYPE_VOID && !m_isAsyncVersionOfSyncMethod)
+    {
+        return;
+    }
+
+    InterpType retType;
+    CORINFO_CLASS_HANDLE retClsHnd = NULL;
+    if (m_isAsyncVersionOfSyncMethod)
+    {
+        // The actual type of the return value will be the Task<T> or
+        // ValueTask<T> type, so get it from the await call signature
+        CORINFO_LOOKUP instArg;
+        CORINFO_METHOD_HANDLE awaitCall = m_compHnd->getAwaitReturnCall(m_methodHnd, &instArg);
+        CORINFO_SIG_INFO awaitCallSig;
+        m_compHnd->getMethodSig(awaitCall, &awaitCallSig);
+
+        CORINFO_CLASS_HANDLE vcTypeRet;
+        CorInfoType paramType = strip(m_compHnd->getArgType(&awaitCallSig, awaitCallSig.args, &vcTypeRet));
+
+        retType = GetInterpType(paramType);
+        retClsHnd = (retType == InterpTypeVT) ? vcTypeRet : NULL;
+    }
+    else
+    {
+        retType = GetInterpType(m_methodInfo->args.retType);
+        retClsHnd = (retType == InterpTypeVT) ? m_methodInfo->args.retTypeClass : NULL;
+    }
+
+    PushInterpType(retType, retClsHnd);
+    m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+    INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
 }
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)

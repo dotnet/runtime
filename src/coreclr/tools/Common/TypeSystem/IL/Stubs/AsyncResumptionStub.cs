@@ -81,10 +81,18 @@ namespace ILCompiler
 
             foreach (var param in _targetMethod.Signature)
             {
-                var local = ilEmitter.NewLocal(param);
-                ilStream.EmitLdLoca(local);
-                ilStream.Emit(ILOpcode.initobj, ilEmitter.NewToken(param));
-                ilStream.EmitLdLoc(local);
+                if (param.IsByRef)
+                {
+                    ilStream.EmitLdc(0);
+                    ilStream.Emit(ILOpcode.conv_u);
+                }
+                else
+                {
+                    var local = ilEmitter.NewLocal(param);
+                    ilStream.EmitLdLoca(local);
+                    ilStream.Emit(ILOpcode.initobj, ilEmitter.NewToken(param));
+                    ilStream.EmitLdLoc(local);
+                }
             }
 
             ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(_targetMethod));
