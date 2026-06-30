@@ -1,19 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <AssemblyName>ILCompiler.Compiler.Tests.Assets</AssemblyName>
+    <AssemblyName>A_B</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <SkipTestRun>true</SkipTestRun>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <!-- Don't add references to the netstandard platform since this is a core assembly -->
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ManglerCollision.*\**" />
-    <ProjectReference Include="..\..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
+    <ProjectReference Include="..\..\..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
   </ItemGroup>
-
 </Project>
