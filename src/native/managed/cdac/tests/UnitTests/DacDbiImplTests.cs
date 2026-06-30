@@ -570,15 +570,20 @@ public unsafe class DacDbiImplTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ResolveTypeReference_TypeRef_NotCached_ReturnsClassNotLoaded(MockTarget.Architecture arch)
     {
-        ulong assemblyAddr = 0;
-        var (dacDbi, _) = CreateDacDbiWithLoader(arch, (loader, _) =>
-        {
-            MockLoaderModule module = loader.AddModule();
-            assemblyAddr = module.Assembly;
-        });
+        const ulong refAsmPtr = 0x100, refManifest = 0x9001;
+        ModuleHandle refHandle = Mod(0x1000);
 
-        uint typeRefToken = (uint)EcmaMetadataUtils.TokenType.mdtTypeRef | 0x000003;
-        DacDbiTypeRefData input = new() { vmAssembly = assemblyAddr, typeToken = typeRefToken };
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(Ptr(refAsmPtr))).Returns(refHandle);
+        loader.Setup(l => l.GetLookupTables(refHandle)).Returns(Tables(refManifest));
+        SetupTypeRefCacheMiss(loader);
+
+        Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
+        ecma.Setup(e => e.GetMetadata(refHandle)).Returns((MetadataReader?)null);
+
+        DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
+
+        DacDbiTypeRefData input = new() { vmAssembly = refAsmPtr, typeToken = MdtTypeRef | 3 };
         DacDbiTypeRefData output = default;
         int hr = dacDbi.ResolveTypeReference(&input, &output);
 
