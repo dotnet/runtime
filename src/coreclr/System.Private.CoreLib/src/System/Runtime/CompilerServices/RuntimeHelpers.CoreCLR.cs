@@ -335,7 +335,10 @@ namespace System.Runtime.CompilerServices
             GetStackBounds(&stackBase, &stackLimit);
 
             nuint currentStackAddress = (nuint)(&stackBase);
-            if ((stackBase <= stackLimit) || (currentStackAddress <= stackLimit) || (currentStackAddress >= stackBase))
+            if ((stackLimit == 0) ||
+                (stackBase <= stackLimit) ||
+                (currentStackAddress <= stackLimit) ||
+                (currentStackAddress >= stackBase))
             {
                 // Unknown or unexpected stack bounds: use the heap.
                 return false;

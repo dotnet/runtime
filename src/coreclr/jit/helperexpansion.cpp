@@ -2910,21 +2910,6 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
     bool const isLocAlloc = (elemSizeArg != nullptr);
     bool const isAlign8   = isLocAlloc && (helper == CORINFO_HELP_NEWARR_1_ALIGN8);
 
-    // The localloc/heapalloc dispatch path needs to store the heap-fallback
-    // call result into the same local that consumes the original call's
-    // result. If the result is unused (e.g. DCE removed the consumer),
-    // skip the expansion and let later phases drop the dead call.
-    //
-    if (isLocAlloc)
-    {
-        GenTree* const stmtRoot = stmt->GetRootNode();
-        if (!(stmtRoot->OperIs(GT_STORE_LCL_VAR) && (stmtRoot->AsLclVarCommon()->Data() == call)))
-        {
-            JITDUMP("Skipping localloc dispatch for [%06d]: call result is unused\n", dspTreeID(call));
-            return false;
-        }
-    }
-
     JITDUMP("Expanding new array helper for stack allocated array at [%06d] %sin " FMT_BB ":\n", dspTreeID(call),
             isLocAlloc ? " into localloc " : "", block->bbNum);
     DISPTREE(call);
@@ -3142,7 +3127,6 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
 
         helperHeapInEdge->setLikelihood(0.2);
         locallocInEdge->setLikelihood(0.8);
-        locallocBlock->inheritWeightPercentage(block, 80);
         locallocOutEdge->setLikelihood(1.0);
         locallocBlock->SetTargetEdge(locallocOutEdge);
 
@@ -3150,11 +3134,14 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         FlowEdge* const heapallocOutEdge = fgAddRefPred(remainderBlock, heapallocBlock);
 
         heapallocInEdge->setLikelihood(0.01);
-        heapallocBlock->inheritWeightPercentage(block, 20);
         heapallocOutEdge->setLikelihood(1.0);
         heapallocBlock->SetTargetEdge(heapallocOutEdge);
 
         block->SetCond(heapallocInEdge, helperCheckInEdge);
+
+        locallocBlock->inheritWeightPercentage(helperCheckBlock, 80);
+        heapallocBlock->inheritWeight(block);
+        heapallocBlock->bbWeight = heapallocBlock->computeIncomingWeight();
 
         // Now fill in the heapalloc block.
         //
