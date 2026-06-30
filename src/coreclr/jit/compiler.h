@@ -10594,8 +10594,15 @@ public:
         return threshold;
     }
 
-    // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
-    // structs will fit the criteria.
+    //---------------------------------------------------------------------------------------------
+    // structMightRepresentSIMDType: Can this class handle be a SIMD type?
+    //
+    // Returns:
+    //   false if it is not possible for this class handle to be a SIMD type, otherwise true.
+    //
+    // Notes:
+    //   SIMD types are currently all value classes annotated with the [Intrinsic] attribute.
+    //   This is a first stage filter, caller should verify exact SIMD types by name.
     bool structMightRepresentSIMDType(CORINFO_CLASS_HANDLE clsHnd)
     {
         uint32_t structFlags   = info.compCompHnd->getClassAttribs(clsHnd);
