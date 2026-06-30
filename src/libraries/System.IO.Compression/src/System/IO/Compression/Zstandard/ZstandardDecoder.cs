@@ -363,37 +363,6 @@ namespace System.IO.Compression
             _finished = false;
         }
 
-        /// <summary>
-        /// Determines whether <paramref name="framePrefix"/> starts a new Zstandard frame (versus trailing data)
-        /// by feeding it to the decoder: a valid frame magic yields <see cref="OperationStatus.NeedMoreData"/>,
-        /// anything else yields <see cref="OperationStatus.InvalidData"/>. The bytes are not consumed; on return
-        /// the session is reset, ready to decode the next frame (<see langword="true"/>) or to end the stream
-        /// (<see langword="false"/>).
-        /// </summary>
-        /// <param name="framePrefix">The four boundary bytes (a frame magic number, or trailing data).</param>
-        internal bool IsFrameStart(ReadOnlySpan<byte> framePrefix)
-        {
-            Debug.Assert(framePrefix.Length == 4);
-            EnsureNotDisposed();
-
-            // Clear the just-finished frame's latch so Decompress feeds the prefix; session-only reset keeps
-            // any dictionary and the window-size cap.
-            _context.Reset();
-            _finished = false;
-
-            Span<byte> scratch = stackalloc byte[1]; // a frame magic produces no output
-            OperationStatus status = Decompress(framePrefix, scratch, out _, out _);
-            Debug.Assert(status is OperationStatus.NeedMoreData or OperationStatus.InvalidData);
-
-            bool isFrame = status == OperationStatus.NeedMoreData;
-
-            // Reset again so the next frame decodes from a clean session; for trailing data this re-latches
-            // _finished so the stream ends without re-feeding the rejected bytes.
-            _context.Reset();
-            _finished = !isFrame;
-            return isFrame;
-        }
-
         /// <summary>References a prefix for the next decompression operation.</summary>
         /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called. The referenced data must remain valid and unmodified for the duration of the decompression operation.</remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>

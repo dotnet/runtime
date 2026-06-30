@@ -13,6 +13,7 @@ namespace System.IO.Compression
     {
         private ZstandardDecoder? _decoder;
         private bool _nonEmptyInput;
+        private bool _endOfStream;
 
         // Length of a Zstandard frame magic number, in bytes.
         private const int ZstdFrameMagicLength = 4;
@@ -144,6 +145,14 @@ namespace System.IO.Compression
 
             try
             {
+                if (_endOfStream)
+                {
+                    // A previous read reached the end of the final frame (or rejected trailing data). The
+                    // boundary probe may have left the decoder non-resumable, so never re-enter the decode
+                    // loop; report end-of-stream to all subsequent reads.
+                    return 0;
+                }
+
                 while (true)
                 {
                     int bytesWritten;
@@ -201,10 +210,12 @@ namespace System.IO.Compression
         }
 
         // Called after TryDecompress reports OperationStatus.Done with no pending output (a finished frame).
-        // Decides whether another concatenated frame follows: reads up to a frame magic and asks the decoder
-        // (IsFrameStart) whether those bytes begin a frame. Returns true (decoder reset and ready) so the caller
-        // loops to decode it, or false (stream complete; a seekable base stream is rewound to the end of the
-        // compressed data) so the caller returns. Shared by Read (async: false) and ReadAsync (async: true).
+        // Decides whether another concatenated frame follows by reading up to a frame magic and feeding just
+        // those bytes to the decoder: a valid magic is accepted (NeedMoreData) so decoding continues, while
+        // bytes that are not a frame magic identify trailing data after the final frame. Returns true (decoder
+        // reset and ready) so the caller loops to decode the next frame, or false (stream complete; _endOfStream
+        // is set and a seekable base stream is rewound to the end of the compressed data) so the caller returns.
+        // Shared by Read (async: false) and ReadAsync (async: true).
         private async ValueTask<bool> AdvanceToNextFrame(bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_decoder != null);
@@ -228,18 +239,39 @@ namespace System.IO.Compression
                 }
             }
 
-            if (_buffer.ActiveLength >= ZstdFrameMagicLength &&
-                _decoder.IsFrameStart(_buffer.ActiveSpan.Slice(0, ZstdFrameMagicLength)))
+            if (_buffer.ActiveLength >= ZstdFrameMagicLength)
             {
-                // Another frame follows. IsFrameStart has reset the decoder (a session-only native reset that
-                // keeps the window size and any dictionary, and releases a single-use prefix) and left it ready
-                // to decode the next frame.
-                return true;
+                // Determine whether another concatenated frame follows by feeding the decoder exactly the next
+                // frame magic number. The decoder validates the magic against both standard and skippable
+                // frames: a valid magic leaves it asking for more input (NeedMoreData), so decoding continues,
+                // while bytes that are not a frame magic produce InvalidData, identifying trailing data after
+                // the final frame. Feeding only the magic (not the whole buffer) means a frame whose magic is
+                // valid but whose body is corrupt is not mistaken for trailing data here: the magic is accepted
+                // and the corrupt body is rejected by the subsequent decode in the Read/ReadAsync loop.
+                _decoder.Reset();
+
+                // The magic alone never decodes into output, so the decoder needs no real output space; a single
+                // scratch byte borrowed from the buffer's free region (which the decoder won't write to) satisfies
+                // the non-empty-destination requirement. A Span local / stackalloc can't be used here because this
+                // method is async.
+                _buffer.EnsureAvailableSpace(1);
+                if (_decoder.Decompress(_buffer.ActiveSpan.Slice(0, ZstdFrameMagicLength), _buffer.AvailableSpan.Slice(0, 1), out int bytesConsumed, out _) == OperationStatus.NeedMoreData)
+                {
+                    // A valid magic; the decoder has taken the magic bytes into its session to continue decoding
+                    // the rest of the frame. Drop them from the buffer and keep decoding.
+                    _buffer.Discard(bytesConsumed);
+                    return true;
+                }
+
+                // Not a frame: leave the magic bytes buffered so they are included in the trailing-data rewind
+                // below (on a non-seekable stream they simply remain unconsumed).
             }
 
-            // Trailing non-zstd data or end of input after the final frame: the stream is complete. Leave any
-            // trailing bytes on a seekable base stream by rewinding to the end of the compressed data,
-            // mirroring how DeflateStream handles data after the last gzip member.
+            // Trailing non-zstd data or end of input after the final frame: the stream is complete. Mark the
+            // stream ended so subsequent reads short-circuit to 0 without re-entering the (now non-resumable)
+            // decoder, and leave any trailing bytes on a seekable base stream by rewinding to the end of the
+            // compressed data, mirroring how DeflateStream handles data after the last gzip member.
+            _endOfStream = true;
             if (_stream.CanSeek)
             {
                 TryRewindStream(_stream);
@@ -287,6 +319,14 @@ namespace System.IO.Compression
 
             try
             {
+                if (_endOfStream)
+                {
+                    // A previous read reached the end of the final frame (or rejected trailing data). The
+                    // boundary probe may have left the decoder non-resumable, so never re-enter the decode
+                    // loop; report end-of-stream to all subsequent reads.
+                    return 0;
+                }
+
                 while (true)
                 {
                     int bytesWritten;
