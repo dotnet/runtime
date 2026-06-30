@@ -2216,7 +2216,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         // Smalltypes only support atomic instructions for GT_XCHG
         assert(!treeNode->OperIs(GT_XORR, GT_XAND, GT_XADD));
         // ISA1.1
-        if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_LAM_BH))
+        if (m_compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
         {
             if (varTypeIsByte(treeNode->TypeGet()))
             {
@@ -2227,103 +2227,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 ins = INS_amswap_db_h;
             }
             emit->emitIns_R_R_R(ins, dataSize, targetReg, dataReg, addrReg);
-        }
-        else
-        {
-            // ISA1.0
-            regNumber exResultReg   = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            regNumber xchgBitReg    = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            regNumber norXchgBitReg = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            regNumber alignAddrReg  = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            regNumber tmpReg        = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            // Register allocator should have extended the lifetimes of all input and internal registers
-            // They should all be different
-            noway_assert(addrReg != targetReg);
-            noway_assert(dataReg != targetReg);
-            noway_assert(addrReg != dataReg);
-            noway_assert(targetReg != REG_NA);
-            noway_assert(exResultReg != REG_NA);
-            noway_assert(exResultReg != targetReg);
-
-            assert(addr->isUsedFromReg());
-
-            // Store exclusive unpredictable cases must be avoided
-            noway_assert(exResultReg != dataReg);
-            noway_assert(exResultReg != addrReg);
-            noway_assert(exResultReg != xchgBitReg);
-            noway_assert(exResultReg != norXchgBitReg);
-            noway_assert(exResultReg != alignAddrReg);
-            noway_assert(exResultReg != tmpReg);
-            noway_assert(xchgBitReg != REG_NA);
-            noway_assert(xchgBitReg != dataReg);
-            noway_assert(xchgBitReg != addrReg);
-            noway_assert(xchgBitReg != targetReg);
-            noway_assert(xchgBitReg != norXchgBitReg);
-            noway_assert(xchgBitReg != alignAddrReg);
-            noway_assert(xchgBitReg != tmpReg);
-            noway_assert(norXchgBitReg != REG_NA);
-            noway_assert(norXchgBitReg != dataReg);
-            noway_assert(norXchgBitReg != addrReg);
-            noway_assert(norXchgBitReg != targetReg);
-            noway_assert(norXchgBitReg != alignAddrReg);
-            noway_assert(norXchgBitReg != tmpReg);
-            noway_assert(alignAddrReg != REG_NA);
-            noway_assert(alignAddrReg != dataReg);
-            noway_assert(alignAddrReg != addrReg);
-            noway_assert(alignAddrReg != targetReg);
-            noway_assert(alignAddrReg != tmpReg);
-            noway_assert(tmpReg != REG_NA);
-            noway_assert(tmpReg != dataReg);
-            noway_assert(tmpReg != addrReg);
-            noway_assert(tmpReg != targetReg);
-
-            // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
-            // registers die at the first generated instruction. However, here the input registers are reused,
-            // so mark the location register as a GC pointer until code generation for this node is finished.
-            gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
-            BasicBlock* labelRetry = genCreateTempLabel();
-            unsigned    size       = 0;
-            emit->emitIns_R_R_I(INS_addi_w, dataSize, tmpReg, REG_R0, -4);
-            emit->emitIns_R_R_R(INS_and, dataSize, alignAddrReg, addrReg, tmpReg);
-            emit->emitIns_R_R_I(INS_andi, dataSize, tmpReg, addrReg, 0x3);
-            emit->emitIns_R_R_I(INS_slli_d, dataSize, tmpReg, tmpReg, 0x3);
-            if (varTypeIsByte(treeNode->TypeGet()))
-            {
-                size = 0x7;
-                emit->emitIns_R_R_I(INS_addi_w, dataSize, exResultReg, REG_R0, 0xff);
-                emit->emitIns_R_R_R(INS_sll_w, dataSize, xchgBitReg, exResultReg, tmpReg);
-            }
-            else if (varTypeIsShort(treeNode->TypeGet()))
-            {
-                size = 0xf;
-                emit->emitIns_R_I(INS_lu12i_w, dataSize, exResultReg, 0xf);
-                emit->emitIns_R_R_I(INS_ori, dataSize, xchgBitReg, exResultReg, 0xfff);
-                emit->emitIns_R_R_R(INS_sll_w, dataSize, xchgBitReg, xchgBitReg, tmpReg);
-            }
-            emit->emitIns_R_R_R(INS_nor, dataSize, norXchgBitReg, REG_R0, xchgBitReg);
-            emit->emitIns_R_R_I_I(INS_bstrpick_w, dataSize, exResultReg, dataReg, size, 0);
-            emit->emitIns_R_R_R(INS_sll_w, dataSize, tmpReg, exResultReg, tmpReg);
-            instGen_MemoryBarrier();
-            genDefineTempLabel(labelRetry);
-            emit->emitIns_R_R_I(INS_ll_w, dataSize, targetReg, alignAddrReg, 0); // load original value
-            emit->emitIns_R_R_R(INS_and, dataSize, exResultReg, targetReg, norXchgBitReg);
-            emit->emitIns_R_R_R(INS_or, dataSize, exResultReg, exResultReg, tmpReg);
-            emit->emitIns_R_R_I(INS_sc_w, dataSize, exResultReg, alignAddrReg, 0); // try to update
-            emit->emitIns_J_cond_la(INS_beq, labelRetry, exResultReg, REG_R0);     // retry if update failed
-            instGen_MemoryBarrier();
-            emit->emitIns_R_R_R(INS_and, dataSize, targetReg, targetReg, xchgBitReg);
-            emit->emitIns_R_R_I(INS_andi, dataSize, tmpReg, addrReg, 0x3);
-            emit->emitIns_R_R_I(INS_slli_d, dataSize, tmpReg, tmpReg, 0x3);
-            emit->emitIns_R_R_R(INS_srl_w, dataSize, targetReg, targetReg, tmpReg);
-            if (varTypeIsByte(treeNode->TypeGet()))
-            {
-                emit->emitIns_R_R(INS_ext_w_b, dataSize, targetReg, targetReg);
-            }
-            else if (varTypeIsShort(treeNode->TypeGet()))
-            {
-                emit->emitIns_R_R(INS_ext_w_b, dataSize, targetReg, targetReg);
-            }
-            gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
         }
     }
 
@@ -2362,7 +2265,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     emitter* emit     = GetEmitter();
     emitAttr dataSize = emitActualTypeSize(data);
     bool     is4      = (dataSize == EA_4BYTE);
-    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_LAM_CAS))
+    if (m_compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
     {
         // amcas_db use the comparand as the target reg
         emit->emitIns_R_R(INS_mov, dataSize, targetReg, comparandReg);
@@ -2385,6 +2288,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     }
     else
     {
+        assert(!varTypeIsSmall(treeNode->TypeGet()));
         regNumber exResultReg = internalRegisters.Extract(treeNode, RBM_ALLINT);
         // Register allocator should have extended the lifetimes of all input and internal registers
         // They should all be different
@@ -2402,125 +2306,29 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         // Store exclusive unpredictable cases must be avoided
         noway_assert(exResultReg != dataReg);
         noway_assert(exResultReg != addrReg);
-        if (!varTypeIsSmall(treeNode->TypeGet()))
+
+        // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
+        // registers die at the first generated instruction. However, here the input registers are reused,
+        // so mark the location register as a GC pointer until code generation for this node is finished.
+        gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
+
+        BasicBlock* labelRetry = genCreateTempLabel();
+        BasicBlock* fail       = genCreateTempLabel();
+
+        if (is4)
         {
-
-            // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
-            // registers die at the first generated instruction. However, here the input registers are reused,
-            // so mark the location register as a GC pointer until code generation for this node is finished.
-            gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
-
-            BasicBlock* labelRetry = genCreateTempLabel();
-            BasicBlock* fail       = genCreateTempLabel();
-
-            if (is4)
-            {
-                // INS_bne is 64 bit comparison, high bits may be contaminated.
-                emit->emitIns_R_R_I(INS_slli_w, dataSize, comparandReg, comparandReg, 0x0);
-            }
-            instGen_MemoryBarrier();
-            genDefineTempLabel(labelRetry);
-            emit->emitIns_R_R_I(is4 ? INS_ll_w : INS_ll_d, dataSize, targetReg, addrReg, 0); // load original value
-            emit->emitIns_J_cond_la(INS_bne, fail, targetReg, comparandReg);                 // fail if doesn’t match
-            emit->emitIns_R_R(INS_mov, dataSize, exResultReg, dataReg);
-            emit->emitIns_R_R_I(is4 ? INS_sc_w : INS_sc_d, dataSize, exResultReg, addrReg, 0); // try to update
-            emit->emitIns_J_cond_la(INS_beq, labelRetry, exResultReg, REG_R0);                 // retry if update failed
-            genDefineTempLabel(fail);
-            instGen_MemoryBarrier();
+            // INS_bne is 64 bit comparison, high bits may be contaminated.
+            emit->emitIns_R_R_I(INS_slli_w, dataSize, comparandReg, comparandReg, 0x0);
         }
-        else
-        {
-            // ISA1.0
-            regNumber xchgBitReg    = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            regNumber norXchgBitReg = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            regNumber alignAddrReg  = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            regNumber tmpReg        = internalRegisters.Extract(treeNode, RBM_ALLINT);
-            // Register allocator should have extended the lifetimes of all input and internal registers
-            // Store exclusive unpredictable cases must be avoided
-            noway_assert(exResultReg != xchgBitReg);
-            noway_assert(exResultReg != norXchgBitReg);
-            noway_assert(exResultReg != alignAddrReg);
-            noway_assert(exResultReg != tmpReg);
-            noway_assert(xchgBitReg != REG_NA);
-            noway_assert(xchgBitReg != dataReg);
-            noway_assert(xchgBitReg != addrReg);
-            noway_assert(xchgBitReg != targetReg);
-            noway_assert(xchgBitReg != comparandReg);
-            noway_assert(xchgBitReg != norXchgBitReg);
-            noway_assert(xchgBitReg != alignAddrReg);
-            noway_assert(xchgBitReg != tmpReg);
-            noway_assert(norXchgBitReg != REG_NA);
-            noway_assert(norXchgBitReg != dataReg);
-            noway_assert(norXchgBitReg != addrReg);
-            noway_assert(norXchgBitReg != targetReg);
-            noway_assert(norXchgBitReg != comparandReg);
-            noway_assert(norXchgBitReg != alignAddrReg);
-            noway_assert(norXchgBitReg != tmpReg);
-            noway_assert(alignAddrReg != REG_NA);
-            noway_assert(alignAddrReg != dataReg);
-            noway_assert(alignAddrReg != addrReg);
-            noway_assert(alignAddrReg != targetReg);
-            noway_assert(alignAddrReg != comparandReg);
-            noway_assert(alignAddrReg != tmpReg);
-            noway_assert(tmpReg != REG_NA);
-            noway_assert(tmpReg != dataReg);
-            noway_assert(tmpReg != addrReg);
-            noway_assert(tmpReg != targetReg);
-            noway_assert(tmpReg != comparandReg);
-
-            // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
-            // registers die at the first generated instruction. However, here the input registers are reused,
-            // so mark the location register as a GC pointer until code generation for this node is finished.
-            gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
-
-            BasicBlock* labelRetry = genCreateTempLabel();
-            BasicBlock* fail       = genCreateTempLabel();
-            unsigned    size       = 0;
-            emit->emitIns_R_R_I(INS_addi_w, dataSize, tmpReg, REG_R0, -4);
-            emit->emitIns_R_R_R(INS_and, dataSize, alignAddrReg, addrReg, tmpReg);
-            emit->emitIns_R_R_I(INS_andi, dataSize, tmpReg, addrReg, 0x3);
-            emit->emitIns_R_R_I(INS_slli_d, dataSize, tmpReg, tmpReg, 0x3);
-            if (varTypeIsByte(treeNode->TypeGet()))
-            {
-                size = 0x7;
-                emit->emitIns_R_R_I(INS_addi_w, dataSize, exResultReg, REG_R0, 0xff);
-                emit->emitIns_R_R_R(INS_sll_w, dataSize, xchgBitReg, exResultReg, tmpReg);
-            }
-            else if (varTypeIsShort(treeNode->TypeGet()))
-            {
-                size = 0xf;
-                emit->emitIns_R_I(INS_lu12i_w, dataSize, exResultReg, 0xf);
-                emit->emitIns_R_R_I(INS_ori, dataSize, xchgBitReg, exResultReg, 0xfff);
-                emit->emitIns_R_R_R(INS_sll_w, dataSize, xchgBitReg, xchgBitReg, tmpReg);
-            }
-            emit->emitIns_R_R_R(INS_nor, dataSize, norXchgBitReg, REG_R0, xchgBitReg);
-            emit->emitIns_R_R_I_I(INS_bstrpick_w, dataSize, exResultReg, comparandReg, size, 0);
-            emit->emitIns_R_R_R(INS_sll_w, dataSize, comparandReg, exResultReg, tmpReg);
-            emit->emitIns_R_R_I_I(INS_bstrpick_w, dataSize, exResultReg, dataReg, size, 0);
-            emit->emitIns_R_R_R(INS_sll_w, dataSize, tmpReg, exResultReg, tmpReg);
-            instGen_MemoryBarrier();
-            genDefineTempLabel(labelRetry);
-            emit->emitIns_R_R_I(INS_ll_w, dataSize, exResultReg, alignAddrReg, 0); // load original value
-            emit->emitIns_R_R_R(INS_and, dataSize, targetReg, exResultReg, xchgBitReg);
-            emit->emitIns_J_cond_la(INS_bne, fail, targetReg, comparandReg); // fail if doesn’t match
-            emit->emitIns_R_R_R(INS_and, dataSize, exResultReg, exResultReg, norXchgBitReg);
-            emit->emitIns_R_R_R(INS_or, dataSize, exResultReg, exResultReg, tmpReg);
-            emit->emitIns_R_R_I(INS_sc_w, dataSize, exResultReg, alignAddrReg, 0); // try to update
-            emit->emitIns_J_cond_la(INS_beq, labelRetry, exResultReg, REG_R0);     // retry if update failed
-            genDefineTempLabel(fail);
-            instGen_MemoryBarrier();
-            emit->emitIns_R_R_I(INS_andi, dataSize, tmpReg, addrReg, 0x3);
-            emit->emitIns_R_R_I(INS_slli_d, dataSize, tmpReg, tmpReg, 0x3);
-            emit->emitIns_R_R_R(INS_srl_w, dataSize, targetReg, targetReg, tmpReg);
-            if (varTypeIsByte(treeNode->TypeGet()))
-            {
-                emit->emitIns_R_R(INS_ext_w_b, dataSize, targetReg, targetReg);
-            }
-            else if (varTypeIsShort(treeNode->TypeGet()))
-            {
-                emit->emitIns_R_R(INS_ext_w_h, dataSize, targetReg, targetReg);
-            }
-        }
+        instGen_MemoryBarrier();
+        genDefineTempLabel(labelRetry);
+        emit->emitIns_R_R_I(is4 ? INS_ll_w : INS_ll_d, dataSize, targetReg, addrReg, 0); // load original value
+        emit->emitIns_J_cond_la(INS_bne, fail, targetReg, comparandReg);                 // fail if doesn’t match
+        emit->emitIns_R_R(INS_mov, dataSize, exResultReg, dataReg);
+        emit->emitIns_R_R_I(is4 ? INS_sc_w : INS_sc_d, dataSize, exResultReg, addrReg, 0); // try to update
+        emit->emitIns_J_cond_la(INS_beq, labelRetry, exResultReg, REG_R0);                 // retry if update failed
+        genDefineTempLabel(fail);
+        instGen_MemoryBarrier();
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 

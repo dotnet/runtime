@@ -309,6 +309,11 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
             }
+            else if (allowOptimistic && targetArchitecture is TargetArchitecture.LoongArch64)
+            {
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lam_bh");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lam_cas");
+            }
 
             // Vector<T> can always be part of the optimistic set, we only want to optionally exclude it from the supported set
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(maxVectorTBitWidth, skipAddingVectorT: false, out var optimisticInstructionSet, out _,

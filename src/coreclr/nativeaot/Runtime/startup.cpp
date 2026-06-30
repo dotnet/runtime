@@ -48,7 +48,7 @@ static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
-#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
 // This field is inspected from the generated code to determine what intrinsics are available.
 EXTERN_C int g_cpuFeatures;
 int g_cpuFeatures = 0;
@@ -167,7 +167,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
 bool DetectCPUFeatures()
 {
-#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
     int cpuFeatures = minipal_getcpufeatures();
 
     if ((cpuFeatures & IntrinsicConstants_Invalid) != 0)

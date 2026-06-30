@@ -386,23 +386,10 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(comparand->IsIntegralConst(0));
             }
 
-            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_LAM_CAS))
+            if (!m_compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
             {
-                if (!varTypeIsSmall(tree->TypeGet()))
-                {
-                    buildInternalIntRegisterDefForNode(tree); // ISA1.1 temp reg for store conditional error
-                }
-                else
-                {
-                    // For SmallType ISA1.0 need five temp reg to detal GT_CMPXCHG
-                    buildInternalIntRegisterDefForNode(tree);
-                    buildInternalIntRegisterDefForNode(tree);
-                    buildInternalIntRegisterDefForNode(tree);
-                    buildInternalIntRegisterDefForNode(tree);
-                    buildInternalIntRegisterDefForNode(tree);
-                }
+                buildInternalIntRegisterDefForNode(tree); // ISA1.1 temp reg for store conditional error
             }
-
             // Internals may not collide with target
             setInternalRegsDelayFree = true;
             buildInternalRegisterUses();
@@ -438,19 +425,6 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(data->IsIntegralConst(0));
             }
 
-            if ((!m_compiler->compOpportunisticallyDependsOn(InstructionSet_LAM_BH)) && varTypeIsSmall(tree->TypeGet()))
-            {
-
-                // For SmallType ISA1.0 need five temp reg to detal GT_XCHG
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalIntRegisterDefForNode(tree);
-
-                setInternalRegsDelayFree = true;
-                buildInternalRegisterUses();
-            }
             BuildDef(tree);
         }
         break;
