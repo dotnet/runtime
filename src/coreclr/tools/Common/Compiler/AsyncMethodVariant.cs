@@ -151,7 +151,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Returns true if the natural calling convention of the MethodDesc's defintion requires adaptation to match
+        /// Returns true if the natural calling convention of the MethodDesc's definition requires adaptation to match
         /// the calling convention of the MethodDesc itself. This is true when the MethodDesc's "async-ness" is
         /// different than the "async-ness" defined in metadata (its definition's .IsAsync property), or for
         /// return-dropping async thunks. This may necessitate a thunk to convert between the two calling conventions,
