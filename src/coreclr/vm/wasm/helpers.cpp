@@ -527,9 +527,19 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     pRD->IsCallerContextValid = FALSE;
 
     pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
-    pRD->pCurrentContext->InterpreterSP = GetSP();
-    // Recover the frame pointer so GC-info readers can locate frame slots.
-    pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(GetSP());
+    TADDR sp = GetSP();
+    pRD->pCurrentContext->InterpreterSP = sp;
+
+    // Recover the frame pointer so GC-info readers can locate frame slots, but only when
+    // the stack pointer refers to a real R2R frame. When this frame represents a transition
+    // out of interpreted code, GetSP() returns the address just past the TransitionBlock (the
+    // outgoing argument area) rather than a frame pointer (see TransitionFrame::GetSP). Decoding
+    // that would dereference arbitrary memory, so leave the frame pointer as 0 in that case.
+    TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
+    bool hasR2RStackPointer = (pTransitionBlock != NULL) &&
+                              (pTransitionBlock->m_ReturnAddress != 0) &&
+                              (pTransitionBlock->m_StackPointer != 0);
+    pRD->pCurrentContext->InterpreterFP = hasR2RStackPointer ? GetWasmFramePointerFromStackPointer(sp) : 0;
 
     SyncRegDisplayToCurrentContext(pRD);
 
