@@ -206,6 +206,29 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
+        /// Resumes the process that was started with <see cref="ProcessStartInfo.StartSuspended" /> set to <see langword="true" />.
+        /// </summary>
+        /// <remarks>
+        /// On Windows, this calls <c>ResumeThread</c> on the main thread of the process.
+        /// On macOS, this sends <c>SIGCONT</c> to the process.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current operating system is not supported.</exception>
+        /// <exception cref="Win32Exception">The OS call to resume the process failed.</exception>
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("macos")]
+        public void Resume()
+        {
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            Validate();
+            ResumeCore();
+        }
+
+        /// <summary>
         /// Sends a request to the OS to terminate the process.
         /// </summary>
         /// <remarks>

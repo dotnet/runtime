@@ -55,7 +55,7 @@ internal partial class StackWalk_1 : IStackWalk
         // Check for out-of-line finally funclets.  Filter funclets can't be out-of-line.
         if (!isFilterFunclet)
         {
-            TargetPointer callerIp = callerContext.InstructionPointer;
+            TargetCodePointer callerIp = callerContext.InstructionPointer;
 
             // In the runtime, on Windows, we check with that the IP is in the runtime
             // TODO(stackref): make sure this difference doesn't matter
