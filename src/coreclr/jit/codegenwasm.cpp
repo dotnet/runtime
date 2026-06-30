@@ -519,7 +519,15 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
         else
         {
-            // blocks and trys bind to end
+            // Try and ExnRefWrapper ends inject auto-emitted code (unreachable / exnref
+            // local.set) so they are not valid plain br targets; use the paired Block.
+            //
+            if (ii->IsTry() || ii->IsExnRefWrapper())
+            {
+                continue;
+            }
+
+            // blocks bind to end
             match = ii->End();
         }
 
@@ -563,6 +571,18 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     //
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
+        WasmInterval* const topInterval = wasmControlFlowStack->Top();
+
+        // The [exnref]-wrapper is only meant to be reached via catch_ref; any
+        // normal-flow fall-through into its `end` would fail to provide the
+        // required [exnref]. Emit `unreachable` right before the wrapper's end
+        // so the fall-through path is polymorphic.
+        //
+        if (topInterval->IsExnRefWrapper())
+        {
+            instGen(INS_unreachable);
+        }
+
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
 
@@ -611,16 +631,30 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 assert(jTrue->OperIs(GT_WASM_JEXCEPT));
 
                 // try_table uses void result sig; the paired [exnref]-wrapper
-                // just outside it provides the depth-0 target for catch_ref.
+                // provides the catch_ref target. Find its depth on the control
+                // flow stack: any plain Blocks emitted between the wrapper and
+                // this try_table sit inside the wrapper and shift its index.
                 //
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
 
-                // One catch clause targeting the wrapper at depth 0. The true
-                // target of GT_WASM_JEXCEPT is passed only for disasm readability.
+                int const stackHeight  = wasmControlFlowStack->Height();
+                unsigned  wrapperDepth = UINT_MAX;
+                for (int i = 0; i < stackHeight; i++)
+                {
+                    if (wasmControlFlowStack->Top(i)->IsExnRefWrapper())
+                    {
+                        wrapperDepth = (unsigned)i;
+                        break;
+                    }
+                }
+                assert(wrapperDepth != UINT_MAX);
+
+                // One catch clause targeting the wrapper. The true target of
+                // GT_WASM_JEXCEPT is passed only for disasm readability.
                 //
                 assert(block->GetFalseTarget() == block->Next());
                 BasicBlock* const target = block->GetTrueTarget();
-                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, 0, target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, wrapperDepth, target);
             }
             else
             {
@@ -666,6 +700,54 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             chain    = interval->Chain();
         }
     }
+}
+
+//------------------------------------------------------------------------
+// genEmitFunctionEnd: close still-open control flow intervals and emit the
+//   function-body terminator.
+//
+// Arguments:
+//   emitTerminalUnreachable - if true, emit `unreachable` before the closing
+//     `end` so the implicit return is polymorphic. Callers that have already
+//     emitted a terminator (e.g. BBJ_THROW) pass false.
+//
+// Notes:
+//   Per-interval bookkeeping mirrors genEmitStartBlock: Try needs a trailing
+//   `unreachable`; ExnRefWrapper needs a preceding `unreachable` and a
+//   trailing `local.set` of the per-funclet exnref local.
+//
+void CodeGen::genEmitFunctionEnd(bool emitTerminalUnreachable)
+{
+    while (!wasmControlFlowStack->Empty())
+    {
+        WasmInterval* const topInterval = wasmControlFlowStack->Top();
+
+        if (topInterval->IsExnRefWrapper())
+        {
+            instGen(INS_unreachable);
+        }
+
+        instGen(INS_end);
+        WasmInterval* interval = wasmControlFlowStack->Pop();
+
+        if (interval->IsTry())
+        {
+            instGen(INS_unreachable);
+        }
+
+        if (interval->IsExnRefWrapper())
+        {
+            unsigned const exnRefIdx = m_compiler->funCurrentFunc()->funWasmExnRefLocalIndex;
+            assert(exnRefIdx != UINT_MAX);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, exnRefIdx);
+        }
+    }
+
+    if (emitTerminalUnreachable)
+    {
+        instGen(INS_unreachable);
+    }
+    instGen(INS_end);
 }
 
 //------------------------------------------------------------------------
@@ -745,6 +827,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     {
         return;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (treeNode->OperIsHWIntrinsic())
+    {
+        genHWIntrinsic(treeNode->AsHWIntrinsic());
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     switch (treeNode->OperGet())
     {
@@ -921,6 +1011,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CKFINITE:
             genCkfinite(treeNode);
             break;
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+            genCodeForVectorConstant(treeNode);
+            break;
+#endif // FEATURE_SIMD
 
         default:
 #ifdef DEBUG
@@ -1801,6 +1897,22 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     WasmProduceReg(treeNode);
 }
 
+#ifdef FEATURE_SIMD
+void CodeGen::genCodeForVectorConstant(GenTree* treeNode)
+{
+    assert(treeNode->IsCnsVec());
+    GenTreeVecCon* vecCon = treeNode->AsVecCon();
+
+    uint8_t bytes[16] = {};
+    memcpy(bytes, &vecCon->gtSimdVal, genTypeSize(vecCon->TypeGet()));
+
+    // There is only one type variant for v128.const, v128.const <byte[16]>
+    // and the bytes are reinterpreted according to whichever operation consumes the value.
+    GetEmitter()->emitIns_V128Imm(INS_v128_const, bytes);
+    WasmProduceReg(treeNode);
+}
+#endif
+
 //------------------------------------------------------------------------
 // genCodeForShift: Generate code for a shift or rotate operator
 //
@@ -2471,10 +2583,6 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        if (type == TYP_SIMD16)
-        {
-            NYI_WASM_SIMD("SIMD16 local load");
-        }
 
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
@@ -2560,15 +2668,16 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types type = tree->TypeGet();
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 indirect load");
-    }
-
-    instruction ins = ins_Load(type);
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
 
     genConsumeAddress(tree->Addr());
+
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        regNumber addrReg = GetMultiUseOperandReg(tree->Addr());
+        genEmitNullCheck(addrReg);
+    }
 
     // TODO-WASM: Memory barriers
 
@@ -2681,36 +2790,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     GenTree* target = getCallTarget(call, &params.methHnd);
 
-    // Report managed call signatures to the R2R compiler for thunk generation.
-    if (!call->IsHelperCall() && !call->IsUnmanaged())
-    {
-        CORINFO_SIG_INFO  sigInfoLocal;
-        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
-
-        if (sigInfoCall == nullptr)
-        {
-            if ((params.methHnd != NO_METHOD_HANDLE) &&
-                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
-            {
-                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
-                sigInfoCall = &sigInfoLocal;
-            }
-        }
-
-        if (sigInfoCall != nullptr)
-        {
-            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
-        }
-    }
-
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
-    // Compute the wasm-level result type for the call. Use call->gtReturnType
-    // (the call's "exact" return type) rather than call->gtType, since the latter is
-    // overwritten to TYP_VOID for fast tail calls and for retbuf calls. Calls that
-    // return via a retbuf produce no wasm-level value. For fast tail calls we rely
-    // on fgCanFastTailCall to ensure caller/callee result types are compatible.
-    const var_types callRetType = (var_types)call->gtReturnType;
+    // Compute the wasm-level result type for the call. For fast tail calls, gtType
+    // has been overwritten to TYP_VOID, but the wasm return_call_indirect signature
+    // must match this function's return type, so use gtReturnType.
+    const var_types callRetType = call->IsFastTailCall() ? (var_types)call->gtReturnType : genActualType(call);
     if (call->ShouldHaveRetBufArg() || (callRetType == TYP_VOID))
     {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
@@ -2732,7 +2817,36 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(seg.IsPassedInRegister());
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             assert(wvt < WasmValueType::Count);
+            if (wvt == WasmValueType::V128)
+            {
+                // Passing a 16-byte SIMD value by value through a call is not yet correctly
+                // implemented: the argument is materialized as an i32 (by-ref) while the call
+                // signature requires v128, producing an invalid module. Bail for now.
+                NYI_WASM_SIMD("SIMD16 call argument");
+            }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
+        }
+    }
+
+    // Report managed call signatures to the R2R compiler for thunk generation.
+    if (!call->IsHelperCall() && !call->IsUnmanaged())
+    {
+        CORINFO_SIG_INFO  sigInfoLocal;
+        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
+
+        if (sigInfoCall == nullptr)
+        {
+            if ((params.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
+            {
+                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+            }
+        }
+
+        if (sigInfoCall != nullptr)
+        {
+            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
         }
     }
 
@@ -3507,6 +3621,19 @@ void CodeGen::genCallFinally(BasicBlock* block)
         {
             GetEmitter()->emitIns(INS_end);
         }
+
+        return;
+    }
+
+    // Branch to the continuation block if it's not the next block.
+    assert(block->isBBCallFinallyPair());
+    BasicBlock* const callFinallyRet = block->Next();
+    assert(callFinallyRet->KindIs(BBJ_CALLFINALLYRET));
+    BasicBlock* const continuation = callFinallyRet->GetTarget();
+
+    if (continuation != callFinallyRet->Next())
+    {
+        inst_JMP(EJ_jmp, continuation);
     }
 }
 

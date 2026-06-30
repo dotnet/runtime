@@ -3,9 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Buffers.Binary;
-using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -41,7 +40,8 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
     private IEnumerable<COR_HEAPOBJECT> Walk()
     {
         bool pendingFailure = false;
-        foreach ((GCHeapSegmentInfo seg, GCHeapData _) in EnumerateAllSegments())
+
+        foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
         {
             if (seg.Start.Value >= seg.End.Value)
                 continue;
@@ -49,6 +49,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
             while (currentObj.Value < seg.End.Value)
             {
+                // Replicate IObject.GetMethodTableAddress in fast path with linear read cache
                 if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
                 {
                     pendingFailure = true;
@@ -56,6 +57,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
                 }
                 mt = new TargetPointer(mt.Value & _methodTableMask);
 
+                // Replicate IObject.GetSize in fast path with linear read cache
                 if (!TryGetObjectSize(currentObj, mt, out ulong size) || size == 0)
                 {
                     pendingFailure = true;
@@ -63,7 +65,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
                 }
 
                 size = _gc.AlignObjectSize(size, seg.Generation);
-                if (currentObj.Value + size > seg.End.Value)
+                if (currentObj.Value + size > seg.End.Value || size == 0)
                 {
                     pendingFailure = true;
                     break;
@@ -106,19 +108,6 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
             yield return default;
     }
 
-    private IEnumerable<(GCHeapSegmentInfo Segment, GCHeapData Heap)> EnumerateAllSegments()
-    {
-        string[] gcIdentifiers = _gc.GetGCIdentifiers();
-        bool isWorkstation = gcIdentifiers.Contains(GCIdentifiers.Workstation);
-        foreach (GCHeapData heap in EnumerateHeaps(_gc, isWorkstation))
-        {
-            foreach (GCHeapSegmentInfo seg in _gc.EnumerateHeapSegments(heap))
-            {
-                yield return (seg, heap);
-            }
-        }
-    }
-
     private bool TryGetObjectSize(TargetPointer objAddr, TargetPointer mt, out ulong size)
     {
         size = 0;
@@ -147,113 +136,6 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
         {
             // The MT may be corrupt — surface as a read failure.
             return false;
-        }
-    }
-
-    private static IEnumerable<GCHeapData> EnumerateHeaps(IGC gc, bool isWorkstation)
-    {
-        if (isWorkstation)
-        {
-            yield return gc.GetHeapData();
-        }
-        else
-        {
-            foreach (TargetPointer heapAddress in gc.GetGCHeaps())
-                yield return gc.GetHeapData(heapAddress);
-        }
-    }
-
-    // Linear page cache used by the per-object heap walk.
-    private sealed class LinearReadCache
-    {
-        // Typical page size
-        private const uint PageSize = 0x1000;
-
-        private readonly Target _target;
-        private readonly byte[] _page = new byte[PageSize];
-        private ulong _currPageStart;
-        private uint _currPageSize;
-
-        public LinearReadCache(Target target)
-        {
-            _target = target;
-        }
-
-        public bool TryReadPointer(ulong addr, out TargetPointer value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(ulong)];
-            buffer = buffer.Slice(0, _target.PointerSize);
-            if (!TryRead(addr, buffer))
-            {
-                value = TargetPointer.Null;
-                return false;
-            }
-            value = _target.ReadPointerFromSpan(buffer);
-            return true;
-        }
-
-        public bool TryReadUInt32(ulong addr, out uint value)
-        {
-            Span<byte> buffer = stackalloc byte[sizeof(uint)];
-            if (!TryRead(addr, buffer))
-            {
-                value = 0;
-                return false;
-            }
-            value = _target.IsLittleEndian
-                ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
-                : BinaryPrimitives.ReadUInt32BigEndian(buffer);
-            return true;
-        }
-
-        private bool TryRead(ulong addr, Span<byte> dest)
-        {
-            // If the request misses the currently-cached page, try to load the page
-            // containing it. If that fails (e.g. the page is unmapped), or the request
-            // straddles the end of the cached page, fall back to a direct read.
-            if (addr < _currPageStart || addr - _currPageStart >= _currPageSize)
-            {
-                if (!MoveToPage(addr))
-                    return DirectRead(addr, dest);
-            }
-
-            ulong offset = addr - _currPageStart;
-            if (offset + (ulong)dest.Length > _currPageSize)
-                return DirectRead(addr, dest);
-
-            _page.AsSpan((int)offset, dest.Length).CopyTo(dest);
-            return true;
-        }
-
-        private bool MoveToPage(ulong addr)
-        {
-            ulong pageStart = addr - (addr % PageSize);
-            try
-            {
-                _target.ReadBuffer(pageStart, _page.AsSpan(0, (int)PageSize));
-                _currPageStart = pageStart;
-                _currPageSize = PageSize;
-                return true;
-            }
-            catch
-            {
-                _currPageStart = 0;
-                _currPageSize = 0;
-                return false;
-            }
-        }
-
-        private bool DirectRead(ulong addr, Span<byte> dest)
-        {
-            try
-            {
-                _target.ReadBuffer(addr, dest);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }

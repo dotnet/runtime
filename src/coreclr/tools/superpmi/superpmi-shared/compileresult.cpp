@@ -681,6 +681,7 @@ const char* relocationTypeToString(CorInfoReloc fRelocType)
         ADD_CASE(ARM64_BRANCH26);
         ADD_CASE(ARM64_PAGEBASE_REL21);
         ADD_CASE(ARM64_PAGEOFFSET_12A);
+        ADD_CASE(ARM64_PAGEOFFSET_12L);
         ADD_CASE(ARM64_LIN_TLSDESC_ADR_PAGE21);
         ADD_CASE(ARM64_LIN_TLSDESC_LD64_LO12);
         ADD_CASE(ARM64_LIN_TLSDESC_ADD_LO12);
@@ -846,7 +847,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             DWORDLONG target = tmp.target + (int32_t)tmp.addlDelta;
             if (relocType == CorInfoReloc::ARM64_PAGEBASE_REL21 || relocType == CorInfoReloc::ARM64_LIN_TLSDESC_ADR_PAGE21 ||
-                relocType == CorInfoReloc::ARM64_PAGEOFFSET_12A)
+                relocType == CorInfoReloc::ARM64_PAGEOFFSET_12A || relocType == CorInfoReloc::ARM64_PAGEOFFSET_12L)
             {
                 if ((rc->originalRoDataAddress2 <= (size_t)target) &&
                     ((size_t)target < rc->originalRoDataAddress2 + rc->roDataSize2))
@@ -908,6 +909,17 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     {
                         INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
                         PutArm64Rel12((UINT32*)address, imm12);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case CorInfoReloc::ARM64_PAGEOFFSET_12L: // LDR 12 bit page offset
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
+                        PutArm64Rel12Ldr((UINT32*)address, imm12);
                     }
                     wasRelocHandled = true;
                 }

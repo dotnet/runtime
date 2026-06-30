@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
@@ -29,7 +28,6 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
         private readonly ProcessWaitState.Holder? _waitStateHolder;
-
         internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
             _waitStateHolder = waitStateHolder;
@@ -136,10 +134,7 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private static void ResumeCore()
-        {
-            throw new PlatformNotSupportedException();
-        }
+        private void ResumeCore() => SignalCore(PosixSignal.SIGCONT);
 
         private ProcessExitStatus WaitForExitCore()
         {
@@ -466,9 +461,7 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
-                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles);
-#pragma warning restore CA1416
+                    startInfo, inheritedHandles);
 
                 if (errno == 0)
                 {

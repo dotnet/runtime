@@ -2405,6 +2405,21 @@ class SuperPMIReplayAsmDiffs:
                                     # No miss/replay failure is expected in contexts that were reported as having diffs since then they succeeded during the diffs run.
                                     raise create_exception()
 
+                                # A Wasm JIT may exit successfully without writing any disassembly to DOTNET_JitStdOutFile. For example, the wasm JIT
+                                # with JitWasmSimdNyiToR2RUnsupported=1 exits via
+                                # implReadyToRunUnsupported() (CORJIT_R2R_UNSUPPORTED) for NYI_WASM_SIMD during import, so no code is produced. This is an expected behavior.
+                                # TODO-WASM: This check can potentially be removed once we no longer have any NYI's in the import stage.
+                                if not os.path.exists(item_path) and self.coreclr_args.target_arch == "wasm":
+                                    # Log a warning so that unexpected misses (vs the expected JitWasmSimdNyiToR2RUnsupported path) remain diagnosable
+                                    # rather than being silently masked as empty diffs.
+                                    stderr_snippet = stderr.decode(errors='replace').strip().splitlines()
+                                    stderr_first_line = stderr_snippet[0] if stderr_snippet else ""
+                                    logging.warning(
+                                        "%sNo JitStdOutFile produced for wasm context %s at %s (exit=%d, stderr first line: %r). "
+                                        "Treating as empty diff; verify this is the expected JitWasmSimdNyiToR2RUnsupported path.",
+                                        print_prefix, context_index, item_path, proc.returncode, stderr_first_line)
+                                    return ""
+
                                 try:
                                     with open(item_path, 'r') as file_handle:
                                         return file_handle.read()
