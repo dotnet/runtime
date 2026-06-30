@@ -17,6 +17,23 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
     }
+    public sealed partial class CompressedContent : System.Net.Http.HttpContent
+    {
+        public CompressedContent(System.Net.Http.HttpContent content, System.Net.Http.CompressionMethod method) { }
+        public CompressedContent(System.Net.Http.HttpContent content, System.Net.Http.CompressionMethod method, System.IO.Compression.CompressionLevel compressionLevel) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override bool TryComputeLength(out long length) { throw null; }
+    }
+    public enum CompressionMethod
+    {
+        GZip = 0,
+        Deflate = 1,
+        Brotli = 2,
+        Zstandard = 3,
+    }
     public enum ClientCertificateOption
     {
         Manual = 0,
