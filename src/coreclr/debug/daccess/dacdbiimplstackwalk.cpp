@@ -637,6 +637,23 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRE
     return hr;
 }
 
+#ifdef TARGET_X86
+static FramePointer ComputeX86FramePointer(CrawlFrame * pCF, T_CONTEXT * pSourceContext)
+{
+    REGDISPLAY * pRD = pCF->GetRegisterSet();
+
+    T_CONTEXT tempContext;
+    CopyOSContext(&tempContext, pSourceContext);
+    pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
+
+    EECodeInfo codeInfo;
+    codeInfo.Init(pRD->pCurrentContext->Eip);
+
+    LPVOID PCTAddr = tempContext.Esp - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo) - sizeof(DWORD);
+    return FramePointer::MakeFramePointer(PCTAddr);
+}
+#endif // TARGET_X86
+
 // Internal helper for GetStackWalkCurrentFrameInfo.
 FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIter)
 {
@@ -651,14 +668,7 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
         case StackFrameIterator::SFITER_FRAMELESS_METHOD:
         {
 #ifdef TARGET_X86
-            // physical unwind
-            T_CONTEXT tempContext;
-            CopyOSContext(&tempContext, pRD->pCurrentContext);
-            pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
-            EECodeInfo tempCodeInfo;
-            tempCodeInfo.Init(tempContext.Eip);
-            LPVOID PCTAddr = tempContext.Esp - tempCodeInfo.GetCodeManager()->GetStackParameterSize(&tempCodeInfo) - sizeof(DWORD);
-            fp = FramePointer::MakeFramePointer(PCTAddr);
+            fp = ComputeX86FramePointer(pCF, pRD->pCurrentContext);
 #else
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
@@ -675,14 +685,7 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 #ifdef TARGET_X86
             // We only get here if we are unwinding a runtime-unwindable stub.
             // So first we need to unwind the stub to get to the caller frame, and then we can get the frame pointer from that.
-            T_CONTEXT * pContext = RetrieveHijackedContext(pRD);
-            T_CONTEXT tempContext;
-            CopyOSContext(&tempContext, pContext);
-            pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
-            EECodeInfo tempCodeInfo;
-            tempCodeInfo.Init(tempContext.Eip);
-            LPVOID PCTAddr = tempContext.Esp - tempCodeInfo.GetCodeManager()->GetStackParameterSize(&tempCodeInfo) - sizeof(DWORD);
-            fp = FramePointer::MakeFramePointer(PCTAddr);
+            fp = ComputeX86FramePointer(pCF, RetrieveHijackedContext(pRD));
 #else
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
