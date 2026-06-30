@@ -1893,7 +1893,7 @@ void EEJitManager::SetCpuInfo()
         preferredVectorBitWidth = 256;
     }
 
-#if defined(FEATURE_INTERPRETER)
+#if defined(FEATURE_INTERPRETER) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     if (interpreterOnly && (preferredVectorBitWidth > 128))
     {
         // The interpreter only supports 128-bit vectors. Clamp the preferred vector
