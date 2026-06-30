@@ -1487,6 +1487,14 @@ public:
                                               DWORD &dwRvaHint,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
+
+    static bool GetMetaDataFileInfoFromModule(Module *pModule,
+                                              DWORD &dwTimeStamp,
+                                              DWORD &dwSize,
+                                              DWORD &dwDataSize,
+                                              DWORD &dwRvaHint,
+                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                              const DWORD cchFilePath);
 };
 
 extern ClrDataAccess* g_dacImpl;

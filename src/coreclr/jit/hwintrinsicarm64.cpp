@@ -576,6 +576,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = 7;
                 break;
 
+            case NI_Sha3_XorRotateRight:
+                immLowerBound = 0;
+                immUpperBound = 63;
+                break;
+
             default:
                 unreached();
         }
@@ -844,7 +849,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // and the signature return type are both the same TYP_SIMD.
 
             retNode = impSIMDPopStack();
-            SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
         }
@@ -939,7 +943,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // and the signature return type are both the same TYP_SIMD.
 
                     retNode = impSIMDPopStack();
-                    SetOpLclRelatedToSIMDIntrinsic(retNode);
                     assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
                     break;
                 }
@@ -1129,151 +1132,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_Create:
         case NI_Vector128_Create:
         {
-            if (sig->numArgs == 1)
-            {
-                op1     = impPopStack().val;
-                retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
-                break;
-            }
-
-            uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
-            assert(sig->numArgs == simdLength);
-
-            bool isConstant = true;
-
-            if (varTypeIsFloating(simdBaseType))
-            {
-                for (uint32_t index = 0; index < sig->numArgs; index++)
-                {
-                    GenTree* arg = impStackTop(index).val;
-
-                    if (!arg->IsCnsFltOrDbl())
-                    {
-                        isConstant = false;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                assert(varTypeIsIntegral(simdBaseType));
-
-                for (uint32_t index = 0; index < sig->numArgs; index++)
-                {
-                    GenTree* arg = impStackTop(index).val;
-
-                    if (!arg->IsIntegralConst())
-                    {
-                        isConstant = false;
-                        break;
-                    }
-                }
-            }
-
-            if (isConstant)
-            {
-                // Some of the below code assumes 8 or 16 byte SIMD types
-                assert((simdSize == 8) || (simdSize == 16));
-
-                GenTreeVecCon* vecCon = gtNewVconNode(retType);
-
-                switch (simdBaseType)
-                {
-                    case TYP_BYTE:
-                    case TYP_UBYTE:
-                    {
-                        uint8_t cnsVal = 0;
-
-                        for (uint32_t index = 0; index < sig->numArgs; index++)
-                        {
-                            cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimdVal.u8[simdLength - 1 - index] = cnsVal;
-                        }
-                        break;
-                    }
-
-                    case TYP_SHORT:
-                    case TYP_USHORT:
-                    {
-                        uint16_t cnsVal = 0;
-
-                        for (uint32_t index = 0; index < sig->numArgs; index++)
-                        {
-                            cnsVal = static_cast<uint16_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimdVal.u16[simdLength - 1 - index] = cnsVal;
-                        }
-                        break;
-                    }
-
-                    case TYP_INT:
-                    case TYP_UINT:
-                    {
-                        uint32_t cnsVal = 0;
-
-                        for (uint32_t index = 0; index < sig->numArgs; index++)
-                        {
-                            cnsVal = static_cast<uint32_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimdVal.u32[simdLength - 1 - index] = cnsVal;
-                        }
-                        break;
-                    }
-
-                    case TYP_LONG:
-                    case TYP_ULONG:
-                    {
-                        uint64_t cnsVal = 0;
-
-                        for (uint32_t index = 0; index < sig->numArgs; index++)
-                        {
-                            cnsVal = static_cast<uint64_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
-                            vecCon->gtSimdVal.u64[simdLength - 1 - index] = cnsVal;
-                        }
-                        break;
-                    }
-
-                    case TYP_FLOAT:
-                    {
-                        float cnsVal = 0;
-
-                        for (uint32_t index = 0; index < sig->numArgs; index++)
-                        {
-                            cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->DconValue());
-                            vecCon->gtSimdVal.f32[simdLength - 1 - index] = cnsVal;
-                        }
-                        break;
-                    }
-
-                    case TYP_DOUBLE:
-                    {
-                        double cnsVal = 0;
-
-                        for (uint32_t index = 0; index < sig->numArgs; index++)
-                        {
-                            cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->DconValue());
-                            vecCon->gtSimdVal.f64[simdLength - 1 - index] = cnsVal;
-                        }
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
-
-                retNode = vecCon;
-                break;
-            }
-
-            IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
-
-            for (int i = sig->numArgs - 1; i >= 0; i--)
-            {
-                GenTree* arg = impPopStack().val;
-                nodeBuilder.AddOperand(i, arg);
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseType, simdSize);
+            retNode = impSimdCreate(intrinsic, sig, simdBaseType, retType, simdSize);
             break;
         }
 
@@ -3547,11 +3406,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
-            SetOpLclRelatedToSIMDIntrinsic(op1);
-            SetOpLclRelatedToSIMDIntrinsic(op2);
-            SetOpLclRelatedToSIMDIntrinsic(op3);
-            SetOpLclRelatedToSIMDIntrinsic(op4);
-            SetOpLclRelatedToSIMDIntrinsic(op5);
             retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
                                                                     simdBaseType, simdSize, op1, op2, op3, op4, op5);
             break;

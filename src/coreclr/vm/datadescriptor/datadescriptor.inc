@@ -195,7 +195,15 @@ CDAC_TYPE_END(String)
 
 CDAC_TYPE_BEGIN(ContinuationObject)
 CDAC_TYPE_SIZE(sizeof(ContinuationObject))
+CDAC_TYPE_FIELD(ContinuationObject, T_POINTER, Next, cdac_data<ContinuationObject>::Next)
+CDAC_TYPE_FIELD(ContinuationObject, T_POINTER, ResumeInfo, cdac_data<ContinuationObject>::ResumeInfo)
+CDAC_TYPE_FIELD(ContinuationObject, T_INT32, State, cdac_data<ContinuationObject>::State)
 CDAC_TYPE_END(ContinuationObject)
+
+CDAC_TYPE_BEGIN(AsyncResumeInfo)
+CDAC_TYPE_INDETERMINATE(AsyncResumeInfo)
+CDAC_TYPE_FIELD(AsyncResumeInfo, T_POINTER, DiagnosticIP, offsetof(CORINFO_AsyncResumeInfo, DiagnosticIP))
+CDAC_TYPE_END(AsyncResumeInfo)
 
 CDAC_TYPE_BEGIN(Array)
 CDAC_TYPE_SIZE(sizeof(ArrayBase))
@@ -1171,6 +1179,7 @@ CDAC_TYPE_END(TransitionBlock)
 CDAC_TYPE_BEGIN(FuncEvalFrame)
 CDAC_TYPE_SIZE(sizeof(FuncEvalFrame))
 CDAC_TYPE_FIELD(FuncEvalFrame, T_POINTER, DebuggerEvalPtr, cdac_data<FuncEvalFrame>::DebuggerEvalPtr)
+CDAC_TYPE_FIELD(FuncEvalFrame, TYPE(CodePointer), ReturnAddress, cdac_data<FuncEvalFrame>::ReturnAddress)
 CDAC_TYPE_END(FuncEvalFrame)
 
 CDAC_TYPE_BEGIN(DebuggerEval)
@@ -1715,6 +1724,7 @@ CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
 #endif // FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(CallingConvention, c1)
 CDAC_GLOBAL_CONTRACT(CodeVersions, c1)
 CDAC_GLOBAL_CONTRACT(CodeNotifications, c1)
 #ifdef FEATURE_COMWRAPPERS

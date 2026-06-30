@@ -1619,7 +1619,13 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return false;
     }
 
-    assert((TypeOfVN(vn) == TYP_I_IMPL) || (TypeOfVN(vn) == TYP_REF) || (TypeOfVN(vn) == TYP_BYREF));
+    // Ignore corner cases like a SIMD value - SIMD could be a base address of an indirection
+    // (e.g. SVE GatherVector, a vector of addresses).
+    var_types vnType = TypeOfVN(vn);
+    if ((vnType != TYP_I_IMPL) && (vnType != TYP_REF) && (vnType != TYP_BYREF))
+    {
+        return false;
+    }
 
     target_ssize_t offset;
     PeelOffsets(&vn, &offset);

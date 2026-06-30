@@ -1906,7 +1906,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
-    srcCount += BuildDelayFreeUses(op2, op1, lowGprRegs & ~(SRBM_RAX | SRBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
 
@@ -2748,6 +2748,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            case NI_AVX512v3_MultiplyWideningAndAdd:
+            case NI_AVX512v3_MultiplyWideningAndAddSaturate:
             case NI_AVXVNNIINT_MultiplyWideningAndAdd:
             case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
             case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
