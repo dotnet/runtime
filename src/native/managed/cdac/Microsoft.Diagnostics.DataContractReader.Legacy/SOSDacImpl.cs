@@ -7390,11 +7390,14 @@ public sealed unsafe partial class SOSDacImpl
 
     private (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) ResolveGCInfo(ClrDataAddress ip)
     {
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        TargetCodePointer targetCodePointer = ip.ToTargetCodePointer(_target);
+        CodeBlockHandle? cbh = eman.GetCodeBlockHandle(targetCodePointer);
         if (cbh is null)
             throw new ArgumentException("No code block found for the given IP");
 
         eman.GetGCInfo(cbh.Value, out TargetPointer pGcInfo, out uint gcVersion);
-        Contracts.CodeKind codeKind = eman.GetCodeKind(ip.ToTargetCodePointer(_target));
+        Contracts.CodeKind codeKind = eman.GetCodeKind(targetCodePointer);
         Contracts.IGCInfo gcInfo = _target.Contracts.GCInfo;
         Contracts.IGCInfoHandle handle = codeKind == Contracts.CodeKind.Interpreter
             ? gcInfo.DecodeInterpreterGCInfo(pGcInfo, gcVersion)
