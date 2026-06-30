@@ -745,7 +745,10 @@ namespace System.Xml.Serialization
         private void WriteMemberElementsIf(Member[] expectedMembers, Member? anyElementMember, UnknownNodeAction elementElseAction, Fixup? fixup = null, CheckTypeSource? checkTypeSource = null, int[]? sequenceState = null)
         {
             bool checkType = checkTypeSource != null;
-            bool isSequence = sequenceState != null && IsSequence(expectedMembers);
+
+            // sequenceState is non-null only for sequence types (created via IsSequence in WriteMembers),
+            // and it always accompanies the same member array, so its presence alone identifies a sequence.
+            bool isSequence = sequenceState != null;
 
             // This mirrors XmlSerializationReaderILGen.WriteMemberElementsIf, which uses a single
             // loop over the members with isSequence-conditional logic inline (it does not split into
