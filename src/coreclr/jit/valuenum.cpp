@@ -15040,10 +15040,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
     bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
 
-    if (helpFunc == CORINFO_HELP_GETCURRENTMANAGEDTHREADID)
-    {
-        pure = false;
-    }
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
 
