@@ -2839,8 +2839,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 
     // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
     // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
-    // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch,
-    // see ClrDataAccess::VerifyDlls for details.
+    // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch.
     m_fEnableDllVerificationAsserts = false;
 #endif
 }
@@ -5189,9 +5188,6 @@ ClrDataAccess::Initialize(void)
     // DAC is now setup and ready to use
     //
 
-    // Do some validation
-    IfFailRet(VerifyDlls());
-
     // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
     // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
     // if an exception was raised by a given instance of the runtime or not.
@@ -6271,16 +6267,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return m_fEnableTargetConsistencyAsserts;
-}
-
-//
-// VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
-// Only done on Windows and Mac builds at the moment.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-//
-HRESULT ClrDataAccess::VerifyDlls()
-{
-    return S_OK;
 }
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS

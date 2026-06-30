@@ -1417,9 +1417,6 @@ private:
     // Read the DAC table and initialize m_dacGlobals
     HRESULT GetDacGlobalValues();
 
-    // Verify the target mscorwks.dll matches the version expected
-    HRESULT VerifyDlls();
-
     // Check whether a region of memory is fully readable.
     bool IsFullyReadable(TADDR addr, TSIZE_T size);
 
