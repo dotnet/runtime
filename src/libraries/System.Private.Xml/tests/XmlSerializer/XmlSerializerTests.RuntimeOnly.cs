@@ -3721,24 +3721,23 @@ public static partial class XmlSerializerTests
         // which element each value was read from.
         Assert.Equal(new ArrayLikeChoice[] { ArrayLikeChoice.Word, ArrayLikeChoice.Numbers }, actual.ChoiceArray);
     }
-}
+    public class TypeWithArrayLikeChoiceElement
+    {
+        // One of the choice element types (Numbers) is an array, so its element mapping is an
+        // ArrayMapping. Each item in ManyChoices is matched to an item in ChoiceArray.
+        [XmlChoiceIdentifier("ChoiceArray")]
+        [XmlElement("Word", typeof(string))]
+        [XmlElement("Numbers", typeof(int[]))]
+        public object[] ManyChoices;
 
-public class TypeWithArrayLikeChoiceElement
-{
-    // One of the choice element types (Numbers) is an array, so its element mapping is an
-    // ArrayMapping. Each item in ManyChoices is matched to an item in ChoiceArray.
-    [XmlChoiceIdentifier("ChoiceArray")]
-    [XmlElement("Word", typeof(string))]
-    [XmlElement("Numbers", typeof(int[]))]
-    public object[] ManyChoices;
+        [XmlIgnore]
+        public ArrayLikeChoice[] ChoiceArray;
+    }
 
-    [XmlIgnore]
-    public ArrayLikeChoice[] ChoiceArray;
-}
-
-public enum ArrayLikeChoice
-{
-    None,
-    Word,
-    Numbers
+    public enum ArrayLikeChoice
+    {
+        None,
+        Word,
+        Numbers
+    }
 }
