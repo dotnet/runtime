@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.IO;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -11,8 +10,6 @@ namespace System.Memory.Tests
 {
     public class ROSequenceStreamConformanceTests : StandaloneStreamConformanceTests
     {
-        public new static IEnumerable<object[]> AllSeekModes() => StreamConformanceTests.AllSeekModes();
-
         protected override bool CanSeek => true;
         protected override bool CanSetLength => false;
         protected override bool NopFlushCompletesSynchronously => true;
