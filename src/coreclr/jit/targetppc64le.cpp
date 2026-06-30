@@ -254,23 +254,25 @@ ABIPassingInformation Ppc64leClassifier::Classify(Compiler*    comp,
                 m_numTotalSlots += regsAvailable;
                 unsigned stackOffset = 32 + (m_numTotalSlots * 8);
                 
-                // Put remainder on stack - each field uses 8-byte slot
+                // Put remainder on stack - tightly packed by field size
                 for (unsigned i = regsAvailable; i < numFields; i++)
                 {
                     info.Segment(i) = ABIPassingSegment::OnStack(stackOffset, offset, fieldSize);
                     offset += fieldSize;
-                    stackOffset += slotSize; // Advance by 8 bytes per slot
+                    stackOffset += fieldSize; // Advance by field size for tight packing
                 }
                 
                 m_argNum++;
-                m_numTotalSlots += stackFields;
+                // For stack portion of split HFA, track actual bytes consumed
+                unsigned stackBytesConsumed = stackFields * fieldSize;
+                m_numTotalSlots += (stackBytesConsumed + 7) / 8; // Round up to 8-byte slots
                 m_stackArgSize = stackOffset;
                 m_floatRegs.Clear();
                 return info;
             }
             else
             {
-                // Pass HFA entirely on stack - each field uses 8-byte slot
+                // Pass HFA entirely on stack - tightly packed by field size
                 ABIPassingInformation info = ABIPassingInformation(comp, numFields);
                 unsigned offset = 0;
                 unsigned stackOffset = 32 + (m_numTotalSlots * 8);
@@ -279,11 +281,14 @@ ABIPassingInformation Ppc64leClassifier::Classify(Compiler*    comp,
                 {
                     info.Segment(i) = ABIPassingSegment::OnStack(stackOffset, offset, fieldSize);
                     offset += fieldSize;
-                    stackOffset += slotSize; // Advance by 8 bytes per slot
+                    stackOffset += fieldSize; // Advance by field size for tight packing
                 }
                 
                 m_argNum++;
-                m_numTotalSlots += numFields;
+                // For stack-only HFAs, track actual bytes consumed, not 8-byte slots
+                // This ensures next argument's offset is calculated correctly
+                unsigned bytesConsumed = numFields * fieldSize;
+                m_numTotalSlots += (bytesConsumed + 7) / 8; // Round up to 8-byte slots
                 m_stackArgSize = stackOffset;
                 m_floatRegs.Clear();
                 m_intRegs.Clear();
