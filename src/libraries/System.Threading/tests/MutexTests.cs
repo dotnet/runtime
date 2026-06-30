@@ -1062,6 +1062,46 @@ namespace System.Threading.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
+        public void NamedMutex_ConcurrentCreation_NoException()
+        {
+            // Simulates the ENOENT -> EEXIST race in CreateOrOpenFile: multiple threads concurrently
+            // create the same named mutex. Without the fix, a thread that sees ENOENT on the initial
+            // open but EEXIST on the exclusive-create attempt would throw IOException.
+            string name = $"Global\\{Guid.NewGuid():N}";
+            var options = new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false };
+
+            const int threadCount = 8;
+            var exceptions = new Exception[threadCount];
+            var barrier = new Barrier(threadCount);
+            var threads = new Thread[threadCount];
+
+            for (int i = 0; i < threadCount; i++)
+            {
+                int idx = i;
+                threads[idx] = new Thread(() =>
+                {
+                    try
+                    {
+                        barrier.SignalAndWait();
+                        using var m = new Mutex(false, name, options, out _);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions[idx] = ex;
+                    }
+                });
+                threads[idx].IsBackground = true;
+            }
+
+            foreach (var t in threads) t.Start();
+            foreach (var t in threads) t.Join();
+
+            Assert.All(exceptions, e => Assert.Null(e));
+        }
+
         public static TheoryData<string> GetValidNames()
         {
             var names = new TheoryData<string>() { Guid.NewGuid().ToString("N") };
