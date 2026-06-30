@@ -9497,7 +9497,7 @@ public:
 
 #if defined(TARGET_WASM)
     CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
-    bool                      wasmWellKnownGlobalsInitialized = false;
+    bool                           wasmWellKnownGlobalsInitialized = false;
 
     CORINFO_WASM_WELLKNOWN_GLOBALS* eeGetWasmWellKnownGlobals();
 #endif // defined(TARGET_WASM)

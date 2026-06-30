@@ -188,7 +188,8 @@ bool emitter::emitInsIsStore(instruction ins)
 void emitter::emitAddressConstant(void* address)
 {
     // Load our module base from the image base global, then load our address constant, then sum them.
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
     emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
 }
@@ -196,7 +197,8 @@ void emitter::emitAddressConstant(void* address)
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 {
     // Load our table base, then load our funclet pointer offset, then sum them.
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
     emitIns(INS_i32_add);
 }
