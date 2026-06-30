@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         protected override RSAProvider RSAFactory => RSAOpenSslProvider.Instance;
     }
 
-        public sealed class EncryptDecrypt_Array_OpenSsl : EncryptDecrypt_Array
+    public sealed class EncryptDecrypt_Array_OpenSsl : EncryptDecrypt_Array
     {
         protected override RSAProvider RSAFactory => RSAOpenSslProvider.Instance;
     }
