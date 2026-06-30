@@ -718,7 +718,7 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DerivedIXmlSerializable()
     {
-        var dClass = new XmlSerializableDerivedClass() { AttributeString = "derivedIXmlSerTest", DateTimeValue = DateTime.Parse("Dec 31, 1999"), BoolValue = true };
+        var dClass = new XmlSerializableDerivedClass() { AttributeString = "derivedIXmlSerTest", DateTimeValue = new DateTime(1999, 12, 31), BoolValue = true };
 
         var expectedXml = WithXmlHeader(@$"<BaseIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" xmlns=""{XmlSerializableBaseClass.XmlNamespace}"" />");
         var fromBase = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableBaseClass), new Type[] { typeof(XmlSerializableDerivedClass) }));
@@ -733,6 +733,40 @@ public static partial class XmlSerializerTests
         Assert.Equal(dClass.AttributeString, fromDerived.AttributeString);
         Assert.Equal(dClass.DateTimeValue, fromDerived.DateTimeValue);
         Assert.Equal(dClass.BoolValue, fromDerived.BoolValue);
+    }
+
+    [Fact]
+    public static void Xml_DerivedIXmlSerializable_UnknownXsiTypeDoesNotClobberMember()
+    {
+        var serializer = new XmlSerializer(typeof(XmlSerializableMemberWrapper), new Type[] { typeof(XmlSerializableDerivedClass) });
+
+        // Produce valid XML carrying a real xsi:type for the IXmlSerializable member, then swap the
+        // xsi:type to a name that matches neither the declared serializable type nor any known derived
+        // type. On this path the ILGen reader emits only Reader.UnknownNode(null) and leaves the member
+        // untouched; the reflection reader must behave identically rather than overwriting it with null.
+        var wrapper = new XmlSerializableMemberWrapper()
+        {
+            Member = new XmlSerializableDerivedClass() { AttributeString = "derived", DateTimeValue = new DateTime(1999, 12, 31), BoolValue = true }
+        };
+
+        string validXml;
+        using (var sw = new StringWriter())
+        {
+            serializer.Serialize(sw, wrapper);
+            validXml = sw.ToString();
+        }
+
+        string unknownTypeXml = validXml.Replace(@"xsi:type=""DerivedIXmlSerializable""", @"xsi:type=""NonExistentDerivedType""");
+        Assert.DoesNotContain(@"xsi:type=""DerivedIXmlSerializable""", unknownTypeXml);
+
+        XmlSerializableMemberWrapper result;
+        using (var sr = new StringReader(unknownTypeXml))
+        {
+            result = (XmlSerializableMemberWrapper)serializer.Deserialize(sr);
+        }
+
+        Assert.NotNull(result.Member);
+        Assert.Equal(XmlSerializableMemberWrapper.PresetAttributeString, result.Member.AttributeString);
     }
 
     [Fact]

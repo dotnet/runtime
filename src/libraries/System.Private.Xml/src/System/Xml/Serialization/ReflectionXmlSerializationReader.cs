@@ -991,7 +991,15 @@ namespace System.Xml.Serialization
                             }
                             else
                             {
+                                // The xsi:type matched neither the declared serializable type nor any
+                                // known derived type. Mirror XmlSerializationReaderILGen, which emits
+                                // only Reader.UnknownNode(null) here and leaves the member untouched
+                                // rather than overwriting it with null. Still perform the choice and
+                                // specified bookkeeping the ILGen reader does unconditionally.
                                 UnknownNode(null);
+                                member?.ChoiceSource?.Invoke(element.Name);
+                                member?.CheckSpecifiedSource?.Invoke(true);
+                                return value;
                             }
                         }
                         else

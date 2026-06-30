@@ -1444,6 +1444,20 @@ public class XmlSerializableDerivedClass : XmlSerializableBaseClass
     public static new XmlQualifiedName GetMySchema(XmlSchemaSet xs) => GetSchemaForType(xs, DerivedName);
 }
 
+public class XmlSerializableMemberWrapper
+{
+    public XmlSerializableMemberWrapper()
+    {
+        // Pre-populate the member so a regression that overwrites it with null when an
+        // unrecognized xsi:type is encountered can be detected.
+        Member = new XmlSerializableBaseClass() { AttributeString = PresetAttributeString };
+    }
+
+    public const string PresetAttributeString = "preset";
+
+    public XmlSerializableBaseClass Member { get; set; }
+}
+
 [XmlRootAttribute("PurchaseOrder", Namespace = "http://www.contoso1.com", IsNullable = false)]
 public class PurchaseOrder
 {
