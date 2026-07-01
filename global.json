@@ -1,6 +1,6 @@
 {
   "sdk": {
-    "version": "11.0.100-preview.5.26227.104",
+    "version": "11.0.0-preview.5.26302.115",
     "allowPrerelease": true,
     "rollForward": "major",
     "paths": [
