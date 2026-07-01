@@ -4911,8 +4911,9 @@ void CodeGen::genFinalizeFrame()
 
 #if defined(TARGET_AMD64)
     // The secondary frame-pointer register is reserved as a candidate during LSRA (it is in
-    // regSet.rsMaskResvd). Unlike ARM, do NOT mark it modified here: whether it is actually pushed is
-    // decided below by genSecondFramePtrIsProfitable, once FINAL offsets are known.
+    // regSet.rsMaskResvd). Whether it is marked modified (and thus saved/restored) is handled below,
+    // after the callee-save area is sized, so the single FINAL layout accounts for the push even when
+    // we later decide not to establish it.
 #endif // TARGET_AMD64
 
 #ifdef TARGET_ARM64

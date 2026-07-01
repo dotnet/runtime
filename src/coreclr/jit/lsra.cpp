@@ -2593,6 +2593,8 @@ void LinearScan::setFrameType()
     // (primaryBase +/- offset), so far locals in a large frame can use cheap disp8 addressing
     // (see JitSecondFramePtr).
     {
+        // A non-positive offset disables the feature: zero means "off", and a negative offset would
+        // invert the (base +/- offset) adjustment math and the prolog LEA, so reject it here.
         const int secondFramePtrOffset = (int)JitConfig.JitSecondFramePtr();
 
         // Only a win with optimizations disabled: with opts on, enregistration makes the pre-layout
@@ -2622,6 +2624,13 @@ void LinearScan::setFrameType()
             unsigned size = m_compiler->lvaOutgoingArgSpaceSize;
             for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
             {
+                // Skip the outgoing-arg-space var: its stack home size is lvaOutgoingArgSpaceSize, which
+                // is already seeded into `size` above; counting it again would double-count that region.
+                if (lclNum == m_compiler->lvaOutgoingArgSpaceVar)
+                {
+                    continue;
+                }
+
                 size += m_compiler->lvaLclStackHomeSize(lclNum);
                 if (size > 256)
                 {
@@ -2631,7 +2640,7 @@ void LinearScan::setFrameType()
             return false;
         };
 
-        if ((secondFramePtrOffset != 0) && optDisabled && haveFixedBase && ehCompatible && notOsr &&
+        if ((secondFramePtrOffset > 0) && optDisabled && haveFixedBase && ehCompatible && notOsr &&
             frameLikelyLargeEnough())
         {
             // Reserve the register only as a candidate: remove it from allocation now, but defer the

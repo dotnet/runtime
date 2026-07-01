@@ -5290,9 +5290,12 @@ bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int 
     // The secondary register holds (base - offset) for RBP frames (locals at negative offsets) and
     // (base + offset) for RSP frames (locals at positive offsets); invert accordingly. Test the band
     // first: it rejects the common in-window access cheaply, before the costlier instruction-class checks.
-    const int adjusted = EBPbased ? (dsp + codeGen->genSecondFramePtrOffset) : (dsp - codeGen->genSecondFramePtrOffset);
-    const bool rawFits = ((signed char)dsp == (ssize_t)dsp);
-    const bool adjFits = ((signed char)adjusted == (ssize_t)adjusted);
+    // Compute in ssize_t: JitSecondFramePtr is a release config and can be set arbitrarily, so an int
+    // add/subtract could overflow (UB) before the disp8 fit checks below.
+    const ssize_t adjusted = EBPbased ? ((ssize_t)dsp + codeGen->genSecondFramePtrOffset)
+                                      : ((ssize_t)dsp - codeGen->genSecondFramePtrOffset);
+    const bool    rawFits  = ((signed char)dsp == (ssize_t)dsp);
+    const bool    adjFits  = ((signed char)adjusted == adjusted);
 
     if (rawFits || !adjFits)
     {
@@ -5306,7 +5309,7 @@ bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int 
         return false;
     }
 
-    *pAdjustedDsp = adjusted;
+    *pAdjustedDsp = (int)adjusted;
     return true;
 }
 #endif // TARGET_AMD64
@@ -12343,7 +12346,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruc
 #if defined(TARGET_AMD64)
         if (secondRedirected)
         {
-            printf("%s", emitRegName(REG_OPT_RSVD2, EA_PTRSIZE));
+            printf("%s", emitRegName(codeGen->genSecondFramePtrReg, EA_PTRSIZE));
 
             if (secondDsp < 0)
             {
@@ -15915,8 +15918,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // Redirect through the secondary frame pointer (a low callee-saved register, e.g. RBX):
         // modrm mod=01, rm=base => low byte 0x40 | (reg & 7); no SIB byte and no REX.B since the
         // register is < R8 and is not RSP/R12.
-        assert((unsigned)REG_OPT_RSVD2 < 8);
-        dst += emitOutputWord(dst, code | (((0x40 | (REG_OPT_RSVD2 & 0x07))) << 8));
+        const regNumber secondReg = codeGen->genSecondFramePtrReg;
+        assert((unsigned)secondReg < 8);
+        dst += emitOutputWord(dst, code | (((0x40 | (secondReg & 0x07))) << 8));
         dst += emitOutputByte(dst, secondDsp);
     }
     else
