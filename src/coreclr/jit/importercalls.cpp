@@ -3898,6 +3898,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Activator_CreateInstance_T:
+            {
+                isSpecial = true;
+                break;
+            }
+
             case NI_System_Span_get_Item:
             case NI_System_ReadOnlySpan_get_Item:
             {
@@ -10659,6 +10665,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     const char* methodName =
         info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
                                                     ArrLen(enclosingClassNames));
+    CORINFO_SIG_INFO sig;
+    eeGetMethodSig(method, &sig);
 
     JITDUMP("Named Intrinsic ");
 
@@ -10725,6 +10733,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "AllocatorOf") == 0)
                         {
                             result = NI_System_Activator_AllocatorOf;
+                        }
+                        else if (strcmp(methodName, "CreateInstance") == 0 && sig.hasTypeArg())
+                        {
+                            result = NI_System_Activator_CreateInstance_T;
                         }
                         else if (strcmp(methodName, "DefaultConstructorOf") == 0)
                         {
