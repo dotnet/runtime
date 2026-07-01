@@ -4909,6 +4909,13 @@ void CodeGen::genFinalizeFrame()
     }
 #endif // TARGET_ARM
 
+#if defined(TARGET_AMD64)
+    // The secondary frame-pointer register is reserved as a candidate during LSRA (it is in
+    // regSet.rsMaskResvd). Whether it is marked modified (and thus saved/restored) is handled below,
+    // after the callee-save area is sized, so the single FINAL layout accounts for the push even when
+    // we later decide not to establish it.
+#endif // TARGET_AMD64
+
 #ifdef TARGET_ARM64
     if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform)
     {
@@ -4999,6 +5006,19 @@ void CodeGen::genFinalizeFrame()
         regSet.rsSetRegsModified(RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1);
     }
 #endif
+
+#if defined(TARGET_AMD64)
+    // If LSRA reserved a secondary frame-pointer candidate, commit to saving it now so the single
+    // FINAL layout below already accounts for the push. After layout we decide whether to actually
+    // establish it; if not, we leave it saved (a small wasted push/pop) rather than redoing the layout.
+    if (genSecondFramePtrReg != REG_NA)
+    {
+        // The secondary frame pointer is a callee-saved register set up only in the prolog; EnC cannot
+        // preserve it across a remap (see setFrameType), so it must never be reserved for EnC code.
+        assert(!m_compiler->opts.compDbgEnC);
+        regSet.rsSetRegsModified(genRegMask(genSecondFramePtrReg));
+    }
+#endif // TARGET_AMD64
 
     /* Count how many callee-saved registers will actually be saved (pushed) */
 
@@ -5111,6 +5131,20 @@ void CodeGen::genFinalizeFrame()
 
     m_compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
 
+#if defined(TARGET_AMD64)
+    // A secondary frame pointer was reserved during LSRA and we committed to saving it before the
+    // single FINAL layout above, so the offsets already account for the push. Now that FINAL offsets
+    // are known, decide whether actually establishing it (prolog lea + per-access redirects) pays off.
+    // If not, demote the register to REG_NA so no lea/redirect is emitted; the register stays
+    // saved/restored (a small wasted push/pop), which lets us avoid a second frame layout.
+    if ((genSecondFramePtrReg != REG_NA) && !genSecondFramePtrIsProfitable())
+    {
+        JITDUMP("Not establishing secondary frame pointer: no local lands in the secondary disp8 band "
+                "(register stays saved)\n");
+        genSecondFramePtrReg = REG_NA;
+    }
+#endif // TARGET_AMD64
+
 #ifdef DEBUG
     if (m_compiler->opts.dspCode || m_compiler->opts.disAsm || m_compiler->opts.disAsm2 || verbose)
     {
@@ -5118,6 +5152,74 @@ void CodeGen::genFinalizeFrame()
     }
 #endif
 }
+
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// genSecondFramePtrIsProfitable: decide whether the reserved secondary frame-pointer register is
+//    worth establishing, given FINAL frame offsets.
+//
+// Return Value:
+//    true if some on-frame local has an access that needs a disp32 off the primary base but fits a
+//    disp8 off the secondary base; false otherwise.
+//
+// Notes:
+//    Mirrors emitter::emitIsSecondFramePtrCandidate's band test, so must run after FINAL offsets are
+//    assigned. This is necessary but not sufficient: it finds at least one redirectable access but does
+//    not count them, so a method with only one or two redirects can still regress a few bytes (each
+//    redirect saves 3 bytes, while setup costs a push + lea, a pop per epilog, and an unwind code).
+//    Counting sites would need an IR walk (MinOpts has no precise ref counts), not worth the Tier0 cost.
+//
+bool CodeGen::genSecondFramePtrIsProfitable()
+{
+    assert(genSecondFramePtrReg != REG_NA);
+    assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
+
+    const bool wantFPbased = genSecondFramePtrFPbased;
+    const int  offset      = genSecondFramePtrOffset;
+
+    // A redirect applies when the raw displacement does NOT fit a disp8 but the adjusted displacement
+    // (dsp +/- offset) does. Precompute the range of raw displacements that fit a disp8 once adjusted.
+    // Compute in ssize_t: offset comes from the JitSecondFramePtr release config and can be large, so
+    // int arithmetic here (127 +/- offset) could overflow (UB).
+    const ssize_t adjFitLo = wantFPbased ? ((ssize_t)-128 - offset) : ((ssize_t)-128 + offset);
+    const ssize_t adjFitHi = wantFPbased ? ((ssize_t)127 - offset) : ((ssize_t)127 + offset);
+
+    for (unsigned varNum = 0; varNum < m_compiler->lvaCount; varNum++)
+    {
+        const LclVarDsc* const varDsc = m_compiler->lvaGetDesc(varNum);
+        if (!varDsc->lvOnFrame || m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+
+        bool      fpBased;
+        const int loDsp = m_compiler->lvaFrameAddress((int)varNum, &fpBased);
+        if (fpBased != wantFPbased)
+        {
+            continue;
+        }
+
+        // Accesses to this local span [loDsp, hiDsp] (base slot plus any field/element offset).
+        const int hiDsp = loDsp + (int)m_compiler->lvaLclStackHomeSize(varNum) - 1;
+
+        // Intersect that range with the adjusted-fits-disp8 range.
+        const ssize_t interLo = ((ssize_t)loDsp > adjFitLo) ? (ssize_t)loDsp : adjFitLo;
+        const ssize_t interHi = ((ssize_t)hiDsp < adjFitHi) ? (ssize_t)hiDsp : adjFitHi;
+        if (interLo > interHi)
+        {
+            continue;
+        }
+
+        // The redirect only helps where the raw displacement itself needs a disp32 (|dsp| > 127).
+        if ((interLo < -128) || (interHi > 127))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+#endif // TARGET_AMD64
 
 /*****************************************************************************
  *
@@ -5718,6 +5820,21 @@ void CodeGen::genFnProlog()
     // This is the end of the OS-reported prolog for purposes of unwinding
     //
     //-------------------------------------------------------------------------
+
+#if defined(TARGET_AMD64)
+    // Establish the secondary frame-pointer register. This runs after the frame pointer (if any) and
+    // after SP is final, so both candidate bases are live. It sits after the OS-reported prolog: the
+    // register was already saved (with its own unwind code) by genPushCalleeSavedRegisters, so this lea
+    // just loads a derived address and needs no unwind data. The register is out of allocation, so it
+    // stays live for the method body.
+    if (genSecondFramePtrReg != REG_NA)
+    {
+        const regNumber base = genSecondFramePtrFPbased ? REG_FPBASE : REG_SPBASE;
+        const int       disp = genSecondFramePtrFPbased ? -genSecondFramePtrOffset : genSecondFramePtrOffset;
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, genSecondFramePtrReg, base, disp);
+        regSet.verifyRegUsed(genSecondFramePtrReg);
+    }
+#endif // TARGET_AMD64
 
 #ifdef TARGET_ARM64
     if (m_compiler->compUsesUnknownSizeFrame)

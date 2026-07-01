@@ -4911,7 +4911,7 @@ void emitter::emitDispIns(
  *  Display a stack frame reference.
  */
 
-void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
+void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruction ins)
 {
     NYI_RISCV64("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
 }

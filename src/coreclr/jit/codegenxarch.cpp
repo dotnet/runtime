@@ -10895,6 +10895,18 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     m_compiler->unwindEndProlog();
 
+    // Re-establish the secondary frame-pointer register, but only in FILTER funclets. Catch/finally/
+    // fault funclets are entered via CallEHFunclet, which restores all nonvolatiles (including RBX) from
+    // the establisher CONTEXT, so RBX already holds RBP - offset. Filter funclets use CallEHFilterFunclet,
+    // which restores only RBP, so RBX must be recomputed. EH methods always use an RBP frame and the
+    // funclet shares the parent frame via RBP, so the base is always RBP.
+    if ((genSecondFramePtrReg != REG_NA) && (m_compiler->funCurrentFunc()->funKind == FUNC_FILTER))
+    {
+        assert(genSecondFramePtrFPbased);
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, genSecondFramePtrReg, REG_FPBASE, -genSecondFramePtrOffset);
+        regSet.verifyRegUsed(genSecondFramePtrReg);
+    }
+
     genClearAvxStateInProlog();
 }
 

@@ -601,8 +601,9 @@ protected:
 #ifdef TARGET_AMD64
     void     genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs);
     unsigned genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs);
+    bool     genSecondFramePtrIsProfitable();
 #endif // TARGET_AMD64
-#endif // !defined(TARGET_XARCH)
+#endif // defined(TARGET_XARCH)
 
 #endif // !defined(TARGET_ARM64)
 

@@ -65,6 +65,12 @@ struct CnsVal
 
 UNATIVE_OFFSET emitInsSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
 UNATIVE_OFFSET emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp);
+#if defined(TARGET_AMD64)
+// Set once per method in emitBegFN: true only when codegen reserved a secondary frame pointer. Lets the
+// per-stack-access fast path skip the candidate check (and its codeGen deref) in the common case.
+bool emitSecondFramePtrActive = false;
+bool emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp);
+#endif // TARGET_AMD64
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
 UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code);
@@ -813,6 +819,15 @@ void emitDispMask(const instrDesc* id, regNumber reg) const;
 void emitDispReloc(ssize_t value) const;
 void emitDispAddrMode(instrDesc* id, bool noDetail = false) const;
 void emitDispShift(instruction ins, int cnt = 0) const;
+
+#if defined(TARGET_AMD64)
+// Display state for secondary frame-pointer redirects (see emitDispFrameRef): the operand shows
+// [rbx+disp8] and the canonical frame reference is emitted as a trailing comment, finalized at the
+// end of the instruction line.
+bool emitDispSecondFramePtrPending = false;
+bool emitDispSecondFramePtrFPbased = false;
+int  emitDispSecondFramePtrAddr    = 0;
+#endif // TARGET_AMD64
 
 const char* emitXMMregName(unsigned reg) const;
 const char* emitYMMregName(unsigned reg) const;
