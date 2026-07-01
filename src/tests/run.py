@@ -1270,6 +1270,12 @@ def parse_crashed_runner_file(args, item):
                         script = parts[1][len("Script="):]
     except Exception as e:
         print("Warning: Failed to parse crash file %s: %s" % (crash_file, e))
+        return None
+
+    # If we could not parse any useful information, treat this as a parse failure.
+    if exit_code is None and script is None:
+        print("Warning: Crash file %s did not contain ExitCode or Script information." % crash_file)
+        return None
 
     return {"name": name, "exit_code": exit_code, "script": script}
 
@@ -1619,7 +1625,11 @@ def print_active_issue_summary(tests, show_details=False):
     """
     issues = defaultdict(list)
     for test in tests:
-        reason = test.get("skip_reason") or test.get("test_output")
+        if test.get("result") != "Skip":
+            continue
+        reason = test.get("skip_reason")
+        if reason is None:
+            reason = test.get("test_output")
         if reason is None:
             continue
         if not reason.startswith("ActiveIssue:"):

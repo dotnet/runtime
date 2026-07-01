@@ -68,13 +68,14 @@
     <Delete Files="@(_StaleTestRunXmls)" />
 
     <PropertyGroup Condition="'$(RunnerFilter)' != ''">
-      <_NormalizedRunnerFilter>$([System.String]::new('$(RunnerFilter)').Replace('/','.').Replace('\','.'))</_NormalizedRunnerFilter>
+      <_NormalizedRunnerFilter>$([System.String]::new('$(RunnerFilter)').Replace('/','.').Replace('\','.').ToLowerInvariant())</_NormalizedRunnerFilter>
     </PropertyGroup>
     <ItemGroup Condition="'$(RunnerFilter)' != ''">
-      <MergedTestWrapperScripts Remove="@(MergedTestWrapperScripts)" Condition="!$([System.String]::new('%(MergedTestWrapperScripts.RelativeResultsPath)').Replace('/','.').Replace('\','.').Contains('$(_NormalizedRunnerFilter)'))" />
+      <MergedTestWrapperScripts Remove="@(MergedTestWrapperScripts)" Condition="!$([System.String]::new('%(MergedTestWrapperScripts.RelativeResultsPath)').Replace('/','.').Replace('\','.').ToLowerInvariant().Contains('$(_NormalizedRunnerFilter)'))" />
     </ItemGroup>
 
     <Message Text="Runner filter '$(RunnerFilter)' matched @(MergedTestWrapperScripts->Count()) runner(s)" Importance="high" Condition="'$(RunnerFilter)' != ''" />
+    <Error Text="RunnerFilter '$(RunnerFilter)' did not match any merged test runners; no tests will be executed." Condition="'$(RunnerFilter)' != '' and '@(MergedTestWrapperScripts)' == ''" />
 
     <ItemGroup>
       <_ProjectsToBuild Include="$(MSBuildThisFileFullPath)">
