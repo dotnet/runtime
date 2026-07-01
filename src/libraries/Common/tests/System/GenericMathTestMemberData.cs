@@ -198,6 +198,58 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> AcosDouble
+        {
+            get
+            {
+                yield return new object[] {  double.NegativeInfinity,  double.NaN,          0.0 };
+                yield return new object[] { -1.0,                      3.1415926535897932,  DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.78539816339744831,      2.4741354375614093,  DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(pi / 4)
+                yield return new object[] { -0.70710678118654752,      2.3561944901923450,  DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(1 / sqrt(2))
+                yield return new object[] { -0.69314718055994531,      2.3366425216139770,  DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(ln(2))
+                yield return new object[] { -0.63661977236758134,      2.2609034181694367,  DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(2 / pi)
+                yield return new object[] { -0.43429448190325183,      2.0200512174769663,  DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(log10(e))
+                yield return new object[] { -0.31830988618379067,      1.8947424337268775,  DoubleCrossPlatformMachineEpsilon * 10 }; // value: -(1 / pi)
+                yield return new object[] { -0.0,                      1.5707963267948966,  DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  double.NaN,               double.NaN,          0.0 };
+                yield return new object[] {  0.0,                      1.5707963267948966,  DoubleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  0.31830988618379067,      1.2468502198629159,  DoubleCrossPlatformMachineEpsilon * 10 }; // value:  (1 / pi)
+                yield return new object[] {  0.43429448190325183,      1.1215414361128270,  DoubleCrossPlatformMachineEpsilon * 10 }; // value:  (log10(e))
+                yield return new object[] {  0.63661977236758134,      0.88068923542035660, DoubleCrossPlatformMachineEpsilon };      // value:  (2 / pi)
+                yield return new object[] {  0.69314718055994531,      0.80495013197581640, DoubleCrossPlatformMachineEpsilon };      // value:  (ln(2))
+                yield return new object[] {  0.70710678118654752,      0.78539816339744828, DoubleCrossPlatformMachineEpsilon };      // value:  (1 / sqrt(2)),  expected:  (pi / 4)
+                yield return new object[] {  0.78539816339744831,      0.66745721602838380, DoubleCrossPlatformMachineEpsilon };      // value:  (pi / 4)
+                yield return new object[] {  1.0,                      0.0,                 0.0 };
+                yield return new object[] {  double.PositiveInfinity,  double.NaN,          0.0 };
+            }
+        }
+
+        public static IEnumerable<object[]> AcosSingle
+        {
+            get
+            {
+                yield return new object[] {  float.NegativeInfinity,  float.NaN,       0.0f };
+                yield return new object[] { -1.0f,                    3.14159274f,     SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.785398163f,            2.47413540f,     SingleCrossPlatformMachineEpsilon * 10 };      // value: -(pi / 4)
+                yield return new object[] { -0.707106781f,            2.35619450f,     SingleCrossPlatformMachineEpsilon * 10 };      // value: -(1 / sqrt(2))
+                yield return new object[] { -0.693147181f,            2.33664250f,     SingleCrossPlatformMachineEpsilon * 10 };      // value: -(ln(2))
+                yield return new object[] { -0.636619772f,            2.26090336f,     SingleCrossPlatformMachineEpsilon * 10 };      // value: -(2 / pi)
+                yield return new object[] { -0.434294482f,            2.02005124f,     SingleCrossPlatformMachineEpsilon * 10 };      // value: -(log10(e))
+                yield return new object[] { -0.318309886f,            1.89474249f,     SingleCrossPlatformMachineEpsilon * 10 };      // value: -(1 / pi)
+                yield return new object[] { -0.0f,                    1.57079637f,     SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  float.NaN,               float.NaN,       0.0f };
+                yield return new object[] {  0.0f,                    1.57079637f,     SingleCrossPlatformMachineEpsilon * 10 };
+                yield return new object[] {  0.318309886f,            1.24685025f,     SingleCrossPlatformMachineEpsilon * 10 };      // value:  (1 / pi)
+                yield return new object[] {  0.434294482f,            1.12154138f,     SingleCrossPlatformMachineEpsilon * 10 };      // value:  (log10(e))
+                yield return new object[] {  0.636619772f,            0.880689263f,    SingleCrossPlatformMachineEpsilon };            // value:  (2 / pi)
+                yield return new object[] {  0.693147181f,            0.804950058f,    SingleCrossPlatformMachineEpsilon };            // value:  (ln(2))
+                yield return new object[] {  0.707106781f,            0.785398185f,    SingleCrossPlatformMachineEpsilon };            // value:  (1 / sqrt(2)),  expected:  (pi / 4)
+                yield return new object[] {  0.785398163f,            0.667457163f,    SingleCrossPlatformMachineEpsilon };            // value:  (pi / 4)
+                yield return new object[] {  1.0f,                    0.0f,            0.0f };
+                yield return new object[] {  float.PositiveInfinity,  float.NaN,       0.0f };
+            }
+        }
+
         public static IEnumerable<object[]> AsinDouble
         {
             get

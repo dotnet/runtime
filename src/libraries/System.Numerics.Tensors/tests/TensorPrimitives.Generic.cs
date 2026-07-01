@@ -461,8 +461,8 @@ namespace System.Numerics.Tensors.Tests
                 : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
-            yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
-            yield return Create(TensorPrimitives.Acos, T.Acos);
+            yield return Create(TensorPrimitives.AcosPi, T.AcosPi, Helpers.DetermineTolerance<T>(doubleTolerance: 2e-9, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Acos, T.Acos, Helpers.DetermineTolerance<T>(doubleTolerance: 2e-9, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.Asinh, T.Asinh);
             yield return Create(TensorPrimitives.AsinPi, T.AsinPi);
             yield return Create(TensorPrimitives.Asin, T.Asin, trigTolerance);

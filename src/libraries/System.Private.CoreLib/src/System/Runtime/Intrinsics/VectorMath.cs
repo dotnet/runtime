@@ -3221,5 +3221,175 @@ namespace System.Runtime.Intrinsics
 
             return ax + ax * g * poly + (TVectorDouble.Create(PIBY2) & gtHalf);
         }
+
+        public static TVectorDouble AcosDouble<TVectorDouble>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // This code is based on `acos` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // Based on the value of x, acos(x) is calculated as:
+            //
+            // 1. If x > 0.5:  acos(x) = 2 * asin(sqrt((1 - x) / 2))
+            // 2. If x < -0.5: acos(x) = pi - 2 * asin(sqrt((1 + x) / 2))
+            // 3. If |x| <= 0.5: acos(x) = pi/2 - asin(x)
+            //
+            // asin(x) is approximated using the polynomial:
+            //   x + C1*x^3 + C2*x^5 + ... + C12*x^25
+
+            // Polynomial coefficients obtained from Sollya
+            const double C1  = 0.166666666666647700;    // 0x1.55555555552aap-3
+            const double C2  = 0.075000000004179696;    // 0x1.333333337cbaep-4
+            const double C3  = 0.044642856781408560;    // 0x1.6db6db3c0984p-5
+            const double C4  = 0.030381960650355640;    // 0x1.f1c72dd86cbafp-6
+            const double C5  = 0.022371727970318958;    // 0x1.6e89d3ff33aa4p-6
+            const double C6  = 0.017360094637841349;    // 0x1.1c6d83ae664b6p-6
+            const double C7  = 0.013881842859634605;    // 0x1.c6e1568b90518p-7
+            const double C8  = 0.012189191110336799;    // 0x1.8f6a58977fe49p-7
+            const double C9  = 0.006449405266899452;    // 0x1.a6ab10b3321bp-8
+            const double C10 = 0.019725887785684789;    // 0x1.43305ebb2428fp-6
+            const double C11 = -0.016511752058748410;   // -0x1.0e874ec5e3157p-6
+            const double C12 = 0.032096272998247702;    // 0x1.06eec35b3b142p-5
+
+            const double PIBY2 = 1.5707963267948966;    // 0x1.921fb54442d18p+0
+            const double PIBY4 = 0.78539816339744828;   // 0x1.921fb54442d18p-1
+
+            TVectorDouble xneg = TVectorDouble.IsNegative(x);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(0.5));
+
+            // For |x| > 0.5: z = 0.5*(1-|x|), y = -2*sqrt(z)
+            // For |x| <= 0.5: z = |x|*|x|, y = |x|
+            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            TVectorDouble y = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z), ax);
+
+            // Evaluate polynomial: P(z) = C1 + z*(C2 + z*(C3 + ... + z*C12))
+            TVectorDouble poly = TVectorDouble.Create(C12);
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C11));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C10));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C9));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C8));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C7));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C6));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C5));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C4));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C3));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C2));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C1));
+
+            // poly = y + y * z * P(z)
+            poly = y + y * z * poly;
+
+            // Reconstruct acos using split constants for precision:
+            //   |x| > 0.5:  A = 0, B = pi/2
+            //   |x| <= 0.5: A = pi/4, B = pi/4
+            //   positive x: result = (A - poly) + A
+            //   negative x: result = (B + poly) + B
+            TVectorDouble aConst = TVectorDouble.Create(PIBY4) & ~gtHalf;
+            TVectorDouble bConst = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(PIBY2), TVectorDouble.Create(PIBY4));
+
+            TVectorDouble posResult = (aConst - poly) + aConst;
+            TVectorDouble negResult = (bConst + poly) + bConst;
+
+            TVectorDouble result = TVectorDouble.ConditionalSelect(xneg, negResult, posResult);
+
+            // Handle special cases: |x| > 1 returns NaN
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
+            result = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), result);
+
+            return result;
+        }
+
+        public static TVectorSingle AcosSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+        {
+            // This code is based on `acosf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2023 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorSingle outOfRange = TVectorSingle.GreaterThan(TVectorSingle.Abs(x), TVectorSingle.One);
+            TVectorSingle xEqualsOne = TVectorSingle.Equals(x, TVectorSingle.One);
+            TVectorSingle xEqualsNegOne = TVectorSingle.Equals(x, TVectorSingle.Create(-1.0f));
+
+            TVectorSingle result;
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                result = Narrow<TVectorDouble, TVectorSingle>(AcosSingleCoreDouble<TVectorDouble>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AcosSingleCoreDouble<TVectorDouble>(dxLo),
+                    AcosSingleCoreDouble<TVectorDouble>(dxHi));
+            }
+
+            result = TVectorSingle.ConditionalSelect(outOfRange, TVectorSingle.Create(float.NaN), result);
+            result = TVectorSingle.ConditionalSelect(xEqualsOne, TVectorSingle.Zero, result);
+            result = TVectorSingle.ConditionalSelect(xEqualsNegOne, TVectorSingle.Create(float.Pi), result);
+
+            return result;
+        }
+
+        private static TVectorDouble AcosSingleCoreDouble<TVectorDouble>(TVectorDouble dx)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // Polynomial coefficients from Sollya (AMD aocl-libm-ose acosf.c)
+            const double C1 = 0.1666679084300995;       // 0x1.5555fcp-3
+            const double C2 = 0.074944347143173218;     // 0x1.32f8d8p-4
+            const double C3 = 0.045550186187028885;     // 0x1.7525aap-5
+            const double C4 = 0.023858169093728065;     // 0x1.86e46ap-6
+            const double C5 = 0.042635641992092133;     // 0x1.5d456cp-5
+
+            const double PIBY2 = 1.5707963267948966;    // 0x1.921fb54442d18p+0
+            const double PIBY4 = 0.78539816339744828;   // 0x1.921fb54442d18p-1
+
+            TVectorDouble xneg = TVectorDouble.IsNegative(dx);
+            TVectorDouble ax = TVectorDouble.Abs(dx);
+
+            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(0.5));
+
+            // For |x| > 0.5: z = 0.5*(1-|x|), y = -2*sqrt(z)
+            // For |x| <= 0.5: z = |x|*|x|, y = |x|
+            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            TVectorDouble y = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z), ax);
+
+            // Evaluate polynomial: P(z) = C1 + z*(C2 + z*(C3 + z*(C4 + z*C5)))
+            TVectorDouble poly = TVectorDouble.Create(C5);
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C4));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C3));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C2));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C1));
+
+            // poly = y + y * z * P(z)
+            poly = y + y * z * poly;
+
+            // Reconstruct acos using split constants for precision:
+            //   |x| > 0.5:  A = 0, B = pi/2
+            //   |x| <= 0.5: A = pi/4, B = pi/4
+            //   positive x: result = (A - poly) + A
+            //   negative x: result = (B + poly) + B
+            TVectorDouble aConst = TVectorDouble.Create(PIBY4) & ~gtHalf;
+            TVectorDouble bConst = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(PIBY2), TVectorDouble.Create(PIBY4));
+
+            TVectorDouble posResult = (aConst - poly) + aConst;
+            TVectorDouble negResult = (bConst + poly) + bConst;
+
+            return TVectorDouble.ConditionalSelect(xneg, negResult, posResult);
+        }
     }
 }

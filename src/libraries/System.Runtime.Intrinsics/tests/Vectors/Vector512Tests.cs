@@ -6477,6 +6477,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         private static T GetNonConstant<T>(T value) => value;
 
         [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AcosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void AcosDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector512<double> actualResult = Vector512.Acos(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AcosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void AcosSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector512<float> actualResult = Vector512.Acos(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.AsinDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void AsinDoubleTest(double value, double expectedResult, double variance)
         {
