@@ -282,6 +282,11 @@ fi
            wasi-provisioning.targets or installed manually). -->
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true --env DOTNET_WASI_PRINT_EXIT_CODE=1 "$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
+      <!-- WASI has no watchdog binary in Core_Root (skipped in
+           src/coreclr/CMakeLists.txt for wasm targets); use coreutils
+           timeout instead. Wasmtime is a normal host process so this
+           kills it cleanly. -->
+      <WatcherRunFile Condition="'$(TargetOS)' == 'wasi'">timeout --preserve-status "${_WatcherTimeoutMins}m"</WatcherRunFile>
 
       <!-- CoreCLR on browser defaults to running tests with Node.js -->
       <BashDefaultRunWithNodeJS Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'"><![CDATA[
