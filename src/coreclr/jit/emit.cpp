@@ -9995,6 +9995,11 @@ void emitter::emitNxtIG(bool extend)
         emitInitByrefRegs = emitThisByrefRegs;
     }
 
+    // We cannot start a new IG while we are still generating unwind info.
+    // It would result in creating a new fragment, and all fragments are
+    // expected to be unwindable by executing all unwind codes.
+    assert(!m_compiler->compGeneratingUnwindProlog);
+
     /* Start generating the new group */
 
     emitNewIG();
