@@ -2871,7 +2871,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (nodeRetType == TYP_MASK)
     {
-        // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
+        // HWIntrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
         retNode = gtFoldExpr(retNode);
         retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseType, simdSize);
     }
