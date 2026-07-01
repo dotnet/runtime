@@ -20,6 +20,7 @@ namespace Microsoft.Android.Build
         private TaskLoggingHelper logger;
 
         private string abi;
+        private string androidNdkPath;
         private string androidToolchainPath;
         private string projectName;
         private string targetArchitecture;
@@ -33,6 +34,7 @@ namespace Microsoft.Android.Build
 
         public AndroidProject(string projectName, string runtimeIdentifier, string androidNdkPath, TaskLoggingHelper logger)
         {
+            this.androidNdkPath = androidNdkPath;
             androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake").Replace('\\', '/');
             abi = DetermineAbi(runtimeIdentifier);
             targetArchitecture = GetTargetArchitecture(runtimeIdentifier);
@@ -50,47 +52,45 @@ namespace Microsoft.Android.Build
             Utils.RunProcess(logger, tools.ClangPath, workingDir: workingDir, args: clangArgs);
         }
 
-        public void GenerateCMake(string workingDir, bool stripDebugSymbols)
+        public void GenerateCMake(string workingDir)
         {
-            GenerateCMake(workingDir, DefaultMinApiLevel, stripDebugSymbols);
+            GenerateCMake(workingDir, DefaultMinApiLevel);
         }
 
-        public void GenerateCMake(string workingDir, string apiLevel = DefaultMinApiLevel, bool stripDebugSymbols = false)
+        public void GenerateCMake(string workingDir, string apiLevel = DefaultMinApiLevel)
         {
             // force ninja generator on Windows, the VS generator causes issues with the built-in Android support in VS
             var generator = Utils.IsWindows() ? "-G Ninja" : "";
             string cmakeGenArgs = $"{generator} -DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none -DTARGETS_ANDROID=1 " +
                 $"-DANDROID_PLATFORM=android-{apiLevel} -B {projectName}";
 
-            if (stripDebugSymbols)
-            {
-                // Use "-s" to strip debug symbols, it complains it's unused but it works
-                cmakeGenArgs += " -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_FLAGS=\"-s -Wno-unused-command-line-argument\"";
-            }
-            else
-            {
-                cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
-            }
+            // Always build with debug info; symbol stripping is done post-build via StripBinaryInPlace
+            cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
 
             Utils.RunProcess(logger, Cmake, workingDir: workingDir, args: cmakeGenArgs);
         }
 
-        public string BuildCMake(string workingDir, bool stripDebugSymbols = false)
+        public string BuildCMake(string workingDir)
         {
-            string cmakeBuildArgs = $"--build {projectName}";
-
-            if (stripDebugSymbols)
-            {
-                cmakeBuildArgs += " --config MinSizeRel";
-            }
-            else
-            {
-                cmakeBuildArgs += " --config Debug";
-            }
+            string cmakeBuildArgs = $"--build {projectName} --config Debug";
 
             Utils.RunProcess(logger, Cmake, workingDir: workingDir, args: cmakeBuildArgs);
 
             return Path.Combine(workingDir, projectName);
+        }
+
+        public void StripBinaryInPlace(string filePath)
+        {
+            string hostTag = GetHostOS() switch
+            {
+                "windows" => "windows-x86_64",
+                "osx" => "darwin-x86_64",
+                _ => "linux-x86_64"
+            };
+            string execExt = Utils.IsWindows() ? ".exe" : string.Empty;
+            string llvmStripPath = Path.Combine(androidNdkPath, "toolchains", "llvm", "prebuilt", hostTag, "bin", $"llvm-strip{execExt}");
+            logger.LogMessage(MessageImportance.High, $"Stripping debug symbols from {filePath}");
+            Utils.RunProcess(logger, llvmStripPath, args: $"--strip-debug \"{filePath}\"");
         }
 
         private static string BuildClangArgs(ClangBuildOptions buildOptions)
