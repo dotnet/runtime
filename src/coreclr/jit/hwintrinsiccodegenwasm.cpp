@@ -26,7 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // emitIns_v128_Imm
     // emitIns_Lane
     // emitIns_Memarg_Lane
 
@@ -37,13 +36,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         instruction const ins = HWIntrinsicInfo::lookupIns(info.id, info.baseType, m_compiler);
         assert(ins != INS_invalid);
-        if (info.category == HW_Category_SIMD)
+        switch (info.category)
         {
-            GetEmitter()->emitIns(ins);
-        }
-        else
-        {
-            NYI_WASM_SIMD("!HW_Category_SIMD");
+            case HW_Category_SIMD:
+            {
+                GetEmitter()->emitIns(ins);
+                break;
+            }
+            case HW_Category_IMM:
+            {
+                GetEmitter()->emitIns_Lane(ins, info.GetImmediateLaneOperand());
+                break;
+            }
+            default:
+            {
+                NYI_WASM_SIMD("CodeGen::genHWIntrinsic: Unsupported category for table-driven intrinsic");
+            }
         }
     }
     else

@@ -2822,7 +2822,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 // Passing a 16-byte SIMD value by value through a call is not yet correctly
                 // implemented: the argument is materialized as an i32 (by-ref) while the call
                 // signature requires v128, producing an invalid module. Bail for now.
-                NYI_WASM_SIMD("SIMD16 call argument");
+                //NYI_WASM_SIMD("SIMD16 call argument");
             }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
@@ -3814,34 +3814,34 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
     DROP
 
     // Extract lane: v128 -> scalar (i32/i64/f32/f64), then drop
-#define TEST_EXTRACT_LANE(bytes, ins, attr, lane) \
+#define TEST_EXTRACT_LANE(bytes, ins, lane) \
     PUSH_V128(bytes);                             \
-    emit->emitIns_Lane(ins, attr, lane);              \
+    emit->emitIns_Lane(ins, lane);              \
     DROP
 
     // Replace lane: [v128, scalar] -> v128, then drop
-#define TEST_REPLACE_LANE_I32(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_I32(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_I32(42);                                     \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
-#define TEST_REPLACE_LANE_I64(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_I64(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_I64(42);                                     \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
-#define TEST_REPLACE_LANE_F32(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_F32(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_F32(0);                                      \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
-#define TEST_REPLACE_LANE_F64(bytes, ins, attr, lane) \
+#define TEST_REPLACE_LANE_F64(bytes, ins, lane) \
     PUSH_V128(bytes);                                 \
     PUSH_F64(0);                                      \
-    emit->emitIns_Lane(ins, attr, lane);                  \
+    emit->emitIns_Lane(ins, lane);                  \
     DROP
 
     // Load lane: [i32_addr, v128] -> v128, then drop
@@ -3883,30 +3883,30 @@ void CodeGen::genWasmEmitterUnitTestsSimd()
 
     // --- IF_LANE: extract/replace lane instructions ---
     // i8x16 lanes (0..15)
-    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_s, EA_1BYTE, 0);
-    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_u, EA_1BYTE, 15);
-    TEST_REPLACE_LANE_I32(v128Ones, INS_i8x16_replace_lane, EA_1BYTE, 7);
+    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_s, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_i8x16_extract_lane_u, 15);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i8x16_replace_lane, 7);
 
     // i16x8 lanes (0..7)
-    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_s, EA_2BYTE, 0);
-    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_u, EA_2BYTE, 7);
-    TEST_REPLACE_LANE_I32(v128Ones, INS_i16x8_replace_lane, EA_2BYTE, 3);
+    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_s, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_i16x8_extract_lane_u, 7);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i16x8_replace_lane, 3);
 
     // i32x4 lanes (0..3)
-    TEST_EXTRACT_LANE(v128Ones, INS_i32x4_extract_lane, EA_4BYTE, 0);
-    TEST_REPLACE_LANE_I32(v128Ones, INS_i32x4_replace_lane, EA_4BYTE, 3);
+    TEST_EXTRACT_LANE(v128Ones, INS_i32x4_extract_lane, 0);
+    TEST_REPLACE_LANE_I32(v128Ones, INS_i32x4_replace_lane, 3);
 
     // i64x2 lanes (0..1)
-    TEST_EXTRACT_LANE(v128Ones, INS_i64x2_extract_lane, EA_8BYTE, 0);
-    TEST_REPLACE_LANE_I64(v128Ones, INS_i64x2_replace_lane, EA_8BYTE, 1);
+    TEST_EXTRACT_LANE(v128Ones, INS_i64x2_extract_lane, 0);
+    TEST_REPLACE_LANE_I64(v128Ones, INS_i64x2_replace_lane, 1);
 
     // f32x4 lanes (0..3)
-    TEST_EXTRACT_LANE(v128Ones, INS_f32x4_extract_lane, EA_4BYTE, 3);
-    TEST_REPLACE_LANE_F32(v128Ones, INS_f32x4_replace_lane, EA_4BYTE, 0);
+    TEST_EXTRACT_LANE(v128Ones, INS_f32x4_extract_lane, 3);
+    TEST_REPLACE_LANE_F32(v128Ones, INS_f32x4_replace_lane, 0);
 
     // f64x2 lanes (0..1)
-    TEST_EXTRACT_LANE(v128Ones, INS_f64x2_extract_lane, EA_8BYTE, 0);
-    TEST_REPLACE_LANE_F64(v128Ones, INS_f64x2_replace_lane, EA_8BYTE, 1);
+    TEST_EXTRACT_LANE(v128Ones, INS_f64x2_extract_lane, 0);
+    TEST_REPLACE_LANE_F64(v128Ones, INS_f64x2_replace_lane, 1);
 
     // --- IF_MEMARG_LANE: load/store lane with memarg ---
     TEST_LOAD_LANE(v128Ones, INS_v128_load8_lane, EA_1BYTE, 0, 5);

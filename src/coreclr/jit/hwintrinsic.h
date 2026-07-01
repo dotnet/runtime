@@ -576,7 +576,7 @@ struct HWIntrinsicInfo
     static void lookupImmBounds(
         NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
 #elif defined(TARGET_WASM)
-    static int lookupImmUpperBound(NamedIntrinsic intrinsic, var_types baseType);
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, unsigned int simdSize, var_types baseType);
 #else
 #error Unsupported platform
 #endif
@@ -1357,6 +1357,59 @@ struct HWIntrinsicInfo
             }
         }
     }
+#elif defined(TARGET_WASM)
+    static void CheckImmOpSignature(NamedIntrinsic id, CORINFO_SIG_INFO* sig)
+    {
+        switch (id)
+        {
+            case NI_PackedSimd_ExtractScalar:
+            {
+                assert(sig->numArgs == 2);
+                break;
+            }
+            case NI_PackedSimd_ReplaceScalar:
+            case NI_PackedSimd_StoreSelectedScalar:
+            case NI_PackedSimd_LoadScalarAndInsert:
+            {
+                assert(sig->numArgs == 3);
+                break;
+            }
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    static void GetImmOpsPositions(NamedIntrinsic id, int* imm1Pos, int* imm2Pos)
+    {
+        switch (id)
+        {
+            case NI_PackedSimd_ExtractScalar:
+            {
+                // (v128, lane_imm)
+                *imm1Pos = 0;
+                break;
+            }
+            case NI_PackedSimd_ReplaceScalar:
+            {
+                // (v128, lane_imm, value)
+                *imm1Pos = 1;
+                break;
+            }
+            case NI_PackedSimd_StoreSelectedScalar:
+            case NI_PackedSimd_LoadScalarAndInsert:
+            {
+                // (scalar_addr, v128, lane_imm)
+                *imm1Pos = 0;
+                break;
+            }
+            default:
+            {
+                unreached();
+            }
+        }
+}
 #endif // TARGET_ARM64
 };
 
@@ -1477,7 +1530,6 @@ struct HWIntrinsic final
 
         id       = node->GetHWIntrinsicId();
         category = HWIntrinsicInfo::lookupCategory(id);
-
         assert(HWIntrinsicInfo::RequiresCodegen(id));
 
         InitializeOperands(node);
@@ -1490,6 +1542,27 @@ struct HWIntrinsic final
         bool isTableDrivenFlag     = !HWIntrinsicInfo::HasSpecialCodegen(id);
 
         return isTableDrivenCategory && isTableDrivenFlag;
+    }
+
+    uint8_t GetImmediateLaneOperand() const
+    {
+        assert(category == HW_Category_IMM || category == HW_Category_MemoryLoad || \
+            category == HW_Category_MemoryStore);
+
+        GenTree* ops[] = {op1, op2, op3};
+
+        int imm1Pos = -1;
+        int imm2Pos = -1;
+        HWIntrinsicInfo::GetImmOpsPositions(id, &imm1Pos, &imm2Pos);
+        int      opIdx = (int)numOperands - 1 - imm1Pos;
+        assert(opIdx >= 0);
+        GenTree* immOp = ops[opIdx];
+
+        assert(immOp->IsCnsIntOrI());
+        ssize_t lane = immOp->AsIntCon()->IconValue();
+        assert(FitsIn<uint8_t>(lane));
+
+        return static_cast<uint8_t>(lane);
     }
 
     NamedIntrinsic      id;
@@ -1554,7 +1627,7 @@ private:
             }
         }
     }
-};
+  };
 
 #endif // TARGET_WASM
 

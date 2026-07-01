@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "lower.h"
+#include "compiler.h"
 
 void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 {
@@ -842,11 +843,18 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case HWIntrinsicCategory::HW_Category_SIMD:
         {
+            // No containment possible for SIMD ops without a memory or immediate operand.
+            break;
+        }
+        case HWIntrinsicCategory::HW_Category_IMM:
+        {
+            ContainCheckHWIntrinsic(node);
             break;
         }
         default:
             NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
     }
+
     return node->gtNext;
 }
 
@@ -854,12 +862,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 // LowerHWIntrinsicCompareUnsignedLong: Rewrite a PackedSimd ordered ulong compare into a
 // signed compare on sign-bit-flipped operands.
 //
-// Wasm SIMD does not provide unsigned i64x2 relative comparison opcodes. So we apply the 
+// Wasm SIMD does not provide unsigned i64x2 relative comparison opcodes. We apply the 
 // rewrite of
 //     cmp_u(a, b)  ==  cmp_s(a VECTOR_XOR signbit_vec, b VECTOR_XOR signbit_vec)
-//
-// After this rewrite the node's base type is TYP_LONG, so the table-driven codegen path
-// can select the signed compare variants i64x2_{lt,le,gt,ge}_s.
 //
 // Arguments:
 //    node - The PackedSimd ordered compare with SimdBaseType TYP_ULONG.
@@ -909,5 +914,35 @@ GenTree* Lowering::LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // TODO-WASM: implement containment for hardware intrinsics, currently a no-op
+#if DEBUG
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->GetHWIntrinsicId());
+    assert(category == HWIntrinsicCategory::HW_Category_IMM);
+#endif
+
+    int imm1Pos = -1;
+    int imm2Pos = -1;
+    HWIntrinsicInfo::GetImmOpsPositions(node->GetHWIntrinsicId(), &imm1Pos, &imm2Pos);
+
+    // We only expect one immediate operand for Wasm SIMD
+    assert(imm1Pos >= 0 && imm2Pos < 0);
+
+    switch (category)
+    {
+        case HWIntrinsicCategory::HW_Category_IMM:
+        {
+            int operandCount = HWIntrinsicInfo::lookupNumArgs(node->GetHWIntrinsicId());
+            assert(node->GetOperandCount() == operandCount);
+
+            // imm1Pos is an offset in operand stack order
+            int      immOpPos = operandCount - imm1Pos;
+            assert(immOpPos > 0);
+            GenTree* immOp = node->Op(immOpPos);
+            assert(immOp->IsCnsIntOrI());
+
+            MakeSrcContained(node, immOp);
+            break;
+        }
+        default:
+            unreached();
+    }
 }

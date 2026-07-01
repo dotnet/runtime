@@ -466,11 +466,32 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t bytes[16])
 //   attr    - emit attribute indicating the lane element size
 //   laneIdx - lane index byte
 //
-void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
+void emitter::emitIns_Lane(instruction ins, uint8_t laneIdx)
 {
+    uint8_t    elemSize = CodeGenInterface::instSimdElemSize(ins);
+
+    // Add element width as an emit attribute
+    emitAttr attr     = EA_UNKNOWN;
+    switch (elemSize)
+    {
+        case 1:
+            attr = EA_1BYTE;
+            break;
+        case 2:
+            attr = EA_2BYTE;
+            break;
+        case 4:
+            attr = EA_4BYTE;
+            break;
+        case 8:
+            attr = EA_8BYTE;
+            break;
+        default:
+            unreached();
+    }
+
     instrDesc* id       = emitNewInstrSC(attr, laneIdx);
     insFormat  fmt      = emitInsFormat(ins);
-    uint8_t    elemSize = CodeGenInterface::instSimdElemSize(ins);
     assert(fmt == IF_LANE);
     assert(isValidVectorIndex(elemSize, laneIdx));
 

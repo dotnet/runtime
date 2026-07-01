@@ -2368,7 +2368,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
         hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
 #elif defined(TARGET_WASM)
-        immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdBaseType);
+        immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdSize, simdBaseType);
 #endif
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp1, mustExpand, immLowerBound, immUpperBound,
