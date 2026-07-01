@@ -5152,6 +5152,11 @@ protected:
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
 #if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreate(NamedIntrinsic    intrinsic,
+                           CORINFO_SIG_INFO* sig,
+                           var_types         simdBaseType,
+                           var_types         retType,
+                           unsigned          simdSize);
     GenTree* impSimdCreateScalarHalf(GenTree* op1);
     GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
 #endif // FEATURE_HW_INTRINSICS

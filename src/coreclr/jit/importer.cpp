@@ -9052,7 +9052,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (compIsAsyncVersion())
                     {
-                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET))
+                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET) &&
+                            ((info.compFlags & CORINFO_FLG_SYNCH) == 0))
                         {
                             JITDUMP("\nRecognized tail-call in async version\n");
                             awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
@@ -11737,6 +11738,23 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //
 bool Compiler::impWrapTopOfStackInAwait()
 {
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    {
+        assert(!compIsForInlining());
+
+        if (lvaMonAcquired == BAD_VAR_NUM)
+        {
+            lvaMonAcquired = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+            lvaGetDesc(lvaMonAcquired)->lvType = TYP_I_IMPL;
+        }
+
+        GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
+        GenTree* lockObject =
+            info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(info.compThisArg, TYP_REF);
+        GenTree* exitMon = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, lockObject, varAddrNode);
+        impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+
     if (impFoldAwaitedTopOfStack())
     {
         return true;

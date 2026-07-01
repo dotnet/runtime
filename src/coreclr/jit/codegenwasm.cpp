@@ -352,6 +352,37 @@ void CodeGen::genHomeRegisterParamsOutsideProlog()
     }
 }
 
+//------------------------------------------------------------------------
+// genReportGenericContextArg: spill the generic context (or "this") into its
+// GC-reportable frame slot in the prolog so the GC stack walk can locate it.
+// initReg / pInitRegZeroed are unused on wasm.
+//
+void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
+{
+    assert(m_compiler->compGeneratingProlog);
+
+    const bool reportArg  = m_compiler->lvaReportParamTypeArg();
+    const bool reportThis = m_compiler->lvaKeepAliveAndReportThis();
+    if (!reportArg && !reportThis)
+    {
+        return;
+    }
+
+    const unsigned contextArg = reportArg ? m_compiler->info.compTypeCtxtArg : m_compiler->info.compThisArg;
+    noway_assert(contextArg != BAD_VAR_NUM);
+
+    // The context arg is still in its incoming register at this point in the prolog.
+    const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(contextArg);
+    assert(abiInfo.HasExactlyOneRegisterSegment());
+    const regNumber reg = abiInfo.Segment(0).GetRegister();
+
+    // [FP + lvaCachedGenericContextArgOffset()] = contextArg
+    emitter* emit = GetEmitter();
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(reg));
+    emit->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaCachedGenericContextArgOffset());
+}
+
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
 #ifdef DEBUG
@@ -828,6 +859,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         return;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (treeNode->OperIsHWIntrinsic())
+    {
+        genHWIntrinsic(treeNode->AsHWIntrinsic());
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     switch (treeNode->OperGet())
     {
         case GT_ADD:
@@ -1003,6 +1042,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CKFINITE:
             genCkfinite(treeNode);
             break;
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+            genCodeForVectorConstant(treeNode);
+            break;
+#endif // FEATURE_SIMD
 
         default:
 #ifdef DEBUG
@@ -1883,6 +1928,22 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     WasmProduceReg(treeNode);
 }
 
+#ifdef FEATURE_SIMD
+void CodeGen::genCodeForVectorConstant(GenTree* treeNode)
+{
+    assert(treeNode->IsCnsVec());
+    GenTreeVecCon* vecCon = treeNode->AsVecCon();
+
+    uint8_t bytes[16] = {};
+    memcpy(bytes, &vecCon->gtSimdVal, genTypeSize(vecCon->TypeGet()));
+
+    // There is only one type variant for v128.const, v128.const <byte[16]>
+    // and the bytes are reinterpreted according to whichever operation consumes the value.
+    GetEmitter()->emitIns_V128Imm(INS_v128_const, bytes);
+    WasmProduceReg(treeNode);
+}
+#endif
+
 //------------------------------------------------------------------------
 // genCodeForShift: Generate code for a shift or rotate operator
 //
@@ -2553,10 +2614,6 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        if (type == TYP_SIMD16)
-        {
-            NYI_WASM_SIMD("SIMD16 local load");
-        }
 
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
@@ -2642,13 +2699,8 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types type = tree->TypeGet();
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 indirect load");
-    }
-
-    instruction ins = ins_Load(type);
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
 
     genConsumeAddress(tree->Addr());
 

@@ -178,6 +178,7 @@ public enum DataType
     ExternalMethodFrame,
     DynamicHelperFrame,
     InterpreterFrame,
+    PInvokeCalliFrame,
 
     ComCallWrapper,
     SimpleComCallWrapper,

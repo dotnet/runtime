@@ -28,6 +28,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
+    <!-- Android test APKs link the crypto archive directly; keep the Java native trust-manager callback visible. -->
+    <IlcArg Include="--export-dynamic-symbol:Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" />
+    <LinkerArg Include="-Wl,-u,Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" />
+  </ItemGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->
   <Target Name="BundleTestAndroidApp" DependsOnTargets="$(BundleTestAndroidAppDependsOn)" />

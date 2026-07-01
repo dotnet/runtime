@@ -831,6 +831,62 @@ namespace System.Net.Http.Functional.Tests
             }),
             new LoopbackServer.Options { UseSsl = true });
         }
+
+        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [InlineData("1.1", HttpVersionPolicy.RequestVersionExact, false)]
+        [InlineData("1.1", HttpVersionPolicy.RequestVersionOrHigher, false)]
+        [InlineData("2.0", HttpVersionPolicy.RequestVersionExact, false)]
+        [InlineData("2.0", HttpVersionPolicy.RequestVersionOrHigher, false)]
+        [InlineData("2.0", HttpVersionPolicy.RequestVersionOrLower, false)]
+        [InlineData("1.1", HttpVersionPolicy.RequestVersionExact, true)]
+        [InlineData("2.0", HttpVersionPolicy.RequestVersionExact, true)]
+        [InlineData("2.0", HttpVersionPolicy.RequestVersionOrLower, true)]
+        public async Task ProxiedRequest_UsesConnectTunnelForHttpsAndCleartextHttp2(string version, HttpVersionPolicy versionPolicy, bool useSsl)
+        {
+            Version requestVersion = Version.Parse(version);
+
+            if (useSsl && requestVersion.Major == 2 && !PlatformDetection.SupportsAlpn)
+            {
+                // Negotiating HTTP/2 over TLS requires ALPN.
+                return;
+            }
+
+            // HTTPS requests always tunnel through the proxy using CONNECT. Cleartext (http://) requests are
+            // only tunneled when they require HTTP/2 (h2c, which can't use the proxy's absolute-form request line);
+            // otherwise they are forwarded using an absolute-form HTTP/1.1 request line.
+            bool useHttp2 = requestVersion.Major == 2 && (versionPolicy != HttpVersionPolicy.RequestVersionOrLower || useSsl);
+            bool expectConnectTunnel = useSsl || useHttp2;
+            Version expectedResponseVersion = useHttp2 ? HttpVersion.Version20 : HttpVersion.Version11;
+
+            using LoopbackProxyServer proxy = LoopbackProxyServer.Create();
+
+            await GetFactoryForVersion(expectedResponseVersion).CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                    handler.Proxy = new UseSpecifiedUriWebProxy(proxy.Uri);
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    HttpRequestMessage request = new(HttpMethod.Get, uri)
+                    {
+                        Version = requestVersion,
+                        VersionPolicy = versionPolicy
+                    };
+
+                    using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(expectedResponseVersion, response.Version);
+                    Assert.Equal("Echo", await response.Content.ReadAsStringAsync());
+                },
+                async server => await server.HandleRequestAsync(content: "Echo"),
+                options: new GenericLoopbackOptions { UseSsl = useSsl });
+
+            Assert.NotEmpty(proxy.Requests);
+
+            // A tunneled request must have used a CONNECT request; a forwarded request must have used an
+            // absolute-form HTTP/1.1 request line.
+            Assert.All(proxy.Requests, r => Assert.StartsWith(expectConnectTunnel ? "CONNECT " : "GET http://", r.RequestLine));
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]

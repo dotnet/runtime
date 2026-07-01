@@ -899,6 +899,19 @@ HARDWARE_INTRINSIC(Sha256,        ScheduleUpdate0,                              
 HARDWARE_INTRINSIC(Sha256,        ScheduleUpdate1,                                                  16,      3,     {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_sha256su1,      INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_HasRMWSemantics)
 #define LAST_NI_Sha256            NI_Sha256_ScheduleUpdate1
 
+// ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+//                 ISA            Function name                                              SIMD size  NumArg  EncodesExtraTypeArg                                                                                            Instructions                                                                                        Category                           Flags
+//                                                                                                                          {TYP_BYTE,           TYP_UBYTE,          TYP_SHORT,          TYP_USHORT,         TYP_INT,            TYP_UINT,           TYP_LONG,           TYP_ULONG,          TYP_FLOAT,          TYP_DOUBLE}
+// ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+// Sha3
+#define FIRST_NI_Sha3             NI_Sha3_BitwiseClearXor
+HARDWARE_INTRINSIC(Sha3,          BitwiseClearXor,                                                  16,      3,     {INS_bcax,           INS_bcax,           INS_bcax,           INS_bcax,           INS_bcax,           INS_bcax,           INS_bcax,           INS_bcax,           INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_SpecialCodeGen)
+HARDWARE_INTRINSIC(Sha3,          BitwiseRotateLeftBy1AndXor,                                       16,      2,     {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_rax1,           INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_NoFlag)
+HARDWARE_INTRINSIC(Sha3,          Xor,                                                              16,      3,     {INS_eor3,           INS_eor3,           INS_eor3,           INS_eor3,           INS_eor3,           INS_eor3,           INS_eor3,           INS_eor3,           INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_SpecialCodeGen)
+HARDWARE_INTRINSIC(Sha3,          XorRotateRight,                                                   16,      3,     {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_xar,            INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_HasImmediateOperand)
+#define LAST_NI_Sha3              NI_Sha3_XorRotateRight
+
+
 #endif // FEATURE_HW_INTRINSIC
 
 #include "hwintrinsiclistarm64sve.h"
