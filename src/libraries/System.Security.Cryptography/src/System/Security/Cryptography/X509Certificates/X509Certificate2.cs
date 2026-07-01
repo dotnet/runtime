@@ -305,8 +305,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime NotAfter => GetNotAfter();
-        public DateTime NotBefore => GetNotBefore();
+        public DateTime NotAfter => GetNotAfterUtc().LocalDateTime;
+        public DateTime NotBefore => GetNotBeforeUtc().LocalDateTime;
 
         public PublicKey PublicKey
         {

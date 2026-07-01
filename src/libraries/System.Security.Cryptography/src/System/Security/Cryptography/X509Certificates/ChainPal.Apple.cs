@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
         private SafeX509ChainHandle? _chainHandle;
         public X509ChainElement[]? ChainElements { get; private set; }
         public X509ChainStatus[]? ChainStatus { get; private set; }
-        private DateTime _verificationTime;
+        private DateTimeOffset _verificationTime;
         private X509RevocationMode _revocationMode;
 
         internal SecTrustChainPal()
@@ -222,7 +222,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         internal void Execute(
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             bool allowNetwork,
             OidCollection? applicationPolicy,
             OidCollection? certificatePolicy,
@@ -478,7 +478,7 @@ namespace System.Security.Cryptography.X509Certificates
                         const int errSecCertificateExpired = -67818;
                         const int errSecCertificateNotValidYet = -67819;
 
-                        osStatus = cert != null && cert.NotBefore > _verificationTime ?
+                        osStatus = cert != null && cert.GetNotBeforeUtc() > _verificationTime ?
                             errSecCertificateNotValidYet :
                             errSecCertificateExpired;
                         errorString = Interop.AppleCrypto.GetSecErrorString(osStatus);
@@ -593,17 +593,10 @@ namespace System.Security.Cryptography.X509Certificates
             X509RevocationFlag revocationFlag,
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan timeout,
             bool disableAia)
         {
-            // If the time was given in Universal, it will stay Universal.
-            // If the time was given in Local, it will be converted.
-            // If the time was given in Unspecified, it will be assumed local, and converted.
-            //
-            // This matches the "assume Local unless explicitly Universal" implicit contract.
-            verificationTime = verificationTime.ToUniversalTime();
-
             SecTrustChainPal chainPal = new SecTrustChainPal();
 
             // The allowNetwork controls all network activity for macOS chain building.

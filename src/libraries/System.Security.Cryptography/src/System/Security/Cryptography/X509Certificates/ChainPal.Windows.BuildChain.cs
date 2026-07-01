@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509RevocationFlag revocationFlag,
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan timeout,
             bool disableAia)
         {
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                             chainPara.dwUrlRetrievalTimeout = (int)Math.Floor(timeout.TotalMilliseconds);
 
-                            Interop.Crypt32.FILETIME ft = Interop.Crypt32.FILETIME.FromDateTime(verificationTime);
+                            Interop.Crypt32.FILETIME ft = Interop.Crypt32.FILETIME.FromDateTimeOffset(verificationTime);
                             Interop.Crypt32.CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag, disableAia);
                             SafeX509ChainHandle chain;
                             using (SafeCertContextHandle certContext = certificatePal.GetCertContext())

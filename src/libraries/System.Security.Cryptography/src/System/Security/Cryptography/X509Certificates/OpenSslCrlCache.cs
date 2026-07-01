@@ -33,14 +33,14 @@ namespace System.Security.Cryptography.X509Certificates
             SafeX509Handle cert,
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan downloadTimeout)
         {
             // In Offline mode, accept any cached CRL we have.
             // "CRL is Expired" is a better match for Offline than "Could not find CRL"
             if (revocationMode != X509RevocationMode.Online)
             {
-                verificationTime = DateTime.MinValue;
+                verificationTime = DateTimeOffset.MinValue;
             }
 
             string? url = GetCdpUrl(cert);
@@ -76,14 +76,8 @@ namespace System.Security.Cryptography.X509Certificates
             DownloadAndAddCrl(url, crlFileName, store, downloadTimeout);
         }
 
-        private static bool AddCachedCrl(string crlFileName, SafeX509StoreHandle store, DateTime verificationTime)
+        private static bool AddCachedCrl(string crlFileName, SafeX509StoreHandle store, DateTimeOffset verificationTime)
         {
-            // OpenSSL is going to convert our input time to universal, so we should be in Local or
-            // Unspecified (local-assumed).
-            Debug.Assert(
-                verificationTime.Kind != DateTimeKind.Utc,
-                "UTC verificationTime should have been normalized to Local");
-
             if (s_crlCache.TryGetValueAndUpRef(crlFileName, out CachedCrlEntry? cacheEntry))
             {
                 try
@@ -94,7 +88,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         if (OpenSslX509ChainEventSource.Log.IsEnabled())
                         {
-                            OpenSslX509ChainEventSource.Log.CrlCacheInMemoryHit(cacheEntry.Expiration);
+                            OpenSslX509ChainEventSource.Log.CrlCacheInMemoryHit(cacheEntry.Expiration.UtcDateTime);
                         }
 
                         AttachCrl(store, cacheEntry.CrlHandle);
@@ -103,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (OpenSslX509ChainEventSource.Log.IsEnabled())
                     {
-                        OpenSslX509ChainEventSource.Log.CrlCacheInMemoryExpired(verificationTime, cacheEntry.Expiration);
+                        OpenSslX509ChainEventSource.Log.CrlCacheInMemoryExpired(verificationTime.UtcDateTime, cacheEntry.Expiration.UtcDateTime);
                     }
                 }
                 finally
@@ -165,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static CachedCrlEntry? CheckDiskCache(string crlFileName, DateTime verificationTime)
+        private static CachedCrlEntry? CheckDiskCache(string crlFileName, DateTimeOffset verificationTime)
         {
             string crlFile = GetCachedCrlPath(crlFileName);
 
@@ -187,7 +181,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static CachedCrlEntry? CheckDiskCacheCore(string crlFile, DateTime verificationTime)
+        private static CachedCrlEntry? CheckDiskCacheCore(string crlFile, DateTimeOffset verificationTime)
         {
             using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "rb"))
             {
@@ -223,7 +217,7 @@ namespace System.Security.Cryptography.X509Certificates
                     //
                     // If crl.NextUpdate is in the past, try downloading a newer version.
                     IntPtr nextUpdatePtr = Interop.Crypto.GetX509CrlNextUpdate(crl);
-                    DateTime nextUpdate;
+                    DateTimeOffset nextUpdate;
 
                     // If there is no crl.NextUpdate, this indicates that the CA is not providing
                     // any more updates to the CRL, or they made a mistake not providing a NextUpdate.
@@ -237,7 +231,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         try
                         {
-                            nextUpdate = ExpirationTimeFromCacheFileTime(File.GetLastWriteTime(crlFile));
+                            nextUpdate = ExpirationTimeFromCacheFileTime(File.GetLastWriteTimeUtc(crlFile));
                         }
                         catch
                         {
@@ -259,7 +253,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         if (OpenSslX509ChainEventSource.Log.IsEnabled())
                         {
-                            OpenSslX509ChainEventSource.Log.CrlCacheExpired(verificationTime, nextUpdate);
+                            OpenSslX509ChainEventSource.Log.CrlCacheExpired(verificationTime.UtcDateTime, nextUpdate.UtcDateTime);
                         }
 
                         crl.Dispose();
@@ -268,7 +262,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (OpenSslX509ChainEventSource.Log.IsEnabled())
                     {
-                        OpenSslX509ChainEventSource.Log.CrlCacheAcceptedFile(nextUpdate);
+                        OpenSslX509ChainEventSource.Log.CrlCacheAcceptedFile(nextUpdate.UtcDateTime);
                     }
 
                     return new CachedCrlEntry(crl, nextUpdate);
@@ -305,14 +299,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             IntPtr nextUpdatePtr = Interop.Crypto.GetX509CrlNextUpdate(crl);
-            DateTime expiryTime;
+            DateTimeOffset expiryTime;
 
             // If there is no crl.NextUpdate, this indicates that the CA is not providing
             // any more updates to the CRL, or they made a mistake not providing a NextUpdate.
             // We'll cache it for a few days to cover the case it was a mistake.
             if (nextUpdatePtr == IntPtr.Zero)
             {
-                expiryTime = ExpirationTimeFromCacheFileTime(DateTime.Now);
+                expiryTime = ExpirationTimeFromCacheFileTime(DateTimeOffset.UtcNow);
             }
             else
             {
@@ -352,7 +346,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new CachedCrlEntry(crl, expiryTime);
         }
 
-        private static DateTime ExpirationTimeFromCacheFileTime(DateTime cacheFileTime)
+        private static DateTimeOffset ExpirationTimeFromCacheFileTime(DateTimeOffset cacheFileTime)
         {
             // CA/Browser Forum says that CRLs should be updated every 4 to 7 days,
             // so recheck any cached CRL, that doesn't have a NextUpdate, every 3 days.
@@ -766,9 +760,9 @@ namespace System.Security.Cryptography.X509Certificates
         private sealed class CachedCrlEntry
         {
             internal SafeX509CrlHandle CrlHandle { get; }
-            internal DateTime Expiration { get; }
+            internal DateTimeOffset Expiration { get; }
 
-            internal CachedCrlEntry(SafeX509CrlHandle crlHandle, DateTime expiration)
+            internal CachedCrlEntry(SafeX509CrlHandle crlHandle, DateTimeOffset expiration)
             {
                 CrlHandle = crlHandle;
                 Expiration = expiration;

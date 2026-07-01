@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.X509Certificates
                                     cert,
                                     _store,
                                     revocationMode,
-                                    _verificationTime.LocalDateTime,
+                                    _verificationTime,
                                     _downloadTimeout);
                             }
                         }
