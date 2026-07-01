@@ -20834,7 +20834,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     if (instArg != nullptr && instArg->GetNode()->IsIconHandle())
                     {
                         CORINFO_SIG_INFO methodSig;
-                        eeGetMethodSig((CORINFO_METHOD_HANDLE)instArg->GetNode()->AsIntCon()->IconValue(), &methodSig);
+                        eeGetMethodSig((CORINFO_METHOD_HANDLE)instArg->GetNode()->AsIntCon()->GetCompileTimeHandle(),
+                                       &methodSig);
                         if (methodSig.sigInst.methInstCount == 1)
                         {
                             objClass    = methodSig.sigInst.methInst[0];
