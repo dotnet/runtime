@@ -3107,8 +3107,9 @@ void emitter::emitSplit(emitLocation*         startLoc,
         // IGs are part of the *same* prolog or epilog, so we have to assume they are.
 
         if (igPrev && (((igPrev->igFlags & IGF_PROLOG) && (ig->igFlags & IGF_PROLOG)) ||
+                       ((igPrev->igFlags & IGF_EPILOG) && (ig->igFlags & IGF_EPILOG)) ||
                        ((igPrev->igFlags & IGF_FUNCLET_PROLOG) && (ig->igFlags & IGF_FUNCLET_PROLOG)) ||
-                       ((igPrev->igFlags & IGF_EPILOG) && (ig->igFlags & IGF_EPILOG))))
+                       ((igPrev->igFlags & IGF_FUNCLET_EPILOG) && (ig->igFlags & IGF_FUNCLET_EPILOG))))
         {
             // We can't update the candidate
         }
