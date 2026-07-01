@@ -1994,6 +1994,28 @@ struct NaturalLoopIterInfo
     // length of an invariant array.
     bool HasArrayLengthLimit : 1;
 
+    // Whether or not the loop test compares the induction variable with a
+    // multi-dimensional array's per-dimension length (`Array.GetLength(d)`
+    // expanded to GT_MDARR_LENGTH). Mutually exclusive with the other Has*
+    // limit flags.
+    bool HasMDArrayLengthLimit : 1;
+
+    // Whether the loop iterates within the valid index range for a single
+    // dimension of a multi-dimensional array. Specifically the loop test
+    // limit has the form `MDARR_LOWER_BOUND(arr,d,r) + MDARR_LENGTH(arr,d,r) - 1`
+    // and the iter var's init is `MDARR_LOWER_BOUND(arr,d,r)` with all of
+    // arr/d/r matching. The test may be inclusive or exclusive of the upper
+    // bound.
+    // When set, any per-dim BOUNDS_CHECK on the same (arr, d, r) using the
+    // iter var (after the morph-time `effIdx = i - LOWER` subtract) is
+    // trivially safe.
+    bool HasMDArrayBoundedRangeLoop : 1;
+
+    // For HasMDArrayBoundedRangeLoop: the array local, dimension, and rank.
+    unsigned BoundedRangeArrLcl = 0;
+    unsigned BoundedRangeDim    = 0;
+    unsigned BoundedRangeRank   = 0;
+
     // Whether the consumer must emit its own runtime entry guard for this loop.
     // Set when AnalyzeIteration could not prove statically that the loop
     // condition [IterVar TestOper Limit] holds on entry (so the analysis
@@ -2004,8 +2026,8 @@ struct NaturalLoopIterInfo
     bool NeedsZeroTripGuard : 1;
 
     // Constant peeled from the loop limit so that the effective limit is
-    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
-    // and HasArrayLengthLimit.
+    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit,
+    // HasArrayLengthLimit, and HasMDArrayLengthLimit.
     int LimitOffset = 0;
 
     NaturalLoopIterInfo()
@@ -2015,6 +2037,8 @@ struct NaturalLoopIterInfo
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
         , HasArrayLengthLimit(false)
+        , HasMDArrayLengthLimit(false)
+        , HasMDArrayBoundedRangeLoop(false)
         , NeedsZeroTripGuard(false)
     {
     }
@@ -2031,6 +2055,10 @@ struct NaturalLoopIterInfo
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
+
+    // For HasMDArrayLengthLimit: extract the per-dim array length limit info.
+    // Returns the loop-invariant array local, the dimension, and the rank.
+    void MDArrayLengthLimit(unsigned* arrLcl, unsigned* dim, unsigned* rank);
 
 private:
     bool IsReversed();
@@ -2110,6 +2138,8 @@ class FlowGraphNaturalLoop
     GenTreeLclVarCommon* FindDef(unsigned lclNum);
 
     bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
+    bool TryMatchMDArrayUpperBoundLimit(GenTree* limitOp, NaturalLoopIterInfo* info);
+    bool MDArrayBoundedRangeInitMatches(unsigned iterVar, BasicBlock* initBlock, NaturalLoopIterInfo* info);
     bool FindConstInit(BasicBlock* preheader, NaturalLoopIterInfo* info);
     bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
     bool HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info);
@@ -9293,6 +9323,8 @@ public:
     bool optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
+    bool optExtractMdArrayPerDimBndsChk(
+        GenTree* tree, unsigned* arrLcl, unsigned* origIdx, unsigned* dim, unsigned* rank);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
     bool optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);

@@ -5732,6 +5732,17 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
                 Compiler::dspTreeID(info->IterTree));
     }
 
+    // If MatchLimit tentatively recognized the MD-array bounded-range loop
+    // shape on the limit side, confirm here that the iter var's init is the
+    // matching MDARR_LOWER_BOUND. If not, give up: the loop's iter range
+    // isn't actually the valid index range, so the bounded-range optimization
+    // would be unsound, and there's no other way to analyze this limit shape.
+    if (info->HasMDArrayBoundedRangeLoop && !MDArrayBoundedRangeInitMatches(info->IterVar, preheader, info))
+    {
+        JITDUMP("  MD-array bounded-range loop init shape does not match the limit\n");
+        return false;
+    }
+
     // Note: we already verified via VisitDefs above (in the exit edge loop)
     // that info->IterVar has no extraneous definitions other than info->IterTree.
 
@@ -5741,7 +5752,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
         // loop body might not execute on the first iteration, allow the loop
         // through provided we have enough symbolic info about init and limit
         // to express the guard.
-        if (allowMissingBaseCase && (info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit))
+        if (allowMissingBaseCase && (info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit ||
+                                     info->HasMDArrayLengthLimit))
         {
             JITDUMP("  Loop condition may not be true on the first iteration; deferring to caller "
                     "(NeedsZeroTripGuard)\n");
@@ -5799,11 +5811,13 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
 //
 bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info)
 {
-    info->HasConstLimit          = false;
-    info->HasSimdLimit           = false;
-    info->HasArrayLengthLimit    = false;
-    info->HasInvariantLocalLimit = false;
-    info->LimitOffset            = 0;
+    info->HasConstLimit              = false;
+    info->HasSimdLimit               = false;
+    info->HasArrayLengthLimit        = false;
+    info->HasMDArrayLengthLimit      = false;
+    info->HasMDArrayBoundedRangeLoop = false;
+    info->HasInvariantLocalLimit     = false;
+    info->LimitOffset                = 0;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5945,6 +5959,47 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
         info->HasArrayLengthLimit = true;
     }
+    else if (limitOp->OperIs(GT_MDARR_LENGTH))
+    {
+        // Multi-dimensional array per-dim length: `Array.GetLength(d)` is
+        // expanded by the importer into this node so analysis can treat it
+        // canonically (a positive int bounded by Array.MaxLength). The array
+        // reference must be a loop-invariant local.
+        GenTree* const array = limitOp->AsArrCommon()->ArrRef();
+
+        if (!array->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP("    MD array limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
+            return false;
+        }
+
+        if (comp->lvaGetDesc(array->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("    MD array base local V%02u is address exposed\n", array->AsLclVarCommon()->GetLclNum());
+            return false;
+        }
+
+        GenTreeLclVarCommon* def = FindDef(array->AsLclVarCommon()->GetLclNum());
+        if (def != nullptr)
+        {
+            JITDUMP("    MD array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),
+                    Compiler::dspTreeID(def));
+            return false;
+        }
+
+        info->HasMDArrayLengthLimit = true;
+    }
+    else if (TryMatchMDArrayUpperBoundLimit(limitOp, info))
+    {
+        // Recognized the GetUpperBound(d) shape (LOWER + LENGTH - 1).
+        // TryMatchMDArrayUpperBoundLimit has already verified the array
+        // reference is a loop-invariant local and stashed (arr, d, r) on info.
+        // HasMDArrayBoundedRangeLoop will be confirmed once we also verify
+        // the iter var's init is MDARR_LOWER_BOUND(arr, d, r); that check
+        // happens below in AnalyzeIteration after FindConstInit.
+        info->HasMDArrayBoundedRangeLoop = true;
+        info->LimitOffset                = 0;
+    }
     else
     {
         JITDUMP("    Loop limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
@@ -5953,10 +6008,187 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
     // Were we able to successfully analyze the limit?
     //
-    assert(info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit);
+    assert(info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit ||
+           info->HasMDArrayLengthLimit || info->HasMDArrayBoundedRangeLoop);
 
     info->TestTree = relop;
     return true;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::TryMatchMDArrayUpperBoundLimit:
+//   Recognize a loop limit of the form `MDARR_LOWER_BOUND(arr, d, r) +
+//   MDARR_LENGTH(arr, d, r) - 1`, which the importer expands from an
+//   inline `arr.GetUpperBound(d)` call (issue #103321). The array
+//   reference must be a loop-invariant local; on match this method
+//   stashes `(arr, d, r)` on `info` so subsequent verification of the
+//   init shape can confirm the full bounded-range pattern.
+//
+// Parameters:
+//   limitOp        - the recognized limit subtree
+//   info           - [in, out] info; on match, fills BoundedRangeArrLcl/Dim/Rank
+// Returns:
+//   True if the limit shape matches and the array is a loop-invariant local.
+//
+bool FlowGraphNaturalLoop::TryMatchMDArrayUpperBoundLimit(GenTree* limitOp, NaturalLoopIterInfo* info)
+{
+    // After offset-peel we may see one of:
+    //   SUB(ADD(LOWER, LEN), 1)            -- LimitOffset still 0
+    //   ADD(LOWER, LEN)  with LimitOffset == -1  (peeled '-1' constant)
+    // Recognize both. The ADD operands are commutative.
+    GenTree* addNode = nullptr;
+    if (limitOp->OperIs(GT_SUB))
+    {
+        GenTree* const subRhs = limitOp->gtGetOp2();
+        if (!subRhs->IsIntegralConst(1))
+        {
+            return false;
+        }
+        addNode = limitOp->gtGetOp1();
+        if (!addNode->OperIs(GT_ADD))
+        {
+            return false;
+        }
+    }
+    else if (limitOp->OperIs(GT_ADD) && (info->LimitOffset == -1))
+    {
+        addNode = limitOp;
+    }
+    else
+    {
+        return false;
+    }
+
+    GenTree* lower = addNode->gtGetOp1();
+    GenTree* len   = addNode->gtGetOp2();
+
+    if (lower->OperIs(GT_MDARR_LENGTH) && len->OperIs(GT_MDARR_LOWER_BOUND))
+    {
+        std::swap(lower, len);
+    }
+
+    if (!lower->OperIs(GT_MDARR_LOWER_BOUND) || !len->OperIs(GT_MDARR_LENGTH))
+    {
+        return false;
+    }
+
+    GenTreeMDArr* const lowerNode = lower->AsMDArr();
+    GenTreeMDArr* const lenNode   = len->AsMDArr();
+
+    if ((lowerNode->Dim() != lenNode->Dim()) || (lowerNode->Rank() != lenNode->Rank()))
+    {
+        return false;
+    }
+
+    GenTree* const arr1 = lowerNode->ArrRef();
+    GenTree* const arr2 = lenNode->ArrRef();
+
+    if (!arr1->OperIs(GT_LCL_VAR) || !arr2->OperIs(GT_LCL_VAR))
+    {
+        return false;
+    }
+
+    if (arr1->AsLclVarCommon()->GetLclNum() != arr2->AsLclVarCommon()->GetLclNum())
+    {
+        return false;
+    }
+
+    Compiler* const comp   = m_dfsTree->GetCompiler();
+    const unsigned  arrLcl = arr1->AsLclVarCommon()->GetLclNum();
+
+    if (comp->lvaGetDesc(arrLcl)->IsAddressExposed())
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* def = FindDef(arrLcl);
+    if (def != nullptr)
+    {
+        return false;
+    }
+
+    info->BoundedRangeArrLcl = arrLcl;
+    info->BoundedRangeDim    = lowerNode->Dim();
+    info->BoundedRangeRank   = lowerNode->Rank();
+    return true;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoop::MDArrayBoundedRangeInitMatches:
+//   For a loop tentatively recognized as iterating the bounded range of an
+//   MD array dimension (HasMDArrayBoundedRangeLoop set by MatchLimit),
+//   verify that the iter var's init is `MDARR_LOWER_BOUND(arr, d, r)` for
+//   the same (arr, d, r). The init is searched for in the preheader.
+//
+// Parameters:
+//   iterVar   - the loop's induction variable
+//   initBlock - block to scan for the init (typically the preheader)
+//   info      - loop info holding the expected BoundedRangeArrLcl/Dim/Rank
+//
+// Returns:
+//   True if the init matches; false otherwise.
+//
+bool FlowGraphNaturalLoop::MDArrayBoundedRangeInitMatches(unsigned             iterVar,
+                                                          BasicBlock*          initBlock,
+                                                          NaturalLoopIterInfo* info)
+{
+    assert(info->HasMDArrayBoundedRangeLoop);
+
+    // Walk backward through unique predecessors looking for the iter var's
+    // initialization; mirrors FindConstInit. Stop at the first statement that
+    // either stores to iterVar (whether matching or not) or that contains any
+    // other store to iterVar (preventing us from looking past a non-matching
+    // definition).
+    BasicBlock* curBlock = initBlock;
+    while (curBlock != nullptr)
+    {
+        Statement* stmt = curBlock->lastStmt();
+        if (stmt != nullptr)
+        {
+            while (true)
+            {
+                GenTree* tree = stmt->GetRootNode();
+                if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVarCommon()->GetLclNum() == iterVar))
+                {
+                    GenTree* const data = tree->AsLclVarCommon()->Data();
+                    if (!data->OperIs(GT_MDARR_LOWER_BOUND))
+                    {
+                        return false;
+                    }
+
+                    GenTreeMDArr* const mdNode = data->AsMDArr();
+                    if ((mdNode->Dim() != info->BoundedRangeDim) || (mdNode->Rank() != info->BoundedRangeRank))
+                    {
+                        return false;
+                    }
+
+                    GenTree* const arr = mdNode->ArrRef();
+                    if (!arr->OperIs(GT_LCL_VAR) || (arr->AsLclVarCommon()->GetLclNum() != info->BoundedRangeArrLcl))
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                if (m_dfsTree->GetCompiler()->gtTreeHasLocalStore(tree, iterVar))
+                {
+                    return false;
+                }
+
+                if (stmt == curBlock->firstStmt())
+                {
+                    break;
+                }
+
+                stmt = stmt->GetPrevStmt();
+            }
+        }
+
+        curBlock = curBlock->GetUniquePred(m_dfsTree->GetCompiler());
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -7020,6 +7252,31 @@ unsigned NaturalLoopIterInfo::VarLimit()
     GenTree* limit = LimitBase();
     assert(limit->OperIs(GT_LCL_VAR));
     return limit->AsLclVarCommon()->GetLclNum();
+}
+
+//------------------------------------------------------------------------
+// MDArrayLengthLimit: Extract the array local, dim, and rank for an MD-array
+// per-dim length limit `MDARR_LENGTH(arr, dim, rank)`.
+//
+// Parameters:
+//   arrLcl - [out] loop-invariant array local
+//   dim    - [out] dimension index
+//   rank   - [out] total rank of the MD array
+//
+// Remarks:
+//   Only valid if HasMDArrayLengthLimit is true.
+//
+void NaturalLoopIterInfo::MDArrayLengthLimit(unsigned* arrLcl, unsigned* dim, unsigned* rank)
+{
+    assert(HasMDArrayLengthLimit);
+    GenTree* limit = LimitBase();
+    assert(limit->OperIs(GT_MDARR_LENGTH));
+    GenTreeMDArr* mdLen = limit->AsMDArr();
+    GenTree*      arr   = mdLen->ArrRef();
+    assert(arr->OperIs(GT_LCL_VAR));
+    *arrLcl = arr->AsLclVarCommon()->GetLclNum();
+    *dim    = mdLen->Dim();
+    *rank   = mdLen->Rank();
 }
 
 //------------------------------------------------------------------------

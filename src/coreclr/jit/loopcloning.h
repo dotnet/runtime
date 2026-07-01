@@ -286,38 +286,35 @@ struct LcOptInfo
 
 /**
  *
- * Optimization info for a multi-dimensional array.
+ * Optimization info for a multi-dimensional array per-dimension bounds check.
+ *
+ * Captures one dimension's bounds check after fgMorphArrayOps has lowered
+ * GT_ARR_ELEM into the per-dim form:
+ *   COMMA(STORE_LCL_VAR(effIdx, SUB(origIdx, MDARR_LOWER_BOUND(arr, dim, rank))),
+ *         COMMA(BOUNDS_CHECK(effIdx, MDARR_LENGTH(arr, dim, rank)), LCL_VAR effIdx))
+ *
+ * Cloning emits `origIdx < MDARR_LENGTH(arr, dim, rank)` as a fast-path
+ * guard and strips the corresponding BOUNDS_CHECK on the fast clone.
  */
 struct LcMdArrayOptInfo : public LcOptInfo
 {
-    GenTreeArrElem* arrElem; // "arrElem" node of an MD array.
-    unsigned        dim;     // "dim" represents up to what level of the rank this optimization applies to.
-                             //    For example, a[i,j,k] could be the MD array "arrElem" but if "dim" is 2,
-                             //    then this node is treated as though it were a[i,j]
-    ArrIndex* index;         // "index" cached computation in the form of an ArrIndex representation.
+    unsigned    arrLcl;       // The MD array local
+    unsigned    dim;          // Which dimension this bounds check covers (0-based)
+    unsigned    rank;         // Total rank of the MD array
+    GenTree*    bndsChkComma; // Outer COMMA containing the STORE_LCL_VAR + BOUNDS_CHECK COMMA
+    BasicBlock* useBlock;     // Block containing the bounds check
+    Statement*  stmt;         // Statement containing the bounds check
 
-    LcMdArrayOptInfo(GenTreeArrElem* arrElem, unsigned dim)
+    LcMdArrayOptInfo(
+        unsigned arrLcl, unsigned dim, unsigned rank, GenTree* bndsChkComma, BasicBlock* useBlock, Statement* stmt)
         : LcOptInfo(LcMdArray)
-        , arrElem(arrElem)
+        , arrLcl(arrLcl)
         , dim(dim)
-        , index(nullptr)
+        , rank(rank)
+        , bndsChkComma(bndsChkComma)
+        , useBlock(useBlock)
+        , stmt(stmt)
     {
-    }
-
-    ArrIndex* GetArrIndexForDim(CompAllocator alloc)
-    {
-        if (index == nullptr)
-        {
-            index       = new (alloc) ArrIndex(alloc);
-            index->rank = arrElem->gtArrRank;
-            for (unsigned i = 0; i < dim; ++i)
-            {
-                index->indLcls.Push(arrElem->gtArrInds[i]->AsLclVarCommon()->GetLclNum());
-            }
-            index->arrLcl  = arrElem->gtArrObj->AsLclVarCommon()->GetLclNum();
-            index->arrType = arrElem->gtArrObj->TypeGet();
-        }
-        return index;
     }
 };
 
@@ -439,6 +436,7 @@ struct LC_Array
     {
         None,
         ArrLen,
+        LowerBound,
     };
 
     ArrType   type;     // The type of the array on which to invoke length operator.
@@ -449,10 +447,21 @@ struct LC_Array
 #ifdef DEBUG
     void Print()
     {
-        arrIndex->Print(dim);
+        if (type == MdArray)
+        {
+            printf("V%02d", arrIndex->arrLcl);
+        }
+        else
+        {
+            arrIndex->Print(dim);
+        }
         if (oper == ArrLen)
         {
             printf(".Length");
+        }
+        else if (oper == LowerBound)
+        {
+            printf(".LowerBound(%d)", dim);
         }
     }
 #endif
@@ -460,9 +469,14 @@ struct LC_Array
     int dim; // "dim" = which index to invoke arrLen on, if -1 invoke on the whole array
              //     Example 1: a[0][1][2] and dim =  2 implies a[0][1].length
              //     Example 2: a[0][1][2] and dim = -1 implies a[0][1][2].length
+
+    // For MdArray: total rank of the array (passed to the GT_MDARR_LENGTH node).
+    unsigned mdRank;
+
     LC_Array()
         : type(Invalid)
         , dim(-1)
+        , mdRank(0)
     {
     }
     LC_Array(ArrType type, ArrIndex* arrIndex, int dim, OperType oper)
@@ -470,6 +484,7 @@ struct LC_Array
         , arrIndex(arrIndex)
         , oper(oper)
         , dim(dim)
+        , mdRank(0)
     {
     }
 
@@ -478,6 +493,7 @@ struct LC_Array
         , arrIndex(arrIndex)
         , oper(oper)
         , dim(-1)
+        , mdRank(0)
     {
     }
 
@@ -491,6 +507,11 @@ struct LC_Array
             arrIndex->arrType != that.arrIndex->arrType || oper != that.oper)
         {
             return false;
+        }
+
+        if (type == MdArray)
+        {
+            return (dim == that.dim) && (mdRank == that.mdRank);
         }
 
         // If the dim ranks are not matching, quit.
