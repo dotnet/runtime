@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.ObjectiveC
@@ -61,6 +62,16 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
         private static unsafe bool IsTrackedReferenceWithFinalizer(object obj)
             => RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer;
+
+        [StackTraceHidden]
+        internal static void ThrowPendingExceptionObject()
+        {
+            Exception? ex = System.StubHelpers.StubHelpers.GetPendingExceptionObject();
+            if (ex is not null)
+            {
+                ExceptionDispatchInfo.Throw(ex);
+            }
+        }
 
         [UnmanagedCallersOnly]
         internal static unsafe void* InvokeUnhandledExceptionPropagation(Exception* pExceptionArg, IntPtr methodDesc, IntPtr* pContext, Exception* pException)

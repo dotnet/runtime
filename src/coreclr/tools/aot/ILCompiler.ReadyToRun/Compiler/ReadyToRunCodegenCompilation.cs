@@ -22,6 +22,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ReadyToRun;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler
@@ -702,6 +703,7 @@ namespace ILCompiler
         private ManualResetEventSlim _compilationSessionComplete = new ManualResetEventSlim();
         private bool _hasCreatedCompilationThreads = false;
         private bool _hasAddedAsyncReferences = false;
+        private bool _hasAddedObjectiveCMarshalReferences = false;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -737,6 +739,9 @@ namespace ILCompiler
                         bool shouldBeCompiled = !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method);
                         if (method.IsAsyncCall() && shouldBeCompiled)
                             AddNecessaryAsyncReferences(method);
+
+                        if (method.IsPInvoke && shouldBeCompiled && MarshalHelpers.ShouldCheckForPendingException(method.Context.Target, method.GetPInvokeMethodMetadata()))
+                            AddNecessaryObjectiveCMarshalReferences(method);
 
                         if (method.IsCompilerGeneratedILBodyForAsync() && shouldBeCompiled)
                             EnsureAsyncThunkTokensAreAvailable(method);
@@ -1042,6 +1047,24 @@ namespace ILCompiler
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
             _hasAddedAsyncReferences = true;
+        }
+
+        private void AddNecessaryObjectiveCMarshalReferences(MethodDesc method)
+        {
+            if (_hasAddedObjectiveCMarshalReferences || TypeSystemContext.SystemModule is null)
+                return;
+
+            MetadataType objectiveCMarshalType = TypeSystemContext.SystemModule.GetType(
+                "System.Runtime.InteropServices.ObjectiveC"u8,
+                "ObjectiveCMarshal"u8,
+                throwIfNotFound: false);
+            if (objectiveCMarshalType is null)
+                return;
+
+            MethodDesc throwPendingExceptionObject = objectiveCMarshalType.GetKnownMethod("ThrowPendingExceptionObject"u8, null);
+            var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            _tokenManager.EnsureDefTokensAreAvailable([objectiveCMarshalType, throwPendingExceptionObject], moduleForNewReferences, false);
+            _hasAddedObjectiveCMarshalReferences = true;
         }
 
         public ISymbolNode GetFieldRvaData(FieldDesc field)
