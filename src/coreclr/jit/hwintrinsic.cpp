@@ -4450,8 +4450,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             if (sig->numArgs == 2)
             {
                 op3 = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
-                op2 = gtFoldExpr(gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3));
-                op1 = gtFoldExpr(gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2));
+                op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3);
+                op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 
             retNode = gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
@@ -5101,8 +5101,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             if (sig->numArgs == 3)
             {
                 op4 = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
-                op3 = gtFoldExpr(gtNewOperNode(GT_MUL, op3->TypeGet(), op3, op4));
-                op2 = gtFoldExpr(gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3));
+                op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, op4);
+                op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
             op1 = impSIMDPopStack();
@@ -5354,8 +5354,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             if (!isIndexConst)
             {
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseType, simdSize);
-
                 retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                break;
             }
 #endif
 
