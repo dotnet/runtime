@@ -173,6 +173,17 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewManagedSpan")]
         internal static partial SafeBioHandle BioNewManagedSpan();
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewSocketReplay")]
+        private static unsafe partial SafeBioHandle BioNewSocketReplay(IntPtr fd, byte* prefix, int prefixLen);
+
+        internal static unsafe SafeBioHandle BioNewSocketReplay(SafeSocketHandle socket, ReadOnlySpan<byte> prefix)
+        {
+            fixed (byte* pPrefix = prefix)
+            {
+                return BioNewSocketReplay(socket.DangerousGetHandle(), pPrefix, prefix.Length);
+            }
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
         internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);
 
@@ -488,11 +499,27 @@ namespace Microsoft.Win32.SafeHandles
         {
             SafeSocketHandle? socket = options.SocketHandle;
             bool useFd = socket is not null && !socket.IsInvalid;
+            byte[]? replayPrefix = useFd ? options.ReplayPrefix : null;
+            bool useReplayBio = useFd && replayPrefix is not null;
 
-            SafeBioHandle? readBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
-            SafeBioHandle? writeBio = useFd ? null : Interop.Ssl.BioNewManagedSpan();
+            SafeBioHandle? readBio = null;
+            SafeBioHandle? writeBio = null;
+            if (useReplayBio)
+            {
+                // Deferred-server flow: managed pre-fetched the ClientHello off the
+                // socket to run a ServerOptionsSelectionCallback. Install a BIO that
+                // replays those bytes to OpenSSL, then delegates recv/send to the fd.
+                readBio = Interop.Ssl.BioNewSocketReplay(socket!, replayPrefix);
+                writeBio = Interop.Ssl.BioNewSocketReplay(socket!, ReadOnlySpan<byte>.Empty);
+            }
+            else if (!useFd)
+            {
+                readBio = Interop.Ssl.BioNewManagedSpan();
+                writeBio = Interop.Ssl.BioNewManagedSpan();
+            }
+
             SafeSslHandle handle = Interop.Ssl.SslCreate(context);
-            if ((!useFd && (readBio!.IsInvalid || writeBio!.IsInvalid)) || handle.IsInvalid)
+            if (((readBio is not null) && (readBio.IsInvalid || writeBio!.IsInvalid)) || handle.IsInvalid)
             {
                 readBio?.Dispose();
                 writeBio?.Dispose();
@@ -507,7 +534,7 @@ namespace Microsoft.Win32.SafeHandles
             // CertificateValidationException; expose it via the options.
             options.SafeSslHandle = handle;
 
-            if (useFd)
+            if (useFd && !useReplayBio)
             {
                 if (Interop.Ssl.SslSetFd(handle, socket!) != 1)
                 {
@@ -534,6 +561,9 @@ namespace Microsoft.Win32.SafeHandles
                     throw;
                 }
             }
+
+            // Consumed exactly once: the BIO holds its own copy of the prefix bytes.
+            options.ReplayPrefix = null;
 
             if (options.IsServer)
             {

@@ -4,9 +4,13 @@
 #include "pal_bio.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 BIO* CryptoNative_CreateMemoryBio(void)
 {
@@ -479,3 +483,267 @@ int32_t CryptoNative_BioDrainSpill(BIO* bio, void* dst, int32_t dstLen)
     return toCopy;
 }
 
+/*
+ * Socket BIO with a replayable prefix
+ * -----------------------------------
+ *
+ * The deferred-server flow on OpenSSL sockets works like this: the managed
+ * TlsSession first uses its buffered (non-fd) path to peek the ClientHello
+ * off the socket so SNI is available to a ServerOptionsSelectionCallback.
+ * Once the caller resolves options via SetServerOptions, the session installs
+ * a real SSL* on the same socket. The ClientHello bytes are already sitting
+ * in the managed scratch and must not be re-read from the wire.
+ *
+ * This BIO holds a heap-owned copy of those prefix bytes. BIO_read drains the
+ * prefix first, then delegates to recv() on the stored fd. BIO_write always
+ * goes straight to send() on the fd. EAGAIN/EWOULDBLOCK maps to
+ * BIO_set_retry_{read,write} so the SSL state machine surfaces WANT_READ /
+ * WANT_WRITE and the managed handshake loop can wait for socket readiness.
+ *
+ * The BIO does not own the fd: the socket lifetime is managed by
+ * SafeSocketHandle. Destroy only frees the prefix buffer and the context.
+ */
+
+typedef struct
+{
+    uint8_t* prefix;
+    int32_t  prefixLen;
+    int32_t  prefixPos;
+    int      fd;
+} SocketReplayBioCtx;
+
+static SocketReplayBioCtx* GetSocketReplayBioCtx(BIO* bio)
+{
+    return (SocketReplayBioCtx*)BIO_get_data(bio);
+}
+
+static BIO_METHOD* g_socketReplayBioMethod = NULL;
+static pthread_once_t g_socketReplayBioOnce = PTHREAD_ONCE_INIT;
+
+static int SocketReplayBioRead(BIO* bio, char* buf, int len)
+{
+    if (bio == NULL || buf == NULL || len <= 0)
+    {
+        return 0;
+    }
+
+    BIO_clear_retry_flags(bio);
+
+    SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
+    if (ctx == NULL)
+    {
+        return -1;
+    }
+
+    // Drain any remaining prefix bytes first.
+    int32_t available = ctx->prefixLen - ctx->prefixPos;
+    if (available > 0)
+    {
+        int32_t toCopy = len < available ? len : available;
+        memcpy(buf, ctx->prefix + ctx->prefixPos, (size_t)toCopy);
+        ctx->prefixPos += toCopy;
+
+        // Free the prefix eagerly once fully drained; the BIO becomes a pure
+        // socket BIO from this point on.
+        if (ctx->prefixPos == ctx->prefixLen)
+        {
+            free(ctx->prefix);
+            ctx->prefix = NULL;
+            ctx->prefixLen = 0;
+            ctx->prefixPos = 0;
+        }
+        return toCopy;
+    }
+
+    // Prefix exhausted; delegate to the socket.
+    if (ctx->fd < 0)
+    {
+        return -1;
+    }
+
+    ssize_t n;
+    do
+    {
+        n = recv(ctx->fd, buf, (size_t)len, 0);
+    } while (n < 0 && errno == EINTR);
+
+    if (n > 0)
+    {
+        return (int)n;
+    }
+
+    if (n == 0)
+    {
+        // Peer closed the connection cleanly. Return 0 without setting retry
+        // flags so SSL_get_error reports SSL_ERROR_ZERO_RETURN / SYSCALL.
+        return 0;
+    }
+
+    if (errno == EAGAIN || errno == EWOULDBLOCK)
+    {
+        BIO_set_retry_read(bio);
+    }
+    return -1;
+}
+
+static int SocketReplayBioWrite(BIO* bio, const char* buf, int len)
+{
+    if (bio == NULL || buf == NULL || len < 0)
+    {
+        return 0;
+    }
+
+    BIO_clear_retry_flags(bio);
+
+    if (len == 0)
+    {
+        return 0;
+    }
+
+    SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
+    if (ctx == NULL || ctx->fd < 0)
+    {
+        return -1;
+    }
+
+    ssize_t n;
+    do
+    {
+#ifdef MSG_NOSIGNAL
+        n = send(ctx->fd, buf, (size_t)len, MSG_NOSIGNAL);
+#else
+        n = send(ctx->fd, buf, (size_t)len, 0);
+#endif
+    } while (n < 0 && errno == EINTR);
+
+    if (n > 0)
+    {
+        return (int)n;
+    }
+
+    if (errno == EAGAIN || errno == EWOULDBLOCK)
+    {
+        BIO_set_retry_write(bio);
+    }
+    return -1;
+}
+
+static long SocketReplayBioCtrl(BIO* bio, int cmd, long num, void* ptr)
+{
+    (void)bio;
+    (void)num;
+    (void)ptr;
+
+    if (cmd == BIO_CTRL_FLUSH)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+static int SocketReplayBioCreate(BIO* bio)
+{
+    SocketReplayBioCtx* ctx = (SocketReplayBioCtx*)calloc(1, sizeof(SocketReplayBioCtx));
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    ctx->fd = -1;
+
+    BIO_set_data(bio, ctx);
+    BIO_set_init(bio, 1);
+    return 1;
+}
+
+static int SocketReplayBioDestroy(BIO* bio)
+{
+    if (bio == NULL)
+    {
+        return 0;
+    }
+
+    SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
+    if (ctx != NULL)
+    {
+        free(ctx->prefix);
+        free(ctx);
+        BIO_set_data(bio, NULL);
+    }
+    BIO_set_init(bio, 0);
+    return 1;
+}
+
+static void SocketReplayBioMethodInit(void)
+{
+    int index = BIO_get_new_index();
+    if (index == -1)
+    {
+        return;
+    }
+
+    BIO_METHOD* method = BIO_meth_new(index | BIO_TYPE_SOURCE_SINK, "dotnet-socket-replay");
+    if (method == NULL)
+    {
+        return;
+    }
+
+    if (!BIO_meth_set_write(method, SocketReplayBioWrite) ||
+        !BIO_meth_set_read(method, SocketReplayBioRead) ||
+        !BIO_meth_set_ctrl(method, SocketReplayBioCtrl) ||
+        !BIO_meth_set_create(method, SocketReplayBioCreate) ||
+        !BIO_meth_set_destroy(method, SocketReplayBioDestroy))
+    {
+        BIO_meth_free(method);
+        return;
+    }
+
+    g_socketReplayBioMethod = method;
+}
+
+static BIO_METHOD* GetSocketReplayBioMethod(void)
+{
+    pthread_once(&g_socketReplayBioOnce, SocketReplayBioMethodInit);
+    return g_socketReplayBioMethod;
+}
+
+BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t prefixLen)
+{
+    ERR_clear_error();
+
+    if (fd < 0 || prefixLen < 0)
+    {
+        return NULL;
+    }
+
+    BIO_METHOD* method = GetSocketReplayBioMethod();
+    if (method == NULL)
+    {
+        return NULL;
+    }
+
+    BIO* bio = BIO_new(method);
+    if (bio == NULL)
+    {
+        return NULL;
+    }
+
+    SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
+    assert(ctx != NULL);
+    ctx->fd = (int)fd;
+
+    if (prefixLen > 0)
+    {
+        uint8_t* copy = (uint8_t*)malloc((size_t)prefixLen);
+        if (copy == NULL)
+        {
+            BIO_free(bio);
+            return NULL;
+        }
+        memcpy(copy, prefix, (size_t)prefixLen);
+        ctx->prefix = copy;
+        ctx->prefixLen = prefixLen;
+    }
+
+    return bio;
+}

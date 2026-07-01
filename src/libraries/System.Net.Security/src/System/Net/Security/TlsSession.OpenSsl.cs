@@ -15,15 +15,74 @@ namespace System.Net.Security
         // managed ProcessHandshake/Encrypt/Decrypt loop and its scratch buffers.
         private bool _useFdMode;
 
+        // Socket that will be bound to OpenSSL once server options are resolved.
+        // Non-null only in the deferred-server socket-bound flow: the session
+        // returns nativeBindingEnabled=false so the managed pre-fetch loop can
+        // parse the ClientHello and surface NeedsServerOptions. OnServerOptionsSet
+        // then activates fd-mode with the peeked bytes replayed via the socket BIO.
+        private SafeSocketHandle? _pendingFdSocket;
+
         // Bind the socket directly to the SSL object so OpenSSL drives ciphertext
         // I/O itself. AllocateSslHandle inspects options.SocketHandle and skips
         // the ManagedSpanBio installation when set. With fd-mode active, no
         // managed Socket wrapper is needed - OpenSSL calls recv/send on the fd.
+        //
+        // Server sessions created without options up front (SNI-driven callback)
+        // cannot go fd-mode immediately: SSL_set_fd would let OpenSSL consume the
+        // ClientHello before managed code sees SNI. Defer binding until
+        // OnServerOptionsSet runs; until then the session uses the managed loop.
         partial void EnableNativeSocketBinding(SafeSocketHandle socket, ref bool nativeBindingEnabled)
         {
+            if (_context.IsServer && !_hasServerOptions)
+            {
+                _pendingFdSocket = socket;
+                nativeBindingEnabled = false;
+                return;
+            }
+
             _options.SocketHandle = socket;
             _useFdMode = true;
             nativeBindingEnabled = true;
+        }
+
+        // Activated when the caller supplies server options in response to
+        // NeedsServerOptions. In the deferred socket-bound flow, hand the peeked
+        // ClientHello bytes to a socket-replay BIO so OpenSSL sees them, then
+        // switch subsequent Handshake/Read/Write calls onto the fd-mode fast path.
+        partial void OnServerOptionsSet()
+        {
+            if (_pendingFdSocket is null)
+            {
+                return;
+            }
+
+            // Handoff order matters. Publish the prefetch bytes to the options
+            // *before* nulling the managed pre-fetch state so AllocateSslHandle
+            // sees a stable snapshot. The BIO holds its own copy; the options
+            // field is cleared once consumed inside SafeSslHandle.Create.
+            if (_socketInUsed > 0)
+            {
+                byte[] prefix = new byte[_socketInUsed];
+                Buffer.BlockCopy(_socketInBuf!, 0, prefix, 0, _socketInUsed);
+                _options.ReplayPrefix = prefix;
+            }
+
+            _options.SocketHandle = _pendingFdSocket;
+            _pendingFdSocket = null;
+
+            // Keep the managed Socket wrapper alive so session Dispose still owns
+            // the fd (OpenSSL only holds the raw fd number after SSL_set_fd). It's
+            // unused from this point; all traffic goes through the SSL* directly.
+
+            // Return the pre-fetch buffer; the replay BIO now owns those bytes.
+            if (_socketInBuf is not null)
+            {
+                System.Buffers.ArrayPool<byte>.Shared.Return(_socketInBuf);
+                _socketInBuf = null;
+                _socketInUsed = 0;
+            }
+
+            _useFdMode = true;
         }
 
         partial void TryFastHandshake(ref TlsOperationStatus? result)

@@ -411,6 +411,8 @@ namespace System.Net.Security
             _options.UpdateOptions(options);
             _hasServerOptions = true;
             _clientHelloInfo = null;
+
+            OnServerOptionsSet();
         }
 
         /// <summary>
@@ -1909,6 +1911,11 @@ namespace System.Net.Security
         partial void TryFastHandshake(ref TlsOperationStatus? result);
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result);
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result);
+
+        // Fires at the end of SetServerOptions. Platforms with a deferred-server
+        // fast path (OpenSSL socket-bound sessions) use this hook to activate
+        // native binding now that server options are known.
+        partial void OnServerOptionsSet();
 
         public void Dispose()
         {
