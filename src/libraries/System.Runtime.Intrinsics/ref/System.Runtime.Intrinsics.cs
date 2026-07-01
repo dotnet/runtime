@@ -10570,6 +10570,28 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
+    public abstract class AvxIfma : System.Runtime.Intrinsics.X86.Avx2
+    {
+        internal AvxIfma() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<ulong> MultiplyAdd52Low(System.Runtime.Intrinsics.Vector128<ulong> addend, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> MultiplyAdd52High(System.Runtime.Intrinsics.Vector128<ulong> addend, System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ulong> MultiplyAdd52Low(System.Runtime.Intrinsics.Vector256<ulong> addend, System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ulong> MultiplyAdd52High(System.Runtime.Intrinsics.Vector256<ulong> addend, System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<ulong> MultiplyAdd52Low(System.Runtime.Intrinsics.Vector512<ulong> addend, System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ulong> MultiplyAdd52High(System.Runtime.Intrinsics.Vector512<ulong> addend, System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
     public abstract partial class Bmi1 : System.Runtime.Intrinsics.X86.X86Base
     {
         internal Bmi1() { }
