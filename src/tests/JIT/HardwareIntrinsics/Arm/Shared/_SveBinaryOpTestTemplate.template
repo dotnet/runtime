@@ -313,7 +313,9 @@ namespace {Namespace}
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_TrueValue(Vector<{RetBaseType}> mask, Vector<{Op1BaseType}> op1, Vector<{Op2BaseType}> op2, Vector<{RetBaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2), falseOp);
+            var result = (falseOp == Vector<{RetBaseType}>.Zero) ?
+                         Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2), Vector<{RetBaseType}>.Zero) :
+                         Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2), falseOp);
             ValidateConditionalSelectResult(mask, op1, op2, falseOp, result);
         }
 

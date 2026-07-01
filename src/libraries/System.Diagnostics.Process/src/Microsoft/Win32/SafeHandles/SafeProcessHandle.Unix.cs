@@ -8,6 +8,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
+using System.Security;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -205,8 +208,6 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
         {
-            waitStateHolder = null;
-
             ProcessUtils.EnsureInitialized();
 
             if (startInfo.UseShellExecute)
@@ -214,7 +215,7 @@ namespace Microsoft.Win32.SafeHandles
                 return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle, out waitStateHolder);
             }
 
-            string? filename;
+            string filename;
             string[] argv;
 
             IDictionary<string, string?> env = startInfo.Environment;
@@ -231,12 +232,8 @@ namespace Microsoft.Win32.SafeHandles
 
             bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
-            filename = ProcessUtils.ResolvePath(startInfo.FileName);
+            filename = ProcessUtils.ResolveValidPath(startInfo.FileName, cwd);
             argv = ProcessUtils.ParseArgv(startInfo);
-            if (Directory.Exists(filename))
-            {
-                throw new Win32Exception(SR.DirectoryNotValidAsInput);
-            }
 
             return ForkAndExecProcess(
                 startInfo, filename, argv, env, cwd,
@@ -244,6 +241,116 @@ namespace Microsoft.Win32.SafeHandles
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                 inheritedHandles,
                 out waitStateHolder);
+        }
+
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinFd, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
+            Func<UnixProcessStartArguments, int> callback, out ProcessWaitState.Holder? waitStateHolder)
+        {
+            waitStateHolder = null;
+            ProcessUtils.EnsureInitialized();
+
+            string resolvedFileName = ProcessUtils.ResolveValidPath(startInfo.FileName, startInfo.WorkingDirectory);
+
+            string[] argv = ProcessUtils.ParseArgv(startInfo);
+            bool configuredTerminal = false, usesTerminal = UsesTerminal(stdinFd, stdoutHandle, stderrHandle);
+            byte** argvPtr = null, envpPtr = null;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+            scoped Utf8StringMarshaller.ManagedToUnmanagedIn resolvedPathMarshaller = default;
+            Span<byte> resolvedPathBuffer = stackalloc byte[Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize];
+
+            try
+            {
+                Interop.Sys.AllocArgvArray(argv, ref argvPtr);
+                Interop.Sys.AllocEnvpArray(startInfo.Environment, ref envpPtr);
+
+                resolvedPathMarshaller.FromManaged(resolvedFileName, resolvedPathBuffer);
+
+                nint stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
+
+                if (stdinFd is not null)
+                {
+                    stdinFd.DangerousAddRef(ref stdinRefAdded);
+                    stdinRawFd = stdinFd.DangerousGetHandle();
+                }
+
+                if (stdoutHandle is not null)
+                {
+                    stdoutHandle.DangerousAddRef(ref stdoutRefAdded);
+                    stdoutRawFd = stdoutHandle.DangerousGetHandle();
+                }
+
+                if (stderrHandle is not null)
+                {
+                    stderrHandle.DangerousAddRef(ref stderrRefAdded);
+                    stderrRawFd = stderrHandle.DangerousGetHandle();
+                }
+
+                UnixProcessStartArguments args = new(
+                    resolvedPathMarshaller.ToUnmanaged(),
+                    argvPtr,
+                    envpPtr,
+                    stdinRawFd,
+                    stdoutRawFd,
+                    stderrRawFd,
+                    startInfo);
+
+                // Lock to avoid races with OnSigChild
+                // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+                ProcessUtils.s_processStartLock.EnterReadLock();
+
+                try
+                {
+                    if (usesTerminal)
+                    {
+                        ProcessUtils.ConfigureTerminalForChildProcesses(1);
+                        configuredTerminal = true;
+                    }
+
+                    int processId = callback(args);
+                    if (processId <= 0)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidProcessId, nameof(callback));
+                    }
+
+                    waitStateHolder = new ProcessWaitState.Holder(processId, isNewChild: true, usesTerminal);
+                    return new SafeProcessHandle(waitStateHolder!);
+                }
+                finally
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
+                }
+            }
+            catch
+            {
+                if (configuredTerminal)
+                {
+                    // We failed to launch a child that could use the terminal.
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
+                    ProcessUtils.ConfigureTerminalForChildProcesses(-1);
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (stdinRefAdded)
+                {
+                    stdinFd!.DangerousRelease();
+                }
+                if (stdoutRefAdded)
+                {
+                    stdoutHandle!.DangerousRelease();
+                }
+                if (stderrRefAdded)
+                {
+                    stderrHandle!.DangerousRelease();
+                }
+
+                NativeMemory.Free(envpPtr);
+                NativeMemory.Free(argvPtr);
+                resolvedPathMarshaller.Free();
+            }
         }
 
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
