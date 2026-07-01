@@ -3956,6 +3956,15 @@ public:
     bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
     bool gtTreeHasLocalStore(GenTree* tree, unsigned lclNum);
 
+    // Returns true iff the LCLHEAP node "tree" must zero-initialize its
+    // allocation, either because the method requests init-mem semantics or
+    // because the node carries the GTF_LCLHEAP_MUSTINIT flag.
+    bool gtMustZeroLocalloc(GenTree* tree)
+    {
+        assert(tree->OperIs(GT_LCLHEAP));
+        return info.compInitMem || ((tree->gtFlags & GTF_LCLHEAP_MUSTINIT) != 0);
+    }
+
     void gtSetStmtInfo(Statement* stmt);
 
     // Returns "true" iff "node" has any of the side effects in "flags".
@@ -6634,7 +6643,10 @@ public:
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandStackArrayAllocations();
-    bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
+    bool fgExpandStackArrayAllocation(BasicBlock*  pBlock,
+                                      Statement*   stmt,
+                                      GenTreeCall* call,
+                                      unsigned&    frameRunningTotalLclNum);
 
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);

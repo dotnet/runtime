@@ -538,6 +538,8 @@ enum GenTreeFlags : unsigned
 
     GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
+    GTF_LCLHEAP_MUSTINIT = 0x80000000, // GT_LCLHEAP -- allocation must be zeroed
+
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
@@ -4813,6 +4815,7 @@ enum class WellKnownArg : unsigned
     SwiftSelf,
     X86TailCallSpecialArg,
     StackArrayLocal,
+    StackArrayElemSize,
     RuntimeMethodHandle,
     AsyncExecutionContext,
     AsyncSynchronizationContext,

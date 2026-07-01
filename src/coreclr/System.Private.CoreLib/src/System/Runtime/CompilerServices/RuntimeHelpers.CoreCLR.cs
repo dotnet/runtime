@@ -328,6 +328,50 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
+        internal static unsafe bool CanStackAllocate(nuint size, nuint* allocatedInFrame)
+        {
+            nuint stackBase;
+            nuint stackLimit;
+            GetStackBounds(&stackBase, &stackLimit);
+
+            nuint currentStackAddress = (nuint)(&stackBase);
+            if ((stackLimit == 0) ||
+                (stackBase <= stackLimit) ||
+                (currentStackAddress <= stackLimit) ||
+                (currentStackAddress >= stackBase))
+            {
+                // Unknown or unexpected stack bounds: use the heap.
+                return false;
+            }
+
+            nuint stackSize = stackBase - stackLimit;
+            nuint stackUsed = stackBase - currentStackAddress;
+            if (stackUsed >= (stackSize >> 1))
+            {
+                // The stack is already at least half consumed.
+                return false;
+            }
+
+            nuint remainingStack = currentStackAddress - stackLimit;
+            // 1/128th of remaining stack; about 8 KB when 1 MB remains.
+            nuint stackAllocationLimit = remainingStack >> 7;
+            nuint newAllocatedInFrame = *allocatedInFrame + size;
+            if ((newAllocatedInFrame < *allocatedInFrame) ||
+                (size > stackAllocationLimit) ||
+                (newAllocatedInFrame > stackAllocationLimit))
+            {
+                // Overflow, request too large, or this frame has used too much stack.
+                return false;
+            }
+
+            *allocatedInFrame = newAllocatedInFrame;
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void GetStackBounds(nuint* stackBase, nuint* stackLimit);
+
         public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
             // A type is seen as constructed if a constructor is kept.
