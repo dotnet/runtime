@@ -2809,6 +2809,7 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
 
     for (BasicBlock* const block : Blocks())
     {
+        bool blockModified = false;
         for (Statement* const stmt : block->Statements())
         {
             if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
@@ -2823,14 +2824,27 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
                     continue;
                 }
 
-                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall(), frameRunningTotalLclNum))
+                GenTreeCall* const call = tree->AsCall();
+                const bool isLocAlloc   = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayElemSize) != nullptr;
+                if (fgExpandStackArrayAllocation(block, stmt, call, frameRunningTotalLclNum))
                 {
                     // If we expand, we split the statement's tree
-                    // so will be done with this statment.
+                    // so will be done with this statement. Localloc expansion
+                    // also moves the statement to a new block, so the current
+                    // block's statement iterator is no longer valid.
                     //
                     modified = true;
+                    if (isLocAlloc)
+                    {
+                        blockModified = true;
+                    }
                     break;
                 }
+            }
+
+            if (blockModified)
+            {
+                break;
             }
         }
     }
