@@ -36,5 +36,12 @@ namespace System.Text.Json.SourceGeneration
         public required ImmutableEquatableArray<string> ContextClassDeclarations { get; init; }
 
         public required SourceGenerationOptionsSpec? GeneratedOptionsSpec { get; init; }
+
+        /// <summary>
+        /// The union of every generated type's <see cref="TypeGenerationSpec.ExperimentalDiagnosticIds"/>,
+        /// used to suppress <c>[Experimental]</c> diagnostics in the aggregate source files that reference
+        /// all registered types by name.
+        /// </summary>
+        public required ImmutableEquatableArray<string> ExperimentalDiagnosticIds { get; init; }
     }
 }

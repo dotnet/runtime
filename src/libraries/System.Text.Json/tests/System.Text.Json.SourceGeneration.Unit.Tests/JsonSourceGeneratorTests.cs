@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Tests;
 using Microsoft.CodeAnalysis;
@@ -964,29 +965,324 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
+        [Theory]
+        [MemberData(nameof(ExperimentalSuppressionSources))]
+        public void ExperimentalMemberUsage_IsSuppressedByDefault(string scenario, string source)
+        {
+            _ = scenario;
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            // RunJsonSourceGenerator's default validation asserts the resulting compilation has no
+            // warnings or errors (max severity Info). That whole-compilation check is what enforces
+            // suppression: if the generated code left any experimental ID unsuppressed -- or emitted
+            // any other lurking warning -- this call fails. A narrow "no EXP diagnostics" filter would
+            // miss those other warnings.
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
         [Fact]
-        public void PocoWithExperimentalProperty_NoJsonIgnore_EmitsDiagnostic()
+        public void ExperimentalConverterTypeArgument_IsSuppressed()
         {
             string source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP_TEST")]
+                public class MyExperimentalType { }
+
+                public class MyConverter<T> : JsonConverter<object>
+                {
+                    public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
+                    public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) { }
+                }
+
+                public class MyPoco
+                {
+                    #pragma warning disable EXP_TEST
+                    [JsonConverter(typeof(MyConverter<MyExperimentalType>))]
+                    #pragma warning restore EXP_TEST
+                    public object Prop { get; set; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+
+            var diagnostics = result.NewCompilation.GetDiagnostics();
+            var expDiagnostics = diagnostics.Where(d => d.Id == "EXP_TEST");
+            Assert.Empty(expDiagnostics);
+        }
+
+
+        public static IEnumerable<object[]> ExperimentalSuppressionSources()
+        {
+            // Experimental property member: the generated getter/setter is the sole usage.
+            yield return new object[]
+            {
+                "ExperimentalProperty",
+                """
                 using System.Diagnostics.CodeAnalysis;
                 using System.Text.Json.Serialization;
 
                 public class MyPoco
                 {
                     [Experimental("EXP001")]
-                    public int ExperimentalProperty { get; set; }
+                    public int Value { get; set; }
                 }
 
                 [JsonSerializable(typeof(MyPoco))]
-                public partial class MyContext : JsonSerializerContext
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Experimental field member (fields included): the generated field access is the sole usage.
+            yield return new object[]
+            {
+                "ExperimentalField",
+                """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
                 {
+                    [Experimental("EXP002")]
+                    public int Value;
                 }
+
+                [JsonSourceGenerationOptions(IncludeFields = true)]
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Experimental property type: the user's own declaration is suppressed, leaving generated code.
+            yield return new object[]
+            {
+                "ExperimentalPropertyType",
+                """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP003")]
+                public class Widget { public int X { get; set; } }
+
+                public class MyPoco
+                {
+                #pragma warning disable EXP003
+                    public Widget W { get; set; }
+                #pragma warning restore EXP003
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Experimental serializable type itself: the user's [JsonSerializable] usage is suppressed.
+            yield return new object[]
+            {
+                "ExperimentalSerializableType",
+                """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP004")]
+                public class Widget { public int X { get; set; } }
+
+                #pragma warning disable EXP004
+                [JsonSerializable(typeof(Widget))]
+                #pragma warning restore EXP004
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Experimental constructor: the generated 'new Widget()' is the sole usage.
+            yield return new object[]
+            {
+                "ExperimentalConstructor",
+                """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class Widget
+                {
+                    [Experimental("EXP005")]
+                    public Widget() { }
+                    public int X { get; set; }
+                }
+
+                [JsonSerializable(typeof(Widget))]
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Polymorphic experimental derived type (dotnet/runtime#119451): the [JsonDerivedType] usage is suppressed.
+            yield return new object[]
+            {
+                "ExperimentalDerivedType",
+                """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP006")]
+                public class Derived : Base { public int Y { get; set; } }
+
+                #pragma warning disable EXP006
+                [JsonDerivedType(typeof(Derived), "derived")]
+                #pragma warning restore EXP006
+                public class Base { public int X { get; set; } }
+
+                [JsonSerializable(typeof(Base))]
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Experimental converter: the generated 'new WidgetConverter()' is suppressed.
+            yield return new object[]
+            {
+                "ExperimentalConverter",
+                """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP007")]
+                public class WidgetConverter : JsonConverter<ConvertedWidget>
+                {
+                    public override ConvertedWidget Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new ConvertedWidget();
+                    public override void Write(Utf8JsonWriter writer, ConvertedWidget value, JsonSerializerOptions options) { }
+                }
+
+                #pragma warning disable EXP007
+                [JsonConverter(typeof(WidgetConverter))]
+                #pragma warning restore EXP007
+                public class ConvertedWidget { public int X { get; set; } }
+
+                [JsonSerializable(typeof(ConvertedWidget))]
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Mixed experimental and obsolete members on the same type; both are suppressed.
+            yield return new object[]
+            {
+                "MixedExperimentalAndObsolete",
+                """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    [Experimental("EXP008")]
+                    public int Experimental { get; set; }
+
+                    [Obsolete("old")]
+                    public int Obsolete { get; set; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+
+            // Multiple distinct experimental IDs on a single type; each ID is suppressed.
+            yield return new object[]
+            {
+                "MultipleDistinctIds",
+                """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    [Experimental("EXP009")]
+                    public int A { get; set; }
+
+                    [Experimental("EXP010")]
+                    public int B { get; set; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """
+            };
+        }
+
+        [Fact]
+        public void ExperimentalDiagnosticIds_AreScopedPerType()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP100")]
+                public class TypeA { public int X { get; set; } }
+
+                [Experimental("EXP200")]
+                public class TypeB { public int Y { get; set; } }
+
+                #pragma warning disable EXP100, EXP200
+                [JsonSerializable(typeof(TypeA))]
+                [JsonSerializable(typeof(TypeB))]
+                #pragma warning restore EXP100, EXP200
+                public partial class MyContext : JsonSerializerContext { }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            var result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
-            Assert.NotEmpty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP001"));
+            TypeGenerationSpec typeA = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "TypeA");
+            TypeGenerationSpec typeB = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "TypeB");
+
+            // Each type's generated file suppresses only its own experimental ID.
+            Assert.Equal(new[] { "EXP100" }, typeA.ExperimentalDiagnosticIds);
+            Assert.Equal(new[] { "EXP200" }, typeB.ExperimentalDiagnosticIds);
+
+            // The aggregate source files suppress the union of all per-type IDs.
+            Assert.Equal(new[] { "EXP100", "EXP200" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+        }
+
+        [Fact]
+        public void ExperimentalSuppression_DoesNotLeakToUserCode()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP300")]
+                public class Widget { public int X { get; set; } }
+
+                public class MyPoco
+                {
+                #pragma warning disable EXP300
+                    public Widget W { get; set; }
+                #pragma warning restore EXP300
+                }
+
+                public class Consumer
+                {
+                    public int Use() => new Widget().X;
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+
+            // The generated code suppresses its own references, but the unguarded user usage in Consumer.Use
+            // must still report the diagnostic (suppression is scoped to generated files). Exactly one match
+            // also confirms the generated files contributed none.
+            Diagnostic diagnostic = Assert.Single(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP300"));
+            Assert.False(diagnostic.Location.SourceTree?.FilePath.EndsWith(".g.cs", StringComparison.Ordinal) ?? false);
         }
 #endif
 
@@ -1241,3 +1537,4 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
     }
 }
+
