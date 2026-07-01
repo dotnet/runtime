@@ -1491,6 +1491,22 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_NullableDataContractStructAsRoot_DeserializesWithoutPriorInitialization()
+    {
+        // Regression: cold-cache deserialization of Nullable<T> for a [DataContract] struct
+        // must not throw SerializationException ("DataContract cache overflow").
+        const string xml = "<DataContractSerializerTests.NullableRootDataContractStruct" +
+            " xmlns=\"http://schemas.datacontract.org/2004/07/\"" +
+            " xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"/>";
+        var serializer = new DataContractSerializer(typeof(NullableRootDataContractStruct?));
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
+        var deserialized = (NullableRootDataContractStruct?)serializer.ReadObject(stream);
+
+        Assert.True(deserialized.HasValue);
+    }
+
+    [Fact]
     public static void DCS_SimpleStructWithProperties()
     {
         SimpleStructWithProperties x = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
@@ -1547,6 +1563,11 @@ public static partial class DataContractSerializerTests
     }
 
 #region private type has to be in with in the class
+    [DataContract]
+    private struct NullableRootDataContractStruct
+    {
+    }
+
     [DataContract]
     private class PrivateType
     {
