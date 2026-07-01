@@ -373,9 +373,9 @@ namespace System.Net.NameResolution.Tests
         {
             // The subdomain goes to OS resolver first. If it fails (likely on most systems),
             // it falls back to resolving plain "localhost", which should return loopback addresses.
-            // On Android/Apple mobile platforms the OS resolver may return non-loopback addresses
+            // On Apple mobile platforms the OS resolver may return non-loopback addresses
             // for *.localhost.
-            bool requireLoopback = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
+            bool requireLoopback = !PlatformDetection.IsAppleMobile;
 
             IPHostEntry entry = Dns.GetHostEntry(hostName);
             Assert.True(entry.AddressList.Length >= 1, "Expected at least one address");
@@ -421,8 +421,9 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostEntryAsync(hostName));
         }
 
-        // "localhost." (with trailing dot) should NOT be treated as a subdomain.
-        // It's equivalent to plain "localhost" and should resolve via OS resolver.
+        // "localhost." (fully-qualified form with trailing dot) is equivalent to plain "localhost"
+        // and must resolve to loopback, either directly via the OS resolver or via the RFC 6761
+        // fallback to plain "localhost" when the OS resolver doesn't handle the trailing dot.
         [Fact]
         public async Task DnsGetHostEntry_LocalhostWithTrailingDot_ReturnsLoopback()
         {
@@ -472,13 +473,13 @@ namespace System.Net.NameResolution.Tests
         // 1. The OS resolver is tried first for subdomains
         // 2. The OS may return different results (e.g., both IPv4+IPv6 vs IPv4 only)
         // 3. Different systems configure localhost differently
-        // On Android and Apple mobile the OS resolver may return non-loopback addresses
+        // On Apple mobile the OS resolver may return non-loopback addresses
         // for both plain "localhost" and "*.localhost" (e.g. link-local IPv6 or
         // multicast DNS results), so we only require any address to be returned there.
         [Fact]
         public async Task DnsGetHostEntry_LocalhostAndSubdomain_BothReturnLoopback()
         {
-            bool requireLoopback = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
+            bool requireLoopback = !PlatformDetection.IsAppleMobile;
 
             IPHostEntry localhostEntry = Dns.GetHostEntry("localhost");
             IPHostEntry subdomainEntry = Dns.GetHostEntry("foo.localhost");
@@ -510,7 +511,7 @@ namespace System.Net.NameResolution.Tests
         [InlineData("bar.test.localhost.")]
         public async Task DnsGetHostEntry_LocalhostSubdomainWithTrailingDot_ReturnsLoopback(string hostName)
         {
-            bool requireLoopback = !PlatformDetection.IsAppleMobile && !PlatformDetection.IsAndroid;
+            bool requireLoopback = !PlatformDetection.IsAppleMobile;
 
             IPHostEntry entry = Dns.GetHostEntry(hostName);
             Assert.True(entry.AddressList.Length >= 1, "Expected at least one address");
