@@ -27,11 +27,19 @@ public record struct ThreadStoreCounts(
 [Flags]
 public enum ThreadState
 {
-    Unknown             = 0x00000000,
+    Unknown             = 0x00000000,   // Threads are initialized this way
+    SuspensionTrapped   = 0x00000002,   // Thread is trapped waiting for suspension to complete (was in managed code)
+    GCSuspendRedirected = 0x00000004,   // Thread has been redirected to suspension routine
+    DebugSuspendPending = 0x00000008,   // Is the debugger suspending threads?
     Hijacked            = 0x00000080,   // Return address has been hijacked
     Background          = 0x00000200,   // Thread is a background thread
     Unstarted           = 0x00000400,   // Thread has never been started
+    CoInitialized       = 0x00002000,   // CoInitialize has been called for this thread
+    InSTA               = 0x00004000,   // Thread hosts an STA
+    InMTA               = 0x00008000,   // Thread is part of the MTA
     Stopped             = 0x00010000,   // Thread has started to shut down
+    SyncSuspended       = 0x00080000,   // Thread has suspended itself at a safe point in response to a debugger suspend request
+    DebugWillSync       = 0x00100000,   // Debugger will wait for this thread to sync
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
     WaitSleepJoin       = 0x02000000,   // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached

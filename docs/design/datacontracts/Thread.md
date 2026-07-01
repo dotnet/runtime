@@ -27,10 +27,18 @@ record struct ThreadStoreCounts (
 enum ThreadState
 {
     Unknown             = 0x00000000,    // threads are initialized this way
+    SuspensionTrapped   = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
+    GCSuspendRedirected = 0x00000004,    // Thread has been redirected to suspension routine
+    DebugSuspendPending = 0x00000008,    // Is the debugger suspending threads?
     Hijacked            = 0x00000080,    // Return address has been hijacked
     Background          = 0x00000200,    // Thread is a background thread
     Unstarted           = 0x00000400,    // Thread has never been started
+    CoInitialized       = 0x00002000,    // CoInitialize has been called for this thread
+    InSTA               = 0x00004000,    // Thread hosts an STA
+    InMTA               = 0x00008000,    // Thread is part of the MTA
     Stopped             = 0x00010000,    // Thread has started to shut down
+    SyncSuspended       = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request
+    DebugWillSync       = 0x00100000,    // Debugger will wait for this thread to sync
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
     WaitSleepJoin       = 0x02000000,    // Thread is in a Sleep(), Wait(), Join()
     Detached            = unchecked((int)0x80000000), // Thread was detached
@@ -248,7 +256,7 @@ ThreadData GetThreadData(TargetPointer address)
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
         OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
-        State: target.Read<uint>(address + /* Thread::State offset */) /* -> convert to contract enum */,
+        State: (ThreadState)(target.Read<uint>(address + /* Thread::State offset */) & /* mask of wrapped ThreadState bits */),
         PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,

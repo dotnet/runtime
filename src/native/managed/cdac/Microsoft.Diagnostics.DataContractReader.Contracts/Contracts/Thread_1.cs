@@ -23,10 +23,18 @@ internal readonly struct Thread_1 : IThread
     [Flags]
     private enum ThreadState_1
     {
+        SuspensionTrapped = 0x2,
+        GCSuspendRedirected = 0x4,
+        DebugSuspendPending = 0x8,
         Hijacked = 0x80,
         Background = 0x200,
         Unstarted = 0x400,
+        CoInitialized = 0x2000,
+        InSTA = 0x4000,
+        InMTA = 0x8000,
         Stopped = 0x10000,
+        SyncSuspended = 0x80000,
+        DebugWillSync = 0x100000,
         ThreadPoolWorker = 0x1000000,
         WaitSleepJoin = 0x2000000,
         Detached = unchecked((int)0x80000000)
@@ -81,18 +89,34 @@ internal readonly struct Thread_1 : IThread
     private static Contracts.ThreadState GetThreadState(ThreadState_1 state)
     {
         Contracts.ThreadState result = Contracts.ThreadState.Unknown;
+        if (state.HasFlag(ThreadState_1.SuspensionTrapped))
+            result |= Contracts.ThreadState.SuspensionTrapped;
+        if (state.HasFlag(ThreadState_1.GCSuspendRedirected))
+            result |= Contracts.ThreadState.GCSuspendRedirected;
+        if (state.HasFlag(ThreadState_1.DebugSuspendPending))
+            result |= Contracts.ThreadState.DebugSuspendPending;
         if (state.HasFlag(ThreadState_1.Hijacked))
             result |= Contracts.ThreadState.Hijacked;
         if (state.HasFlag(ThreadState_1.Background))
             result |= Contracts.ThreadState.Background;
         if (state.HasFlag(ThreadState_1.Unstarted))
             result |= Contracts.ThreadState.Unstarted;
+        if (state.HasFlag(ThreadState_1.CoInitialized))
+            result |= Contracts.ThreadState.CoInitialized;
+        if (state.HasFlag(ThreadState_1.InSTA))
+            result |= Contracts.ThreadState.InSTA;
+        if (state.HasFlag(ThreadState_1.InMTA))
+            result |= Contracts.ThreadState.InMTA;
         if (state.HasFlag(ThreadState_1.Stopped))
             result |= Contracts.ThreadState.Stopped;
-        if (state.HasFlag(ThreadState_1.WaitSleepJoin))
-            result |= Contracts.ThreadState.WaitSleepJoin;
+        if (state.HasFlag(ThreadState_1.SyncSuspended))
+            result |= Contracts.ThreadState.SyncSuspended;
+        if (state.HasFlag(ThreadState_1.DebugWillSync))
+            result |= Contracts.ThreadState.DebugWillSync;
         if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
             result |= Contracts.ThreadState.ThreadPoolWorker;
+        if (state.HasFlag(ThreadState_1.WaitSleepJoin))
+            result |= Contracts.ThreadState.WaitSleepJoin;
         if (state.HasFlag(ThreadState_1.Detached))
             result |= Contracts.ThreadState.Detached;
         return result;

@@ -505,10 +505,10 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
-        TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
+        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code). [cDAC] [Thread]: Contract depends on this value.
+        TS_GCSuspendRedirected    = 0x00000004,    // Thread has been redirected to suspension routine. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
+        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads? [cDAC] [Thread]: Contract depends on this value.
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
         TS_SyncBlockCleanup       = 0x00000020,    // The synch block needs to be cleaned up.
@@ -526,10 +526,10 @@ public:
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread
+        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_InSTA                  = 0x00004000,    // Thread hosts an STA
-        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA
+        TS_InSTA                  = 0x00004000,    // Thread hosts an STA. [cDAC] [Thread]: Contract depends on this value.
+        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA. [cDAC] [Thread]: Contract depends on this value.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         // Some bits that only have meaning for reporting the state to clients.
@@ -538,8 +538,8 @@ public:
 
         // unused                 = 0x00040000,
 
-        TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
-        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
+        TS_SyncSuspended          = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request. [cDAC] [Thread]: Contract depends on this value.
+        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync. [cDAC] [Thread]: Contract depends on this value.
 
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
                                                    // See comment for s_pWaitForStackCrawlEvent for reason.
@@ -560,7 +560,7 @@ public:
                                                    // We can clean up the unmanaged part now.
 
         TS_FailStarted            = 0x40000000,    // The thread fails during startup.
-        TS_Detached               = 0x80000000,    // Thread was detached by DllMain
+        TS_Detached               = 0x80000000,    // Thread was detached by DllMain. [cDAC] [Thread]: Contract depends on this value.
 
         // <TODO> @TODO: We need to reclaim the bits that have no concurrency issues (i.e. they are only
         //         manipulated by the owning thread) and move them off to a different DWORD.  Note if this
