@@ -2999,6 +2999,25 @@ namespace Internal.JitInterface
                 }
                 break;
 
+                case (InstructionSet.X64_AVXIFMA, TargetArchitecture.X64):
+                case (InstructionSet.X64_AVXIFMA_X64, TargetArchitecture.X64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "AvxIfma"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                        if (instructionSet == InstructionSet.X64_AVXIFMA_X64)
+                        {
+                            var nestedType = type.GetNestedType("X64"u8);
+                            if (nestedType != null)
+                            {
+                                yield return nestedType;
+                            }
+                        }
+                    }
+                }
+                break;
+
                 case (InstructionSet.X64_AVX512BMM, TargetArchitecture.X64):
                 {
                     var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "Avx512Bmm"u8, false);
@@ -3469,6 +3488,16 @@ namespace Internal.JitInterface
                 case (InstructionSet.X86_AVXVNNI, TargetArchitecture.X86):
                 {
                     var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "AvxVnni"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                    }
+                }
+                break;
+
+                case (InstructionSet.X86_AVXIFMA, TargetArchitecture.X86):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "AvxIfma"u8, false);
                     if (type != null)
                     {
                         yield return type;
