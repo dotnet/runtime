@@ -17,14 +17,17 @@ internal static partial class Interop
             HANDLE_FLAG_PROTECT_FROM_CLOSE = 2
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetHandleInformation(SafeHandle hObject, out HandleFlags lpdwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetHandleInformation(SafeHandle hObject, HandleFlags dwMask, HandleFlags dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetHandleInformation(nint hObject, HandleFlags dwMask, HandleFlags dwFlags);

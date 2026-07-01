@@ -1130,12 +1130,10 @@ namespace Internal.JitInterface
             if (method.IsPInvoke)
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
 
-#if READYTORUN
             if (method.RequireSecObject)
             {
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE_CALLER;
             }
-#endif
 
             if (method.IsAggressiveOptimization)
             {
@@ -1201,6 +1199,42 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
             // TODO: Inlining
+        }
+
+        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
+        {
+            if (!fIsTailPrefix)
+            {
+                MethodDesc caller = HandleToObject(callerHnd);
+
+                // Do not tailcall out of the entry point as it results in a confusing debugger experience.
+                if (caller is EcmaMethod em && em.Module.EntryPoint == caller)
+                {
+                    return false;
+                }
+
+                // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
+                // to mean "I want to always see this method in stacktrace")
+                if (caller.IsNoInlining)
+                {
+                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+                    // to emit fast tail calls if optimizations are disabled.
+                    return false;
+                }
+
+                // Methods with StackCrawlMark depend on finding their caller on the stack.
+                // If we tail call one of these guys, they get confused.  For lack of
+                // a better way of identifying them, we use DynamicSecurity attribute to identify
+                // them.
+                //
+                MethodDesc callee = exactCalleeHnd == null ? null : HandleToObject(exactCalleeHnd);
+                if (callee != null && callee.RequireSecObject)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void getMethodSig(CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent)
@@ -1484,6 +1518,74 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
+            bool isArray = decl.OwningType.IsInterface && objType.IsArray;
+            bool contextIsMethod = isArray || decl.HasInstantiation;
+#else
+            bool contextIsMethod = decl.HasInstantiation;
+#endif
+            MethodDesc instArgTarget = unboxingStub ? nonUnboxingImpl : impl;
+            bool requiresInstMethodDescArg = instArgTarget.RequiresInstMethodDescArg();
+            bool requiresInstMethodTableArg = instArgTarget.RequiresInstMethodTableArg();
+
+            // For unboxing stubs whose unboxed entry needs a MethodTable inst arg, the boxed object supplies the exact MT.
+            // For MethodDesc cases we always need to supply the exact MD.
+            if (requiresInstMethodDescArg || (requiresInstMethodTableArg && !unboxingStub))
+            {
+                if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // If we end up with a shared MethodTable that is not exact,
+                    // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                if (originalImpl.IsRuntimeDeterminedExactMethod || originalImpl.IsSharedByGenericInstantiations)
+                {
+                    // TODO: Support for runtime lookup
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+            }
+
+#if READYTORUN
+            if (isArray)
+            {
+                // Array interface devirt is not yet supported by R2R.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+#endif
+
+            if (requiresInstMethodDescArg)
+            {
+                if (unboxingStub)
+                {
+                    // Bail out for now. We need an unboxing stub that points to an instantiated method.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+#if READYTORUN
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
+
+#else
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+#endif
+            }
+            else if (requiresInstMethodTableArg)
+            {
+                if (!unboxingStub)
+                {
+#if READYTORUN
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+
+#else
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
+#endif
+                }
+            }
+
+#if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
             if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
@@ -1497,7 +1599,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->tokenLookupContext = contextFromType(owningType);
+            info->tokenLookupContext = contextIsMethod ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 
