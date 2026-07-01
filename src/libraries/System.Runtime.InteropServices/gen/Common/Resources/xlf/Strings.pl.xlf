@@ -694,17 +694,17 @@
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription">
         <source>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</source>
-        <target state="new">Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</target>
+        <target state="translated">Właściwości interfejsu COM wygenerowanego przez źródło nie obsługują modyfikatorów ani metod dostępu „static”, „extern”, „required” ani „init”.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceMessage">
         <source>The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</source>
-        <target state="new">The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</target>
+        <target state="translated">Właściwość „{0}” w interfejsie „{1}” używa „{2}”, co nie jest obsługiwane we właściwości interfejsu COM wygenerowanym przez źródło</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceTitle">
         <source>Property uses an unsupported modifier or accessor for a source-generated COM interface</source>
-        <target state="new">Property uses an unsupported modifier or accessor for a source-generated COM interface</target>
+        <target state="translated">Właściwość używa nieobsługiwanego modyfikatora lub metody dostępu w interfejsie COM wygenerowanym przez źródło</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -849,17 +849,17 @@
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription">
         <source>Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</source>
-        <target state="new">Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</target>
+        <target state="translated">Atrybuty serializacji, takie jak „MarshalUsing” i „MarshalAs”, w domyślnie zaimplementowanym elemencie (z treścią) interfejsu COM generowanego ze źródła nie mają żadnego wpływu. Domyślne implementacje to czysty kod zarządzany, który omija potok serializacji COM i nie ma wygenerowanej nakładki.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage">
         <source>The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</source>
-        <target state="new">The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</target>
+        <target state="translated">Atrybut serializacji na domyślnie zaimplementowanym elemencie „{0}” w interfejsie „{1}” zostanie zignorowany, ponieważ domyślne implementacje nie generują kodu serializacji COM</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle">
         <source>Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</source>
-        <target state="new">Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</target>
+        <target state="translated">Atrybut serializacji na domyślnie zaimplementowanym elemencie interfejsu COM wygenerowanego przez źródło nie ma wpływu</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
@@ -869,17 +869,17 @@
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription">
         <source>When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</source>
-        <target state="new">When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</target>
+        <target state="translated">Gdy „MarshalUsing” jest stosowany do metody dostępu właściwości interfejsu COM generowanego ze źródła (za pomocą „[return: MarshalUsing(...)]” w metodzie pobierającej lub „[param: MarshalUsing(...)]” w metodzie ustawiającej), musi przekazywać typ serializatora w argumencie konstruktora. Formy tylko z liczbą lub tylko z głębokością („MarshalUsing(ConstantElementCount = ...)”, „MarshalUsing(CountElementName = ...)” lub „MarshalUsing(ElementIndirectionDepth = ...)” w metodzie dostępu) mogą po cichu zastąpić lub częściowo wejść w konflikt z „MarshalUsing” na poziomie właściwości. Połącz typ serializatora i informacje o liczbie w jednym atrybucie „MarshalUsing” w metodzie dostępu. „ConstantElementCount” i „ElementIndirectionDepth” możesz też podać w „MarshalUsing” na poziomie właściwości; „CountElementName” nie jest obsługiwany w metodzie dostępu właściwości ani indeksatora, bo w tym kontekście nie ma dostępu do wyszukiwania parametrów równorzędnych.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage">
         <source>The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</source>
-        <target state="new">The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</target>
+        <target state="translated">Atrybut „MarshalUsing” w metodzie dostępu właściwości „{0}” w interfejsie „{1}” musi określać typ serializatora. Połącz typ serializatora i liczbę w jednym atrybucie „MarshalUsing” na metodzie dostępu albo podaj „ConstantElementCount” lub „ElementIndirectionDepth” w deklaracji właściwości.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle">
         <source>'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</source>
-        <target state="new">'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</target>
+        <target state="translated">Atrybut „MarshalUsing” zastosowany do metody dostępu do właściwości w interfejsie COM wygenerowanym przez źródło musi określać typ serializatora</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
@@ -1014,17 +1014,17 @@
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingDescription">
         <source>On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</source>
-        <target state="new">On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</target>
+        <target state="translated">W interfejsie COM generowanym ze źródła właściwość jest albo w pełni abstrakcyjna (bez treści metod dostępu, traktowana jako właściwość COM zajmująca miejsca w tabeli vtable), albo w pełni zaimplementowana domyślnie (każda metoda dostępu ma treść, a kod jest traktowany jako tylko zarządzany i omija serializację COM). Mieszanie tych dwóch postaci w obrębie jednej właściwości nie jest obsługiwane.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingMessage">
         <source>The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</source>
-        <target state="new">The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</target>
+        <target state="translated">Właściwość „{0}” w interfejsie „{1}” łączy metody dostępu abstrakcyjne i domyślnie zaimplementowane. Wszystkie metody dostępu muszą mieć treść albo żadna nie może jej mieć.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingTitle">
         <source>Property accessors on a source-generated COM interface must either all have bodies or none have bodies</source>
-        <target state="new">Property accessors on a source-generated COM interface must either all have bodies or none have bodies</target>
+        <target state="translated">Metody dostępu do właściwości w interfejsie COM wygenerowanym przez źródło muszą albo wszystkie mieć treść, albo żadna nie może jej mieć</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
