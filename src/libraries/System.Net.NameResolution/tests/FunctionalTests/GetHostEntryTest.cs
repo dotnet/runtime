@@ -440,6 +440,7 @@ namespace System.Net.NameResolution.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128253", TestPlatforms.Android)]
         public async Task DnsGetHostEntry_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
         {
             // Skip IPv6 test if OS doesn't support it.
