@@ -85,6 +85,9 @@ struct ConstantReuseGroup
     unsigned              count;
     bool                  clean;
     unsigned              temp;
+    unsigned              firstIndex;
+    unsigned              lastIndex;
+    bool                  crossesCall;
 };
 
 #ifdef DEBUG
@@ -345,6 +348,14 @@ bool IsLiteralTrueMaskUseProfitable(GenTree* node, GenTree* user)
 //
 bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
 {
+    if (!compiler->compEnregLocals())
+    {
+        // Reuse materializes the first candidate into a temp. If locals are
+        // not enregistered, that temp will be stack-homed and later uses become
+        // stack loads, which is generally worse than rematerializing the mask.
+        return false;
+    }
+
     auto sameCandidateKey = [](const ConstantMaskCandidate& left, const ConstantMaskCandidate& right) {
         return (left.opt == right.opt) && (left.pattern == right.pattern);
     };
@@ -356,11 +367,13 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
 
     // First pass: count exact-match candidates in this block. If any candidate
     // for a key is not cleanly reusable, leave the whole key alone for now.
+    unsigned nodeIndex = 0;
     for (GenTree* node : range)
     {
         ConstantMaskCandidate candidate;
         if (!TryGetConstantMaskCandidate(node, &candidate))
         {
+            nodeIndex++;
             continue;
         }
 
@@ -391,7 +404,7 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
         if (group == nullptr)
         {
             groupIndex                  = groups.Height();
-            ConstantReuseGroup newGroup = {candidate, 0, canReuse, BAD_VAR_NUM};
+            ConstantReuseGroup newGroup = {candidate, 0, canReuse, BAD_VAR_NUM, nodeIndex, nodeIndex, false};
             groups.Push(newGroup);
             group = &groups.TopRef();
         }
@@ -399,6 +412,7 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
         // Keep the original candidate order so the first reusable node becomes
         // the defining temp and later candidates become loads from that temp.
         group->count++;
+        group->lastIndex = nodeIndex;
 
         if (!canReuse)
         {
@@ -407,11 +421,27 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
 
         ConstantMaskCandidateUse candidateUse = {node, groupIndex DEBUGARG(user) DEBUGARG(canReuse)};
         candidates.Push(candidateUse);
+        nodeIndex++;
     }
 
     if (groups.Empty())
     {
         return false;
+    }
+
+    nodeIndex = 0;
+    for (GenTree* node : range)
+    {
+        if (node->OperIs(GT_CALL))
+        {
+            for (int i = 0; i < groups.Height(); i++)
+            {
+                ConstantReuseGroup& group = groups.BottomRef(i);
+                group.crossesCall |= (group.firstIndex < nodeIndex) && (nodeIndex < group.lastIndex);
+            }
+        }
+
+        nodeIndex++;
     }
 
     JITDUMP("\nSVE constant mask reuse before " FMT_BB ":\n", block->bbNum);
@@ -435,9 +465,11 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
             continue;
         }
 
-        // Reusing all-true masks in loops can introduce a live predicate temp.
-        // Require enough uses to make the reuse worthwhile if that temp spills.
-        if (IsAllTrueMaskCandidate(group.candidate) && block->HasFlag(BBF_BACKWARD_JUMP) && (group.count < 6))
+        // Reusing all-true masks can introduce a live predicate temp. Avoid
+        // short live ranges and live ranges that cross calls, as these are
+        // likely to spill and are generally worse than rematerializing ptrue.
+        if (IsAllTrueMaskCandidate(group.candidate) &&
+            ((group.count < 3) || group.crossesCall || (block->HasFlag(BBF_BACKWARD_JUMP) && (group.count < 6))))
         {
             continue;
         }
