@@ -1685,6 +1685,17 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
             return false;
         }
 
+        // Conditional localloc does not have a fixed layout in the frame, so we
+        // cannot report GC element slots for it.
+        //
+        if (!CanAllocateLclVarOnStack(candidate.m_lclNum, clsHnd, candidate.m_allocType, /* length */ 1, &blockSize,
+                                      &candidate.m_onHeapReason, /* preliminaryCheck */ false,
+                                      /* lengthKnown */ false))
+        {
+            // reason set by the call
+            return false;
+        }
+
         JITDUMP("Allocating V%02u on the stack [via localloc, in loop]\n", candidate.m_lclNum);
         MorphNewArrNodeIntoLocAlloc(data->AsCall(), clsHnd, len, candidate.m_block, candidate.m_statement);
         m_compiler->Metrics.LocallocAllocatedArrays++;
@@ -2648,11 +2659,14 @@ void ObjectAllocator::UpdateAncestorTypes(
                 var_types parentType = parent->TypeGet();
                 assert(parentType != TYP_REF);
 
-                // New type can be TYP_I_IMPL, TYP_BYREF.
-                // But TYP_BYREF only if parent is also
-                //
                 if (parentType != newType)
                 {
+                    if (newType == TYP_BYREF)
+                    {
+                        // The subtraction produces a native int; keep the parent type.
+                        break;
+                    }
+
                     // We must be retyping TYP_BYREF to TYP_I_IMPL.
                     //
                     assert(newType == TYP_I_IMPL);

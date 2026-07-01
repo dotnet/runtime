@@ -2928,6 +2928,34 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         }
     }
 
+    unsigned resultLclNum = BAD_VAR_NUM;
+    if (isLocAlloc)
+    {
+        GenTree* const stmtRoot = stmt->GetRootNode();
+        if (stmtRoot->OperIs(GT_STORE_LCL_VAR) && (stmtRoot->AsLclVarCommon()->Data() == *callUse))
+        {
+            resultLclNum = stmtRoot->AsLclVarCommon()->GetLclNum();
+        }
+        else
+        {
+            resultLclNum                  = lvaGrabTemp(true DEBUGARG("stack array result"));
+            lvaTable[resultLclNum].lvType = genActualType(call);
+
+            GenTree* const   resultStore     = gtNewStoreLclVarNode(resultLclNum, call);
+            Statement* const resultStoreStmt = fgNewStmtFromTree(resultStore);
+            gtUpdateStmtSideEffects(resultStoreStmt);
+            fgInsertStmtBefore(block, stmt, resultStoreStmt);
+
+            *callUse = gtNewLclVarNode(resultLclNum);
+            gtSetStmtInfo(stmt);
+            fgSetStmtSeq(stmt);
+            gtUpdateStmtSideEffects(stmt);
+
+            stmt    = resultStoreStmt;
+            callUse = &stmt->GetRootNode()->AsLclVarCommon()->Data();
+        }
+    }
+
     GenTree* lengthArg         = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
     GenTree* stackLocalAddress = nullptr;
 
@@ -3157,11 +3185,8 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
 #endif // FEATURE_READYTORUN
         newCall = fgMorphArgs(newCall);
 
-        // We expect *callUse's user to be a local store.
-        //
-        assert((*callUse)->gtNext->OperIs(GT_STORE_LCL_VAR));
-        unsigned const   useLclNum      = (*callUse)->gtNext->AsLclVarCommon()->GetLclNum();
-        GenTree* const   heapAllocStore = gtNewStoreLclVarNode(useLclNum, newCall);
+        assert(resultLclNum != BAD_VAR_NUM);
+        GenTree* const   heapAllocStore = gtNewStoreLclVarNode(resultLclNum, newCall);
         Statement* const heapAllocStmt  = fgNewStmtFromTree(heapAllocStore);
 
         gtUpdateStmtSideEffects(heapAllocStmt);
