@@ -618,11 +618,6 @@ namespace System.IO
                             continue;
                         }
 
-                        if (error.Error != Interop.Error.ENOENT)
-                        {
-                            throw Interop.GetExceptionForIoErrno(error, directoryPath);
-                        }
-
                         throw Interop.GetExceptionForIoErrno(error, directoryPath);
                     }
                     else
