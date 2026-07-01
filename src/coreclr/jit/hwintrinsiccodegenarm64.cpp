@@ -1139,10 +1139,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         assert(!isRMW);
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
-                    else if (isRMW)
-                    {
-                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
-                    }
                     else
                     {
                         GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
