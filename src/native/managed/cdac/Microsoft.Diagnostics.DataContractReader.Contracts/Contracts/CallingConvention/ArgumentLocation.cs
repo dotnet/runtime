@@ -24,9 +24,4 @@ internal readonly struct ArgumentLocation
     // walks instance fields for these to emit INTERIOR tokens at each managed
     // pointer slot.
     public bool IsByRefLikeStruct { get; init; }
-
-    // For generic-instantiation parameters with an uncached closed ITypeHandle,
-    // the open generic MethodTable (e.g. Span<T> for a Span<int> arg) so
-    // encoders can inspect type structure as a fallback.
-    public ITypeHandle OpenGenericType { get; init; }
 }

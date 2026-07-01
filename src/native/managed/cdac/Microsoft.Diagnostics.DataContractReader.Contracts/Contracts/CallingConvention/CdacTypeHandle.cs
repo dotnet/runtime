@@ -20,26 +20,10 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
     private readonly CdacITypeHandle _typeHandle;
     private readonly Target _target;
 
-    // Outermost ELEMENT_TYPE_* wrapper (PTR / BYREF / SZARRAY / ARRAY / etc.)
-    // recorded out-of-band by the signature wrapper provider in
-    // CallingConvention_1.ParamMetadataProvider. Used when the underlying
-    // ITypeHandle would be null (the runtime hasn't cached the constructed
-    // form), in which case Rts.GetSignatureCorElementType would return 0 and
-    // ArgIterator would fail to classify the arg for stack-size accounting.
-    // `default` (the enum's 0 value, which CorElementType doesn't name) means
-    // "no override; ask Rts".
-    private readonly CdacCorElementType _kindOverride;
-
     public CdacTypeHandle(CdacITypeHandle typeHandle, Target target)
-        : this(typeHandle, target, kindOverride: default)
-    {
-    }
-
-    public CdacTypeHandle(CdacITypeHandle typeHandle, Target target, CdacCorElementType kindOverride)
     {
         _typeHandle = typeHandle;
         _target = target;
-        _kindOverride = kindOverride;
     }
 
     private IRuntimeTypeSystem Rts => _target.Contracts.RuntimeTypeSystem;
@@ -47,33 +31,24 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
     public int PointerSize => _target.PointerSize;
     public RuntimeInfoArchitecture Arch => _target.Contracts.RuntimeInfo.GetTargetArchitecture();
 
-    public bool IsNull() => _typeHandle.IsNull && _kindOverride == default;
+    public bool IsNull() => _typeHandle.IsNull;
 
     public bool IsValueType() => !_typeHandle.IsNull && Rts.IsValueType(_typeHandle);
 
-    public bool IsPointerType()
-        => _kindOverride == CdacCorElementType.Ptr
-           || (!_typeHandle.IsNull && Rts.IsPointer(_typeHandle));
+    public bool IsPointerType() => !_typeHandle.IsNull && Rts.IsPointer(_typeHandle);
 
     public bool HasIndeterminateSize() => false;
 
     public int GetSize()
     {
-        // Constructed pointer/array/byref args always occupy one TADDR slot
-        // in the transition block (the actual pointee is reached via the
-        // pointer value, not stored inline). When _kindOverride is set, the
-        // underlying ITypeHandle may be null (uncached PTR), so GetBaseSize
-        // would fault.
-        if (_kindOverride is CdacCorElementType.Ptr
-                          or CdacCorElementType.Byref
-                          or CdacCorElementType.SzArray
-                          or CdacCorElementType.Array)
-        {
-            return PointerSize;
-        }
-
         if (_typeHandle.IsNull)
             return 0;
+
+        // Synthetic constructed types (Ptr/Byref/SzArray/Array) occupy one
+        // pointer-sized slot; they have no loaded MethodTable so GetBaseSize
+        // would return 0.
+        if (_typeHandle.IsSynthetic)
+            return PointerSize;
 
         // GetBaseSize returns the full object size including object header and padding.
         // For value types used in calling convention, we need the unboxed size.
@@ -85,9 +60,6 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
 
     public SharedCorElementType GetCorElementType()
     {
-        if (_kindOverride != default)
-            return MapCorElementType(_kindOverride);
-
         if (_typeHandle.IsNull)
             return (SharedCorElementType)0;
 
@@ -95,12 +67,6 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
         // it resolves the closed ITypeHandle and returns
         // MethodTable::GetInternalCorElementType, which collapses enums to
         // their underlying primitive (byte enum -> U1, int enum -> I4, ...).
-        // The shared ArgIterator's x86 IsArgumentInRegister relies on this
-        // normalization to recognise sub-pointer-size enums as register-
-        // passable; returning ELEMENT_TYPE_VALUETYPE for a byte enum makes
-        // it fall into the IsTrivialPointerSizedStruct path which then
-        // (correctly) rejects it because GetSize() != PointerSize, and the
-        // arg gets mis-accounted as stack-passed.
         CdacCorElementType cdacType = Rts.GetInternalCorElementType(_typeHandle);
         return MapCorElementType(cdacType);
     }
