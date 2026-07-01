@@ -1444,6 +1444,26 @@ public class Program
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class SequentialReferenceBase
+    {
+        public string A;
+        public string B;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public class ExplicitDerivedFromSequentialReferenceBase : SequentialReferenceBase
+    {
+        [FieldOffset(0)] public string C;
+        [FieldOffset(8)] public string D;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override string ToString()
+        {
+            return $"{A} {B} {C} {D}";
+        }
+    }
+
     [StructLayout(LayoutKind.Auto, Size = 0x14)]
     public struct ExplicitlySizedStructAuto
     {
@@ -1583,6 +1603,24 @@ public class Program
 
         Console.WriteLine(cls.ToString());
         if (cls.ToString() != "100 200 101 201 102 202")
+            return false;
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ExplicitDerivedFromSequentialReferenceBaseTest()
+    {
+        var cls = new ExplicitDerivedFromSequentialReferenceBase
+        {
+            A = "100",
+            B = "200",
+            C = "101",
+            D = "201"
+        };
+
+        Console.WriteLine(cls.ToString());
+        if (cls.ToString() != "100 200 101 201")
             return false;
 
         return true;
@@ -2227,6 +2265,7 @@ public class Program
         RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
+        RunTest("ExplicitDerivedFromSequentialReferenceBaseTest", ExplicitDerivedFromSequentialReferenceBaseTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
         RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());

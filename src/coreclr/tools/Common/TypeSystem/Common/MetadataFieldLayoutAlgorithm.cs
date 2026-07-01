@@ -323,7 +323,7 @@ namespace Internal.TypeSystem
                     return LayoutInt.Zero;
                 }
 
-                return baseType.InstanceFieldSize;
+                return baseType.InstanceByteCountUnaligned - type.Context.Target.LayoutPointerSize;
             }
 
             return LayoutInt.Indeterminate;
@@ -334,9 +334,7 @@ namespace Internal.TypeSystem
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
             LayoutInt cumulativeInstanceFieldPos = GetParentLayoutStartingOffset(type);
-            LayoutInt offsetBias = cumulativeInstanceFieldPos.IsIndeterminate || type.IsValueType
-                ? (!type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero)
-                : LayoutInt.Zero;
+            LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
             if (cumulativeInstanceFieldPos.IsIndeterminate)
             {
                 cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
@@ -454,9 +452,7 @@ namespace Internal.TypeSystem
             // For reference types, we calculate field alignment as if the address after the method table pointer
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
             LayoutInt cumulativeInstanceFieldPos = GetParentLayoutStartingOffset(type);
-            LayoutInt offsetBias = cumulativeInstanceFieldPos.IsIndeterminate || type.IsValueType
-                ? (!type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero)
-                : LayoutInt.Zero;
+            LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
             if (cumulativeInstanceFieldPos.IsIndeterminate)
             {
                 cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
