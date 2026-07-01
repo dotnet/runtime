@@ -4,12 +4,9 @@
 using System;
 using System.Threading.Tasks;
 
-// Verifies that `async Task<int> Main()` works on CoreCLR-WASI without
-// throwing PlatformNotSupportedException. Roslyn emits an entry-point
-// wrapper that calls AsyncHelpers.HandleAsyncEntryPoint(task); WASI's
-// AsyncHelpers.Wasi.cs routes that through WasiEventLoop's pump instead
-// of a blocking Task.Wait (which throws PNSE from
-// RuntimeFeature.ThrowIfMultithreadingIsNotSupported on WASI).
+// Smoke test: verifies async Main + Task.Delay works on WASI. Depends on
+// AsyncHelpers.Wasi.cs routing through WasiEventLoop, and on the WIT
+// wasi:clocks p/invokes reaching the callhelpers pinvoke table.
 internal static class Program
 {
     private static async Task<int> Main()
@@ -23,3 +20,4 @@ internal static class Program
         return 100;
     }
 }
+

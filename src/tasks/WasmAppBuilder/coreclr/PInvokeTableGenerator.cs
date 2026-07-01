@@ -177,16 +177,10 @@ internal sealed class PInvokeTableGenerator
                 .Select(l =>
                 {
                     PInvoke p = l.First();
-                    // The runtime does the p/invoke override lookup with the managed
-                    // EntryPoint string (see PInvokeMethodDesc::GetEntrypointName ->
-                    // dllimport.cpp: PInvokeOverride::GetMethodImpl). For non-linkage
-                    // pinvokes the fixed-up symbol name equals the managed EntryPoint,
-                    // so `DllImportEntry(name)` (which stringifies to "name") matches.
-                    // For [WasmImportLinkage] imports we mangle the C symbol as
-                    // "<ns>#<module>#<entry>" to keep it unique per module, so we must
-                    // emit the entry-point string explicitly instead of stringifying
-                    // the mangled C name, otherwise the lookup misses and the runtime
-                    // falls back to dlopen (which is not implemented on WASI).
+                    // Runtime resolver looks up by managed EntryPoint.
+                    // [WasmImportLinkage] mangles the C symbol per module,
+                    // so emit the entry-point string explicitly rather than
+                    // stringifying the mangled name via DllImportEntry.
                     if (p.WasmLinkage)
                         return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
                     return $"    DllImportEntry({CEntryPoint(p)}) // {ListRefs(l)}{w.NewLine}";

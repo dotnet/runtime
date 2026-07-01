@@ -2355,12 +2355,12 @@ CPalThread::GetStackBase()
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
 #if defined(TARGET_WASI)
-    // wasm-component-ld places the stack first with -Wl,-z,stack-size=8 MiB
-    // (see corerun CMakeLists.txt), so the stack lives in [0, 8 MiB) and the
-    // base is the upper bound. pthread_getattr_np is unavailable.
+    // wasm-component-ld places the stack first with -Wl,-z,stack-size (see
+    // corerun CMakeLists.txt). Keep in sync with that value.
     (void)thread; (void)stackAddr; (void)stackSize; (void)status;
     pthread_attr_destroy(&attr);
-    stackBase = (void*)(8 * 1024 * 1024);
+    constexpr size_t s_wasiStackSize = 8 * 1024 * 1024;
+    stackBase = (void*)s_wasiStackSize;
 #elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
@@ -2414,8 +2414,8 @@ CPalThread::GetStackLimit()
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
 #if defined(TARGET_WASI)
-    // See GetStackBase. CoreCLR rejects NULL stack limits, so bump by one
-    // page to give a usable lower bound.
+    // See GetStackBase. CoreCLR rejects NULL stack limits, so return a
+    // small non-null placeholder.
     (void)thread; (void)stackSize; (void)status;
     pthread_attr_destroy(&attr);
     stackLimit = (void*)4096;

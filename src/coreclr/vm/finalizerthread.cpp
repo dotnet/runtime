@@ -384,13 +384,9 @@ void FinalizerThread::RaiseShutdownEvents()
         hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
     }
 #else // TARGET_WASM
-    // No dedicated finalizer thread on WASM. Consistent with the rest of
-    // CoreCLR, finalizers queued during process exit are not pumped here
-    // and leak by design (.NET Framework's shutdown-time finalizer pump
-    // was removed years ago). During normal execution, EnableFinalization
-    // schedules the WasiEventLoop pump via WasiFinalizer_Schedule and
-    // GC.WaitForPendingFinalizers drains the queue synchronously on the
-    // calling thread in FinalizerThreadWait below.
+    // No dedicated finalizer thread on WASM. Like every other CoreCLR
+    // target, finalizers queued at process exit are not pumped and
+    // leak by design.
 #endif // !TARGET_WASM
 }
 
@@ -853,23 +849,11 @@ void FinalizerThread::FinalizerThreadWait()
         _ASSERTE(status == WAIT_OBJECT_0);
     }
 #else // TARGET_WASM
-    // No separate finalizer thread on WASM. Drain the queue synchronously on
-    // the calling thread. Browser ordinarily relies on the JS event loop to
-    // call SystemJS_ExecuteFinalizationCallback asynchronously, but a managed
-    // caller that has just issued GC.Collect() and is now blocked in
-    // GC.WaitForPendingFinalizers() needs the queue drained before this QCall
-    // returns. Single-threaded WASI has no host event loop at all, so this is
-    // the only synchronous drain path -- finalizers queued during process
-    // exit are not pumped (see RaiseShutdownEvents above) and leak by design,
-    // matching the behavior of every other CoreCLR target.
-    //
-    // Re-entry guard: a user finalizer may itself call
-    // GC.WaitForPendingFinalizers() (transitively via Dispose or similar).
-    // The non-WASM branch above skips re-entry with IsCurrentThreadFinalizer();
-    // on WASM the same thread is always "the finalizer thread", so we track
-    // an explicit nesting flag. Inner calls become no-ops; the outer
-    // FinalizeAllObjects loop will continue draining whatever the user
-    // finalizer pushes onto the queue when it returns.
+    // No separate finalizer thread on WASM. Drain synchronously on the
+    // calling thread so GC.WaitForPendingFinalizers() actually waits.
+    // The re-entry guard covers a user finalizer that calls
+    // WaitForPendingFinalizers itself; the non-WASM branch above uses
+    // IsCurrentThreadFinalizer() for the same purpose.
     static thread_local bool s_inDrain = false;
     if (s_inDrain)
     {
@@ -888,10 +872,7 @@ void FinalizerThread::FinalizerThreadWait()
     }
     EX_CATCH
     {
-        // Same rationale as RaiseShutdownEvents: user finalizers may throw,
-        // but blocking the caller of GC.WaitForPendingFinalizers on a
-        // finalizer-raised exception would be a behavior change relative to
-        // every other target where the finalizer thread quietly swallows it.
+        // User finalizer threw; swallow to match every other target.
     }
     EX_END_CATCH
 
