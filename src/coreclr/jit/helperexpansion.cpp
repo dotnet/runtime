@@ -3235,12 +3235,16 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
             // For Align8, adjust address to be suitably aligned.
             // Addr = (Localloc + 4) & ~7;
             //
-            GenTree* const alignSize      = gtNewIconNode(4, TYP_I_IMPL);
-            GenTree* const biasedAddress  = gtNewOperNode(GT_ADD, TYP_I_IMPL, stackLocalAddress, alignSize);
-            GenTree* const alignMaskInv   = gtNewIconNode(-8, TYP_I_IMPL);
-            GenTree* const alignedAddress = gtNewOperNode(GT_AND, TYP_I_IMPL, biasedAddress, alignMaskInv);
+            GenTree* const   alignSize      = gtNewIconNode(4, TYP_I_IMPL);
+            GenTree* const   biasedAddress  = gtNewOperNode(GT_ADD, TYP_I_IMPL, stackLocalAddress, alignSize);
+            GenTree* const   alignMaskInv   = gtNewIconNode(-8, TYP_I_IMPL);
+            GenTree* const   alignedAddress = gtNewOperNode(GT_AND, TYP_I_IMPL, biasedAddress, alignMaskInv);
+            GenTree* const   alignedStore   = gtNewStoreLclVarNode(locallocTemp, alignedAddress);
+            Statement* const alignedStmt    = fgNewStmtFromTree(alignedStore);
 
-            stackLocalAddress = alignedAddress;
+            gtUpdateStmtSideEffects(alignedStmt);
+            fgInsertStmtBefore(locallocBlock, stmt, alignedStmt);
+            stackLocalAddress = gtNewLclVarNode(locallocTemp);
         }
 #endif
 
@@ -3283,9 +3287,15 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
 
     fgInsertStmtBefore(block, stmt, lenStmt);
 
-    // Replace call with local address
+    // Replace call with local address.
     //
-    *callUse = gtCloneExpr(stackLocalAddress);
+    GenTree* replacement = gtCloneExpr(stackLocalAddress);
+    if (isLocAlloc)
+    {
+        replacement->ChangeType(TYP_BYREF);
+    }
+
+    *callUse = replacement;
     DEBUG_DESTROY_NODE(call);
 
     fgMorphStmtBlockOps(block, stmt);
