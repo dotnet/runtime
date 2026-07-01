@@ -10003,8 +10003,8 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             assert(sig.sigInst.methInstCount == 1);
             assert(sig.sigInst.classInstCount == 0);
 
-            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.methInst[0];
-            assert(typeHnd != nullptr);
+            CORINFO_CLASS_HANDLE result = sig.sigInst.methInst[0];
+            assert(result != nullptr);
 
             CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
             if (instParam != nullptr)
@@ -10013,11 +10013,9 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
                 CORINFO_METHOD_HANDLE hMethod = gtGetHelperArgMethodHandle(instParam->GetNode());
                 if (hMethod != NO_METHOD_HANDLE)
                 {
-                    typeHnd = getMethodInstantiationArgument(hMethod, 0);
+                    result = getMethodInstantiationArgument(hMethod, 0);
                 }
             }
-
-            result = eeIsSharedInst(typeHnd) ? NO_CLASS_HANDLE : typeHnd;
 
             if (result != NO_CLASS_HANDLE)
             {
