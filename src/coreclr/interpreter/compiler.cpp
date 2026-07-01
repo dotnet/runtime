@@ -7410,7 +7410,13 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
-    switch (*(ip + pattern[2].offsetIntoPeep - 1))
+    // IL pattern:
+    // # CALL | CALLVIRT at offset 0
+    // # LDC_I4_0 | LDC_I4_1
+    // CALLVIRT
+    // CALL
+
+    switch (*(ip + pattern[0].offsetIntoPeep - 1))
     {
         case CEE_LDC_I4_0:
             m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
@@ -7421,6 +7427,113 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         default:
             return false;
     }
+
+    CORINFO_RESOLVED_TOKEN configureAwaitResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &configureAwaitResolvedToken);
+    if (!m_compHnd->isIntrinsic(configureAwaitResolvedToken.hMethod) ||
+        GetNamedIntrinsic(m_compHnd, m_methodHnd, configureAwaitResolvedToken.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
+    {
+        return false;
+    }
+
+    CORINFO_RESOLVED_TOKEN awaitResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &awaitResolvedToken);
+    if (!m_compHnd->isIntrinsic(awaitResolvedToken.hMethod) ||
+        GetNamedIntrinsic(m_compHnd, m_methodHnd, awaitResolvedToken.hMethod) != NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
+    {
+        return false;
+    }
+
+    return ResolveAsyncCallToken(ip);
+}
+
+bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    // IL pattern:
+    // # CALL | CALLVIRT at offset 0
+    // # STLOC_0 | STLOC_1 | STLOC_2 | STLOC_3
+    // LDLOCA | LDLOCA_S
+    // # LDC_I4_0 | LDC_I4_1
+    // CALL
+    // CALL
+
+    uint32_t stLocVar = 0;
+    uint32_t ldlocaVar = 0;
+
+    switch (*(ip + pattern[0].offsetIntoPeep - 1))
+    {
+        case CEE_STLOC_0:
+            stLocVar = 0;
+            break;
+        case CEE_STLOC_1:
+            stLocVar = 1;
+            break;
+        case CEE_STLOC_2:
+            stLocVar = 2;
+            break;
+        case CEE_STLOC_3:
+            stLocVar = 3;
+            break;
+        default:
+            return false;
+    }
+
+    switch (*(ip + pattern[0].offsetIntoPeep))
+    {
+        case CEE_LDLOCA_S:
+            ldlocaVar = (ip + pattern[0].offsetIntoPeep)[1];
+            break;
+        default:
+            // Must be LDLOCA
+            ldlocaVar = getU2LittleEndian(ip + pattern[0].offsetIntoPeep + 2);
+            break;
+    }
+
+    if (ldlocaVar != stLocVar)
+    {
+        return false;
+    }
+
+    switch (*(ip + pattern[1].offsetIntoPeep - 1))
+    {
+        case CEE_LDC_I4_0:
+            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
+            break;
+        case CEE_LDC_I4_1:
+            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+            break;
+        default:
+            return false;
+    }
+
+    CORINFO_RESOLVED_TOKEN configureAwaitResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &configureAwaitResolvedToken);
+    if (!m_compHnd->isIntrinsic(configureAwaitResolvedToken.hMethod) ||
+        GetNamedIntrinsic(m_compHnd, m_methodHnd, configureAwaitResolvedToken.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
+    {
+        return false;
+    }
+
+    CORINFO_RESOLVED_TOKEN awaitResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[2].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &awaitResolvedToken);
+    if (!m_compHnd->isIntrinsic(awaitResolvedToken.hMethod) ||
+        GetNamedIntrinsic(m_compHnd, m_methodHnd, awaitResolvedToken.hMethod) != NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
+    {
+        return false;
+    }
+
+    return ResolveAsyncCallToken(ip);
+}
+
+bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    // IL pattern:
+    // # CALL | CALLVIRT at offset 0
+    // STLOC | STLOC_S
+    // LDLOCA | LDLOCA_S
+    // # LDC_I4_0 | LDC_I4_1
+    // CALL
+    // CALL
 
     uint32_t stLocVar = 0;
     uint32_t ldlocaVar = 0;
@@ -7452,6 +7565,18 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
+    switch (*(ip + pattern[2].offsetIntoPeep - 1))
+    {
+        case CEE_LDC_I4_0:
+            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
+            break;
+        case CEE_LDC_I4_1:
+            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+            break;
+        default:
+            return false;
+    }
+
     CORINFO_RESOLVED_TOKEN configureAwaitResolvedToken;
     ResolveToken(getU4LittleEndian(ip + pattern[2].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &configureAwaitResolvedToken);
     if (!m_compHnd->isIntrinsic(configureAwaitResolvedToken.hMethod) ||
@@ -7462,109 +7587,6 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
 
     CORINFO_RESOLVED_TOKEN awaitResolvedToken;
     ResolveToken(getU4LittleEndian(ip + pattern[3].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &awaitResolvedToken);
-    if (!m_compHnd->isIntrinsic(awaitResolvedToken.hMethod) ||
-        GetNamedIntrinsic(m_compHnd, m_methodHnd, awaitResolvedToken.hMethod) != NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
-    {
-        return false;
-    }
-
-    return ResolveAsyncCallToken(ip);
-}
-
-bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
-{
-    switch (*(ip + pattern[1].offsetIntoPeep - 1))
-    {
-        case CEE_LDC_I4_0:
-            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
-            break;
-        case CEE_LDC_I4_1:
-            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
-            break;
-        default:
-            return false;
-    }
-
-    uint32_t stLocVar = 0;
-    uint32_t ldlocaVar = 0;
-
-    switch (*(ip + pattern[0].offsetIntoPeep - 1))
-    {
-        case CEE_STLOC_0:
-            stLocVar = 0;
-            break;
-        case CEE_STLOC_1:
-            stLocVar = 1;
-            break;
-        case CEE_STLOC_2:
-            stLocVar = 2;
-            break;
-        case CEE_STLOC_3:
-            stLocVar = 3;
-            break;
-        default:
-            return false;
-    }
-
-    switch (*(ip + pattern[1].offsetIntoPeep))
-    {
-        case CEE_LDLOCA_S:
-            ldlocaVar = (ip + pattern[1].offsetIntoPeep)[1];
-            break;
-        default:
-            // Must be LDLOCA
-            ldlocaVar = getU2LittleEndian(ip + pattern[1].offsetIntoPeep + 2);
-            break;
-    }
-
-    if (ldlocaVar != stLocVar)
-    {
-        return false;
-    }
-
-    CORINFO_RESOLVED_TOKEN configureAwaitResolvedToken;
-    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &configureAwaitResolvedToken);
-    if (!m_compHnd->isIntrinsic(configureAwaitResolvedToken.hMethod) ||
-        GetNamedIntrinsic(m_compHnd, m_methodHnd, configureAwaitResolvedToken.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
-    {
-        return false;
-    }
-
-    CORINFO_RESOLVED_TOKEN awaitResolvedToken;
-    ResolveToken(getU4LittleEndian(ip + pattern[2].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &awaitResolvedToken);
-    if (!m_compHnd->isIntrinsic(awaitResolvedToken.hMethod) ||
-        GetNamedIntrinsic(m_compHnd, m_methodHnd, awaitResolvedToken.hMethod) != NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
-    {
-        return false;
-    }
-
-    return ResolveAsyncCallToken(ip);
-}
-
-bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
-{
-    switch (*(ip + pattern[0].offsetIntoPeep - 1))
-    {
-        case CEE_LDC_I4_0:
-            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
-            break;
-        case CEE_LDC_I4_1:
-            m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
-            break;
-        default:
-            return false;
-    }
-
-    CORINFO_RESOLVED_TOKEN configureAwaitResolvedToken;
-    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &configureAwaitResolvedToken);
-    if (!m_compHnd->isIntrinsic(configureAwaitResolvedToken.hMethod) ||
-        GetNamedIntrinsic(m_compHnd, m_methodHnd, configureAwaitResolvedToken.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
-    {
-        return false;
-    }
-
-    CORINFO_RESOLVED_TOKEN awaitResolvedToken;
-    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &awaitResolvedToken);
     if (!m_compHnd->isIntrinsic(awaitResolvedToken.hMethod) ||
         GetNamedIntrinsic(m_compHnd, m_methodHnd, awaitResolvedToken.hMethod) != NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
     {
@@ -7634,10 +7656,10 @@ bool InterpCompiler::FindAndApplyPeep(OpcodePeep* Peeps[])
 
         // Check to see if peep applies to the current block just looking at the IL streams
         // starting at the current ip.
-        for (int iPeepOpCode = 0; peep->pattern[iPeepOpCode].opcode != CEE_ILLEGAL; iPeepOpCode++)
+        int iPeepOpCode = 0;
+        for (; peep->pattern[iPeepOpCode].opcode != CEE_ILLEGAL; iPeepOpCode++)
         {
             const uint8_t *ipForOpcode = ip + peep->pattern[iPeepOpCode].offsetIntoPeep;
-            int32_t insOffset = (int32_t)(ipForOpcode - m_pILCode);
 
             if (ipForOpcode >= m_pILCode + m_ILCodeSize)
             {
@@ -7645,17 +7667,29 @@ bool InterpCompiler::FindAndApplyPeep(OpcodePeep* Peeps[])
                 skipToNextPeep = true;
                 break;
             }
-            InterpBasicBlock *pNewBB = m_ppOffsetToBB[insOffset];
-            if (pNewBB != NULL && m_pCBB != pNewBB)
-            {
-                // Ran into a different basic block
-                skipToNextPeep = true;
-                break;
-            }
 
             if (peep->pattern[iPeepOpCode].opcode != CEEDecodeOpcode(&ipForOpcode))
             {
                 // Opcode does not match
+                skipToNextPeep = true;
+                break;
+            }
+        }
+        if (skipToNextPeep)
+            continue;
+
+        // Peeps don't necessarily contain all the opcodes that should match. The opcodes that we
+        // are matching in the peep have not been reached yet by the compiler, so we don't have
+        // the `m_ppOffsetToBB` offset initialized for them, since this is initialized only for
+        // the first instruction in the bblock. We therefore need to scan all offsets looking for
+        // a new bblock.
+        int32_t startOffset = (int32_t)(ip - m_pILCode);
+        int32_t endOffset = startOffset + peep->pattern[iPeepOpCode].offsetIntoPeep;
+        for (int32_t ilOffset = startOffset + 1; ilOffset < endOffset; ilOffset++)
+        {
+            InterpBasicBlock *pNewBB = m_ppOffsetToBB[ilOffset];
+            if (pNewBB != NULL && m_pCBB != pNewBB)
+            {
                 skipToNextPeep = true;
                 break;
             }
