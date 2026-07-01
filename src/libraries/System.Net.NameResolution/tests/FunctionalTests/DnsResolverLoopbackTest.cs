@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.NameResolution.Tests
 {
+#if WINDOWS
     public sealed class WindowsLoopbackServer : IAsyncDisposable
     {
         private LoopbackDnsServer? _server;
@@ -20,7 +21,7 @@ namespace System.Net.NameResolution.Tests
         // is unavailable; that is only honored by the ConditionalFact/ConditionalTheory
         // runner, which wraps the test class constructor where Server is first accessed.
         // Starting in this fixture constructor would instead surface as a hard failure.
-        internal LoopbackDnsServer Server => _server ??= LoopbackDnsServer.Start();
+        internal LoopbackDnsServer Server => _server ??= LoopbackDnsServer.Start(53);
 
         public async ValueTask DisposeAsync()
         {
@@ -49,6 +50,26 @@ namespace System.Net.NameResolution.Tests
     [Collection(nameof(DisableParallelization))]
     public class DnsResolverLoopbackTest : IClassFixture<WindowsLoopbackServer>
     {
+        public DnsResolverLoopbackTest(WindowsLoopbackServer fixture)
+        {
+            _server = fixture.Server;
+            _server.ClearResponses();
+        }
+#else
+    // for all other platforms, bind an ephemeral port and use that for the loopback server. In
+    // these cases, we can run in parallel
+    public class DnsResolverLoopbackTest : IAsyncDisposable
+    {
+        public DnsResolverLoopbackTest()
+        {
+            _server = LoopbackDnsServer.Start();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _server.DisposeAsync();
+        }
+#endif
         private static DnsResolver CreateResolver(LoopbackDnsServer server)
             => new DnsResolver(new DnsResolverOptions { Servers = { server.EndPoint } });
 
@@ -58,12 +79,6 @@ namespace System.Net.NameResolution.Tests
 
         LoopbackDnsServer _server;
         DnsResolver? _resolver;
-
-        public DnsResolverLoopbackTest(WindowsLoopbackServer fixture)
-        {
-            _server = fixture.Server;
-            _server.ClearResponses();
-        }
 
         internal DnsResolver Resolver => _resolver ??= CreateResolver(_server);
 

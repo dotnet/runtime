@@ -14,22 +14,12 @@ using Microsoft.DotNet.XUnitExtensions;
 namespace System.Net.NameResolution.Tests
 {
     /// <summary>
-    /// A minimal in-process DNS server for testing. Listens on the loopback DNS port (53)
+    /// A minimal in-process DNS server for testing. Listens on the provided port
     /// and responds with preconfigured answers based on the query name and type.
     /// Self-contained: does not depend on any production DNS message types.
     /// </summary>
-    /// <remarks>
-    /// Windows' <c>DnsQueryEx</c> only ever contacts custom DNS servers on the standard
-    /// port 53 (the sockaddr port field must be 0), so the loopback server must bind 53.
-    /// Binding a privileged-looking low port does not require elevation on Windows, but
-    /// the port may already be in use (e.g. a local DNS service), in which case
-    /// <see cref="Start"/> throws <see cref="SkipTestException"/> so the test is skipped
-    /// rather than failed.
-    /// </remarks>
     internal sealed class LoopbackDnsServer : IAsyncDisposable
     {
-        public const int DnsPort = 53;
-
         private readonly Socket _udp;
         private readonly Socket _tcp;
         private readonly CancellationTokenSource _cts = new();
@@ -53,8 +43,26 @@ namespace System.Net.NameResolution.Tests
             _tcpListenTask = ListenTcpAsync(_cts.Token);
         }
 
-        public static LoopbackDnsServer Start()
+        public static LoopbackDnsServer Start(int port = 0)
         {
+            // start with TCP socket to get a free port. then bind UDP to the same port. This order is
+            // more likely to succeed than the reverse, since UDP is connectionless and the socket does
+            // not have WAIT_CLOSE state.
+
+            Socket tcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                tcp.Bind(new IPEndPoint(IPAddress.Loopback, port));
+                tcp.Listen();
+            }
+            catch (SocketException ex)
+            {
+                tcp.Dispose();
+                throw new SkipTestException(
+                    $"Unable to bind loopback DNS TCP port {port}; another DNS server may be running ({ex.SocketErrorCode}).");
+            }
+
+            IPEndPoint ep = (IPEndPoint)tcp.LocalEndPoint!;
             Socket udp = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             if (OperatingSystem.IsWindows())
             {
@@ -64,28 +72,14 @@ namespace System.Net.NameResolution.Tests
             }
             try
             {
-                udp.Bind(new IPEndPoint(IPAddress.Loopback, DnsPort));
-            }
-            catch (SocketException ex)
-            {
-                udp.Dispose();
-                throw new SkipTestException(
-                    $"Unable to bind loopback DNS port {DnsPort}; another DNS server may be running ({ex.SocketErrorCode}).");
-            }
-
-            IPEndPoint ep = (IPEndPoint)udp.LocalEndPoint!;
-            Socket tcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            try
-            {
-                tcp.Bind(new IPEndPoint(IPAddress.Loopback, ep.Port));
-                tcp.Listen();
+                udp.Bind(new IPEndPoint(IPAddress.Loopback, ep.Port));
             }
             catch (SocketException ex)
             {
                 udp.Dispose();
                 tcp.Dispose();
                 throw new SkipTestException(
-                    $"Unable to bind loopback DNS TCP port {DnsPort}; another DNS server may be running ({ex.SocketErrorCode}).");
+                    $"Unable to bind loopback DNS UDP port {ep.Port}; another DNS server may be running ({ex.SocketErrorCode}).");
             }
 
             return new LoopbackDnsServer(udp, tcp, ep);
