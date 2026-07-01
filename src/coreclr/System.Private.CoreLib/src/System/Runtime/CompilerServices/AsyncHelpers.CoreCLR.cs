@@ -22,11 +22,13 @@ namespace System.Runtime.CompilerServices
         ContinueOnThreadPool = 1 << 0,
         ContinueOnCapturedSynchronizationContext = 1 << 1,
         ContinueOnCapturedTaskScheduler = 1 << 2,
-        // This is an await of valueTask.AsTask()
-        // (e.g. valueTask.AsTask() returned from an async version)
+        // This is an await of valueTask.AsTask() (e.g. valueTask.AsTask()
+        // returned from an async version). This flag affects how
+        // ValueTaskSourceContinuation handling computes the flags to pass to
+        // IValueTaskSource.OnCompleted.
         ValueTaskAdaptedToTask = 1 << 3,
 
-        AllContinuationFlags = ContinueOnThreadPool | ContinueOnCapturedSynchronizationContext | ContinueOnCapturedTaskScheduler | ValueTaskAdaptedToTask,
+        AllContinuationFlags = ContinueOnThreadPool | ContinueOnCapturedSynchronizationContext | ContinueOnCapturedTaskScheduler,
 
         // The flags encode where in the continuation various members are stored.
         // If the encoded index is 0, it means no such member is present.
@@ -828,7 +830,8 @@ namespace System.Runtime.CompilerServices
                         // the direct AsyncHelpers.Await(ValueTask/ValueTask<T>) path.
                         // In either case, that can only happen in nontransparent/user code.
                         Continuation contWithContinueFlags = valueTaskSourceCont;
-                        while ((contWithContinueFlags.Flags & ContinuationFlags.AllContinuationFlags) == 0 && contWithContinueFlags.Next != null)
+                        while ((contWithContinueFlags.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0 &&
+                               contWithContinueFlags.Next != null)
                         {
                             contWithContinueFlags = contWithContinueFlags.Next;
                         }
