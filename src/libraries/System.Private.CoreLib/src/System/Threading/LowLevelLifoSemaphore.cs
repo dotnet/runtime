@@ -320,15 +320,16 @@ namespace System.Threading
 
             if (blockerNode != null)
             {
-#if TARGET_WINDOWS
-                // Disable the priority boost that Windows would normally apply
+                // Suppress the wake-up preemption that the OS would normally apply
                 // when this thread is unblocked. The semaphore is used to park workers.
-                // A transient priority boost on wake provides no benefit here and can
-                // result in woken thread preempting already working threads.
-                // GetCurrentThread() returns a pseudo-handle (-2) that is valid
-                // only on the calling thread and does not need to be closed.
-                Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: true);
-#endif
+                // A transient wake-up advantage provides no benefit here and can result in
+                // the woken thread preempting already-working threads. On Windows this
+                // disables SetThreadPriorityBoost. On Linux this switches the thread to
+                // SCHED_BATCH before the wait, which sched(7) documents as applying "a small
+                // scheduling penalty with respect to wakeup behavior", then restores to the
+                // default SCHED_OTHER after the wait. These are best-effort; failures are
+                // asserted in debug builds but otherwise ignored.
+                WakePreemptionScope wakePreemptionScope = SuppressWakePreemption();
 
                 try
                 {
@@ -349,10 +350,7 @@ namespace System.Threading
                 }
                 finally
                 {
-#if TARGET_WINDOWS
-                    // restore the default.
-                    Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
-#endif
+                    RestoreWakePreemption(wakePreemptionScope);
                 }
             }
 
