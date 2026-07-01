@@ -1250,5 +1250,78 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments("this[]", "I"));
         }
+
+        [Fact]
+        public async Task GeneratedComInterfaceMemberReturningInterfaceWithoutRcw_ReportsDiagnostic()
+        {
+            // A [GeneratedComInterface] member with a return / out parameter of a
+            // [GeneratedComInterface(Options = ComInterfaceOptions.ManagedObjectWrapper)] type
+            // is unmanaged -> managed marshalling, which requires an RCW that will not be generated.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface(Options = ComInterfaceOptions.ManagedObjectWrapper)]
+                [Guid("D5A6D2DD-F1F1-4DF7-B84F-8A34A6B27CD3")]
+                partial interface INoRcw
+                {
+                    void Method();
+                }
+
+                [GeneratedComInterface]
+                [Guid("2E8A6D3F-9AF7-4A44-9DD9-4A6E39D7B0F1")]
+                partial interface IHost
+                {
+                    INoRcw {|#0:GetNoRcw|}();
+                    void GetNoRcwOut(out INoRcw {|#1:value|});
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(string.Format(SR.ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged, "INoRcw"), "GetNoRcw"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(1)
+                    .WithArguments(string.Format(SR.ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged, "INoRcw"), "value"));
+        }
+
+        [Fact]
+        public async Task GeneratedComInterfaceMemberTakingInterfaceWithoutCcw_ReportsDiagnostic()
+        {
+            // A [GeneratedComInterface] member with a by-value / in parameter of a
+            // [GeneratedComInterface(Options = ComInterfaceOptions.ComObjectWrapper)] type
+            // is managed -> unmanaged marshalling, which requires a CCW that will not be generated.
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface(Options = ComInterfaceOptions.ComObjectWrapper)]
+                [Guid("D5A6D2DD-F1F1-4DF7-B84F-8A34A6B27CD3")]
+                partial interface INoCcw
+                {
+                    void Method();
+                }
+
+                [GeneratedComInterface]
+                [Guid("2E8A6D3F-9AF7-4A44-9DD9-4A6E39D7B0F1")]
+                partial interface IHost
+                {
+                    void TakeNoCcw(INoCcw {|#0:value|});
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(string.Format(SR.ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged, "INoCcw"), "value"));
+        }
     }
 }

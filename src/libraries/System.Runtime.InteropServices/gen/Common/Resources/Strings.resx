@@ -679,6 +679,12 @@
   <data name="OneWrapperMustBeGenerated" xml:space="preserve">
     <value>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</value>
   </data>
+  <data name="ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged" xml:space="preserve">
+    <value>The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no managed object wrapper (CCW) is generated. Marshalling a managed object as this interface to unmanaged code will not work.</value>
+  </data>
+  <data name="ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged" xml:space="preserve">
+    <value>The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</value>
+  </data>
   <data name="OutRequiresToManagedDescription" xml:space="preserve">
     <value>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</value>
   </data>
