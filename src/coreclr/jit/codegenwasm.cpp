@@ -2872,6 +2872,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             {
                 m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
                 sigInfoCall = &sigInfoLocal;
+                if (callRetType == TYP_REF && sigInfoCall->retType == CORINFO_TYPE_VOID && sigInfoCall->callConv == CORINFO_CALLCONV_HASTHIS)
+                {
+                    // Adjust sigInfoCall for string ctor case
+                    sigInfoCall->retType = CORINFO_TYPE_CLASS;
+                    sigInfoCall->callConv = CORINFO_CALLCONV_DEFAULT;
+                }
             }
         }
 

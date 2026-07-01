@@ -1416,7 +1416,45 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
 
     MetaSig sig(pMD);
-    void* thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+    void* thunk;
+
+    if (pMD->IsCtor() && pMD->GetMethodTable()->IsString())
+    {
+        const char *thunkKey = nullptr;
+
+        // String constructors are special-cased in the interpreter and have special thunks that don't match the normal signature.
+        if (sig.NumFixedArgs() == 1 && sig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+        {
+            thunkKey = "IiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+        }
+        else
+        {
+            switch (sig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Iiip";
+                    break;
+                case 2:
+                    thunkKey = "Iiiip";
+                    break;
+                case 3:
+                    thunkKey = "Iiiiip";
+                    break;
+                case 4:
+                    thunkKey = "Iiiiiip";
+                    break;
+                default:
+                    PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
+                    break;
+            }
+        }
+
+        thunk = LookupPortableEntryPointThunk(thunkKey);
+    }
+    else
+    {
+        thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+    }
 
     return thunk;
 }
