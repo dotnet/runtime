@@ -139,7 +139,7 @@ internal partial class StackWalk_1 : IStackWalk
     private void SetupContext(IPlatformAgnosticContext context, FrameIterator frameIterator, StackWalkState state, ref bool isFirst, out bool matchedIsInterrupted)
     {
         TargetPointer curSP = context.StackPointer;
-        TargetCodePointer curPc = context.InstructionPointer;
+        TargetCodePointer curPc = CodePointerUtils.CodePointerFromAddress(context.InstructionPointer.AsTargetPointer, _target);
         TargetPointer curFP = context.FramePointer;
         if (state == StackWalkState.Frameless)
         {
@@ -160,7 +160,7 @@ internal partial class StackWalk_1 : IStackWalk
                 }
 
                 // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/vm/stackwalk.cpp#L1238
-                if (frameIterator.GetCurrentReturnAddress() != curPc)
+                if (CodePointerUtils.CodePointerFromAddress(frameIterator.GetCurrentReturnAddress().AsTargetPointer, _target) != curPc)
                     break;
 
                 IPlatformAgnosticContext tmpContext = context.Clone();
@@ -169,7 +169,7 @@ internal partial class StackWalk_1 : IStackWalk
                     break;
             }
 
-            if (frameIterator.GetCurrentReturnAddress() == curPc)
+            if (CodePointerUtils.CodePointerFromAddress(frameIterator.GetCurrentReturnAddress().AsTargetPointer, _target) == curPc)
             {
                 matched = true;
                 matchedType = frameIterator.GetCurrentFrameType();
@@ -821,7 +821,7 @@ internal partial class StackWalk_1 : IStackWalk
                 // Reset interrupted state after processing a managed frame.
                 // Native stackwalk.cpp: isInterrupted = false; hasFaulted = false;
                 handle.IsInterrupted = false;
-                TargetCodePointer preUnwindIp = new(handle.Context.InstructionPointer.Value);
+                TargetCodePointer preUnwindIp = CodePointerUtils.CodePointerFromAddress(handle.Context.InstructionPointer.AsTargetPointer, _target);
                 if (_target.Contracts.ExecutionManager.GetCodeBlockHandle(preUnwindIp) is CodeBlockHandle cbh)
                 {
                     handle.LastFramelessStackParameterSize = _target.Contracts.ExecutionManager.GetStackParameterSize(cbh);
@@ -855,7 +855,7 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.InitialNativeContext:
             case StackWalkState.NativeMarker:
             {
-                TargetCodePointer ip = handle.Context.InstructionPointer;
+                TargetCodePointer ip = CodePointerUtils.CodePointerFromAddress(handle.Context.InstructionPointer.AsTargetPointer, _target);
                 HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(ip);
                 if (hijackKind != HijackKind.None)
                 {
@@ -892,7 +892,7 @@ internal partial class StackWalk_1 : IStackWalk
                     // (interpreter virtual unwind manages the IP), but we still need
                     // UpdateContextFromFrame to transition to Frameless in the
                     // interpreted method.
-                    if (returnAddress != TargetPointer.Null
+                    if (returnAddress != TargetCodePointer.Null
                         || frameType == FrameType.InterpreterFrame)
                     {
                         handle.FrameIter.UpdateContextFromCurrentFrame(handle.Context);
@@ -1097,7 +1097,7 @@ internal partial class StackWalk_1 : IStackWalk
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
                 Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(framePtr);
-                TargetCodePointer returnAddress = icf.CallerReturnAddress;
+                TargetCodePointer returnAddress = CodePointerUtils.CodePointerFromAddress(icf.CallerReturnAddress.AsTargetPointer, _target);
                 if (returnAddress != TargetCodePointer.Null && _eman.GetCodeBlockHandle(returnAddress) is CodeBlockHandle cbh)
                 {
                     MethodDescHandle returnMethodDesc = rts.GetMethodDescHandle(_eman.GetMethodDesc(cbh));
@@ -1226,7 +1226,8 @@ internal partial class StackWalk_1 : IStackWalk
 
     private bool IsManaged(TargetCodePointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
-        if (_eman.GetCodeBlockHandle(ip) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
+        TargetCodePointer strippedIp = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
+        if (_eman.GetCodeBlockHandle(strippedIp) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
         {
             codeBlockHandle = cbh;
             return true;
@@ -1267,7 +1268,8 @@ internal partial class StackWalk_1 : IStackWalk
     /// </summary>
     private bool IsInterpreterCode(TargetCodePointer ip)
     {
-        return _eman.GetCodeKind(ip) == CodeKind.Interpreter;
+        TargetCodePointer strippedIp = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
+        return _eman.GetCodeKind(strippedIp) == CodeKind.Interpreter;
     }
 
     #endregion Interpreter

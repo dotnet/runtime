@@ -51,7 +51,8 @@ internal class ARM64Unwinder(Target target)
 
     public bool Unwind(ref ARM64Context context)
     {
-        if (_eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
+        TargetCodePointer controlPc = CodePointerUtils.CodePointerFromAddress(context.InstructionPointer.AsTargetPointer, _target);
+        if (_eman.GetCodeBlockHandle(controlPc) is not CodeBlockHandle cbh)
             return false;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
@@ -123,7 +124,9 @@ internal class ARM64Unwinder(Target target)
         }
         else
         {
-            controlPcRva = (uint)(context.Pc - imageBase);
+            TargetCodePointer controlPc = CodePointerUtils.CodePointerFromAddress(context.InstructionPointer.AsTargetPointer, _target);
+            TargetPointer controlPcAddress = CodePointerUtils.AddressFromCodePointer(controlPc, _target);
+            controlPcRva = (uint)(controlPcAddress - imageBase);
         }
 
         //
@@ -162,6 +165,7 @@ internal class ARM64Unwinder(Target target)
         // behavior.
         //
         bool finalPcFromLr = true;
+        bool isReturnAddressSigned = false;
 
         //
         // Fetch the header word from the .xdata blob
@@ -763,9 +767,7 @@ internal class ARM64Unwinder(Target target)
                     return false;
                 }
 
-                //
-                // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
-                //
+                isReturnAddressSigned = true;
             }
 
             //
@@ -816,7 +818,9 @@ internal class ARM64Unwinder(Target target)
             //
             if (finalPcFromLr)
             {
-                context.Pc = context.Lr;
+                context.Pc = isReturnAddressSigned
+                    ? CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(context.Lr), _target).Value
+                    : context.Lr;
             }
         }
 
@@ -972,7 +976,7 @@ internal class ARM64Unwinder(Target target)
 
             case 0xec:  // MSFT_OP_CLEAR_UNWOUND_TO_CALL
                 context.ContextFlags &= (uint)~ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL;
-                context.Pc = context.Lr;
+                context.Pc = CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(context.Lr), _target).Value;
                 break;
 
             default:

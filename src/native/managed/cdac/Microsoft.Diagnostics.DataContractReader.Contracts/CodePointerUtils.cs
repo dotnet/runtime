@@ -10,6 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 internal static class CodePointerUtils
 {
     private const uint Arm32ThumbBit = 1;
+    private const ulong Arm64PtrAuthMask = 0x0000FFFFFFFFFFFF;
 
     internal static TargetCodePointer CodePointerFromAddress(TargetPointer address, Target target)
     {
@@ -26,7 +27,7 @@ internal static class CodePointerUtils
         }
         else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
         {
-            throw new NotImplementedException($"{nameof(CodePointerFromAddress)}: ARM64 with pointer authentication");
+            return new TargetCodePointer(address.Value & Arm64PtrAuthMask);
         }
         Debug.Assert(flags == default);
         return new TargetCodePointer(address.Value);
@@ -42,9 +43,10 @@ internal static class CodePointerUtils
         }
         else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
         {
-            throw new NotImplementedException($"{nameof(AddressFromCodePointer)}: ARM64 with pointer authentication");
+            return new TargetPointer(code.Value & Arm64PtrAuthMask);
         }
         Debug.Assert(flags == default);
         return new TargetPointer(code.Value);
     }
+
 }

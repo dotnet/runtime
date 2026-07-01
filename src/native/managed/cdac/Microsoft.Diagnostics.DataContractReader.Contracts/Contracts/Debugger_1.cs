@@ -121,6 +121,8 @@ internal readonly struct Debugger_1 : IDebugger
 
     HijackKind IDebugger.GetHijackKind(TargetCodePointer controlPC)
     {
+        TargetPointer controlAddress = CodePointerUtils.AddressFromCodePointer(controlPC, _target);
+
         if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
             return HijackKind.None;
 
@@ -142,7 +144,7 @@ internal readonly struct Debugger_1 : IDebugger
 
             ulong start = entry.StartAddress.Value;
             ulong end = start + entry.Size.Value;
-            if (controlPC.Value >= start && controlPC.Value < end)
+            if (controlAddress.Value >= start && controlAddress.Value < end)
             {
                 return i == UnhandledExceptionHijackIndex ? HijackKind.UnhandledException : HijackKind.Other;
             }
