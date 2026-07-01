@@ -373,6 +373,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
 
     m_loaderAllocator = NULL;
     m_pDynamicMetadata = (TADDR)NULL;
+    m_dwMetadataGeneration = 0;
 
     m_pPEAssembly->AddRef();
 }
@@ -665,6 +666,7 @@ void Module::ApplyMetaData()
     // Ensure for MethodDef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtMethodDef) + 1;
     EnsureMethodDefCanBeStored(TokenFromRid(ulCount, mdtMethodDef));
+    m_dwMetadataGeneration++;
 }
 
 //
@@ -4032,6 +4034,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
         delete (uint32_t*)m_pDynamicMetadata;
 
         m_pDynamicMetadata = (TADDR)pBuffer.Extract();
+        m_dwMetadataGeneration++;
     }
 
     //
