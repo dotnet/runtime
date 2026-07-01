@@ -142,6 +142,7 @@
 // Scratch registers that do not conflict with the argument registers, usually for use in function prolog
 #define REG_SCRATCH              REG_R9
 #define REG_SCRATCH_V            REG_V9
+#define REG_SCRATCH_P            REG_P4
 
 // This is a general register that can be optionally reserved for other purposes during codegen
 #define REG_OPT_RSVD             REG_IP1

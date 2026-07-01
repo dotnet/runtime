@@ -5968,14 +5968,35 @@ void CodeGen::genPoisonUnknownSizeVariable(int varNum, char poisonVal)
     assert(varNum >= 0);
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
-    // We should not see mask locals being address exposed.
     assert(varDsc->IsAddressExposed());
-    noway_assert(varDsc->TypeGet() == TYP_SIMD);
 
-    // mov z9.b, #poisonVal
-    GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, (ssize_t)poisonVal, INS_OPTS_SCALABLE_B);
-    // str z9, [x19, $index MUL VL]
-    GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, varNum, 0);
+    if (varDsc->TypeGet() == TYP_SIMD)
+    {
+        // mov z9.b, #poisonVal
+        GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, (ssize_t)poisonVal, INS_OPTS_SCALABLE_B);
+        // str z9, [x19, $index MUL VL]
+        GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, varNum, 0);
+    }
+    else
+    {
+        assert(varDsc->TypeGet() == TYP_MASK);
+        // At the moment we don't have a single instruction to produce an arbitrary value in a predicate register,
+        // since it would have to fit some common element masking pattern. We can, however, produce a repeating
+        // 64-bit value in a vector, then convert this to a predicate using cmpne.
+        const ssize_t vectorPoisonVal = static_cast<ssize_t>(0xffff0000ffff00ffULL);
+        // mov x9, #vectorPoisonVal
+        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_SCRATCH, vectorPoisonVal);
+        // dup z9.d, x9
+        GetEmitter()->emitIns_R_R(INS_sve_dup, EA_8BYTE, REG_SCRATCH_V, REG_SCRATCH, INS_OPTS_SCALABLE_D);
+        // ptrue p4.b
+        GetEmitter()->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, REG_SCRATCH_P, INS_OPTS_SCALABLE_B,
+                                       SVE_PATTERN_ALL);
+        // cmpne p4.b, p4/z, z9.b, #0
+        GetEmitter()->emitIns_R_R_R_I(INS_sve_cmpne, EA_SCALABLE, REG_SCRATCH_P, REG_SCRATCH_P, REG_SCRATCH_V, 0,
+                                      INS_OPTS_SCALABLE_B);
+        // str p4, [x19, $index MUL VL]
+        GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_P, varNum, 0);
+    }
 }
 
 #endif // TARGET_ARM64
