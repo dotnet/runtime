@@ -129,6 +129,21 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
             continue;
         }
         uint32_t interfaceIndex = if_nametoindex(ifa_name);
+        if (interfaceIndex == 0)
+        {
+            int savedErrno = errno;
+
+            // If the device was removed or not a real device (like an 'ip address add' label) errno is ENODEV.
+            if (savedErrno == ENODEV)
+            {
+                continue;
+            }
+
+            freeifaddrs(headAddr);
+            errno = savedErrno;
+            return -1;
+        }
+
         // ifa_name may be an aliased interface name.
         // Use if_indextoname to map back to the true device name.
         char actualName[IF_NAMESIZE];
@@ -323,6 +338,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     void * memoryBlock = calloc((size_t)entriesCount, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
+        freeifaddrs(head);
         errno = ENOMEM;
         return -1;
     }
@@ -346,6 +362,25 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
         //current = NULL;
         nii = NULL;
         uint ifindex = if_nametoindex(ifa_name);
+        if (ifindex == 0)
+        {
+            int savedErrno = errno;
+
+            // If the device was removed or not a real device (like an 'ip address add' label) errno is ENODEV.
+            if (savedErrno == ENODEV)
+            {
+                ifaddrsEntry = ifaddrsEntry->ifa_next;
+                continue;
+            }
+
+            freeifaddrs(head);
+            free(memoryBlock);
+            if (socketfd != -1)
+                close(socketfd);
+            errno = savedErrno;
+            return -1;
+        }
+
         for (index = 0; index < (int)ifcount; index ++)
         {
             if (((NetworkInterfaceInfo*)memoryBlock)[index].InterfaceIndex == ifindex)
