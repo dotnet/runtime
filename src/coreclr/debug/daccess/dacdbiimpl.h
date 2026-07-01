@@ -715,9 +715,6 @@ public:
     // Return the stack parameter size of the given method.
     ULONG32 GetStackParameterSize(EECodeInfo * pCodeInfo);
 
-    // Return the FramePointer of the current frame at which the stackwalker is stopped.
-    HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal);
-
     FramePointer GetFramePointerWorker(StackFrameIterator * pIter);
 
     // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.

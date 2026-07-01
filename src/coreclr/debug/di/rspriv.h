@@ -6386,12 +6386,6 @@ private:
 
     // cached flag used for refreshing a CordbStackWalk
     CorDebugSetContextFlag m_cachedSetContextFlag;
-
-    // We unwind one frame ahead of time to get the FramePointer on x86.
-    // These fields are used for the bookkeeping.
-    RSSmartPtr<CordbFrame> m_pCachedFrame;
-    HRESULT m_cachedHR;
-    bool m_fIsOneFrameAhead;
 };
 
 
