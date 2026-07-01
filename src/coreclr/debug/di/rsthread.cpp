@@ -6787,10 +6787,11 @@ HRESULT CordbNativeFrame::GetLocalDoubleRegisterValue(
             // nickbe
             // 10/31/2002 11:09:42
             //
-            // This assert assumes that the JIT will only partially enregister
-            // objects that have a size equal to twice the size of a register.
+            // The JIT partially enregisters an object across two registers. The
+            // object occupies more than one register (otherwise it would be a
+            // single-register home) and at most two registers' worth of space.
             //
-            _ASSERTE(objectSize == 2 * sizeof(void*));
+            _ASSERTE((objectSize > sizeof(void*)) && (objectSize <= 2 * sizeof(void*)));
         }
     }
 #endif
@@ -7039,6 +7040,108 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
         EX_CATCH_HRESULT(hr);
 
     }
+
+    return hr;
+}
+
+// Build a value that lives in two registers, where either register may be an
+// integer or a floating-point register (e.g. a 16-byte struct returned in
+// XMM0+XMM1 on Unix x64, or a mixed int/fp multi-register return). The low and
+// high 8-byte halves are gathered from the appropriate register sources into a
+// contiguous local snapshot, then the value is built from that snapshot.
+//
+// Arguments:
+//     lowReg      - the register holding the low 8 bytes. When lowIsFloat is true
+//                   this is a 0-based fp register index, otherwise a CorDebugRegister.
+//     lowIsFloat  - whether the low half is in a floating-point register.
+//     highReg     - the register holding the high 8 bytes. When highIsFloat is true
+//                   this is a 0-based fp register index, otherwise a CorDebugRegister.
+//     highIsFloat - whether the high half is in a floating-point register.
+//     pType       - the type of the value.
+//     ppValue     - [out] the newly created value.
+//
+// Note: This produces a read-only value snapshot (no register value-home for
+//       write-back), which matches how multi-register return values are inspected.
+HRESULT CordbNativeFrame::GetLocalTwoRegisterValue(DWORD            lowReg,
+                                                   bool             lowIsFloat,
+                                                   DWORD            highReg,
+                                                   bool             highIsFloat,
+                                                   CordbType *      pType,
+                                                   ICorDebugValue **ppValue)
+{
+    PUBLIC_REENTRANT_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppValue, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    // Snapshot of the value: low 8 bytes followed by high 8 bytes.
+    BYTE valueBuffer[2 * sizeof(double)] = {0};
+
+    EX_TRY
+    {
+        CordbThread * pThread = m_pThread;
+
+        // Ensure the floating-point state is loaded if either half lives in an fp register.
+        if (lowIsFloat || highIsFloat)
+        {
+            if (!pThread->m_fFloatStateValid)
+            {
+                pThread->LoadFloatState();
+            }
+        }
+
+        const DWORD numFloatValues =
+            (DWORD)(sizeof(pThread->m_floatValues) / sizeof(pThread->m_floatValues[0]));
+
+        // Gather the low 8 bytes.
+        if (lowIsFloat)
+        {
+            if (lowReg >= numFloatValues)
+                ThrowHR(E_INVALIDARG);
+            memcpy(valueBuffer, &pThread->m_floatValues[lowReg], sizeof(double));
+        }
+        else
+        {
+            UINT_PTR * pReg = GetAddressOfRegister((CorDebugRegister)lowReg);
+            if (pReg == NULL)
+                ThrowHR(E_INVALIDARG);
+            memcpy(valueBuffer, pReg, sizeof(UINT_PTR));
+        }
+
+        // Gather the high 8 bytes.
+        if (highIsFloat)
+        {
+            if (highReg >= numFloatValues)
+                ThrowHR(E_INVALIDARG);
+            memcpy(valueBuffer + sizeof(double), &pThread->m_floatValues[highReg], sizeof(double));
+        }
+        else
+        {
+            UINT_PTR * pReg = GetAddressOfRegister((CorDebugRegister)highReg);
+            if (pReg == NULL)
+                ThrowHR(E_INVALIDARG);
+            memcpy(valueBuffer + sizeof(double), pReg, sizeof(UINT_PTR));
+        }
+
+        // Build the value from the local snapshot. The value lives in two registers, at
+        // least one of which is a floating-point register, so its contents cannot be
+        // reached through the integer register display. TwoRegisterValueHome captures the
+        // 16-byte snapshot so the value's object copy can be populated and so the home can
+        // be cloned for read-only field access (writing back is not supported).
+        EnregisteredValueHomeHolder pRemoteReg(new TwoRegisterValueHome(this, valueBuffer, sizeof(valueBuffer)));
+        EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();
+
+        CordbValue::CreateValueByType(GetCurrentAppDomain(),
+                                      pType,
+                                      false,
+                                      EMPTY_BUFFER,
+                                      MemoryRange(NULL, 0),
+                                      pRegHolder,
+                                      ppValue);  // throws
+    }
+    EX_CATCH_HRESULT(hr);
 
     return hr;
 }
@@ -8301,6 +8404,34 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                             type, ppValue);
         break;
 
+#if defined(TARGET_64BIT)
+    // The value lives in two registers, at least one of which is a floating-point
+    // register (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64, or a mixed
+    // int/fp multi-register return). vlrrReg1 holds the low 8 bytes and vlrrReg2 the
+    // high 8 bytes; fp registers are stored as 0-based fp register indices while int
+    // registers are ordinary register numbers (converted to CorDebugRegister here).
+    case ICorDebugInfo::VLT_REG_FP_REG_FP:
+        hr = m_nativeFrame->GetLocalTwoRegisterValue(
+                            pNativeVarInfo->loc.vlRegReg.vlrrReg1, true,
+                            pNativeVarInfo->loc.vlRegReg.vlrrReg2, true,
+                            type, ppValue);
+        break;
+
+    case ICorDebugInfo::VLT_REG_FP_REG:
+        hr = m_nativeFrame->GetLocalTwoRegisterValue(
+                            pNativeVarInfo->loc.vlRegReg.vlrrReg1, true,
+                            ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg2), false,
+                            type, ppValue);
+        break;
+
+    case ICorDebugInfo::VLT_REG_REG_FP:
+        hr = m_nativeFrame->GetLocalTwoRegisterValue(
+                            ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg1), false,
+                            pNativeVarInfo->loc.vlRegReg.vlrrReg2, true,
+                            type, ppValue);
+        break;
+#endif // TARGET_64BIT
+
     case ICorDebugInfo::VLT_REG_STK:
         {
             CORDB_ADDRESS pRemoteValue = m_nativeFrame->GetLSStackAddress(
@@ -8336,15 +8467,16 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_FPSTK:
-#if defined(TARGET_ARM) // @ARMTODO
-        hr = E_NOTIMPL;
-#else
-        /*
-        @TODO [Microsoft] We have to make this work!!!!!!!!!!!!!
+#if defined(TARGET_X86)
+        // On x86 floating-point values (including return values) live on the x87
+        // FP stack. vlfReg is the depth from the top of the stack, so add the base
+        // register to form the CorDebugRegister index expected by the helper.
         hr = m_nativeFrame->GetLocalFloatingPointValue(
                          pNativeVarInfo->loc.vlFPstk.vlfReg + REGISTER_X86_FPSTACK_0,
                          type, ppValue);
-                         */
+#elif defined(TARGET_ARM) // @ARMTODO
+        hr = E_NOTIMPL;
+#else
         hr = CORDBG_E_IL_VAR_NOT_AVAILABLE;
 #endif
         break;

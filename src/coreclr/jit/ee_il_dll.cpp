@@ -925,6 +925,21 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
             break;
 
+        case CodeGenInterface::VLT_REG_FP_REG_FP:
+            printf("%s-%s", getRegName((regNumber)(var->loc.vlRegReg.vlrrReg1 + REG_FP_FIRST)),
+                   getRegName((regNumber)(var->loc.vlRegReg.vlrrReg2 + REG_FP_FIRST)));
+            break;
+
+        case CodeGenInterface::VLT_REG_FP_REG:
+            printf("%s-%s", getRegName((regNumber)(var->loc.vlRegReg.vlrrReg1 + REG_FP_FIRST)),
+                   getRegName(var->loc.vlRegReg.vlrrReg2));
+            break;
+
+        case CodeGenInterface::VLT_REG_REG_FP:
+            printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1),
+                   getRegName((regNumber)(var->loc.vlRegReg.vlrrReg2 + REG_FP_FIRST)));
+            break;
+
 #ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_STK:
             if ((int)var->loc.vlRegStk.vlrsStk.vlrssBaseReg != (int)ICorDebugInfo::REGNUM_AMBIENT_SP)

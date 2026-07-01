@@ -79,6 +79,14 @@ bool CodeGenInterface::siVarLoc::vlIsInReg(regNumber reg) const
         case CodeGenInterface::VLT_FPSTK:
             return false;
 
+        case CodeGenInterface::VLT_REG_FP_REG_FP:
+        case CodeGenInterface::VLT_REG_FP_REG:
+        case CodeGenInterface::VLT_REG_REG_FP:
+            // These describe values that live (at least partly) in floating-point
+            // registers, recorded as 0-based fp register indices rather than raw
+            // register numbers, so they cannot be compared against "reg" here.
+            return false;
+
         default:
             assert(!"Bad locType");
             return false;
@@ -124,6 +132,9 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack(regNumber reg, signed offset) const
         case CodeGenInterface::VLT_REG:
         case CodeGenInterface::VLT_REG_FP:
         case CodeGenInterface::VLT_REG_REG:
+        case CodeGenInterface::VLT_REG_FP_REG_FP:
+        case CodeGenInterface::VLT_REG_FP_REG:
+        case CodeGenInterface::VLT_REG_REG_FP:
         case CodeGenInterface::VLT_FPSTK:
             return false;
 
@@ -173,6 +184,56 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
         vlType            = VLT_REG_REG;
         vlRegReg.vlrrReg1 = reg;
         vlRegReg.vlrrReg2 = otherReg;
+    }
+}
+
+//------------------------------------------------------------------------
+// storeVariableInTwoRegisters: Convert the siVarLoc instance into a two-register
+//  location, where either register may be an integer or a floating-point register.
+//
+// Arguments:
+//    reg1  - the register holding the low 8 bytes of the value.
+//    reg2  - the register holding the high 8 bytes of the value.
+//
+// Notes:
+//    This generalizes storeVariableInRegisters to support values that live in a
+//    pair of registers where at least one is a floating-point register (e.g. a
+//    16-byte struct returned in XMM0+XMM1 on Unix x64, or a mixed int/fp
+//    multi-register return). Floating-point registers are recorded as a 0-based
+//    fp register index (reg - REG_FP_FIRST), matching the VLT_REG_FP convention;
+//    integer registers are recorded as their ordinary register number.
+//
+void CodeGenInterface::siVarLoc::storeVariableInTwoRegisters(regNumber reg1, regNumber reg2)
+{
+    assert(reg1 != REG_NA);
+    assert(reg2 != REG_NA);
+
+    const bool fpReg1 = genIsValidFloatReg(reg1);
+    const bool fpReg2 = genIsValidFloatReg(reg2);
+
+    if (!fpReg1 && !fpReg2)
+    {
+        vlType            = VLT_REG_REG;
+        vlRegReg.vlrrReg1 = reg1;
+        vlRegReg.vlrrReg2 = reg2;
+    }
+    else if (fpReg1 && fpReg2)
+    {
+        vlType            = VLT_REG_FP_REG_FP;
+        vlRegReg.vlrrReg1 = (regNumber)(reg1 - REG_FP_FIRST);
+        vlRegReg.vlrrReg2 = (regNumber)(reg2 - REG_FP_FIRST);
+    }
+    else if (fpReg1)
+    {
+        vlType            = VLT_REG_FP_REG;
+        vlRegReg.vlrrReg1 = (regNumber)(reg1 - REG_FP_FIRST);
+        vlRegReg.vlrrReg2 = reg2;
+    }
+    else
+    {
+        vlType            = VLT_REG_REG_FP;
+        vlRegReg.vlrrReg1 = reg1;
+        vlRegReg.vlrrReg2 = (regNumber)(reg2 - REG_FP_FIRST);
     }
 }
 
@@ -236,6 +297,9 @@ bool CodeGenInterface::siVarLoc::Equals(const siVarLoc* lhs, const siVarLoc* rhs
             return (lhs->vlReg.vlrReg == rhs->vlReg.vlrReg);
 
         case VLT_REG_REG:
+        case VLT_REG_FP_REG_FP:
+        case VLT_REG_FP_REG:
+        case VLT_REG_REG_FP:
             return (lhs->vlRegReg.vlrrReg1 == rhs->vlRegReg.vlrrReg1) &&
                    (lhs->vlRegReg.vlrrReg2 == rhs->vlRegReg.vlrrReg2);
 
@@ -531,6 +595,14 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             {
                 printf(" byref");
             }
+            break;
+
+        case VLT_REG_FP_REG_FP:
+        case VLT_REG_FP_REG:
+        case VLT_REG_REG_FP:
+            // At least one of the two registers is an fp register, recorded as a
+            // 0-based fp register index, so just print the raw register fields.
+            printf("reg1=%d reg2=%d (fp multi-reg)", varLoc->vlRegReg.vlrrReg1, varLoc->vlRegReg.vlrrReg2);
             break;
 
         case VLT_STK:
@@ -1436,6 +1508,9 @@ void CodeGen::checkICodeDebugInfo()
     assert((unsigned)ICorDebugInfo::VLT_STK2 == CodeGenInterface::VLT_STK2);
     assert((unsigned)ICorDebugInfo::VLT_FPSTK == CodeGenInterface::VLT_FPSTK);
     assert((unsigned)ICorDebugInfo::VLT_FIXED_VA == CodeGenInterface::VLT_FIXED_VA);
+    assert((unsigned)ICorDebugInfo::VLT_REG_FP_REG_FP == CodeGenInterface::VLT_REG_FP_REG_FP);
+    assert((unsigned)ICorDebugInfo::VLT_REG_FP_REG == CodeGenInterface::VLT_REG_FP_REG);
+    assert((unsigned)ICorDebugInfo::VLT_REG_REG_FP == CodeGenInterface::VLT_REG_REG_FP);
     assert((unsigned)ICorDebugInfo::VLT_COUNT == CodeGenInterface::VLT_COUNT);
     assert((unsigned)ICorDebugInfo::VLT_INVALID == CodeGenInterface::VLT_INVALID);
 
@@ -1736,24 +1811,26 @@ void CodeGen::psiBegProlog()
 
         if (reg1 != REG_NA)
         {
-            if (genIsValidFloatReg(reg1))
+            if (reg2 == REG_NA)
             {
-                // FP parameter in XMM/V register — encode as VLT_REG_FP with
-                // 0-based FP register index.
-                varLocation.vlType       = VLT_REG_FP;
-                varLocation.vlReg.vlrReg = (regNumber)(reg1 - REG_FP_FIRST);
+                if (genIsValidFloatReg(reg1))
+                {
+                    // FP parameter in a single XMM/V register — encode as VLT_REG_FP
+                    // with a 0-based FP register index.
+                    varLocation.vlType       = VLT_REG_FP;
+                    varLocation.vlReg.vlrReg = (regNumber)(reg1 - REG_FP_FIRST);
+                }
+                else
+                {
+                    varLocation.storeVariableInRegisters(reg1, REG_NA);
+                }
             }
             else
             {
-                // Integer register parameter. On SysV x64, the second segment
-                // may be in an XMM register for mixed struct passing — drop it
-                // since VLT_REG_REG cannot encode FP registers.
-                // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
-                if (reg2 != REG_NA && !genIsValidIntReg(reg2))
-                {
-                    reg2 = REG_NA;
-                }
-                varLocation.storeVariableInRegisters(reg1, reg2);
+                // Two-register parameter. Either register may be an integer or a
+                // floating-point register (e.g. mixed int/fp struct passing on
+                // SysV x64); storeVariableInTwoRegisters selects the right encoding.
+                varLocation.storeVariableInTwoRegisters(reg1, reg2);
             }
         }
         else

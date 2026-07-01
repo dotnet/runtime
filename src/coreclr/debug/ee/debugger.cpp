@@ -4255,6 +4255,9 @@ bool GetSetFrameHelper::GetValueClassSizeOfVar(int varNum, ICorDebugInfo::VarLoc
     if ((cet != ELEMENT_TYPE_VALUETYPE) ||
         (varType == ICorDebugInfo::VLT_REG) ||
         (varType == ICorDebugInfo::VLT_REG_REG) ||
+        (varType == ICorDebugInfo::VLT_REG_FP_REG_FP) ||
+        (varType == ICorDebugInfo::VLT_REG_FP_REG) ||
+        (varType == ICorDebugInfo::VLT_REG_REG_FP) ||
         (varType == ICorDebugInfo::VLT_REG_STK) ||
         (varType == ICorDebugInfo::VLT_STK_REG))
     {

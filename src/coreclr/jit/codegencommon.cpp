@@ -1828,16 +1828,33 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
         regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
 
-        // VLT_REG_REG can only encode integer registers. On platforms where structs
-        // can be returned in a mix of int and float registers (SysV x64, RISC-V),
-        // skip recording if any register is not an int register.
-        // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
+#ifndef TARGET_64BIT
+        // The two-register FP/mixed encodings (VLT_REG_FP_REG_FP and the mixed
+        // VLT_REG_FP_REG / VLT_REG_REG_FP forms) and their DBI read path assume each
+        // register holds an 8-byte half of the value, so they are only implemented
+        // for 64-bit targets. On a 32-bit target a value returned in two
+        // floating-point registers (e.g. an ARM32 HFA such as a struct of two floats
+        // or doubles) cannot yet be represented; skip emitting MRV info for it rather
+        // than producing an encoding the debugger cannot decode. A pair of integer
+        // registers (e.g. x86 EAX:EDX) is still encoded below as VLT_REG_REG.
+        //
+        // Supporting this on ARM32 also depends on implementing managed FP-register
+        // value inspection there, which is itself unimplemented (the single-register
+        // VLT_REG_FP case is @ARMTODO/E_NOTIMPL in the DBI), and on mapping the JIT's
+        // single-precision register numbering to the debugger's D-register indexing.
+        // TODO: Implement 32-bit support for two-floating-point-register returns.
         if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
         {
             return;
         }
+#endif // !TARGET_64BIT
 
-        info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
+        // Either register may be an integer or a floating-point register. On
+        // platforms where structs can be returned in a mix of int and float
+        // registers (SysV x64, RISC-V), or in two float registers (e.g. a 16-byte
+        // Vector128 returned in XMM0+XMM1 on Unix x64), storeVariableInTwoRegisters
+        // selects the appropriate VLT_REG_REG / VLT_REG_FP_* encoding.
+        info.returnValueLoc.storeVariableInTwoRegisters(reg1, reg2);
     }
     else if (varTypeIsFloating(call))
     {

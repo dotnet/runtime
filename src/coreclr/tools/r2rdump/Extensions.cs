@@ -97,6 +97,12 @@ namespace R2RDump
                         writer.WriteLine($"    Register 1: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         writer.WriteLine($"    Register 2: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
                         break;
+                    case VarLocType.VLT_REG_FP_REG_FP:
+                    case VarLocType.VLT_REG_FP_REG:
+                    case VarLocType.VLT_REG_REG_FP:
+                        writer.WriteLine($"    Register 1: {varLoc.VariableLocation.Data1}");
+                        writer.WriteLine($"    Register 2: {varLoc.VariableLocation.Data2}");
+                        break;
                     case VarLocType.VLT_REG_STK:
                         writer.WriteLine($"    Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
