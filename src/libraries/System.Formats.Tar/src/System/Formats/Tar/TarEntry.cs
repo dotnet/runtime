@@ -415,9 +415,9 @@ namespace System.Formats.Tar
             return (fileDestinationPath, linkTargetPath);
         }
 
-        // Check whether a path escapes the destination directory by walking through its relative components and resolving any
-        // symlinks/junctions that already exist on disk (including ones extracted from earlier entries in the same archive).
-        // This prevents later entries from escaping the extraction root through symlink/junction traversal.
+        // Prevent an archive from escaping the extraction root through symlinks that were created by earlier entries in the same archive.
+        // This protection applies only to links introduced by the archive itself. It is not intended to defend against preexisting symlinks
+        // already present on disk before extraction
         private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
         {
             // Windows is case insensitive while Linux is case sensitive
