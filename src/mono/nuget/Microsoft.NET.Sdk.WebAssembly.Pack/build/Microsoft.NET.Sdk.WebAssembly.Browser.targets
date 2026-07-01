@@ -421,9 +421,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil 
+          Candidates="@(_WasmDllBuildCandidates)" 
+          IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" 
+          OutputPath="$(_WasmBuildWebcilPath)" 
+          IsEnabled="$(_WasmEnableWebcil)" 
+          WebcilVersion="$(_WasmWebcilVersion)" 
+          R2RWebcilCandidates="@(WasmR2RWebcilCandidate)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
+      <Output TaskParameter="WebcilSizes" ItemName="_WasmWebcilSizes" />
     </ConvertDllsToWebcil>
 
     <!-- Touch is needed for property-triggered full rebuilds: the task's content comparison
@@ -741,6 +748,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
+      WebcilSizes="@(_WasmWebcilSizes)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
@@ -924,6 +932,187 @@ Copyright (c) .NET Foundation. All rights reserved.
     DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences"
     BeforeTargets="PrepareForPublish" />
 
+  <!-- ReadyToRun (R2R) cross-compilation for WebAssembly. A project opts in by listing assembly
+       names (without extension) in @(WasmReadyToRunAssembly). Each named assembly is crossgen'd to
+       an R2R webcil-in-wasm image and handed to ConvertDllsToWebcil as a prebuilt replacement (via
+       @(WasmR2RWebcilCandidate)), so the SDK computes fingerprint/integrity from the R2R bytes and
+       the runtime executes the precompiled code instead of falling back to the interpreter.
+
+       R2R runs for BOTH `build` (untrimmed dev loop) and `publish` (trimmed). Each path has its own
+       self-contained hook target (_WasmCrossgenReadyToRunForBuild / _WasmCrossgenReadyToRunForPublish)
+       that resolves the per-path inputs and reference closure, invokes crossgen2, and emits the
+       @(WasmR2RWebcilCandidate) staged-image items consumed by ConvertDllsToWebcil.
+
+       The two hooks are deliberately NOT factored into a shared "core" crossgen target: an MSBuild
+       target runs at most once per project build, and a single `dotnet publish` invocation runs the
+       Build path and the Publish path in the same build. A shared crossgen target would therefore
+       run once (for whichever path reached it first) and be a no-op for the other, leaving its
+       output image missing. Keeping the crossgen invocation inline in each hook keeps them
+       independent; the small duplication (MakeDir + response file + Exec) is intentional.
+
+       Requires CoreCLR + webcil. The crossgen2 tool and wasm JIT are provided via the
+       _WasmCrossgen2Path / _WasmCrossgen2JitPath properties. In the runtime repo these are set by
+       WasmApp.InTree.props (in-repo artifact paths). For a shipping SDK they are resolved from the
+       restored Microsoft.NETCore.App.Crossgen2.<hostRID> pack by _WasmResolveReadyToRunCompiler
+       below; that target only fills in the properties when they are not already set, so the in-repo
+       override always wins. -->
+
+  <!-- crossgen2 pack coordinates (host RID/arch of the tool, not the wasm target) and the version it
+       is coupled to. The crossgen2 pack version must match the app's runtime framework version exactly
+       (R2R is version-bubble sensitive). RuntimeFrameworkVersion honors an explicit user override but
+       is only available at evaluation time when set in the project; otherwise it is resolved later in a
+       target, so fall back to the SDK-bundled runtime version (available at evaluation, which is what a
+       PackageDownload requires). -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
+    <_WasmCrossgen2HostRid Condition="'$(_WasmCrossgen2HostRid)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</_WasmCrossgen2HostRid>
+    <_WasmCrossgen2HostRid Condition="'$(_WasmCrossgen2HostRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</_WasmCrossgen2HostRid>
+    <_WasmCrossgen2HostArch Condition="'$(_WasmCrossgen2HostArch)' == '' and '$(_WasmCrossgen2HostRid)' != ''">$(_WasmCrossgen2HostRid.Substring($([MSBuild]::Add($(_WasmCrossgen2HostRid.LastIndexOf('-')), 1))))</_WasmCrossgen2HostArch>
+    <_WasmCrossgen2PackVersion Condition="'$(_WasmCrossgen2PackVersion)' == ''">$(RuntimeFrameworkVersion)</_WasmCrossgen2PackVersion>
+    <_WasmCrossgen2PackVersion Condition="'$(_WasmCrossgen2PackVersion)' == ''">$(BundledNETCoreAppPackageVersion)</_WasmCrossgen2PackVersion>
+  </PropertyGroup>
+
+  <!-- Acquisition: restore the crossgen2 pack when a project opts into R2R and no in-repo override is
+       present. PackageDownload is collected at restore, so it is a top-level item (not produced in a
+       target) and uses an evaluation-time version. -->
+  <ItemGroup Condition="'@(WasmReadyToRunAssembly)' != '' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(_WasmCrossgen2Path)' == '' and '$(_WasmCrossgen2HostRid)' != '' and '$(_WasmCrossgen2PackVersion)' != ''">
+    <PackageDownload Include="Microsoft.NETCore.App.Crossgen2.$(_WasmCrossgen2HostRid)">
+      <Version>[$(_WasmCrossgen2PackVersion)]</Version>
+    </PackageDownload>
+  </ItemGroup>
+
+  <!-- Resolve the crossgen2 tool and wasm JIT from the restored crossgen2 pack. Only runs (and only
+       sets the properties) when they are not already provided by an in-repo override. -->
+  <Target Name="_WasmResolveReadyToRunCompiler"
+          Condition="'@(WasmReadyToRunAssembly)' != '' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(_WasmCrossgen2Path)' == ''">
+
+    <PropertyGroup>
+      <_WasmCrossgen2NuGetRoot Condition="'$(_WasmCrossgen2NuGetRoot)' == ''">$(NuGetPackageRoot)</_WasmCrossgen2NuGetRoot>
+      <_WasmCrossgen2NuGetRoot Condition="'$(_WasmCrossgen2NuGetRoot)' == ''">$(NuGetPackageFolders)</_WasmCrossgen2NuGetRoot>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WasmCrossgen2NuGetRoot)' == ''"
+           Text="ReadyToRun for WebAssembly could not determine the NuGet packages folder to resolve the crossgen2 pack. Set the %24(_WasmCrossgen2Path) and %24(_WasmCrossgen2JitPath) properties to point at a crossgen2 tool and wasm JIT." />
+
+    <PropertyGroup>
+      <_WasmCrossgen2PackDir>$([MSBuild]::NormalizeDirectory('$(_WasmCrossgen2NuGetRoot)', 'microsoft.netcore.app.crossgen2.$(_WasmCrossgen2HostRid)', '$(_WasmCrossgen2PackVersion)', 'tools'))</_WasmCrossgen2PackDir>
+      <_WasmCrossgen2Path Condition="'$(OS)' == 'Windows_NT'">$(_WasmCrossgen2PackDir)crossgen2.exe</_WasmCrossgen2Path>
+      <_WasmCrossgen2Path Condition="'$(_WasmCrossgen2Path)' == ''">$(_WasmCrossgen2PackDir)crossgen2</_WasmCrossgen2Path>
+      <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == '' and '$(OS)' == 'Windows_NT'">clrjit_universal_wasm_$(_WasmCrossgen2HostArch).dll</_WasmCrossgen2JitName>
+      <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">libclrjit_universal_wasm_$(_WasmCrossgen2HostArch).dylib</_WasmCrossgen2JitName>
+      <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == ''">libclrjit_universal_wasm_$(_WasmCrossgen2HostArch).so</_WasmCrossgen2JitName>
+      <_WasmCrossgen2JitPath Condition="'$(_WasmCrossgen2JitPath)' == ''">$(_WasmCrossgen2PackDir)$(_WasmCrossgen2JitName)</_WasmCrossgen2JitPath>
+      <!-- -O works around the MinOpts wasm R2R JIT assert (https://github.com/dotnet/runtime/issues/129630).
+           JitWasmNyiToR2RUnsupported / JitWasmSimdNyiToR2RUnsupported let NYI (incl. SIMD) methods fall
+           back at runtime instead of failing crossgen (https://github.com/dotnet/runtime/issues/129745).
+           Mirrors the in-repo default in WasmApp.InTree.props; drop once those bugs are fixed. -->
+      <_WasmCrossgen2ExtraArgs Condition="'$(_WasmCrossgen2ExtraArgs)' == ''">--codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O</_WasmCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Build hook: crossgen the opted-in assemblies from the untrimmed build output before webcil
+       conversion. This must run wherever _ConvertBuildDllsToWebcil produces the shipping webcil —
+       including the nested publish invocation ($(WasmBuildingForNestedPublish) == 'true'), which is
+       what builds the served build-output bundle for both 'dotnet build' and the wasm test host.
+       @() items don't cross MSBuild invocation boundaries, so the candidate must be produced in the
+       same invocation that converts. Only suppressed in the OUTER publish invocation
+       ($(_IsPublishing) == 'true'), where the trimmed publish hook feeds the final publish bundle.
+       The reference closure is the resolved set of managed assemblies that ship with the app
+       (@(_WasmDllBuildCandidates)), minus the assemblies being compiled. -->
+  <Target Name="_WasmCrossgenReadyToRunForBuild"
+          BeforeTargets="_ConvertBuildDllsToWebcil"
+          DependsOnTargets="_ComputeWasmBuildCandidates;_WasmResolveReadyToRunCompiler"
+          Condition="'@(WasmReadyToRunAssembly)' != '' and '$(_WasmEnableWebcil)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_IsPublishing)' != 'true'">
+
+    <Error Condition="'$(_WasmCrossgen2Path)' == '' or !Exists('$(_WasmCrossgen2Path)')"
+           Text="ReadyToRun for WebAssembly requires crossgen2, but it was not found at '$(_WasmCrossgen2Path)'. Set the %24(_WasmCrossgen2Path) property." />
+    <Error Condition="'$(_WasmCrossgen2JitPath)' == '' or !Exists('$(_WasmCrossgen2JitPath)')"
+           Text="ReadyToRun for WebAssembly requires the wasm JIT, but it was not found at '$(_WasmCrossgen2JitPath)'. Set the %24(_WasmCrossgen2JitPath) property." />
+
+    <PropertyGroup>
+      <_WasmR2RNames>;@(WasmReadyToRunAssembly);</_WasmR2RNames>
+      <_WasmR2ROutDir>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'r2r', 'build'))</_WasmR2ROutDir>
+      <_WasmR2RRspPath>$(_WasmR2ROutDir)crossgen2.rsp</_WasmR2RRspPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Inputs: the opted-in assemblies' untrimmed build .dll among the webcil candidates. -->
+      <_WasmR2RInput Include="@(_WasmDllBuildCandidates)" Condition="$(_WasmR2RNames.Contains(';%(FileName);'))">
+        <InputPath>%(FullPath)</InputPath>
+        <OutputPath>$(_WasmR2ROutDir)%(FileName).wasm</OutputPath>
+      </_WasmR2RInput>
+      <!-- Reference closure: every other code assembly shipping with the app (skip the assemblies
+           being compiled and culture/satellite resource assemblies). -->
+      <_WasmR2RReference Include="@(_WasmDllBuildCandidates)" Condition="!$(_WasmR2RNames.Contains(';%(FileName);')) and '%(AssetTraitName)' != 'Culture'" />
+    </ItemGroup>
+
+    <Error Condition="'@(_WasmR2RInput)' == ''"
+           Text="ReadyToRun: none of @(WasmReadyToRunAssembly) ('@(WasmReadyToRunAssembly)') matched a managed assembly in the build output." />
+    <Error Condition="'%(_WasmR2RInput.Identity)' != '' and !Exists('%(_WasmR2RInput.InputPath)')"
+           Text="ReadyToRun input assembly not found: '%(_WasmR2RInput.InputPath)'." />
+
+    <MakeDir Directories="$(_WasmR2ROutDir)" />
+
+    <!-- Reference closure passed via a response file to avoid command-line length limits. -->
+    <ItemGroup>
+      <_WasmR2RRspLine Include="-r:&quot;%(_WasmR2RReference.FullPath)&quot;" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_WasmR2RRspPath)" Lines="@(_WasmR2RRspLine)" Overwrite="true" />
+
+    <Exec Command="&quot;$(_WasmCrossgen2Path)&quot; @&quot;$(_WasmR2RRspPath)&quot; --targetarch:wasm --targetos:browser --obj-format:wasm --jitpath:&quot;$(_WasmCrossgen2JitPath)&quot; $(_WasmCrossgen2ExtraArgs) --out:&quot;%(_WasmR2RInput.OutputPath)&quot; &quot;%(_WasmR2RInput.InputPath)&quot;" />
+
+    <!-- Hand the prebuilt R2R image to ConvertDllsToWebcil. -->
+    <ItemGroup>
+      <WasmR2RWebcilCandidate Include="@(_WasmR2RInput->'%(OutputPath)')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Publish hook: crossgen the trimmed assemblies (ILLink output in obj/.../linked/) before the
+       publish webcil conversion. Self-contained for the reason described above. -->
+  <Target Name="_WasmCrossgenReadyToRunForPublish"
+          BeforeTargets="ProcessPublishFilesForWasm"
+          DependsOnTargets="_WasmResolveReadyToRunCompiler"
+          Condition="'@(WasmReadyToRunAssembly)' != '' and '$(_WasmEnableWebcil)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmBuildingForNestedPublish)' != 'true'">
+
+    <Error Condition="'$(_WasmCrossgen2Path)' == '' or !Exists('$(_WasmCrossgen2Path)')"
+           Text="ReadyToRun for WebAssembly requires crossgen2, but it was not found at '$(_WasmCrossgen2Path)'. Set the %24(_WasmCrossgen2Path) property." />
+    <Error Condition="'$(_WasmCrossgen2JitPath)' == '' or !Exists('$(_WasmCrossgen2JitPath)')"
+           Text="ReadyToRun for WebAssembly requires the wasm JIT, but it was not found at '$(_WasmCrossgen2JitPath)'. Set the %24(_WasmCrossgen2JitPath) property." />
+
+    <PropertyGroup>
+      <_WasmR2RLinkDir>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'linked'))</_WasmR2RLinkDir>
+      <_WasmR2ROutDir>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'r2r', 'publish'))</_WasmR2ROutDir>
+      <_WasmR2RRspPath>$(_WasmR2ROutDir)crossgen2.rsp</_WasmR2RRspPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WasmR2RInput Include="@(WasmReadyToRunAssembly)">
+        <InputPath>$(_WasmR2RLinkDir)%(Identity).dll</InputPath>
+        <OutputPath>$(_WasmR2ROutDir)%(Identity).wasm</OutputPath>
+      </_WasmR2RInput>
+      <!-- Reference closure: the framework assemblies from the runtime pack. -->
+      <_WasmR2RReference Include="$(_WasmReadyToRunReferenceAssembliesPath)lib\net*\*.dll" />
+      <_WasmR2RReference Include="$(_WasmReadyToRunReferenceAssembliesPath)native\System.Private.CoreLib.dll" />
+    </ItemGroup>
+
+    <Error Condition="'%(_WasmR2RInput.Identity)' != '' and !Exists('%(_WasmR2RInput.InputPath)')"
+           Text="ReadyToRun input assembly not found: '%(_WasmR2RInput.InputPath)'. R2R for WebAssembly during publish requires the assembly to be trimmed (PublishTrimmed)." />
+
+    <MakeDir Directories="$(_WasmR2ROutDir)" />
+
+    <!-- Reference closure passed via a response file to avoid command-line length limits. -->
+    <ItemGroup>
+      <_WasmR2RRspLine Include="-r:&quot;%(_WasmR2RReference.FullPath)&quot;" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_WasmR2RRspPath)" Lines="@(_WasmR2RRspLine)" Overwrite="true" />
+
+    <Exec Command="&quot;$(_WasmCrossgen2Path)&quot; @&quot;$(_WasmR2RRspPath)&quot; --targetarch:wasm --targetos:browser --obj-format:wasm --jitpath:&quot;$(_WasmCrossgen2JitPath)&quot; $(_WasmCrossgen2ExtraArgs) --out:&quot;%(_WasmR2RInput.OutputPath)&quot; &quot;%(_WasmR2RInput.InputPath)&quot;" />
+
+    <!-- Hand the prebuilt R2R image to ConvertDllsToWebcil. -->
+    <ItemGroup>
+      <WasmR2RWebcilCandidate Include="@(_WasmR2RInput->'%(OutputPath)')" />
+    </ItemGroup>
+  </Target>
+
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
   <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
@@ -996,9 +1185,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" 
+        IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" 
+        OutputPath="$(_WasmPublishWebcilPath)" 
+        IsEnabled="$(_WasmEnableWebcil)" 
+        WebcilVersion="$(_WasmWebcilVersion)" 
+        R2RWebcilCandidates="@(WasmR2RWebcilCandidate)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="WebcilSizes" ItemName="_WasmWebcilSizes" />
     </ConvertDllsToWebcil>
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
@@ -1228,6 +1423,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
+      WebcilSizes="@(_WasmWebcilSizes)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"

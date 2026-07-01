@@ -176,7 +176,7 @@ async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
         const webcilPromise = loadResource(assetInternal);
 
         const memory = await wasmMemoryPromiseController.promise;
-        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!);
+        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!, assetInternal.tableSize, assetInternal.payloadSize);
         await instancePromise;
     } finally {
         onDownloadedAsset(assetInternal);

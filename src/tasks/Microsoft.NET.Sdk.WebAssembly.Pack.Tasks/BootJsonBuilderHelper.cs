@@ -206,7 +206,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return intValue;
         }
 
-        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false)
+        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? r2rSizes = null)
         {
             List<string> imports = [];
 
@@ -289,6 +289,20 @@ namespace Microsoft.NET.Sdk.WebAssembly
                     hash = a.Value,
                     cache = GetCacheControl(a.Key, resources)
                 };
+
+                // Webcil payload/table sizes. For satellites (subFolder == culture) the key is
+                // culture-qualified to match GenerateWasmBootJson's store key and disambiguate
+                // same-named satellites across cultures.
+                if (r2rSizes != null)
+                {
+                    string r2rKey = subFolder != null ? subFolder + "/" + a.Key : a.Key;
+                    if (r2rSizes.TryGetValue(r2rKey, out var sizes))
+                    {
+                        asset.payloadSize = sizes.payloadSize;
+                        if (sizes.tableSize > 0)
+                            asset.tableSize = sizes.tableSize;
+                    }
+                }
 
                 if (bundlerFriendly)
                 {

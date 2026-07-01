@@ -2093,6 +2093,12 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
 {
+    // targetIp must point to valid interpreter byte code. A NULL here means a caller failed to route a
+    // method that has native (R2R) code but no interpreter code to InvokeManagedMethod. Dispatching a
+    // NULL byte code pointer would be (mis)interpreted as INTOP_INVALID and fail with a cryptic fatal
+    // error, so assert here at the actual point of misuse.
+    _ASSERTE(targetIp != (TADDR)NULL);
+
     // Copy arguments to the stack
     if (argSize > 0)
     {
@@ -2241,6 +2247,11 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         targetIp = pMD->GetInterpreterCode();
     }
+    // The g_ReverseThunks reverse thunk is only used for UnmanagedCallersOnly methods that are executed
+    // by the interpreter. Methods compiled to native (R2R) code are dispatched directly to their R2R
+    // entrypoint by GetUnmanagedCallersOnlyThunk and never reach this path, so the interpreter byte code
+    // must exist here.
+    _ASSERTE(targetIp != NULL);
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
 }
 #endif // FEATURE_INTERPRETER

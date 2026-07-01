@@ -19,6 +19,33 @@
     <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
+
+  <!-- ReadyToRun (R2R) for WebAssembly: tool/reference paths consumed by the SDK's
+       _WasmCrossgenReadyToRunForBuild/_WasmCrossgenReadyToRunForPublish targets when a project opts in
+       via @(WasmReadyToRunAssembly). These point at the in-tree build outputs and are the in-repo
+       override only: when set, the SDK's _WasmResolveReadyToRunCompiler target leaves them as-is; when
+       unset (shipping SDK), it resolves crossgen2 and the wasm JIT from the restored
+       Microsoft.NETCore.App.Crossgen2.<hostRID> pack instead. -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
+    <!-- Architecture of the host crossgen2 tool (not the wasm target). -->
+    <_WasmCrossgen2HostArch Condition="'$(_WasmCrossgen2HostArch)' == ''">x64</_WasmCrossgen2HostArch>
+    <_WasmCrossgen2ToolsDir>$(ArtifactsBinDir)coreclr\browser.wasm.$(Configuration)\$(_WasmCrossgen2HostArch)\</_WasmCrossgen2ToolsDir>
+    <_WasmCrossgen2Path Condition="'$(_WasmCrossgen2Path)' == '' and '$(OS)' == 'Windows_NT'">$(_WasmCrossgen2ToolsDir)crossgen2\crossgen2.exe</_WasmCrossgen2Path>
+    <_WasmCrossgen2Path Condition="'$(_WasmCrossgen2Path)' == ''">$(_WasmCrossgen2ToolsDir)crossgen2\crossgen2</_WasmCrossgen2Path>
+    <!-- Host wasm JIT used by crossgen2 (- -jitpath). Native library name is OS-specific. -->
+    <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == '' and '$(OS)' == 'Windows_NT'">clrjit_universal_wasm_$(_WasmCrossgen2HostArch).dll</_WasmCrossgen2JitName>
+    <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">libclrjit_universal_wasm_$(_WasmCrossgen2HostArch).dylib</_WasmCrossgen2JitName>
+    <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == ''">libclrjit_universal_wasm_$(_WasmCrossgen2HostArch).so</_WasmCrossgen2JitName>
+    <_WasmCrossgen2JitPath Condition="'$(_WasmCrossgen2JitPath)' == ''">$(_WasmCrossgen2ToolsDir)$(_WasmCrossgen2JitName)</_WasmCrossgen2JitPath>
+    <_WasmReadyToRunReferenceAssembliesPath Condition="'$(_WasmReadyToRunReferenceAssembliesPath)' == ''">$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</_WasmReadyToRunReferenceAssembliesPath>
+    <!-- -O works around the MinOpts wasm R2R JIT assert (https://github.com/dotnet/runtime/issues/129630).
+         JitWasmNyiToR2RUnsupported lets NYI methods fall back at runtime instead of failing crossgen.
+         JitWasmSimdNyiToR2RUnsupported does the same for the NYI_WASM_SIMD paths (parity with
+         crossgen-corelib.proj), otherwise SIMD methods crash crossgen2
+         (https://github.com/dotnet/runtime/issues/129745). -->
+    <_WasmCrossgen2ExtraArgs Condition="'$(_WasmCrossgen2ExtraArgs)' == ''">--codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O</_WasmCrossgen2ExtraArgs>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
     <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>

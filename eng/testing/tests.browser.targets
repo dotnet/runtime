@@ -4,6 +4,15 @@
   </PropertyGroup>
 
   <Import Project="tests.wasm.targets" />
+
+  <!-- Opt every CoreCLR browser test assembly into ReadyToRun (crossgen2 wasm) so the test
+       assembly's own methods are precompiled to native code instead of being interpreted. Any
+       method that crossgen2 cannot yet handle on wasm falls back to IL/interpreter automatically.
+       Opt a single project out with DisableR2R=true. -->
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(DisableR2R)' != 'true' and '$(IsTestProject)' == 'true'">
+    <WasmReadyToRunAssembly Include="$(AssemblyName)" />
+  </ItemGroup>
+
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == ''">true</IsBrowserWasmProject>

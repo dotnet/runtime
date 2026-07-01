@@ -399,6 +399,22 @@ public class GeneralAsset
     public string hash { get; set; }
     public string resolvedUrl { get; set; }
     public string cache { get; set; }
+
+    /// <summary>
+    /// For ReadyToRun (R2R) webcil-in-wasm images: the number of table entries the module needs.
+    /// When present (non-null) the loader grows the table before instantiation. Only R2R images set
+    /// this; it is omitted for plain (non-R2R) webcil.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public int? tableSize { get; set; }
+
+    /// <summary>
+    /// The size in bytes of the Webcil payload to allocate before instantiation. Emitted for every
+    /// webcil-in-wasm assembly (the loader requires it to avoid parsing the wasm data section), not
+    /// just R2R images. For R2R images it is paired with <see cref="tableSize"/>.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public int? payloadSize { get; set; }
 }
 
 [DataContract]
