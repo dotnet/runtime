@@ -3968,6 +3968,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GetLower:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_XARCH)
+            if (simdSize == 8)
+            {
+                break;
+            }
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdGetLowerNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -3976,6 +3984,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GetUpper:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_XARCH)
+            if (simdSize == 8)
+            {
+                break;
+            }
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdGetUpperNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -5354,6 +5370,13 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+#if defined(TARGET_XARCH)
+            if (simdSize == 16)
+            {
+                break;
+            }
+#endif
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -5364,6 +5387,13 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_WithUpper:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_XARCH)
+            if (simdSize == 16)
+            {
+                break;
+            }
+#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();

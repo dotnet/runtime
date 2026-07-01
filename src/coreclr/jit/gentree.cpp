@@ -4280,6 +4280,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_Vector_GetLower:
                     {
                         assert((simdSize == 32) || (simdSize == 64));
+                        assert(genTypeSize(retType) == (simdSize / 2));
                         costEx = 1;
                         break;
                     }
@@ -4287,6 +4288,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_Vector_GetLower128:
                     {
                         assert(simdSize == 64);
+                        assert(retType == TYP_SIMD16);
                         costEx = 1;
                         break;
                     }
@@ -4294,6 +4296,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_Vector_GetUpper:
                     {
                         assert((simdSize == 32) || (simdSize == 64));
+                        assert(genTypeSize(retType) == (simdSize / 2));
                         costEx = 3;
                         break;
                     }
@@ -4391,6 +4394,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_Vector_WithUpper:
                     {
                         assert((simdSize == 32) || (simdSize == 64));
+                        assert(genTypeSize(retType) == simdSize);
                         costEx = 3;
                         break;
                     }
