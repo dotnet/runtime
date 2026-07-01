@@ -605,8 +605,8 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
 #ifdef TARGET_POWERPC64
         if ((allRegs(theInterval->registerType) & mask) == 0)
         {
-            printf("[PPC64LE HFA DEBUG] ASSERTION FAILURE at line 605:\n");
-            printf("  interval->registerType = %s\n", varTypeName(theInterval->registerType));
+            JITDUMP("[PPC64LE HFA DEBUG] ASSERTION FAILURE at line 605:\n");
+            JITDUMP("  interval->registerType = %s\n", varTypeName(theInterval->registerType));
             printf("  mask = 0x%llx\n", (unsigned long long)mask);
             printf("  allRegs(registerType) = 0x%llx\n", (unsigned long long)allRegs(theInterval->registerType));
             printf("  theTreeNode = %s\n", theTreeNode ? GenTree::OpName(theTreeNode->OperGet()) : "nullptr");
@@ -4545,20 +4545,20 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
                 {
                     // Override the type to match the HFA element type
                     overrideType = hfaType;
-                    printf("[PPC64LE HFA DEBUG] Detected HFA struct with element type %s for V%02u\n",
-                           varTypeName(hfaType), lclNum);
+                    JITDUMP("[PPC64LE HFA DEBUG] Detected HFA struct with element type %s for V%02u\n",
+                            varTypeName(hfaType), lclNum);
                     
                     // Update interval if variable is tracked
                     if (varDsc->lvTracked)
                     {
                         Interval* interval = getIntervalForLocalVar(varDsc->lvVarIndex);
                         interval->registerType = hfaType;
-                        printf("[PPC64LE HFA DEBUG] Updated tracked interval register type to %s for V%02u\n",
-                               varTypeName(hfaType), lclNum);
+                        JITDUMP("[PPC64LE HFA DEBUG] Updated tracked interval register type to %s for V%02u\n",
+                                varTypeName(hfaType), lclNum);
                     }
                     else
                     {
-                        printf("[PPC64LE HFA DEBUG] Variable V%02u is NOT tracked\n", lclNum);
+                        JITDUMP("[PPC64LE HFA DEBUG] Variable V%02u is NOT tracked\n", lclNum);
                     }
                 }
             }
@@ -4573,7 +4573,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     // For HFA structs, update the interval's register type before calling BuildUse
     if (overrideType != TYP_UNDEF && !isCandidateLocalRef(op1))
     {
-        printf("[PPC64LE HFA DEBUG] ENTERED potentially redundant code path (non-local operand)\n");
+        JITDUMP("[PPC64LE HFA DEBUG] ENTERED potentially redundant code path (non-local operand)\n");
         // For non-local operands, find the interval in the def list and update its type
         for (RefInfoListNode* listNode = defList.Begin(); listNode != defList.End(); listNode = listNode->Next())
         {
@@ -4581,15 +4581,15 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
             {
                 Interval* interval = listNode->ref->getInterval();
                 interval->registerType = overrideType;
-                printf("[PPC64LE HFA DEBUG] Updated untracked interval register type to %s\n",
-                       varTypeName(overrideType));
+                JITDUMP("[PPC64LE HFA DEBUG] Updated untracked interval register type to %s\n",
+                        varTypeName(overrideType));
                 break;
             }
         }
     }
     else if (overrideType != TYP_UNDEF)
     {
-        printf("[PPC64LE HFA DEBUG] Skipped untracked path because isCandidateLocalRef(op1) = true\n");
+        JITDUMP("[PPC64LE HFA DEBUG] Skipped untracked path because isCandidateLocalRef(op1) = true\n");
     }
 #endif
     RefPosition*     use     = BuildUse(op1, argMask);

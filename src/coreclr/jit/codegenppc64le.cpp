@@ -835,8 +835,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 {
                     storeIns = INS_stfs;  // Store single (4 bytes)
                 }
-                printf("HFA DEBUG: genPutArgStk (non-struct) - Float register detected, overriding instruction to %s for %s (slotType=%s, attr=%d)\n",
-                       genInsName(storeIns), getRegName(srcReg), varTypeName(slotType), (int)storeAttr);
+                JITDUMP("genPutArgStk (non-struct): Float register detected, overriding instruction to %s for %s (slotType=%s, attr=%d)\n",
+                        genInsName(storeIns), getRegName(srcReg), varTypeName(slotType), (int)storeAttr);
             }
             
             emit->emitIns_S_R(storeIns, storeAttr, srcReg, varNumOut, argOffsetOut);
@@ -946,8 +946,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 IsPpc64leHfaLikeStruct(compiler, structHnd, &hfaType, &hfaSlots))
             {
                 isHfa = true;
-                printf("HFA DEBUG genPutArgStk: Detected HFA struct, loReg=%s, hfaType=%s, hfaSlots=%u\n",
-                       getRegName(loReg), varTypeName(hfaType), hfaSlots);
+                JITDUMP("genPutArgStk: Detected HFA struct, loReg=%s, hfaType=%s, hfaSlots=%u\n",
+                        getRegName(loReg), varTypeName(hfaType), hfaSlots);
             }
             
             while (remainingSize >= TARGET_POINTER_SIZE)
@@ -1090,8 +1090,8 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
         {
             moveType = TYP_FLOAT;
         }
-        printf("HFA DEBUG: genPutArgReg - Float registers detected, overriding type from %s to %s for %s -> %s\n",
-               varTypeName(targetType), varTypeName(moveType), getRegName(op1->GetRegNum()), getRegName(targetReg));
+        JITDUMP("[PPC64LE HFA DEBUG] genPutArgReg: Float registers detected, overriding type from %s to %s for %s -> %s\n",
+                varTypeName(targetType), varTypeName(moveType), getRegName(op1->GetRegNum()), getRegName(targetReg));
     }
 
     // If child node is not already in the register we need, move it
@@ -1182,8 +1182,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 isHfaStruct = IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots);
                 if (isHfaStruct)
                 {
-                    printf("HFA DEBUG: genPutArgSplit - HFA struct detected (type=%s, contained=%d)\n",
-                           varTypeName(targetType), source->isContained());
+                    JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: HFA struct detected (type=%s, contained=%d)\n",
+                            varTypeName(targetType), source->isContained());
                 }
             }
         }
@@ -1219,7 +1219,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // 3. Can't use integer instructions with float registers
             if (isHfaStruct)
             {
-                printf("HFA DEBUG: genPutArgSplit - HFA struct, using custom float load/store\n");
+                JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: HFA struct, using custom float load/store\n");
                 
                 // Get HFA element type and size
                 layout = varDsc->GetLayout();
@@ -1241,8 +1241,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                     
                     GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), targetReg, srcLclNum, fieldOffset);
                     
-                    printf("HFA DEBUG: genPutArgSplit - Loaded HFA field %d from V%02u+%u to %s\n",
-                           i, srcLclNum, fieldOffset, getRegName(targetReg));
+                    JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: Loaded HFA field %d from V%02u+%u to %s\n",
+                            i, srcLclNum, fieldOffset, getRegName(targetReg));
                 }
                 
                 // Store remaining fields to stack
@@ -1262,8 +1262,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                         GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), tempReg, srcLclNum, fieldOffset);
                         GetEmitter()->emitIns_S_R(storeIns, emitActualTypeSize(hfaType), tempReg, varNumOut, stackOffset);
                         
-                        printf("HFA DEBUG: genPutArgSplit - Stored HFA field %d from V%02u+%u to stack+%u\n",
-                               treeNode->gtNumRegs + i, srcLclNum, fieldOffset, stackOffset);
+                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: Stored HFA field %d from V%02u+%u to stack+%u\n",
+                                treeNode->gtNumRegs + i, srcLclNum, fieldOffset, stackOffset);
                     }
                 }
                 
@@ -1346,8 +1346,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
             structOffset = treeNode->gtNumRegs * fieldSize;
             
-            printf("HFA DEBUG: genPutArgSplit - HFA struct offset calculation: gtNumRegs=%u, fieldSize=%u, structOffset=%u, layoutSize=%u\n",
-                   treeNode->gtNumRegs, fieldSize, structOffset, layout->GetSize());
+            JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: HFA struct offset calculation: gtNumRegs=%u, fieldSize=%u, structOffset=%u, layoutSize=%u\n",
+                    treeNode->gtNumRegs, fieldSize, structOffset, layout->GetSize());
         }
         else
         {
@@ -1614,8 +1614,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                     {
                         ins = INS_stfs;  // Store single (4 bytes)
                     }
-                    printf("HFA DEBUG: genCodeForStoreLclVar - HFA detected (element type %s), overriding instruction to %s for %s -> V%02u (original type=%s, attr=%d, hfaSlots=%u, lvIsParam=%d)\n",
-                           varTypeName(hfaType), genInsName(ins), getRegName(dataReg), varNum, varTypeName(targetType), (int)attr, hfaSlots, varDsc->lvIsParam);
+                    JITDUMP("[PPC64LE HFA DEBUG] genCodeForStoreLclVar: HFA detected (element type %s), overriding instruction to %s for %s -> V%02u (original type=%s, attr=%d, hfaSlots=%u, lvIsParam=%d)\n",
+                            varTypeName(hfaType), genInsName(ins), getRegName(dataReg), varNum, varTypeName(targetType), (int)attr, hfaSlots, varDsc->lvIsParam);
                 }
             }
 
@@ -1711,8 +1711,8 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
         {
             // This is an HFA struct, use the HFA element type
             storeType = hfaType;
-            printf("HFA DEBUG: genCodeForStoreLclFld - HFA detected, overriding store type from %s to %s for %s -> V%02u+%u (hfaSlots=%u, lvIsParam=%d)\n",
-                   varTypeName(targetType), varTypeName(storeType), getRegName(dataReg), varNum, offset, hfaSlots, varDsc->lvIsParam);
+            JITDUMP("[PPC64LE HFA DEBUG] genCodeForStoreLclFld: HFA detected, overriding store type from %s to %s for %s -> V%02u+%u (hfaSlots=%u, lvIsParam=%d)\n",
+                    varTypeName(targetType), varTypeName(storeType), getRegName(dataReg), varNum, offset, hfaSlots, varDsc->lvIsParam);
         }
     }
 
@@ -2324,8 +2324,8 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
         {
             // This is an HFA struct, use the HFA element type
             loadType = hfaType;
-            printf("HFA DEBUG: genCodeForLclFld - HFA detected, overriding load type from %s to %s for V%02u+%u -> %s (hfaSlots=%u, lvIsParam=%d)\n",
-                   varTypeName(targetType), varTypeName(loadType), varNum, offs, getRegName(targetReg), hfaSlots, varDsc->lvIsParam);
+            JITDUMP("[PPC64LE HFA DEBUG] genCodeForLclFld: HFA detected, overriding load type from %s to %s for V%02u+%u -> %s (hfaSlots=%u, lvIsParam=%d)\n",
+                    varTypeName(targetType), varTypeName(loadType), varNum, offs, getRegName(targetReg), hfaSlots, varDsc->lvIsParam);
         }
     }
 
