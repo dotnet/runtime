@@ -476,6 +476,16 @@ namespace System.Reflection.Tests
             Assert.True(args[1] is int);
         }
 
+        [Fact]
+        public void Invoke_CustomBinder_ResultRequiringPrimitiveWidening_DoesNotCopyBackWidenedArgument()
+        {
+            MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
+            object[] args = new object[] { "10", 100 };
+
+            Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToInt16Binder(), args, null));
+            Assert.Equal("10", Assert.IsType<string>(args[0]));
+        }
+
         [Theory]
         [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1), new Type[] { typeof(int) })]
         [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2), new Type[] { typeof(string), typeof(int) })]
