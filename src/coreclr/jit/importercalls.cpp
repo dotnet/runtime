@@ -9995,6 +9995,26 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             break;
         }
 
+        case NI_System_Activator_CreateInstance_T:
+        {
+            CallArg* instArg = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instArg != nullptr && instArg->GetNode()->IsIconHandle())
+            {
+                CORINFO_SIG_INFO methodSig;
+                eeGetMethodSig((CORINFO_METHOD_HANDLE)instArg->GetNode()->AsIntCon()->GetCompileTimeHandle(),
+                               &methodSig);
+                if (methodSig.sigInst.methInstCount == 1)
+                {
+                    CORINFO_CLASS_HANDLE objClass = methodSig.sigInst.methInst[0];
+                    if (!eeIsSharedInst(objClass))
+                    {
+                        result = objClass;
+                    }
+                }
+            }
+            break;
+        }
+
         default:
         {
             JITDUMP("This special intrinsic not handled, sorry...\n");

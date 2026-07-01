@@ -20828,23 +20828,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass = gtGetClassHandle(call->gtArgs.GetThisArg()->GetNode(), pIsExact, pIsNonNull);
                     break;
                 }
-                if (ni == NI_System_Activator_CreateInstance_T)
-                {
-                    CallArg* instArg = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-                    if (instArg != nullptr && instArg->GetNode()->IsIconHandle())
-                    {
-                        CORINFO_SIG_INFO methodSig;
-                        eeGetMethodSig((CORINFO_METHOD_HANDLE)instArg->GetNode()->AsIntCon()->GetCompileTimeHandle(),
-                                       &methodSig);
-                        if (methodSig.sigInst.methInstCount == 1)
-                        {
-                            objClass    = methodSig.sigInst.methInst[0];
-                            *pIsExact   = !eeIsSharedInst(objClass);
-                            *pIsNonNull = true;
-                        }
-                    }
-                    break;
-                }
 
                 CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call);
                 if (specialObjClass != nullptr)
