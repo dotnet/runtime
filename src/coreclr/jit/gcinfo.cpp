@@ -234,6 +234,8 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 //
 GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* store)
 {
+    return WBF_NoBarrier; //currently we don't want to use write barriers
+
     if (!store->TypeIs(TYP_REF))
     {
         // Note that byref values cannot be in the managed heap.
@@ -266,7 +268,6 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         wbf = WBF_BarrierChecked;
     }
 
-    return wbf;
 }
 
 //------------------------------------------------------------------------

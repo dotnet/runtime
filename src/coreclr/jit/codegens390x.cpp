@@ -4155,8 +4155,43 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 //
 void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 {
+    //we don't support read or write barriers copying arm's implementation
     // s390x has strong memory ordering -- most barriers are no-ops.
     // A full barrier can use BCR 15,0 (serialization) if needed later.
+
+	return;
+
+    // Avoid emitting redundant memory barriers on arm64 if they belong to the same IG
+    // and there were no memory accesses in-between them
+/*    emitter::instrDesc* lastMemBarrier = GetEmitter()->emitLastMemBarrier;
+    if ((lastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
+    {
+        BarrierKind prevBarrierKind = BARRIER_FULL;
+        if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHLD)
+        {
+            prevBarrierKind = BARRIER_LOAD_ONLY;
+        }
+        else
+        {
+            // Currently we only emit two kinds of barriers on arm64:
+            //  ISH   - Full (inner shareable domain)
+            //  ISHLD - LoadOnly (inner shareable domain)
+            assert(lastMemBarrier->idSmallCns() == INS_BARRIER_ISH);
+        }
+
+        if ((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL))
+        {
+            // Previous memory barrier: load-only, current: full
+            // Upgrade the previous one to full
+            assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
+            lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
+        }
+    }
+    else
+    {
+        GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
+    }
+*/
 }
 
 
