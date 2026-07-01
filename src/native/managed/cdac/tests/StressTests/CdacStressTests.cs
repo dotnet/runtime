@@ -89,7 +89,9 @@ public class CdacStressTests : CdacStressTestBase
         if (!argIterSupported)
             throw new SkipTestException(
                 "ARGITER stress: needs follow-up work for this platform " +
-                "(SystemV-AMD64 / RISC-V / LoongArch / WASM struct classifiers).");
+                "(SystemV-AMD64 struct classifier for linux/macOS x64, " +
+                "Windows ARM32 ABI port, RISC-V / LoongArch FP struct classifier, " +
+                "or WASM GetFieldAlignment).");
 
         CdacStressResults results = await RunArgIterStressAsync(debuggee.Name);
         AssertAllArgIterPassed(results, debuggee.Name);

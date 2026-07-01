@@ -690,66 +690,81 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Detects
     // intrinsic Vector shapes by TypeDef name+namespace, then validates the
     // generic argument is a numerical primitive.
+    // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Detects
+    // intrinsic Vector shapes by TypeDef name+namespace, then validates the
+    // generic argument is a numerical primitive. Any metadata decode failure
+    // (bad token, missing metadata, corrupt image) is swallowed; the caller
+    // treats a 0 return as "not an HVA" and falls through to the field walk.
     private int GetVectorHFAElementSize(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsIntrinsicType)
             return 0;
 
-        TargetPointer modulePtr = ((IRuntimeTypeSystem)this).GetModule(typeHandle);
-        if (modulePtr == TargetPointer.Null)
-            return 0;
-
-        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-        MetadataReader? reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-        if (reader is null)
-            return 0;
-
-        uint typeDefToken = ((IRuntimeTypeSystem)this).GetTypeDefToken(typeHandle);
-        if (EcmaMetadataUtils.GetRowId(typeDefToken) == 0)
-            return 0;
-
-        TypeDefinitionHandle tdHandle = (TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken);
-        TypeDefinition typeDef = reader.GetTypeDefinition(tdHandle);
-        string className = reader.GetString(typeDef.Name);
-        string namespaceName = reader.GetString(typeDef.Namespace);
-
-        int elemSize;
-        if (className == "Vector`1" && namespaceName == "System.Numerics")
+        try
         {
-            // System.Numerics.Vector<T> is size-dependent.
-            elemSize = ((IRuntimeTypeSystem)this).GetNumInstanceFieldBytes(typeHandle) switch
+            TargetPointer modulePtr = ((IRuntimeTypeSystem)this).GetModule(typeHandle);
+            if (modulePtr == TargetPointer.Null)
+                return 0;
+
+            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader? reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+            if (reader is null)
+                return 0;
+
+            uint typeDefToken = ((IRuntimeTypeSystem)this).GetTypeDefToken(typeHandle);
+            if (EcmaMetadataUtils.GetRowId(typeDefToken) == 0)
+                return 0;
+
+            EntityHandle handle = (EntityHandle)MetadataTokens.Handle((int)typeDefToken);
+            if (handle.Kind != HandleKind.TypeDefinition)
+                return 0;
+
+            TypeDefinition typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)handle);
+            string className = reader.GetString(typeDef.Name);
+            string namespaceName = reader.GetString(typeDef.Namespace);
+
+            int elemSize;
+            if (className == "Vector`1" && namespaceName == "System.Numerics")
             {
-                8 => 8,
-                16 => 16,
-                _ => 0,
-            };
+                // System.Numerics.Vector<T> is size-dependent.
+                elemSize = ((IRuntimeTypeSystem)this).GetNumInstanceFieldBytes(typeHandle) switch
+                {
+                    8 => 8,
+                    16 => 16,
+                    _ => 0,
+                };
+            }
+            else if (className == "Vector128`1" && namespaceName == "System.Runtime.Intrinsics")
+            {
+                elemSize = 16;
+            }
+            else if (className == "Vector64`1" && namespaceName == "System.Runtime.Intrinsics")
+            {
+                elemSize = 8;
+            }
+            else
+            {
+                return 0;
+            }
+
+            if (elemSize == 0)
+                return 0;
+
+            // T must be a numerical primitive (CorIsNumericalType in cor.h): I1..R8, I, U.
+            ReadOnlySpan<TypeHandle> instantiation = ((IRuntimeTypeSystem)this).GetInstantiation(typeHandle);
+            if (instantiation.Length < 1)
+                return 0;
+
+            CorElementType argType = ((IRuntimeTypeSystem)this).GetSignatureCorElementType(instantiation[0]);
+            if (!IsCorNumericalType(argType))
+                return 0;
+
+            return elemSize;
         }
-        else if (className == "Vector128`1" && namespaceName == "System.Runtime.Intrinsics")
+        catch
         {
-            elemSize = 16;
-        }
-        else if (className == "Vector64`1" && namespaceName == "System.Runtime.Intrinsics")
-        {
-            elemSize = 8;
-        }
-        else
-        {
             return 0;
         }
-
-        if (elemSize == 0)
-            return 0;
-
-        // T must be a numerical primitive (CorIsNumericalType in cor.h): I1..R8, I, U.
-        ReadOnlySpan<TypeHandle> instantiation = ((IRuntimeTypeSystem)this).GetInstantiation(typeHandle);
-        if (instantiation.Length < 1)
-            return 0;
-
-        CorElementType argType = ((IRuntimeTypeSystem)this).GetSignatureCorElementType(instantiation[0]);
-        if (!IsCorNumericalType(argType))
-            return 0;
-
-        return elemSize;
     }
 
     private static bool IsCorNumericalType(CorElementType t)
