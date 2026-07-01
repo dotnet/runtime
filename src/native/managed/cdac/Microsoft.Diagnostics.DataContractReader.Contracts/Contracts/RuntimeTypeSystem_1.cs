@@ -615,8 +615,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
     public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
 
-    // FEATURE_HFA targets. On non-FEATURE_HFA targets the enum_flag_IsHFA
-    // bit is either unused or reused (UNIX_AMD64_ABI IsRegStructPassed).
     private bool IsFeatureHfaTarget(out RuntimeInfoArchitecture arch)
     {
         arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
