@@ -139,6 +139,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
     NI_System_String_Equals,
+    NI_System_String_FastAllocateString,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
     NI_System_String_op_Implicit,
@@ -166,6 +167,13 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_MemoryBarrier,
 
     NI_System_Threading_Tasks_Task_ConfigureAwait,
+    NI_System_Threading_Tasks_Task_FromResult,
+    NI_System_Threading_Tasks_Task_get_CompletedTask,
+
+    NI_System_Threading_Tasks_ValueTask_FromResult,
+    NI_System_Threading_Tasks_ValueTask_get_CompletedTask,
+
+    NI_System_Threading_Tasks_ValueTask_1__ctor,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
@@ -182,7 +190,11 @@ enum NamedIntrinsic : unsigned short
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)      \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#elif defined(TARGET_WASM)
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)      \
+    NI_##isa##_##name,
+#include "hwintrinsiclistwasm.h"
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_WASM)
     NI_HW_INTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 

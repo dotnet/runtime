@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSATestHelpers.AssertKeyEquals(diminishedDPParameters, exported);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public static void LargeKeyImportExport()
         {
             RSAParameters imported = TestData.RSA16384Params;
@@ -367,6 +367,13 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         private static bool TestRsa16384()
         {
+            if (PlatformDetection.IsAndroid)
+            {
+                // We cannot detect this on Android at the moment. Even attempting to generate or import a 16K RSA key
+                // may leave the error queue in the incorrect state. See https://github.com/google/conscrypt/issues/1507
+                return false;
+            }
+
             try
             {
                 using (RSA rsa = RSAFactory.Create())

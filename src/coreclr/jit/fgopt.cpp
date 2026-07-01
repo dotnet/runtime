@@ -1097,6 +1097,9 @@ void Compiler::fgCompactBlock(BasicBlock* block)
 
     block->CopyFlags(target, BBF_COMPACT_UPD);
 
+    // If target was a resumption block, block now plays that role.
+    block->CopyFlags(target, BBF_ASYNC_RESUMPTION);
+
     // mark target as removed
 
     target->SetFlags(BBF_REMOVED);
@@ -1384,6 +1387,9 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 unreached();
         }
 
+        // Inherit some special affordances.
+        block->CopyFlags(bDest, BBF_ASYNC_RESUMPTION);
+
         //
         // When we optimize a branch to branch we need to update the profile weight
         // of bDest by subtracting out the weight of the path that is being optimized.
@@ -1646,6 +1652,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             {
                 bDest->decreaseBBProfileWeight(edge->getLikelyWeight());
             }
+
+            // Inherit affordances
+            block->CopyFlags(bDest, BBF_ASYNC_RESUMPTION);
 
             // Redirect the jump to the new target
             //
@@ -4633,6 +4642,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
                         fgRedirectEdge(block->TrueEdgeRef(), bNext->GetTarget());
 
+                        // Inherit some affordances
+                        block->CopyFlags(bNext, BBF_ASYNC_RESUMPTION);
+
                         // bNext no longer flows to target
                         //
                         fgRemoveRefPred(bNext->GetTargetEdge());
@@ -5115,6 +5127,29 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     ArrayStack<PredInfo>    matchedPredInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<BasicBlock*> retryBlocks(getAllocator(CMK_ArrayStack));
 
+    auto tryRemoveAndFixFlow = [&](BasicBlock* emptyBlock, BasicBlock* newTarget) -> bool {
+        assert(emptyBlock->isEmpty());
+        assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
+
+        // Try to remove emptyBlock and make its preds jump directly to newTarget
+        //
+        bool canRemove =
+            !emptyBlock->HasFlag(BBF_DONT_REMOVE) && (emptyBlock != fgFirstBB) && (emptyBlock != fgOSREntryBB);
+        if (canRemove)
+        {
+            for (BasicBlock* const pred : emptyBlock->PredBlocksEditing())
+            {
+                fgReplaceJumpTarget(pred, emptyBlock, newTarget);
+            }
+
+            // We don't want removal to decrease weight of successor, so make it weightless.
+            emptyBlock->bbWeight = BB_ZERO_WEIGHT;
+            fgRemoveBlock(emptyBlock, true);
+        }
+
+        return canRemove;
+    };
+
     // Try tail merging a block.
     // If return value is true, retry.
     // May also add to retryBlocks.
@@ -5134,7 +5169,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         // Note we check this rather than countOfInEdges because we don't care
         // about dups, just the number of unique pred blocks.
         //
-        if (predInfo.Height() > mergeLimit)
+        // This cap only applies to common-successor tail merging. The terminal
+        // block (return/throw) merging below subsumes the old fgTailMergeThrows
+        // phase and routinely sees throw-heavy methods that exceed the per-block
+        // cap, so it uses a larger limit. 4x was empirically the smallest
+        // multiple that avoids code-size regressions (measured via SPMI asmdiffs).
+        //
+        const int effectiveLimit = (commSucc != nullptr) ? mergeLimit : (4 * mergeLimit);
+        if (predInfo.Height() > effectiveLimit)
         {
             // Too many preds to consider
             return false;
@@ -5200,6 +5242,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     fgUnlinkStmt(predBlock, stmt);
 
+                    if (predBlock->isEmpty())
+                    {
+                        tryRemoveAndFixFlow(predBlock, commSucc);
+                    }
+
                     // Add one of the matching stmts to block, and
                     // update its flags.
                     //
@@ -5238,10 +5285,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
-            BasicBlock* crossJumpVictim       = nullptr;
-            Statement*  crossJumpStmt         = nullptr;
-            bool        haveNoSplitVictim     = false;
-            bool        haveFallThroughVictim = false;
+            BasicBlock* crossJumpVictim = nullptr;
+            Statement*  crossJumpStmt   = nullptr;
+            unsigned    bestRank        = UINT32_MAX;
 
             for (PredInfo& info : matchedPredInfo.TopDownOrder())
             {
@@ -5255,46 +5301,40 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     continue;
                 }
 
-                bool const isNoSplit     = stmt == predBlock->firstStmt();
-                bool const isFallThrough = (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsToNext());
+                auto getRank = [=]() -> unsigned {
+                    bool const isNoSplit     = stmt == predBlock->firstStmt();
+                    bool const isFallThrough = (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsToNext());
 
-                // Is this block possibly better than what we have?
-                //
-                bool useBlock = false;
-
-                if (crossJumpVictim == nullptr)
-                {
-                    // Pick an initial candidate.
-                    useBlock = true;
-                }
-                else if (isNoSplit && isFallThrough)
-                {
-                    // This is the ideal choice.
+                    // From most to least preferable.
                     //
-                    useBlock = true;
-                }
-                else if (!haveNoSplitVictim && isNoSplit)
+                    if (isNoSplit && isFallThrough)
+                    {
+                        return 0;
+                    }
+                    if (isNoSplit)
+                    {
+                        return 1;
+                    }
+                    if (isFallThrough)
+                    {
+                        return 2;
+                    }
+
+                    return 3;
+                };
+
+                unsigned const rank = getRank();
+                bool           pick = rank < bestRank;
+                if (rank == bestRank)
                 {
-                    useBlock = true;
-                }
-                else if (!haveNoSplitVictim && !haveFallThroughVictim && isFallThrough)
-                {
-                    useBlock = true;
+                    pick = predBlock->bbID < crossJumpVictim->bbID;
                 }
 
-                if (useBlock)
+                if (pick)
                 {
-                    crossJumpVictim       = predBlock;
-                    crossJumpStmt         = stmt;
-                    haveNoSplitVictim     = isNoSplit;
-                    haveFallThroughVictim = isFallThrough;
-                }
-
-                // If we have the perfect victim, stop looking.
-                //
-                if (haveNoSplitVictim && haveFallThroughVictim)
-                {
-                    break;
+                    crossJumpVictim = predBlock;
+                    crossJumpStmt   = stmt;
+                    bestRank        = rank;
                 }
             }
 
@@ -5303,7 +5343,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // If this block requires splitting, then split it.
             // Note we know that stmt has a prev stmt.
             //
-            if (haveNoSplitVictim)
+            if (crossJumpStmt == crossJumpTarget->firstStmt())
             {
                 JITDUMP("Will cross-jump to " FMT_BB "\n", crossJumpTarget->bbNum);
             }
@@ -5332,22 +5372,26 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                if (commSucc != nullptr)
-                {
-                    assert(predBlock->KindIs(BBJ_ALWAYS));
-                    fgRedirectEdge(predBlock->TargetEdgeRef(), crossJumpTarget);
-                }
-                else
-                {
-                    FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
-                    predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-                }
 
                 // For tail merge we have a common successor of predBlock and
                 // crossJumpTarget, so the profile update can be done locally.
                 if (crossJumpTarget->hasProfileWeight())
                 {
                     crossJumpTarget->increaseBBProfileWeight(predBlock->bbWeight);
+                }
+
+                if (!(predBlock->isEmpty() && tryRemoveAndFixFlow(predBlock, crossJumpTarget)))
+                {
+                    if (commSucc != nullptr)
+                    {
+                        assert(predBlock->KindIs(BBJ_ALWAYS));
+                        fgRedirectEdge(predBlock->TargetEdgeRef(), crossJumpTarget);
+                    }
+                    else
+                    {
+                        FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
+                        predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                    }
                 }
             }
 
@@ -5386,6 +5430,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
             if (predBlock->GetUniqueSucc() != block)
+            {
+                continue;
+            }
+
+            // If this block was already processed, skip it
+            //
+            if (predBlock->isEmpty())
             {
                 continue;
             }
@@ -5480,13 +5531,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     }
 
-    predInfo.Reset();
-    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+    JITDUMP("Trying tail merge of return and throw blocks\n");
+    do
     {
-        predInfo.Push(PredInfo(block, block->lastStmt()));
-    }
-
-    tailMergePreds(nullptr);
+        predInfo.Reset();
+        for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
+        {
+            // If this block was already processed, skip it
+            //
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW) || block->isEmpty())
+            {
+                continue;
+            }
+            predInfo.Push(PredInfo(block, block->lastStmt()));
+        }
+    } while (tailMergePreds(nullptr));
 
     // Work through any retries
     //

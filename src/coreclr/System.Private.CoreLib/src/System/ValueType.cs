@@ -70,7 +70,6 @@ namespace System
 
         // Return true if the valuetype does not contain pointer, is tightly packed,
         // does not have floating point number field and does not override Equals method.
-        [RequiresUnsafe]
         private static unsafe bool CanCompareBitsOrUseFastGetHashCode(MethodTable* pMT)
         {
             MethodTableAuxiliaryData* pAuxData = pMT->AuxiliaryData;
@@ -84,7 +83,6 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT);
 
@@ -143,6 +141,7 @@ namespace System
 
                     case ValueTypeHashCodeStrategy.ValueTypeOverride:
                         Debug.Assert(fieldMT != null);
+                        Debug.Assert(!fieldMT->IsSharedByGenericInstantiations);
                         // Box the field to handle complicated cases like mutable method and shared generic
                         hashCode.Add(RuntimeHelpers.Box(fieldMT, ref Unsafe.AddByteOffset(ref rawData, fieldOffset))?.GetHashCode() ?? 0);
                         break;
@@ -164,7 +163,6 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
-        [RequiresUnsafe]
         private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
             MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT);
 

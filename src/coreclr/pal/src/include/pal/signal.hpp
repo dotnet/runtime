@@ -93,6 +93,12 @@ void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, si
 
 #endif // !HAVE_MACH_EXCEPTIONS
 
+namespace CorUnix
+{
+    // Keep this header self-contained without including pal/thread.hpp.
+    class CPalThread;
+}
+
 /*++
 Function :
     SEHInitializeSignals

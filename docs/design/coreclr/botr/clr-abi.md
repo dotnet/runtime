@@ -145,7 +145,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 ## Hidden parameters
 
-*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R4` / (ARM NativeAOT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
+*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
 *Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
 
@@ -385,7 +385,7 @@ When a funclet finishes execution, and the VM returns execution to the function 
 
 Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame. This not a fundamental limitation. If necessary, the runtime can be updated to preserve non-volatile register changes made in funclets.
 
-Funclets are not required to preserve non-volatile registers.
+Funclets are not required to preserve non-volatile registers that are saved by the main method body.
 
 # EH Info, GC Info, and Hot & Cold Splitting
 
@@ -542,7 +542,7 @@ EnC is supported for adding and editing generic methods and methods on generic t
 
 ## Async methods
 
-The JIT saves the current `ExecutionContext` and `SynchronizationContext` in runtime async methods and these must be preserved during remap. The new GC encoder includes the state in the EnC frame header size, while for JIT32 the EE expects this state to exist when `CORINFO_ASYNC_SAVE_CONTEXTS` was reported to the JIT from `getMethodInfo`.
+The JIT saves the current `Thread`, `ExecutionContext` and `SynchronizationContext` in runtime async methods and these must be preserved during remap. The new GC encoder includes the state in the EnC frame header size, while for JIT32 the EE expects this state to exist when `CORINFO_ASYNC_SAVE_CONTEXTS` was reported to the JIT from `getMethodInfo`.
 
 # Portable entrypoints
 
@@ -714,11 +714,41 @@ The linear stack pointer `$sp` is the first argument to all methods. At a native
 
 A frame pointer, if used, points at the bottom of the "fixed" portion of the stack to facilitate use of Wasm addressing modes, which only allow positive offsets.
 
-Structs are generally passed by-reference, unless they happen to exactly contain a single primitive field (or be a struct exactly containing such a struct). The linear stack provides the backing storage for the by-reference structs.
+Arguments and return values are processed via the Type Lowering algorithm below.
 
-Structs are generally returned via hidden buffers, whose address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack.
+If a struct is returned via a hidden buffer, the address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack per the Type Lowering rules.
 
 (TBD: ABI for vector types)
+
+### Type Lowering
+
+Managed types are lowered to WebAssembly value types according to the following rules
+(implemented in `WasmLowering.LowerToAbiType` and `WasmLowering.LowerType`):
+
+| Managed type | Wasm value type |
+|---|---|
+| `bool`, `char`, `sbyte`, `byte`, `short`, `ushort`, `int`, `uint` | `i32` |
+| `long`, `ulong` | `i64` |
+| `float` | `f32` |
+| `double` | `f64` |
+| `nint`, `nuint`, pointer, byref, function pointer | `i32` (pointer-sized) |
+| Reference types (class, string, array, szarray, interface) | `i32` (pointer-sized) |
+| Value type (struct) — single primitive field, no padding | Unwrap recursively to the field's wasm type |
+| Value type (struct) — single field with padding, or multiple fields | Passed by reference (`i32` pointer) |
+| Empty struct (zero instance fields) | Elided from the signature entirely |
+
+**Struct unwrapping** is recursive: a struct containing a single struct field, where the inner struct
+has the same size as the outer, is unwrapped until a primitive is reached or the rule no longer applies.
+For example, a struct `Wrapper { Inner value; }` where `Inner { int x; }` is unwrapped all the way
+to `i32`.
+
+A struct is **not** unwrapped when:
+- It has more than one instance field.
+- It has exactly one instance field but the field's size differs from the struct's size (i.e., the
+  struct has padding due to explicit layout or alignment attributes).
+
+Structs that cannot be unwrapped are passed by reference. The caller allocates space on the linear
+stack and passes a pointer. For return values, the caller provides a hidden return buffer pointer.
 
 ### Prolog
 

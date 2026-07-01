@@ -359,6 +359,8 @@ public:
     DWORD           GetRawSigLen() const;
 
 private:
+    friend struct ::cdac_data<VASigCookie>;
+
     PCCOR_SIGNATURE m_pSig;
     DWORD           m_cbSig;
 };  // class Signature

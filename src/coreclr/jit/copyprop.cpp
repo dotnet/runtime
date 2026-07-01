@@ -205,10 +205,12 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an
-        // enregisterable lclVar.
+        // It may not be profitable to propagate a local if that changes its expected enregister status.
         LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
-        if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
+        bool enregOld = !varDsc->lvDoNotEnregister && (!varDsc->IsLiveInOutOfHandler() || IsEHVarARegCandidate(varDsc));
+        bool enregNew = !newLclVarDsc->lvDoNotEnregister &&
+                        (!newLclVarDsc->IsLiveInOutOfHandler() || IsEHVarARegCandidate(newLclVarDsc));
+        if (enregOld != enregNew)
         {
             continue;
         }

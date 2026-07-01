@@ -12,7 +12,7 @@ namespace System.Text.Json
     {
         private static readonly StandardFormat s_dateTimeStandardFormat = new StandardFormat('O');
 
-        public static void WriteDateTimeTrimmed(Span<byte> buffer, DateTime value, out int bytesWritten)
+        public static unsafe void WriteDateTimeTrimmed(Span<byte> buffer, DateTime value, out int bytesWritten)
         {
             Span<byte> tempSpan = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
             bool result = Utf8Formatter.TryFormat(value, tempSpan, out bytesWritten, s_dateTimeStandardFormat);
@@ -21,7 +21,7 @@ namespace System.Text.Json
             tempSpan.Slice(0, bytesWritten).CopyTo(buffer);
         }
 
-        public static void WriteDateTimeOffsetTrimmed(Span<byte> buffer, DateTimeOffset value, out int bytesWritten)
+        public static unsafe void WriteDateTimeOffsetTrimmed(Span<byte> buffer, DateTimeOffset value, out int bytesWritten)
         {
             Span<byte> tempSpan = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
             bool result = Utf8Formatter.TryFormat(value, tempSpan, out bytesWritten, s_dateTimeStandardFormat);

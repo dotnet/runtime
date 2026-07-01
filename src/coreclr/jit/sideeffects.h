@@ -129,12 +129,18 @@ public:
 
             if ((m_flags & ALIAS_WRITES_LCL_VAR) != 0)
             {
-                // Stores to 'lvLiveInOutOfHndlr' locals cannot be reordered with
+                // Stores to locals live into handlers cannot be reordered with
                 // exception-throwing nodes so we conservatively consider them
                 // globally visible.
 
                 LclVarDsc* const varDsc = m_compiler->lvaGetDesc(LclNum());
-                return varDsc->lvLiveInOutOfHndlr != 0;
+
+                if (varDsc->lvTracked)
+                {
+                    return varDsc->IsLiveInOutOfHandler();
+                }
+
+                return m_compiler->compHndBBtabCount > 0;
             }
 
             return false;
@@ -187,9 +193,16 @@ public:
     bool InterferesWith(Compiler* compiler, GenTree* node, bool strict) const;
     void Clear();
 
-    bool IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive);
+    bool IsLirInvariantInRange(Compiler*    comp,
+                               GenTree*     node,
+                               GenTree*     endExclusive,
+                               GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY);
 
-    bool IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive, GenTree* ignoreNode);
+    bool IsLirInvariantInRange(Compiler*    comp,
+                               GenTree*     node,
+                               GenTree*     endExclusive,
+                               GenTree*     ignoreNode,
+                               GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY);
 
     bool IsLirRangeInvariantInRange(
         Compiler* comp, GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive, GenTree* ignoreNode);

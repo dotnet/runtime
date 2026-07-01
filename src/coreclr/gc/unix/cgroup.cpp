@@ -13,7 +13,7 @@ Abstract:
 #include "cgroup.h"
 #include <cstddef>
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
 
 #include <cstdint>
 #include <cassert>
@@ -646,7 +646,7 @@ bool GetPhysicalMemoryUsed(size_t* val)
     return result;
 }
 
-#else // !(TARGET_LINUX || TARGET_ANDROID)
+#else // !TARGET_LINUX
 
 void InitializeCGroup()
 {
@@ -666,4 +666,4 @@ bool GetPhysicalMemoryUsed(size_t* val)
     return false;
 }
 
-#endif // TARGET_LINUX || TARGET_ANDROID
+#endif // TARGET_LINUX
