@@ -11570,6 +11570,15 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
         {
             GenTree* tree = *use;
             tree->gtFlags &= ~(GTF_ASG | GTF_CALL | GTF_EXCEPT);
+
+            // Attempt to clear stale SIDEEFF bits
+            // if this node does indeed need GTF_ORDER_SIDEEFF, then the bit will later be propagated up and re-set
+            // during the child's post-order visit
+            if (!tree->OperSupportsOrderingSideEffect())
+            {
+                tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
+            }
+
             return WALK_CONTINUE;
         }
 
