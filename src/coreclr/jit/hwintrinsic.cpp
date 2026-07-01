@@ -889,6 +889,15 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic intrinsic, CORINFO
 {
     if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
+        if ((intrinsic == NI_Vector_op_Equality) || (intrinsic == NI_Vector_op_Inequality))
+        {
+            // This is a bit of a hack to minimize diffs. Prior to the refactoring (when we had NI_VectorXXX_*)
+            // these were not marked as BaseTypeFromFirstArg like they should've been, which meant that access
+            // via the ISimdVector interface would return TYP_UNDEF and the attempt to resolve it via the containing
+            // clsHnd would then also fail, allowing us to bail before we lookup the SIMD size
+            return simdBaseType;
+        }
+
         CORINFO_ARG_LIST_HANDLE arg = sig->args;
 
         if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
