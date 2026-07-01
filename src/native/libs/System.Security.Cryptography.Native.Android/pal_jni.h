@@ -507,6 +507,31 @@ extern jmethodID g_DotnetX509KeyManagerCtor;
 extern jclass    g_PalPbkdf2;
 extern jmethodID g_PalPbkdf2Pbkdf2OneShot;
 
+// java/net/ProxySelector
+extern jclass    g_ProxySelector;
+extern jmethodID g_ProxySelector_getDefault;
+extern jmethodID g_ProxySelector_select;
+
+// java/net/Proxy
+extern jclass    g_Proxy;
+extern jmethodID g_ProxyType_method;  // Proxy.type() -> Proxy$Type
+extern jmethodID g_Proxy_address;     // Proxy.address() -> SocketAddress
+
+// java/net/Proxy$Type
+extern jclass    g_ProxyType;
+extern jfieldID  g_ProxyType_DIRECT;
+extern jfieldID  g_ProxyType_HTTP;
+extern jfieldID  g_ProxyType_SOCKS;
+
+// java/net/InetSocketAddress
+extern jclass    g_InetSocketAddress;
+extern jmethodID g_InetSocketAddress_getHostString;
+extern jmethodID g_InetSocketAddress_getPort;
+
+// java/net/URI
+extern jclass    g_URI;
+extern jmethodID g_URI_create;
+
 // Compatibility macros
 #if !defined (__mallocfunc)
 #if defined (__clang__) || defined (__GNUC__)
@@ -585,6 +610,16 @@ jclass GetClassGRef(JNIEnv *env, const char* name) ARGS_NON_NULL(1);
 
 // Print and clear any JNI exceptions. Returns true if there was an exception, false otherwise.
 bool CheckJNIExceptions(JNIEnv* env) ARGS_NON_NULL_ALL;
+
+// Allocates a NUL-terminated UTF-16 buffer (via xmalloc) and copies the contents of the
+// supplied Java String into it. Returns NULL when source is NULL. Aborts on allocation
+// failure (matches xmalloc semantics). Caller frees with free().
+//
+// This is the standard PAL helper for returning a String to managed code as UTF-16 —
+// System.String is internally UTF-16, so Marshal.PtrToStringUni on the managed side is
+// a zero-conversion memcpy. Using GetStringUTFRegion would produce *modified* UTF-8
+// (which is not standard UTF-8) and force an extra Encoding.UTF8.GetString allocation.
+uint16_t* AllocateString(JNIEnv* env, jstring source) ARGS_NON_NULL(1);
 
 // Clear any JNI exceptions without printing them. Returns true if there was an exception, false otherwise.
 bool TryClearJNIExceptions(JNIEnv* env) ARGS_NON_NULL_ALL;
