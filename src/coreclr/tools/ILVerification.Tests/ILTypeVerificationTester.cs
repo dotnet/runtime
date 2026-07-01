@@ -3,9 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using ILVerify;
 using Internal.TypeSystem.Ecma;
 using Xunit;
@@ -54,6 +57,20 @@ namespace ILVerification.Tests
             }
         }
 
+        [Fact]
+        public static void CyclicTypeSpecBase_ReturnsInvalidMetadataResult()
+        {
+            using PEReader peReader = GetPatchedCyclicTypeSpecBasePE(out TypeDefinitionHandle typeHandle, out string assemblyName);
+            using var resolver = new InMemoryResolver(assemblyName, peReader);
+            var context = new ILVerifyTypeSystemContext(resolver);
+            context.SetSystemModule(context.GetModule(resolver.CoreAssembly));
+            var verifier = new Verifier(context, new VerifierOptions { IncludeMetadataTokensInErrorMessages = true });
+
+            VerificationResult result = Assert.Single(verifier.Verify(peReader, typeHandle));
+            Assert.Equal(typeHandle, result.Type);
+            Assert.Equal(VerifierError.None, result.Code);
+        }
+
         private static IEnumerable<VerificationResult> Verify(TestCase testCase)
         {
             EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
@@ -65,6 +82,81 @@ namespace ILVerification.Tests
                 SanityChecks = true
             });
             return verifier.Verify(module.PEReader, typeHandle);
+        }
+
+        private static PEReader GetPatchedCyclicTypeSpecBasePE(out TypeDefinitionHandle typeHandle, out string assemblyName)
+        {
+            assemblyName = "MalformedTypeSpecTests";
+            byte[] image = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Tests", assemblyName + ".dll"));
+            ReplaceBytes(
+                image,
+                new byte[] { 0x15, 0x12, 0x08, 0x01, 0x20, 0x06, 0x08 },
+                new byte[] { 0x15, 0x12, 0x08, 0x01, 0x20, 0x0A, 0x08 });
+
+            var peReader = new PEReader(new MemoryStream(image));
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            typeHandle = metadataReader.TypeDefinitions.Single(handle => metadataReader.GetString(metadataReader.GetTypeDefinition(handle).Name) == "Extender");
+            return peReader;
+        }
+
+        private sealed class InMemoryResolver : IResolver, IDisposable
+        {
+            private readonly string _assemblyName;
+            private readonly PEReader _peReader;
+            private readonly string _coreAssemblyName = typeof(object).Assembly.GetName().Name;
+            private readonly string _systemRuntimeName = Assembly.Load(new AssemblyName("System.Runtime")).GetName().Name;
+
+            public InMemoryResolver(string assemblyName, PEReader peReader)
+            {
+                _assemblyName = assemblyName;
+                _peReader = peReader;
+                CoreAssembly = new PEReader(File.OpenRead(typeof(object).Assembly.Location));
+                SystemRuntime = new PEReader(File.OpenRead(Assembly.Load(new AssemblyName("System.Runtime")).Location));
+            }
+
+            public PEReader CoreAssembly { get; }
+            private PEReader SystemRuntime { get; }
+
+            public PEReader ResolveAssembly(AssemblyNameInfo assemblyName)
+            {
+                if (assemblyName.Name == _assemblyName)
+                    return _peReader;
+                if (assemblyName.Name == _coreAssemblyName)
+                    return CoreAssembly;
+                if (assemblyName.Name == _systemRuntimeName)
+                    return SystemRuntime;
+                return null;
+            }
+
+            public PEReader ResolveModule(AssemblyNameInfo referencingModule, string fileName)
+                => ResolveAssembly(new AssemblyNameInfo(Path.GetFileNameWithoutExtension(fileName)));
+
+            public void Dispose()
+            {
+                CoreAssembly.Dispose();
+                SystemRuntime.Dispose();
+            }
+        }
+
+        private static void ReplaceBytes(byte[] bytes, byte[] search, byte[] replace)
+        {
+            int index = IndexOf(bytes, search);
+            Assert.True(index >= 0, "Expected TypeSpec signature was not found.");
+            Assert.True(IndexOf(bytes, search, index + 1) < 0, "Expected TypeSpec signature was not unique.");
+            Array.Copy(replace, 0, bytes, index, replace.Length);
+        }
+
+        private static int IndexOf(byte[] bytes, byte[] search, int start = 0)
+        {
+            for (int i = start; i <= bytes.Length - search.Length; i++)
+            {
+                int j = 0;
+                for (; j < search.Length && bytes[i + j] == search[j]; j++) ;
+                if (j == search.Length)
+                    return i;
+            }
+
+            return -1;
         }
     }
 }
