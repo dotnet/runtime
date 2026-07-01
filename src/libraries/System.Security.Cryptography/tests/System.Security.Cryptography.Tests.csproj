@@ -629,6 +629,7 @@
     <Compile Include="X25519DiffieHellmanTestData.cs" />
     <Compile Include="X25519DiffieHellmanTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
+    <Compile Include="X509Certificates\ApplePartialChainTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />
     <Compile Include="X509Certificates\ChainHolder.cs" />
