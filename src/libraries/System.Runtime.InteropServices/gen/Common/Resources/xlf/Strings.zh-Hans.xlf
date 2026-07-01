@@ -177,6 +177,11 @@
         <target state="translated">调用非托管 COM 方法时，托管定义中的返回值将转换为参数列表末尾的附加 "out" 参数。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged">
+        <source>The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
+        <target state="new">The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="translated">源生成的 COM 将忽略任何不受支持的配置。</target>
@@ -800,6 +805,11 @@
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
         <target state="translated">类型“{0}”指定它支持“{1}”封送模式，但不提供采用“int”并返回“Span&lt;&gt;”的“GetManagedValuesDestination”和采用“int”并返回“ReadOnlySpan&lt;&gt;”的“GetUnmanagedValuesSource”方法</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged">
+        <source>The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no managed object wrapper (CCW) is generated. Marshalling a managed object as this interface to unmanaged code will not work.</source>
+        <target state="new">The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no managed object wrapper (CCW) is generated. Marshalling a managed object as this interface to unmanaged code will not work.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">

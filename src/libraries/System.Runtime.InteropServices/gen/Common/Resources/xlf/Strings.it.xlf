@@ -177,6 +177,11 @@
         <target state="translated">Il valore restituito nella definizione gestita verrà convertito in un parametro 'out' aggiuntivo alla fine dell'elenco di parametri quando si chiama il metodo COM non gestito.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged">
+        <source>The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
+        <target state="new">The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
         <target state="translated">I COM generati dall'origine ignoreranno qualsiasi configurazione non supportata.</target>
@@ -800,6 +805,11 @@
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
         <target state="translated">Il tipo '{0}' specifica che supporta la modalità di marshalling '{1}', ma non fornisce un 'GetManagedValuesDestination' che accetta 'int' e restituisce 'Span&lt;&gt;' e un metodo 'GetUnmanagedValuesSource' che accetta 'int' e restituisce 'ReadOnlySpan&lt;&gt;'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged">
+        <source>The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no managed object wrapper (CCW) is generated. Marshalling a managed object as this interface to unmanaged code will not work.</source>
+        <target state="new">The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no managed object wrapper (CCW) is generated. Marshalling a managed object as this interface to unmanaged code will not work.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">

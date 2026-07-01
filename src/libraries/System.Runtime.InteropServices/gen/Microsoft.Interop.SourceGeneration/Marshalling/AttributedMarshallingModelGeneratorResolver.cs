@@ -128,6 +128,37 @@ namespace Microsoft.Interop
             return false;
         }
 
+        private static GeneratorDiagnostic.NotSupported? ValidateDirectionalMarshallingSupport(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
+        {
+            // Fast path: no directional restriction on this marshaller.
+            if (marshalInfo.SupportsManagedToUnmanagedMarshalling && marshalInfo.SupportsUnmanagedToManagedMarshalling)
+            {
+                return null;
+            }
+
+            MarshalDirection direction = MarshallerHelpers.GetMarshalDirection(info, context);
+            bool needsManagedToUnmanaged = direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional;
+            bool needsUnmanagedToManaged = direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional;
+
+            if (needsManagedToUnmanaged && !marshalInfo.SupportsManagedToUnmanagedMarshalling)
+            {
+                return new GeneratorDiagnostic.NotSupported(info)
+                {
+                    NotSupportedDetails = SR.Format(SR.ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged, info.ManagedType.DiagnosticFormattedName)
+                };
+            }
+
+            if (needsUnmanagedToManaged && !marshalInfo.SupportsUnmanagedToManagedMarshalling)
+            {
+                return new GeneratorDiagnostic.NotSupported(info)
+                {
+                    NotSupportedDetails = SR.Format(SR.ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged, info.ManagedType.DiagnosticFormattedName)
+                };
+            }
+
+            return null;
+        }
+
         private CustomTypeMarshallerData GetMarshallerDataForTypePositionInfo(CustomTypeMarshallers marshallers, TypePositionInfo info, StubCodeContext context)
         {
             MarshalDirection elementDirection = MarshallerHelpers.GetMarshalDirection(info, context);
@@ -146,6 +177,11 @@ namespace Microsoft.Interop
             if (ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo) is GeneratorDiagnostic.NotSupported diagnostic)
             {
                 return ResolvedGenerator.NotSupported(info, context, diagnostic);
+            }
+
+            if (ValidateDirectionalMarshallingSupport(info, context, marshalInfo) is GeneratorDiagnostic.NotSupported directionalDiagnostic)
+            {
+                return ResolvedGenerator.NotSupported(info, context, directionalDiagnostic);
             }
 
             CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(marshalInfo.Marshallers, info, context);

@@ -109,7 +109,30 @@ namespace Microsoft.Interop
     /// </summary>
     public record NativeMarshallingAttributeInfo(
         ManagedTypeInfo EntryPointType,
-        CustomTypeMarshallers Marshallers) : MarshallingInfo;
+        CustomTypeMarshallers Marshallers) : MarshallingInfo
+    {
+        /// <summary>
+        /// Whether the entry-point marshaller can convert a managed object to its unmanaged form.
+        /// When <see langword="false"/>, marshalling in the managed-to-unmanaged direction
+        /// (regular by-value / <c>in</c> parameters, and return values in unmanaged-to-managed stubs)
+        /// is not supported and a diagnostic should be emitted.
+        /// Defaults to <see langword="true"/>; only set to <see langword="false"/> by providers
+        /// that know the entry-point marshaller has an intentionally missing direction
+        /// (for example, a <c>[GeneratedComInterface]</c> that opts out of a managed-object wrapper).
+        /// </summary>
+        public bool SupportsManagedToUnmanagedMarshalling { get; init; } = true;
+
+        /// <summary>
+        /// Whether the entry-point marshaller can convert an unmanaged value back to its managed form.
+        /// When <see langword="false"/>, marshalling in the unmanaged-to-managed direction
+        /// (<c>out</c> parameters and return values in managed-to-unmanaged stubs)
+        /// is not supported and a diagnostic should be emitted.
+        /// Defaults to <see langword="true"/>; only set to <see langword="false"/> by providers
+        /// that know the entry-point marshaller has an intentionally missing direction
+        /// (for example, a <c>[GeneratedComInterface]</c> that opts out of a COM-object wrapper).
+        /// </summary>
+        public bool SupportsUnmanagedToManagedMarshalling { get; init; } = true;
+    }
 
     public sealed record IidParameterIndexNativeMarshallingInfo(
         ManagedTypeInfo EntryPointType,
