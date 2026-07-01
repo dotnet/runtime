@@ -901,8 +901,11 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    InstrumentedDispatchContinuations(flags);
-                    return;
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags) || AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
+                    {
+                        InstrumentedDispatchContinuations(flags);
+                        return;
+                    }
                 }
 
                 // Intentionally skip initialization for this state; the Push
@@ -999,13 +1002,16 @@ namespace System.Runtime.CompilerServices
 
                     if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out flags))
                     {
-                        SetContinuationState(asyncDispatcherInfo.NextContinuation);
+                        if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags) || AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
+                        {
+                            SetContinuationState(asyncDispatcherInfo.NextContinuation);
 
-                        awaitState.Pop();
-                        refDispatcherInfo = asyncDispatcherInfo.Next;
+                            awaitState.Pop();
+                            refDispatcherInfo = asyncDispatcherInfo.Next;
 
-                        InstrumentedDispatchContinuations(flags);
-                        return;
+                            InstrumentedDispatchContinuations(flags);
+                            return;
+                        }
                     }
                 }
             }
@@ -1246,8 +1252,11 @@ namespace System.Runtime.CompilerServices
         {
             if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                InstrumentedFinalizeRuntimeAsyncTask(task, ref state, flags);
-                return;
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags) || AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
+                {
+                    InstrumentedFinalizeRuntimeAsyncTask(task, ref state, flags);
+                    return;
+                }
             }
 
             task.HandleSuspended(ref state);
