@@ -1208,17 +1208,21 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
     // If we got here, then we're here b/c we're at the start of a delegate stub
     // need to figure out the kind of delegates we are dealing with.
-    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationList());
+    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfHelperObject());
 
     LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: invocationList: %p\n", pbDelInvocationList));
 
-    if (pbDelInvocationList == NULL)
+    if (pbDelInvocationList == NULL || !(*(MethodTable**)pbDelInvocationList)->IsArray())
     {
         // A null invocationList can be one of the following:
-        //  - Instance closed, Instance open non-virt, Instance open virtual, Static closed, Static opened, Unmanaged FtnPtr
-        //  - Instance open virtual is complex and we need to figure out what to do (TODO).
-        // For the others the logic is the following:
-        // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the taret is _methodPtrAux
+        // - Instance closed
+        // - Instance open non-virt
+        // - Instance open virtual
+        // - Static closed
+        // - Static opened
+        // - Instance open virtual
+        // - Unmanaged FtnPtr
+        // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the target is _methodPtrAux
 
         ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
         if (*ppbDest == NULL)
@@ -1235,9 +1239,9 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
         LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: ppbDest: %p *ppbDest:%p\n", ppbDest, *ppbDest));
 
-        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
+        BOOL res = StubManager::TraceStub((PCODE) *ppbDest, trace);
 
-        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %s, result type: %d\n", (res ? "true" : "false"), trace->GetTraceType()));
+        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %s, result type: %d\n", res ? "true" : "false", trace->GetTraceType()));
 
         return res;
     }
@@ -1246,7 +1250,7 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
     // In order to go to the correct spot, we have just have to fish out
     // slot 0 of the invocation list, and figure out where that's going to,
     // then put a breakpoint there.
-    pbDel = *(BYTE**)(((ArrayBase *)pbDelInvocationList)->GetDataPtr());
+    pbDel = *(BYTE**)((ArrayBase *)pbDelInvocationList)->GetDataPtr();
     return TraceDelegateObject(pbDel, trace);
 }
 
