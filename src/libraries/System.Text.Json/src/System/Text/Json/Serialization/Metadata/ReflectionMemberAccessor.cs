@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -33,7 +34,16 @@ namespace System.Text.Json.Serialization.Metadata
                     : null;
             }
 
-            return () => ctorInfo.Invoke(null);
+            return () =>
+#if NET
+                ctorInfo.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null);
+#else
+                ctorInfo.Invoke(null);
+#endif
         }
 
         public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
@@ -56,6 +66,13 @@ namespace System.Text.Json.Serialization.Metadata
                     argsToPass[i] = arguments[i];
                 }
 
+#if NET
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: argsToPass,
+                    culture: null);
+#else
                 try
                 {
                     return (T)constructor.Invoke(argsToPass);
@@ -67,6 +84,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // This doesn't apply to the method below as it supports a max of 4 constructor params.
                     throw e.InnerException ?? e;
                 }
+#endif
             };
         }
 
@@ -108,7 +126,16 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                return (T)constructor.Invoke(arguments);
+                return
+#if NET
+                    (T)constructor.Invoke(
+                        BindingFlags.DoNotWrapExceptions,
+                        binder: null,
+                        parameters: arguments,
+                        culture: null);
+#else
+                    (T)constructor.Invoke(arguments);
+#endif
             };
         }
 
@@ -122,6 +149,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             return value =>
             {
+#if NET
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object?[] { value },
+                    culture: null);
+#else
                 try
                 {
                     return (T)constructor.Invoke(new object?[] { value });
@@ -130,6 +164,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     throw e.InnerException ?? e;
                 }
+#endif
             };
         }
 
@@ -143,7 +178,17 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TCollection collection, object? element)
             {
+#if NET
+                // Keep exception propagation aligned with ReflectionEmitMemberAccessor.
+                addMethod.Invoke(
+                    collection,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object[] { element! },
+                    culture: null);
+#else
                 addMethod.Invoke(collection, new object[] { element! });
+#endif
             };
         }
 
@@ -167,7 +212,24 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+#if NET
+                return (TProperty)getMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null)!;
+#else
+                try
+                {
+                    return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
+#endif
             };
         }
 
@@ -177,7 +239,24 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TDeclaringType obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+#if NET
+                return (TProperty)getMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null)!;
+#else
+                try
+                {
+                    return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
+#endif
             };
         }
 
@@ -187,7 +266,23 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj, TProperty value)
             {
-                setMethodInfo.Invoke(obj, new object[] { value! });
+#if NET
+                setMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object[] { value! },
+                    culture: null);
+#else
+                try
+                {
+                    setMethodInfo.Invoke(obj, new object[] { value! });
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
+#endif
             };
         }
 
@@ -216,10 +311,27 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 KeyValuePair<Type, MethodInfo> entry = entries[i];
                 caseTypes[i] = entry.Key;
-                chain[i] = (UnionTryGetValueAccessor<TUnion>)typeof(ReflectionMemberAccessor)
+                object? accessor = typeof(ReflectionMemberAccessor)
                     .GetMethod(nameof(CreateUnionTryGetValueAccessorCore), BindingFlags.NonPublic | BindingFlags.Static)!
                     .MakeGenericMethod(typeof(TUnion), entry.Key)
-                    .Invoke(null, new object[] { entry.Value })!;
+#if NET
+                    .Invoke(
+                        null,
+                        BindingFlags.DoNotWrapExceptions,
+                        binder: null,
+                        parameters: new object[] { entry.Value },
+                        culture: null);
+#else
+                    .Invoke(null, new object[] { entry.Value });
+#endif
+
+                if (accessor is null)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to create union accessor for type '{entry.Key}' using method '{entry.Value}'.");
+                }
+
+                chain[i] = (UnionTryGetValueAccessor<TUnion>)accessor;
             }
 
             return (TUnion union, out Type? caseType, out object? value) =>
