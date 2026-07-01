@@ -195,6 +195,7 @@ namespace System.Net.Sockets.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/128141", TestPlatforms.Android)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128141", TestPlatforms.Android)]
         public async Task ConnectAsync_WithBuffer_Succeeds()
         {
             using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
