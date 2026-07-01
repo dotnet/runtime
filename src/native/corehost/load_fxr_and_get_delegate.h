@@ -4,6 +4,8 @@
 #ifndef _COREHOST_LOAD_FXR_AND_GET_DELEGATE_H_
 #define _COREHOST_LOAD_FXR_AND_GET_DELEGATE_H_
 
+#include <assert.h>
+
 #include "fxr_resolver.h"
 
 #include "hostfxr.h"
@@ -35,18 +37,21 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
     }
     else
     {
-        // Do not specify the root path. Getting a delegate does not support self-contained (app-local fxr)
-        pal_char_t* dotnet_root_c = nullptr;
-        pal_char_t* fxr_path_c = nullptr;
-        bool resolved = fxr_resolver_try_get_path(nullptr, fxr_search_location_default, nullptr, &dotnet_root_c, &fxr_path_c);
-        if (resolved)
+        bool resolved;
         {
-            dotnet_root.assign(dotnet_root_c);
-            fxr_path.assign(fxr_path_c);
+            // Do not specify the root path. Getting a delegate does not support self-contained (app-local fxr)
+            pal_char_t* dotnet_root_c = nullptr;
+            pal_char_t* fxr_path_c = nullptr;
+            resolved = fxr_resolver_try_get_path(nullptr, fxr_search_location_default, nullptr, &dotnet_root_c, &fxr_path_c);
+            if (resolved)
+            {
+                dotnet_root.assign(dotnet_root_c);
+                fxr_path.assign(fxr_path_c);
+            }
+    
+            free(dotnet_root_c);
+            free(fxr_path_c);
         }
-
-        free(dotnet_root_c);
-        free(fxr_path_c);
 
         if (!resolved)
             return StatusCode::CoreHostLibMissingFailure;
