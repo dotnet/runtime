@@ -194,13 +194,13 @@ jobs:
 
 #
 # MacCatalyst
-# Build the whole product using CoreCLR and run libraries smoke tests (Debug)
+# Build the whole product using CoreCLR and run libraries smoke tests (Checked)
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Checked
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
