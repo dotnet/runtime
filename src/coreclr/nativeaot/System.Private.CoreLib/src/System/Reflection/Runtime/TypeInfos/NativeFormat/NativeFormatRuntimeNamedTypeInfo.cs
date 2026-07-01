@@ -204,6 +204,58 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return (this.ToType() == typeof(Nullable<>)) ? RuntimeGenericTypeParameters[0].ToType() : null;
         }
 
+        internal sealed override void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
+        {
+            Debug.Assert(IsActualEnum);
+
+            // Count the number of static fields. The single instance field may or may not have metadata,
+            // so using `_typeDefinition.Fields.Count - 1` is not reliable.
+            int staticFieldCount = 0;
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                    staticFieldCount++;
+            }
+
+            unsortedNames = new string[staticFieldCount];
+            unsortedValues = new object[staticFieldCount];
+
+            int i = 0;
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                {
+                    unsortedNames[i] = field.Name.GetString(_reader);
+                    Handle handle = field.DefaultValue;
+                    unsortedValues[i] = handle.HandleType switch
+                    {
+                        HandleType.ConstantSByteValue => (object)(byte)handle.ToConstantSByteValueHandle(_reader).GetConstantSByteValue(_reader).Value,
+                        HandleType.ConstantByteValue => handle.ToConstantByteValueHandle(_reader).GetConstantByteValue(_reader).Value,
+                        HandleType.ConstantInt16Value => (ushort)handle.ToConstantInt16ValueHandle(_reader).GetConstantInt16Value(_reader).Value,
+                        HandleType.ConstantUInt16Value => handle.ToConstantUInt16ValueHandle(_reader).GetConstantUInt16Value(_reader).Value,
+                        HandleType.ConstantInt32Value => (uint)handle.ToConstantInt32ValueHandle(_reader).GetConstantInt32Value(_reader).Value,
+                        HandleType.ConstantUInt32Value => handle.ToConstantUInt32ValueHandle(_reader).GetConstantUInt32Value(_reader).Value,
+                        HandleType.ConstantInt64Value => (ulong)handle.ToConstantInt64ValueHandle(_reader).GetConstantInt64Value(_reader).Value,
+                        HandleType.ConstantUInt64Value => handle.ToConstantUInt64ValueHandle(_reader).GetConstantUInt64Value(_reader).Value,
+                        _ => throw new InvalidOperationException(),
+                    };
+                    i++;
+                }
+            }
+
+            isFlags = false;
+            foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
+            {
+                if (cah.IsCustomAttributeOfType(_reader, ["System"], "FlagsAttribute"))
+                {
+                    isFlags = true;
+                    break;
+                }
+            }
+        }
+
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
             get
