@@ -861,20 +861,12 @@ void FinalizerThread::FinalizerThreadWait()
     }
     s_inDrain = true;
 
-    EX_TRY
+    INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     {
-        INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
-        {
-            GCX_COOP();
-            ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
-        }
-        UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+        GCX_COOP();
+        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
     }
-    EX_CATCH
-    {
-        // User finalizer threw; swallow to match every other target.
-    }
-    EX_END_CATCH
+    UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
     s_inDrain = false;
 #endif // !TARGET_WASM
