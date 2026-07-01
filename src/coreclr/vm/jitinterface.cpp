@@ -8976,6 +8976,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     if (pDevirtMD->IsUnboxingStub())
     {
         MethodDesc* pUnboxedMD = pDevirtMD->GetMethodTable()->GetUnboxedEntryPointMD(pDevirtMD);
+        if (pUnboxedMD->IsInstantiatingStub()) pUnboxedMD = pUnboxedMD->GetWrappedMethodDesc();
         info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = (CORINFO_METHOD_HANDLE) pUnboxedMD;
     }
 
