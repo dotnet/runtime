@@ -516,6 +516,13 @@ void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
     original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
 }
 
+bool interceptor_ICJI::getParameterlessCtor(
+          CORINFO_CLASS_HANDLE targetType,
+          CORINFO_METHOD_HANDLE* ctor)
+{
+    return original_ICorJitInfo->getParameterlessCtor(targetType, ctor);
+}
+
 CorInfoInitClassResult interceptor_ICJI::initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,

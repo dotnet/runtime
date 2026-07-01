@@ -106,6 +106,7 @@ namespace System
         // The constructor of this struct is used when there's no constructor
         private struct StructWithNoConstructor { public StructWithNoConstructor() { } }
 
+        [Intrinsic]
         [DebuggerHidden]
         [DebuggerStepThrough]
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type, bool nonPublic)

@@ -6130,6 +6130,47 @@ void CEEInfo::getReadyToRunDelegateCtorHelper(
 }
 
 /***********************************************************************/
+bool CEEInfo::getParameterlessCtor(
+        CORINFO_CLASS_HANDLE     targetType,
+        CORINFO_METHOD_HANDLE*   ctor
+        )
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(targetType != NULL);
+    _ASSERT(ctor != NULL);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle clsHnd(targetType);
+
+    if (clsHnd.GetMethodTable()->HasDefaultConstructor())
+    {
+        MethodDesc* ctorDesc = clsHnd.GetMethodTable()->GetDefaultConstructor();
+        if (ctorDesc->IsPublic())
+        {
+            *ctor = (CORINFO_METHOD_HANDLE)ctorDesc;
+            result = true;
+        }
+    }
+    else if (clsHnd.IsValueType())
+    {
+        *ctor = NULL;
+        result = true;
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/***********************************************************************/
 // see code:Nullable#NullableVerification
 
 CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
@@ -7479,37 +7520,6 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
     return false;
 }
 
-static bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
-    CORINFO_METHOD_INFO* methInfo,
-    SigPointer* pSig)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__ACTIVATOR));
-
-    // We are only interested if ftn's token and CreateInstance<T> token match
-    if (ftn->GetMemberDef() != CoreLibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_INSTANCE_OF_T)->GetMemberDef())
-        return false;
-
-    _ASSERTE(ftn->HasMethodInstantiation());
-    Instantiation inst = ftn->GetMethodInstantiation();
-
-    _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-    TypeHandle typeHandle = inst[0];
-    MethodTable* methodTable = typeHandle.GetMethodTable();
-
-    if (!methodTable->IsValueType() || methodTable->HasDefaultConstructor())
-        return false;
-
-    // Replace the body with implementation that just returns "default"
-    MethodDesc* createDefaultInstance = CoreLibBinder::GetMethod(METHOD__ACTIVATOR__CREATE_DEFAULT_INSTANCE_OF_T);
-    COR_ILMETHOD_DECODER header(createDefaultInstance->GetILHeader(), createDefaultInstance->GetMDImport(), NULL);
-    getMethodInfoILMethodHeaderHelper(&header, methInfo);
-    *pSig = SigPointer(header.LocalVarSig, header.cbLocalVarSig);
-
-    return true;
-}
-
 //---------------------------------------------------------------------------------------
 //
 COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
@@ -7559,10 +7569,6 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
             else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
                 fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(cxt, methInfo, &localSig);
-            }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
-            {
-                fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__INSTANCE_CALLI_HELPER))
             {

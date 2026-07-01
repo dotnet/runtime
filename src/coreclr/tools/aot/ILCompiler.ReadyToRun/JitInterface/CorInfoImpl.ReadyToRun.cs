@@ -1010,6 +1010,11 @@ namespace Internal.JitInterface
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
 
+        private bool getParameterlessCtor(CORINFO_CLASS_STRUCT_* targetType, CORINFO_METHOD_STRUCT_** ctor)
+        {
+            return false;
+        }
+
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
         {
             ReadyToRunHelper id;

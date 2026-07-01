@@ -102,27 +102,6 @@ namespace Internal.IL
                 if (owningType.Namespace == "System.Threading"u8)
                     return InterlockedIntrinsics.EmitIL(method);
             }
-            else if (owningType.Name == "Activator"u8)
-            {
-                TypeSystemContext context = owningType.Context;
-                if (method.Name == "CreateInstance"u8 && method.Signature.Length == 0 && method.HasInstantiation
-                    && method.Instantiation[0] is TypeDesc activatedType
-                    && activatedType != context.UniversalCanonType
-                    && activatedType.IsValueType
-                    && activatedType.GetParameterlessConstructor() == null)
-                {
-                    ILEmitter emit = new ILEmitter();
-                    ILCodeStream codeStream = emit.NewCodeStream();
-
-                    var t = emit.NewLocal(context.GetSignatureVariable(0, method: true));
-                    codeStream.EmitLdLoca(t);
-                    codeStream.Emit(ILOpcode.initobj, emit.NewToken(context.GetSignatureVariable(0, method: true)));
-                    codeStream.EmitLdLoc(t);
-                    codeStream.Emit(ILOpcode.ret);
-
-                    return new InstantiatedMethodIL(method, emit.Link(method.GetMethodDefinition()));
-                }
-            }
             else if (owningType.Name == "RuntimeHelpers"u8)
             {
                 if (owningType.Namespace == "System.Runtime.CompilerServices"u8)
