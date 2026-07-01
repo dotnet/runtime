@@ -1705,8 +1705,9 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
+    // We do not support splitting the prolog while we are still generating unwind info.
     if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && (emitCurIGinsCnt != 0) &&
-        !emitCurIG->endsWithAlignInstr())
+        !emitCurIG->endsWithAlignInstr() && !m_compiler->compGeneratingUnwindProlog)
     {
         emitNxtIG(true);
     }
