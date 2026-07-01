@@ -10003,7 +10003,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             assert(sig.sigInst.methInstCount == 1);
             assert(sig.sigInst.classInstCount == 0);
 
-            CORINFO_CLASS_HANDLE result = sig.sigInst.methInst[0];
+            result = sig.sigInst.methInst[0];
             assert(result != nullptr);
 
             CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
