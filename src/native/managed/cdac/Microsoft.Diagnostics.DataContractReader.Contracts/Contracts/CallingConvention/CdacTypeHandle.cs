@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using Internal.CallingConvention;
 using Internal.JitInterface;
 
@@ -114,6 +115,8 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public int GetHomogeneousAggregateElementSize()
     {
+        Debug.Assert(IsHomogeneousAggregate());
+
         // ARM has no HVA; RequiresAlign8 encodes the R4-vs-R8 choice, so we
         // can skip the field walk that TryGetHFAElementSize would do.
         if (Arch == RuntimeInfoArchitecture.Arm)
