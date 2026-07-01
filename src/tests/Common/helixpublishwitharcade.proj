@@ -77,7 +77,17 @@
     <TargetsBrowserOnMono Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'mono'">true</TargetsBrowserOnMono>
     <TargetsBrowserOnCoreCLR>false</TargetsBrowserOnCoreCLR>
     <TargetsBrowserOnCoreCLR Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsBrowserOnCoreCLR>
-    <TargetsMobile Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">false</TargetsMobile>
+    <TargetsWasiOnCoreCLR>false</TargetsWasiOnCoreCLR>
+    <TargetsWasiOnCoreCLR Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsWasiOnCoreCLR>
+    <!-- Browser-CoreCLR and Wasi-CoreCLR both follow the desktop test-execution
+         path (per-test .sh next to the .dll -> corerun via node / wasmtime),
+         not the mobile/xharness AppBundle path used by Mono wasm/wasi tests
+         (see mergedrunner.targets: mergedrunnermobile.targets is explicitly
+         not imported for TargetArchitecture=wasm+RuntimeFlavor=coreclr).
+         Force TargetsMobile=false here so DiscoverMergedTestWrappers looks
+         for %(marker).sh instead of AppBundle/RunTests.sh, which the mobile
+         path expects but wasm+CoreCLR test builds don't produce. -->
+    <TargetsMobile Condition="'$(TargetsBrowserOnCoreCLR)' == 'true' or '$(TargetsWasiOnCoreCLR)' == 'true'">false</TargetsMobile>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
     <MobileAppBundleDirName Condition="'$(TargetsBrowserOnMono)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
