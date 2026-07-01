@@ -607,23 +607,21 @@ namespace System.IO
                     statResult = Interop.Sys.Stat(directoryPath, out fileStatus);
                 }
 
-                // If the path exists, check that it's a directory
-                if (statResult != 0 || (fileStatus.Mode & Interop.Sys.FileTypes.S_IFDIR) == 0)
+                if (statResult != 0)
                 {
-                    if (statResult != 0)
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    if (error.Error == Interop.Error.ENOENT && RetryOnTransientPermissionFailure())
                     {
-                        Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                        if (error.Error == Interop.Error.ENOENT && RetryOnTransientPermissionFailure())
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        throw Interop.GetExceptionForIoErrno(error, directoryPath);
-                    }
-                    else
-                    {
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_PathExistsButNotDirectory, directoryPath));
-                    }
+                    throw Interop.GetExceptionForIoErrno(error, directoryPath);
+                }
+
+                // If the path exists, check that it's a directory
+                if ((fileStatus.Mode & Interop.Sys.FileTypes.S_IFDIR) == 0)
+                {
+                    throw new IOException(SR.Format(SR.IO_SharedMemory_PathExistsButNotDirectory, directoryPath));
                 }
 
                 if (isSystemDirectory)
