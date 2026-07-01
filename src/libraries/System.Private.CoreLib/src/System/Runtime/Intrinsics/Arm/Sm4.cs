@@ -37,7 +37,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// uint32x4_t vsm4eq_u32(uint32x4_t a, uint32x4_t b)
         ///   SM4E Vd.4S,Vn.4S
         /// </summary>
-        public static unsafe Vector128<uint> Encode(Vector128<uint> value, Vector128<uint> roundKeys) => Encode(a, b);
+        public static unsafe Vector128<uint> Encode(Vector128<uint> value, Vector128<uint> roundKeys) => Encode(value, roundKeys);
 
         // SM4 key updates
 
@@ -45,7 +45,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// uint32x4_t vsm4ekeyq_u32(uint32x4_t a, uint32x4_t b)
         ///   SM4EKEY Vd.4S,Vn.4S,Vm.4S
         /// </summary>
-        public static unsafe Vector128<uint> KeyUpdate(Vector128<uint> value, Vector128<uint> constant) => KeyUpdate(a, b);
+        public static unsafe Vector128<uint> KeyUpdate(Vector128<uint> value, Vector128<uint> constant) => KeyUpdate(value, constant);
 
     }
 }

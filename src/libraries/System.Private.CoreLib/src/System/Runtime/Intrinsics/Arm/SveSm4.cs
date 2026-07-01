@@ -39,7 +39,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svsm4e[_u32](svuint32_t op1, svuint32_t op2)
         ///   SM4E Ztied1.S, Ztied1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<uint> Encode(Vector<uint> value, Vector<uint> roundKeys) => Encode(left, right);
+        public static unsafe Vector<uint> Encode(Vector<uint> value, Vector<uint> roundKeys) => Encode(value, roundKeys);
 
 
         // SM4 key updates
@@ -48,7 +48,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svsm4ekey[_u32](svuint32_t op1, svuint32_t op2)
         ///   SM4EKEY Zresult.S, Zop1.S, Zop2.S
         /// </summary>
-        public static unsafe Vector<uint> KeyUpdate(Vector<uint> value, Vector<uint> constant) => KeyUpdate(left, right);
+        public static unsafe Vector<uint> KeyUpdate(Vector<uint> value, Vector<uint> constant) => KeyUpdate(value, constant);
 
     }
 }
