@@ -3167,22 +3167,6 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
 void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt)
 {
     const weight_t weight = block->getBBWeight(this);
-
-    /* Is this a call to unmanaged code ? */
-    if (tree->IsCall() && compMethodRequiresPInvokeFrame())
-    {
-        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
-        if (!opts.ShouldUsePInvokeHelpers())
-        {
-            /* Get the special variable descriptor */
-            LclVarDsc* varDsc = lvaGetDesc(info.compLvFrameListRoot);
-
-            /* Increment the ref counts twice */
-            varDsc->incRefCnts(weight, this);
-            varDsc->incRefCnts(weight, this);
-        }
-    }
-
     if (tree->OperIs(GT_LCL_ADDR))
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
