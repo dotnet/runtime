@@ -36,7 +36,6 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
             private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
-            private const string ByteArrayValueWriterMethodName = "WriteByteArrayValue";
             private const string JsonCommentHandlingTypeRef = "global::System.Text.Json.JsonCommentHandling";
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
@@ -61,6 +60,8 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonUnionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonUnionInfoValues";
             private const string ReferenceHandlerTypeRef = "global::System.Text.Json.Serialization.ReferenceHandler";
             private const string EmptyTypeArray = "global::System.Array.Empty<global::System.Type>()";
+
+            private const string ByteArrayValueWriterMethodName = "WriteByteArrayValue";
 
             /// <summary>
             /// Contains an index from TypeRef to TypeGenerationSpec for the current ContextGenerationSpec.
