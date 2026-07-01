@@ -15,6 +15,13 @@
     .field public int32 instanceField
 }
 
+.class public sequential ansi sealed beforefieldinit RefStruct
+        extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = ( 01 00 00 00 )
+    .field public int32 instanceField
+}
+
 .class public auto ansi beforefieldinit ReturnTestsType
         extends [System.Runtime]System.Object
 {
@@ -120,6 +127,23 @@
         ret
     }
 
+    .method public hidebysig instance int32& Return.ByRefArg_Valid(int32& i) cil managed
+    {
+        ldarg.1
+        ret
+    }
+
+    .method public hidebysig instance int32& Return.ByRefLocal_Invalid_ReturnPtrToStack(int32 i) cil managed
+    {
+        .locals init (
+            [0] int32&
+        )
+        ldarga.s    i
+        stloc.0
+        ldloc.0
+        ret
+    }
+
     .method public hidebysig instance int32& Return.InstanceFieldByRef_Valid(int32 i) cil managed
     {
         ldarg.0
@@ -151,6 +175,24 @@
     .method public hidebysig instance void MissingReturn_Invalid_MethodFallthrough() cil managed
     {
         ldarg.0
+    }
+
+    .method public hidebysig static valuetype RefStruct 'Return.RefStructByValue_Valid'(valuetype RefStruct rs) cil managed
+    {
+        .locals init (
+            [0] valuetype RefStruct
+        )
+        ldarg.0
+        stloc.0
+        ldloc.0
+        ret
+    }
+
+    .method public hidebysig instance int32& 'Return.LocalRefStructFieldByRef_Invalid_ReturnPtrToStack'(valuetype RefStruct rs) cil managed
+    {
+        ldarg.1
+        ldflda      int32 RefStruct::instanceField
+        ret
     }
 
     .method public hidebysig instance void 'special.ReturnAfterBaseCtor..ctor_Valid'() cil managed { ret }
