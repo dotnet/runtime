@@ -355,34 +355,10 @@ namespace Internal.IL
             // so check for that.
             if (reader.Size > 2 * (1 + sizeof(int)))
             {
+                if (!MatchStlocLdloca(ref reader, out int stlocNum))
+                    stlocNum = -1;
+
                 opcode = reader.ReadILOpcode();
-
-                // ConfigureAwait on a ValueTask will start with stloc/ldloca.
-                int stlocNum = opcode switch
-                {
-                    >= ILOpcode.stloc_0 and <= ILOpcode.stloc_3 => opcode - ILOpcode.stloc_0,
-                    ILOpcode.stloc => reader.ReadILUInt16(),
-                    ILOpcode.stloc_s => reader.ReadILByte(),
-                    _ => -1,
-                };
-
-                // if it was a stloc, check for matching ldloca
-                if (stlocNum != -1)
-                {
-                    opcode = reader.ReadILOpcode();
-                    int ldlocaNum = opcode switch
-                    {
-                        ILOpcode.ldloca_s => reader.ReadILByte(),
-                        ILOpcode.ldloca => reader.ReadILUInt16(),
-                        _ => -1,
-                    };
-
-                    if (stlocNum != ldlocaNum)
-                        return false;
-
-                    opcode = reader.ReadILOpcode();
-                }
-
                 if (opcode is (not ILOpcode.ldc_i4_0) and (not ILOpcode.ldc_i4_1))
                 {
                     if (stlocNum != -1)
@@ -411,6 +387,42 @@ namespace Internal.IL
                 && IsAsyncHelpersAwait((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
         }
 
+        private static bool MatchStlocLdloca(ref ILReader reader, out int stlocNum)
+        {
+            stlocNum = -1;
+            ILReader tempReader = reader;
+
+            ILOpcode opcode = tempReader.ReadILOpcode();
+
+            // ConfigureAwait on a ValueTask will start with stloc/ldloca.
+            stlocNum = opcode switch
+            {
+                >= ILOpcode.stloc_0 and <= ILOpcode.stloc_3 => opcode - ILOpcode.stloc_0,
+                ILOpcode.stloc => tempReader.ReadILUInt16(),
+                ILOpcode.stloc_s => tempReader.ReadILByte(),
+                _ => -1,
+            };
+
+            if (stlocNum == -1)
+            {
+                return false;
+            }
+
+            opcode = tempReader.ReadILOpcode();
+            int ldlocaNum = opcode switch
+            {
+                ILOpcode.ldloca_s => tempReader.ReadILByte(),
+                ILOpcode.ldloca => tempReader.ReadILUInt16(),
+                _ => -1,
+            };
+
+            if (stlocNum != ldlocaNum)
+                return false;
+
+            reader = tempReader;
+            return true;
+        }
+
         private ILReader GetRemainingBlockIL()
         {
             int nextBBOffset = _currentOffset;
@@ -421,17 +433,76 @@ namespace Internal.IL
             return new ILReader(new ReadOnlySpan<byte>(_ilBytes, _currentOffset, nextBBOffset - _currentOffset));
         }
 
-        private bool MatchTailCallAwait(MethodDesc method)
+        private bool MatchTailCallAwait()
         {
             // Create ILReader for what's left in the basic block
-            var reader = GetRemainingBlockIL();
+            ILReader remainingReader = GetRemainingBlockIL();
 
-            if (!reader.HasNext)
+            if (!remainingReader.HasNext)
                 return false;
 
-            ILOpcode opcode = reader.ReadILOpcode();
-            if (opcode == ILOpcode.ret && method.Signature.ReturnsTaskOrValueTask())
+            ILReader reader = remainingReader;
+            // Look for call; ret
+            if (reader.ReadILOpcode() == ILOpcode.ret)
             {
+                _prevMatchedAwaitTailCallRetPostOffset = _currentOffset + reader.Offset;
+                return true;
+            }
+
+            reader = remainingReader;
+            // Look for call; stloc X; ldloca X; call AsTask(); ret
+            if (MatchStlocLdloca(ref reader, out _))
+            {
+                if (reader.ReadILOpcode() != ILOpcode.call)
+                {
+                    return false;
+                }
+
+                int callToken = reader.ReadILToken();
+
+                // Verify ret first before we go resolving metadata
+                if (reader.ReadILOpcode() != ILOpcode.ret)
+                {
+                    return false;
+                }
+
+                if (!IsValueTaskAsTask((MethodDesc)_methodIL.GetObject(callToken)))
+                {
+                    return false;
+                }
+
+                _prevMatchedAwaitTailCallRetPostOffset = _currentOffset + reader.Offset;
+                return true;
+            }
+
+            // Look for call; newobj ValueTask; ret
+            reader = remainingReader;
+            if (reader.ReadILOpcode() == ILOpcode.newobj)
+            {
+                int ctorToken = reader.ReadILToken();
+
+                if (reader.ReadILOpcode() != ILOpcode.ret)
+                {
+                    return false;
+                }
+
+                MethodDesc ctorMethod = (MethodDesc)_methodIL.GetObject(ctorToken);
+                if (!IsValueTaskCtor(ctorMethod))
+                {
+                    return false;
+                }
+
+                MethodSignature sig = ctorMethod.GetTypicalMethodDefinition().Signature;
+                if (sig.Length != 1)
+                {
+                    return false;
+                }
+
+                if (sig[0] is not MetadataType mt || !IsTaskType(mt))
+                {
+                    return false;
+                }
+
                 _prevMatchedAwaitTailCallRetPostOffset = _currentOffset + reader.Offset;
                 return true;
             }
@@ -473,7 +544,7 @@ namespace Internal.IL
                 // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                 allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
-                if (allowAsyncVariant && (_canonMethod.SupportsAsyncVersionCodegen() ? MatchTailCallAwait(method) : MatchTaskAwaitPattern()))
+                if (allowAsyncVariant && (_canonMethod.SupportsAsyncVersionCodegen() ? MatchTailCallAwait() : MatchTaskAwaitPattern()))
                 {
                     MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
                     MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
@@ -1777,6 +1848,52 @@ namespace Internal.IL
             }
 
             return false;
+        }
+
+        private static bool IsValueTaskAsTask(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "AsTask"u8)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    Utf8Span typeName = owningType.Name;
+                    return owningType.Module == method.Context.SystemModule
+                        && owningType.Namespace == "System.Threading.Tasks"u8
+                        && (typeName == "ValueTask"u8 || typeName == "ValueTask`1"u8);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsValueTaskCtor(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == ".ctor"u8)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    Utf8Span typeName = owningType.Name;
+                    return owningType.Module == method.Context.SystemModule
+                        && owningType.Namespace == "System.Threading.Tasks"u8
+                        && (typeName == "ValueTask"u8 || typeName == "ValueTask`1"u8);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsTaskType(MetadataType type)
+        {
+            if (type.Module != type.Context.SystemModule
+                || type.Namespace != "System.Threading.Tasks"u8)
+            {
+                return false;
+            }
+
+            Utf8Span name = type.Name;
+            return name == "Task"u8 || name == "Task`1"u8;
         }
 
         private DefType GetWellKnownType(WellKnownType wellKnownType)
