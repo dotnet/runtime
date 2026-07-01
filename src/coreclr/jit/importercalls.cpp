@@ -9997,20 +9997,37 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
 
         case NI_System_Activator_CreateInstance_T:
         {
-            CallArg* instArg = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-            if (instArg != nullptr && instArg->GetNode()->IsIconHandle())
+            // Expect one method generic parameter; figure out which it is.
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(methodHnd, &sig);
+            assert(sig.sigInst.methInstCount == 1);
+            assert(sig.sigInst.classInstCount == 0);
+
+            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.methInst[0];
+            assert(typeHnd != nullptr);
+
+            CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
             {
-                CORINFO_SIG_INFO methodSig;
-                eeGetMethodSig((CORINFO_METHOD_HANDLE)instArg->GetNode()->AsIntCon()->GetCompileTimeHandle(),
-                               &methodSig);
-                if (methodSig.sigInst.methInstCount == 1)
+                assert(instParam->GetNext() == nullptr);
+                CORINFO_METHOD_HANDLE hMethod = gtGetHelperArgMethodHandle(instParam->GetNode());
+                if (hMethod != NO_METHOD_HANDLE)
                 {
-                    CORINFO_CLASS_HANDLE objClass = methodSig.sigInst.methInst[0];
-                    if (!eeIsSharedInst(objClass))
-                    {
-                        result = objClass;
-                    }
+                    typeHnd = getMethodInstantiationArgument(hMethod, 0);
                 }
+            }
+
+            result = eeIsSharedInst(typeHnd) ? NO_CLASS_HANDLE : typeHnd;
+
+            if (result != NO_CLASS_HANDLE)
+            {
+                JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
+                        result != nullptr ? eeGetClassName(result) : "unknown");
+            }
+            else
+            {
+                JITDUMP("Special intrinsic for type %s: return type undetermined or inexact, so deferring opt\n",
+                        eeGetClassName(typeHnd));
             }
             break;
         }
