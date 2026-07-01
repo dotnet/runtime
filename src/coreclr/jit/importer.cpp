@@ -5874,7 +5874,7 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
         if ((nextOp != CEE_LDC_I4_0 && nextOp != CEE_LDC_I4_1) ||
             (nextNextOp != CEE_CALL && nextNextOp != CEE_CALLVIRT))
         {
-            if (stlocNum != -1)
+            if (stlocNum != BAD_VAR_NUM)
             {
                 // we had stloc/ldloca, we must see ConfigAwait
                 return nullptr;
@@ -5890,7 +5890,7 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
         if (!eeIsIntrinsic(nextCallTok.hMethod) ||
             lookupNamedIntrinsic(nextCallTok.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
         {
-            if (stlocNum != -1)
+            if (stlocNum != BAD_VAR_NUM)
             {
                 // we had stloc/ldloca, we must see ConfigAwait
                 return nullptr;
