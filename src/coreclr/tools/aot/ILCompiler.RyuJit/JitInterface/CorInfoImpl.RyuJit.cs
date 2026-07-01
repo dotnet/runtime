@@ -1431,15 +1431,11 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    MethodDesc caller = HandleToObject(callerHandle);
-
-                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    pResult->codePointerOrStubLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(caller);
-                    object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                    ISymbolNode helper = GetGenericLookupHelper(pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.MethodEntry, caller, helperArg);
-                    pResult->codePointerOrStubLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
+                    ComputeLookup(ref pResolvedToken,
+                        GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
+                        ReadyToRunHelperId.MethodEntry,
+                        HandleToObject(callerHandle),
+                        ref pResult->codePointerOrStubLookup);
                 }
                 else
                 {
