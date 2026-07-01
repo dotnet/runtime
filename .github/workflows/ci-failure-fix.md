@@ -185,6 +185,18 @@ Apply these fixer-specific bounds on top of the skill's guidance:
 | NativeAOT outer loop | In bounds only if it satisfies Step 5.2. |
 | Generic | In bounds only if it satisfies Step 5.2. |
 
+#### Step 5.1.1 — Pipeline-category gate (mandatory, before any fix attempt)
+
+Before Step 5.2, resolve the KBE's pipeline and short-circuit JIT/GC/PGO
+codegen-stress failures. No fix or workaround PR is in bounds for them.
+
+1. Read the build definition name and id from the KBE's `Build:` link and the
+   `Build error leg or test failing:` leg name.
+2. Treat as codegen-stress when the name or leg matches (case-insensitive)
+   `jitstress`, `gcstress`, `pgo`, `superpmi`, `jit-cfg`, or `jit-experimental`.
+3. If matched, skip Steps 5.2–5.4 and go to Step 5.5 (Branch COMMENT), recording
+   `-> routed to loop-in: codegen-stress pipeline (<name>)`. Otherwise continue.
+
 #### Step 5.2 — Attempt a fix, then classify confidence
 
 Always try to produce a real candidate change first. Read every file you would modify at `HEAD`, work out the minimal correct change (e.g. wrong expected value in a test, missing `using`, wrong cast, missing `#if`, off-by-one in test setup, a missing platform guard that *enables* correct behavior rather than disabling the test), and stage it. If the change reduces to "do what the source already does", there is nothing to fix -> record `-> skipped: candidate fix already present in source`.

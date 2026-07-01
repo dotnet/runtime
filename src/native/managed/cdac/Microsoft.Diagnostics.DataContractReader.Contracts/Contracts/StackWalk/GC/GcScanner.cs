@@ -192,7 +192,14 @@ internal class GcScanner
     {
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
         GCRefMapDecoder decoder = new(_target, gcRefMapBlob);
+        EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
+    }
 
+    private void EnumerateGCRefMapTokens(
+        ref GCRefMapDecoder decoder,
+        Data.TransitionBlock tb,
+        GcScanContext scanContext)
+    {
         if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
             decoder.ReadStackPop();
 
@@ -234,17 +241,15 @@ internal class GcScanner
         const int DynamicHelperFrameFlags_ObjectArg2 = 2;
 
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
-        TargetPointer argRegStart = tb.ArgumentRegisters;
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg) != 0)
         {
-            scanContext.GCReportCallback(argRegStart, GcScanFlags.None);
+            scanContext.GCReportCallback(ArgSlotAddress(tb, 0), GcScanFlags.None);
         }
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2) != 0)
         {
-            TargetPointer argAddr = new(argRegStart.Value + (uint)_target.PointerSize);
-            scanContext.GCReportCallback(argAddr, GcScanFlags.None);
+            scanContext.GCReportCallback(ArgSlotAddress(tb, 1), GcScanFlags.None);
         }
     }
 
@@ -330,20 +335,64 @@ internal class GcScanner
     /// Entry point for promoting caller stack GC references via method signature.
     /// Matches native TransitionFrame::PromoteCallerStack (frames.cpp:1494).
     /// </summary>
-    /// <remarks>
-    /// Not yet ported. Every call records a deferred frame so the stress harness
-    /// buckets the resulting cDAC-vs-runtime diff at this frame as a known issue
-    /// rather than a real cDAC bug. Will be replaced with a real port once the
-    /// signature- and ArgIterator-based ref enumeration lands.
-    /// </remarks>
-    private static void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
+    private void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
     {
-        scanContext.RecordDeferredFrame(frameAddress);
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+        RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
+        RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
+        // TODO(https://github.com/dotnet/runtime/issues/130008): extend ICallingConvention.TryComputeArgGCRefMapBlob
+        // coverage to non-Windows / ARM targets (SystemV-AMD64 / ARM64 struct-in-register classification, ARM32 ABI
+        // port) so this path is taken on those targets too instead of deferring to RecordDeferredFrame.
+        bool supportedByCallingConvention =
+            os is RuntimeInfoOperatingSystem.Windows
+            && arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64;
+
+        if (!supportedByCallingConvention)
+        {
+            scanContext.RecordDeferredFrame(frameAddress);
+            return;
+        }
+
+        Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+        if (fmf.MethodDescPtr == TargetPointer.Null)
+        {
+            scanContext.RecordDeferredFrame(frameAddress);
+            return;
+        }
+
+        MethodDescHandle md = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(fmf.MethodDescPtr);
+        if (!_target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(md, out byte[] blob) || blob.Length == 0)
+        {
+            scanContext.RecordDeferredFrame(frameAddress);
+            return;
+        }
+
+        Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+        GCRefMapDecoder decoder = new(blob);
+        EnumerateGCRefMapTokens(ref decoder, tb, scanContext);
     }
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
     {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+            return ArgSlotAddress(tb, pos);
         return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
+    }
+
+    private TargetPointer ArgSlotAddress(Data.TransitionBlock tb, int argIndex)
+    {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+        {
+            const int x86NumArgRegs = 2;
+            if (argIndex < x86NumArgRegs)
+            {
+                int offset = (x86NumArgRegs - 1 - argIndex) * _target.PointerSize;
+                return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)offset);
+            }
+            int stackOffset = (argIndex - x86NumArgRegs) * _target.PointerSize;
+            return new TargetPointer(tb.OffsetOfArgs.Value + (ulong)stackOffset);
+        }
+        return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)(argIndex * _target.PointerSize));
     }
 
     private TargetPointer GetCallerSP(IPlatformAgnosticContext context, ref TargetPointer? cached)

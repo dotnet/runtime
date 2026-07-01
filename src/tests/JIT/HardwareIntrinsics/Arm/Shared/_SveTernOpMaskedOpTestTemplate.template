@@ -245,7 +245,9 @@ namespace {Namespace}._{Isa}
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_TrueValue(Vector<{Op1BaseType}> mask, Vector<{Op1BaseType}> op1, Vector<{Op2BaseType}> op2, Vector<{RetBaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect((Vector<{RetBaseType}>)mask, {Isa}.{Method}(mask, op1, op2), falseOp);
+            var result = (falseOp == Vector<{RetBaseType}>.Zero) ?
+                         Sve.ConditionalSelect((Vector<{RetBaseType}>)mask, {Isa}.{Method}(mask, op1, op2), Vector<{RetBaseType}>.Zero) :
+                         Sve.ConditionalSelect((Vector<{RetBaseType}>)mask, {Isa}.{Method}(mask, op1, op2), falseOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateConditionalSelectResult_TrueValue(mask, op1, op2, falseOp, _dataTable.outArrayPtr);

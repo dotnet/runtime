@@ -11,7 +11,6 @@ import "unknwn.idl";
 //
 // Forward-declared structs defined in other headers.
 //
-struct DbiVersion;
 struct TypeRefData;
 struct TargetBuffer;
 struct ModuleInfo;
@@ -19,7 +18,6 @@ struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
 struct Debugger_STRData;
-struct DebuggerREGDISPLAY;
 struct NativeCodeFunctionData;
 struct FieldData;
 struct DebuggerIPCE_ExpandedTypeData;
@@ -194,7 +192,6 @@ interface IDacDbiMetaDataLookup : IUnknown
 interface IDacDbiInterface : IUnknown
 {
     // Initialization
-    HRESULT CheckDbiVersion([in] const struct DbiVersion * pVersion);
     HRESULT FlushCache();
     HRESULT DacSetTargetConsistencyChecks([in] BOOL fEnableAsserts);
 
@@ -285,7 +282,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetFramePointer([in] StackWalkHandle pSFIHandle, [out] FramePointer * pRetVal);
     HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext, [out] BOOL * pResult);
     HRESULT GetContext([in] VMPTR_Thread vmThread, [out] DT_CONTEXT * pContextBuffer);
-    HRESULT ConvertContextToDebuggerRegDisplay([in] const DT_CONTEXT * pInContext, [out] struct DebuggerREGDISPLAY * pOutDRD, [in] BOOL fActive);
 
     // Method
     HRESULT IsDiagnosticsHiddenOrLCGMethod([in] VMPTR_MethodDesc vmMethodDesc, [out] DynamicMethodType * pRetVal);
@@ -368,8 +364,8 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetAttachStateFlags([out] CLR_DEBUGGING_PROCESS_FLAGS * pRetVal);
 
     // Metadata
-    HRESULT GetMetaDataFileInfoFromPEFile(
-        [in] VMPTR_PEAssembly vmPEAssembly,
+    HRESULT GetModuleMetaDataFileInfo(
+        [in] VMPTR_Module vmModule,
         [out] DWORD * pTimeStamp,
         [out] DWORD * pImageSize,
         [in] IDacDbiStringHolder pStrFilename,
@@ -386,7 +382,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
 
     // Reference Walking
-    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] BOOL walkFQ, [in] UINT32 handleWalkMask);
+    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] UINT32 handleWalkMask);
     HRESULT DeleteRefWalk([in] RefWalkHandle handle);
     HRESULT WalkRefs([in] RefWalkHandle handle, [in] ULONG count, [out] struct DacGcReference * refs, [out] ULONG * pFetched);
 
