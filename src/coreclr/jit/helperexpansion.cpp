@@ -2848,30 +2848,42 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
 //
 bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, GenTreeCall* call)
 {
-    if (!call->IsHelperCall())
+    int      lengthArgIndex = -1;
+    int      typeArgIndex   = -1;
+    unsigned lengthOffset   = 0;
+
+    if (call->IsHelperCall())
+    {
+        switch (call->GetHelperNum())
+        {
+            case CORINFO_HELP_NEWARR_1_DIRECT:
+            case CORINFO_HELP_NEWARR_1_VC:
+            case CORINFO_HELP_NEWARR_1_PTR:
+            case CORINFO_HELP_NEWARR_1_ALIGN8:
+                lengthArgIndex = 1;
+                typeArgIndex   = 0;
+                lengthOffset   = OFFSETOF__CORINFO_Array__length;
+                break;
+
+            default:
+                return false;
+        }
+    }
+    else if (call->IsSpecialIntrinsic(this, NI_System_String_FastAllocateString))
+    {
+        // Strings are modelled as FastAllocateString(pMT, length) and reuse the array
+        // stack allocation path; only the length field offset differs.
+        //
+        lengthArgIndex = 1;
+        typeArgIndex   = 0;
+        lengthOffset   = OFFSETOF__CORINFO_String__stringLen;
+    }
+    else
     {
         return false;
     }
 
-    const CorInfoHelpFunc helper         = call->GetHelperNum();
-    int                   lengthArgIndex = -1;
-    int                   typeArgIndex   = -1;
-
-    switch (helper)
-    {
-        case CORINFO_HELP_NEWARR_1_DIRECT:
-        case CORINFO_HELP_NEWARR_1_VC:
-        case CORINFO_HELP_NEWARR_1_PTR:
-        case CORINFO_HELP_NEWARR_1_ALIGN8:
-            lengthArgIndex = 1;
-            typeArgIndex   = 0;
-            break;
-
-        default:
-            return false;
-    }
-
-    // If this is a local array, the new helper will have an arg for the array's address
+    // If this is a local array or string, the call will have an arg for the object's address
     //
     CallArg* const stackLocalAddressArg = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal);
 
@@ -2880,7 +2892,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         return false;
     }
 
-    JITDUMP("Expanding new array helper for stack allocated array at [%06d] in " FMT_BB ":\n", dspTreeID(call),
+    JITDUMP("Expanding new array/string helper for stack allocated object at [%06d] in " FMT_BB ":\n", dspTreeID(call),
             block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
@@ -2900,7 +2912,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     GenTree* const stackLocalAddress = stackLocalAddressArg->GetNode();
 
-    // Initialize the array method table pointer.
+    // Initialize the method table pointer.
     //
     GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
@@ -2908,14 +2920,14 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     fgInsertStmtBefore(block, stmt, mtStmt);
 
-    // Initialize the array length.
+    // Initialize the array/string length.
     //
-    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
-    GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
-    GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
-                                                   gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
-    GenTree* const   lengthStore   = gtNewStoreValueNode(TYP_INT, lengthAddress, lengthArgInt);
-    Statement* const lenStmt       = fgNewStmtFromTree(lengthStore);
+    GenTree* const lengthArg    = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* const lengthArgInt = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
+    GenTree* const lengthAddress =
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress), gtNewIconNode(lengthOffset, TYP_I_IMPL));
+    GenTree* const   lengthStore = gtNewStoreValueNode(TYP_INT, lengthAddress, lengthArgInt);
+    Statement* const lenStmt     = fgNewStmtFromTree(lengthStore);
 
     fgInsertStmtBefore(block, stmt, lenStmt);
 

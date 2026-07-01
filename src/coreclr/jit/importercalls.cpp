@@ -4152,7 +4152,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             case NI_System_ArgumentNullException_ThrowIfNull:
+                isSpecial = true;
+                break;
+
             case NI_System_String_FastAllocateString:
+                // Flag the method so the object allocator runs its escape analysis and can
+                // stack allocate non-escaping, constant-length strings.
+                optMethodFlags |= OMF_HAS_FASTSTRINGALLOC;
                 isSpecial = true;
                 break;
 

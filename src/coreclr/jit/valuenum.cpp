@@ -14506,6 +14506,17 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
     {
         case NI_System_String_FastAllocateString:
         {
+            // A stack allocated string keeps the FastAllocateString call (retyped to a native
+            // pointer with an extra StackArrayLocal arg) until it is expanded in
+            // fgExpandStackArrayAllocations. Give it a fresh, non-heap value number, just like
+            // stack allocated arrays.
+            //
+            if ((call->gtCallMoreFlags & GTF_CALL_M_STACK_ARRAY) != 0)
+            {
+                call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
+                return true;
+            }
+
             assert(call->gtArgs.CountUserArgs() == 2);
 
             GenTree* methodTableArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
