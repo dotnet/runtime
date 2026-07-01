@@ -12495,7 +12495,24 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "NegateIfNeeded",
        "IsAsciiLetter",
        "IsNullOrWhiteSpace",
-       "IndexOfAnyChar"
+       "IndexOfAnyChar",
+       "InitializeIsSupported",
+       "Contains",
+       "get_Term",
+       "ReadInt",
+       "set_Item",
+       "InitializeIsMeterSupported",
+       "GetClrConfig",
+       "EventSource_GetClrConfig",
+       "set_Capacity",
+       "GetMethodTable",
+       "GetBucket",
+       "Close",
+       "GetNumber",
+       "GetExtendedString",
+       "ReleaseHandle",
+       "AllBytesInUInt32AreAscii",
+       "GetRawStringData"
     };
 
     struct JitInclusionEntry
