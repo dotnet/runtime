@@ -520,9 +520,10 @@ namespace System.Net
 
                     DnsResponseCode rc = MapWindowsErrorToResponseCode(status);
 
-                    // Extract the negative-cache TTL from an authority-section SOA when present.
-                    // This covers both NXDOMAIN and NODATA (the latter maps to NoError but can
-                    // still carry an authority SOA); the helper returns zero when no SOA is found.
+                    // Best-effort negative-cache TTL from an authority-section SOA. Note that
+                    // DnsQueryEx returns no records at all for negative responses (empty answer
+                    // section), so in practice this yields zero for NXDOMAIN/NODATA on Windows;
+                    // it still applies for the rare positive response that carries an SOA.
                     TimeSpan negativeTtl = ExtractNegativeCacheTtl(records);
 
                     _tcs.TrySetResult(new DnsQueryRawResult(rc, records, negativeTtl));
@@ -640,9 +641,10 @@ namespace System.Net
 
                 DnsResponseCode rc = MapWindowsErrorToResponseCode(status);
 
-                // Extract the negative-cache TTL from an authority-section SOA when present.
-                // This covers both NXDOMAIN and NODATA (the latter maps to NoError but can
-                // still carry an authority SOA); the helper returns zero when no SOA is found.
+                // Best-effort negative-cache TTL from an authority-section SOA. Note that
+                // DnsQueryEx returns no records at all for negative responses (empty answer
+                // section), so in practice this yields zero for NXDOMAIN/NODATA on Windows;
+                // it still applies for the rare positive response that carries an SOA.
                 TimeSpan negativeTtl = ExtractNegativeCacheTtl(records);
 
                 return new DnsQueryRawResult(rc, records, negativeTtl);
@@ -717,6 +719,10 @@ namespace System.Net
                 _ => DnsResponseCode.ServerFailure,
             };
 
+        // Extracts the negative-cache TTL from an authority-section SOA, per RFC 2308 §5.
+        // Returns TimeSpan.Zero when no such SOA is present. In practice DnsQueryEx drops
+        // the authority section for negative responses (see callers), so this is best-effort;
+        // a future Windows-11+ path using DnsQueryRaw could parse the raw message instead.
         private static unsafe TimeSpan ExtractNegativeCacheTtl(IntPtr head)
         {
             // Walk the record list looking for an SOA in the authority section.

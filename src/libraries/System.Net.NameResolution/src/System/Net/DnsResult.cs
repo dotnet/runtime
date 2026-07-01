@@ -28,7 +28,8 @@ namespace System.Net
         /// </summary>
         /// <remarks>
         /// The value is derived from the SOA minimum TTL in the authority section, per RFC 2308 §5.
-        /// It is <see cref="TimeSpan.Zero"/> when not applicable or unavailable.
+        /// Availability is best-effort and platform-dependent; the value is <see cref="TimeSpan.Zero"/>
+        /// when not applicable or unavailable.
         /// </remarks>
         public TimeSpan NegativeCacheTtl { get; }
 

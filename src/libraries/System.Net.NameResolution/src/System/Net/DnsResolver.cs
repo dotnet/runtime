@@ -15,6 +15,10 @@ namespace System.Net
     /// <remarks>
     /// When constructed without options, or with empty <see cref="DnsResolverOptions.Servers"/>,
     /// the resolver uses the system-configured DNS servers.
+    /// <para>
+    /// Instances are thread-safe: a single <see cref="DnsResolver"/> may be shared across threads
+    /// and used to issue multiple concurrent resolutions.
+    /// </para>
     /// </remarks>
     public sealed partial class DnsResolver : IAsyncDisposable, IDisposable
     {
