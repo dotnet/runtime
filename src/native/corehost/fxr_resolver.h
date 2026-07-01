@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-// Keep in sync with DotNetRootOptions.SearchLocation in HostWriter.cs.
+// Keep in sync with HostWriter.DotNetSearchOptions.SearchLocation in HostWriter.cs.
 typedef enum
 {
     fxr_search_location_default = 0,
