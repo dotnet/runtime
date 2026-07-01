@@ -2878,8 +2878,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
     if ((simdSize == 32) && varTypeIsIntegral(simdBaseType))
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2) || HWIntrinsicInfo::AvxOnlyCompatible(intrinsic));
-
         bool potentiallyNotSupported = true;
 
         switch (intrinsic)
@@ -3476,12 +3474,12 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
             if (simdSize == 16)
             {
-                intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleScalar;
+                intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
             }
             else
             {
                 assert(simdSize == 8);
-                intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
+                intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleScalar;
             }
 #elif defined(TARGET_WASM)
             // TODO-WASM-SIMD: Implement NI_Vector_ConvertToDouble
