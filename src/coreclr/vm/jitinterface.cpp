@@ -8905,7 +8905,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 DevirtualizedMethodDescSlot,
                 info->pResolvedTokenVirtualMethod,
                 nullptr,
-                pInstantiatedMD->IsUnboxingStub() ? pInstantiatedMD->GetWrappedMethodDesc() : pInstantiatedMD,
+                pInstantiatedMD,
                 m_pMethodBeingCompiled,
                 &info->instParamLookup);
         }
