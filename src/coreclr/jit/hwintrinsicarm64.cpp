@@ -628,7 +628,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             // AdvSimd.ShiftLogical does right-shifts with negative immediates, hence the negation
             if (isRightShift)
             {
-                op2 = gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2);
+                op2 = gtFoldExpr(gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2));
             }
 
             NamedIntrinsic fallbackIntrinsic;
@@ -1884,8 +1884,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (sig->numArgs == 2)
             {
                 op3 = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
-                op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3);
-                op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
+                op2 = gtFoldExpr(gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3));
+                op1 = gtFoldExpr(gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2));
             }
 
             retNode = gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
@@ -2422,8 +2422,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (sig->numArgs == 3)
             {
                 op4 = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
-                op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, op4);
-                op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
+                op3 = gtFoldExpr(gtNewOperNode(GT_MUL, op3->TypeGet(), op3, op4));
+                op2 = gtFoldExpr(gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3));
             }
 
             op1 = impSIMDPopStack();

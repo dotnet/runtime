@@ -5430,10 +5430,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             {
                 GenTree* size = gtNewIconNode(classSize, TYP_I_IMPL);
                 op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
+                op2           = gtFoldExpr(op2);
             }
 
             var_types type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
-            return gtNewOperNode(GT_ADD, type, op1, op2);
+            GenTree*  tmp  = gtNewOperNode(GT_ADD, type, op1, op2);
+            return gtFoldExpr(tmp);
         }
 
         case NI_SRCS_UNSAFE_AddByteOffset:
@@ -5450,7 +5452,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             impBashVarAddrsToI(op1, op2);
 
             var_types type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
-            return gtNewOperNode(GT_ADD, type, op1, op2);
+            GenTree*  tmp  = gtNewOperNode(GT_ADD, type, op1, op2);
+            return gtFoldExpr(tmp);
         }
 
         case NI_SRCS_UNSAFE_AreSame:
@@ -5709,7 +5712,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
 
-            return gtNewOperNode(GT_SUB, TYP_I_IMPL, op2, op1);
+            GenTree* tmp = gtNewOperNode(GT_SUB, TYP_I_IMPL, op2, op1);
+            return gtFoldExpr(tmp);
         }
 
         case NI_SRCS_UNSAFE_Copy:
@@ -5956,10 +5960,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             {
                 GenTree* size = gtNewIconNode(classSize, TYP_I_IMPL);
                 op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
+                op2           = gtFoldExpr(op2);
             }
 
             var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
-            return gtNewOperNode(GT_SUB, type, op1, op2);
+            GenTree*  tmp  = gtNewOperNode(GT_SUB, type, op1, op2);
+            return gtFoldExpr(tmp);
         }
 
         case NI_SRCS_UNSAFE_SubtractByteOffset:
@@ -5976,7 +5982,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             impBashVarAddrsToI(op1, op2);
 
             var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
-            return gtNewOperNode(GT_SUB, type, op1, op2);
+            GenTree*  tmp  = gtNewOperNode(GT_SUB, type, op1, op2);
+            return gtFoldExpr(tmp);
         }
 
         case NI_SRCS_UNSAFE_Unbox:
@@ -10522,8 +10529,8 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
     {
         case NI_System_Math_MultiplyAddEstimate:
         {
-            GenTree* mulNode = gtNewOperNode(GT_MUL, callType, op1, op2);
-            return gtNewOperNode(GT_ADD, callType, mulNode, op3);
+            GenTree* mulNode = gtFoldExpr(gtNewOperNode(GT_MUL, callType, op1, op2));
+            return gtFoldExpr(gtNewOperNode(GT_ADD, callType, mulNode, op3));
         }
 
         case NI_System_Math_ReciprocalEstimate:
@@ -10543,7 +10550,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                 op1 = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt, nullptr R2RARG(entryPoint));
             }
-            return gtNewOperNode(GT_DIV, genActualType(callType), gtNewDconNode(1.0, callType), op1);
+            return gtFoldExpr(gtNewOperNode(GT_DIV, genActualType(callType), gtNewDconNode(1.0, callType), op1));
         }
 
         default:
