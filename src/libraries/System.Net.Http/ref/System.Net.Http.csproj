@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\ref\System.IO.Compression.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression.Brotli\ref\System.IO.Compression.Brotli.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Sockets\ref\System.Net.Sockets.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />

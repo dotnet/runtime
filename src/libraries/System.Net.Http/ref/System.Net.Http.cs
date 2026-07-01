@@ -17,22 +17,35 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
     }
-    public sealed partial class CompressedContent : System.Net.Http.HttpContent
+    public sealed partial class BrotliCompressedContent : System.Net.Http.HttpContent
     {
-        public CompressedContent(System.Net.Http.HttpContent content, System.Net.Http.CompressionMethod method) { }
-        public CompressedContent(System.Net.Http.HttpContent content, System.Net.Http.CompressionMethod method, System.IO.Compression.CompressionLevel compressionLevel) { }
+        public BrotliCompressedContent(System.Net.Http.HttpContent content) { }
+        public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.BrotliCompressionOptions compressionOptions) { }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
     }
-    public enum CompressionMethod
+    public sealed partial class GZipCompressedContent : System.Net.Http.HttpContent
     {
-        GZip = 1,
-        Deflate = 2,
-        Brotli = 4,
-        Zstandard = 8,
+        public GZipCompressedContent(System.Net.Http.HttpContent content) { }
+        public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZLibCompressionOptions compressionOptions) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override bool TryComputeLength(out long length) { throw null; }
+    }
+    public sealed partial class ZstandardCompressedContent : System.Net.Http.HttpContent
+    {
+        public ZstandardCompressedContent(System.Net.Http.HttpContent content) { }
+        public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected internal override bool TryComputeLength(out long length) { throw null; }
     }
     public enum ClientCertificateOption
     {
