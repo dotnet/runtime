@@ -7285,7 +7285,8 @@ private:
 
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
 
-    GenTree* fgMorphReduceAddOps(GenTree* tree);
+    GenTree* fgMorphReduceAddOrSubOps(GenTree* tree);
+    bool fgMorphOperIsIntScalarMulLclVar(GenTree* op, ssize_t* scalar, unsigned int* lclNum);
 
 public:
     GenTree* fgMorphTree(GenTree* tree);
@@ -9139,6 +9140,7 @@ public:
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_AddSub(BasicBlock* block, GenTree* parent, GenTree* tree);
 
     AssertionIndex GetAssertionCount()
     {
