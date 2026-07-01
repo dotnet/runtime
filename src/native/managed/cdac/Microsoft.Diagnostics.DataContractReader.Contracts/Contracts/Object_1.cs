@@ -163,10 +163,8 @@ internal readonly struct Object_1 : IObject
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
 
-        // Classify by invocation count first:
-        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
-        // that this API does not interpret further. Only when invocationCount==0
-        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
+        // Classify by invocation count first to handle multicast and unmanaged.
+        // This does not handle open virtual delegates correctly.
         DelegateType delegateType = DelegateType.Unknown;
         if (del.InvocationCount.Value == 0)
         {
@@ -187,6 +185,18 @@ internal readonly struct Object_1 : IObject
             TargetObject: targetObject,
             TargetMethodPtr: targetMethodPtr,
             DelegateType: delegateType);
+    }
+
+    public ContinuationInfo GetContinuationInfo(TargetPointer address)
+    {
+        Data.ContinuationObject cont = _target.ProcessedData.GetOrAdd<Data.ContinuationObject>(address);
+        TargetPointer diagnosticIP = cont.ResumeInfo != TargetPointer.Null
+            ? _target.ProcessedData.GetOrAdd<Data.AsyncResumeInfo>(cont.ResumeInfo).DiagnosticIP
+            : TargetPointer.Null;
+        return new ContinuationInfo(
+            Next: cont.Next,
+            DiagnosticIP: diagnosticIP,
+            State: (uint)cont.State);
     }
 
     public ulong GetSize(TargetPointer address)

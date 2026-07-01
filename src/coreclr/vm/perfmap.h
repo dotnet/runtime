@@ -148,6 +148,11 @@ public:
     // Log a pre-compiled method to the map.
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode);
 
+#ifdef FEATURE_INTERPRETER
+    // Log an interpreter IR bytecode range to the perfmap
+    static void LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize);
+#endif
+
     // Log a set of stub to the map.
     static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType);
 

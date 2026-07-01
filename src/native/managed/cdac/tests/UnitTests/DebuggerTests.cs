@@ -38,6 +38,7 @@ public class DebuggerTests
             new(nameof(Data.Debugger.RSRequestedSync), DataType.int32),
             new(nameof(Data.Debugger.SendExceptionsOutsideOfJMC), DataType.int32),
             new(nameof(Data.Debugger.GCNotificationEventsEnabled), DataType.int32),
+            new(nameof(Data.Debugger.RgHijackFunction), DataType.pointer),
         ]);
     }
 
@@ -401,5 +402,120 @@ public class DebuggerTests
         debugger.EnableGCNotificationEvents(value);
 
         Assert.Equal(value ? 1 : 0, target.Read<int>(debuggerAddress.Value + (ulong)fieldOffset));
+    }
+
+    // -----------------------------------------------------------------------
+    // GetHijackKind
+    // -----------------------------------------------------------------------
+
+    private static TargetTestHelpers.LayoutResult GetMemoryRangeLayout(TargetTestHelpers helpers)
+    {
+        return helpers.LayoutFields(
+        [
+            new(nameof(Data.MemoryRange.StartAddress), DataType.pointer),
+            new(nameof(Data.MemoryRange.Size), DataType.nuint),
+        ]);
+    }
+
+    /// <summary>
+    /// Builds a target whose Debugger has an RgHijackFunction array of <paramref name="ranges"/>
+    /// MemoryRange entries. Index 0 in the array is the unhandled-exception hijack, matching
+    /// Debugger::kUnhandledException == 0 in native debugger.h.
+    /// </summary>
+    private static TestPlaceholderTarget BuildTargetWithHijackTable(
+        MockTarget.Architecture arch,
+        (ulong Start, ulong Size)[] ranges)
+    {
+        TargetTestHelpers helpers = new(arch);
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = builder.MemoryBuilder.CreateAllocator(0x1_0000, 0x10_0000);
+
+        TargetTestHelpers.LayoutResult debuggerLayout = GetDebuggerLayout(helpers);
+        TargetTestHelpers.LayoutResult memoryRangeLayout = GetMemoryRangeLayout(helpers);
+        builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.Debugger] = new() { Fields = debuggerLayout.Fields, Size = debuggerLayout.Stride },
+            [DataType.MemoryRange] = new() { Fields = memoryRangeLayout.Fields, Size = memoryRangeLayout.Stride },
+        });
+
+        // Allocate the RgHijackFunction array as a contiguous block of MemoryRange entries.
+        ulong rgHijackAddress = 0;
+        if (ranges.Length > 0)
+        {
+            MockMemorySpace.HeapFragment rgFrag = allocator.Allocate(
+                (ulong)ranges.Length * memoryRangeLayout.Stride,
+                "RgHijackFunction");
+            int startOff = memoryRangeLayout.Fields[nameof(Data.MemoryRange.StartAddress)].Offset;
+            int sizeOff = memoryRangeLayout.Fields[nameof(Data.MemoryRange.Size)].Offset;
+            for (int i = 0; i < ranges.Length; i++)
+            {
+                int entryBase = i * (int)memoryRangeLayout.Stride;
+                helpers.WritePointer(rgFrag.Data.AsSpan(entryBase + startOff, helpers.PointerSize), ranges[i].Start);
+                helpers.WriteNUInt(rgFrag.Data.AsSpan(entryBase + sizeOff, helpers.PointerSize), new TargetNUInt(ranges[i].Size));
+            }
+            rgHijackAddress = rgFrag.Address;
+        }
+
+        // Allocate and populate the Debugger struct.
+        MockMemorySpace.HeapFragment debuggerFrag = allocator.Allocate(debuggerLayout.Stride, "Debugger");
+        helpers.WritePointer(
+            debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.RgHijackFunction)].Offset, helpers.PointerSize),
+            rgHijackAddress);
+
+        // g_pDebugger -> Debugger
+        MockMemorySpace.HeapFragment debuggerPtrFrag = allocator.Allocate((ulong)helpers.PointerSize, "g_pDebugger");
+        helpers.WritePointer(debuggerPtrFrag.Data, debuggerFrag.Address);
+        builder.AddGlobals(
+            (Constants.Globals.Debugger, debuggerPtrFrag.Address),
+            (Constants.Globals.MaxHijackFunctions, (ulong)ranges.Length));
+
+        builder.AddContract<IDebugger>(version: "c1");
+        return builder.Build();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetHijackKind_DetectsUnhandledExceptionHijack(MockTarget.Architecture arch)
+    {
+        // Index 0 is the unhandled-exception hijack; index 1 is any other redirect stub.
+        (ulong Start, ulong Size)[] ranges =
+        [
+            (0x10_0000, 0x100),
+            (0x20_0000, 0x100),
+        ];
+        Target target = BuildTargetWithHijackTable(arch, ranges);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        Assert.Equal(HijackKind.UnhandledException, debugger.GetHijackKind(new TargetCodePointer(0x10_0080)));
+        Assert.Equal(HijackKind.Other, debugger.GetHijackKind(new TargetCodePointer(0x20_0010)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetHijackKind_ReturnsNoneForUnmatchedPC(MockTarget.Architecture arch)
+    {
+        (ulong Start, ulong Size)[] ranges =
+        [
+            (0x10_0000, 0x100),
+        ];
+        Target target = BuildTargetWithHijackTable(arch, ranges);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        // Just outside the range (end is exclusive).
+        Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x10_0100)));
+
+        // Well outside any range.
+        Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0xDEAD_BEEF)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetHijackKind_ReturnsNoneWhenTableEmpty(MockTarget.Architecture arch)
+    {
+        // FEATURE_HIJACK off / uninitialized: MaxHijackFunctions == 0.
+        Target target = BuildTargetWithHijackTable(arch, []);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x10_0080)));
     }
 }
