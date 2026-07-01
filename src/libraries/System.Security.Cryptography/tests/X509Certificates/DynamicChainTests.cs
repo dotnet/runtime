@@ -527,7 +527,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -538,12 +537,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
-                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasNotPermittedNameConstraint), chain.AllStatusFlags());
+                X509ChainStatusFlags expected = PlatformDetection.IsAndroid
+                    ? X509ChainStatusFlags.InvalidNameConstraints
+                    : PlatformNameConstraints(X509ChainStatusFlags.HasNotPermittedNameConstraint);
+                Assert.Equal(expected, chain.AllStatusFlags());
             });
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -562,7 +563,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
-                Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.HasExcludedNameConstraint), chain.AllStatusFlags());
+                X509ChainStatusFlags expected = PlatformDetection.IsAndroid
+                    ? X509ChainStatusFlags.InvalidNameConstraints
+                    : PlatformNameConstraints(X509ChainStatusFlags.HasExcludedNameConstraint);
+                Assert.Equal(expected, chain.AllStatusFlags());
             });
         }
 
@@ -600,7 +604,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
             if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
@@ -638,6 +641,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string encoded = writer.Encode(Convert.ToHexString);
 
             TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android does not enforce UPN (OtherName) name constraints.
+                    Assert.True(result, "chain.Build");
+                    return;
+                }
+
                 Assert.False(result, "chain.Build");
 
                 if (PlatformDetection.IsWindows)
@@ -654,7 +664,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Upn()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -687,6 +696,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string encoded = writer.Encode(Convert.ToHexString);
 
             TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android does not enforce UPN (OtherName) name constraints.
+                    Assert.True(result, "chain.Build");
+                    return;
+                }
+
                 Assert.False(result, "chain.Build");
 
                 if (PlatformDetection.IsWindows)
