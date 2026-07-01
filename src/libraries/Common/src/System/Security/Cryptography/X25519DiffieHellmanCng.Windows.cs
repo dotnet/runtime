@@ -4,8 +4,8 @@
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 using ErrorCode = Interop.NCrypt.ErrorCode;
 
@@ -18,23 +18,26 @@ namespace System.Security.Cryptography
 
         public partial X25519DiffieHellmanCng(CngKey key)
         {
-            Debug.Assert(Helpers.IsOSPlatformWindows);
+            if (!Helpers.IsOSPlatformWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             ArgumentNullException.ThrowIfNull(key);
             ThrowIfNotSupported();
 
-            if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman ||
-                key.GetCurveName(out _) != X25519WindowsHelpers.BCRYPT_ECC_CURVE_25519)
+            if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman || !IsX25519Key(key))
             {
                 throw new ArgumentException(SR.Cryptography_ArgX25519RequiresX25519Key, nameof(key));
             }
 
-            _key = CngHelpers.Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
+            _key = key.Duplicate();
         }
 
         public partial CngKey GetKey()
         {
             ThrowIfDisposed();
-            return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
+            return _key.Duplicate();
         }
 
         protected override unsafe partial void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
@@ -87,9 +90,16 @@ namespace System.Security.Cryptography
                     flags);
 
                 using (keyHandle)
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
                 using (SafeNCryptSecretHandle secretAgreement = Interop.NCrypt.DeriveSecretAgreement(
                     _key.HandleNoDuplicate,
                     keyHandle))
+#else
+                using (SafeNCryptKeyHandle currentKeyHandle = _key.Handle)
+                using (SafeNCryptSecretHandle secretAgreement = Interop.NCrypt.DeriveSecretAgreement(
+                    currentKeyHandle,
+                    keyHandle))
+#endif
                 {
                     bool success = Interop.NCrypt.TryDeriveKeyMaterialTruncate(
                         secretAgreement,
@@ -163,8 +173,14 @@ namespace System.Security.Cryptography
                 CngKeyBlobFormat.EccPrivateBlob.Format :
                 CngKeyBlobFormat.EccPublicBlob.Format;
 
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            SafeNCryptKeyHandle keyHandle = key.HandleNoDuplicate;
+#else
+            using SafeNCryptKeyHandle keyHandle = key.Handle;
+#endif
+
             ErrorCode errorCode = Interop.NCrypt.NCryptExportKey(
-                key.HandleNoDuplicate,
+                keyHandle,
                 IntPtr.Zero,
                 format,
                 IntPtr.Zero,
@@ -181,7 +197,7 @@ namespace System.Security.Cryptography
             using (CryptoPoolLease lease = CryptoPoolLease.Rent(numBytesNeeded, skipClear: !privateKey))
             {
                 errorCode = Interop.NCrypt.NCryptExportKey(
-                    key.HandleNoDuplicate,
+                    keyHandle,
                     IntPtr.Zero,
                     format,
                     IntPtr.Zero,
@@ -199,19 +215,30 @@ namespace System.Security.Cryptography
             }
         }
 
+        private static bool IsX25519Key(CngKey key)
+        {
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            return key.GetCurveName(out _) == X25519WindowsHelpers.BCRYPT_ECC_CURVE_25519;
+#else
+            return key.GetPropertyAsString(KeyPropertyName.ECCCurveName) == X25519WindowsHelpers.BCRYPT_ECC_CURVE_25519;
+#endif
+        }
+
         private void ExportPrivateKeyFromEncryptedPkcs8(Span<byte> destination)
         {
             const string TemporaryExportPassword = "DotnetExportPhrase";
             byte[] exported = _key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
+            byte[] privateKey = new byte[PrivateKeySizeInBytes];
 
             using (PinAndClear.Track(exported))
+            using (PinAndClear.Track(privateKey))
             {
                 KeyFormatHelper.ReadEncryptedPkcs8(
                     s_eccKeyOid,
                     exported,
                     TemporaryExportPassword,
-                    destination,
-                    static (ReadOnlySpan<byte> key, Span<byte> destination, in ValueAlgorithmIdentifierAsn algId, out object? ret) =>
+                    privateKey,
+                    static (ReadOnlySpan<byte> key, byte[] privateKey, in ValueAlgorithmIdentifierAsn algId, out object? ret) =>
                     {
                         if (algId.Algorithm != Oids.EcPublicKey)
                         {
@@ -228,11 +255,13 @@ namespace System.Security.Cryptography
                             throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
                         }
 
-                        ecKey.PrivateKey.CopyTo(destination);
+                        ecKey.PrivateKey.CopyTo(privateKey);
                         ret = (object?)null;
                     },
                     out _,
                     out _);
+
+                privateKey.CopyTo(destination);
             }
         }
     }

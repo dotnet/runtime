@@ -2335,6 +2335,5 @@ namespace System.Security.Cryptography
             return hashAlgorithmIdentifier;
         }
 
-        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
     }
 }
