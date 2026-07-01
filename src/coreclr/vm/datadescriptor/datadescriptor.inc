@@ -153,6 +153,8 @@ CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ThrownObject, offsetof(ExInfo, m_excep
 CDAC_TYPE_FIELD(ExceptionInfo, T_UINT32, ExceptionFlags, cdac_data<ExInfo>::ExceptionFlagsValue)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackLowBound, cdac_data<ExInfo>::StackLowBound)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackHighBound, cdac_data<ExInfo>::StackHighBound)
+CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ExceptionRecord, cdac_data<ExInfo>::ExceptionRecord)
+CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ContextRecord, cdac_data<ExInfo>::ContextRecord)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
 #endif // TARGET_UNIX
