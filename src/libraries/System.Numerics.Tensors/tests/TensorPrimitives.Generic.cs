@@ -2727,7 +2727,8 @@ namespace System.Numerics.Tensors.Tests
         protected override T SumOfSquares(ReadOnlySpan<T> x) => TensorPrimitives.SumOfSquares(x);
 
         protected override T ConvertFromSingle(float f) => T.CreateTruncating(f);
-        protected override bool IsFloatingPoint => typeof(T) == typeof(Half) || base.IsFloatingPoint;
+        protected override bool IsFloatingPoint => typeof(T) == typeof(NFloat) || typeof(T) == typeof(Half) || base.IsFloatingPoint;
+        protected override bool IsUnsignedInteger => typeof(T) == typeof(UInt128) || typeof(T) == typeof(nuint) || base.IsUnsignedInteger;
 
         protected override T NextRandom()
         {

@@ -105,6 +105,9 @@ namespace System.Numerics.Tensors.Tests
         public delegate bool SpanIsAllAnyDelegate(ReadOnlySpan<T> x);
 
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+        protected virtual bool IsUnsignedInteger =>
+            typeof(T) == typeof(byte) || typeof(T) == typeof(ushort) || typeof(T) == typeof(uint) ||
+            typeof(T) == typeof(ulong) || typeof(T) == typeof(char);
 
         protected virtual int? IndexOfSizeExceedingMaxValue() =>
             (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)) ? Helpers.SizeGreaterThanByte :
@@ -1138,6 +1141,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, IndexOfMax([ConvertFromSingle(+0f), ConvertFromSingle(-0f)]));
             Assert.Equal(1, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(2, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(NegativeZero);
+                    x[expected] = Zero;
+                    x[tensorLength - 1] = Zero;
+                    Assert.Equal(expected, IndexOfMax(x.Span));
+                }
+            });
         }
 
         [Fact]
@@ -1167,17 +1182,12 @@ namespace System.Numerics.Tensors.Tests
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
-                    using BoundedMemory<T> x = CreateTensor(tensorLength);
-                    FillTensor(x, MinValue);
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
 
                     T max = x[0];
                     for (int i = 0; i < x.Length; i++)
                     {
-                        int compared = Comparer<T>.Default.Compare(Abs(x[i]), Abs(max));
-                        if (compared > 0 || (compared == 0 && EqualityComparer<T>.Default.Equals(x[i], max)))
-                        {
-                            max = x[i];
-                        }
+                        max = MaxMagnitude(max, x[i]);
                     }
                     x[expected] = max;
 
@@ -1188,11 +1198,11 @@ namespace System.Numerics.Tensors.Tests
                         Assert.True(actual < expected || Comparer<T>.Default.Compare(x[actual], x[expected]) > 0, $"{tensorLength} {actual} {expected}     {string.Join(",", MemoryMarshal.ToEnumerable<T>(x.Memory))}");
                         if (IsFloatingPoint)
                         {
-                            AssertEqualTolerance(Abs(x[expected]), Abs(x[actual]));
+                            AssertEqualTolerance(x[expected], x[actual], Zero);
                         }
                         else
                         {
-                            Assert.Equal(Abs(x[expected]), Abs(x[actual]));
+                            Assert.Equal(x[expected], x[actual]);
                         }
                     }
                 }
@@ -1217,6 +1227,24 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public void IndexOfMaxMagnitude_Negative1LesserThanPositive1()
+        {
+            if (IsUnsignedInteger) return;
+
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(NegativeOne);
+                    x[expected] = One;
+                    x[tensorLength - 1] = One;
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x.Span));
+                }
+            });
+        }
+
+        [Fact]
         public void IndexOfMaxMagnitude_Negative0LesserThanPositive0()
         {
             if (!IsFloatingPoint) return;
@@ -1227,6 +1255,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, IndexOfMaxMagnitude([ConvertFromSingle(+0f), ConvertFromSingle(-0f)]));
             Assert.Equal(0, IndexOfMaxMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(2, IndexOfMaxMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(NegativeZero);
+                    x[expected] = Zero;
+                    x[tensorLength - 1] = Zero;
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x.Span));
+                }
+            });
         }
 
         [Fact]
@@ -1291,6 +1331,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMin([ConvertFromSingle(+0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f)]));
             Assert.Equal(0, IndexOfMin([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(0, IndexOfMin([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(Zero);
+                    x[expected] = NegativeZero;
+                    x[tensorLength - 1] = NegativeZero;
+                    Assert.Equal(expected, IndexOfMin(x.Span));
+                }
+            });
         }
 
         [Fact]
@@ -1320,17 +1372,12 @@ namespace System.Numerics.Tensors.Tests
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
-                    using BoundedMemory<T> x = CreateTensor(tensorLength);
-                    FillTensor(x, MinValue);
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
 
                     T min = x[0];
                     for (int i = 0; i < x.Length; i++)
                     {
-                        int compared = Comparer<T>.Default.Compare(Abs(x[i]), Abs(min));
-                        if (compared < 0 || (compared == 0 && Comparer<T>.Default.Compare(x[i], min) < 0))
-                        {
-                            min = x[i];
-                        }
+                        min = MinMagnitude(min, x[i]);
                     }
 
                     x[expected] = min;
@@ -1341,11 +1388,11 @@ namespace System.Numerics.Tensors.Tests
                         Assert.True(actual < expected || Comparer<T>.Default.Compare(x[actual], x[expected]) < 0, $"{tensorLength} {actual} {expected}     {string.Join(",", MemoryMarshal.ToEnumerable<T>(x.Memory))}");
                         if (IsFloatingPoint)
                         {
-                            AssertEqualTolerance(Abs(x[expected]), Abs(x[actual]));
+                            AssertEqualTolerance(x[expected], x[actual], Zero);
                         }
                         else
                         {
-                            Assert.Equal(Abs(x[expected]), Abs(x[actual]));
+                            Assert.Equal(x[expected], x[actual]);
                         }
                     }
                 }
@@ -1370,6 +1417,24 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public void IndexOfMinMagnitude_Negative1LesserThanPositive1()
+        {
+            if (IsUnsignedInteger) return;
+
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(One);
+                    x[expected] = NegativeOne;
+                    x[tensorLength - 1] = NegativeOne;
+                    Assert.Equal(expected, IndexOfMinMagnitude(x.Span));
+                }
+            });
+        }
+
+        [Fact]
         public void IndexOfMinMagnitude_Negative0LesserThanPositive0()
         {
             if (!IsFloatingPoint) return;
@@ -1380,6 +1445,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(+0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f)]));
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(Zero);
+                    x[expected] = NegativeZero;
+                    x[tensorLength - 1] = NegativeZero;
+                    Assert.Equal(expected, IndexOfMinMagnitude(x.Span));
+                }
+            });
         }
 
         [Fact]
