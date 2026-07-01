@@ -21,8 +21,10 @@ namespace System.IO.Compression
     public sealed partial class DeflateDecoder : System.IDisposable
     {
         public DeflateDecoder() { }
+        public bool IsFinished { get { throw null; } }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class DeflateEncoder : System.IDisposable
@@ -78,8 +80,10 @@ namespace System.IO.Compression
     public sealed partial class GZipDecoder : System.IDisposable
     {
         public GZipDecoder() { }
+        public bool IsFinished { get { throw null; } }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class GZipEncoder : System.IDisposable
@@ -207,8 +211,10 @@ namespace System.IO.Compression
     public sealed partial class ZLibDecoder : System.IDisposable
     {
         public ZLibDecoder() { }
+        public bool IsFinished { get { throw null; } }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
+        public void Reset() { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class ZLibEncoder : System.IDisposable

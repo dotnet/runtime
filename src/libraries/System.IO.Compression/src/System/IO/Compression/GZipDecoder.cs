@@ -14,6 +14,15 @@ namespace System.IO.Compression
         private bool _disposed;
 
         /// <summary>
+        /// Gets a value indicating whether the decompression operation has completed.
+        /// </summary>
+        /// <remarks>
+        /// Once this property returns <see langword="true"/>, subsequent calls to <see cref="Decompress"/> return <see cref="OperationStatus.Done"/> without consuming input or producing output.
+        /// Call <see cref="Reset"/> to reuse the same instance for a new, independent decompression operation, or create a new <see cref="GZipDecoder"/> instance.
+        /// </remarks>
+        public bool IsFinished => _deflateDecoder.IsFinished;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GZipDecoder"/> class.
         /// </summary>
         /// <exception cref="IOException">Failed to create the <see cref="GZipDecoder"/> instance.</exception>
@@ -48,6 +57,19 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
             return _deflateDecoder.Decompress(source, destination, out bytesConsumed, out bytesWritten);
+        }
+
+        /// <summary>
+        /// Resets the decoder to its initial state so the same instance can be reused for a new, independent decompression operation.
+        /// </summary>
+        /// <remarks>
+        /// After this method returns, <see cref="IsFinished"/> is <see langword="false"/> and any sliding-window history from a previous decompression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            _deflateDecoder.Reset();
         }
 
         /// <summary>
