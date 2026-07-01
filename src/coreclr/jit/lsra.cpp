@@ -2620,13 +2620,15 @@ void LinearScan::setFrameType()
         // stale register would then corrupt every redirected local access.
         const bool notEnC = !m_compiler->opts.compDbgEnC;
 
-        // The frame must be large enough that some local can fall outside the primary disp8 window.
-        // x64 has no REGALLOC-time layout to consult, so rather than run a full lvaFrameSize pass just to
-        // gate this (opt-disabled-only) reservation, estimate the local area cheaply: locals sit above the
-        // outgoing-arg space, so sum that plus the stack-home sizes until the window is exceeded. The estimate
-        // need not be exact (it omits temps/callee-saves): genSecondFramePtrIsProfitable re-checks with FINAL
-        // offsets and cancels the reservation if no local lands in the secondary band.
-        auto frameLikelyLargeEnough = [this]() -> bool {
+        // The frame must be large enough that some local can fall outside the primary disp8 window and
+        // land in the secondary band. x64 has no REGALLOC-time layout to consult, so rather than run a
+        // full lvaFrameSize pass just to gate this (opt-disabled-only) reservation, estimate the local
+        // area cheaply: locals sit above the outgoing-arg space, so sum that plus the stack-home sizes
+        // until the configured offset is exceeded. The estimate need not be exact (it omits
+        // temps/callee-saves): genSecondFramePtrIsProfitable re-checks with FINAL offsets and cancels the
+        // reservation if no local lands in the secondary band. The threshold tracks the configured offset
+        // so the cheap gate follows the band actually targeted rather than a fixed constant.
+        auto frameLikelyLargeEnough = [this, secondFramePtrOffset]() -> bool {
             unsigned size = m_compiler->lvaOutgoingArgSpaceSize;
             for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
             {
@@ -2638,7 +2640,7 @@ void LinearScan::setFrameType()
                 }
 
                 size += m_compiler->lvaLclStackHomeSize(lclNum);
-                if (size > 256)
+                if (size > (unsigned)secondFramePtrOffset)
                 {
                     return true;
                 }

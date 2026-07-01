@@ -5179,8 +5179,10 @@ bool CodeGen::genSecondFramePtrIsProfitable()
 
     // A redirect applies when the raw displacement does NOT fit a disp8 but the adjusted displacement
     // (dsp +/- offset) does. Precompute the range of raw displacements that fit a disp8 once adjusted.
-    const int adjFitLo = wantFPbased ? (-128 - offset) : (-128 + offset);
-    const int adjFitHi = wantFPbased ? (127 - offset) : (127 + offset);
+    // Compute in ssize_t: offset comes from the JitSecondFramePtr release config and can be large, so
+    // int arithmetic here (127 +/- offset) could overflow (UB).
+    const ssize_t adjFitLo = wantFPbased ? ((ssize_t)-128 - offset) : ((ssize_t)-128 + offset);
+    const ssize_t adjFitHi = wantFPbased ? ((ssize_t)127 - offset) : ((ssize_t)127 + offset);
 
     for (unsigned varNum = 0; varNum < m_compiler->lvaCount; varNum++)
     {
@@ -5201,8 +5203,8 @@ bool CodeGen::genSecondFramePtrIsProfitable()
         const int hiDsp = loDsp + (int)m_compiler->lvaLclStackHomeSize(varNum) - 1;
 
         // Intersect that range with the adjusted-fits-disp8 range.
-        const int interLo = (loDsp > adjFitLo) ? loDsp : adjFitLo;
-        const int interHi = (hiDsp < adjFitHi) ? hiDsp : adjFitHi;
+        const ssize_t interLo = ((ssize_t)loDsp > adjFitLo) ? (ssize_t)loDsp : adjFitLo;
+        const ssize_t interHi = ((ssize_t)hiDsp < adjFitHi) ? (ssize_t)hiDsp : adjFitHi;
         if (interLo > interHi)
         {
             continue;
