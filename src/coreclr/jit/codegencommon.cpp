@@ -5013,6 +5013,9 @@ void CodeGen::genFinalizeFrame()
     // establish it; if not, we leave it saved (a small wasted push/pop) rather than redoing the layout.
     if (genSecondFramePtrReg != REG_NA)
     {
+        // The secondary frame pointer is a callee-saved register set up only in the prolog; EnC cannot
+        // preserve it across a remap (see setFrameType), so it must never be reserved for EnC code.
+        assert(!m_compiler->opts.compDbgEnC);
         regSet.rsSetRegsModified(genRegMask(genSecondFramePtrReg));
     }
 #endif // TARGET_AMD64

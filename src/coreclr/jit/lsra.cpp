@@ -2614,6 +2614,12 @@ void LinearScan::setFrameType()
         // matters under stress modes that force MinOpts on an OSR method.
         const bool notOsr = !m_compiler->opts.IsOSR();
 
+        // EnC is incompatible: the secondary pointer is a callee-saved register (REG_OPT_RSVD2) established
+        // only in the prolog, but an EnC remap resumes in the updated method without re-running its prolog
+        // and only preserves RBM_ENC_CALLEE_SAVED across the transition (RBX is not in that set). The
+        // stale register would then corrupt every redirected local access.
+        const bool notEnC = !m_compiler->opts.compDbgEnC;
+
         // The frame must be large enough that some local can fall outside the primary disp8 window.
         // x64 has no REGALLOC-time layout to consult, so rather than run a full lvaFrameSize pass just to
         // gate this (opt-disabled-only) reservation, estimate the local area cheaply: locals sit above the
@@ -2640,7 +2646,7 @@ void LinearScan::setFrameType()
             return false;
         };
 
-        if ((secondFramePtrOffset > 0) && optDisabled && haveFixedBase && ehCompatible && notOsr &&
+        if ((secondFramePtrOffset > 0) && optDisabled && haveFixedBase && ehCompatible && notOsr && notEnC &&
             frameLikelyLargeEnough())
         {
             // Reserve the register only as a candidate: remove it from allocation now, but defer the
