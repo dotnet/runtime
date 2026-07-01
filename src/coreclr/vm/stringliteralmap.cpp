@@ -155,60 +155,72 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     }
     CONTRACTL_END;
 
-    HashDatum Data;
-
-    DWORD dwHash = m_StringToEntryHashTable->GetHash(pStringData);
-    // Retrieve the string literal from the global string literal map.
-    CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
-
-    // TODO: We can be more efficient by checking our local hash table now to see if
-    // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
-    // (Rather than waiting until after we look the string up in the global map)
-
     // Don't use FOH for collectible modules to avoid potential memory leaks
     const bool preferFrozenObjectHeap = !bIsCollectible;
-    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
 
-    _ASSERTE(pEntry || !bAddIfNotFound);
+    // This method never returns a pinned string; only the global-map path below can.
+    if (ppPinnedString != nullptr)
+        *ppPinnedString = nullptr;
 
-    // If pEntry is non-null then the entry exists in the Global map. (either we retrieved it or added it just now)
-    if (pEntry)
+    HashDatum Data;
+    DWORD dwHash = m_StringToEntryHashTable->GetHash(pStringData);
+    if (m_StringToEntryHashTable->GetValue(pStringData, &Data, dwHash))
     {
-        // pEntry holds a counted reference to a live entry, so read the (immutable)
-        // string object up front. This keeps the read independent of what we
-        // decide to do with our reference below.
-        STRINGREF* pStrObj = pEntry->GetStringObject();
+        // Only collectible entries are tracked in the per-map table; non-collectible
+        // ones are kept alive by the global map and never inserted here.
+        _ASSERTE(bIsCollectible);
+        STRINGREF* pStrObj = ((StringLiteralEntry*)Data)->GetStringObject();
         _ASSERTE(!bAddIfNotFound || pStrObj);
-
-        if (pStrObj != nullptr && ppPinnedString != nullptr && preferFrozenObjectHeap && pEntry->IsStringFrozen())
-        {
-            *ppPinnedString = *reinterpret_cast<void**>(pStrObj);
-        }
-
-        // Decide the fate of our reference. The global map lock (gch) is held for
-        // every outcome, as releasing a StringLiteralEntry requires.
-        if (!bIsCollectible)
-        {
-            // The appdomain never unloads, so we don't track the entry in the
-            // per-map table and simply keep the global reference alive.
-            LOG((LF_APPDOMAIN, LL_INFO10000, "Avoided adding String literal to appdomain map: size: %d bytes\n", pStringData->GetCharCount()));
-            pEntry.Detach();
-        }
-        else if (m_StringToEntryHashTable->GetValue(pStringData, &Data))
-        {
-            // Another thread already added the entry, release our reference.
-            _ASSERTE((StringLiteralEntry*)Data == (StringLiteralEntry*)pEntry);
-            pEntry.Free();
-        }
-        else
-        {
-            // Hand ownership of our reference to the per-map table, which releases
-            // it when the map is torn down.
-            m_StringToEntryHashTable->InsertValue(pStringData, (LPVOID)pEntry, FALSE);
-            pEntry.Detach();
-        }
-
         return pStrObj;
+    }
+    else
+    {
+        // Retrieve the string literal from the global string literal map.
+        CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
+
+        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
+
+        _ASSERTE(pEntry || !bAddIfNotFound);
+
+        // If pEntry is non-null then the entry exists in the Global map. (either we retrieved it or added it just now)
+        if (pEntry)
+        {
+            // pEntry holds a counted reference to a live entry, so read the (immutable)
+            // string object up front. This keeps the read independent of what we
+            // decide to do with our reference below.
+            STRINGREF* pStrObj = pEntry->GetStringObject();
+            _ASSERTE(!bAddIfNotFound || pStrObj);
+
+            if (pStrObj != nullptr && ppPinnedString != nullptr && preferFrozenObjectHeap && pEntry->IsStringFrozen())
+            {
+                *ppPinnedString = *reinterpret_cast<void**>(pStrObj);
+            }
+
+            // Decide the fate of our reference. The global map lock (gch) is held for
+            // every outcome, as releasing a StringLiteralEntry requires.
+            if (!bIsCollectible)
+            {
+                // The appdomain never unloads, so we don't track the entry in the
+                // per-map table and simply keep the global reference alive.
+                LOG((LF_APPDOMAIN, LL_INFO10000, "Avoided adding String literal to appdomain map: size: %d bytes\n", pStringData->GetCharCount()));
+                pEntry.Detach();
+            }
+            else if (m_StringToEntryHashTable->GetValue(pStringData, &Data))
+            {
+                // Another thread already added the entry, release our reference.
+                _ASSERTE((StringLiteralEntry*)Data == (StringLiteralEntry*)pEntry);
+                pEntry.Free();
+            }
+            else
+            {
+                // Hand ownership of our reference to the per-map table, which releases
+                // it when the map is torn down.
+                m_StringToEntryHashTable->InsertValue(pStringData, (LPVOID)pEntry, FALSE);
+                pEntry.Detach();
+            }
+
+            return pStrObj;
+        }
     }
     // If the bAddIfNotFound flag is set then we better have a string
     // string object at this point.
@@ -234,22 +246,15 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
     DWORD dwHash = m_StringToEntryHashTable->GetHash(&StringData);
     if (m_StringToEntryHashTable->GetValue(&StringData, &Data, dwHash))
     {
-        STRINGREF *pStrObj = NULL;
-        pStrObj = ((StringLiteralEntry*)Data)->GetStringObject();
+        STRINGREF* pStrObj = ((StringLiteralEntry*)Data)->GetStringObject();
         _ASSERTE(!bAddIfNotFound || pStrObj);
         return pStrObj;
-
     }
     else
     {
         CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
 
-        // TODO: We can be more efficient by checking our local hash table now to see if
-        // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
-        // (Rather than waiting until after we look the string up in the global map)
-
         // Retrieve the string literal from the global string literal map.
-
         StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound));
 
         _ASSERTE(pEntry || !bAddIfNotFound);
