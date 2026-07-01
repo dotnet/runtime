@@ -623,8 +623,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64;
     }
 
-    // See RuntimeTypeSystem.md for the pseudocode. Mirrors
-    // MethodTable::GetHFAType in src/coreclr/vm/class.cpp.
     public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
     {
         elementSize = 0;
