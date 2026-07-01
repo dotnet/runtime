@@ -75,19 +75,29 @@ bundled_resources_is_known_assembly_extension (const char *ext)
 
 // If a bundled resource has a known assembly extension, we strip the extension from its name
 // This ensures that lookups for foo.dll will work even if the assembly is in a webcil container
+// 
+// Arguments:
+//  * id - Name of the resource, not NULL, null-terminated byte string.
+//  * buffer - Data to be written at given target address.
+//  * buffer_len - Length of buffer.
+//
+// Returns:
+// static char * - Pointer to the stripped name of the resource.
+//
+
 static char *
 key_from_id (const char *id, char *buffer, guint buffer_len)
 {
 	size_t id_length = 0;
-	size_t extension_offset = -1;
+	ssize_t extension_offset = -1;
 	const char *extension = NULL;
 
-	if (id){
-		id_length = strlen (id);
-		extension = g_memrchr (id, '.', id_length);
-		if (extension)
-			extension_offset = extension - id;
-	}
+	g_assert (id);	
+	id_length = strlen (id);
+	extension = g_memrchr (id, '.', id_length);
+	if (extension)
+		extension_offset = extension - id;
+	
 	if (!buffer) {
 		// Add space for .dll and null terminator
 		buffer_len = (guint)(id_length + 6);
@@ -198,7 +208,7 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 static MonoBundledResource *
 bundled_resources_get (const char *id)
 {
-	if (!bundled_resources)
+	if (!bundled_resources || !id)
 		return NULL;
 
 	char key_buffer[1024];
