@@ -14,6 +14,20 @@ namespace Internal.JitInterface
 {
     public static partial class WasmLowering
     {
+        public static MethodSignature GetStringCtorActualSignature(MethodSignature signature)
+        {
+            Debug.Assert(signature.GenericParameterCount == 0);
+            Debug.Assert(signature.Flags == 0);
+
+            TypeDesc[] arguments = new TypeDesc[signature.Length];
+            for (int i = 0; i < signature.Length; i++)
+            {
+                arguments[i] = signature[i];
+            }
+
+            return new MethodSignature(MethodSignatureFlags.Static, 0, signature.Context.GetWellKnownType(WellKnownType.String), arguments);
+        }
+
         // The Wasm "basic C ABI" passes structs that contain one
         // primitive field as that primitive field.
         //
