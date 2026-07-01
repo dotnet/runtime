@@ -647,12 +647,12 @@ namespace System.IO
                         return true;
                     }
 
-                    if (!RetryOnTransientPermissionFailure())
+                    if (RetryOnTransientPermissionFailure())
                     {
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrect, directoryPath, fileStatus.Uid, Convert.ToString(fileStatus.Mode, 8)));
+                        continue;
                     }
 
-                    continue;
+                    throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrect, directoryPath, fileStatus.Uid, Convert.ToString(fileStatus.Mode, 8)));
                 }
 
                 // For non-system directories (such as SharedFilesPath/UserUnscopedRuntimeTempDirectoryName),
@@ -662,12 +662,12 @@ namespace System.IO
                 // For user-scoped directories, verify the owner UID
                 if (id.IsUserScope && fileStatus.Uid != id.Uid)
                 {
-                    if (!RetryOnTransientPermissionFailure())
+                    if (RetryOnTransientPermissionFailure())
                     {
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryNotOwnedByUid, directoryPath, id.Uid));
+                        continue;
                     }
 
-                    continue;
+                    throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryNotOwnedByUid, directoryPath, id.Uid));
                 }
 
                 // Verify the permissions, or try to change them if possible
@@ -681,12 +681,12 @@ namespace System.IO
                 // since other users aren't sufficiently restricted in permissions.
                 if (id.IsUserScope)
                 {
-                    if (!RetryOnTransientPermissionFailure())
+                    if (RetryOnTransientPermissionFailure())
                     {
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrectUserScope, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
+                        continue;
                     }
 
-                    continue;
+                    throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrectUserScope, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
                 }
 
                 // For user-unscoped directories, as a last resort, check that at least the owner user has full access.
@@ -696,10 +696,12 @@ namespace System.IO
                     return true;
                 }
 
-                if (!RetryOnTransientPermissionFailure())
+                if (RetryOnTransientPermissionFailure())
                 {
-                    throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryOwnerPermissionsIncorrect, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
+                    continue;
                 }
+
+                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryOwnerPermissionsIncorrect, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
             }
 
             bool RetryOnTransientPermissionFailure()
