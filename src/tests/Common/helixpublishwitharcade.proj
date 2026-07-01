@@ -87,6 +87,7 @@
     <ItemGroup>
       <_WasmtimeFilesToStage Include="$(WasmtimeDir)**\*" />
     </ItemGroup>
+    <MakeDir Directories="$(WasmtimeDirForHelixPayload)" />
     <Copy SourceFiles="@(_WasmtimeFilesToStage)"
           DestinationFiles="@(_WasmtimeFilesToStage->'$(WasmtimeDirForHelixPayload)%(RecursiveDir)%(FileName)%(Extension)')"
           SkipUnchangedFiles="true" />

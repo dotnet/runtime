@@ -133,6 +133,13 @@ FileCleanupRoutine(
 
     if (!fShutdown && -1 != pLocalData->unix_fd)
     {
+#if defined(TARGET_WASI)
+        // WASI: init_std_handle borrows fileno(stream) for stdin/stdout/stderr
+        // because WASI has no dup(). Never close a borrowed std fd here.
+        if (pLocalData->unix_fd != STDIN_FILENO &&
+            pLocalData->unix_fd != STDOUT_FILENO &&
+            pLocalData->unix_fd != STDERR_FILENO)
+#endif
         close(pLocalData->unix_fd);
     }
 
@@ -2485,6 +2492,13 @@ done:
     }
     else if (-1 != new_fd)
     {
+#if defined(TARGET_WASI)
+        // See FileCleanupRoutine: on WASI, new_fd may be a borrowed std fd
+        // (STDIN/STDOUT/STDERR) because init_std_handle can't dup on WASI.
+        if (new_fd != STDIN_FILENO &&
+            new_fd != STDOUT_FILENO &&
+            new_fd != STDERR_FILENO)
+#endif
         close(new_fd);
     }
 
