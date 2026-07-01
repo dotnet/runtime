@@ -901,14 +901,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (isa == InstructionSet_Vector)
     {
-        if (node->GetSimdSize() == 16)
+        if (node->GetSimdSize() == 8)
         {
-            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector128));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector64));
         }
         else
         {
-            assert(node->GetSimdSize() <= 8);
-            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector64));
+            assert((node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector128));
         }
     }
     else

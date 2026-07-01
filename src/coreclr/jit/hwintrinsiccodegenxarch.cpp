@@ -399,7 +399,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         }
         else
         {
-            assert(node->GetSimdSize() <= 16);
+            assert((node->GetSimdSize() == 8) || (node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
             assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector128));
         }
     }
