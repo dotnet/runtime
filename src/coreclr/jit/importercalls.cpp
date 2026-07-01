@@ -4829,6 +4829,28 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     }
                 }
 
+                // Try to load handle directly for known types
+                if (retNode == nullptr)
+                {
+                    GenTree*             tree    = impStackTop().val;
+                    bool                 isExact = false;
+                    bool                 notNull = false;
+                    CORINFO_CLASS_HANDLE typeHnd = gtGetClassHandle(tree, &isExact, &notNull);
+                    if ((typeHnd != NO_CLASS_HANDLE) && isExact)
+                    {
+                        assert((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0);
+                        if (!eeIsSharedInst(typeHnd) && notNull && !fgAddrCouldBeNull(tree))
+                        {
+                            JITDUMP("Optimizing object.GetType() with known type to typeof\n");
+                            impPopStack();
+                            GenTree* handle = gtNewIconEmbClsHndNode(typeHnd);
+                            GenTree* helper =
+                                gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+                            retNode = gtWrapWithSideEffects(helper, tree, GTF_ALL_EFFECT, true);
+                        }
+                    }
+                }
+
 #ifdef DEBUG
                 if (retNode != nullptr)
                 {
