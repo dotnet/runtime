@@ -65,9 +65,9 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
             public static bool Invoke(T x) => T.IsNaN(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => IsNaN<T>(x);
-            public static Vector256<T> Invoke(Vector256<T> x) => IsNaN<T>(x);
-            public static Vector512<T> Invoke(Vector512<T> x) => IsNaN<T>(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsNaN<T>(x);
+            public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsNaN<T>(x);
+            public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsNaN<T>(x);
         }
     }
 }
