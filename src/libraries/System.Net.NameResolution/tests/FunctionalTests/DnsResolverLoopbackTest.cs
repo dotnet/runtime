@@ -46,7 +46,6 @@ namespace System.Net.NameResolution.Tests
     //
     // These tests cover the record-parsing and response-handling behavior that the
     // OuterLoop tests in DnsResolverTest.cs cannot exercise deterministically.
-    [OuterLoop("Binds the loopback DNS port 53 and issues real DnsQueryEx calls.")]
     [Collection(nameof(DisableParallelization))]
     public class DnsResolverLoopbackTest : IClassFixture<WindowsLoopbackServer>
     {
