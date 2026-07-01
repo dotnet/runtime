@@ -6727,7 +6727,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef TARGET_POWERPC64
             if (lclNum <= 8 && varDsc->lvIsParam)
             {
-                printf("PPC64LE: Processing V%02u param in frame layout loop (lvOnFrame=%d, allocOrder=0x%x)\n",
+                JITDUMP("[PPC64LE HFA DEBUG] Processing V%02u param in frame layout loop (lvOnFrame=%d, allocOrder=0x%x)\n",
                         lclNum, varDsc->lvOnFrame, alloc_order[cur]);
             }
 #endif
@@ -7216,8 +7216,8 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         // - Parameters smaller than 8 bytes (floats, small structs)
         // - Parameters with size that's a multiple of 4 but not 8 (float-only HFAs: 4, 12, 20, 28 bytes)
         skipAlignment = true;
-        printf("PPC64LE: Skipping 8-byte alignment for register parameter V%02u (size=%u, type=%s)\n",
-               lclNum, size, varTypeName(lcl->TypeGet()));
+        JITDUMP("[PPC64LE HFA DEBUG] Skipping 8-byte alignment for register parameter V%02u (size=%u, type=%s)\n",
+                lclNum, size, varTypeName(lcl->TypeGet()));
     }
     
     if (!skipAlignment && (size >= 8) && ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || ((stkOffs % 8) != 0)
@@ -7279,8 +7279,8 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         lvaIncrementFrameSize(pad);
 #if defined(TARGET_POWERPC64)
         // PPC64LE: positive offsets grow upward
-        printf("PPC64LE: Adding %d bytes padding before V%02u (stkOffs was %d, now %d)\n",
-               pad, lclNum, stkOffs, stkOffs + pad);
+        JITDUMP("[PPC64LE HFA DEBUG] Adding %d bytes padding before V%02u (stkOffs was %d, now %d)\n",
+                pad, lclNum, stkOffs, stkOffs + pad);
         stkOffs += pad;
 #else
         stkOffs -= pad;
@@ -7315,8 +7315,8 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     int frameOffset = LINKAGE_AREA_SIZE + paramSaveArea;
     int finalOffset = stkOffs + frameOffset;
     lcl->SetStackOffset(finalOffset);
-    printf("PPC64LE: V%02u assigned offset %d (stkOffs=%d, frameOffset=%d, size=%u)\n",
-           lclNum, finalOffset, stkOffs, frameOffset, size);
+    JITDUMP("[PPC64LE HFA DEBUG] V%02u assigned offset %d (stkOffs=%d, frameOffset=%d, size=%u)\n",
+            lclNum, finalOffset, stkOffs, frameOffset, size);
     stkOffs += size;
 #else
     stkOffs -= size;

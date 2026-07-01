@@ -3449,8 +3449,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                         {
                             storeType = TYP_FLOAT;
                         }
-                        printf("HFA DEBUG: genHomeRegisterParams - HFA detected (element type %s), overriding store type from %s to %s for %s -> V%02u+%u (size=%u, hfaSlots=%u)\n",
-                               varTypeName(hfaType), varTypeName(origStoreType), varTypeName(storeType), getRegName(seg.GetRegister()), lclNum, seg.Offset, seg.Size, hfaSlots);
+                        JITDUMP("[PPC64LE HFA DEBUG] genHomeRegisterParams: HFA detected (element type %s), overriding store type from %s to %s for %s -> V%02u+%u (size=%u, hfaSlots=%u)\n",
+                                varTypeName(hfaType), varTypeName(origStoreType), varTypeName(storeType), getRegName(seg.GetRegister()), lclNum, seg.Offset, seg.Size, hfaSlots);
                     }
 #endif
                     

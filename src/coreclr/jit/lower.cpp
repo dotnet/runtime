@@ -1646,8 +1646,8 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
                 
                 if (IsPpc64leHfaLikeStruct(comp, typeHnd, &hfaType, &hfaSlots))
                 {
-                    printf("[PPC64LE HFA DEBUG] PUTARG_SPLIT: Creating field list for HFA struct (hfaType=%s, hfaSlots=%u)\n",
-                           varTypeName(hfaType), hfaSlots);
+                    JITDUMP("[PPC64LE HFA DEBUG] PUTARG_SPLIT: Creating field list for HFA struct (hfaType=%s, hfaSlots=%u)\n",
+                            varTypeName(hfaType), hfaSlots);
                     
                     // Create a field list with individual float/double fields
                     GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
@@ -1703,8 +1703,8 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
                         unsigned hfaSlots = 0;
                         if (IsPpc64leHfaLikeStruct(comp, typeHnd, &hfaType, &hfaSlots))
                         {
-                            printf("[PPC64LE HFA DEBUG] PUTARG_SPLIT: Overriding m_regType[%u] from %s to %s (hfaSlots=%u)\n",
-                                   index, varTypeName(regType), varTypeName(hfaType), hfaSlots);
+                            JITDUMP("[PPC64LE HFA DEBUG] PUTARG_SPLIT: Overriding m_regType[%u] from %s to %s (hfaSlots=%u)\n",
+                                    index, varTypeName(regType), varTypeName(hfaType), hfaSlots);
                             regType = hfaType;
                         }
                     }

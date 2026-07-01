@@ -1180,8 +1180,8 @@ private:
                         if (IsPpc64leHfaLikeStruct(compiler, typeHnd, &hfaType, &hfaSlots))
                         {
                             // Override type to HFA element type (TYP_FLOAT or TYP_DOUBLE)
-                            printf("[PPC64LE HFA DEBUG] getDefType: %s for V%02u, overriding type from %s to %s (hfaSlots=%u)\n",
-                                   nodeType, lclNum, varTypeName(type), varTypeName(hfaType), hfaSlots);
+                            JITDUMP("[PPC64LE HFA DEBUG] getDefType: %s for V%02u, overriding type from %s to %s (hfaSlots=%u)\n",
+                                    nodeType, lclNum, varTypeName(type), varTypeName(hfaType), hfaSlots);
                             type = hfaType;
                         }
                     }
