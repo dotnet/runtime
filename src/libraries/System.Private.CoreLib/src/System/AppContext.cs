@@ -58,7 +58,10 @@ namespace System
                     lock (s_dataStore)
                     {
                         if (s_dataStore.TryGetValue(name, out object? existing))
+                        {
+                            Debug.Assert(existing is string existingValue && existingValue == value);
                             return existing;
+                        }
 
                         s_dataStore[name] = value;
                         return value;

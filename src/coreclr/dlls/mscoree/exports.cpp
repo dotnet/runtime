@@ -85,6 +85,37 @@ static bool IsKnownHostProperty(LPCSTR key)
         || strcmp(key, HOST_PROPERTY_APP_PATHS) == 0;
 }
 
+struct HostPropertyArrays final
+{
+    int count;
+    const char** keys;
+    LPCWSTR* keysW;
+    LPCWSTR* valuesW;
+};
+
+// Frees the key and value arrays and the wide-string copies of the known host probing-path
+// properties. The remaining strings are handed to the CLR configuration knobs, which retain
+// them for the process lifetime, so they are not freed here.
+struct HostPropertyArraysTraits final
+{
+    using Type = HostPropertyArrays;
+    static Type Default() { return {}; }
+    static void Free(Type arrays)
+    {
+        for (int i = 0; i < arrays.count; ++i)
+        {
+            if (IsKnownHostProperty(arrays.keys[i]))
+            {
+                delete[] const_cast<WCHAR*>(arrays.keysW[i]);
+                delete[] const_cast<WCHAR*>(arrays.valuesW[i]);
+            }
+        }
+
+        delete[] arrays.keysW;
+        delete[] arrays.valuesW;
+    }
+};
+
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
@@ -305,6 +336,12 @@ int coreclr_initialize(
         Bundle::AppBundle = &bundle;
     }
 
+    // Take ownership of the converted (unfiltered) property arrays. The unfiltered arrays
+    // are passed to CreateAppDomainWithManager so the binder/AppDomain can parse them.
+    // Afterward, the arrays and the excluded strings are freed. The other property strings
+    // are handed to the CLR config knobs, which own them for the process lifetime.
+    LifetimeHolder<HostPropertyArraysTraits> hostPropertiesHolder{ HostPropertyArrays{ propertyCount, propertyKeys, propertyKeysW, propertyValuesW } };
+
     // Build a filtered set of properties for the CLR config knobs that excludes probing path
     // properties (TPA, NATIVE_DLL_SEARCH_DIRECTORIES, PLATFORM_RESOURCE_ROOTS, APP_PATHS).
     // Those are parsed into binder/AppDomain structures during CreateAppDomainWithManager,
@@ -326,7 +363,7 @@ int coreclr_initialize(
         ++configPropertyCount;
     }
 
-    // Configuration takes ownership of the filtered arrays and the strings they reference.
+    // Configuration takes ownership of the filtered arrays and the strings they reference
     Configuration::InitializeConfigurationKnobs(configPropertyCount, configKeysW, configValuesW);
 
 #ifdef TARGET_UNIX
@@ -355,20 +392,6 @@ int coreclr_initialize(
         propertyKeysW,
         propertyValuesW,
         (DWORD *)domainId);
-
-    // The binder/AppDomain has now parsed the host probing path properties into its own
-    // structures. Free the wide-string copies for the excluded properties (the rest are
-    // owned by the CLR config above) and the full property arrays themselves.
-    for (int i = 0; i < propertyCount; ++i)
-    {
-        if (IsKnownHostProperty(propertyKeys[i]))
-        {
-            delete[] (WCHAR*)propertyKeysW[i];
-            delete[] (WCHAR*)propertyValuesW[i];
-        }
-    }
-    delete[] propertyKeysW;
-    delete[] propertyValuesW;
 
     if (SUCCEEDED(hr))
     {

@@ -120,8 +120,15 @@ namespace
     // Append all paths from a StringArrayList into 'output', separated by PATH_SEPARATOR_CHAR_W.
     void AppendStringArrayList(StringArrayList* pList, SString& output)
     {
-        if (pList == NULL)
-            return;
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(pList != NULL);
 
         for (DWORD i = 0; i < pList->GetCount(); ++i)
         {
@@ -153,7 +160,7 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
             BINDER_SPACE::SimpleNameToFileNameMap* pMap = pAppContext->GetTpaList();
             _ASSERTE(pMap != NULL);
 
-            StackSString result;
+            SString result;
             BINDER_SPACE::SimpleNameToFileNameMap::Iterator i = pMap->Begin();
             BINDER_SPACE::SimpleNameToFileNameMap::Iterator end = pMap->End();
             while (i != end)
@@ -178,7 +185,7 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
     }
     else if (u16_strcmp(name, _T(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES)) == 0)
     {
-        StackSString result;
+        SString result;
         AppDomain::PathIterator iter = pDomain->IterateNativeDllSearchDirectories();
         while (iter.Next())
         {
@@ -199,7 +206,7 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
         StringArrayList* pList = pAppContext->GetPlatformResourceRoots();
         if (pList != NULL && pList->GetCount() > 0)
         {
-            StackSString result;
+            SString result;
             AppendStringArrayList(pList, result);
             retValue.Set(result);
             found = TRUE;
@@ -210,7 +217,7 @@ extern "C" BOOL QCALLTYPE AppContext_TryGetHostPropertyValue(LPCWSTR name, QCall
         StringArrayList* pList = pAppContext->GetAppPaths();
         if (pList != NULL && pList->GetCount() > 0)
         {
-            StackSString result;
+            SString result;
             AppendStringArrayList(pList, result);
             retValue.Set(result);
             found = TRUE;
