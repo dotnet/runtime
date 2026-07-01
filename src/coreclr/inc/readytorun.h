@@ -64,7 +64,7 @@
 // R2R Version 22 changes NativeVarInfo encoding to include CALL_RETURN_VALUE
 // R2R Version 23 changes delegate layout to have target before methodPtr
 // R2R Version 24 changes ARM32 virtual stub dispatch hidden parameter register to R12
-// R2R Version 25 renames runtime async infrastructure members and makes thunk-used members NonVersionable
+// R2R Version 25 renames runtime async infrastructure members, makes thunk-used members NonVersionable, and frees up a flag in CorInfoContinuationFlags
 
 struct READYTORUN_CORE_HEADER
 {
