@@ -14,9 +14,11 @@ public record struct StressLogData(
     int TotalChunks,
     ulong TickFrequency,
     ulong StartTimestamp,
+    ulong StartTime,
     TargetPointer Logs);
 
 public record struct ThreadStressLogData(
+    TargetPointer Address,
     TargetPointer NextPointer,
     ulong ThreadId,
     bool WriteHasWrapped,
@@ -31,6 +33,10 @@ public record struct StressMsgData(
     ulong Timestamp,
     IReadOnlyList<TargetPointer> Args);
 
+public record struct StressLogMemoryRange(
+    TargetPointer Start,
+    ulong Size);
+
 public interface IStressLog : IContract
 {
     static string IContract.Name { get; } = nameof(StressLog);
@@ -40,6 +46,7 @@ public interface IStressLog : IContract
     IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => throw new NotImplementedException();
     IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => throw new NotImplementedException();
     bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => throw new NotImplementedException();
+    IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog) => throw new NotImplementedException();
 }
 
 public readonly struct StressLog : IStressLog

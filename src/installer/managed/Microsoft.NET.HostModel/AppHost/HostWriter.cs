@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.NET.HostModel.MachO;
 
@@ -162,7 +160,7 @@ namespace Microsoft.NET.HostModel.AppHost
                                 }
                             }
                         }
-                        using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize: 1))
+                        using (FileStream appHostDestinationStream = HostModelUtils.CreateFileStreamForHost(appHostDestinationFilePath, FileAccess.ReadWrite, FileShare.None, bufferSize: 1))
                         using (MemoryMappedViewAccessor appHostAccessor = appHostDestinationMap.CreateViewAccessor(0, appHostDestinationLength, MemoryMappedFileAccess.Read))
                         {
                             // Write the final content to the destination file, only up to the total length of the host, not the entire mapped file.
@@ -179,14 +177,8 @@ namespace Microsoft.NET.HostModel.AppHost
                         }
                     }
                 });
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    // chmod +755
-                    File.SetUnixFileMode(appHostDestinationFilePath,
-                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                        UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-                }
+
+                HostModelUtils.SetPermissionsForHost(appHostDestinationFilePath);
             }
             catch (Exception ex)
             {

@@ -87,7 +87,7 @@ public partial class UpdateChromeVersions : MBU.Task
             }
             if (VersionsChanged)
             {
-                UpdateEnvVarsForPRFile(versions);
+                UpdateEnvVarsForPRFile(chromeVersionsXmlDoc, versions);
             }
             return !Log.HasLoggedErrors;
         }
@@ -98,23 +98,30 @@ public partial class UpdateChromeVersions : MBU.Task
         }
     }
 
-    private static bool AreVersionsChanged(XmlDocument xmlDoc, ChromeVersionSpec version, string baseUrl)
+    private bool AreVersionsChanged(XmlDocument xmlDoc, ChromeVersionSpec version, string baseUrl)
     {
-        if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
+        string nodePrefix = version.os switch
         {
-            string linuxChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "linux_ChromeBaseSnapshotUrl");
-            string linuxV8Version = GetNodeValue(xmlDoc, "linux_V8Version");
-            return version.v8_version != linuxV8Version ||
-                baseUrl != linuxChromeBaseSnapshotUrl;
-        }
-        else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
+            _ when string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase) => "linux",
+            _ when string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase) => "win",
+            _ when string.Equals(version.os, "Mac", StringComparison.OrdinalIgnoreCase) => "macos",
+            _ => throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}")
+        };
+
+        string existingChromeVersion = GetNodeValue(xmlDoc, $"{nodePrefix}_ChromeVersion");
+        if (Version.TryParse(existingChromeVersion, out Version? existing) &&
+            Version.TryParse(version.version, out Version? candidate) &&
+            candidate < existing)
         {
-            string winChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl");
-            string winV8Version = GetNodeValue(xmlDoc, "win_V8Version");
-            return version.v8_version != winV8Version ||
-                baseUrl != winChromeBaseSnapshotUrl;
+            Log.LogMessage(MessageImportance.High,
+                $"Skipping {version.os}: candidate version {version.version} is older than existing {existingChromeVersion}.");
+            return false;
         }
-        throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}");
+
+        string existingChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, $"{nodePrefix}_ChromeBaseSnapshotUrl");
+        string existingV8Version = GetNodeValue(xmlDoc, $"{nodePrefix}_V8Version");
+        return version.v8_version != existingV8Version ||
+            baseUrl != existingChromeBaseSnapshotUrl;
     }
 
     private static string GetNodeValue(XmlDocument xmlDoc, string nodeName)
@@ -139,6 +146,13 @@ public partial class UpdateChromeVersions : MBU.Task
             UpdateNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl", baseUrl);
             UpdateNodeValue(xmlDoc, "win_V8Version", version.v8_version);
         }
+        else if (string.Equals(version.os, "Mac", StringComparison.OrdinalIgnoreCase))
+        {
+            UpdateNodeValue(xmlDoc, "macos_ChromeVersion", version.version);
+            UpdateNodeValue(xmlDoc, "macos_ChromeRevision", version.branch_base_position);
+            UpdateNodeValue(xmlDoc, "macos_ChromeBaseSnapshotUrl", baseUrl);
+            UpdateNodeValue(xmlDoc, "macos_V8Version", version.v8_version);
+        }
         else
         {
             throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}");
@@ -147,18 +161,22 @@ public partial class UpdateChromeVersions : MBU.Task
         return true;
     }
 
-    private void UpdateEnvVarsForPRFile(List<ChromeVersionSpec> versions)
+    private void UpdateEnvVarsForPRFile(XmlDocument xmlDoc, List<ChromeVersionSpec> versions)
     {
         using StreamWriter writer = new StreamWriter(EnvVarsForPRPath);
         foreach (var version in versions)
         {
             if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
             {
-                writer.WriteLine($"CHROME_LINUX_VER={version.version}");
+                writer.WriteLine($"CHROME_LINUX_VER={GetNodeValue(xmlDoc, "linux_ChromeVersion")}");
             }
             else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
             {
-                writer.WriteLine($"CHROME_WIN_VER={version.version}");
+                writer.WriteLine($"CHROME_WIN_VER={GetNodeValue(xmlDoc, "win_ChromeVersion")}");
+            }
+            else if (string.Equals(version.os, "Mac", StringComparison.OrdinalIgnoreCase))
+            {
+                writer.WriteLine($"CHROME_MAC_VER={GetNodeValue(xmlDoc, "macos_ChromeVersion")}");
             }
             else
             {
@@ -210,7 +228,9 @@ public partial class UpdateChromeVersions : MBU.Task
                 ? "linux_V8Version"
                 : string.Equals(osIdentifier, "windows", StringComparison.OrdinalIgnoreCase)
                     ? "win_V8Version"
-                    : throw new LogAsErrorException($"Unknown OS identifier '{osIdentifier}' for V8 version fallback");
+                    : string.Equals(osIdentifier, "Mac", StringComparison.OrdinalIgnoreCase)
+                        ? "macos_V8Version"
+                        : throw new LogAsErrorException($"Unknown OS identifier '{osIdentifier}' for V8 version fallback");
             foundV8Version = GetNodeValue(existingDoc, existingV8VersionNodeName);
             if (string.IsNullOrEmpty(foundV8Version))
                 throw new LogAsErrorException($"V8 binary for {osIdentifier} not available on CDN and no existing version found in {ChromeVersionsPath}");
@@ -265,6 +285,7 @@ public partial class UpdateChromeVersions : MBU.Task
         {
             "Linux_x64" => "linux64",
             "Win_x64" => "win32",
+            "Mac_Arm" => "mac-arm64",
             _ => throw new ArgumentException($"Unknown OS prefix '{osPrefix}' for V8 binary URL")
         };
         return $"{s_v8CanaryBaseUrl}/v8-{jsvuPlatform}-rel-{v8Version}.zip";
