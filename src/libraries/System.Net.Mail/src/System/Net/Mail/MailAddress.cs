@@ -131,10 +131,9 @@ namespace System.Net.Mail
 
             displayNameEncoding ??= Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
             displayName ??= string.Empty;
-            bool userProvidedDisplayName = !string.IsNullOrEmpty(displayName);
 
             // Check for bounding quotes
-            if (userProvidedDisplayName)
+            if (!string.IsNullOrEmpty(displayName))
             {
                 if (!MailAddressParser.TryNormalizeOrThrow(displayName, out displayName, throwExceptionIfFail))
                 {
@@ -170,7 +169,7 @@ namespace System.Net.Mail
             }
 
             // If we were not given a display name, use the one parsed from 'address'.
-            if (!userProvidedDisplayName)
+            if (string.IsNullOrEmpty(displayName))
             {
                 displayName = info.DisplayName;
 
