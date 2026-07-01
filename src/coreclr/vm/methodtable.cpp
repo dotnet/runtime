@@ -1970,8 +1970,14 @@ namespace
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
+        // When firstFieldElementType is ELEMENT_TYPE_VALUETYPE, pFirstFieldValueType must be
+        // non-NULL; otherwise GetSize(NULL) would look up the type via DontLoadTypes, which can
+        // fail to find a generic instantiation that was canonicalized during recursive layout
+        // loading (e.g., EntityIdValue<UserId> replaced with EntityIdValue<__Canon>), causing a
+        // null-TypeHandle assert or a crash. Return false conservatively: the struct is not a
+        // fixed-buffer type and the normal per-field classification loop handles it correctly.
         return (CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                            || (firstFieldElementType == ELEMENT_TYPE_VALUETYPE && pFirstFieldValueType != NULL))
                         && (pFieldStart->GetOffset() == 0)
                         && pMT->HasLayout()
                         && (pMT->GetNumInstanceFieldBytes() % pFieldStart->GetSize(pFirstFieldValueType) == 0);
@@ -2152,7 +2158,28 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
+        CorElementType fieldType = pField->GetFieldType();
+        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
+
+        // Resolve the nested MethodTable for value-type fields. The cache entry covers the common
+        // case (set during MethodTableBuilder::InitializeFieldDescs). When pByValueClassCache is
+        // NULL (recursive classification call) the exact generic instantiation may not be in the
+        // cache at all — for example, EntityIdValue<UserId> may have been replaced by
+        // EntityIdValue<__Canon> to break recursion, so DontLoadTypes would fail to find it.
+        // In that case load the approximate type handle (LoadTypes), which will succeed because
+        // UserId itself is already registered in the type hash.
+        MethodTable* pFieldValueTypeMT = ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup);
+        if (fieldClassificationType == SystemVClassificationTypeStruct && pFieldValueTypeMT == NULL)
+        {
+            TypeHandle th = pField->GetApproxFieldTypeHandleThrowing();
+            if (th.IsNull())
+            {
+                return false;
+            }
+            pFieldValueTypeMT = th.GetMethodTable();
+        }
+
+        unsigned int fieldSize = pField->GetSize(pFieldValueTypeMT);
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2162,22 +2189,14 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             return false;
         }
 
-        CorElementType fieldType = pField->GetFieldType();
-        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
-
 #ifdef _DEBUG
         LPCUTF8 fieldName;
         pField->GetName_NoThrow(&fieldName);
 #endif // _DEBUG
         if (fieldClassificationType == SystemVClassificationTypeStruct)
         {
-            TypeHandle th;
-            if (pByValueClassCache != NULL)
-                th = TypeHandle(pByValueClassCache[fieldIndexForCacheLookup]);
-            else
-                th = pField->GetApproxFieldTypeHandleThrowing();
-            _ASSERTE(!th.IsNull());
-            MethodTable* pFieldMT = th.GetMethodTable();
+            _ASSERTE(pFieldValueTypeMT != NULL);
+            MethodTable* pFieldMT = pFieldValueTypeMT;
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
