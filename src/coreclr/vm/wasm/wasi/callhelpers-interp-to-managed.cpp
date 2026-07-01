@@ -611,6 +611,12 @@ namespace
         (*fptr)(&framePointer, ARG_I32(0), ARG_I32(1), pPortableEntryPoint);
     }
 
+    static void CallFunc_I32_I64_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        void (*fptr)(int32_t, int64_t, int32_t) = (void (*)(int32_t, int64_t, int32_t))pcode;
+        (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2));
+    }
+
     NOINLINE static void CallFunc_I32_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
@@ -727,6 +733,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "Mviiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid },
     { "Mviiip", (void*)&CallFunc_I32_I32_I32_RetVoid_PE },
     { "Mviip", (void*)&CallFunc_I32_I32_RetVoid_PE },
+    { "Mvili", (void*)&CallFunc_I32_I64_I32_RetVoid },
     { "Mvip", (void*)&CallFunc_I32_RetVoid_PE },
     { "Mvl", (void*)&CallFunc_I64_RetVoid },
     { "Mvp", (void*)&CallFunc_Void_RetVoid_PE }

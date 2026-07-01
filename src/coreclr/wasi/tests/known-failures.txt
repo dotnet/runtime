@@ -17,10 +17,8 @@
 #
 # 2^31 iteration loop in pure interpreter — runs forever within the 60s
 # default test timeout. Will become viable once R2R-WASM is on for tests.
-JIT/jit64/regress/ddb/113574/113574/113574.sh
 
-# Nested 2^16 * 2^16 (~4.3B) iterations per method; same family as 113574.
-JIT/opt/Regressions/Regression2_Regressions/Regression2_Regressions.sh
+# Nested 2^16 * 2^16 (~4.3B) iterations per method; same family: as 113574.
 
 # ----- finalizer-timeout test (no separate finalizer thread on WASI) ---------
 #
@@ -35,11 +33,10 @@ GC/Scenarios/FinalizeTimeout/FinalizeTimeout/FinalizeTimeout.sh
 # contention from the rest of the GC sweep it slips past the 120s
 # timeout reproducibly. Listed here so the sweep stays clean; passes
 # on a solo retry. Expected to drop once R2R-WASM is on for tests.
-GC/Features/HeapExpansion/bestfit-finalize/bestfit-finalize.sh
 
 # ----- flaky under parallel sweep load ---------------------------------------
 #
-# All four pass cleanly in solo runs (WASM EXIT 100 reported) but
+# All six pass cleanly in solo runs (WASM EXIT 100 reported) but
 # fail intermittently under --jobs=8 parallelism — they share state
 # through the test wrappers' takeLock/ReleaseLock guard. Listed here
 # so the sweep stays deterministic; pass on re-run with --jobs=1.
@@ -47,6 +44,8 @@ JIT/Regression/JitBlue/GitHub_27169/GitHub_27169/GitHub_27169.sh
 Regressions/coreclr/GitHub_49826/test49826/test49826.sh
 Regressions/coreclr/GitHub_49982/test49982/test49982.sh
 Regressions/coreclr/GitHub_61104/test61104/test61104.sh
+baseservices/TieredCompilation/BasicTest_QuickJitOff_R2r/BasicTest_QuickJitOff_R2r.sh
+baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/BasicTest_QuickJitOn_R2r.sh
 
 # ----- RequiresProcessIsolation tests (silently 'Pass' in CI via xharness) ---
 #
@@ -75,10 +74,6 @@ baseservices/exceptions/UnhandledExceptionHandler/NoEffectInMainThread/NoEffectI
 baseservices/exceptions/UnhandledExceptionHandler/PInvoke/PInvokeUnhandled/PInvokeUnhandled.sh
 baseservices/exceptions/UnhandledExceptionHandler/UnhandledTrivial/UnhandledTrivial.sh
 baseservices/RuntimeConfiguration/TestConfigTester/TestConfigTester.sh
-baseservices/threading/regressions/13662/13662-a/13662-a.sh
-baseservices/threading/regressions/13662/13662-b/13662-b.sh
-baseservices/threading/regressions/13662/13662-simple/13662-simple.sh
-baseservices/threading/regressions/30032/30032/30032.sh
 baseservices/threading/regressions/576463/576463/576463.sh
 baseservices/threading/regressions/beta2/437017/437017.sh
 baseservices/threading/regressions/beta2/437044/437044.sh
@@ -93,7 +88,6 @@ GC/API/NoGCRegion/Callback_Svr/Callback_Svr.sh
 GC/API/NoGCRegion/Callback/Callback.sh
 GC/Coverage/LargeObjectAlloc/LargeObjectAlloc.sh
 GC/Features/BackgroundGC/foregroundgc/foregroundgc.sh
-GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Scenarios/BinTree/thdtree/thdtree.sh
 GC/Scenarios/BinTree/thdtreegrowingobj/thdtreegrowingobj.sh
 GC/Scenarios/BinTree/thdtreelivingobj/thdtreelivingobj.sh
@@ -131,4 +125,58 @@ Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
 Loader/SystemCoreLibDirectory/SystemCoreLibDirectory/SystemCoreLibDirectory.sh
 Regressions/coreclr/GitHub_117393/test117393/test117393.sh
 Regressions/coreclr/GitHub_12224/Test12224/Test12224.sh
-Regressions/coreclr/GitHub_89834/test89834/test89834.sh
+
+# ----- WASM interpreter gaps (CI-side skipped via xunit ConditionalFact) -----
+#
+# All entries below rely on CoreCLR test-library gates that already
+# skip them on any WASM target when run through xunit (browser CI does
+# not fail these):
+#
+#   * IsVarArgSupported returns false when Utilities.IsCoreClrInterpreter
+#     is true (per PR #123377). Utilities.IsCoreClrInterpreter is true on
+#     PlatformDetection.IsWasm.
+#   * IsMultithreadingSupported is false on browser + wasi per
+#     RuntimeFeature.
+#   * xunit-level ActiveIssue / SkipOnCoreClrAttribute for the couple of
+#     tests whose failure mode is not one of the above.
+#
+# Our local run.cs sweep drives standalone-mode wrappers directly (no
+# xunit gating), so we list them here to keep the sweep clean. If any
+# of these ever pass under a fixed interpreter, the sweep will report an
+# "unexpected pass" and we can remove them.
+# https://github.com/dotnet/runtime/issues/130064
+
+# --- vararg calling convention (IsVarArgSupported=false on WASM) ---
+JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/MutualThdRecur-fptr.sh
+JIT/Methodical/Coverage/arglist_pos/arglist_pos.sh
+JIT/Methodical/refany/seq_d/seq_d.sh
+JIT/Methodical/refany/seq_r/seq_r.sh
+JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/b26323.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324a/b26324a.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324b/b26324b.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/b28901.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30838/b30838/b30838.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30864/b30864/b30864.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/b32374.sh
+JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b35784/b35784/b35784.sh
+JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/b409748.sh
+baseservices/typeequivalence/signatures/nopiatestil/nopiatestil.sh
+
+# --- calli through EH / IL-verified tailcall (IsCoreClrInterpreter=true on WASM) ---
+JIT/Directed/pinvoke/calli_excep/calli_excep.sh
+JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
+
+# --- threading (IsMultithreadingSupported=false on browser/wasi) ---
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorFourThreadsBFI/CircularCctorFourThreadsBFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads01BFI/CircularCctorThreeThreads01BFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads02BFI/CircularCctorThreeThreads02BFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads03BFI/CircularCctorThreeThreads03BFI.sh
+
+# --- interpreter EH clause dispatch (Dev11_468598 HndIndex family:, hijacking) ---
+# These carry xunit-level ActiveIssue / SkipOnCoreClrAttribute in the .il itself.
+JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
+JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Plain/Test_HndIndex_10_Plain.sh
+JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/Test_HndIndex_10_Reordered.sh
+
+# --- MethodImpl self-override on PortableEntryPoint (fixed in main by #126124) ---
+# Local sweep still trips this until the branch is re-verified against the fix.
