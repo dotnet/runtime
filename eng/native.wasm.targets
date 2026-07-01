@@ -1,6 +1,7 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
-  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets"
+          Condition="'$(TargetsWasi)' == 'true' and Exists('$(RepositoryEngineeringDir)AcquireWasiSdk.targets')" />
 
   <!-- These packages provide ICU and timezone data paths for the native build (CMake).
        Skip them during app-level relink (IsBrowserWasmProject) since the runtime pack
