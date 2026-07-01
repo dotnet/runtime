@@ -138,10 +138,9 @@ namespace System.Data
                     // we need to convert the return value to the column.Type;
                     try
                     {
-                        if (StorageType.Object != _storageType)
+                        if (_dataType != null && StorageType.Object != _storageType)
                         {
-                            // TODO: _dataType can be null, probably a bug
-                            result = SqlConvert.ChangeType2(result, _storageType, _dataType!, _table!.FormatProvider);
+                            result = SqlConvert.ChangeType2(result, _storageType, _dataType, _table == null ? System.Globalization.CultureInfo.CurrentCulture : _table.FormatProvider);
                         }
                     }
                     catch (Exception e) when (ADP.IsCatchableExceptionType(e))
