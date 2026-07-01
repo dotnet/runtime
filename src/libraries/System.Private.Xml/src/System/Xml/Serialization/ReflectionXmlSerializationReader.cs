@@ -1993,9 +1993,17 @@ namespace System.Xml.Serialization
                 }
                 else if (special.TypeDesc.CanBeAttributeValue)
                 {
-                    // https://github.com/dotnet/runtime/issues/1398:
-                    // To Support special.TypeDesc.CanBeAttributeValue == true
-                    throw new NotImplementedException("special.TypeDesc.CanBeAttributeValue");
+                    if (attr is not XmlAttribute xmlAttribute)
+                    {
+                         if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
+                         {
+                             member.CheckSpecifiedSource?.Invoke(null);
+                         }
+
+                        return;
+                    }
+
+                    value = xmlAttribute;
                 }
                 else
                     throw new InvalidOperationException(SR.XmlInternalError);
