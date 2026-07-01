@@ -52,10 +52,15 @@
           Condition="'$(_IlcReferencedAsPackage)' != 'false'"
           BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
+      <_ExplicitILCompilerPackageReference Include="@(PackageReference)"
+                                           Condition="'%(PackageReference.Identity)' == 'Microsoft.DotNet.ILCompiler' And '%(PackageReference.IsImplicitlyDefined)' != 'true'" />
+
       <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler"
-                           Condition="'%(PackageReference.Identity)' == 'Microsoft.DotNet.ILCompiler' And '%(PackageReference.IsImplicitlyDefined)' != 'true'">
+                           Condition="'@(_ExplicitILCompilerPackageReference)' != ''">
         <ILCompilerPackVersion>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(ILCompilerTargetsPath)))))))</ILCompilerPackVersion>
       </KnownILCompilerPack>
+
+      <_ExplicitILCompilerPackageReference Remove="@(_ExplicitILCompilerPackageReference)" />
     </ItemGroup>
   </Target>
 
