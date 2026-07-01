@@ -38,7 +38,7 @@ inline void* GetCurrentSP()
     WRAPPER_NO_CONTRACT;
 #if defined(TARGET_BROWSER)
     return (void*)emscripten_stack_get_current();
-#elif defined(TARGET_WASI)
+#else
     // WASI has no equivalent of emscripten_stack_get_current(). The interpreter
     // walks the explicit InterpreterFrame chain rather than consulting native
     // SP, so any caller is in a code path that won't actually run on WASI.

@@ -23,8 +23,8 @@ Two ways to validate CoreCLR-WASI changes locally:
   ```
 * `wasmtime` — auto-downloaded by `run-tests.sh`, or run
   `./.dotnet/dotnet build src/coreclr/wasi/tests/provision-wasmtime.proj`
-  to fetch it without running any tests. `run.cs` looks for it on
-  `$PATH`, then `~/.wasmtime/bin/wasmtime`, then `$WASMTIME`.
+  to fetch it without running any tests. `run.cs` looks for it via
+  `$WASMTIME`, then `~/.wasmtime/bin/wasmtime`, then `$PATH`.
 
 ## Running CoreCLR runtime tests (recommended)
 

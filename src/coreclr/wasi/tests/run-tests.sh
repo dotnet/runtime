@@ -3,7 +3,9 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 # CoreCLR-WASI smoke test runner. Builds + runs managed test assemblies
-# under corerun.wasm on wasmtime. Exit-code 100 = pass.
+# under corerun.wasm on wasmtime. Each test is expected to print
+# "WASI-SMOKE-PASS:<name>" on stdout; that sentinel (not the exit
+# code, which WASI collapses) determines pass/fail.
 #
 # Usage:
 #   ./src/coreclr/wasi/tests/run-tests.sh            # all smoke tests
@@ -13,7 +15,6 @@
 # Env overrides:
 #   CONFIG        - Release (default) | Debug | Checked
 #   WASMTIME      - explicit path to a wasmtime binary
-#   COREROOT      - explicit path to a CORE_ROOT layout (override staging)
 #   KEEP_STAGING  - if set, leave the per-test staging dir on disk
 
 set -euo pipefail
@@ -170,9 +171,10 @@ for csproj in "${selected[@]}"; do
         fail=$((fail+1)); failures+=("$name: missing dll"); continue
     fi
 
-    # Stage CORE_ROOT.
+    # Stage CORE_ROOT. Explicit cleanup at the end of each iteration —
+    # `trap ... RETURN` only fires for functions / sourced scripts, and
+    # even then only for the last-assigned $staging value.
     staging="$(mktemp -d -t "wasi-smoke-$name.XXXXXX")"
-    trap '[[ -n "${KEEP_STAGING:-}" ]] || rm -rf "$staging"' RETURN
     # Order matters: runtime pack first, then overlay the freshly-built
     # CoreLib + corerun + test on top so newer artifacts win.
     cp "$runtime_pack"/*.dll "$staging/"
@@ -202,7 +204,11 @@ for csproj in "${selected[@]}"; do
         fail=$((fail+1)); failures+=("$name: no sentinel (exit=$rc)")
     fi
 
-    [[ -n "${KEEP_STAGING:-}" ]] && echo "  staging: $staging"
+    if [[ -n "${KEEP_STAGING:-}" ]]; then
+        echo "  staging: $staging"
+    else
+        rm -rf "$staging"
+    fi
 done
 
 # --- Summary -----------------------------------------------------------------

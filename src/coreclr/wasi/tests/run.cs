@@ -24,7 +24,7 @@
 //   CORE_ROOT     - explicit path to a CORE_ROOT layout (default: derived)
 //   TESTROOT      - explicit path to a test-bin root (default: derived)
 //   WASMTIME      - path to wasmtime binary, or directory containing it
-//                   (default: probe $PATH then ~/.wasmtime/bin)
+//                   (probe order: $WASMTIME, then ~/.wasmtime/bin, then $PATH)
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -70,7 +70,7 @@ if (!Directory.Exists(testRoot))
 {
     Console.Error.WriteLine($"error: test root '{testRoot}' does not exist.");
     Console.Error.WriteLine("       Build tests first with:");
-    Console.Error.WriteLine("       BuildAllTestsAsStandalone=true ./src/tests/build.sh wasi {config} -priority1 -skipnative");
+    Console.Error.WriteLine($"       BuildAllTestsAsStandalone=true ./src/tests/build.sh wasi {config} -priority1 -skipnative");
     return 2;
 }
 if (!File.Exists(Path.Combine(coreRoot, "corerun")))
@@ -140,7 +140,7 @@ int completed = 0;
 await Parallel.ForEachAsync(tests, new ParallelOptions { MaxDegreeOfParallelism = jobs }, async (test, ct) =>
 {
     string rel = Rel(test);
-    TestResult result = await RunOneAsync(test, rel, coreRoot, wasmtimePath, perTestTimeoutSec, ct);
+    TestResult result = await RunOneAsync(test, coreRoot, perTestTimeoutSec, ct);
     bool expectedFailure = knownFailures.Contains(rel);
     int n = Interlocked.Increment(ref completed);
     string mark = (result.Outcome, expectedFailure) switch
@@ -289,9 +289,7 @@ static HashSet<string> LoadKnownFailures(string? path)
 
 static async Task<TestResult> RunOneAsync(
     string scriptPath,
-    string relPath,
     string coreRoot,
-    string wasmtimePath,
     int timeoutSec,
     CancellationToken outerCt)
 {

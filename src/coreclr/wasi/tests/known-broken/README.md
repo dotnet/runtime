@@ -20,26 +20,6 @@ KEEP_STAGING=1 ./src/coreclr/wasi/tests/run-tests.sh <Name>
 
 ## Active failures
 
-### `Finalization` — no host event loop to give finalization a turn
-
-Finalizers on WASI are dispatched through `WasiEventLoop`, which only
-makes progress when control yields back to a host loop turn. The test
-attempts the obvious workaround — make `Main` async and `await
-Task.Yield()` between `GC.Collect()` and the assertion — but two
-things bite:
-
-1. `async Task<int> Main()` compiles into an entry-point thunk that
-   calls `Task.Wait()`. On single-threaded WASI that fails fast in
-   `RuntimeFeature.ThrowIfMultithreadingIsNotSupported()`
-   (`PlatformNotSupportedException`).
-2. Even if the entry point yielded, `Task.Yield()` posts the
-   continuation back to the synchronization context / threadpool, and
-   there is nothing pumping it in a console-style WASI program — only
-   actual `wasi:io/poll` operations drive `WasiEventLoop`.
-
-A test that demonstrates "finalization eventually runs" on WASI
-needs to perform a real `wasi:io/poll`-backed await (e.g. a
-`Task.Delay`-equivalent that maps to `monotonic-clock.subscribe`) so
-the loop actually ticks. Worth doing once the bring-up grows that
-plumbing.
-
+_(none currently — the previous `Finalization` scenario now passes and
+has been promoted to `../smoke/Finalization/` after the AsyncHelpers.Wasi
++ wasi:clocks + WasiEventLoop pieces of this bring-up landed.)_
