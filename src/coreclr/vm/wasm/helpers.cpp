@@ -578,6 +578,12 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInv
          "i32.store       0\n"               // And save a terminator to the stack frame.
 
          "local.get       3\n"               // Get the stack pointer
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK_FP_OFFSET) "\n"
+         "i32.add\n"                          // Compute the address next to the terminator
+         "local.get       1\n"               // Get the establishing (method) frame pointer argument
+         "i32.store       0\n"               // Save it so a handler nested in this funclet can recover its establishing frame.
+
+         "local.get       3\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
          "local.get       2\n"               // Get the exception object for the funclet
          "local.get       0\n"               // Get the funclet address to call
@@ -605,6 +611,12 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletTo
          "local.get       2\n"               // Get the stack pointer
          "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
          "i32.store       0\n"               // And save a terminator to the stack frame.
+
+         "local.get       2\n"               // Get the stack pointer
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK_FP_OFFSET) "\n"
+         "i32.add\n"                          // Compute the address next to the terminator
+         "local.get       1\n"               // Get the establishing (method) frame pointer argument
+         "i32.store       0\n"               // Save it so a handler nested in this funclet can recover its establishing frame.
 
          "local.get       2\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
@@ -1465,9 +1477,19 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
     }
 }
 
+// Recover the establishing (method) frame pointer stored by CallFuncletWith[out]Throwable next to the
+// TERMINATE_R2R_STACK_WALK marker. 'sp' must point at such a synthetic terminator frame (i.e. the SP
+// reached after natively unwinding a funclet that the VM invoked via CallFunclet).
+TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp)
+{
+    _ASSERTE(*(int*)sp == TERMINATE_R2R_STACK_WALK);
+    return *(TADDR*)(sp + TERMINATE_R2R_STACK_WALK_FP_OFFSET);
+}
+
 TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
 {
     TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+
 
     if (fp == 0)
     {
