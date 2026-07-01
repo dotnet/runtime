@@ -269,7 +269,7 @@ HARDWARE_INTRINSIC(Vector,          op_UnsignedRightShift,                      
 #else
 #error Unsupported platform
 #endif
-#endif // FEATURE_HW_INTRINSIC
+#endif // FEATURE_HW_INTRINSICS
 
 #undef HARDWARE_INTRINSIC
 
