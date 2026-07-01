@@ -380,3 +380,6 @@ test:.cs
 *.tempLog.xml
 *.testResults.xml
 *.testStats.csv
+
+# Copilot CLI local configuration
+.github/copilot/settings.local.json
