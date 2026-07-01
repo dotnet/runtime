@@ -615,24 +615,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
     public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
 
-    // True iff the target runtime is built with FEATURE_HFA (ARM, ARM64). On
-    // non-FEATURE_HFA targets the enum_flag_IsHFA bit (0x800 in MTFlags low)
-    // is either unused (Windows x64, x86) or repurposed (UNIX_AMD64_ABI uses
-    // it as enum_flag_IsRegStructPassed); reading the bit as HFA is incorrect.
+    // FEATURE_HFA targets. On non-FEATURE_HFA targets the enum_flag_IsHFA
+    // bit is either unused or reused (UNIX_AMD64_ABI IsRegStructPassed).
     private bool IsFeatureHfaTarget()
     {
         RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         return arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64;
     }
 
-    // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. At each
-    // recursion level first checks for an intrinsic Vector shape via
-    // GetVectorHFAElementSize (covers Vector64<T>/Vector128<T>/
-    // System.Numerics.Vector<T>); if that doesn't match, walks the first
-    // instance field. R4 -> 4, R8 -> 8, ValueType -> recurse via
-    // GetFieldDescApproxTypeHandle. Returns false when the type is not
-    // classified as an HFA / HVA, or when the target arch doesn't define
-    // FEATURE_HFA.
+    // See RuntimeTypeSystem.md for the pseudocode. Mirrors
+    // MethodTable::GetHFAType in src/coreclr/vm/class.cpp.
     public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
     {
         elementSize = 0;
@@ -687,14 +679,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return false;
     }
 
-    // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Detects
-    // intrinsic Vector shapes by TypeDef name+namespace, then validates the
-    // generic argument is a numerical primitive.
-    // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Detects
-    // intrinsic Vector shapes by TypeDef name+namespace, then validates the
-    // generic argument is a numerical primitive. Any metadata decode failure
-    // (bad token, missing metadata, corrupt image) is swallowed; the caller
-    // treats a 0 return as "not an HVA" and falls through to the field walk.
+    // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Any
+    // metadata decode failure returns 0 (treated as "not an HVA").
     private int GetVectorHFAElementSize(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsIntrinsicType)
@@ -726,7 +712,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             int elemSize;
             if (className == "Vector`1" && namespaceName == "System.Numerics")
             {
-                // System.Numerics.Vector<T> is size-dependent.
                 elemSize = ((IRuntimeTypeSystem)this).GetNumInstanceFieldBytes(typeHandle) switch
                 {
                     8 => 8,
@@ -750,7 +735,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             if (elemSize == 0)
                 return 0;
 
-            // T must be a numerical primitive (CorIsNumericalType in cor.h): I1..R8, I, U.
             ReadOnlySpan<TypeHandle> instantiation = ((IRuntimeTypeSystem)this).GetInstantiation(typeHandle);
             if (instantiation.Length < 1)
                 return 0;
@@ -767,6 +751,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    // Mirrors CorIsNumericalType in src/coreclr/inc/cor.h.
     private static bool IsCorNumericalType(CorElementType t)
         => (t >= CorElementType.I1 && t <= CorElementType.R8)
             || t == CorElementType.I

@@ -27,13 +27,7 @@ internal struct MethodTableFlags_1
         GenericsMask_TypicalInstantiation = 0x00000030,  // the type instantiated at its formal parameters, e.g. List<T>
 
         IsByRefLike = 0x00001000,                        // value type that may contain managed pointers (e.g. Span<T>, ReadOnlySpan<T>)
-
-        // ARM / ARM64 (FEATURE_HFA): set after layout when CheckForHFA classifies
-        // the type as a Homogeneous Floating-point Aggregate. On UNIX_AMD64_ABI
-        // runtimes the same 0x800 bit is reused as enum_flag_IsRegStructPassed,
-        // so callers MUST gate on the target architecture before treating this
-        // bit as HFA. The cDAC gates at CdacTypeHandle.IsHomogeneousAggregate.
-        IsHFA = 0x00000800,
+        IsHFA = 0x00000800,                              // ARM/ARM64 only (FEATURE_HFA); reused on UNIX_AMD64_ABI as IsRegStructPassed
 
         StringArrayValues =
             GenericsMask_NonGeneric |

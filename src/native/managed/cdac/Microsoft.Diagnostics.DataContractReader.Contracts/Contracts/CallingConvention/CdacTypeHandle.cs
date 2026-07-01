@@ -110,23 +110,15 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     }
 
     public bool IsHomogeneousAggregate()
-    {
-        // Rts.TryGetHFAElementSize handles target-arch gating internally.
-        return !_typeHandle.IsNull && Rts.TryGetHFAElementSize(_typeHandle, out _);
-    }
+        => !_typeHandle.IsNull && Rts.TryGetHFAElementSize(_typeHandle, out _);
 
     public int GetHomogeneousAggregateElementSize()
     {
-        // ARM has no HVA; the element is either float (4) or double (8), and
-        // RequiresAlign8 mirrors the runtime's choice between the two (set by
-        // CheckForHFA based on the resolved HFA element type). The shortcut
-        // avoids a field walk.
+        // ARM has no HVA; RequiresAlign8 encodes the R4-vs-R8 choice, so we
+        // can skip the field walk that TryGetHFAElementSize would do.
         if (Arch == RuntimeInfoArchitecture.Arm)
             return RequiresAlign8() ? 8 : 4;
 
-        // ARM64 (and any future FEATURE_HFA target) uses the full classifier
-        // in RTS, which also detects HVA shapes (Vector64<T>/Vector128<T>/
-        // System.Numerics.Vector<T>). Returns 0 on non-FEATURE_HFA targets.
         return _typeHandle.IsNull || !Rts.TryGetHFAElementSize(_typeHandle, out int size) ? 0 : size;
     }
 
