@@ -355,38 +355,6 @@ namespace Internal.Runtime.Augments
             ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
-        public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
-        {
-            Debug.Assert(enumTypeHandle.ToMethodTable()->IsEnum);
-
-            EETypeElementType elementType = enumTypeHandle.ToMethodTable()->ElementType;
-            switch (elementType)
-            {
-                case EETypeElementType.Boolean:
-                    return typeof(bool);
-                case EETypeElementType.Char:
-                    return typeof(char);
-                case EETypeElementType.SByte:
-                    return typeof(sbyte);
-                case EETypeElementType.Byte:
-                    return typeof(byte);
-                case EETypeElementType.Int16:
-                    return typeof(short);
-                case EETypeElementType.UInt16:
-                    return typeof(ushort);
-                case EETypeElementType.Int32:
-                    return typeof(int);
-                case EETypeElementType.UInt32:
-                    return typeof(uint);
-                case EETypeElementType.Int64:
-                    return typeof(long);
-                case EETypeElementType.UInt64:
-                    return typeof(ulong);
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
             MethodTable* elementType = parameterTypeHandle.ToMethodTable()->RelatedParameterType;
