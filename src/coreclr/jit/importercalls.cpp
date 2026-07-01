@@ -10021,13 +10021,12 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
 
             if (result != NO_CLASS_HANDLE)
             {
-                JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
+                JITDUMP("Special intrinsic: return type is %s\n",
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }
             else
             {
-                JITDUMP("Special intrinsic for type %s: return type undetermined or inexact, so deferring opt\n",
-                        eeGetClassName(typeHnd));
+                JITDUMP("Special intrinsic: return type undetermined or inexact, so deferring opt\n");
             }
             break;
         }
