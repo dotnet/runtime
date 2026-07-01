@@ -14,17 +14,11 @@ internal static class Program
 {
     private static async Task<int> Main()
     {
-        Console.WriteLine("WASI-SMOKE-STEP:AsyncMain-before-await");
-        // Only synchronously-completed awaits; Task.Delay depends on
-        // wasi:clocks/monotonic-clock@0.2.8 which needs a separate p/invoke
-        // resolver wiring on CoreCLR-WASI (tracked separately). This test
-        // targets AsyncHelpers.Wasi.cs -> WasiEventLoop.PollWasiEventLoopUntilResolved
-        // wiring, not the clock plumbing.
-        var v1 = await Task.FromResult(41);
-        Console.WriteLine($"WASI-SMOKE-STEP:AsyncMain-v1={v1}");
-        var v2 = await Task.FromResult(v1 + 1);
-        Console.WriteLine($"WASI-SMOKE-STEP:AsyncMain-v2={v2}");
-        if (v2 != 42) return 1;
+        Console.WriteLine("WASI-SMOKE-STEP:AsyncMain-before-delay");
+        await Task.Delay(50);
+        Console.WriteLine("WASI-SMOKE-STEP:AsyncMain-after-delay");
+        var v = await Task.FromResult(42);
+        if (v != 42) return 1;
         Console.WriteLine("WASI-SMOKE-PASS:AsyncMain");
         return 100;
     }

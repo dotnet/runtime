@@ -31,7 +31,7 @@ GC/Scenarios/FinalizeTimeout/FinalizeTimeout/FinalizeTimeout.sh
 
 # ----- bestfit-finalize: flaky under parallel load ---------------------------
 #
-# Solo runtime is ~115s on the WASM interpreter; under --jobs=12
+# Solo runtime is ~115s on the WASM interpreter; under --jobs=8
 # contention from the rest of the GC sweep it slips past the 120s
 # timeout reproducibly. Listed here so the sweep stays clean; passes
 # on a solo retry. Expected to drop once R2R-WASM is on for tests.
@@ -39,10 +39,11 @@ GC/Features/HeapExpansion/bestfit-finalize/bestfit-finalize.sh
 
 # ----- flaky under parallel sweep load ---------------------------------------
 #
-# All three pass cleanly in solo runs (WASM EXIT 100 reported) but
-# fail intermittently under --jobs=12 parallelism — they share state
+# All four pass cleanly in solo runs (WASM EXIT 100 reported) but
+# fail intermittently under --jobs=8 parallelism — they share state
 # through the test wrappers' takeLock/ReleaseLock guard. Listed here
 # so the sweep stays deterministic; pass on re-run with --jobs=1.
+JIT/Regression/JitBlue/GitHub_27169/GitHub_27169/GitHub_27169.sh
 Regressions/coreclr/GitHub_49826/test49826/test49826.sh
 Regressions/coreclr/GitHub_49982/test49982/test49982.sh
 Regressions/coreclr/GitHub_61104/test61104/test61104.sh
