@@ -129,6 +129,7 @@ void PrintToStdErrA(const char *pszString)
         FORBID_FAULT;
     }
     CONTRACTL_END
+    _ASSERTE(pszString != NULL);
 
     minipal_log_write_error(pszString);
 }
@@ -142,6 +143,7 @@ void PrintToStdErrW(const WCHAR *pwzString)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
+    _ASSERTE(pwzString != NULL);
 
     MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
 

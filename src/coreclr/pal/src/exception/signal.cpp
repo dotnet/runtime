@@ -115,6 +115,27 @@ struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
 struct sigaction g_previous_sigabrt;
 
+// Thread-local stash for the native exception context. These are set in
+// common_signal_handler (signal-based platforms) or the Mach exception path
+// (Apple) before converting to PAL types, and retrieved by
+// PAL_GetNativeExceptionPointers for use in the fatal error handler API.
+static thread_local void* t_lastSiginfo = NULL;
+static thread_local void* t_lastSigcontext = NULL;
+
+void PAL_SetNativeExceptionPointers(void* info, void* context)
+{
+    t_lastSiginfo = info;
+    t_lastSigcontext = context;
+}
+
+PALIMPORT VOID PALAPI PAL_GetNativeExceptionPointers(void** siginfo, void** sigcontext)
+{
+    _ASSERTE(siginfo != NULL);
+    _ASSERTE(sigcontext != NULL);
+    *siginfo = t_lastSiginfo;
+    *sigcontext = t_lastSigcontext;
+}
+
 #if !HAVE_MACH_EXCEPTIONS
 
 // TOP of special stack for handling stack overflow
@@ -1166,11 +1187,16 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     // The exception object takes ownership of the exceptionRecord and contextRecord
     PAL_SEHException exception(&exceptionRecord, &signalContextRecord, true);
 
-    if (SEHProcessException(&exception))
     {
-        // Exception handling may have modified the context, so update it.
-        CONTEXTToNativeContext(exception.ExceptionPointers.ContextRecord, ucontext);
-        return true;
+        // Stash native signal info for the fatal error handler API.
+        // The holder NULLs the TLS on scope exit.
+        NativeExceptionPointerHolder nativeExceptionPointers(siginfo, sigcontext);
+        if (SEHProcessException(&exception))
+        {
+            // Exception handling may have modified the context, so update it.
+            CONTEXTToNativeContext(exception.ExceptionPointers.ContextRecord, ucontext);
+            return true;
+        }
     }
 #endif // !HAVE_MACH_EXCEPTIONS
     return false;

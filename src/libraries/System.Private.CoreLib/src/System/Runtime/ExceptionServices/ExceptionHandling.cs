@@ -8,7 +8,7 @@ namespace System.Runtime.ExceptionServices
     /// <summary>
     /// Provides helpers for configuring and raising global unhandled exception handlers.
     /// </summary>
-    public static class ExceptionHandling
+    public static partial class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
 
@@ -41,6 +41,42 @@ namespace System.Runtime.ExceptionServices
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondHandler);
             }
+        }
+
+        /// <summary>
+        /// Sets a handler that the runtime invokes before performing its own fatal-error
+        /// handling (printing the failure information to standard error, creating a crash
+        /// dump, and so on).
+        /// </summary>
+        /// <param name="handler">
+        /// A pointer to an unmanaged callback invoked when the runtime encounters a fatal
+        /// error. The callback receives the HRESULT associated with the failure and a
+        /// pointer to a <c>FatalErrorInfo</c> structure (declared in
+        /// <c>FatalErrorHandling.h</c>). The callback returns <c>0</c> (<c>RunDefaultHandler</c>)
+        /// to allow the runtime to continue with its default fatal-error handling, or
+        /// <c>1</c> (<c>SkipDefaultHandler</c>) to suppress it.
+        /// </param>
+        /// <exception cref="ArgumentNullException"><paramref name="handler" /> is null.</exception>
+        /// <exception cref="InvalidOperationException">A handler is already set.</exception>
+        /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support this API.</exception>
+        /// <remarks>
+        /// Only a single registration is supported per process. The handler executes as
+        /// unmanaged code on the failing thread immediately before the runtime begins its
+        /// own fatal-error handling.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> handler)
+        {
+#if MONO
+            throw new PlatformNotSupportedException();
+#else
+            ArgumentNullException.ThrowIfNull((void*)handler, nameof(handler));
+
+            if (!TrySetFatalErrorHandler((IntPtr)handler))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondFatalErrorHandler);
+            }
+#endif
         }
 
         /// <summary>
