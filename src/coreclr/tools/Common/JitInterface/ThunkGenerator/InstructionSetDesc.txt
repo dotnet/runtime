@@ -96,7 +96,7 @@ instructionset     ,X86   ,Pclmulqdq_V512       ,                   ,50 ,AES_V51
 instructionset     ,X86   ,                     ,Avx512Vp2intersect    ,80 ,AVX512VP2INTERSECT    ,avx512vp2intersect
 instructionset     ,X86   ,                     ,Avx512Vp2intersect_VL ,81 ,AVX512VP2INTERSECT    ,avx512vp2intersect
 
-instructionset     ,X86   ,                     ,AvxIfma            ,66 ,AVXIFMA               ,avxifma
+instructionset     ,X86   ,AvxIfma              ,                   ,66 ,AVXIFMA               ,avxifma
 instructionset     ,X86   ,AvxVnni              ,                   ,25 ,AVXVNNI               ,avxvnni
 instructionset     ,X86   ,Avx512Bmm            ,                   ,85 ,AVX512BMM             ,avx512bmm
 
