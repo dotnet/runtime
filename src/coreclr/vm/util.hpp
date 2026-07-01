@@ -68,66 +68,6 @@ BOOL inline FitsInU4(uint64_t val)
     return val == (uint64_t)(uint32_t)val;
 }
 
-#if defined(DACCESS_COMPILE)
-#define FastInterlockedCompareExchange InterlockedCompareExchange
-#define FastInterlockedCompareExchangeAcquire InterlockedCompareExchangeAcquire
-#define FastInterlockedCompareExchangeRelease InterlockedCompareExchangeRelease
-#else
-
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-
-FORCEINLINE LONG  FastInterlockedCompareExchange(
-    LONG volatile *Destination,
-    LONG Exchange,
-    LONG Comperand)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casal32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchange(Destination, Exchange, Comperand);
-    }
-}
-
-FORCEINLINE LONG FastInterlockedCompareExchangeAcquire(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casa32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchangeAcquire(Destination, Exchange, Comperand);
-    }
-}
-
-FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casl32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchangeRelease(Destination, Exchange, Comperand);
-    }
-}
-
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-
-#endif //defined(DACCESS_COMPILE)
-
-
 //************************************************************************
 // CQuickHeap
 //
@@ -566,6 +506,11 @@ inline bool IsInCantStopRegion()
 
 BOOL IsValidMethodCodeNotification(ULONG32 Notification);
 
+// Number of usable JIT notification entries. The allocated table has
+// JIT_NOTIFICATION_TABLE_SIZE + 1 slots; slot 0 stores bookkeeping (length).
+// Referenced by the cDAC via CDAC_GLOBAL(JITNotificationTableSize, ...).
+constexpr UINT JIT_NOTIFICATION_TABLE_SIZE = 1000;
+
 typedef DPTR(struct JITNotification) PTR_JITNotification;
 struct JITNotification
 {
@@ -598,7 +543,7 @@ GVAL_DECL(ULONG32, g_dacNotificationFlags);
 inline void
 InitializeJITNotificationTable()
 {
-    g_pNotificationTable = new (nothrow) JITNotification[1001];
+    g_pNotificationTable = new (nothrow) JITNotification[JIT_NOTIFICATION_TABLE_SIZE + 1];
 }
 
 #endif // TARGET_UNIX && !DACCESS_COMPILE

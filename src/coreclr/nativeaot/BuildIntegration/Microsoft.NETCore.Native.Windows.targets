@@ -15,6 +15,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <CppLinker>link</CppLinker>
+    <CppCompiler>cl</CppCompiler>
     <CppLibCreator>lib</CppLibCreator>
     <ObjectSuffix>.obj</ObjectSuffix>
     <LibrarySuffix>.lib</LibrarySuffix>
@@ -79,6 +80,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <SdkNativeLibrary Include="ole32.lib" />
       <SdkNativeLibrary Include="oleaut32.lib" />
       <SdkNativeLibrary Include="secur32.lib" />
+      <SdkNativeLibrary Include="Synchronization.lib" />
       <SdkNativeLibrary Include="user32.lib" />
       <SdkNativeLibrary Include="version.lib" />
       <SdkNativeLibrary Include="ws2_32.lib" />
@@ -93,42 +95,122 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="'$(NativeLib)' == 'Shared'" Include="/DLL" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="@(SdkNativeLibrary->'&quot;%(Identity)&quot;')" />
-      <LinkerArg Include="/NOLOGO /MANIFEST:NO" />
+      <LinkerArg Include="/NOLOGO /MANIFEST:NO" Shim="true" />
       <LinkerArg Condition="$(IlcMergeSections) != 'false'" Include="/MERGE:.managedcode=.text /MERGE:hydrated=.bss" />
-      <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" />
+      <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" Shim="true" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
       <LinkerArg Condition="'$(NativeLib)' == '' and '$(LinkerSubsystem)' != ''" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
       <LinkerArg Condition="'$(NativeLib)' == ''" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB /STACK:$(IlcDefaultStackSize)" />
       <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)NativeAOT.natvis&quot;" />
-      <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
-      <LinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh" />
+      <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" Shim="true" />
+      <LinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh" Shim="true" />
       <!-- Do not warn if someone declares UnmanagedCallersOnly with an entrypoint of 'DllGetClassObject' and similar -->
       <LinkerArg Include="/IGNORE:4104" />
       <!-- Opt into CETCOMPAT by default. -->
-      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT" />
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT" Shim="true" />
       <!-- Allow user to opt out. -->
-      <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" />
+      <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" Shim="true" />
       <!-- Enable EHCONT if CET is not disabled and CFG is enabled. -->
-      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont"/>
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont" Shim="true" />
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">
       <!-- Force ucrt to be dynamically linked for release runtime -->
-      <LinkerArg Include="/NODEFAULTLIB:libucrt.lib" />
-      <LinkerArg Include="/DEFAULTLIB:ucrt.lib" />
+      <LinkerArg Include="/NODEFAULTLIB:libucrt.lib" Shim="true" />
+      <LinkerArg Include="/DEFAULTLIB:ucrt.lib" Shim="true" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(Configuration)' != 'Debug'">
-      <LinkerArg Include="/OPT:REF" />
-      <LinkerArg Include="/OPT:ICF" />
+      <LinkerArg Include="/OPT:REF" Shim="true" />
+      <LinkerArg Include="/OPT:ICF" Shim="true" />
     </ItemGroup>
 
-    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(_targetArchitecture)"
+    <PropertyGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true'">
+      <_VCVarsAllFound>1</_VCVarsAllFound>
+      <_FindVCVarsallCacheFile>$(NativeIntermediateOutputPath)findvcvarsall.$(_targetArchitecture).txt</_FindVCVarsallCacheFile>
+      <_FindVCVarsallVSWherePath>$([System.Environment]::GetEnvironmentVariable('ProgramFiles(x86)'))\Microsoft Visual Studio\Installer\vswhere.exe</_FindVCVarsallVSWherePath>
+      <_FindVCVarsallToolsSuffix>x86.x64</_FindVCVarsallToolsSuffix>
+      <_FindVCVarsallToolsSuffix Condition="'$(_targetArchitecture)' == 'arm64'">ARM64</_FindVCVarsallToolsSuffix>
+      <_FindVCVarsallHostArchitecture>amd64</_FindVCVarsallHostArchitecture>
+      <_FindVCVarsallHostArchitecture Condition="'$(_hostArchitecture)' == 'arm64'">arm64</_FindVCVarsallHostArchitecture>
+      <_FindVCVarsallTargetArchitecture>$([System.String]::Copy('$(_targetArchitecture)').Replace('x64', 'amd64'))</_FindVCVarsallTargetArchitecture>
+      <_FindVCVarsallVCEnvironment>$(_FindVCVarsallHostArchitecture)_$(_FindVCVarsallTargetArchitecture)</_FindVCVarsallVCEnvironment>
+      <_FindVCVarsallVCEnvironment Condition="'$(_FindVCVarsallHostArchitecture)' == '$(_FindVCVarsallTargetArchitecture)'">$(_FindVCVarsallHostArchitecture)</_FindVCVarsallVCEnvironment>
+    </PropertyGroup>
+
+    <Error Condition="'$(IlcUseEnvironmentalTools)' != 'true' and !Exists('$(_FindVCVarsallVSWherePath)')"
+      Text="vswhere.exe not found at '$(_FindVCVarsallVSWherePath)'. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites." />
+
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'"
+      Command="&quot;$(_FindVCVarsallVSWherePath)&quot; -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.$(_FindVCVarsallToolsSuffix) -property installationPath"
+      IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallVSInstallationPath" />
+      <Output TaskParameter="ExitCode" PropertyName="_FindVCVarsallVSInstallationPathExitCode" />
+    </Exec>
+
+    <Error Condition="'$(IlcUseEnvironmentalTools)' != 'true' and ('$(_FindVCVarsallVSInstallationPathExitCode)' != '0' or '$(_FindVCVarsallVSInstallationPath)' == '')"
+      Text="vswhere.exe failed to locate Visual Studio with Microsoft.VisualStudio.Component.VC.Tools.$(_FindVCVarsallToolsSuffix). Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites, in particular the Desktop Development for C++ workload in Visual Studio. For ARM64 development also install C++ ARM64 build tools." />
+
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'"
+      Command="&quot;$(_FindVCVarsallVSWherePath)&quot; -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.$(_FindVCVarsallToolsSuffix) -property installationVersion"
+      ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallVSInstallationVersion" />
+    </Exec>
+
+    <ReadLinesFromFile Condition="'$(IlcUseEnvironmentalTools)' != 'true' and Exists('$(_FindVCVarsallCacheFile)')"
+      File="$(_FindVCVarsallCacheFile)">
+      <Output TaskParameter="Lines" ItemName="_FindVCVarsallCacheLine" />
+    </ReadLinesFromFile>
+
+    <ItemGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true'">
+      <_FindVCVarsallCachedVSInstallationPathLine Include="VSInstallationPath" Condition="$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').StartsWith('VSInstallationPath='))">
+        <Value>$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').Substring(19))</Value>
+      </_FindVCVarsallCachedVSInstallationPathLine>
+      <_FindVCVarsallCachedVSInstallationVersionLine Include="VSInstallationVersion" Condition="$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').StartsWith('VSInstallationVersion='))">
+        <Value>$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').Substring(22))</Value>
+      </_FindVCVarsallCachedVSInstallationVersionLine>
+      <_FindVCVarsallCachedOutputLine Include="_FindVCVarsallOutput" Condition="$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').StartsWith('_FindVCVarsallOutput='))">
+        <Value>$([System.String]::Copy('%(_FindVCVarsallCacheLine.Identity)').Substring(21))</Value>
+      </_FindVCVarsallCachedOutputLine>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true'">
+      <_FindVCVarsallCachedVSInstallationPath Condition="'@(_FindVCVarsallCachedVSInstallationPathLine)' != ''">@(_FindVCVarsallCachedVSInstallationPathLine->'%(Value)', '')</_FindVCVarsallCachedVSInstallationPath>
+      <_FindVCVarsallCachedVSInstallationVersion Condition="'@(_FindVCVarsallCachedVSInstallationVersionLine)' != ''">@(_FindVCVarsallCachedVSInstallationVersionLine->'%(Value)', '')</_FindVCVarsallCachedVSInstallationVersion>
+      <_FindVCVarsallCachedOutput Condition="'@(_FindVCVarsallCachedOutputLine)' != ''">@(_FindVCVarsallCachedOutputLine->'%(Value)', '')</_FindVCVarsallCachedOutput>
+      <_FindVCVarsallCacheValid Condition="'$(_FindVCVarsallCachedVSInstallationPath)' == '$(_FindVCVarsallVSInstallationPath)' and '$(_FindVCVarsallCachedVSInstallationVersion)' == '$(_FindVCVarsallVSInstallationVersion)' and '$(_FindVCVarsallCachedOutput)' != ''">true</_FindVCVarsallCacheValid>
+      <_FindVCVarsallOutput Condition="'$(_FindVCVarsallCacheValid)' == 'true'">$(_FindVCVarsallCachedOutput)</_FindVCVarsallOutput>
+      <_VCVarsAllFound Condition="'$(_FindVCVarsallCacheValid)' == 'true'">0</_VCVarsAllFound>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_FindVCVarsallCacheValid)' != 'true'">
+      <_FindVCVarsallCommand><![CDATA[
+call "$(_FindVCVarsallVSInstallationPath)\vc\Auxiliary\Build\vcvarsall.bat" $(_FindVCVarsallVCEnvironment) > NUL 2> NUL
+if errorlevel 1 exit /b 1
+for /F "delims=" %%W in ('where link') do (
+  for %%A in ("%%W") do echo %%~dpA#
+  goto :CAPTURE_LIB_PATHS
+)
+exit /b 1
+:CAPTURE_LIB_PATHS
+if "%LIB%" == "" exit /b 1
+echo %LIB%
+]]></_FindVCVarsallCommand>
+    </PropertyGroup>
+
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_FindVCVarsallCacheValid)' != 'true'"
+      Command="$(_FindVCVarsallCommand)"
       IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound" />
     </Exec>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath)" Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_VCVarsAllFound)' == '0' and '$(_FindVCVarsallCacheValid)' != 'true'" />
+    <WriteLinesToFile Condition="'$(IlcUseEnvironmentalTools)' != 'true' and '$(_VCVarsAllFound)' == '0' and '$(_FindVCVarsallCacheValid)' != 'true'"
+      File="$(_FindVCVarsallCacheFile)"
+      Lines="$([MSBuild]::Escape('VSInstallationPath=$(_FindVCVarsallVSInstallationPath)'));$([MSBuild]::Escape('VSInstallationVersion=$(_FindVCVarsallVSInstallationVersion)'));$([MSBuild]::Escape('_FindVCVarsallOutput=$(_FindVCVarsallOutput)'))"
+      Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
 
     <ItemGroup Condition="'$(_VCVarsAllFound)' == '0'">
       <AdditionalNativeLibraryDirectories Include="$(_FindVCVarsallOutput.Split(`#`)[1].Split(';'))" />
@@ -136,10 +218,76 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
       <_CppToolsDirectory>$(_FindVCVarsallOutput.Split(`#`)[0])</_CppToolsDirectory>
+      <CppCompiler>$(_CppToolsDirectory)cl.exe</CppCompiler>
       <CppLinker>$(_CppToolsDirectory)link.exe</CppLinker>
       <CppLibCreator>$(_CppToolsDirectory)lib.exe</CppLibCreator>
     </PropertyGroup>
 
     <Error Condition="'$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites, in particular the Desktop Development for C++ workload in Visual Studio. For ARM64 development also install C++ ARM64 build tools." />
+  </Target>
+
+  <Target Name="CreateShimExes"
+          Condition="'$(_AggregateExecutable)' == 'true'"
+          DependsOnTargets="LinkNative;WriteAggregateExecutableShimRspFiles"
+          Inputs="$(NativeImportLibrary);@(_AggregateExecutableReferencePath->'%(ShimSource)');@(_AggregateExecutableReferencePath->'%(ShimCompileRspFile)');@(_AggregateExecutableReferencePath->'%(ShimLinkRspFile)');@(_AggregateExecutableReferencePath->'%(ShimResourceFile)')"
+          Outputs="@(_AggregateExecutableShim);@(_AggregateExecutableShimSymbol)">
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
+    <Exec Command="&quot;$(CppCompiler)&quot; @&quot;%(_AggregateExecutableReferencePath.ShimCompileRspFile)&quot;" />
+    <Exec Command="&quot;$(CppLinker)&quot; @&quot;%(_AggregateExecutableReferencePath.ShimLinkRspFile)&quot;" />
+  </Target>
+
+  <Target Name="WriteAggregateExecutableShimRspFiles"
+          Condition="'$(_AggregateExecutable)' == 'true'"
+          DependsOnTargets="LinkNative;GenerateAggregateExecutableShimResFiles">
+
+    <ItemGroup>
+      <_AggregateExecutableReferencePath>
+        <ShimSourceCode><![CDATA[extern int __stdcall %(_AggregateExecutableReferencePath.EntryPointSymbol)(int, unsigned short**);
+
+int wmain(int argc, unsigned short** argv)
+{
+    return %(_AggregateExecutableReferencePath.EntryPointSymbol)(argc, argv);
+}
+]]></ShimSourceCode>
+        <ShimPdbLinkerArg Condition="'$(NativeDebugSymbols)' == 'true'">/PDB:"%(_AggregateExecutableReferencePath.ShimSymbol)"</ShimPdbLinkerArg>
+        <ShimResourceLinkerArg>"%(_AggregateExecutableReferencePath.ShimResourceFile)"</ShimResourceLinkerArg>
+      </_AggregateExecutableReferencePath>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_AggregateExecutableShimCompilerArg Include="/nologo" />
+      <_AggregateExecutableShimCompilerArg Include="/c" />
+      <_AggregateExecutableShimCompilerArg Include="/MT" />
+      <_AggregateExecutableShimCompilerArg Condition="'$(NativeDebugSymbols)' == 'true'" Include="/Z7" />
+      <_AggregateExecutableShimCompilerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
+
+      <!-- binskim BA2007 X was compiled at too low a warning level -->
+      <_AggregateExecutableShimCompilerArg Include="/W4" />
+      <!-- binskim BA2026 X is a Windows PE that wasn't compiled with recommended Security Development Lifecycle (SDL) checks -->
+      <_AggregateExecutableShimCompilerArg Include="/sdl" />
+
+      <_AggregateExecutableShimLinkerArg Include="@(LinkerArg)" Condition="'%(LinkerArg.Shim)' == 'true'" />
+      <_AggregateExecutableShimLinkerArg Include="/ENTRY:wmainCRTStartup" />
+      <_AggregateExecutableShimLinkerArg Include="/STACK:$(IlcDefaultStackSize)" />
+      <_AggregateExecutableShimLinkerArg Include="@(AdditionalNativeLibraryDirectories->'/LIBPATH:&quot;%(Identity)&quot;')" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimSource)" Lines="$([MSBuild]::Escape('%(_AggregateExecutableReferencePath.ShimSourceCode)'))" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimCompileRspFile)" Lines="@(_AggregateExecutableShimCompilerArg);&quot;%(_AggregateExecutableReferencePath.ShimSource)&quot;;/Fo&quot;%(_AggregateExecutableReferencePath.ShimObject)&quot;" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimLinkRspFile)" Lines="&quot;%(_AggregateExecutableReferencePath.ShimObject)&quot;;&quot;$(NativeImportLibrary)&quot;;%(_AggregateExecutableReferencePath.ShimResourceLinkerArg);/OUT:&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;;/SUBSYSTEM:%(_AggregateExecutableReferencePath.ShimLinkerSubsystem);%(_AggregateExecutableReferencePath.ShimPdbLinkerArg);@(_AggregateExecutableShimLinkerArg)" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <UsingTask TaskName="DumpNativeResources" AssemblyFile="$(IlcBuildTasksPath)" />
+
+  <Target Name="GenerateAggregateExecutableShimResFiles"
+          Condition="'$(_AggregateExecutable)' == 'true'"
+          Inputs="@(_AggregateExecutableReferencePath)"
+          Outputs="@(_AggregateExecutableReferencePath->'%(ShimResourceFile)')">
+
+    <DumpNativeResources
+        MainAssembly="%(_AggregateExecutableReferencePath.Identity)"
+        ResourceFile="%(_AggregateExecutableReferencePath.ShimResourceFile)" />
   </Target>
 </Project>

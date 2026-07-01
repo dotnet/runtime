@@ -110,12 +110,17 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets a task that has already completed successfully.</summary>
-        public static ValueTask CompletedTask => default;
+        public static ValueTask CompletedTask
+        {
+            [Intrinsic]
+            get => default;
+        }
 
         /// <summary>Creates a <see cref="ValueTask{TResult}"/> that's completed successfully with the specified result.</summary>
         /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
+        [Intrinsic]
         public static ValueTask<TResult> FromResult<TResult>(TResult result) =>
             new ValueTask<TResult>(result);
 
@@ -177,30 +182,6 @@ namespace System.Threading.Tasks
                 obj == null ? Task.CompletedTask :
                 obj as Task ??
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
-        }
-
-        internal object AsTaskOrNotifier()
-        {
-            object? obj = _obj;
-            Debug.Assert(obj is Task || obj is IValueTaskSource);
-            return
-                obj as Task ??
-                (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource>(obj), _token);
-        }
-
-        private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
-        {
-            private IValueTaskSource _valueTaskSource;
-            private short _token;
-
-            public ValueTaskSourceNotifier(IValueTaskSource valueTaskSource, short token)
-            {
-                _valueTaskSource = valueTaskSource;
-                _token = token;
-            }
-
-            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags) =>
-                _valueTaskSource.OnCompleted(continuation, state, _token, flags);
         }
 
         /// <summary>Gets a <see cref="ValueTask"/> that may be used at any point in the future.</summary>
@@ -503,6 +484,7 @@ namespace System.Threading.Tasks
         /// <summary>Initialize the <see cref="ValueTask{TResult}"/> with a <typeparamref name="TResult"/> result value.</summary>
         /// <param name="result">The result.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public ValueTask(TResult result)
         {
             _result = result;
@@ -610,30 +592,6 @@ namespace System.Threading.Tasks
             }
 
             return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
-        }
-
-        internal object AsTaskOrNotifier()
-        {
-            object? obj = _obj;
-            Debug.Assert(obj is Task<TResult> || obj is IValueTaskSource<TResult>);
-            return
-                obj as Task ??
-                (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource<TResult>>(obj), _token);
-        }
-
-        private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
-        {
-            private IValueTaskSource<TResult> _valueTaskSource;
-            private short _token;
-
-            public ValueTaskSourceNotifier(IValueTaskSource<TResult> valueTaskSource, short token)
-            {
-                _valueTaskSource = valueTaskSource;
-                _token = token;
-            }
-
-            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags) =>
-                _valueTaskSource.OnCompleted(continuation, state, _token, flags);
         }
 
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
@@ -895,10 +853,5 @@ namespace System.Threading.Tasks
 
             return string.Empty;
         }
-    }
-
-    internal interface IValueTaskSourceNotifier
-    {
-        void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags);
     }
 }

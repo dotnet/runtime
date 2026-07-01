@@ -63,7 +63,7 @@ void InstrumentedILOffsetMapping::Clear()
 #endif // !DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE)
-void InstrumentedILOffsetMapping::SetMappingInfo(SIZE_T cMap, COR_IL_MAP * rgMap)
+void InstrumentedILOffsetMapping::SetMappingInfo(UINT cMap, COR_IL_MAP * rgMap)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE((cMap == 0) == (rgMap == NULL));
@@ -72,7 +72,7 @@ void InstrumentedILOffsetMapping::SetMappingInfo(SIZE_T cMap, COR_IL_MAP * rgMap
 }
 #endif // !DACCESS_COMPILE
 
-SIZE_T InstrumentedILOffsetMapping::GetCount() const
+UINT InstrumentedILOffsetMapping::GetCount() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 

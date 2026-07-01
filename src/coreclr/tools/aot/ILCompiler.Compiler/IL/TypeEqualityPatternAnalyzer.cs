@@ -133,43 +133,42 @@ namespace ILCompiler
                         break;
                     return;
                 case State.TypeEqualityCheck_StlocLdloc:
-                    if (opcode == ILOpcode.ldloc || opcode == ILOpcode.ldloc_s || (opcode >= ILOpcode.ldloc_0 && opcode <= ILOpcode.ldloc_3))
-                        _state = State.TypeEqualityCheck;
-                    else
-                        throw new UnreachableException();
+                    _state = opcode is ILOpcode.ldloc or ILOpcode.ldloc_s or (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) ? State.TypeEqualityCheck
+                        : throw new UnreachableException();
                     return;
                 default:
                     throw new UnreachableException();
             }
 
             static bool IsSystemType(TypeDesc t)
-                => t is MetadataType mdType && mdType.Name.SequenceEqual("Type"u8) && mdType.Namespace.SequenceEqual("System"u8);
+                => t is MetadataType mdType && mdType.Name == "Type"u8 && mdType.Namespace == "System"u8;
 
             static bool IsTypeGetTypeFromHandle(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name.SequenceEqual("GetTypeFromHandle"u8)
+                && method.IsIntrinsic && method.Name == "GetTypeFromHandle"u8
                 && IsSystemType(method.OwningType);
 
             static bool IsTypeEquals(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name.SequenceEqual("op_Equality"u8)
+                && method.IsIntrinsic && method.Name == "op_Equality"u8
                 && IsSystemType(method.OwningType);
 
             static bool IsTypeInequals(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name.SequenceEqual("op_Inequality"u8)
+                && method.IsIntrinsic && method.Name == "op_Inequality"u8
                 && IsSystemType(method.OwningType);
 
             static bool IsObjectGetType(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode is ILOpcode.call or ILOpcode.callvirt && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name.SequenceEqual("GetType"u8) && method.OwningType.IsObject;
+                && method.IsIntrinsic && method.Name == "GetType"u8 && method.OwningType.IsObject;
 
             static bool IsArgumentOrLocalLoad(ILOpcode opcode)
-                => opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3);
+                => opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3)
+                   or ILOpcode.ldloc or ILOpcode.ldloc_s or ILOpcode.ldarg or ILOpcode.ldarg_s;
 
             static bool IsStlocLdlocSequence(ILOpcode opcode, in ILReader reader)
             {
-                if (opcode == ILOpcode.stloc || opcode == ILOpcode.stloc_s || (opcode >= ILOpcode.stloc_0 && opcode <= ILOpcode.stloc_3))
+                if (opcode is ILOpcode.stloc or ILOpcode.stloc_s or (>= ILOpcode.stloc_0 and <= ILOpcode.stloc_3))
                 {
                     ILReader nestedReader = reader;
                     int locIndex = opcode switch
@@ -179,7 +178,8 @@ namespace ILCompiler
                         _ => opcode - ILOpcode.stloc_0,
                     };
                     ILOpcode otherOpcode = nestedReader.ReadILOpcode();
-                    return (otherOpcode == ILOpcode.ldloc || otherOpcode == ILOpcode.ldloc_s || (otherOpcode >= ILOpcode.ldloc_0 && otherOpcode <= ILOpcode.ldloc_3))
+
+                    return (otherOpcode is ILOpcode.ldloc or ILOpcode.ldloc_s or (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3))
                         && otherOpcode switch
                         {
                             ILOpcode.ldloc => nestedReader.ReadILUInt16(),

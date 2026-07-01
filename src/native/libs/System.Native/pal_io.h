@@ -343,6 +343,7 @@ typedef enum
     PAL_IN_ONLYDIR = 0x01000000,
     PAL_IN_DONT_FOLLOW = 0x02000000,
     PAL_IN_EXCL_UNLINK = 0x04000000,
+    PAL_IN_MOVE_SELF = 0x00000800,
     PAL_IN_ISDIR = 0x40000000,
 } NotifyEvents;
 
@@ -447,6 +448,13 @@ PALEXPORT int32_t SystemNative_CloseDir(DIR* dir);
  */
 PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
                         int32_t flags);    // 0 for defaults. Use PAL_O_CLOEXEC, PAL_O_NONBLOCK_READ, and PAL_O_NONBLOCK_WRITE for additional behavior.
+
+/**
+ * Determines if the current platform supports atomically creating pipes with non-inheritable file descriptors (pipe2).
+ *
+ * Returns 1 if supported, 0 if not supported.
+ */
+PALEXPORT int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void);
 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves

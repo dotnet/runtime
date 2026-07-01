@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 using System.Text;
@@ -900,9 +901,8 @@ namespace System
             {
                 ReadOnlySpan<char> charSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(str);
                 // Find the first whitespace character. If there is none, just return the input.
-                int i;
-                for (i = 0; i < charSpan.Length && !char.IsWhiteSpace(charSpan[i]); i++) ;
-                if (i == charSpan.Length)
+                int i = charSpan.IndexOfAnyWhiteSpace();
+                if (i < 0)
                 {
                     return str;
                 }
@@ -1184,7 +1184,6 @@ namespace System
         public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe int HexsToChars<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
         {
             guidChars[0] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
@@ -1347,7 +1346,7 @@ namespace System
                 }
                 flags >>= 8;
 
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian)
                 {
                     // Vectorized implementation for D, N, P and B formats:
                     // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
@@ -1515,9 +1514,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
         {
-            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian);
             // Vectorized implementation for D, N, P and B formats:
             // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
 

@@ -27,6 +27,52 @@ namespace System.Text.Json
             Debug.Assert(state.Current.ObjectState == StackFrameObjectState.StartToken);
             Debug.Assert(state.Current.CanContainMetadata);
 
+            // Custom classifier branch: runs BEFORE normal metadata scanning.
+            // When a TypeClassifier is configured, it replaces discriminator-based type resolution.
+            PolymorphicTypeResolver? polymorphicResolver = jsonTypeInfo.PolymorphicTypeResolver;
+            if (polymorphicResolver is not null && jsonTypeInfo.TypeClassifier is { } typeClassifier)
+            {
+                // Ensure the entire object is buffered (for streaming scenarios).
+                if (!reader.IsFinalBlock)
+                {
+                    Utf8JsonReader bufferCheck = reader;
+                    if (!bufferCheck.TrySkipPartial())
+                    {
+                        return false;
+                    }
+                }
+
+                // If reference handling is configured and the payload is a $ref-only object,
+                // defer to the normal metadata loop so the reference resolver can return the
+                // previously-deserialized instance instead of asking the classifier to identify
+                // a type from a metadata-only payload that does not describe one.
+                bool isRefOnlyPayload = false;
+                if (state.ReferenceResolver is not null)
+                {
+                    Utf8JsonReader peek = reader;
+                    if (peek.Read() &&
+                        peek.TokenType == JsonTokenType.PropertyName &&
+                        peek.GetUnescapedSpan().SequenceEqual(s_refPropertyName))
+                    {
+                        isRefOnlyPayload = true;
+                    }
+                }
+
+                if (!isRefOnlyPayload)
+                {
+                    // Classify using a struct copy; the original reader stays at the object start.
+                    Utf8JsonReader classifierCopy = reader;
+                    Type? resolvedType = typeClassifier(ref classifierCopy);
+
+                    if (resolvedType is null)
+                    {
+                        ThrowHelper.ThrowJsonException(SR.PolymorphicTypeClassifierReturnedNull);
+                    }
+
+                    state.PolymorphicResolvedType = resolvedType;
+                }
+            }
+
             Utf8JsonReader checkpoint;
             bool allowOutOfOrderMetadata = jsonTypeInfo.Options.AllowOutOfOrderMetadataProperties;
             bool isReadingAheadOfNonMetadataProperties = false;

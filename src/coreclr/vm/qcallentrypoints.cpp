@@ -320,7 +320,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(Monitor_GetOrCreateLockObject)
+    DllImportEntry(ObjectHeader_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832
@@ -360,7 +360,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_OffsetOf)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
-    DllImportEntry(MarshalNative_TryGetStructMarshalStub)
+    DllImportEntry(MarshalNative_HasLayout)
     DllImportEntry(MarshalNative_SizeOfHelper)
     DllImportEntry(MarshalNative_GetDelegateForFunctionPointerInternal)
     DllImportEntry(MarshalNative_GetFunctionPointerForDelegateInternal)
@@ -394,15 +394,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetEndComSlot)
     DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ClearNativeContents)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ClearNativeContents)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(MngdSafeArrayMarshaler_CreateMarshaler)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToNative)
@@ -449,7 +440,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_OBJCMARSHAL)
     DllImportEntry(ObjCMarshal_TrySetGlobalMessageSendCallback)
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
-    DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
+    DllImportEntry(ObjCMarshal_AllocateReferenceTrackingHandle)
 #endif
 #if defined(FEATURE_JAVAMARSHAL)
     DllImportEntry(JavaMarshal_Initialize)
@@ -503,6 +494,7 @@ static const Entry s_QCall[] =
     DllImportEntry(X86Base_CpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
+    DllImportEntry(StubHelpers_CreateLayoutClassMarshalStubs)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
@@ -519,6 +511,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)
+    DllImportEntry(InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown)
+    DllImportEntry(InterfaceMarshaler_ValidateComVisibilityForIUnknown)
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ComWeakRefToObject)

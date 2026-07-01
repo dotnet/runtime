@@ -1126,7 +1126,7 @@ SplitName::CdStartField(_In_opt_ PCWSTR fullName,
             status = E_INVALIDARG;
             goto Fail;
         }
-         
+
         if (typeToken == mdTypeDefNil)
         {
             if (!split->FindType(mod->GetMDImport()))
@@ -2836,12 +2836,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     {
         m_fEnableTargetConsistencyAsserts = true;
     }
-
-    // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
-    // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
-    // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch,
-    // see ClrDataAccess::VerifyDlls for details.
-    m_fEnableDllVerificationAsserts = false;
 #endif
 }
 
@@ -5189,9 +5183,6 @@ ClrDataAccess::Initialize(void)
     // DAC is now setup and ready to use
     //
 
-    // Do some validation
-    IfFailRet(VerifyDlls());
-
     // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
     // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
     // if an exception was raised by a given instance of the runtime or not.
@@ -5295,134 +5286,18 @@ ClrDataAccess::GetFullMethodName(
 }
 
 PCSTR
-ClrDataAccess::GetJitHelperName(
-    IN TADDR address,
-    IN bool dynamicHelpersOnly /*=false*/
-    )
+ClrDataAccess::GetJitHelperName(IN TADDR address)
 {
-    const static PCSTR s_rgHelperNames[] = {
-#define JITHELPER(code,fn,sig) #code,
-#include <jithelpers.h>
-    };
-    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
-
-#ifdef TARGET_UNIX
-    if (!dynamicHelpersOnly)
-#else
-    if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address &&
-            address < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-#endif // TARGET_UNIX
+    PCODE pCode = PINSTRToPCODE(address);
+    for (unsigned i = 0; i < g_auxiliarySymbolCount; i++)
     {
-        // Read the whole table from the target in one shot for better performance
-        VMHELPDEF * pTable = static_cast<VMHELPDEF *>(
-            PTR_READ(dac_cast<TADDR>(&hlpFuncTable), CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-
-        for (int i = 0; i < CORINFO_HELP_COUNT; i++)
+        if (pCode == hlpAuxiliarySymbolTable[i].pfnAuxiliarySymbol)
         {
-            if (address == pTable[i].pfnHelper)
-                return s_rgHelperNames[i];
-        }
-    }
-
-    // Check if its a dynamically generated JIT helper
-    const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, binderId) code,
-#define JITHELPER(code, fn, binderId)
-#include <jithelpers.h>
-    };
-
-    // Read the whole table from the target in one shot for better performance
-    VMHELPDEF * pDynamicTable = static_cast<VMHELPDEF *>(
-        PTR_READ(dac_cast<TADDR>(&hlpDynamicFuncTable), DYNAMIC_CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-    for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
-    {
-        if (address == pDynamicTable[d].pfnHelper)
-        {
-            return s_rgHelperNames[s_rgDynamicHCallIds[d]];
+            return hlpAuxiliarySymbolTable[i].name;
         }
     }
 
     return NULL;
-}
-
-// This function expects more memory than maybe needed.
-static int FormatCLRStubName(
-    _In_opt_z_ LPCWSTR stubNameMaybe,
-    _In_ TADDR stubAddr,
-    _In_ ULONG32 bufLen,
-    _Out_ ULONG32 *symbolLen,
-    _Out_writes_bytes_opt_(bufLen) WCHAR* symbolBuf)
-{
-    // Parts needed to construct a name:
-    // With stub manager name: "CLRStub[%s]@%p"
-    //   No stub manager name: "CLRStub@%p"
-    const WCHAR formatName_Prefix[] = W("CLRStub");
-    const WCHAR formatName_OpenBracket[] = W("[");
-    const WCHAR formatName_CloseBracket[] = W("]");
-    const WCHAR formatName_PrefixEnd[] = W("@");
-
-    // Compute the address as a string safely.
-    WCHAR addrString[Max64BitHexString + 1];
-    FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
-    size_t addStringLen = u16_strlen(addrString);
-
-    // Compute maximum length, include the null terminator.
-    size_t formatName_MaxLen = ARRAY_SIZE(formatName_Prefix) // Include trailing null
-                                + ARRAY_SIZE(formatName_PrefixEnd) - 1
-                                + addStringLen;
-
-    // Consider stub manager name
-    size_t stubManagedNameLen = 0;
-    if (stubNameMaybe != NULL)
-    {
-        stubManagedNameLen = u16_strlen(stubNameMaybe);
-        formatName_MaxLen += ARRAY_SIZE(formatName_OpenBracket) - 1;
-        formatName_MaxLen += ARRAY_SIZE(formatName_CloseBracket) - 1;
-    }
-
-    HRESULT hr = S_FALSE;
-
-    // Compute the exact length needed.
-    const size_t lenNeeded = formatName_MaxLen + stubManagedNameLen;
-    if (lenNeeded <= bufLen)
-    {
-        size_t written = 0;
-
-        // Set the prefix
-        wcscpy_s(symbolBuf, bufLen - written, formatName_Prefix);
-        written += ARRAY_SIZE(formatName_Prefix) - 1;
-
-        // Add the name
-        if (stubManagedNameLen > 0)
-        {
-            wcscat_s(symbolBuf, bufLen - written, formatName_OpenBracket);
-            written += ARRAY_SIZE(formatName_OpenBracket) - 1;
-            wcscat_s(symbolBuf, bufLen - written, stubNameMaybe);
-            written += stubManagedNameLen;
-            wcscat_s(symbolBuf, bufLen - written, formatName_CloseBracket);
-            written += ARRAY_SIZE(formatName_CloseBracket) - 1;
-        }
-
-        // Append the prefix end
-        wcscat_s(symbolBuf, bufLen - written, formatName_PrefixEnd);
-        written += ARRAY_SIZE(formatName_PrefixEnd) - 1;
-
-        // Append the address
-        wcscat_s(symbolBuf, bufLen - written, addrString);
-        written += addStringLen;
-
-        hr = S_OK;
-    }
-
-    if (symbolLen)
-    {
-        if (!FitsIn<ULONG32>(lenNeeded))
-            return COR_E_OVERFLOW;
-
-        *symbolLen = (ULONG32)lenNeeded;
-    }
-
-    return hr;
 }
 
 HRESULT
@@ -5460,51 +5335,42 @@ ClrDataAccess::RawGetMethodName(
     PTR_StubManager pStubManager;
     MethodDesc* methodDesc = NULL;
 
-    {
-        EECodeInfo codeInfo(GetInterpreterCodeFromInterpreterPrecodeIfPresent(TO_TADDR(address)));
-        if (codeInfo.IsValid())
-        {
-            if (displacement)
-            {
-                *displacement = codeInfo.GetRelOffset();
-            }
-
-            methodDesc = codeInfo.GetMethodDesc();
-            goto NameFromMethodDesc;
-        }
-    }
-
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
     if (pStubManager != NULL)
     {
-        if (displacement)
-        {
-            *displacement = 0;
-        }
-
-        //
-        // Special-cased stub managers
-        //
         if (pStubManager == PrecodeStubManager::g_pManager)
         {
-            PCODE alignedAddress = AlignDown(TO_TADDR(address), PRECODE_ALIGNMENT);
+            StubCodeBlockKind stubKind = RangeSectionStubManager::GetStubKind(TO_TADDR(address));
+            SIZE_T stubSize = 0;
+
+            switch (stubKind)
+            {
+            case STUB_CODE_BLOCK_STUBPRECODE:
+                stubSize = StubPrecode::CodeSize;
+                break;
+#ifdef HAS_FIXUP_PRECODE
+            case STUB_CODE_BLOCK_FIXUPPRECODE:
+                stubSize = FixupPrecode::CodeSize;
+                break;
+#endif
+            default:
+                break;
+            }
+
+            if (stubSize != 0)
+            {
+                const SIZE_T pageMask = GetStubCodePageSize() - 1;
+                const TADDR pageBase = TO_TADDR(address) & ~static_cast<TADDR>(pageMask);
+                const SIZE_T offset = static_cast<SIZE_T>(TO_TADDR(address) - pageBase);
+                PCODE precodeAddress = pageBase + (offset / stubSize) * stubSize;
 
 #ifdef TARGET_ARM
-            alignedAddress += THUMB_CODE;
+                precodeAddress += THUMB_CODE;
 #endif
 
-            SIZE_T maxPrecodeSize = sizeof(StubPrecode);
-
-#ifdef HAS_THISPTR_RETBUF_PRECODE
-            maxPrecodeSize = max((size_t)maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
-#endif
-
-            for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
-            {
                 EX_TRY
                 {
-                    // Try to find matching precode entrypoint
-                    Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
+                    Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(precodeAddress, TRUE);
                     if (pPrecode != NULL && pPrecode->GetType() != PRECODE_UMENTRY_THUNK)
                     {
                         methodDesc = pPrecode->GetMethodDesc();
@@ -5514,13 +5380,12 @@ ClrDataAccess::RawGetMethodName(
                             {
                                 if (displacement)
                                 {
-                                    *displacement = TO_TADDR(address) - PCODEToPINSTR(alignedAddress);
+                                    *displacement = TO_TADDR(address) - PCODEToPINSTR(precodeAddress);
                                 }
-                                goto NameFromMethodDesc;
+                                return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
                             }
                         }
                     }
-                    alignedAddress -= PRECODE_ALIGNMENT;
                 }
                 EX_CATCH
                 {
@@ -5528,73 +5393,51 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-        else
-        if (pStubManager == JumpStubStubManager::g_pManager)
-        {
-            PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
-
-            HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-
-            PCSTR pHelperName = GetJitHelperName(pTarget);
-            if (pHelperName != NULL)
-            {
-                hr = ConvertUtf8(pHelperName, bufLen, symbolLen, symbolBuf);
-                if (FAILED(hr))
-                    return S_FALSE;
-
-                return hr;
-            }
-        }
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
-
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
-
-        return FormatCLRStubName(
-            wszStubManagerName,
-            TO_TADDR(address),
-            bufLen,
-            symbolLen,
-            symbolBuf);
+        if (u16_strcmp(wszStubManagerName, W("ThePreStub")) != 0 && u16_strcmp(wszStubManagerName, W("InteropDispatchStub")) != 0 && u16_strcmp(wszStubManagerName, W("TailCallStub")) != 0)
+        {
+            // Skip the stubs that are just assembly helpers.
+            size_t nameLen = u16_strlen(wszStubManagerName) + 1; // include null terminator
+            if (symbolLen)
+            {
+                if (!FitsIn<ULONG32>(nameLen))
+                    return COR_E_OVERFLOW;
+                *symbolLen = (ULONG32)nameLen;
+            }
+            if (symbolBuf && bufLen >= nameLen)
+            {
+                wcscpy_s(symbolBuf, bufLen, wszStubManagerName);
+            }
+            else if (symbolBuf)
+            {
+                return S_FALSE;
+            }
+            if (displacement)
+            {
+                *displacement = 0;
+            }
+            return S_OK;
+        }
     }
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
     PCSTR pHelperName;
-    pHelperName = GetJitHelperName(TO_TADDR(address), true /* dynamicHelpersOnly */);
+    pHelperName = GetJitHelperName(TO_TADDR(address));
     if (pHelperName != NULL)
     {
-        if (displacement)
-        {
-            *displacement = 0;
-        }
-
         HRESULT hr = ConvertUtf8(pHelperName, bufLen, symbolLen, symbolBuf);
         if (FAILED(hr))
             return S_FALSE;
 
+        if (displacement)
+        {
+            *displacement = 0;
+        }
         return S_OK;
     }
 
     return E_NOINTERFACE;
-
-NameFromMethodDesc:
-    if (methodDesc->GetClassification() == mcDynamic
-        && methodDesc->GetSigParser().IsNull())
-    {
-        return FormatCLRStubName(
-            NULL,
-            TO_TADDR(address),
-            bufLen,
-            symbolLen,
-            symbolBuf);
-    }
-
-    return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
 }
 
 HRESULT
@@ -5664,11 +5507,11 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -5723,11 +5566,11 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -6078,10 +5921,31 @@ ClrDataAccess::GetHostJitNotificationTable()
     if (m_jitNotificationTable == NULL)
     {
         m_jitNotificationTable =
-            JITNotifications::InitializeNotificationTable(1000);
+            JITNotifications::InitializeNotificationTable(JIT_NOTIFICATION_TABLE_SIZE);
     }
 
     return m_jitNotificationTable;
+}
+
+/* static */ bool
+ClrDataAccess::GetMetaDataFileInfoFromModule(Module *pModule,
+                                             DWORD &dwTimeStamp,
+                                             DWORD &dwSize,
+                                             DWORD &dwDataSize,
+                                             DWORD &dwRvaHint,
+                                             _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                             const DWORD cchFilePath)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+
+    if (pModule == NULL)
+        return false;
+
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
+        return false;
+
+    return ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly, dwTimeStamp, dwSize, dwDataSize, dwRvaHint, wszFilePath, cchFilePath);
 }
 
 /* static */ bool
@@ -6400,16 +6264,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     return m_fEnableTargetConsistencyAsserts;
 }
 
-//
-// VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
-// Only done on Windows and Mac builds at the moment.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-//
-HRESULT ClrDataAccess::VerifyDlls()
-{
-    return S_OK;
-}
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 void ClrDataAccess::InitStreamsForWriting(IN CLRDataEnumMemoryFlags flags)
@@ -6687,7 +6541,7 @@ CLRDataCreateInstance(REFIID iid,
 #endif
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+    ReleaseHolder<IUnknown> cdacInterface = nullptr;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
@@ -6703,7 +6557,7 @@ CLRDataCreateInstance(REFIID iid,
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
@@ -8124,7 +7978,7 @@ void DacFreeRegionEnumerator::AddSingleSegment(const dac_heap_segment &curr, Fre
 
 void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeRegionKind kind, int heap)
 {
-    int iterationMax = 2048;
+    int iterationMax = 65536;
 
     DPTR(dac_heap_segment) curr = start;
     while (curr != nullptr)

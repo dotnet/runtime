@@ -144,10 +144,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       ComputeWasmVfs;
       ResolveWasmOutputs;
       _AddWasmDiagnosticPortsEnvironmentVariable;
+      _AddWasmPerformanceInstrumentationEnvironmentVariables;
     </GenerateBuildWasmBootJsonDependsOn>
     <GeneratePublishWasmBootJsonDependsOn>
       $(GeneratePublishWasmBootJsonDependsOn);
       _AddWasmDiagnosticPortsEnvironmentVariable;
+      _AddWasmPerformanceInstrumentationEnvironmentVariables;
     </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
@@ -203,10 +205,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">1</_WasmWebcilVersion>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">0</_WasmWebcilVersion>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
-      <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
-      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(WasmBootConfigFileName)' == ''">true</_WasmInlineBootConfig>
+      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true'">true</_WasmInlineBootConfig>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
@@ -216,7 +219,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
-      <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(_WasmInlineBootConfig)' == 'true'">dotnet.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
@@ -245,6 +247,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
     <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
       <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="false" Trim="true" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
+      <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="true" Trim="true" />
     </ItemGroup>
     <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
@@ -291,7 +296,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
+  <!-- Resolve and classify build asset candidates.
+       This target always runs to ensure candidate items are populated for downstream consumers. -->
+  <Target Name="_ComputeWasmBuildCandidates" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
       <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');@(WasmAssembliesFinal->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
       <_WasmIntermediateAssemblyFileNames Condition="@(WasmAssembliesFinal->Count()) != 0">;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
@@ -353,19 +360,124 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmBuildWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebcilPath>
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
+      <!-- Controls whether WASM framework/webcil static web assets are copied to bin/wwwroot/_framework/
+           at build time. Defaults to 'Never' (assets stay in obj/fx/ and are served via the static web
+           assets middleware). Set to 'PreserveNewest' to copy them to the output directory — this is
+           required for scenarios that run the app from bin/ without the static web assets middleware
+           (e.g. in-tree library tests). -->
+      <_WasmFrameworkCopyToOutputDirectory Condition="'$(_WasmFrameworkCopyToOutputDirectory)' == ''">Never</_WasmFrameworkCopyToOutputDirectory>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
-      <Output TaskParameter="PassThroughCandidates" ItemName="_WasmFrameworkCandidates" />
+    <!-- Identify DLL candidates that need webcil conversion, separate culture from non-culture
+         DLLs, and compute their expected output paths for use as Outputs in the incremental
+         _ConvertBuildDllsToWebcil target. Culture and non-culture DLLs are separated into
+         distinct item groups to avoid MSBuild batching errors on metadata (like RelatedAsset)
+         that only culture items define.
+         Also pre-classify non-DLL candidates: items with WasmNativeBuildOutput metadata are
+         already per-project (Computed); items without are Framework assets needing per-project
+         materialization. Pre-filtering avoids MSBuild batching errors on WasmNativeBuildOutput
+         metadata that only WasmNativeAsset items define. -->
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
+      <!-- Build DLL candidates with pre-computed WebcilOutputPath metadata.
+           First filter to DLLs only, then split by culture to assign the correct output path.
+           The combined list enables MSBuild partial target execution via Outputs transform
+           (@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')): only out-of-date input/output
+           pairs are passed to the target body, skipping unchanged DLLs entirely. -->
+      <_WasmDllBuildCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' == '.dll'" />
+      <_WasmDllBuildCandidatesNonCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' != 'Culture'">
+        <WebcilOutputPath>$(_WasmBuildWebcilPath)%(FileName).wasm</WebcilOutputPath>
+      </_WasmDllBuildCandidatesNonCulture>
+      <_WasmDllBuildCandidatesCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' == 'Culture'">
+        <WebcilOutputPath>$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm</WebcilOutputPath>
+      </_WasmDllBuildCandidatesCulture>
+      <!-- Rebuild _WasmDllBuildCandidates with WebcilOutputPath metadata from both groups -->
+      <_WasmDllBuildCandidates Remove="@(_WasmDllBuildCandidates)" />
+      <_WasmDllBuildCandidates Include="@(_WasmDllBuildCandidatesNonCulture);@(_WasmDllBuildCandidatesCulture)" />
+      <_WasmExpectedWebcilOutputs Include="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')" />
+    </ItemGroup>
+
+    <!-- Separate non-DLL items into native build outputs (per-project, Computed) and
+         framework candidates (shared, need materialization). WasmNativeBuildOutput metadata
+         is only set on WasmNativeAsset items so we filter from the source to avoid batching
+         errors on _BuildAssetsCandidates. -->
+    <ItemGroup>
+      <_WasmNativeBuildOutputCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' != '.dll' and '%(_BuildAssetsCandidates.WasmNativeBuildOutput)' != ''" />
+      <_WasmNonDllNonNativeCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' != '.dll'" />
+      <_WasmNonDllNonNativeCandidates Remove="@(_WasmNativeBuildOutputCandidates)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Convert DLL assemblies to webcil format.
+       Outputs is a direct transform of the item-based Inputs, enabling MSBuild partial target
+       execution: when only some DLLs change, MSBuild passes only out-of-date pairs to the
+       target body. Property inputs (project/targets/task assembly) are global dependencies —
+       if any changes, all outputs are rebuilt.
+       Touch is needed because the task uses content comparison (MoveIfDifferent) which preserves
+       old timestamps when webcil content is unchanged. Without Touch, property-triggered full
+       rebuilds would loop since skipped outputs retain pre-existing timestamps. -->
+  <Target Name="_ConvertBuildDllsToWebcil"
+    DependsOnTargets="_ComputeWasmBuildCandidates"
+    Condition="'$(_WasmEnableWebcil)' == 'true'"
+    Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
+    Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
+
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
 
-    <!-- Remove pass-throughs from webcil candidates so each file is classified exactly once:
-         webcil-converted files → Computed (per-project in obj/webcil/)
-         pass-through files → Framework (materialized per-project by UpdatePackageStaticWebAssets) -->
-    <ItemGroup>
-      <_WebcilAssetsCandidates Remove="@(_WasmFrameworkCandidates)" />
+    <!-- Touch is needed for property-triggered full rebuilds: the task's content comparison
+         (MoveIfDifferent) preserves old timestamps for unchanged webcil files, but MSBuild
+         needs all outputs to have current timestamps to skip the target on subsequent builds.
+         For item-triggered partial rebuilds, MSBuild only passes changed items so Touch only
+         affects those outputs. -->
+    <Touch Files="@(_WasmConvertedWebcilOutputs)" Condition="'@(_WasmConvertedWebcilOutputs)' != ''" />
+  </Target>
+
+  <!-- Resolve webcil candidate items and define static web assets for the build.
+       This target always runs because it populates item groups consumed by downstream targets.
+       It reuses %(WebcilOutputPath) metadata computed in _ComputeWasmBuildCandidates to construct
+       webcil candidate items, so items are correct whether the conversion target ran or was
+       skipped due to incrementalism.
+       Pass-through files are classified as Framework assets for per-project materialization. -->
+  <Target Name="_ResolveWasmOutputs" DependsOnTargets="_ComputeWasmBuildCandidates;_ConvertBuildDllsToWebcil">
+
+    <!-- When webcil is enabled, transform DLL candidates to their webcil output paths (reusing
+         %(WebcilOutputPath) computed in _ComputeWasmBuildCandidates) and fix metadata. Non-culture
+         and culture DLLs use separate intermediate items to avoid MSBuild batching errors on
+         metadata (like RelatedAsset) that only culture items define.
+         Only webcil-converted items and WasmNativeBuildOutput items go to _WebcilAssetsCandidates
+         (Computed SourceType). Framework candidates are classified separately. -->
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
+      <_WasmWebcilConvertedNonCulture Include="@(_WasmDllBuildCandidatesNonCulture->'%(WebcilOutputPath)')">
+        <RelativePath>$([System.IO.Path]::ChangeExtension(%(RelativePath), '.wasm'))</RelativePath>
+        <OriginalItemSpec>%(WebcilOutputPath)</OriginalItemSpec>
+      </_WasmWebcilConvertedNonCulture>
+      <_WasmWebcilConvertedCulture Include="@(_WasmDllBuildCandidatesCulture->'%(WebcilOutputPath)')">
+        <RelativePath>$([System.IO.Path]::ChangeExtension(%(RelativePath), '.wasm'))</RelativePath>
+        <OriginalItemSpec>%(WebcilOutputPath)</OriginalItemSpec>
+        <RelatedAsset>$([System.IO.Path]::ChangeExtension(%(RelatedAsset), '.wasm'))</RelatedAsset>
+      </_WasmWebcilConvertedCulture>
+
+      <!-- Webcil-converted items + WasmNativeBuildOutput items → Computed (per-project already) -->
+      <_WebcilAssetsCandidates Include="@(_WasmNativeBuildOutputCandidates)" />
+      <_WebcilAssetsCandidates Include="@(_WasmWebcilConvertedNonCulture)" />
+      <_WebcilAssetsCandidates Include="@(_WasmWebcilConvertedCulture)" />
+
+      <!-- Non-DLL items without WasmNativeBuildOutput → Framework (need per-project materialization) -->
+      <_WasmFrameworkCandidates Include="@(_WasmNonDllNonNativeCandidates)" />
+
+      <!-- Track webcil files for clean operations even when the conversion target was skipped -->
+      <FileWrites Include="@(_WasmExpectedWebcilOutputs)" />
+    </ItemGroup>
+
+    <!-- When webcil is disabled, DLLs retain their shared paths and also need Framework
+         materialization (along with non-DLL items). Only WasmNativeBuildOutput items are
+         already per-project (Computed). -->
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' != 'true'">
+      <_WebcilAssetsCandidates Include="@(_WasmNativeBuildOutputCandidates)" />
+      <_WasmFrameworkCandidates Include="@(_WasmNonDllNonNativeCandidates)" />
+      <_WasmFrameworkCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' == '.dll'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -386,7 +498,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Computed"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -405,7 +517,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Framework"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -429,12 +541,12 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Materialized framework assets must be visible to referencing projects (e.g. Blazor WASM
          hosted scenarios where the server project serves the client's framework files).
          UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject and CopyToOutputDirectory
-         to Never. Override both: AssetMode=All so assets flow through project references, and
-         CopyToOutputDirectory=PreserveNewest so they are copied from the intermediate materialized
-         path (obj/fx/{SourceId}/) to bin/wwwroot/_framework/ at build time. -->
+         to Never. Override AssetMode=All so assets flow through project references. Framework
+         files stay in obj/fx/{SourceId}/ and are served by the static web assets middleware
+         during dotnet run — they are not copied to bin/wwwroot/_framework/ at build time. -->
     <ItemGroup>
       <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
-        AssetMode="All" CopyToOutputDirectory="PreserveNewest" />
+        AssetMode="All" CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)" />
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
@@ -476,15 +588,47 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable">
+  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable" Condition="'$(EnableDiagnostics)' == 'true'">
+    <PropertyGroup>
+      <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval></_WasmPerfInstInterval>
+      <_WasmPerfInstDescriptor></_WasmPerfInstDescriptor>
+      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' != 'false'">eventpipe,callspec=$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
+      <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all' and '$(UseMonoRuntime)' == 'false'">*</_WasmPerfInstFilter>
+      <_WasmPerfInstDescriptor Condition="'$(_WasmPerfInstFilter)' != '' and '$(UseMonoRuntime)' == 'false'">$(_WasmPerfInstFilter)</_WasmPerfInstDescriptor>
+    </PropertyGroup>
     <ItemGroup>
-      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
+      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != '' and '$(EnableDiagnostics)' == 'true'"/>
     </ItemGroup>
   </Target>
 
-  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
+  <!-- CoreCLR: transform WasmPerformanceInstrumentation into separate env vars for MethodSet filter + interval.
+       Mono handles this in WasmApp.Common.targets with "eventpipe,callspec=" prefix, so skip for Mono.
+       UseMonoRuntime=false indicates CoreCLR; when true or unset, Mono workload targets handle it. -->
+  <Target Name="_AddWasmPerformanceInstrumentationEnvironmentVariables"
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(WasmPerformanceInstrumentation)' != ''">
     <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
+      <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval></_WasmPerfInstInterval>
+      <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+      <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+      <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
+    </PropertyGroup>
+    <ItemGroup>
+      <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
+      <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Resolve static web asset endpoints for the boot JSON generation.
+       This target always runs to compute JS module candidates and wasm asset endpoints. -->
+  <Target Name="_ResolveBuildWasmBootJsonEndpoints" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
+    <PropertyGroup>
+      <_WasmBuildBootJsonPath>$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmBootConfigFileName)))</_WasmBuildBootJsonPath>
       <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
       <_WasmBuildApplicationEnvironmentName Condition="'$(_WasmBuildApplicationEnvironmentName)' == ''">Development</_WasmBuildApplicationEnvironmentName>
     </PropertyGroup>
@@ -536,6 +680,38 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpoints" />
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
+  </Target>
+
+  <!-- Write a property stamp file that captures non-file parameters passed to GenerateWasmBootJson.
+       This ensures property-only changes (e.g., WasmDebugLevel, environment name) invalidate the
+       incremental boot JSON target. WriteOnlyWhenDifferent preserves the timestamp when unchanged. -->
+  <Target Name="_WriteWasmBootJsonBuildPropertyStamp"
+    DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
+    <PropertyGroup>
+      <_WasmBootJsonBuildStampContent>$(WasmDebugLevel)|$(_WasmBuildApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonBuildStampContent>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)wasm-bootjson-build.stamp"
+      Lines="$(_WasmBootJsonBuildStampContent)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-build.stamp" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Write the boot JSON file for the build.
+       This target is incremental: when all inputs (assemblies, static web assets, VFS files,
+       config files, extensions, property stamp) are older than the output, the target is skipped.
+       Skipped during nested publish: the nested publish runs the full Build chain which would
+       create the boot JSON without VFS entries (LinkContentToWwwroot is skipped). If we wrote
+       it here, the outer build's Inputs/Outputs check would find the stale output and skip
+       regeneration, leaving the final boot JSON without VFS content files. -->
+  <Target Name="_WriteBuildWasmBootJsonFile"
+    DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
+    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
+    Outputs="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
@@ -575,9 +751,36 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp" />
     </ItemGroup>
 
+    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps
+         when the output content is unchanged. We need a current timestamp on something for
+         MSBuild's Inputs/Outputs check to correctly skip this target on subsequent builds,
+         but we must NOT touch $(_WasmBuildBootJsonPath) itself: that file is a source for the
+         StaticWebAssets compression pipeline (GZipCompress/BrotliCompress) and the copy-to-
+         output target (_BuildCopyStaticWebAssetsPreserveNewest). Bumping its timestamp on every
+         build defeats their incrementality checks and breaks `dotnet build -question` (see
+         dotnet/runtime#129280, dotnet/runtime#124729, dotnet/aspnetcore#63207).
+         Touch a separate stamp file that is the target's Outputs= so MSBuild sees a current
+         output timestamp without affecting downstream consumers of the boot JSON. -->
+    <Touch Files="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Define the boot config file as a static web asset and create endpoints.
+       This target always runs to ensure items are populated even when _WriteBuildWasmBootJsonFile is skipped.
+       Skipped during nested publish (same reason as _WriteBuildWasmBootJsonFile). -->
+  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile"
+    Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+
     <ItemGroup>
+      <!-- Track boot JSON for clean operations even when _WriteBuildWasmBootJsonFile was skipped -->
+      <FileWrites Include="$(_WasmBuildBootJsonPath)" />
+      <!-- Track the completion stamp here too: when _WriteBuildWasmBootJsonFile is skipped on
+           incremental builds, its in-body FileWrites entries aren't populated. Without this,
+           `dotnet clean` would leave the stamp behind and the next build would (correctly)
+           see it as up-to-date even though the boot JSON was just cleaned. -->
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp" />
       <_WasmBuildBootConfigCandidate
         Include="$(_WasmBuildBootJsonPath)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
@@ -753,7 +956,13 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- remove the original assemblies -->
       <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" />
-      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+      <!-- Exclude items marked CopyToPublishDirectory=Never. These are build-only assets
+           (e.g., HotReload dll) that should not participate in publish. Without this filter,
+           ComputeWasmPublishAssets matches them by filename and replaces Framework-materialized
+           per-project assets with the raw SDK-path original, causing duplicate Identity crashes
+           in multi-client hosted publish scenarios. -->
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)"
+        Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
     </ItemGroup>
 
     <ComputeWasmPublishAssets
@@ -787,7 +996,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
@@ -847,7 +1056,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorExtensionsCandidate Include="@(BlazorPublishExtension->'%(FullPath)')">
         <SourceId>$(PackageId)</SourceId>
         <SourceType>Computed</SourceType>
-        <ContentRoot>$(PublishDir)wwwroot</ContentRoot>
+        <ContentRoot>$([MSBuild]::NormalizeDirectory($(PublishDir), 'wwwroot'))</ContentRoot>
         <BasePath>$(StaticWebAssetBasePath)</BasePath>
         <RelativePath>%(BlazorPublishExtension.RelativePath)</RelativePath>
         <AssetKind>Publish</AssetKind>
@@ -889,8 +1098,12 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
 
     <ItemGroup>
+      <!-- Track boot JSON for clean operations even when GeneratePublishWasmBootJson was skipped -->
+      <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
+      <!-- Track the completion stamp here too: see _GenerateBuildWasmBootJson for rationale. -->
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp" />
       <_WasmPublishBootConfigCandidate
-        Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
+        Include="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
 
       <_WasmPublishBootConfigFingerprintPatterns Include="WasmBootConfigFiles" Pattern="*%(_WasmPublishBootConfigCandidate.Extension)" Expression="#[.{fingerprint}]!" Condition="'$(_WasmFingerprintBootConfig)' == 'true'" />
@@ -909,7 +1122,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssetTraitValue="manifest"
       CopyToOutputDirectory="Never"
       CopyToPublishDirectory="PreserveNewest"
-      ContentRoot="$(PublishDir)wwwroot"
+      ContentRoot="$([MSBuild]::NormalizeDirectory($(PublishDir), 'wwwroot'))"
       BasePath="$(StaticWebAssetBasePath)"
     >
       <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
@@ -926,7 +1139,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   </Target>
 
-  <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
+  <!-- Resolve inputs for the publish boot JSON target.
+       This target always runs to compute publish asset items and endpoints. -->
+  <Target Name="_ResolvePublishWasmBootJsonInputs" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmPublishApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmPublishApplicationEnvironmentName>
     </PropertyGroup>
@@ -959,6 +1174,31 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpointsForPublish" />
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
+  </Target>
+
+  <!-- Write a property stamp for publish boot JSON incrementalism. Same approach as build stamp. -->
+  <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
+    DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
+    <PropertyGroup>
+      <_WasmBootJsonPublishStampContent>$(WasmDebugLevel)|$(_WasmPublishApplicationEnvironmentName)|$(_BlazorCacheBootResources)|$(InvariantGlobalization)|$(_LoadCustomIcuData)|$(_BlazorWebAssemblyLoadAllGlobalizationData)|$(_BlazorWebAssemblyJiterpreter)|$(_BlazorWebAssemblyRuntimeOptions)|$(RunAOTCompilation)|$(WasmEnableThreads)|$(_WasmFingerprintAssets)|$(_WasmBundlerFriendlyBootConfig)|$(WasmProfilers)|$(TargetFrameworkVersion)|$(DiagnosticPorts)|$(StaticWebAssetStandaloneHosting)|@(WasmEnvironmentVariable->'%(Identity)=%(Value)')|@(BlazorWebAssemblyLazyLoad)|@(WasmModuleAfterConfigLoaded)|@(WasmModuleAfterRuntimeReady)|$(WasmTestExitOnUnhandledError)|$(WasmTestAppendElementOnExit)|$(WasmTestLogExitCode)|$(WasmTestAsyncFlushOnExit)|$(WasmTestForwardConsole)</_WasmBootJsonPublishStampContent>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
+      Lines="$(_WasmBootJsonPublishStampContent)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-publish.stamp" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Write the publish boot JSON file.
+       This target is incremental: when all inputs (assemblies, publish assets, config files,
+       extensions, property stamp) are older than the output, the target is skipped. -->
+  <Target Name="GeneratePublishWasmBootJson"
+    DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp"
+    Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
+    Outputs="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
@@ -969,7 +1209,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugLevel="$(WasmDebugLevel)"
       CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForPublish)"
-      OutputPath="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
+      OutputPath="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
@@ -997,8 +1237,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       />
 
     <ItemGroup>
-      <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
+      <FileWrites Include="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))" />
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp" />
     </ItemGroup>
+
+    <!-- See _WriteBuildWasmBootJsonFile for rationale: touch a separate stamp file rather than
+         the boot JSON itself to avoid cascading mtime bumps into downstream StaticWebAssets
+         compression / copy targets. -->
+    <Touch Files="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp" AlwaysCreate="true" />
 
   </Target>
 
@@ -1043,5 +1289,12 @@ Copyright (c) .NET Foundation. All rights reserved.
           DestinationFiles="$(_DotnetTypesDestPath)"
           Condition="Exists('$(_DotnetTypesSourcePath)')"
           SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
+  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
+    <ItemGroup>
+      <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="all" />
+    </ItemGroup>
   </Target>
 </Project>

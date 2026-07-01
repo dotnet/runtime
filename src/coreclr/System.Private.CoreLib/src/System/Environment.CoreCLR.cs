@@ -12,10 +12,10 @@ namespace System
 {
     public static partial class Environment
     {
-        public static extern int CurrentManagedThreadId
+        public static int CurrentManagedThreadId
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Threading.ManagedThreadId.Current;
         }
 
         // Terminates this process with the given exit code.
@@ -87,7 +87,6 @@ namespace System
         [DoesNotReturn]
         private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
 
-        [RequiresUnsafe]
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {
             string[] commandLineArgs = new string[argc + 1];
@@ -105,7 +104,6 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InitializeCommandLineArgs(char* exePath, int argc, char** argv, string[]* pResult, Exception* pException)
         {
             try
@@ -122,7 +120,6 @@ namespace System
         internal static partial int GetProcessorCount();
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetResourceString(char* pKey, string* pResult, Exception* pException)
         {
             try
@@ -132,6 +129,58 @@ namespace System
             catch (Exception ex)
             {
                 *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool captureException, Exception* pException)
+        {
+            try
+            {
+                if (pArgument is not null)
+                {
+                    string[]? argument = *pArgument;
+
+                    if (pReturnValue is not null)
+                    {
+                        *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
+                    }
+                    else
+                    {
+                        ((delegate*<string[]?, void>)entryPoint)(argument);
+                    }
+                }
+                else
+                {
+                    if (pReturnValue is not null)
+                    {
+                        *pReturnValue = ((delegate*<int>)entryPoint)();
+                    }
+                    else
+                    {
+                        ((delegate*<void>)entryPoint)();
+                    }
+                }
+            }
+            catch (Exception ex) when (captureException)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        internal static unsafe int ExecuteInDefaultAppDomain(IntPtr entryPoint, char* pArgument, Exception* pException)
+        {
+            try
+            {
+                return ((delegate*<string?, int>)entryPoint)(pArgument is not null ? new string(pArgument) : null);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
             }
         }
     }

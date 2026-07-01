@@ -487,19 +487,6 @@ void CodeGen::instGen(instruction ins)
 {
 
     GetEmitter()->emitIns(ins);
-
-#ifdef TARGET_XARCH
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // A workaround necessitated by limitations of emitter
-    // if we are scheduled to insert a nop here, we have to delay it
-    // hopefully we have not missed any other prefix instructions or places
-    // they could be inserted
-    if (ins == INS_lock && GetEmitter()->emitNextNop == 0)
-    {
-        GetEmitter()->emitNextNop = 1;
-    }
-#endif // PSEUDORANDOM_NOP_INSERTION
-#endif
 }
 
 /*****************************************************************************
@@ -610,6 +597,14 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
     return (instInfo[ins] & INS_FLAGS_HasPseudoName) != 0;
 }
 #endif // TARGET_XARCH
+
+#if defined(TARGET_WASM)
+uint8_t CodeGenInterface::instSimdElemSize(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+    return static_cast<uint8_t>((instInfo[ins] >> InstInfoElemSizeShift));
+}
+#endif
 
 /*****************************************************************************
  *
@@ -1980,45 +1975,19 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
         //
         if (srcInReg)
         {
-            if (varTypeIsUnsigned(srcType))
+            if (!varTypeIsSmall(srcType))
             {
-                if (varTypeIsByte(srcType))
-                {
-                    ins = INS_uxtb;
-                }
-                else if (varTypeIsShort(srcType))
-                {
-                    ins = INS_uxth;
-                }
-                else
-                {
-                    // A mov Rd, Rm instruction performs the zero extend
-                    // for the upper 32 bits when the size is EA_4BYTE
-
-                    ins = INS_mov;
-                }
+                // An int/long value already fills its register width, so a plain mov suffices;
+                // for int the EA_4BYTE mov also zero extends the unused upper bits.
+                ins = INS_mov;
+            }
+            else if (varTypeIsUnsigned(srcType))
+            {
+                ins = varTypeIsByte(srcType) ? INS_uxtb : INS_uxth;
             }
             else
             {
-                if (varTypeIsByte(srcType))
-                {
-                    ins = INS_sxtb;
-                }
-                else if (varTypeIsShort(srcType))
-                {
-                    ins = INS_sxth;
-                }
-                else
-                {
-                    if (srcType == TYP_INT)
-                    {
-                        ins = INS_sxtw;
-                    }
-                    else
-                    {
-                        ins = INS_mov;
-                    }
-                }
+                ins = varTypeIsByte(srcType) ? INS_sxtb : INS_sxth;
             }
         }
         else
@@ -2121,6 +2090,10 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             return INS_f32_load;
         case TYP_DOUBLE:
             return INS_f64_load;
+#if defined(FEATURE_SIMD)
+        case TYP_SIMD16:
+            return INS_v128_load;
+#endif
         default:
             NYI_WASM("ins_Load");
             return INS_none;
@@ -2530,6 +2503,10 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             return INS_f32_store;
         case TYP_DOUBLE:
             return INS_f64_store;
+#if defined(FEATURE_SIMD)
+        case TYP_SIMD16:
+            return INS_v128_store;
+#endif
         default:
             NYI_WASM("ins_Store");
             return INS_none;

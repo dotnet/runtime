@@ -71,6 +71,7 @@ namespace System.Security.Cryptography
         public AesCcm(byte[] key) { }
         public AesCcm(System.ReadOnlySpan<byte> key) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
@@ -144,6 +145,7 @@ namespace System.Security.Cryptography
         public AesGcm(System.ReadOnlySpan<byte> key) { }
         public AesGcm(System.ReadOnlySpan<byte> key, int tagSizeInBytes) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public int? TagSizeInBytes { get { throw null; } }
@@ -187,7 +189,7 @@ namespace System.Security.Cryptography
         public AsnEncodedData(string oid, byte[] rawData) { }
         public AsnEncodedData(string oid, System.ReadOnlySpan<byte> rawData) { }
         public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
-        public byte[] RawData { get { throw null; } set { } }
+        public byte[] RawData { get { throw null; } [System.ObsoleteAttribute("Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead.", DiagnosticId="SYSLIB0065", UrlFormat="https://aka.ms/dotnet-warnings/{0}")] set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public virtual string Format(bool multiLine) { throw null; }
     }
@@ -500,6 +502,7 @@ namespace System.Security.Cryptography
         private object _dummy;
         private int _dummyPrimitive;
         public CngProperty(string name, byte[]? value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
+        public CngProperty(string name, System.ReadOnlySpan<byte> value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
         public readonly string Name { get { throw null; } }
         public readonly System.Security.Cryptography.CngPropertyOptions Options { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -675,6 +678,7 @@ namespace System.Security.Cryptography
     }
     public static partial class CryptographicOperations
     {
+        public static bool FixedTimeEquals(System.ReadOnlySpan<byte> source, byte value) { throw null; }
         public static bool FixedTimeEquals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
         public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] source) { throw null; }
         public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.IO.Stream source) { throw null; }
@@ -2033,17 +2037,11 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportMLDsaPrivateKey() { throw null; }
         public void ExportMLDsaPrivateKey(System.Span<byte> destination) { }
@@ -2054,32 +2052,19 @@ namespace System.Security.Cryptography
         public byte[] ExportMLDsaPublicKey() { throw null; }
         public void ExportMLDsaPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportMLDsaPublicKeyCore(System.Span<byte> destination);
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportPkcs8PrivateKey() { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportPkcs8PrivateKeyPem() { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
         public static System.Security.Cryptography.MLDsa GenerateKey(System.Security.Cryptography.MLDsaAlgorithm algorithm) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<byte> passwordBytes) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> password) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportFromEncryptedPem(string source, byte[] passwordBytes) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportFromEncryptedPem(string source, string password) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportFromPem(System.ReadOnlySpan<char> source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportFromPem(string source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPrivateKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPrivateKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
@@ -2087,13 +2072,9 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLDsa ImportMLDsaPrivateSeed(System.Security.Cryptography.MLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPublicKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPublicKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportPkcs8PrivateKey(byte[] source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.MLDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
         public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
         public void SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { }
@@ -2112,17 +2093,11 @@ namespace System.Security.Cryptography
         public void SignPreHash(System.ReadOnlySpan<byte> hash, System.Span<byte> destination, string hashAlgorithmOid, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected abstract void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination);
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool VerifyData(byte[] data, byte[] signature, byte[]? context = null) { throw null; }
         public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
@@ -2895,6 +2870,12 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenKeyFromProvider(System.Collections.Generic.IEnumerable<string> providerNames, string keyUri, string? propertyQuery = null) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyId) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -3468,6 +3449,91 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
+    public abstract partial class X25519DiffieHellman : System.IDisposable
+    {
+        public const int PrivateKeySizeInBytes = 32;
+        public const int PublicKeySizeInBytes = 32;
+        public const int SecretAgreementSizeInBytes = 32;
+        protected X25519DiffieHellman() { }
+        public static bool IsSupported { get { throw null; } }
+        public byte[] DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty) { throw null; }
+        public byte[] DeriveRawSecretAgreement(byte[] otherPartyPublicKey) { throw null; }
+        public void DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        public void DeriveRawSecretAgreement(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination) { }
+        protected abstract void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination);
+        protected abstract void DeriveRawSecretAgreementCore(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination);
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] ExportPrivateKey() { throw null; }
+        public void ExportPrivateKey(System.Span<byte> destination) { }
+        protected abstract void ExportPrivateKeyCore(System.Span<byte> destination);
+        public byte[] ExportPublicKey() { throw null; }
+        public void ExportPublicKey(System.Span<byte> destination) { }
+        protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
+        public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public byte[] ExportPkcs8PrivateKey() { throw null; }
+        public string ExportPkcs8PrivateKeyPem() { throw null; }
+        public byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        public string ExportSubjectPublicKeyInfoPem() { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<byte> passwordBytes) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> password) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(string source, byte[] passwordBytes) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(string source, string password) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromPem(System.ReadOnlySpan<char> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromPem(string source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPkcs8PrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
+        public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public sealed partial class X25519DiffieHellmanCng : System.Security.Cryptography.X25519DiffieHellman
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public X25519DiffieHellmanCng(System.Security.Cryptography.CngKey key) { }
+        protected override void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        protected override void DeriveRawSecretAgreementCore(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void ExportPrivateKeyCore(System.Span<byte> destination) { }
+        protected override void ExportPublicKeyCore(System.Span<byte> destination) { }
+        public System.Security.Cryptography.CngKey GetKey() { throw null; }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public sealed partial class X25519DiffieHellmanOpenSsl : System.Security.Cryptography.X25519DiffieHellman
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public X25519DiffieHellmanOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
+        protected override void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        protected override void DeriveRawSecretAgreementCore(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination) { }
+        protected override void Dispose(bool disposing) { }
+        public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
+        protected override void ExportPrivateKeyCore(System.Span<byte> destination) { }
+        protected override void ExportPublicKeyCore(System.Span<byte> destination) { }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
 }
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -3593,7 +3659,6 @@ namespace System.Security.Cryptography.X509Certificates
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
         public PublicKey(System.Security.Cryptography.CompositeMLDsa key) { }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
         public PublicKey(System.Security.Cryptography.MLDsa key) { }
         public PublicKey(System.Security.Cryptography.MLKem key) { }
         public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData? parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
@@ -3617,7 +3682,6 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPublicKey() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.ECDsa? GetECDsaPublicKey() { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.MLDsa? GetMLDsaPublicKey() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -3657,6 +3721,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddDnsName(string dnsName) { }
         public void AddEmailAddress(string emailAddress) { }
         public void AddIpAddress(System.Net.IPAddress ipAddress) { }
+        public void AddRegisteredId(string registeredId) { }
         public void AddUri(System.Uri uri) { }
         public void AddUserPrincipalName(string upn) { }
         public System.Security.Cryptography.X509Certificates.X509Extension Build(bool critical = false) { throw null; }
@@ -3938,7 +4003,6 @@ namespace System.Security.Cryptography.X509Certificates
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(System.Security.Cryptography.CompositeMLDsa privateKey) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(System.Security.Cryptography.ECDiffieHellman privateKey) { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(System.Security.Cryptography.MLDsa privateKey) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(System.Security.Cryptography.MLKem privateKey) { throw null; }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -3966,9 +4030,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.CompositeMLDsa? GetCompositeMLDsaPublicKey() { throw null; }
         public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPrivateKey() { throw null; }
         public System.Security.Cryptography.ECDiffieHellman? GetECDiffieHellmanPublicKey() { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.MLDsa? GetMLDsaPrivateKey() { throw null; }
-        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.MLDsa? GetMLDsaPublicKey() { throw null; }
         public System.Security.Cryptography.MLKem? GetMLKemPrivateKey() { throw null; }
         public System.Security.Cryptography.MLKem? GetMLKemPublicKey() { throw null; }

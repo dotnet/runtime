@@ -31,14 +31,21 @@ internal struct AMD64Context : IPlatformContext
     }
 
     public readonly uint Size => 0x4d0;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+
+    public readonly int StackPointerRegister => 4;
 
     public TargetPointer StackPointer
     {
         readonly get => new(Rsp);
         set => Rsp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Rip);
         set => Rip = value.Value;
@@ -48,6 +55,8 @@ internal struct AMD64Context : IPlatformContext
         readonly get => new(Rbp);
         set => Rbp = value.Value;
     }
+
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
 
     public void Unwind(Target target)
     {

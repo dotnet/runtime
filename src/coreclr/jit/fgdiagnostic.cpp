@@ -341,7 +341,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsIntOrI())
     {
-        fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+        fprintf(fgxFile, "%d", tree->AsIntCon()->IconValue());
     }
     else if (tree->IsCnsFltOrDbl())
     {
@@ -2752,10 +2752,21 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // Async resumptions are allowed to jump into try blocks at any point. They
     // are introduced late enough that the invariant of single entry is no
     // longer necessary.
+    // TODO: revoke for wasm after SCC
     if (blockPred->HasFlag(BBF_ASYNC_RESUMPTION))
     {
         return true;
     }
+
+#if defined(TARGET_WASM)
+    // Catch resumptions are allowed to jump into try blocks at any point.
+    // They are transients during Wasm control flow restructuring.
+    // TODO: revoke after SCC
+    if (m_compiler->fgWasmHasCatchResumptions && blockPred->HasFlag(BBF_CATCH_RESUMPTION))
+    {
+        return true;
+    }
+#endif // defined(TARGET_WASM)
 
     JITDUMP("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
@@ -2952,7 +2963,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         // If try regions are no longer contiguous we lose this invariant.
 
-        if (m_compiler->fgTrysNotContiguous())
+        if (!m_compiler->fgTrysContiguous())
         {
             JITDUMP("Tolerating, since try regions are not contiguous\n");
             return true;
@@ -3929,6 +3940,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 //    - all statements in the block are linked correctly
 //    - check statements flags
 //    - check nodes gtNext and gtPrev values, if the node list is threaded
+//    - no invalid statements given the block kind
 //
 // Arguments:
 //    block  - the block to check statements in
@@ -3966,11 +3978,25 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         // For each statement check that the exception flags are properly set
-
         noway_assert(stmt->GetRootNode());
-
         fgDebugCheckFlags(stmt->GetRootNode(), block);
         fgDebugCheckTypes(stmt->GetRootNode());
+
+        // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
+        if (!block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree = stmt->GetRootNode();
+            assert(!tree->OperIs(GT_RETURN) && "GT_RETURN node found in a block that isn't BBJ_RETURN");
+        }
+
+        // If the block contains a GT_RETURN node it should be last.
+        if (block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree          = stmt->GetRootNode();
+            bool     isReturn      = tree->OperIs(GT_RETURN);
+            bool     isNotLastStmt = stmt->GetNextStmt() != nullptr;
+            assert(!(isReturn && isNotLastStmt) && "GT_RETURN node found that is not the last statement in the block");
+        }
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()
@@ -4796,6 +4822,10 @@ void Compiler::fgDebugCheckLoops()
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
             assert(!bbIsTryBeg(loop->GetHeader()));
+
+            // After canonicalization a natural loop has a single backedge.
+            //
+            assert(loop->BackEdges().size() == 1);
 
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())

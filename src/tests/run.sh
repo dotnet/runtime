@@ -45,6 +45,7 @@ function print_usage {
     echo '  --node                           : Runs the tests with NodeJS (wasm only)'
     echo '  --runner-filter=<pattern>        : Only run merged runners whose name contains <pattern>'
     echo '  --active-issue-details           : Show per-issue breakdown of ActiveIssue-skipped tests'
+    echo '  --tree=<path>                    : Only run tests under the specified subtree (e.g. JIT/Regression)'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -77,9 +78,16 @@ tieringtest=0
 nativeaottest=0
 runnerFilter=
 activeIssueDetails=
+treeSubtree=
 
 for i in "$@"
 do
+    if [[ "$__nextTreeArg" == "1" ]]; then
+        treeSubtree="$i"
+        __nextTreeArg=
+        continue
+    fi
+
     case $i in
         -h|--help)
             print_usage
@@ -192,6 +200,15 @@ do
             ;;
         --runnativeaottests)
             nativeaottest=1
+            ;;
+        --tree=*|-tree=*)
+            treeSubtree=${i#*=}
+            ;;
+        --tree:*|-tree:*)
+            treeSubtree=${i#*:}
+            ;;
+        --tree|-tree)
+            __nextTreeArg=1
             ;;
         --interpreter)
             export RunInterpreter=1
@@ -333,6 +350,11 @@ fi
 
 if [[ -n "$activeIssueDetails" ]]; then
     runtestPyArguments+=("--active_issue_details")
+fi
+
+if [[ -n "$treeSubtree" ]]; then
+    echo "Running tests under subtree   : ${treeSubtree}"
+    runtestPyArguments+=("--tree" "$treeSubtree")
 fi
 
 # Default to python3 if it is installed

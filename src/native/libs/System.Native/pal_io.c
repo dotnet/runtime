@@ -198,8 +198,15 @@ c_static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW);
 #if HAVE_IN_EXCL_UNLINK
 c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 #endif // HAVE_IN_EXCL_UNLINK
+c_static_assert(PAL_IN_MOVE_SELF == IN_MOVE_SELF);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
+
+// Validate that our UserFlags enum values match the platform, since
+// SystemNative_LChflags and SystemNative_FChflags pass them directly to the OS.
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
+c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
+#endif
 
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
@@ -231,7 +238,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 #endif
 
 #if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
-    dst->UserFlags = ((src->st_flags & UF_HIDDEN) == UF_HIDDEN) ? PAL_UF_HIDDEN : 0;
+    dst->UserFlags = (uint32_t)src->st_flags;
 #else
     dst->UserFlags = 0;
 #endif
@@ -337,6 +344,9 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
         errno = EINVAL;
         return -1;
     }
+
+    // Prevent terminal devices from becoming the controlling terminal of this process.
+    flags |= O_NOCTTY;
 
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
@@ -560,6 +570,15 @@ int32_t SystemNative_CloseDir(DIR* dir)
     }
 
     return result;
+}
+
+int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void)
+{
+#if HAVE_PIPE2
+    return 1;
+#else
+    return 0;
+#endif
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
@@ -1716,7 +1735,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
     if (fsStatDevRes == -1) return 0;
 
     return FileSystemNameSupportsLocking(info.fsh_name);
-#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1726,7 +1745,7 @@ uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperati
 
 #if HAVE_STATFS_FSTYPENAME
     return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     unsigned int f_type = (unsigned int)statfsArgs.f_type;
     if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
         f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
@@ -1846,8 +1865,8 @@ int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* thread
 
     lwpsinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;
@@ -1894,8 +1913,8 @@ int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint
 
     psinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;

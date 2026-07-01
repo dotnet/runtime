@@ -327,7 +327,7 @@ jobs:
       targetRid: linux-x64
       platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: debian-13-gcc15-amd64
+      container: debian-13-gcc16-amd64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -534,6 +534,25 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         hostedOs: windows
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Browser WebAssembly on macOS
+
+- ${{ if containsValue(parameters.platforms, 'browser_wasm_mac') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: browser_wasm_mac
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      jobParameters:
+        hostedOs: osx
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}

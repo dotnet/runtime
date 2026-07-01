@@ -101,6 +101,7 @@ parser.add_argument("--il_link", dest="il_link", action="store_true", default=Fa
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
+parser.add_argument("--use_managed_ilasm", dest="use_managed_ilasm", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
@@ -116,6 +117,7 @@ parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="s
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+parser.add_argument("--tree", dest="tree", default=None, help="Only run tests under the specified subtree (e.g. JIT/Regression).")
 
 ################################################################################
 # Globals
@@ -580,6 +582,9 @@ def call_msbuild(args):
     if args.runner_filter:
         command += ["/p:RunnerFilter=%s" % args.runner_filter]
 
+    if args.tree:
+        command += ["/p:TestSubtree=%s" % args.tree]
+
     print(" ".join(command))
 
     sys.stdout.flush() # flush output before creating sub-process
@@ -611,7 +616,7 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "osx" or "freebsd":
+    if host_os == "osx" or "freebsd" or "openbsd":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
     elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
@@ -687,7 +692,7 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "osx" or "freebsd":
+    if host_os == "osx" or "freebsd" or "openbsd":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
     elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
@@ -829,6 +834,15 @@ def run_tests(args,
         print("Running ILasm round trip.")
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
+
+    if args.use_managed_ilasm:
+        if not args.ilasmroundtrip:
+            print("--use_managed_ilasm implies --ilasmroundtrip; enabling ilasm round trip.")
+            print("Setting RunningIlasmRoundTrip=1")
+            os.environ["RunningIlasmRoundTrip"] = "1"
+        print("Using managed ILasm for round trip.")
+        print("Setting IlasmRoundTripUseManagedIlasm=1")
+        os.environ["IlasmRoundTripUseManagedIlasm"] = "1"
 
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
@@ -980,6 +994,11 @@ def setup_args(args):
                               "Error setting ilasmroundtrip")
 
     coreclr_setup_args.verify(args,
+                              "use_managed_ilasm",
+                              lambda arg: True,
+                              "Error setting use_managed_ilasm")
+
+    coreclr_setup_args.verify(args,
                               "large_version_bubble",
                               lambda arg: True,
                               "Error setting large_version_bubble")
@@ -1023,6 +1042,11 @@ def setup_args(args):
                               "run_nativeaot_tests",
                               lambda arg: True,
                               "Error setting run_nativeaot_tests")
+
+    coreclr_setup_args.verify(args,
+                              "tree",
+                              lambda arg: True,
+                              "Error setting tree")
 
     coreclr_setup_args.verify(args,
                               "interpreter",
