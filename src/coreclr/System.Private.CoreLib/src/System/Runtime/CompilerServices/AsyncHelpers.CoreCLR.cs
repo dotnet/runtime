@@ -22,28 +22,31 @@ namespace System.Runtime.CompilerServices
         ContinueOnThreadPool = 1 << 0,
         ContinueOnCapturedSynchronizationContext = 1 << 1,
         ContinueOnCapturedTaskScheduler = 1 << 2,
+        // This is an await of valueTask.AsTask()
+        // (e.g. valueTask.AsTask() returned from an async version)
+        ValueTaskAdaptedToTask = 1 << 3,
 
-        AllContinuationFlags = ContinueOnThreadPool | ContinueOnCapturedSynchronizationContext | ContinueOnCapturedTaskScheduler,
+        AllContinuationFlags = ContinueOnThreadPool | ContinueOnCapturedSynchronizationContext | ContinueOnCapturedTaskScheduler | ValueTaskAdaptedToTask,
 
         // The flags encode where in the continuation various members are stored.
         // If the encoded index is 0, it means no such member is present.
         // Otherwise the exact offset of the member is computed as
         //   DataOffset + (index - 1) * PointerSize
         //
-        ExecutionContextIndexFirstBit = 3,
+        ExecutionContextIndexFirstBit = 4,
         ExecutionContextIndexNumBits = 2,
 
-        ContinuationContextIndexFirstBit = 5,
+        ContinuationContextIndexFirstBit = 6,
         ContinuationContextIndexNumBits = 2,
 
-        ExceptionIndexFirstBit = 7,
+        ExceptionIndexFirstBit = 8,
         ExceptionIndexNumBits = 3,
 
         // For JIT, the continuation stores space for every possible type of
         // async callee's result. We need to represent the offset to each of
         // these, so we allocate the rest of the bits for this.
-        ResultIndexFirstBit = 10,
-        ResultIndexNumBits = 22,
+        ResultIndexFirstBit = 11,
+        ResultIndexNumBits = 21,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h

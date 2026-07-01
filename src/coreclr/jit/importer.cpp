@@ -5861,70 +5861,12 @@ const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
     {
         // ConfigureAwait on a ValueTask will start with stloc/ldloca.
         // The longest encoding should fit in the length we asked for above.
-        uint8_t     maybeStLoc = getU1LittleEndian(nextOpcode);
-        const BYTE* nextTmp    = nextOpcode + 1;
-        int         stlocNum   = -1;
-        switch (maybeStLoc)
+        unsigned stlocNum = BAD_VAR_NUM;
+        if (impMatchStlocLdloca(&nextOpcode, codeEndp, &stlocNum))
         {
-            case CEE_STLOC_0:
-                stlocNum = 0;
-                break;
-            case CEE_STLOC_1:
-                stlocNum = 1;
-                break;
-            case CEE_STLOC_2:
-                stlocNum = 2;
-                break;
-            case CEE_STLOC_3:
-                stlocNum = 3;
-                break;
-            case CEE_STLOC_S:
-                stlocNum = getU1LittleEndian(nextTmp);
-                nextTmp += 1;
-                break;
-            case CEE_PREFIX1:
-                uint16_t maybeStLocWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
-                nextTmp += 1;
-                if (maybeStLocWide == CEE_STLOC)
-                {
-                    stlocNum = getU2LittleEndian(nextTmp);
-                    nextTmp += 2;
-                }
-                break;
-        }
-
-        // if it was a stloc, check for matching ldloca
-        if (stlocNum != -1)
-        {
-            uint8_t maybeLdLoca = getU1LittleEndian(nextTmp);
-            nextTmp += 1;
-            int ldlocaNum = -1;
-            switch (maybeLdLoca)
-            {
-                case CEE_LDLOCA_S:
-                    ldlocaNum = getU1LittleEndian(nextTmp);
-                    nextTmp += 1;
-                    break;
-                case CEE_PREFIX1:
-                    uint16_t maybeLdLocaWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
-                    nextTmp += 1;
-                    if (maybeLdLocaWide == CEE_LDLOCA)
-                    {
-                        ldlocaNum = getU2LittleEndian(nextTmp);
-                        nextTmp += 2;
-                    }
-                    break;
-            }
-
-            // no ldloca or locals did not match, this can't be await pattern
-            if (stlocNum != ldlocaNum)
-                return nullptr;
-
             // locals match, but no space for ConfigureAwait call, this can't be await pattern
-            if (nextTmp + 2 * (1 + sizeof(mdToken)) >= codeEndp)
+            if (nextOpcode + 2 * (1 + sizeof(mdToken)) >= codeEndp)
                 return nullptr;
-
-            nextOpcode = nextTmp;
         }
 
         uint8_t nextOp     = getU1LittleEndian(nextOpcode);
@@ -5983,6 +5925,216 @@ checkForAwait:
     }
 
     return nullptr;
+}
+
+bool Compiler::impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum)
+{
+    *lclNum          = BAD_VAR_NUM;
+    const BYTE* code = *codeAddr;
+    if (code >= codeEndp)
+    {
+        return false;
+    }
+
+    unsigned matchedLclNum = BAD_VAR_NUM;
+    BYTE     opcode        = *code;
+    code++;
+    if ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3))
+    {
+        matchedLclNum = opcode - CEE_STLOC_0;
+    }
+    else if (opcode == CEE_STLOC_S)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        matchedLclNum = *code;
+        code++;
+    }
+    else if (opcode == CEE_PREFIX1)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        uint16_t maybeStLocWide = (uint16_t)256 + *code;
+        code++;
+        if ((maybeStLocWide != CEE_STLOC) || (code + 1 >= codeEndp))
+        {
+            return false;
+        }
+
+        matchedLclNum = getU2LittleEndian(code);
+        code += 2;
+    }
+    else
+    {
+        return false;
+    }
+
+    if (code >= codeEndp)
+    {
+        return false;
+    }
+
+    opcode = *code;
+    code++;
+    if (opcode == CEE_LDLOCA_S)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        if (*code != matchedLclNum)
+        {
+            return false;
+        }
+
+        code++;
+    }
+    else if (opcode == CEE_PREFIX1)
+    {
+        if (code >= codeEndp)
+        {
+            return false;
+        }
+
+        uint16_t maybeLdLocaWide = (uint16_t)256 + *code;
+        code++;
+        if ((maybeLdLocaWide != CEE_LDLOCA) || (code + 1 >= codeEndp))
+        {
+            return false;
+        }
+
+        if (getU2LittleEndian(code) != matchedLclNum)
+        {
+            return false;
+        }
+        code += 2;
+    }
+    else
+    {
+        return false;
+    }
+
+    *lclNum   = matchedLclNum;
+    *codeAddr = code;
+    return true;
+}
+
+bool Compiler::impMatchAsyncVersionTailCall(const BYTE* codeAddr,
+                                            const BYTE* codeEndp,
+                                            int*        prefixFlags,
+                                            int*        numBytesMatched)
+{
+    const BYTE* nextOpcode = codeAddr;
+
+    // Look for call; ret
+    if ((nextOpcode < codeEndp) && (*nextOpcode == CEE_RET))
+    {
+        *numBytesMatched = 1;
+        return true;
+    }
+
+    // Look for call; stloc X; ldloca X; call AsTask(); ret
+    unsigned vtLclNum;
+    if (impMatchStlocLdloca(&nextOpcode, codeEndp, &vtLclNum))
+    {
+        if ((nextOpcode >= codeEndp) || (*nextOpcode != CEE_CALL))
+        {
+            return false;
+        }
+
+        nextOpcode++;
+
+        // Quick check for ret before we resolve the token
+        if (nextOpcode + sizeof(mdToken) >= codeEndp || (*(nextOpcode + sizeof(mdToken)) != CEE_RET))
+        {
+            return false;
+        }
+
+        CORINFO_RESOLVED_TOKEN callTok;
+        impResolveToken(nextOpcode, &callTok, CORINFO_TOKENKIND_Method);
+
+        if (!eeIsIntrinsic(callTok.hMethod))
+        {
+            return false;
+        }
+
+        NamedIntrinsic ni = lookupNamedIntrinsic(callTok.hMethod);
+        if ((ni != NI_System_Threading_Tasks_ValueTask_AsTask) && (ni != NI_System_Threading_Tasks_ValueTask_1_AsTask))
+        {
+            return false;
+        }
+
+        nextOpcode += sizeof(mdToken);
+        nextOpcode++; // matched CEE_RET already
+
+        JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
+        *prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
+        *numBytesMatched = (int)(nextOpcode - codeAddr);
+        return true;
+    }
+
+    // Look for call; newobj ValueTask; ret
+    if ((nextOpcode < codeEndp) && (*nextOpcode == CEE_NEWOBJ))
+    {
+        nextOpcode++;
+
+        // Quick check for ret before we resolve the token
+        if (nextOpcode + sizeof(mdToken) >= codeEndp || (*(nextOpcode + sizeof(mdToken)) != CEE_RET))
+        {
+            return false;
+        }
+
+        CORINFO_RESOLVED_TOKEN ctorTok;
+        impResolveToken(nextOpcode, &ctorTok, CORINFO_TOKENKIND_NewObj);
+
+        if (!eeIsIntrinsic(ctorTok.hMethod))
+        {
+            return false;
+        }
+
+        NamedIntrinsic ni = lookupNamedIntrinsic(ctorTok.hMethod);
+        if ((ni != NI_System_Threading_Tasks_ValueTask__ctor) && (ni != NI_System_Threading_Tasks_ValueTask_1__ctor))
+        {
+            return false;
+        }
+
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(ctorTok.hMethod, &sig);
+
+        if (sig.numArgs != 1)
+        {
+            return false;
+        }
+
+        if (info.compRetType != TYP_VOID)
+        {
+            assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
+            CORINFO_CLASS_HANDLE paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+            if (paramClass == sig.sigInst.classInst[0])
+            {
+                // This is "class ValueTask<T> { ValueTask(T value) }" overload
+                // which is not what we are looking for. That one gets folded
+                // by impFoldAwaitedTopOfStack.
+                return false;
+            }
+        }
+
+        nextOpcode += sizeof(mdToken);
+        nextOpcode++; // matched CEE_RET already
+
+        JITDUMP("Matched \"return new ValueTask(TaskReturn())\"\n");
+        *numBytesMatched = (int)(nextOpcode - codeAddr);
+        return true;
+    }
+
+    return false;
 }
 
 /*****************************************************************************
@@ -9052,17 +9204,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (compIsAsyncVersion())
                     {
-                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET) &&
-                            ((info.compFlags & CORINFO_FLG_SYNCH) == 0))
+                        int numBytesMatched;
+                        if (((info.compFlags & CORINFO_FLG_SYNCH) == 0) &&
+                            impMatchAsyncVersionTailCall(codeAddr + sz, codeEndp, &prefixFlags, &numBytesMatched))
                         {
                             JITDUMP("\nRecognized tail-call in async version\n");
-                            awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
                             isAwait     = true;
+                            awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
                             prefixFlags |= PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT;
-
-                            // Consume the ret opcode. Note `codeAddr` points at the unconsumed token;
+                            // Consume number of bytes matched. Note `codeAddr` points at the unconsumed token;
                             // the main loop will still do `codeAddr += sz` (token size) after this case.
-                            codeAddrAfterMatch = codeAddr + 1;
+                            codeAddrAfterMatch = codeAddr + numBytesMatched;
                         }
                     }
                     else
