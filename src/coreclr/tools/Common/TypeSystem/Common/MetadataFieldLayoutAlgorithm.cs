@@ -308,12 +308,37 @@ namespace Internal.TypeSystem
         {
         }
 
+        private static LayoutInt GetParentLayoutStartingOffset(MetadataType type)
+        {
+            if (type.IsValueType || !type.HasBaseType)
+            {
+                return LayoutInt.Indeterminate;
+            }
+
+            MetadataType baseType = type.BaseType;
+            if (!baseType.IsAutoLayout)
+            {
+                if (baseType.IsZeroSizedReferenceType)
+                {
+                    return LayoutInt.Zero;
+                }
+
+                return baseType.InstanceByteCountUnaligned - type.Context.Target.LayoutPointerSize;
+            }
+
+            return LayoutInt.Indeterminate;
+        }
+
         protected ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields, in ClassLayoutMetadata layoutMetadata)
         {
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
+            LayoutInt cumulativeInstanceFieldPos = GetParentLayoutStartingOffset(type);
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
+            if (cumulativeInstanceFieldPos.IsIndeterminate)
+            {
+                cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
+            }
             LayoutInt instanceSize = cumulativeInstanceFieldPos + offsetBias;
 
             int packingSize = ComputePackingSize(type, layoutMetadata);
@@ -426,8 +451,12 @@ namespace Internal.TypeSystem
             // For types inheriting from another type, field offsets continue on from where they left off
             // For reference types, we calculate field alignment as if the address after the method table pointer
             // has offset 0 (on 32-bit platforms, this location is guaranteed to be 8-aligned).
+            LayoutInt cumulativeInstanceFieldPos = GetParentLayoutStartingOffset(type);
             LayoutInt offsetBias = !type.IsValueType ? new LayoutInt(type.Context.Target.PointerSize) : LayoutInt.Zero;
-            LayoutInt cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
+            if (cumulativeInstanceFieldPos.IsIndeterminate)
+            {
+                cumulativeInstanceFieldPos = CalculateFieldBaseOffset(type, requiresAlign8: false, requiresAlignedBase: false) - offsetBias;
+            }
 
             LayoutInt largestAlignmentRequirement = LayoutInt.One;
             int fieldOrdinal = 0;
