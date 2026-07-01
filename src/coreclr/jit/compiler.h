@@ -72,22 +72,24 @@ inline var_types genActualType(T value);
  *                  Forward declarations
  */
 
-struct InfoHdr;            // defined in GCInfo.h
-struct escapeMapping_t;    // defined in fgdiagnostic.cpp
-class emitter;             // defined in emit.h
-struct ShadowParamVarInfo; // defined in GSChecks.cpp
-struct InitVarDscInfo;     // defined in registerargconvention.h
-class FgStack;             // defined in fgbasic.cpp
-class Instrumentor;        // defined in fgprofile.cpp
-class SpanningTreeVisitor; // defined in fgprofile.cpp
-class CSE_DataFlow;        // defined in optcse.cpp
-struct CSEdsc;             // defined in optcse.h
-class CSE_HeuristicCommon; // defined in optcse.h
-class OptBoolsDsc;         // defined in optimizer.cpp
-struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
-class ProfileSynthesis;    // defined in profilesynthesis.h
-class PerLoopInfo;         // defined in inductionvariableopts.cpp
-class RangeCheck;          // defined in rangecheck.h
+struct InfoHdr;              // defined in GCInfo.h
+struct escapeMapping_t;      // defined in fgdiagnostic.cpp
+class emitter;               // defined in emit.h
+struct ShadowParamVarInfo;   // defined in GSChecks.cpp
+struct InitVarDscInfo;       // defined in registerargconvention.h
+class FgStack;               // defined in fgbasic.cpp
+class Instrumentor;          // defined in fgprofile.cpp
+class SpanningTreeVisitor;   // defined in fgprofile.cpp
+class CSE_DataFlow;          // defined in optcse.cpp
+struct CSEdsc;               // defined in optcse.h
+class CSE_HeuristicCommon;   // defined in optcse.h
+class OptBoolsDsc;           // defined in optimizer.cpp
+struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
+class ProfileSynthesis;      // defined in profilesynthesis.h
+class PerLoopInfo;           // defined in inductionvariableopts.cpp
+class IncrementalSsaBuilder; // defined in ssabuilder.h
+struct UseDefLocation;       // defined in ssabuilder.h
+class RangeCheck;            // defined in rangecheck.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
 enum class WasmValueType : unsigned;
@@ -8247,6 +8249,22 @@ public:
 
     bool optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
     bool optIsUpdateOfIVWithoutSideEffects(GenTree* tree, unsigned lclNum);
+
+    bool           optReplaceUnenregisterablePrimaryIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
+    bool           optPrimaryIVStaysEHLiveAfterReplacement(unsigned lclNum, FlowGraphNaturalLoop* loop);
+    GenTreePhiArg* optGetPrimaryIVEntryArg(FlowGraphNaturalLoop* loop, Statement* headerPhiStmt);
+    bool           optTryReplaceUnenregisterablePrimaryIV(FlowGraphNaturalLoop* loop,
+                                                          unsigned              lclNum,
+                                                          Statement*            headerPhiStmt,
+                                                          PerLoopInfo*          loopLocals);
+    bool           optCanReplaceUnenregisterablePrimaryIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
+    bool           optPrimaryIVCanCrossHandler(unsigned lclNum, EHblkDsc* eh, FlowGraphNaturalLoop* loop);
+    void           optReplaceIVUses(unsigned                    lclNum,
+                                    unsigned                    newLclNum,
+                                    BasicBlock*                 block,
+                                    Statement*                  stmt,
+                                    IncrementalSsaBuilder*      ssaBuilder,
+                                    ArrayStack<UseDefLocation>* uses);
 
     // Redundant branch opts
     //
