@@ -339,8 +339,8 @@ int __cdecl main(int argc, char* argv[])
 
     // The method context reader handles skipping any unrequested method contexts
     // Used in conjunction with an MCI file, it does a lot less work...
-    MethodContextReader* reader =
-        new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes, o.indexCount, o.hash, o.offset, o.increment);
+    MethodContextReader* reader = new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes.data(),
+                                                          o.indexCount, o.hash, o.offset, o.increment);
     if (!reader->isValid())
     {
         return (int)SpmiResult::GeneralFailure;
@@ -499,17 +499,16 @@ int __cdecl main(int argc, char* argv[])
                 {
                     char buff[500];
                     sprintf_s(buff, 500, "%s-%d.mc", o.reproName, reader->GetMethodContextIndex());
-                    HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-                    if (hFileOut == INVALID_HANDLE_VALUE)
+                    FILE* fpOut = fopen(buff, "wb");
+                    if (fpOut == NULL)
                     {
-                        LogError("Failed to open output '%s'. GetLastError()=%u", buff, GetLastError());
+                        LogError("Failed to open output '%s'. errno=%d", buff, errno);
                         return (int)SpmiResult::GeneralFailure;
                     }
-                    mc->saveToFile(hFileOut);
-                    if (CloseHandle(hFileOut) == 0)
+                    mc->saveToFile(fpOut);
+                    if (fclose(fpOut) != 0)
                     {
-                        LogError("CloseHandle for output file failed. GetLastError()=%u", GetLastError());
+                        LogError("CloseHandle for output file failed. errno=%d", errno);
                         return (int)SpmiResult::GeneralFailure;
                     }
                     LogInfo("Wrote out repro to '%s'", buff);
