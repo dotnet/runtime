@@ -389,6 +389,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/129832 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/FunctionalTests/Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
+
     <!-- https://github.com/dotnet/runtime/issues/119380 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
                       Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'" />
@@ -651,6 +654,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/129832 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/FunctionalTests/Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
