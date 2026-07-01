@@ -1553,7 +1553,7 @@ namespace Internal.JitInterface
                         ref *info->pResolvedTokenVirtualMethod,
                         null,
                         originalImpl,
-                        MethodBeingCompiled,
+                        HandleToObject(info->callerMethod),
                         ref info->instParamLookup);
 #else
                     // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT

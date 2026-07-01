@@ -8906,7 +8906,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 info->pResolvedTokenVirtualMethod,
                 nullptr,
                 pInstantiatedMD,
-                m_pMethodBeingCompiled,
+                GetMethod(info->callerMethod),
                 &info->instParamLookup);
         }
 
@@ -8941,7 +8941,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
         {
-            if (info->pResolvedTokenVirtualMethod == nullptr)
+            if (info->pResolvedTokenVirtualMethod == nullptr || info->callerMethod == nullptr)
             {
                 info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                 return false;
@@ -8952,7 +8952,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 info->pResolvedTokenVirtualMethod,
                 nullptr,
                 pInstArgMD,
-                m_pMethodBeingCompiled,
+                GetMethod(info->callerMethod),
                 &info->instParamLookup);
         }
 

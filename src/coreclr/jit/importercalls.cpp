@@ -9294,6 +9294,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
     dvInfo.virtualMethod               = baseMethod;
+    dvInfo.callerMethod                = info.compMethodHnd;
     dvInfo.objClass                    = objClass;
     dvInfo.context                     = *pContextHandle;
     dvInfo.detail                      = CORINFO_DEVIRTUALIZATION_UNKNOWN;
