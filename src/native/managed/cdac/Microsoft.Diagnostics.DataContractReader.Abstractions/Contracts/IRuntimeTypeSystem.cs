@@ -152,6 +152,20 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
     bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
+    // Returns true and sets elementSize when the type is classified as a
+    // Homogeneous Floating-point / Vector Aggregate:
+    //   4  -> R4 (float) HFA
+    //   8  -> R8 (double) HFA, Vector64<T>, or System.Numerics.Vector<T> at 8 bytes
+    //   16 -> Vector128<T>, or System.Numerics.Vector<T> at 16 bytes
+    // Returns false (and elementSize=0) on any non-HFA / non-HVA type, or on
+    // any target architecture that doesn't define FEATURE_HFA (so callers
+    // don't need to gate themselves). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
+    bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
+    {
+        elementSize = 0;
+        throw new NotImplementedException();
+    }
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own

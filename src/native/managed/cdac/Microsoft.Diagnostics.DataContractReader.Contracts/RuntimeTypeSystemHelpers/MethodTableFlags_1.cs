@@ -28,6 +28,13 @@ internal struct MethodTableFlags_1
 
         IsByRefLike = 0x00001000,                        // value type that may contain managed pointers (e.g. Span<T>, ReadOnlySpan<T>)
 
+        // ARM / ARM64 (FEATURE_HFA): set after layout when CheckForHFA classifies
+        // the type as a Homogeneous Floating-point Aggregate. On UNIX_AMD64_ABI
+        // runtimes the same 0x800 bit is reused as enum_flag_IsRegStructPassed,
+        // so callers MUST gate on the target architecture before treating this
+        // bit as HFA. The cDAC gates at CdacTypeHandle.IsHomogeneousAggregate.
+        IsHFA = 0x00000800,
+
         StringArrayValues =
             GenericsMask_NonGeneric |
             0,
@@ -62,6 +69,7 @@ internal struct MethodTableFlags_1
     internal enum WFLAGS2_ENUM : uint
     {
         DynamicStatics = 0x0002,
+        IsIntrinsicType = 0x0020,
     }
 
     public uint MTFlags { get; init; }
@@ -110,9 +118,11 @@ internal struct MethodTableFlags_1
     public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
     public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
     public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+    public bool IsIntrinsicType => GetFlag(WFLAGS2_ENUM.IsIntrinsicType) != 0;
     public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     public bool IsSharedByGenericInstantiations => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_SharedInst);
     public bool IsByRefLike => TestFlagWithMask(WFLAGS_LOW.IsByRefLike, WFLAGS_LOW.IsByRefLike);
+    public bool IsHFA => TestFlagWithMask(WFLAGS_LOW.IsHFA, WFLAGS_LOW.IsHFA);
     public bool ContainsGenericVariables => GetFlag(WFLAGS_HIGH.ContainsGenericVariables) != 0;
 
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)

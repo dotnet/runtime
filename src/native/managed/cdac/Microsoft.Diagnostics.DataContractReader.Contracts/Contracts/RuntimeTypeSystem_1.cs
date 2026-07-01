@@ -614,6 +614,148 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
     public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+
+    // True iff the target runtime is built with FEATURE_HFA (ARM, ARM64). On
+    // non-FEATURE_HFA targets the enum_flag_IsHFA bit (0x800 in MTFlags low)
+    // is either unused (Windows x64, x86) or repurposed (UNIX_AMD64_ABI uses
+    // it as enum_flag_IsRegStructPassed); reading the bit as HFA is incorrect.
+    private bool IsFeatureHfaTarget()
+    {
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        return arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64;
+    }
+
+    // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. At each
+    // recursion level first checks for an intrinsic Vector shape via
+    // GetVectorHFAElementSize (covers Vector64<T>/Vector128<T>/
+    // System.Numerics.Vector<T>); if that doesn't match, walks the first
+    // instance field. R4 -> 4, R8 -> 8, ValueType -> recurse via
+    // GetFieldDescApproxTypeHandle. Returns false when the type is not
+    // classified as an HFA / HVA, or when the target arch doesn't define
+    // FEATURE_HFA.
+    public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
+    {
+        elementSize = 0;
+
+        if (!IsFeatureHfaTarget())
+            return false;
+
+        if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsHFA)
+            return false;
+
+        TypeHandle current = typeHandle;
+        for (int depth = 0; depth < 16; depth++)
+        {
+            int vectorElem = GetVectorHFAElementSize(current);
+            if (vectorElem != 0)
+            {
+                elementSize = vectorElem;
+                return true;
+            }
+
+            TargetPointer firstField = TargetPointer.Null;
+            foreach (TargetPointer fd in ((IRuntimeTypeSystem)this).GetFieldDescList(current))
+            {
+                if (((IRuntimeTypeSystem)this).IsFieldDescStatic(fd))
+                    continue;
+                firstField = fd;
+                break;
+            }
+
+            if (firstField == TargetPointer.Null)
+                return false;
+
+            CorElementType ft = ((IRuntimeTypeSystem)this).GetFieldDescType(firstField);
+            switch (ft)
+            {
+                case CorElementType.R4:
+                    elementSize = 4;
+                    return true;
+                case CorElementType.R8:
+                    elementSize = 8;
+                    return true;
+                case CorElementType.ValueType:
+                    current = ((IRuntimeTypeSystem)this).GetFieldDescApproxTypeHandle(firstField);
+                    if (current.IsNull)
+                        return false;
+                    continue;
+                default:
+                    return false;
+            }
+        }
+
+        return false;
+    }
+
+    // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Detects
+    // intrinsic Vector shapes by TypeDef name+namespace, then validates the
+    // generic argument is a numerical primitive.
+    private int GetVectorHFAElementSize(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsIntrinsicType)
+            return 0;
+
+        TargetPointer modulePtr = ((IRuntimeTypeSystem)this).GetModule(typeHandle);
+        if (modulePtr == TargetPointer.Null)
+            return 0;
+
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (reader is null)
+            return 0;
+
+        uint typeDefToken = ((IRuntimeTypeSystem)this).GetTypeDefToken(typeHandle);
+        if (EcmaMetadataUtils.GetRowId(typeDefToken) == 0)
+            return 0;
+
+        TypeDefinitionHandle tdHandle = (TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken);
+        TypeDefinition typeDef = reader.GetTypeDefinition(tdHandle);
+        string className = reader.GetString(typeDef.Name);
+        string namespaceName = reader.GetString(typeDef.Namespace);
+
+        int elemSize;
+        if (className == "Vector`1" && namespaceName == "System.Numerics")
+        {
+            // System.Numerics.Vector<T> is size-dependent.
+            elemSize = ((IRuntimeTypeSystem)this).GetNumInstanceFieldBytes(typeHandle) switch
+            {
+                8 => 8,
+                16 => 16,
+                _ => 0,
+            };
+        }
+        else if (className == "Vector128`1" && namespaceName == "System.Runtime.Intrinsics")
+        {
+            elemSize = 16;
+        }
+        else if (className == "Vector64`1" && namespaceName == "System.Runtime.Intrinsics")
+        {
+            elemSize = 8;
+        }
+        else
+        {
+            return 0;
+        }
+
+        if (elemSize == 0)
+            return 0;
+
+        // T must be a numerical primitive (CorIsNumericalType in cor.h): I1..R8, I, U.
+        ReadOnlySpan<TypeHandle> instantiation = ((IRuntimeTypeSystem)this).GetInstantiation(typeHandle);
+        if (instantiation.Length < 1)
+            return 0;
+
+        CorElementType argType = ((IRuntimeTypeSystem)this).GetSignatureCorElementType(instantiation[0]);
+        if (!IsCorNumericalType(argType))
+            return 0;
+
+        return elemSize;
+    }
+
+    private static bool IsCorNumericalType(CorElementType t)
+        => (t >= CorElementType.I1 && t <= CorElementType.R8)
+            || t == CorElementType.I
+            || t == CorElementType.U;
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
     public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null

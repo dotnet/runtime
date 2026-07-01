@@ -111,21 +111,23 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public bool IsHomogeneousAggregate()
     {
-        if (Arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
-            return false;
-
-        // TODO(hfa): Implement HFA detection for ARM/ARM64.
-        // See crossgen2 TypeHandle.IsHomogeneousAggregate().
-        throw new NotImplementedException("HFA detection for ARM/ARM64 is not yet implemented.");
+        // Rts.TryGetHFAElementSize handles target-arch gating internally.
+        return !_typeHandle.IsNull && Rts.TryGetHFAElementSize(_typeHandle, out _);
     }
 
     public int GetHomogeneousAggregateElementSize()
     {
-        if (Arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
-            return 0;
+        // ARM has no HVA; the element is either float (4) or double (8), and
+        // RequiresAlign8 mirrors the runtime's choice between the two (set by
+        // CheckForHFA based on the resolved HFA element type). The shortcut
+        // avoids a field walk.
+        if (Arch == RuntimeInfoArchitecture.Arm)
+            return RequiresAlign8() ? 8 : 4;
 
-        // TODO(hfa): Return 4 for float HFA, 8 for double HFA, 16 for Vector128 HFA.
-        throw new NotImplementedException("HFA element size for ARM/ARM64 is not yet implemented.");
+        // ARM64 (and any future FEATURE_HFA target) uses the full classifier
+        // in RTS, which also detects HVA shapes (Vector64<T>/Vector128<T>/
+        // System.Numerics.Vector<T>). Returns 0 on non-FEATURE_HFA targets.
+        return _typeHandle.IsNull || !Rts.TryGetHFAElementSize(_typeHandle, out int size) ? 0 : size;
     }
 
     public void GetSystemVAmd64PassStructInRegisterDescriptor(out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor)
