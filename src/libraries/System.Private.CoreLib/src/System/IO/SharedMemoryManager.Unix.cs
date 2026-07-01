@@ -706,7 +706,7 @@ namespace System.IO
 
             bool RetryOnTransientPermissionFailure()
             {
-                if (!createIfNotExist || transientRetryCount >= TransientRetryCount)
+                if (transientRetryCount >= TransientRetryCount)
                 {
                     return false;
                 }
