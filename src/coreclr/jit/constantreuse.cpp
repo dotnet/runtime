@@ -466,10 +466,9 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
         }
 
         // Reusing all-true masks can introduce a live predicate temp. Avoid
-        // short live ranges and live ranges that cross calls, as these are
-        // likely to spill and are generally worse than rematerializing ptrue.
-        if (IsAllTrueMaskCandidate(group.candidate) &&
-            ((group.count < 3) || group.crossesCall || (block->HasFlag(BBF_BACKWARD_JUMP) && (group.count < 6))))
+        // live ranges that cross calls, as these are likely to spill and are
+        // generally worse than rematerializing ptrue.
+        if (IsAllTrueMaskCandidate(group.candidate) && group.crossesCall)
         {
             continue;
         }
