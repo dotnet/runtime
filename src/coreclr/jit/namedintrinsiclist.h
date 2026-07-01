@@ -272,6 +272,10 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_PopCount,
     NI_PRIMITIVE_RotateLeft,
     NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_SaturateToInt8,
+    NI_PRIMITIVE_SaturateToInt16,
+    NI_PRIMITIVE_SaturateToUInt8,
+    NI_PRIMITIVE_SaturateToUInt16,
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,

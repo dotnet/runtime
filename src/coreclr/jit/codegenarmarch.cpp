@@ -759,6 +759,32 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
 
+#ifdef TARGET_ARM
+        case NI_PRIMITIVE_SaturateToInt8:
+            // SSAT Rd, #8, Rn - saturate int32 to signed 8-bit range [-128, 127]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToInt16:
+            // SSAT Rd, #16, Rn - saturate int32 to signed 16-bit range [-32768, 32767]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt8:
+            // USAT Rd, #8, Rn - saturate int32 to unsigned 8-bit range [0, 255]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt16:
+            // USAT Rd, #16, Rn - saturate int32 to unsigned 16-bit range [0, 65535]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+#endif // TARGET_ARM
+
 #if defined(FEATURE_SIMD)
             // The handling is a bit more complex so genSimdUpperSave/Restore
             // handles genConsumeOperands and genProduceReg
