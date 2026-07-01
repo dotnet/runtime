@@ -1,0 +1,77 @@
+name: ci-failure-scan-feedback-eval
+description: Quality gate for the CI feedback (meta) prompt (maintainer /ci-feedback eval).
+
+defaults:
+  judge_model: claude-opus-4.6
+  model: claude-opus-4.6
+  runs: 1
+  timeout: 12m
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: feedback-from-recorded-run
+    environment:
+      files:
+        - src: fixtures/feedback
+          dest: .github/workflows/evals/fixtures/feedback
+        - src: ../ci-failure-scan-feedback.md
+          dest: .github/workflows/ci-failure-scan-feedback.md
+        - src: ../ci-failure-scan.md
+          dest: .github/workflows/ci-failure-scan.md
+        - src: ../ci-failure-fix.md
+          dest: .github/workflows/ci-failure-fix.md
+        - src: ../shared/create-kbe.instructions.md
+          dest: .github/workflows/shared/create-kbe.instructions.md
+    constraints:
+      max_tokens: 400000
+      max_turns: 80
+      max_duration: 12m
+    prompt: |
+      You are being evaluated as the CI Scanner Feedback (meta) workflow. Follow `.github/workflows/ci-failure-scan-feedback.md`.
+
+      **Operate entirely against the staged offline fixtures** under `.github/workflows/evals/fixtures/feedback/` — do not hit the network:
+
+      - `recent-runs.json` — recent scanner/fixer run summaries.
+      - `artifacts.json` — the KBE issues / [ci-fix] PRs / comments.
+      - `maintainer-comments.json` — MEMBER/OWNER feedback on those artifacts.
+
+      **Write the regenerated KPI tracker as a single markdown document at `./out/kpi-tracker.md`.** Open with `# CI Scanner KPI Tracker`, then a markdown table of the tracked KPIs with a quantified value per KPI (e.g. precision, false-positive rate, KBEs filed, fixes merged) and a column comparing this period against the previous one so the trend is visible. When a concrete triggering signal (a real maintainer comment or a rubric miss in the fixtures) justifies a change, add a `## Proposed prompt edits` section that quotes the signal and states the one edit it drives, restricted to .github/workflows/ci-failure-scan.md, .github/workflows/ci-failure-fix.md, and/or .github/workflows/shared/create-kbe.instructions.md; otherwise omit that section. Keep scratch under /tmp.
+
+    graders:
+      - type: file-matches
+        config:
+          path: "out/kpi-tracker.md"
+          pattern: '(?m)^\s*\|[^\n]*\d[^\n]*\|'
+
+      - type: file-matches
+        config:
+          path: "out/kpi-tracker.md"
+          pattern: '(?i)(precision|false[ -]?positive|accuracy|\brate\b|%)'
+
+      - type: file-matches
+        config:
+          path: "out/kpi-tracker.md"
+          pattern: '(?i)(previous|prior|last\s+run|trend|since|over time|\bweek\b|delta|change)'
+
+      - type: prompt
+        name: edits-are-grounded
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/kpi-tracker.md against the staged feedback fixtures. Pass ONLY if every proposed prompt edit quotes and is driven by a concrete triggering signal that exists in the fixtures (a real maintainer comment or a demonstrable rubric miss) rather than an invented one. If the fixtures contain no actionable signal, pass iff the document proposes NO edits. Otherwise fail.
+
+      - type: prompt
+        name: full-snapshot
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/kpi-tracker.md. Pass ONLY if the tracker is a complete regenerated snapshot of the tracked KPIs with quantified values, not a partial diff or a note that omits the standing metrics. Otherwise fail.
+
+      - type: prompt
+        name: closes-the-loop
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/kpi-tracker.md. Pass ONLY if the tracker turns the period's signals into a concrete, trackable adjustment — each KPI is comparable against the previous period so a future run can tell whether the change helped, and any proposed edit is specific enough to reinforce (verifiable next period), not a vague aspiration. Otherwise fail.
