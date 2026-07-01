@@ -151,6 +151,26 @@ public class GenericVirtualMethodTests
         RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnStringType<string>();
     }
 
+    [Fact]
+    public static void RuntimeLookupInlining()
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Type Inlinee<TInlinee>(IDevirtTarget target)
+        {
+            return target.GetTypeArg<TInlinee>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type Caller<TWrong, TRight>()
+        {
+            return Inlinee<TRight>(new DevirtTarget());
+        }
+
+        Type actual = Caller<string, object>();
+        Type expected = typeof(object);
+        Assert.Equal(expected, actual);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ValidateCaller(string scenarioName, IBaseMethodCaller caller)
     {
@@ -490,6 +510,17 @@ internal struct DerivedStructStringNoRecursion : IBase<string>
     {
         return Foo<U>;
     }
+}
+
+interface IDevirtTarget
+{
+    Type GetTypeArg<T>();
+}
+
+sealed class DevirtTarget : IDevirtTarget
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public Type GetTypeArg<T>() => typeof(T);
 }
 
 internal static class IconContextBridgeNonShared<TMethod>
