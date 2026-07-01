@@ -2346,7 +2346,7 @@ void MethodContext::recGetParameterlessCtor(CORINFO_CLASS_HANDLE targetType, COR
 
 void MethodContext::dmpGetParameterlessCtor(DWORDLONG key, DLD value)
 {
-    printf("GetParameterlessCtor key class-%016" PRIX64 ", value res-%lu meth-%016" PRIX64 "", key, value.B, value.A);
+    printf("GetParameterlessCtor key class-%016" PRIX64 ", value res-%u meth-%016" PRIX64 "", key, value.B, value.A);
 }
 
 bool MethodContext::repGetParameterlessCtor(CORINFO_CLASS_HANDLE targetType, CORINFO_METHOD_HANDLE* ctor)
