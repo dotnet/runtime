@@ -384,42 +384,13 @@ void FinalizerThread::RaiseShutdownEvents()
         hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
     }
 #else // TARGET_WASM
-    // WASI/Browser have no separate finalizer thread (single-threaded WASI;
-    // browser defers via the JS event loop). At shutdown the JS loop isn't
-    // going to tick again and on WASI there is no loop at all, so any
-    // finalizers queued during process exit would silently leak. Pump them
-    // here on the shutdown thread: force a blocking GC so newly-unreachable
-    // finalizable objects move to the F-reachable queue, then run one
-    // worker iteration to drain GC::RunFinalizers. Repeat once to handle
-    // resurrected objects or finalizers that themselves drop references.
-    //
-    // We're called from ceemain.cpp under GCX_PREEMP; KickOff sets up the
-    // managed thread context and switches modes as needed (this is the
-    // same path SystemJS_ExecuteFinalizationCallback uses for runtime ticks).
-    EX_TRY
-    {
-        for (int pass = 0; pass < 2; pass++)
-        {
-            INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
-            {
-                GCX_COOP();
-                // Mirror GCInterface_Collect: real GC dispatch needs the
-                // current thread in cooperative mode so its stack is scanned
-                // and the heap is suspended consistently.
-                GCHeapUtilities::GetGCHeap()->GarbageCollect(
-                    /*generation*/ -1, /*low_memory_p*/ false, collection_blocking);
-                ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
-            }
-            UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
-        }
-    }
-    EX_CATCH
-    {
-        // Swallow exceptions raised during shutdown finalization: we're past
-        // the point where the app can observe them, and we still want the
-        // remainder of EE shutdown to proceed.
-    }
-    EX_END_CATCH
+    // No dedicated finalizer thread on WASM. Consistent with the rest of
+    // CoreCLR, finalizers queued during process exit are not pumped here
+    // and leak by design (.NET Framework's shutdown-time finalizer pump
+    // was removed years ago). During normal execution, EnableFinalization
+    // schedules the WasiEventLoop pump via WasiFinalizer_Schedule and
+    // GC.WaitForPendingFinalizers drains the queue synchronously on the
+    // calling thread in FinalizerThreadWait below.
 #endif // !TARGET_WASM
 }
 
@@ -888,7 +859,9 @@ void FinalizerThread::FinalizerThreadWait()
     // caller that has just issued GC.Collect() and is now blocked in
     // GC.WaitForPendingFinalizers() needs the queue drained before this QCall
     // returns. Single-threaded WASI has no host event loop at all, so this is
-    // the only drain path outside of the shutdown hook in RaiseShutdownEvents.
+    // the only synchronous drain path -- finalizers queued during process
+    // exit are not pumped (see RaiseShutdownEvents above) and leak by design,
+    // matching the behavior of every other CoreCLR target.
     //
     // Re-entry guard: a user finalizer may itself call
     // GC.WaitForPendingFinalizers() (transitively via Dispose or similar).
