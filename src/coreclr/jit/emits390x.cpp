@@ -8502,7 +8502,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
             id->idIns(ins);
             id->idInsOpt(INS_OPTS_NONE);
             id->idReg1(REG_R14);
-            id->idReg2(ireg);
 
             // Set target address
             id->idAddr()->iiaAddr = (BYTE*)addr;
@@ -10411,7 +10410,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_sllg:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
-            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), REG_NA, imm & 0x3f);
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), REG_R0, imm & 0x3f);
             break;
 
         case INS_nihf:

@@ -644,11 +644,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LCL_ADDR:
             genCodeForLclAddr(treeNode->AsLclFld());
             break;
-//
-//        case GT_LCL_FLD:
-//            genCodeForLclFld(treeNode->AsLclFld());
-//            break;
-//
+
+        case GT_LCL_FLD:
+            genCodeForLclFld(treeNode->AsLclFld());
+            break;
+
         case GT_LCL_VAR:
             genCodeForLclVar(treeNode->AsLclVar());
             break;
@@ -677,10 +677,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genLeaInstruction(treeNode->AsAddrMode());
             break;
 
-//        case GT_INDEX_ADDR:
-//            genCodeForIndexAddr(treeNode->AsIndexAddr());
-//            break;
-//
+        case GT_INDEX_ADDR:
+            genCodeForIndexAddr(treeNode->AsIndexAddr());
+            break;
+
         case GT_IND:
             genCodeForIndir(treeNode->AsIndir());
             break;
@@ -1595,8 +1595,6 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 //
 void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert(tree->OperIs(GT_LCL_FLD));
 
     var_types targetType = tree->TypeGet();
@@ -1610,31 +1608,6 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-#ifdef TARGET_ARM
-    if (tree->IsOffsetMisaligned())
-    {
-        // Arm supports unaligned access only for integer types,
-        // load the floating data as 1 or 2 integer registers and convert them to float.
-        regNumber addr = internalRegisters.Extract(tree);
-        emit->emitIns_R_S(INS_lea, EA_PTRSIZE, addr, varNum, offs);
-
-        if (targetType == TYP_FLOAT)
-        {
-            regNumber floatAsInt = internalRegisters.GetSingle(tree);
-            emit->emitIns_R_R(INS_ldr, EA_4BYTE, floatAsInt, addr);
-            emit->emitIns_Mov(INS_vmov_i2f, EA_4BYTE, targetReg, floatAsInt, /* canSkip */ false);
-        }
-        else
-        {
-            regNumber halfdoubleAsInt1 = internalRegisters.Extract(tree);
-            regNumber halfdoubleAsInt2 = internalRegisters.GetSingle(tree);
-            emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, halfdoubleAsInt1, addr, 0);
-            emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, halfdoubleAsInt2, addr, 4);
-            emit->emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, targetReg, halfdoubleAsInt1, halfdoubleAsInt2);
-        }
-    }
-    else
-#endif // TARGET_ARM
     {
         emitAttr    attr = emitActualTypeSize(targetType);
         instruction ins  = ins_Load(targetType);
@@ -1642,7 +1615,6 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     }
 
     genProduceReg(tree);
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -1653,8 +1625,6 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 {
-    _ASSERTE(!"NYI");
-#if 0
     GenTree* const base  = node->Arr();
     GenTree* const index = node->Index();
 
@@ -1666,82 +1636,55 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // base register is multiply-used. As such, we need to mark the base register as containing a GC pointer until
     // we are finished generating the code for this node.
 
-    gcInfo.gcMarkRegPtrVal(base->GetRegNum(), base->TypeGet());
+    //gcInfo.gcMarkRegPtrVal(base->GetRegNum(), base->TypeGet());
     assert(!varTypeIsGC(index->TypeGet()));
 
     // The index is never contained, even if it is a constant.
     assert(index->isUsedFromReg());
 
     const regNumber tmpReg = internalRegisters.Extract(node);
-
     regNumber indexReg = index->GetRegNum();
 
+    DWORD scale;
+    BitScanForward(&scale, node->gtElemSize);
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
     {
-        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, base->GetRegNum(), node->gtLenOffset);
-        GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), indexReg, tmpReg);
-        genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
-    }
-
-    // Can we use a ScaledAdd instruction?
-    //
-    if (isPow2(node->gtElemSize) && (node->gtElemSize <= 32768))
-    {
-        DWORD scale;
-        BitScanForward(&scale, node->gtElemSize);
-
-#ifdef TARGET_ARM64
-        if (!index->TypeIs(TYP_I_IMPL))
+        GetEmitter()->emitIns_R_R_I(INS_l, EA_4BYTE, tmpReg, base->GetRegNum(), node->gtLenOffset);
+        if (index->TypeIs(TYP_I_IMPL))
         {
-            if (scale <= 4)
-            {
-                // target = base + index<<scale
-                GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(),
-                                              indexReg, scale, INS_OPTS_UXTW);
-            }
-            else
-            {
-                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
-                indexReg      = tmpReg;
-                emitter* emit = GetEmitter();
-                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
-            }
+            GetEmitter()->emitIns_R_R(INS_clgr, EA_8BYTE, indexReg, tmpReg);
         }
         else
-#endif // TARGET_ARM64
         {
-            // dest = base + index * scale
-            genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+            GetEmitter()->emitIns_R_R(INS_clr, EA_4BYTE, indexReg, tmpReg);
         }
+        //genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
-    else // we have to load the element size and use a MADD (multiply-add) instruction
+
+    if (!index->TypeIs(TYP_I_IMPL))
     {
-#ifdef TARGET_ARM64
-        if (!index->TypeIs(TYP_I_IMPL))
-        {
-            const regNumber tmpReg2 = internalRegisters.Extract(node);
-            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
-            indexReg = tmpReg2;
-        }
-#endif // TARGET_ARM64
-
-        // tmpReg = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
-
-        // dest = index * tmpReg + base
-        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
-                                      base->GetRegNum());
+       GetEmitter()->emitIns_R_R(INS_lgfr, EA_8BYTE, tmpReg, indexReg);
+       indexReg = tmpReg;
+    }
+    if (scale == 0)
+    {
+        GetEmitter()->emitIns_R_R_R(INS_agrk, EA_PTRSIZE, node->GetRegNum(), base->GetRegNum(), indexReg);
+    }
+    else
+    {
+        GetEmitter()->emitIns_R_R_R_I(INS_sllg, EA_PTRSIZE, tmpReg, indexReg, REG_R0, (int)scale);
+        GetEmitter()->emitIns_R_R_R(INS_agrk, EA_PTRSIZE, node->GetRegNum(), base->GetRegNum(), tmpReg);
     }
 
-    // dest = dest + elemOffs
-    GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),
-                                node->gtElemOffset);
+    if (node->gtElemOffset != 0)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_lay, EA_PTRSIZE, node->GetRegNum(), node->GetRegNum(), (ssize_t)node->gtElemOffset);
+    }
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
+    //gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
 
     genProduceReg(node);
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -6398,8 +6341,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    _ASSERTE(!"NYI");
-#if 0
     void* addr  = nullptr;
     void* pAddr = nullptr;
 
@@ -6430,10 +6371,10 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         callTarget = callTargetReg;
 
         // adrp + add with relocations will be emitted
-        GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
-                                   (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
+        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, callTarget,
+                                   (ssize_t)pAddr, INS_FLAGS_DONT_CARE DEBUGARG((size_t)compiler->eeFindHelper(helper))
                                        DEBUGARG(GTF_ICON_METHOD_HDL));
-        GetEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTarget, callTarget);
+        GetEmitter()->emitIns_R_R_I(INS_lg, EA_PTRSIZE, callTarget, callTarget, 0);
         callType = emitter::EC_INDIR_R;
     }
 
@@ -6446,7 +6387,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
-#endif
 }
 
 //  move an immediate value into an integer register
