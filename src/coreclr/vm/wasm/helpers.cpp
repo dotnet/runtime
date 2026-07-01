@@ -1490,7 +1490,6 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
 {
     TADDR fp = GetWasmFramePointerFromStackPointer(sp);
 
-
     if (fp == 0)
     {
         return 0;

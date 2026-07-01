@@ -14,6 +14,7 @@
     <ProjectReference Include="int64/unsigned/implicit_promotion_il.ilproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BypassReadyToRunAttribute.cs" />
     <Compile Include="Arrays\lcs\lcs.cs" />
     <Compile Include="Arrays\lcs\lcs2.cs" />
     <Compile Include="Arrays\lcs\lcsbas.cs" />

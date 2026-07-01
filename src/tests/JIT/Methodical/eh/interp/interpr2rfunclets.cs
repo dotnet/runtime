@@ -70,13 +70,3 @@ namespace Test_interp_r2r_funclets
         }
     }
 }
-
-namespace System.Runtime
-{
-    // R2R compilation matches this attribute by namespace + name (see
-    // CorInfoImpl.ReadyToRun.ShouldCodeNotBeCompiledIntoFinalImage), so a local copy of the
-    // CoreLib-internal attribute is sufficient to force the annotated method to be interpreted.
-    internal sealed class BypassReadyToRunAttribute : Attribute
-    {
-    }
-}

@@ -16,6 +16,7 @@
     <ProjectReference Include="Boxing/xlang/sinlib_il.ilproj" Aliases="sinlib_il" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BypassReadyToRunAttribute.cs" />
     <Compile Include="Arrays\lcs\lcs.cs" />
     <Compile Include="Arrays\lcs\lcs2.cs" />
     <Compile Include="Arrays\lcs\lcsbas.cs" />
