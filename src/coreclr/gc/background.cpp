@@ -4114,8 +4114,6 @@ void gc_heap::background_sweep()
                 current_sweep_pos = end;
             }
 
-            verify_soh_segment_list();
-
 #ifdef DOUBLY_LINKED_FL
             while (next_seg && heap_segment_background_allocated (next_seg) == 0)
             {
