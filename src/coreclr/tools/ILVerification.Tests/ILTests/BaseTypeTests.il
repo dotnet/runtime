@@ -57,7 +57,7 @@
 }
 
 .class public auto ansi beforefieldinit ValueTypeBase_InvalidType_InvalidBaseType
-    extends valuetype ValueTypeBase
+    extends ValueTypeBase
 {
 }
 

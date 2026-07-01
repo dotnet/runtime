@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public struct EcmaSignatureParser
+    public partial struct EcmaSignatureParser
     {
         private TypeSystemContext _tsc;
         private Func<EntityHandle, NotFoundBehavior, TypeDesc> _typeResolver;
@@ -17,6 +17,7 @@ namespace Internal.TypeSystem.Ecma
         private EcmaModule _ecmaModule;
         private BlobReader _reader;
         private ResolutionFailure _resolutionFailure;
+        private bool _parsingTypeSpec;
 
         private Stack<int> _indexStack;
         private List<EmbeddedSignatureData> _embeddedSignatureDataList;
@@ -32,6 +33,7 @@ namespace Internal.TypeSystem.Ecma
             _indexStack = null;
             _embeddedSignatureDataList = null;
             _resolutionFailure = null;
+            _parsingTypeSpec = false;
         }
 
         public EcmaSignatureParser(EcmaModule ecmaModule, BlobReader reader, NotFoundBehavior notFoundBehavior)
@@ -44,6 +46,7 @@ namespace Internal.TypeSystem.Ecma
             _indexStack = null;
             _embeddedSignatureDataList = null;
             _resolutionFailure = null;
+            _parsingTypeSpec = false;
         }
 
         private void SetResolutionFailure(ResolutionFailure failure)
@@ -52,6 +55,8 @@ namespace Internal.TypeSystem.Ecma
         }
 
         public ResolutionFailure ResolutionFailure => _resolutionFailure;
+
+        partial void ReportInvalidTypeSpec();
 
         private TypeDesc ResolveHandle(EntityHandle handle)
         {
@@ -85,6 +90,29 @@ namespace Internal.TypeSystem.Ecma
         private DefType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _tsc.GetWellKnownType(wellKnownType);
+        }
+
+        // Avoid TypeSpec recursion through nested TypeSpec handles.
+        // The runtime augment permits CMOD_OPT/CMOD_REQ TypeSpec references, but not cycles;
+        // ILVerify conservatively reports TypeSpec handles embedded in TypeSpecs.
+        private bool ReportInvalidTypeSpecReference(EntityHandle typeHandle)
+        {
+            if (_parsingTypeSpec && typeHandle.Kind == HandleKind.TypeSpecification)
+            {
+                ReportInvalidTypeSpec();
+                return true;
+            }
+
+            return false;
+        }
+
+        private TypeDesc ParseTypeHandle()
+        {
+            EntityHandle typeHandle = _reader.ReadTypeHandle();
+            if (ReportInvalidTypeSpecReference(typeHandle))
+                return null;
+
+            return ResolveHandle(typeHandle);
         }
 
         private TypeDesc ParseType(SignatureTypeCode typeCode)
@@ -140,7 +168,7 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.Object:
                     return GetWellKnownType(WellKnownType.Object);
                 case SignatureTypeCode.TypeHandle:
-                    return ResolveHandle(_reader.ReadTypeHandle());
+                    return ParseTypeHandle();
                 case SignatureTypeCode.SZArray:
                     {
                         var elementType = ParseType();
@@ -276,6 +304,9 @@ namespace Internal.TypeSystem.Ecma
                 if (typeCode == SignatureTypeCode.RequiredModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
+                    if (ReportInvalidTypeSpecReference(typeHandle))
+                        continue;
+
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
@@ -283,6 +314,9 @@ namespace Internal.TypeSystem.Ecma
                 if (typeCode == SignatureTypeCode.OptionalModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
+                    if (ReportInvalidTypeSpecReference(typeHandle))
+                        continue;
+
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
@@ -314,6 +348,35 @@ namespace Internal.TypeSystem.Ecma
         private TypeDesc ParseTypeImpl()
         {
             return ParseType(ParseTypeCode());
+        }
+
+        public TypeDesc ParseTypeSpec()
+        {
+            BlobReader peek = _reader;
+            // ECMA-335 II.23.2.14 defines a narrower TypeSpecBlob grammar than what
+            // the .NET runtime accepts in practice. See the runtime ECMA-335 augment:
+            // https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md#5-typespecs-can-encode-more-than-specified
+            //
+            // In practice, TypeSpec can encode primitives, VAR/MVAR, custom-modifier
+            // rooted forms, and other forms used by existing tools/runtimes. The only
+            // top-level TypeSpec form that does not make sense is a direct
+            // CLASS/VALUETYPE TypeDefOrRef, represented here as SignatureTypeCode.TypeHandle
+            if (peek.ReadSignatureTypeCode() == SignatureTypeCode.TypeHandle)
+            {
+                ReportInvalidTypeSpec();
+            }
+
+            bool wasParsingTypeSpec = _parsingTypeSpec;
+            _parsingTypeSpec = true;
+
+            try
+            {
+                return ParseType();
+            }
+            finally
+            {
+                _parsingTypeSpec = wasParsingTypeSpec;
+            }
         }
 
         public bool IsFieldSignature

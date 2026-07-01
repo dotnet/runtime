@@ -59,46 +59,19 @@ namespace Internal.TypeVerifier
             }
             else
             {
-                if (baseType.Kind == HandleKind.TypeSpecification &&
-                    !IsValidBaseTypeSpecification((TypeSpecificationHandle)baseType))
-                {
-                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return;
-                }
-
-                TypeDesc resolvedBaseType;
-                try
-                {
-                    resolvedBaseType = _module.GetType(baseType);
-                }
-                catch (BadImageFormatException)
-                {
-                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return;
-                }
-                catch (TypeSystemException)
-                {
-                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return;
-                }
-
-
-                if (resolvedBaseType.IsValueType || resolvedBaseType.IsInterface || !resolvedBaseType.IsDefType)
+                TypeDesc resolvedBaseType = _module.GetType(baseType);
+                
+                // Arrays, pointers, and generic variables are valid TypeSpec forms in other
+                // metadata and IL token contexts, so GetType must continue to resolve them. A
+                // BaseType TypeSpec is narrower: it has to name a constructed generic class.
+                if ((baseType.Kind == HandleKind.TypeSpecification && !resolvedBaseType.HasInstantiation) ||
+                    resolvedBaseType.IsValueType ||
+                    resolvedBaseType.IsInterface ||
+                    !resolvedBaseType.IsDefType)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
                 }
             }
-        }
-
-        private bool IsValidBaseTypeSpecification(TypeSpecificationHandle handle)
-        {
-            TypeSpecification typeSpecification = _module.MetadataReader.GetTypeSpecification(handle);
-            BlobReader signatureReader = _module.MetadataReader.GetBlobReader(typeSpecification.Signature);
-
-            // Arrays, pointers, and generic variables are valid TypeSpec forms in other
-            // metadata and IL token contexts, so GetType must continue to resolve them. A
-            // BaseType TypeSpec is narrower: it has to name a constructed generic class.
-            return signatureReader.ReadSignatureTypeCode() == SignatureTypeCode.GenericTypeInstance;
         }
 
         public void VerifyInterfaces()

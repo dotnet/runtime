@@ -571,36 +571,14 @@ namespace Internal.TypeSystem.Ecma
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(typeSpecification.Signature);
 
-#if ILVERIFICATION
-            ValidateTypeSpecificationSignature(signatureReader);
-#endif
-
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
 
-            TypeDesc parsedType = parser.ParseType();
+            TypeDesc parsedType = parser.ParseTypeSpec();
             if (parsedType == null)
                 return parser.ResolutionFailure;
             else
                 return parsedType;
         }
-
-#if ILVERIFICATION
-        private static void ValidateTypeSpecificationSignature(BlobReader signatureReader)
-        {
-            // ECMA-335 II.23.2.14 defines a narrower TypeSpecBlob grammar than what
-            // the .NET runtime accepts in practice. See the runtime ECMA-335 augment:
-            // https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md#5-typespecs-can-encode-more-than-specified
-            //
-            // In practice, TypeSpec can encode primitives, VAR/MVAR, custom-modifier
-            // rooted forms, and other forms used by existing tools/runtimes. The only
-            // top-level TypeSpec form that does not make sense is a direct
-            // CLASS/VALUETYPE TypeDefOrRef, represented here as SignatureTypeCode.TypeHandle
-            if (signatureReader.ReadSignatureTypeCode() == SignatureTypeCode.TypeHandle)
-            {
-                ThrowHelper.ThrowBadImageFormatException();
-            }
-        }
-#endif
 
         private object ResolveMemberReference(MemberReferenceHandle handle)
         {
