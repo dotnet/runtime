@@ -617,9 +617,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     // FEATURE_HFA targets. On non-FEATURE_HFA targets the enum_flag_IsHFA
     // bit is either unused or reused (UNIX_AMD64_ABI IsRegStructPassed).
-    private bool IsFeatureHfaTarget()
+    private bool IsFeatureHfaTarget(out RuntimeInfoArchitecture arch)
     {
-        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         return arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64;
     }
 
@@ -629,11 +629,20 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         elementSize = 0;
 
-        if (!IsFeatureHfaTarget())
+        if (!IsFeatureHfaTarget(out RuntimeInfoArchitecture arch))
             return false;
 
         if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsHFA)
             return false;
+
+        // ARM shortcut: no HVA, and RequiresAlign8 encodes the R4-vs-R8 choice
+        // (CheckForHFA sets the alignment flag based on the resolved element
+        // type). Avoids walking fields.
+        if (arch == RuntimeInfoArchitecture.Arm)
+        {
+            elementSize = _methodTables[typeHandle.Address].Flags.RequiresAlign8 ? 8 : 4;
+            return true;
+        }
 
         TypeHandle current = typeHandle;
         for (int depth = 0; depth < 16; depth++)

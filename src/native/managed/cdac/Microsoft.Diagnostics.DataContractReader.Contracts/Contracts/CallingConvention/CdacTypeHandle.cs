@@ -116,13 +116,7 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     public int GetHomogeneousAggregateElementSize()
     {
         Debug.Assert(IsHomogeneousAggregate());
-
-        // ARM has no HVA; RequiresAlign8 encodes the R4-vs-R8 choice, so we
-        // can skip the field walk that TryGetHFAElementSize would do.
-        if (Arch == RuntimeInfoArchitecture.Arm)
-            return RequiresAlign8() ? 8 : 4;
-
-        return _typeHandle.IsNull || !Rts.TryGetHFAElementSize(_typeHandle, out int size) ? 0 : size;
+        return Rts.TryGetHFAElementSize(_typeHandle, out int size) ? size : 0;
     }
 
     public void GetSystemVAmd64PassStructInRegisterDescriptor(out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor)

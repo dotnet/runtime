@@ -696,6 +696,7 @@ Contracts used:
     //   TryGetHFAElementSize(th):
     //       if targetArch is not ARM/ARM64:               return false
     //       if !th.Flags.IsHFA:                           return false
+    //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign8 ? 8 : 4)
     //       mt = th
     //       loop (bounded depth):
     //           if (elem = GetVectorHFAElementSize(mt)):  return (true, elem)
