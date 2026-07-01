@@ -152,14 +152,9 @@ public interface IRuntimeTypeSystem : IContract
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
     bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
-    // Returns true and sets elementSize when the type is classified as a
-    // Homogeneous Floating-point / Vector Aggregate:
-    //   4  -> R4 (float) HFA
-    //   8  -> R8 (double) HFA, Vector64<T>, or System.Numerics.Vector<T> at 8 bytes
-    //   16 -> Vector128<T>, or System.Numerics.Vector<T> at 16 bytes
-    // Returns false (and elementSize=0) on any non-HFA / non-HVA type, or on
-    // any target architecture that doesn't define FEATURE_HFA (so callers
-    // don't need to gate themselves). Mirrors MethodTable::GetHFAType in
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
     // src/coreclr/vm/class.cpp.
     bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
     {

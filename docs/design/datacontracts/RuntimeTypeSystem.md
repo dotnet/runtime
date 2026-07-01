@@ -75,14 +75,10 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
     public virtual bool IsByRefLike(TypeHandle typeHandle);
-    // Returns true and sets elementSize when the type is classified as a
-    // Homogeneous Floating-point / Vector Aggregate:
-    //   4  -> R4 (float) HFA
-    //   8  -> R8 (double) HFA, Vector64<T>, or System.Numerics.Vector<T> at 8 bytes
-    //   16 -> Vector128<T>, or System.Numerics.Vector<T> at 16 bytes
-    // Returns false (and elementSize=0) on any non-HFA type or on any target
-    // architecture that doesn't define FEATURE_HFA (callers don't need to gate
-    // themselves). Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp.
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
     public virtual bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
@@ -695,12 +691,32 @@ Contracts used:
 
     public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
 
-    // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. Returns true
-    // and sets elementSize to 4 / 8 / 16 for HFA / HVA types; returns false
-    // otherwise. HVA detection (Vector64<T>/Vector128<T>/
-    // System.Numerics.Vector<T>) is performed at every recursion level via
-    // the private GetVectorHFAElementSize helper. Self-gates on target
-    // architecture so callers don't need to.
+    // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. Pseudocode:
+    //
+    //   TryGetHFAElementSize(th):
+    //       if targetArch is not ARM/ARM64:               return false
+    //       if !th.Flags.IsHFA:                           return false
+    //       mt = th
+    //       loop (bounded depth):
+    //           if (elem = GetVectorHFAElementSize(mt)):  return (true, elem)
+    //           field = first non-static field of mt
+    //           if field is null:                         return false
+    //           switch field.ElementType:
+    //               R4:        return (true, 4)
+    //               R8:        return (true, 8)
+    //               ValueType: mt = GetFieldDescApproxTypeHandle(field); continue
+    //               default:   return false
+    //
+    //   GetVectorHFAElementSize(mt):                      // detects HVA shapes
+    //       if !mt.Flags.IsIntrinsicType:                 return 0
+    //       (ns, name) = typedef name+namespace via EcmaMetadata
+    //       elem = match on (ns, name):
+    //           "System.Numerics", "Vector`1":            NumInstanceFieldBytes (8 or 16, else 0)
+    //           "System.Runtime.Intrinsics", "Vector128`1": 16
+    //           "System.Runtime.Intrinsics", "Vector64`1":  8
+    //           _:                                          return 0
+    //       if !CorIsNumericalType(GetInstantiation(mt)[0]): return 0
+    //       return elem
     public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize) { ... }
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
