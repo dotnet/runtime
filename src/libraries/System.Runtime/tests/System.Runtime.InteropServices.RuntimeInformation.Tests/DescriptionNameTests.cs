@@ -103,7 +103,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     sb.Append($"###\t{prop}: ");
                     try
                     {
+#pragma warning disable IL2075 // Not used for testing, just informational logging
                         sb.Append(p.GetType().GetProperty(prop).GetValue(p));
+#pragma warning restore IL2075
                     }
                     catch (Exception e)
                     {

@@ -124,6 +124,7 @@ typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
 #ifdef FEATURE_INTERPRETER
 typedef VPTR(class InterpreterCodeManager) PTR_InterpreterCodeManager;
+typedef DPTR(struct InterpThreadContext) PTR_InterpThreadContext;
 #endif
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
@@ -314,6 +315,7 @@ namespace Loader
 #include "dynamicmethod.h"
 
 #include "gcstress.h"
+#include "cdacstress.h"
 
 HRESULT EnsureRtlFunctions();
 
@@ -373,7 +375,6 @@ extern DummyGlobalContract ___contract;
 #include "object.inl"
 #include "clsload.inl"
 #include "method.inl"
-#include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
 #include "eventtrace.inl"

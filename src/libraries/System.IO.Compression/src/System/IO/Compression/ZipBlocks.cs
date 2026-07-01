@@ -27,7 +27,7 @@ namespace System.IO.Compression
         public ushort Size => _size;
         public byte[] Data => _data ??= [];
 
-        public void WriteBlock(Stream stream)
+        public unsafe void WriteBlock(Stream stream)
         {
             Span<byte> extraFieldHeader = stackalloc byte[SizeOfHeader];
             WriteBlockCore(extraFieldHeader);
@@ -188,7 +188,7 @@ namespace System.IO.Compression
         //
         public static Zip64ExtraField GetJustZip64Block(ReadOnlySpan<byte> extraFieldData,
             bool readUncompressedSize, bool readCompressedSize,
-            bool readLocalHeaderOffset, bool readStartDiskNumber)
+            bool readLocalHeaderOffset, bool readStartDiskNumber, bool isInLocalHeader)
         {
             Zip64ExtraField zip64Field;
             int totalBytesConsumed = 0;
@@ -198,7 +198,7 @@ namespace System.IO.Compression
                 totalBytesConsumed += currBytesConsumed;
 
                 if (TryGetZip64BlockFromGenericExtraField(currentExtraField, readUncompressedSize,
-                    readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, out zip64Field))
+                    readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, isInLocalHeader, out zip64Field))
                 {
                     return zip64Field;
                 }
@@ -218,7 +218,7 @@ namespace System.IO.Compression
         private static bool TryGetZip64BlockFromGenericExtraField(ZipGenericExtraField extraField,
             bool readUncompressedSize, bool readCompressedSize,
             bool readLocalHeaderOffset, bool readStartDiskNumber,
-            out Zip64ExtraField zip64Block)
+            bool isInLocalHeader, out Zip64ExtraField zip64Block)
         {
             const int MaximumExtraFieldLength = FieldLengths.UncompressedSize + FieldLengths.CompressedSize + FieldLengths.LocalHeaderOffset + FieldLengths.StartDiskNumber;
             zip64Block = new()
@@ -249,35 +249,53 @@ namespace System.IO.Compression
 
             if (data.Length < FieldLengths.UncompressedSize)
             {
-                return true;
+                // The spec section 4.5.3 later:
+                //      This entry in the Local header MUST include BOTH original
+                //      and compressed file size fields.
+
+                return !isInLocalHeader;
             }
 
             // Advancing the stream (by reading from it) is possible only when:
             // 1. There is an explicit ask to do that (valid files, corresponding boolean flag(s) set to true).
-            // 2. When the size indicates that all the information is available ("slightly invalid files").
+            // 2. Field is mandated to be present by spec (see "section 4.5.3 later" comment above)
+            // 3. When the size indicates that all the information is available ("slightly invalid files").
             bool readAllFields = extraField.Size >= MaximumExtraFieldLength;
+
+            // The original values are unsigned 64-bit, so a negative signed value means the
+            // value does not fit in Int64 and cannot be represented by the rest of the API
+            // (which uses long). Validate each field as it is read so that short extra fields
+            // (which exit early below) cannot bypass the check.
 
             if (readUncompressedSize)
             {
                 zip64Block._uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._uncompressedSize < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
+                }
                 data = data.Slice(FieldLengths.UncompressedSize);
             }
-            else if (readAllFields)
+            else if (readAllFields || isInLocalHeader)
             {
                 data = data.Slice(FieldLengths.UncompressedSize);
             }
 
             if (data.Length < FieldLengths.CompressedSize)
             {
-                return true;
+                return !isInLocalHeader;
             }
 
             if (readCompressedSize)
             {
                 zip64Block._compressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._compressedSize < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigCompressedSize);
+                }
                 data = data.Slice(FieldLengths.CompressedSize);
             }
-            else if (readAllFields)
+            else if (readAllFields || isInLocalHeader)
             {
                 data = data.Slice(FieldLengths.CompressedSize);
             }
@@ -290,6 +308,10 @@ namespace System.IO.Compression
             if (readLocalHeaderOffset)
             {
                 zip64Block._localHeaderOffset = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._localHeaderOffset < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
+                }
                 data = data.Slice(FieldLengths.LocalHeaderOffset);
             }
             else if (readAllFields)
@@ -307,26 +329,12 @@ namespace System.IO.Compression
                 zip64Block._startDiskNumber = BinaryPrimitives.ReadUInt32LittleEndian(data);
             }
 
-            // original values are unsigned, so implies value is too big to fit in signed integer
-            if (zip64Block._uncompressedSize < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
-            }
-            if (zip64Block._compressedSize < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigCompressedSize);
-            }
-            if (zip64Block._localHeaderOffset < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
-            }
-
             return true;
         }
 
         public static Zip64ExtraField GetAndRemoveZip64Block(List<ZipGenericExtraField> extraFields,
             bool readUncompressedSize, bool readCompressedSize,
-            bool readLocalHeaderOffset, bool readStartDiskNumber)
+            bool readLocalHeaderOffset, bool readStartDiskNumber, bool isInLocalHeader)
         {
             Zip64ExtraField zip64Field = new()
             {
@@ -345,7 +353,7 @@ namespace System.IO.Compression
                     if (!zip64FieldFound)
                     {
                         if (TryGetZip64BlockFromGenericExtraField(ef, readUncompressedSize, readCompressedSize,
-                                    readLocalHeaderOffset, readStartDiskNumber, out zip64Field))
+                                    readLocalHeaderOffset, readStartDiskNumber, isInLocalHeader, out zip64Field))
                         {
                             zip64FieldFound = true;
                         }
@@ -395,7 +403,7 @@ namespace System.IO.Compression
             }
         }
 
-        public void WriteBlock(Stream stream)
+        public unsafe void WriteBlock(Stream stream)
         {
             Span<byte> extraFieldData = stackalloc byte[TotalSize];
             WriteBlockCore(extraFieldData);
@@ -434,7 +442,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
+        public static unsafe Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
@@ -456,7 +464,7 @@ namespace System.IO.Compression
 
         }
 
-        public static void WriteBlock(Stream stream, long zip64EOCDRecordStart)
+        public static unsafe void WriteBlock(Stream stream, long zip64EOCDRecordStart)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             WriteBlockCore(blockContents, zip64EOCDRecordStart);
@@ -513,7 +521,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
+        public static unsafe Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
@@ -545,7 +553,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteInt64LittleEndian(blockContents[FieldLocations.OffsetOfCentralDirectory..], startOfCentralDirectory);
         }
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
+        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
         {
             Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
             WriteBlockCore(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory);
@@ -583,7 +591,7 @@ namespace System.IO.Compression
             return list;
         }
 
-        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
+        public static unsafe List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
@@ -658,7 +666,7 @@ namespace System.IO.Compression
         }
 
         // will not throw end of stream exception
-        public static bool TrySkipBlock(Stream stream)
+        public static unsafe bool TrySkipBlock(Stream stream)
         {
             Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
             long currPosition = stream.Position;
@@ -761,7 +769,8 @@ namespace System.IO.Compression
                 header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields, out ReadOnlySpan<byte> trailingDataSpan);
                 zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64);
+                            relativeOffsetInZip64, diskNumberStartInZip64,
+                            isInLocalHeader: false);
                 header.TrailingExtraFieldData = trailingDataSpan.ToArray();
             }
             else
@@ -770,7 +779,8 @@ namespace System.IO.Compression
                 header.TrailingExtraFieldData = null;
                 zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64);
+                            relativeOffsetInZip64, diskNumberStartInZip64,
+                            isInLocalHeader: false);
             }
 
             header.FileComment = dynamicHeader.Slice(header.FilenameLength + header.ExtraFieldLength, header.FileCommentLength).ToArray();
@@ -897,7 +907,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.ArchiveCommentLength..], (ushort)archiveComment.Length);
         }
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
+        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
 
@@ -956,7 +966,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
+        public static unsafe ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);

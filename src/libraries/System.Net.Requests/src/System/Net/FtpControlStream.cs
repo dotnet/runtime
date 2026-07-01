@@ -914,7 +914,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Parses a response string for last modified time</para>
         /// </summary>
-        private DateTime GetLastModifiedFrom213Response(string str)
+        private unsafe DateTime GetLastModifiedFrom213Response(string str)
         {
             DateTime dateTime = _lastModified;
             Span<Range> parts = stackalloc Range[4];
@@ -1147,7 +1147,7 @@ namespace System.Net
         /// </summary>
         private static string FormatFtpCommand(string command, string? parameter)
         {
-            if (parameter is not null && parameter.Contains("\r\n", StringComparison.Ordinal))
+            if (parameter is not null && parameter.AsSpan().ContainsAny('\r', '\n'))
             {
                 throw new FormatException(SR.net_ftp_no_newlines);
             }

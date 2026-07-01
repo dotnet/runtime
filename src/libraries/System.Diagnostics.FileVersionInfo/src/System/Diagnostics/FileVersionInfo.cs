@@ -288,6 +288,11 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The path and name of the file to retrieve version information for.</param>
         /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
+        /// <remarks>
+        ///     <note type="caution">
+        ///         Use this only with trusted files. Malformed or malicious files can cause unexpected behavior.
+        ///     </note>
+        /// </remarks>
         /// <exception cref="FileNotFoundException"><paramref name="fileName"/> does not exist or cannot be accessed.</exception>
         public static FileVersionInfo GetVersionInfo(string fileName)
         {

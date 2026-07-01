@@ -128,7 +128,6 @@ namespace System.IO
         private readonly nuint _sharedDataTotalByteCount;
         private int _referenceCount = 1;
 
-        [RequiresUnsafe]
         public SharedMemoryProcessDataHeader(SharedMemoryId id, SafeFileHandle fileHandle, SharedMemorySharedDataHeader* sharedDataHeader, nuint sharedDataTotalByteCount)
         {
             _id = id;
@@ -420,75 +419,110 @@ namespace System.IO
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
         {
-            SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
-            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-            if (!fd.IsInvalid)
+            const int TransientRetryCount = 10;
+            int transientRetryCount = 0;
+
+            while (true)
             {
-                if (id.IsUserScope)
+                SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                if (!fd.IsInvalid)
                 {
-                    if (Interop.Sys.FStat(fd, out Interop.Sys.FileStatus fileStatus) != 0)
+                    if (id.IsUserScope)
                     {
-                        error = Interop.Sys.GetLastErrorInfo();
-                        fd.Dispose();
-                        throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-                    }
+                        if (Interop.Sys.FStat(fd, out Interop.Sys.FileStatus fileStatus) != 0)
+                        {
+                            error = Interop.Sys.GetLastErrorInfo();
+                            fd.Dispose();
+                            throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                        }
 
-                    if (fileStatus.Uid != id.Uid)
-                    {
-                        fd.Dispose();
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_FileNotOwnedByUid, sharedMemoryFilePath, id.Uid));
-                    }
+                        if (fileStatus.Uid != id.Uid)
+                        {
+                            fd.Dispose();
+                            throw new IOException(SR.Format(SR.IO_SharedMemory_FileNotOwnedByUid, sharedMemoryFilePath, id.Uid));
+                        }
 
-                    if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
-                    {
-                        fd.Dispose();
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
+                        if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
+                        {
+                            fd.Dispose();
+
+                            // Another process may have created this file and not yet applied the final mode via fchmod.
+                            // Retry briefly in case this open races with that transient window.
+                            if (transientRetryCount < TransientRetryCount)
+                            {
+                                transientRetryCount++;
+                                Thread.Sleep(1);
+                                continue;
+                            }
+
+                            throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
+                        }
                     }
+                    createdFile = false;
+                    return fd;
                 }
-                createdFile = false;
-                return fd;
-            }
 
-            if (error.Error != Interop.Error.ENOENT)
-            {
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
+                if (error.Error == Interop.Error.EACCES && transientRetryCount < TransientRetryCount)
+                {
+                    // During creation, the mode passed to O_CREAT is filtered by process umask. Retry briefly in case
+                    // another process is still in the window between creating the file and fixing its permissions.
+                    transientRetryCount++;
+                    Thread.Sleep(1);
+                    continue;
+                }
 
-            if (!createIfNotExist)
-            {
-                createdFile = false;
-                return fd;
-            }
+                if (error.Error != Interop.Error.ENOENT)
+                {
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
 
-            fd.Dispose();
+                if (!createIfNotExist)
+                {
+                    createdFile = false;
+                    return fd;
+                }
 
-            UnixFileMode permissionsMask = id.IsUserScope
-                ? PermissionsMask_OwnerUser_ReadWrite
-                : PermissionsMask_AllUsers_ReadWrite;
-
-            fd = Interop.Sys.Open(
-                sharedMemoryFilePath,
-                Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
-                (int)permissionsMask);
-
-            if (fd.IsInvalid)
-            {
-                error = Interop.Sys.GetLastErrorInfo();
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
-
-            int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
-
-            if (result != 0)
-            {
-                error = Interop.Sys.GetLastErrorInfo();
                 fd.Dispose();
-                Interop.Sys.Unlink(sharedMemoryFilePath);
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
 
-            createdFile = true;
-            return fd;
+                UnixFileMode permissionsMask = id.IsUserScope
+                    ? PermissionsMask_OwnerUser_ReadWrite
+                    : PermissionsMask_AllUsers_ReadWrite;
+
+                fd = Interop.Sys.Open(
+                    sharedMemoryFilePath,
+                    Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
+                    (int)permissionsMask);
+
+                if (fd.IsInvalid)
+                {
+                    error = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
+                    if (error.Error == Interop.Error.EEXIST && transientRetryCount < TransientRetryCount)
+                    {
+                        // Another process created the file between our ENOENT check and our O_CREAT|O_EXCL attempt.
+                        // Retry opening the existing file.
+                        transientRetryCount++;
+                        continue;
+                    }
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
+
+                // The mode passed to open(..., O_CREAT|O_EXCL, permissionsMask) is filtered by process umask, so the
+                // created file may not have the requested access. Set the exact mode explicitly.
+                int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
+
+                if (result != 0)
+                {
+                    error = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
+                    Interop.Sys.Unlink(sharedMemoryFilePath);
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
+
+                createdFile = true;
+                return fd;
+            }
         }
 
         internal static bool EnsureDirectoryExists(string directoryPath, SharedMemoryId id, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false)
@@ -708,7 +742,6 @@ namespace System.IO
             }
         }
 
-        [RequiresUnsafe]
         public void* Pointer => (void*)addr;
     }
 

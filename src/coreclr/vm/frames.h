@@ -184,7 +184,6 @@ class DacDbiInterfaceImpl;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
-#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
@@ -236,6 +235,20 @@ public:
         INTERCEPTION_COUNT
     };
 
+#ifdef DACCESS_COMPILE
+    enum StubFrameType
+    {
+        STUB_FRAME_NONE,
+        STUB_FRAME_M2U,
+        STUB_FRAME_U2M,
+        STUB_FRAME_FUNC_EVAL,
+        STUB_FRAME_INTERNAL_CALL,
+        STUB_FRAME_CLASS_INIT,
+        STUB_FRAME_EXCEPTION,
+        STUB_FRAME_JIT_COMPILATION,
+    };
+#endif // DACCESS_COMPILE
+
     void GcScanRoots(promote_func *fn, ScanContext* sc);
     unsigned GetFrameAttribs();
 #ifndef DACCESS_COMPILE
@@ -252,6 +265,9 @@ public:
     int GetFrameType();
     ETransitionType GetTransitionType();
     Interception GetInterception();
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType();
+#endif // DACCESS_COMPILE
     void GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP);
     BOOL TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs);
 #ifdef DACCESS_COMPILE
@@ -427,6 +443,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_NONE;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
 
     // Return information about an unmanaged call the frame
     // will make.
@@ -766,6 +790,10 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 
 typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
+#ifdef TARGET_WASM
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp);
+#endif
+
 class TransitionFrame : public Frame
 {
 #ifndef DACCESS_COMPILE
@@ -848,6 +876,18 @@ public:
     TADDR GetSP()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
+        if (pTransitionBlock != NULL)
+        {
+            if ((pTransitionBlock->m_ReturnAddress != 0) && (pTransitionBlock->m_StackPointer != 0))
+            {
+                // If the TransitionBlock is setup with both a return address and a stack pointer, then we can trust the stack pointer value,
+                // and it corresponds into the R2R unwind stack
+                return pTransitionBlock->m_StackPointer;
+            }
+        }
+#endif
         return GetTransitionBlock() + sizeof(TransitionBlock);
     }
 
@@ -955,6 +995,14 @@ public:
         return INTERCEPTION_EXCEPTION;
     }
 
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
+    }
+#endif // DACCESS_COMPILE
+
     unsigned GetFrameAttribs_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1030,6 +1078,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_EXCEPTION;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_EXCEPTION;
+    }
+#endif // DACCESS_COMPILE
 
     ETransitionType GetTransitionType_Impl()
     {
@@ -1112,6 +1168,14 @@ public:
         return TYPE_FUNC_EVAL;
     }
 
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_FUNC_EVAL;
+    }
+#endif // DACCESS_COMPILE
+
     unsigned GetFrameAttribs_Impl();
 
     BOOL NeedsUpdateRegDisplay_Impl()
@@ -1145,6 +1209,7 @@ template<>
 struct cdac_data<FuncEvalFrame>
 {
     static constexpr size_t DebuggerEvalPtr = offsetof(FuncEvalFrame, m_pDebuggerEval);
+    static constexpr size_t ReturnAddress = offsetof(FuncEvalFrame, m_ReturnAddress);
 };
 
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
@@ -1169,6 +1234,17 @@ public:
     TADDR GetTransitionBlock_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)m_pTransitionBlock;
+        if (pTransitionBlock != NULL)
+        {
+            if (pTransitionBlock->m_ReturnAddress == 0)
+            {
+                // Lazy compute the virtual IP for the frame
+                pTransitionBlock->m_ReturnAddress = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+            }
+        }
+#endif
         return m_pTransitionBlock;
     }
 
@@ -1204,6 +1280,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_CALL;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
+    }
+#endif // DACCESS_COMPILE
 
     friend struct cdac_data<FramedMethodFrame>;
 };
@@ -1275,6 +1359,14 @@ public:
         trace->InitForUnmanaged(GetPInvokeCalliTarget());
         return TRUE;
     }
+
+    friend struct ::cdac_data<PInvokeCalliFrame>;
+};
+
+template <>
+struct cdac_data<PInvokeCalliFrame>
+{
+    static constexpr size_t VASigCookiePtr = offsetof(PInvokeCalliFrame, m_pVASigCookie);
 };
 
 // Some context-related forwards.
@@ -1297,6 +1389,20 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return PTR_HOST_MEMBER_TADDR(HijackFrame, this,
                                      m_ReturnAddress);
+    }
+
+    PCODE GetReturnAddress_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
+        if (m_SpForPacSign != 0)
+        {
+            return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
+        }
+#endif
+
+        return (PCODE)m_ReturnAddress;
     }
 
     BOOL NeedsUpdateRegDisplay_Impl()
@@ -1326,11 +1432,14 @@ public:
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
     // So, it's a public function -- but that doesn't mean you should make some.
-    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args);
+    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args ARM64_ARG(LPVOID spForPacSign));
 
 protected:
 
     TADDR               m_ReturnAddress;
+#if defined(TARGET_ARM64)
+    TADDR               m_SpForPacSign;
+#endif
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
 
@@ -1383,6 +1492,14 @@ public:
     }
 
     Interception GetInterception_Impl();
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_JIT_COMPILATION;
+    }
+#endif // DACCESS_COMPILE
 };
 
 //------------------------------------------------------------------------
@@ -1464,6 +1581,14 @@ public:
 
     Interception GetInterception_Impl();
 
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
+
     BOOL SuppressParamTypeArg_Impl()
     {
         //
@@ -1490,6 +1615,7 @@ struct cdac_data<StubDispatchFrame>
 {
     static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
     static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
+    static constexpr size_t Indirection = offsetof(StubDispatchFrame, m_pIndirection);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -1561,9 +1687,17 @@ public:
 #ifdef TARGET_X86
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
 #endif
+
+    friend struct ::cdac_data<ExternalMethodFrame>;
 };
 
 typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
+
+template <>
+struct cdac_data<ExternalMethodFrame>
+{
+    static constexpr size_t Indirection = offsetof(ExternalMethodFrame, m_pIndirection);
+};
 
 class DynamicHelperFrame : public FramedMethodFrame
 {
@@ -1583,9 +1717,25 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_InternalCall;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_INTERNAL_CALL;
+    }
+#endif // DACCESS_COMPILE
+
+    friend struct ::cdac_data<DynamicHelperFrame>;
 };
 
 typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
+
+template <>
+struct cdac_data<DynamicHelperFrame>
+{
+    static constexpr size_t DynamicHelperFrameFlags = offsetof(DynamicHelperFrame, m_dynamicHelperFrameFlags);
+};
 
 //------------------------------------------------------------------------
 // This frame protects object references for the EE's convenience.
@@ -1666,6 +1816,17 @@ private:
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
+
+    friend struct ::cdac_data<GCFrame>;
+};
+
+template<>
+struct cdac_data<GCFrame>
+{
+    static constexpr size_t Next = offsetof(GCFrame, m_Next);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pObjRefs);
+    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
+    static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------
@@ -1761,6 +1922,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return INTERCEPTION_CLASS_INIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_CLASS_INIT;
+    }
+#endif // DACCESS_COMPILE
 };
 
 //------------------------------------------------------------------------
@@ -1787,6 +1956,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_M2U;
+    }
+#endif // DACCESS_COMPILE
 
     // Return information about an unmanaged call the frame
     // will make.
@@ -1849,6 +2026,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_U2M;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return STUB_FRAME_U2M;
+    }
+#endif // DACCESS_COMPILE
 
     bool CatchesAllExceptions()
     {
@@ -2031,6 +2216,14 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TYPE_EXIT;
     }
+
+#ifdef DACCESS_COMPILE
+    StubFrameType GetStubFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FrameHasActiveCall(this) ? STUB_FRAME_M2U : STUB_FRAME_NONE;
+    }
+#endif // DACCESS_COMPILE
 
     BOOL IsTransitionToNativeFrame_Impl()
     {
@@ -2253,20 +2446,6 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
-#ifndef TARGET_WASM
-    void SetInterpExecMethodSP(TADDR sp)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_SP = sp;
-    }
-
-    TADDR GetInterpExecMethodSP()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SP;
-    }
-#endif // TARGET_WASM
-
     void SetIsFaulting(bool isFaulting)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2311,10 +2490,16 @@ private:
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
 #endif // HOST_AMD64 && HOST_WINDOWS
-#ifndef TARGET_WASM
-    TADDR m_SP;
-#endif // TARGET_WASM
     PTR_Object m_continuation;
+
+    friend struct cdac_data<InterpreterFrame>;
+};
+
+template<>
+struct cdac_data<InterpreterFrame>
+{
+    static constexpr size_t TopInterpMethodContextFrame = offsetof(InterpreterFrame, m_pTopInterpMethodContextFrame);
+    static constexpr size_t IsFaulting = offsetof(InterpreterFrame, m_isFaulting);
 };
 
 #endif // FEATURE_INTERPRETER

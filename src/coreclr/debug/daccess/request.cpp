@@ -23,6 +23,10 @@
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
 
+#if defined(FEATURE_OBJCMARSHAL)
+#include <interoplibinterface.h>
+#endif // FEATURE_OBJCMARSHAL
+
 #ifndef TARGET_UNIX
 // It is unfortunate having to include this header just to get the definition of GenericModeBlock
 #include <msodw.h>
@@ -893,8 +897,19 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     // TEB is no longer provided by the runtime. Consumers should look up the TEB
     // from the OS thread ID via the debugger's native API (e.g., IDebuggerServices::GetThreadTeb).
     threadData->teb = (CLRDATA_ADDRESS)NULL;
-    threadData->lastThrownObjectHandle =
-        TO_CDADDR(thread->m_LastThrownObjectHandle);
+    // Prefer the active exception from ExInfo (pseudo-handle to m_exception field).
+    // After the removal of SetThrowable/m_hThrowable, m_LastThrownObjectHandle is only
+    // updated after exception dispatch completes, so during active dispatch it may be
+    // stale.  GetThrowableAsPseudoHandle returns the address of ExInfo::m_exception
+    // which has the same dereference semantics as a real GC handle.
+    {
+        OBJECTHANDLE ohException = thread->GetThrowableAsPseudoHandle();
+        if (ohException == (OBJECTHANDLE)NULL)
+        {
+            ohException = thread->m_LastThrownObjectHandle;
+        }
+        threadData->lastThrownObjectHandle = TO_CDADDR(ohException);
+    }
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
     if (thread->m_ExceptionState.m_pCurrentTracker)
@@ -1598,11 +1613,8 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
                 stringData[0] = W('\0');
             }
         }
-        else
-        {
-            hr = E_INVALIDARG;
-        }
 
+        // A size-only query (no output buffer) reports the needed size via pNeeded and succeeds.
         if (pNeeded)
             *pNeeded = needed;
     }
@@ -2340,7 +2352,7 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 objectData->ElementTypeHandle = (CLRDATA_ADDRESS)(thElem.AsTAddr());
                 objectData->dwRank = mt->GetRank();
                 objectData->dwNumComponents = pArrayObj->GetNumComponents ();
-                objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetDataPtr (TRUE));
+                objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetGCSafeDataPtr());
                 objectData->ArrayBoundsPtr = HOST_CDADDR(pArrayObj->GetBoundsPtr());
                 objectData->ArrayLowerBoundsPtr = HOST_CDADDR(pArrayObj->GetLowerBoundsPtr());
             }
@@ -2402,7 +2414,7 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 {
     SOSDacEnter();
 
-    adsData->systemDomain = HOST_CDADDR(SystemDomain::System());
+    adsData->systemDomain = (CLRDATA_ADDRESS)NULL;
     adsData->sharedDomain = (CLRDATA_ADDRESS)NULL;
 
     // Get an accurate count of appdomains.
@@ -2417,45 +2429,42 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 HRESULT
 ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *appdomainData)
 {
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    if (addr == 0)
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        hr = E_INVALIDARG;
+        hr = E_FAIL;
     }
     else
     {
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
-        appdomainData->AppDomainPtr = addr;
+        appdomainData->AppDomainPtr = HOST_CDADDR(pAppDomain);
         PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (addr != HOST_CDADDR(SystemDomain::System()))
+        appdomainData->dwId = DefaultADID;
+
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
+            kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+        while (i.Next(pAssembly.This()))
         {
-            PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-
-            appdomainData->dwId = DefaultADID;
-
-            AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
-                kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-            CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-            while (i.Next(pAssembly.This()))
+            if (pAssembly->IsLoaded())
             {
-                if (pAssembly->IsLoaded())
-                {
-                    appdomainData->AssemblyCount++;
-                }
+                appdomainData->AssemblyCount++;
             }
+        }
 
-            AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
-            while (j.Next())
-            {
-                appdomainData->FailedAssemblyCount++;
-            }
+        AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
+        while (j.Next())
+        {
+            appdomainData->FailedAssemblyCount++;
         }
     }
 
@@ -2541,19 +2550,16 @@ ClrDataAccess::GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned i
 HRESULT
 ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS values[], int *pNeeded)
 {
-    if (addr == (CLRDATA_ADDRESS)NULL)
-        return E_INVALIDARG;
-
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        // We shouldn't be asking for the assemblies in SystemDomain
-        hr = E_INVALIDARG;
+        hr = E_FAIL;
     }
     else
     {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -2617,20 +2623,16 @@ ClrDataAccess::GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count,
 HRESULT
 ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        // SystemDomain doesn't have this field.
-        if (pNeeded)
-            *pNeeded = 1;
-        if (name && count > 0)
-            name[0] = 0;
+        hr = E_FAIL;
     }
     else
     {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-
         size_t countAsSizeT = count;
         if (pAppDomain->m_friendlyName.IsValid())
         {
@@ -3308,7 +3310,7 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
     }
     else
     {
-        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+        *exceptionObject = dac_cast<TADDR>(pExData->m_exception);
         *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
     }
 
@@ -4051,35 +4053,30 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
     // By default, there are no buckets
     PTR_VOID pBuckets = NULL;
 
-    // Get the handle to the throwble
-    OBJECTHANDLE ohThrowable = pThread->GetThrowableAsHandle();
-    if (ohThrowable != NULL)
+    // Get the current throwable
+    OBJECTREF oThrowable = pThread->GetExceptionState()->GetThrowable();
+    if (oThrowable != NULL)
     {
-        // Get the object from handle and check if the throwable is preallocated or not
-        OBJECTREF oThrowable = ObjectFromHandle(ohThrowable);
-        if (oThrowable != NULL)
+        // Does the throwable have buckets?
+        U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
+        if (refWatsonBucketArray != NULL)
         {
-            // Does the throwable have buckets?
-            U1ARRAYREF refWatsonBucketArray = ((EXCEPTIONREF)oThrowable)->GetWatsonBucketReference();
-            if (refWatsonBucketArray != NULL)
+            // Get the watson buckets from the throwable for non-preallocated
+            // exceptions
+            pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
+        }
+        else
+        {
+            // This is a preallocated exception object - check if the UE Watson bucket tracker
+            // has any bucket details
+            pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
+            if (pBuckets == NULL)
             {
-                // Get the watson buckets from the throwable for non-preallocated
-                // exceptions
-                pBuckets = dac_cast<PTR_VOID>(refWatsonBucketArray->GetDataPtr());
-            }
-            else
-            {
-                // This is a preallocated exception object - check if the UE Watson bucket tracker
-                // has any bucket details
-                pBuckets = pThread->GetExceptionState()->GetUEWatsonBucketTracker()->RetrieveWatsonBuckets();
-                if (pBuckets == NULL)
+                // Since the UE watson bucket tracker does not have them, look up the current
+                // exception tracker
+                if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
                 {
-                    // Since the UE watson bucket tracker does not have them, look up the current
-                    // exception tracker
-                    if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)
-                    {
-                        pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
-                    }
+                    pBuckets = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetWatsonBucketTracker()->RetrieveWatsonBuckets();
                 }
             }
         }
@@ -5387,21 +5384,26 @@ namespace
 #ifdef FEATURE_OBJCMARSHAL
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), target);
-            if (pSyncBlk != NULL)
+            if (g_ObjectiveCTrackingInfoTable != NULL)
             {
-                PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
-                if (pInfo != NULL)
+                CONDITIONAL_WEAK_TABLE_REF trackingTable = (CONDITIONAL_WEAK_TABLE_REF)ObjectFromHandle(g_ObjectiveCTrackingInfoTable);
+                if (trackingTable != NULL)
                 {
-                    CLRDATA_ADDRESS taggedMemoryLocal = PTR_CDADDR(pInfo->GetTaggedMemory());
-                    if (taggedMemoryLocal != NULL)
+                    OBJECTREF object = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(objAddr));
+                    OBJC_TRACKING_INFO_REF trackingInfo = NULL;
+                    if (trackingTable->TryGetValue(object, &trackingInfo) && trackingInfo != NULL)
                     {
-                        hasTaggedMemory = TRUE;
-                        if (taggedMemory)
-                            *taggedMemory = taggedMemoryLocal;
+                        TADDR memory = (TADDR)trackingInfo->_memory;
+                        if (memory != NULL)
+                        {
+                            hasTaggedMemory = TRUE;
+                            if (taggedMemory)
+                                *taggedMemory = (CLRDATA_ADDRESS)memory;
 
-                        if (taggedMemorySizeInBytes)
-                            *taggedMemorySizeInBytes = pInfo->GetTaggedMemorySizeInBytes();
+                            constexpr int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
+                            if (taggedMemorySizeInBytes)
+                                *taggedMemorySizeInBytes = TAGGED_MEMORY_SIZE_IN_POINTERS * sizeof(TADDR);
+                        }
                     }
                 }
             }

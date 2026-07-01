@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -14,12 +15,12 @@ namespace System
     [ComVisible(true)]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-        // _target is the object we will invoke on
-        internal object? _target; // Initialized by VM as needed; null if static delegate
-
         // MethodBase, either cached after first request or assigned from a DynamicMethod
         // For open delegates to collectible types, this may be a LoaderAllocator object
-        internal object? _methodBase; // Initialized by VM as needed
+        internal object? _helperObject;
+
+        // _target is the object we will invoke on; null if static delegate
+        internal object? _target; // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
 
         // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call
@@ -80,7 +81,7 @@ namespace System
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             RuntimeMethodHandleInternal method = new RuntimeMethodHandleInternal(GetInvokeMethod());
-            RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)this.GetType(), method)!;
+            RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)GetType(), method)!;
 
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
@@ -132,8 +133,8 @@ namespace System
 
             // method ptrs don't match, go down long path
 
-            if (_methodBase is MethodInfo && d._methodBase is MethodInfo)
-                return _methodBase.Equals(d._methodBase);
+            if (_helperObject is MethodInfo && d._helperObject is MethodInfo)
+                return _helperObject.Equals(d._helperObject);
             else
                 return InternalEqualMethodHandles(this, d);
         }
@@ -146,9 +147,9 @@ namespace System
             // different hashcode which is not true.
             /*
             if (_methodPtrAux == IntPtr.Zero)
-                return unchecked((int)((long)this._methodPtr));
+                return unchecked((int)((long)_methodPtr));
             else
-                return unchecked((int)((long)this._methodPtrAux));
+                return unchecked((int)((long)_methodPtrAux));
             */
             if (_methodPtrAux == IntPtr.Zero)
                 return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
@@ -158,7 +159,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if (_methodBase is MethodInfo methodInfo)
+            if (_helperObject is MethodInfo methodInfo)
             {
                 return methodInfo;
             }
@@ -208,19 +209,16 @@ namespace System
                     else
                     {
                         // it's an open one, need to fetch the first arg of the instantiation
-                        MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
+                        MethodInfo invoke = GetType().GetMethod("Invoke")!;
                         declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
                     }
                 }
             }
 
-            _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
-            return (MethodInfo)_methodBase;
+            _helperObject = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+            return (MethodInfo)_helperObject;
         }
 
-        public object? Target => GetTarget();
-
-        // V1 API.
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
@@ -256,7 +254,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -292,7 +289,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -327,7 +323,6 @@ namespace System
             return d;
         }
 
-        // V2 API.
         public static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -359,12 +354,8 @@ namespace System
             return d;
         }
 
-        //
-        // internal implementation details (FCALLS and utilities)
-        //
-
-        // V2 internal API.
-        internal static Delegate CreateDelegateNoSecurityCheck(Type type, object? target, RuntimeMethodHandle method)
+        internal static Delegate CreateDelegateForDynamicMethod(Type type, object? target, RuntimeMethodHandle method,
+            DynamicMethod dynamicMethod)
         {
             ArgumentNullException.ThrowIfNull(type);
 
@@ -377,10 +368,7 @@ namespace System
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            // Initialize the method...
             Delegate d = InternalAlloc(rtType);
-            // This is a new internal API added in Whidbey. Currently it's only
-            // used by the dynamic method code to generate a wrapper delegate.
             // Allow flexible binding options since the target method is
             // unambiguously provided to us.
 
@@ -389,6 +377,8 @@ namespace System
                                     RuntimeMethodHandle.GetDeclaringType(method.GetMethodInfo()),
                                     DelegateBindingFlags.RelaxedSignature))
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
+
+            d._helperObject = dynamicMethod;
             return d;
         }
 
@@ -483,11 +473,9 @@ namespace System
         private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
-        [RequiresUnsafe]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
         internal unsafe IntPtr GetMulticastInvoke()
@@ -505,7 +493,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
         private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
 
         internal unsafe IntPtr GetInvokeMethod()
@@ -552,11 +539,6 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
-
-        internal virtual object? GetTarget()
-        {
-            return (_methodPtrAux == IntPtr.Zero) ? _target : null;
-        }
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their

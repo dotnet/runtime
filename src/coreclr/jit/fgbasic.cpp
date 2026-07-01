@@ -2131,6 +2131,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
                     }
+
+                    if (compIsAsyncVersion())
+                    {
+                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
+                    }
                 }
                 handled = true;
                 goto OBSERVE_OPCODE;
@@ -3306,7 +3311,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
     GOT_ENDP:
 
-        tailCall = (opcode == CEE_TAILCALL);
+        tailCall = (opcode == CEE_TAILCALL) && !compIsAsyncVersion();
 
         // Make sure a jump target isn't in the middle of our opcode
 
@@ -5192,6 +5197,10 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         // Unlink this block from the bbNext chain
         fgUnlinkBlockForRemoval(block);
 
+        // Retarget any surviving EH region whose 'last' block was this one.
+        assert(bPrev != nullptr);
+        ehUpdateLastBlocks(block, bPrev);
+
         // At this point the bbPreds and bbRefs had better be zero
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
     }
@@ -5252,6 +5261,8 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         for (BasicBlock* const predBlock : block->PredBlocksEditing())
         {
+            // Inherit affordances
+            predBlock->CopyFlags(block, BBF_ASYNC_RESUMPTION);
             // change all jumps/refs to the removed block
             fgReplaceJumpTarget(predBlock, block, succBlock);
         }
@@ -5379,10 +5390,6 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 //
 // Return Value:
 //    The last block that was relocated, or nullptr on failure.
-//
-// Notes:
-//    This function can invalidate all pointers into the EH table, as well as
-//    change the size of the EH table!
 //
 BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType)
 {

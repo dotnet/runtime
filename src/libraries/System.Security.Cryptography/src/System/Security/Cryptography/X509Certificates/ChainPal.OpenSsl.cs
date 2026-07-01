@@ -98,14 +98,7 @@ namespace System.Security.Cryptography.X509Certificates
                 timeout = s_maxUrlRetrievalTimeout;
             }
 
-            // Let Unspecified mean Local, so only convert if the source was UTC.
-            //
-            // Converge on Local instead of UTC because OpenSSL is going to assume we gave it
-            // local time.
-            if (verificationTime.Kind == DateTimeKind.Utc)
-            {
-                verificationTime = verificationTime.ToLocalTime();
-            }
+            DateTimeOffset verificationInstant = new DateTimeOffset(verificationTime);
 
             // Until we support the Disallowed store, ensure it's empty (which is done by the ctor)
             using (new X509Store(StoreName.Disallowed, StoreLocation.CurrentUser, OpenFlags.ReadOnly))
@@ -118,7 +111,7 @@ namespace System.Security.Cryptography.X509Certificates
                 ((OpenSslX509CertificateReader)cert).SafeHandle,
                 customTrustStore,
                 trustMode,
-                verificationTime,
+                verificationInstant,
                 downloadTimeout);
 
             Interop.Crypto.X509VerifyStatusCode status = chainPal.FindFirstChain(extraStore);

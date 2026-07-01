@@ -71,6 +71,7 @@ namespace System.Security.Cryptography
         public AesCcm(byte[] key) { }
         public AesCcm(System.ReadOnlySpan<byte> key) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
@@ -144,6 +145,7 @@ namespace System.Security.Cryptography
         public AesGcm(System.ReadOnlySpan<byte> key) { }
         public AesGcm(System.ReadOnlySpan<byte> key, int tagSizeInBytes) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public int? TagSizeInBytes { get { throw null; } }
@@ -187,7 +189,7 @@ namespace System.Security.Cryptography
         public AsnEncodedData(string oid, byte[] rawData) { }
         public AsnEncodedData(string oid, System.ReadOnlySpan<byte> rawData) { }
         public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
-        public byte[] RawData { get { throw null; } set { } }
+        public byte[] RawData { get { throw null; } [System.ObsoleteAttribute("Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead.", DiagnosticId="SYSLIB0065", UrlFormat="https://aka.ms/dotnet-warnings/{0}")] set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public virtual string Format(bool multiLine) { throw null; }
     }
@@ -676,6 +678,7 @@ namespace System.Security.Cryptography
     }
     public static partial class CryptographicOperations
     {
+        public static bool FixedTimeEquals(System.ReadOnlySpan<byte> source, byte value) { throw null; }
         public static bool FixedTimeEquals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
         public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] source) { throw null; }
         public static byte[] HashData(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.IO.Stream source) { throw null; }
@@ -2867,6 +2870,12 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenKeyFromProvider(System.Collections.Generic.IEnumerable<string> providerNames, string keyUri, string? propertyQuery = null) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyId) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -3448,8 +3457,11 @@ namespace System.Security.Cryptography
         protected X25519DiffieHellman() { }
         public static bool IsSupported { get { throw null; } }
         public byte[] DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty) { throw null; }
+        public byte[] DeriveRawSecretAgreement(byte[] otherPartyPublicKey) { throw null; }
         public void DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        public void DeriveRawSecretAgreement(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination) { }
         protected abstract void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination);
+        protected abstract void DeriveRawSecretAgreementCore(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public byte[] ExportPrivateKey() { throw null; }
@@ -3493,6 +3505,18 @@ namespace System.Security.Cryptography
         protected abstract bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
         public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    public sealed partial class X25519DiffieHellmanCng : System.Security.Cryptography.X25519DiffieHellman
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public X25519DiffieHellmanCng(System.Security.Cryptography.CngKey key) { }
+        protected override void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        protected override void DeriveRawSecretAgreementCore(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination) { }
+        protected override void Dispose(bool disposing) { }
+        protected override void ExportPrivateKeyCore(System.Span<byte> destination) { }
+        protected override void ExportPublicKeyCore(System.Span<byte> destination) { }
+        public System.Security.Cryptography.CngKey GetKey() { throw null; }
+        protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
     public sealed partial class X25519DiffieHellmanOpenSsl : System.Security.Cryptography.X25519DiffieHellman
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
@@ -3503,6 +3527,7 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public X25519DiffieHellmanOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
         protected override void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        protected override void DeriveRawSecretAgreementCore(System.ReadOnlySpan<byte> otherPartyPublicKey, System.Span<byte> destination) { }
         protected override void Dispose(bool disposing) { }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
         protected override void ExportPrivateKeyCore(System.Span<byte> destination) { }
