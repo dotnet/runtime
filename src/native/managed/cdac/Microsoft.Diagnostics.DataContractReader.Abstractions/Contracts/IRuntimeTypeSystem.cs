@@ -8,18 +8,32 @@ using System.Collections.Immutable;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-// an opaque handle to a type handle.  See IMetadata.GetMethodTableData
-public readonly struct TypeHandle
+/// <summary>
+/// An opaque handle to a runtime type. May represent a loaded type (backed by a
+/// target-process MethodTable or TypeDesc address) or a synthetic type fabricated
+/// by the reader for unloaded constructed types.
+/// </summary>
+public interface ITypeHandle : IEquatable<ITypeHandle>
 {
-    // TODO-Layering: These members should be accessible only to contract implementations.
-    public TypeHandle(TargetPointer address)
-    {
-        Address = address;
-    }
+    TargetPointer Address { get; }
+    bool IsNull { get; }
+    bool IsSynthetic { get; }
+    static ITypeHandle Null { get; } = NullTypeHandle.Instance;
+}
 
-    public TargetPointer Address { get; }
-
-    public bool IsNull => Address == 0;
+/// <summary>
+/// Singleton ITypeHandle representing the absence of a type.
+/// </summary>
+public sealed class NullTypeHandle : ITypeHandle
+{
+    public static readonly NullTypeHandle Instance = new();
+    private NullTypeHandle() { }
+    public TargetPointer Address => TargetPointer.Null;
+    public bool IsNull => true;
+    public bool IsSynthetic => false;
+    public bool Equals(ITypeHandle? other) => other is not null && other.IsNull && !other.IsSynthetic;
+    public override bool Equals(object? obj) => obj is ITypeHandle th && Equals(th);
+    public override int GetHashCode() => 0;
 }
 
 public enum CorElementType
@@ -114,114 +128,115 @@ public interface IRuntimeTypeSystem : IContract
 {
     static string IContract.Name => nameof(RuntimeTypeSystem);
 
-    #region TypeHandle inspection APIs
-    TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
-    TargetPointer GetModule(TypeHandle typeHandle) => throw new NotImplementedException();
-    TargetPointer GetLoaderModule(TypeHandle typeHandle) => throw new NotImplementedException();
+    #region ITypeHandle inspection APIs
+    ITypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
+    TargetPointer GetModule(ITypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetLoaderModule(ITypeHandle typeHandle) => throw new NotImplementedException();
 
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
-    TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetCanonicalMethodTable(ITypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
     // to the canonical MT and returns its EEClass.
-    TargetPointer GetClassPointer(TypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetClassPointer(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
-    bool IsCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
-    TargetPointer GetParentMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsCanonicalMethodTable(ITypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetParentMethodTable(ITypeHandle typeHandle) => throw new NotImplementedException();
 
-    TargetPointer GetMethodDescForSlot(TypeHandle methodTable, ushort slot) => throw new NotImplementedException();
-    IEnumerable<TargetPointer> GetIntroducedMethodDescs(TypeHandle methodTable) => throw new NotImplementedException();
-    TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot) => throw new NotImplementedException();
+    TargetPointer GetMethodDescForSlot(ITypeHandle methodTable, ushort slot) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle methodTable) => throw new NotImplementedException();
+    TargetCodePointer GetSlot(ITypeHandle typeHandle, uint slot) => throw new NotImplementedException();
 
-    uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
-    uint GetNumInstanceFieldBytes(TypeHandle typeHandle) => throw new NotImplementedException();
+    uint GetBaseSize(ITypeHandle typeHandle) => throw new NotImplementedException();
+    uint GetNumInstanceFieldBytes(ITypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
-    uint GetComponentSize(TypeHandle typeHandle) => throw new NotImplementedException();
+    uint GetComponentSize(ITypeHandle typeHandle) => throw new NotImplementedException();
 
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
-    bool IsFreeObjectMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsFreeObjectMethodTable(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
-    bool IsObject(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsObject(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsString(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if the CorElementType represents a GC-collectable object reference.
     bool IsCorElementTypeObjRef(CorElementType elementType) => throw new NotImplementedException();
     // Returns the address of one of the runtime's well-known singleton MethodTables,
     // or TargetPointer.Null if the runtime has not yet initialized that global.
     TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
-    bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool ContainsGCPointers(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
-    bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsByRefLike(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
-    bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool RequiresAlign8(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
-    bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsContinuationWithoutMetadata(ITypeHandle typeHandle) => throw new NotImplementedException();
     /// <summary>
     /// Enumerates GC pointer runs from the CGCDesc stored before the method table.
     /// Returns (offset, size) pairs normalized to actual byte lengths.
     /// See RuntimeTypeSystem.md for the full GCDesc format documentation.
     /// </summary>
-    IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0) => throw new NotImplementedException();
-    bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
-    ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
+    IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(ITypeHandle typeHandle, uint numComponents = 0) => throw new NotImplementedException();
+    bool IsDynamicStatics(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ushort GetNumInterfaces(ITypeHandle typeHandle) => throw new NotImplementedException();
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
-    uint GetTypeDefToken(TypeHandle typeHandle) => throw new NotImplementedException();
-    ushort GetNumVtableSlots(TypeHandle typeHandle) => throw new NotImplementedException();
-    ushort GetNumMethods(TypeHandle typeHandle) => throw new NotImplementedException();
+    uint GetTypeDefToken(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ushort GetNumVtableSlots(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ushort GetNumMethods(ITypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
-    uint GetTypeDefTypeAttributes(TypeHandle typeHandle) => throw new NotImplementedException();
-    ushort GetNumInstanceFields(TypeHandle typeHandle) => throw new NotImplementedException();
-    ushort GetNumStaticFields(TypeHandle typeHandle) => throw new NotImplementedException();
-    ushort GetNumThreadStaticFields(TypeHandle typeHandle) => throw new NotImplementedException();
-    IEnumerable<TargetPointer> GetFieldDescList(TypeHandle typeHandle) => throw new NotImplementedException();
+    uint GetTypeDefTypeAttributes(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ushort GetNumInstanceFields(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ushort GetNumStaticFields(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ushort GetNumThreadStaticFields(ITypeHandle typeHandle) => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetFieldDescList(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
-    bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => throw new NotImplementedException();
-    TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle) => throw new NotImplementedException();
-    TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle) => throw new NotImplementedException();
-    TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr) => throw new NotImplementedException();
-    TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr) => throw new NotImplementedException();
+    bool IsTrackedReferenceWithFinalizer(ITypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetGCStaticsBasePointer(ITypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetNonGCStaticsBasePointer(ITypeHandle typeHandle) => throw new NotImplementedException();
+    TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr) => throw new NotImplementedException();
+    TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr) => throw new NotImplementedException();
 
 
-    ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle) => throw new NotImplementedException();
-    public bool IsClassInited(TypeHandle typeHandle) => throw new NotImplementedException();
-    public bool IsInitError(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsGenericTypeDefinition(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool ContainsGenericVariables(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsCollectible(TypeHandle typeHandle) => throw new NotImplementedException();
+    ITypeHandle[] GetInstantiation(ITypeHandle typeHandle) => throw new NotImplementedException();
+    public bool IsClassInited(ITypeHandle typeHandle) => throw new NotImplementedException();
+    public bool IsInitError(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsGenericTypeDefinition(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool ContainsGenericVariables(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsCollectible(ITypeHandle typeHandle) => throw new NotImplementedException();
 
-    bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
+    bool HasTypeParam(ITypeHandle typeHandle) => throw new NotImplementedException();
 
     // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
     // If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view on a structure
     // HasTypeParam will return true for cases where this is the interop view
-    CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsValueType(TypeHandle typeHandle) => throw new NotImplementedException();
+    CorElementType GetSignatureCorElementType(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsValueType(ITypeHandle typeHandle) => throw new NotImplementedException();
 
     // Internal element type of the type. Unlike GetSignatureCorElementType, this returns the underlying primitive
     // type for enums (e.g. I4 for an enum with int underlying type) and for PrimitiveValueType categories.
     // For arrays, reference types, and TypeDescs, behaves identically to GetSignatureCorElementType.
-    CorElementType GetInternalCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
+    CorElementType GetInternalCorElementType(ITypeHandle typeHandle) => throw new NotImplementedException();
 
-    // return true if the TypeHandle represents an enum type.
-    bool IsEnum(TypeHandle typeHandle) => throw new NotImplementedException();
+    // return true if the ITypeHandle represents an enum type.
+    bool IsEnum(ITypeHandle typeHandle) => throw new NotImplementedException();
 
-    // return true if the TypeHandle represents a delegate type (i.e., its parent is System.MulticastDelegate)
-    bool IsDelegate(TypeHandle typeHandle) => throw new NotImplementedException();
+    // return true if the ITypeHandle represents a delegate type (i.e., its parent is System.MulticastDelegate)
+    bool IsDelegate(ITypeHandle typeHandle) => throw new NotImplementedException();
 
-    // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
-    bool IsArray(TypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
-    TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
-    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
-    TypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
-    bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
-    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
-    bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsTypeDesc(TypeHandle typeHandle) => throw new NotImplementedException();
+    // return true if the ITypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
+    bool IsArray(ITypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
+    ITypeHandle GetTypeParam(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ITypeHandle GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
+    ITypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
+    bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
+    bool IsFunctionPointer(ITypeHandle typeHandle, out ITypeHandle[] retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
+    bool IsPointer(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsTypeDesc(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsSynthetic(ITypeHandle typeHandle) => typeHandle.IsSynthetic;
     TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
-    // Returns null if the TypeHandle is not a class/struct/generic variable
-    #endregion TypeHandle inspection APIs
+    // Returns null if the ITypeHandle is not a class/struct/generic variable
+    #endregion ITypeHandle inspection APIs
 
     #region MethodDesc inspection APIs
     MethodDescHandle GetMethodDescHandle(TargetPointer targetPointer) => throw new NotImplementedException();
@@ -229,7 +244,7 @@ public interface IRuntimeTypeSystem : IContract
 
     // Return true for an uninstantiated generic method
     bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
-    ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    ITypeHandle[] GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
 
@@ -298,8 +313,8 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
-    TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
+    ITypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    TargetPointer GetFieldDescByName(ITypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs

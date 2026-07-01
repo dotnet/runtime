@@ -57,7 +57,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         DacDbiImpl dbi = CreateDacDbi();
 
         TargetPointer objectMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectMethodTable"));
-        TypeHandle objectHandle = Target.Contracts.RuntimeTypeSystem.GetTypeHandle(objectMT);
+        ITypeHandle objectHandle = Target.Contracts.RuntimeTypeSystem.GetTypeHandle(objectMT);
 
         COR_TYPE_LAYOUT layout;
         int hr = dbi.GetTypeLayout(objectMT.Value, &layout);
@@ -79,8 +79,8 @@ public class DacDbiObjectDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer arrayMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectArrayMethodTable"));
-        TypeHandle arrayHandle = rts.GetTypeHandle(arrayMT);
-        TypeHandle componentHandle = rts.GetTypeParam(arrayHandle);
+        ITypeHandle arrayHandle = rts.GetTypeHandle(arrayMT);
+        ITypeHandle componentHandle = rts.GetTypeParam(arrayHandle);
         Assert.True(rts.IsArray(arrayHandle, out uint rank));
 
         COR_ARRAY_LAYOUT layout;
@@ -213,7 +213,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
-        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        ITypeHandle stringHandle = rts.GetTypeHandle(stringMT);
         uint expectedCount = GetIntroducedInstanceFieldCount(rts, stringHandle);
 
         uint fetched = 0;
@@ -231,7 +231,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
-        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        ITypeHandle stringHandle = rts.GetTypeHandle(stringMT);
         uint cFields = GetIntroducedInstanceFieldCount(rts, stringHandle);
         Assert.True(cFields >= 1, $"Expected System.String to have at least one introduced instance field, got {cFields}");
 
@@ -262,13 +262,13 @@ public class DacDbiObjectDumpTests : DumpTestBase
         }
     }
 
-    private static uint GetIntroducedInstanceFieldCount(IRuntimeTypeSystem rts, TypeHandle handle)
+    private static uint GetIntroducedInstanceFieldCount(IRuntimeTypeSystem rts, ITypeHandle handle)
     {
         uint count = rts.GetNumInstanceFields(handle);
         TargetPointer parentMT = rts.GetParentMethodTable(handle);
         if (parentMT != TargetPointer.Null)
         {
-            TypeHandle parentHandle = rts.GetTypeHandle(parentMT);
+            ITypeHandle parentHandle = rts.GetTypeHandle(parentMT);
             count -= rts.GetNumInstanceFields(parentHandle);
         }
         return count;

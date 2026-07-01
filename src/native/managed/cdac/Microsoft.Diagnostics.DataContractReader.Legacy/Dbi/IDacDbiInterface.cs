@@ -278,7 +278,7 @@ public struct DebuggerIPCE_BasicTypeData
     [FieldOffset(0)] public int elementType;       // Portable<CorElementType>
     [FieldOffset(4)] public uint metadataToken;    // Portable<mdTypeDef>
     [FieldOffset(8)] public ulong vmAssembly;      // VMPTR_Assembly (Portable<CORDB_ADDRESS>)
-    [FieldOffset(16)] public ulong vmTypeHandle;   // VMPTR_TypeHandle (Portable<CORDB_ADDRESS>)
+    [FieldOffset(16)] public ulong vmTypeHandle;   // VMPTR_ITypeHandle (Portable<CORDB_ADDRESS>)
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -301,7 +301,7 @@ public struct DebuggerIPCE_ExpandedTypeData
     // ClassTypeData (used for E_T_CLASS, E_T_VALUETYPE)
     [FieldOffset(8)] public uint ClassTypeData_metadataToken;    // Portable<mdTypeDef>
     [FieldOffset(16)] public ulong ClassTypeData_vmAssembly;     // VMPTR_Assembly
-    [FieldOffset(24)] public ulong ClassTypeData_typeHandle;     // VMPTR_TypeHandle
+    [FieldOffset(24)] public ulong ClassTypeData_typeHandle;     // VMPTR_ITypeHandle
 
     // UnaryTypeData (used for E_T_PTR, E_T_BYREF) — overlaps union at offset 8
     [FieldOffset(8)] public DebuggerIPCE_BasicTypeData UnaryTypeData_unaryTypeArg;
@@ -311,7 +311,7 @@ public struct DebuggerIPCE_ExpandedTypeData
     [FieldOffset(32)] public uint ArrayTypeData_arrayRank;       // Portable<DWORD>
 
     // NaryTypeData (used for E_T_FNPTR) — overlaps union at offset 8
-    [FieldOffset(8)] public ulong NaryTypeData_typeHandle;       // VMPTR_TypeHandle
+    [FieldOffset(8)] public ulong NaryTypeData_typeHandle;       // VMPTR_ITypeHandle
 }
 
 [StructLayout(LayoutKind.Sequential)]

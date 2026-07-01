@@ -7,7 +7,7 @@ internal readonly struct ArgumentLocation
 {
     public int Offset { get; init; }
     public CorElementType ElementType { get; init; }
-    public TypeHandle TypeHandle { get; init; }
+    public ITypeHandle TypeHandle { get; init; }
     public bool IsThis { get; init; }
     public bool IsValueTypeThis { get; init; }
     public bool IsParamType { get; init; }
@@ -24,9 +24,4 @@ internal readonly struct ArgumentLocation
     // walks instance fields for these to emit INTERIOR tokens at each managed
     // pointer slot.
     public bool IsByRefLikeStruct { get; init; }
-
-    // For generic-instantiation parameters with an uncached closed TypeHandle,
-    // the open generic MethodTable (e.g. Span<T> for a Span<int> arg) so
-    // encoders can inspect type structure as a fallback.
-    public TypeHandle OpenGenericType { get; init; }
 }

@@ -40,7 +40,7 @@ public unsafe class SOSDacInterface5Tests
 
         ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateSynthetic(s_moduleAddr, 0x06000001);
         MethodDescHandle methodDescHandle = new MethodDescHandle(s_methodDescAddr);
-        TypeHandle typeHandle = new TypeHandle(s_methodTableAddr);
+        ITypeHandle typeHandle = new TargetTypeHandle(s_methodTableAddr);
         Contracts.ModuleHandle moduleHandle = new Contracts.ModuleHandle(s_moduleAddr);
 
         mockCodeVersions

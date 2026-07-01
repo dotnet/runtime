@@ -28,10 +28,10 @@ internal enum GcTypeKind
 /// <summary>
 /// Generic context used to resolve <c>ELEMENT_TYPE_VAR</c> and <c>ELEMENT_TYPE_MVAR</c>
 /// while decoding a method signature for GC scanning. <see cref="ClassContext"/> is the
-/// owning type's <see cref="TypeHandle"/> (used for VAR), and <see cref="MethodContext"/>
+/// owning type's <see cref="ITypeHandle"/> (used for VAR), and <see cref="MethodContext"/>
 /// is the owning method's <see cref="MethodDescHandle"/> (used for MVAR).
 /// </summary>
-internal readonly record struct GcSignatureContext(TypeHandle ClassContext, MethodDescHandle MethodContext);
+internal readonly record struct GcSignatureContext(ITypeHandle ClassContext, MethodDescHandle MethodContext);
 
 /// <summary>
 /// Classifies signature types for GC scanning purposes.
@@ -87,7 +87,7 @@ internal sealed class GcSignatureTypeProvider
     {
         try
         {
-            ReadOnlySpan<TypeHandle> instantiation = _target.Contracts.RuntimeTypeSystem.GetGenericMethodInstantiation(genericContext.MethodContext);
+            ITypeHandle[] instantiation = _target.Contracts.RuntimeTypeSystem.GetGenericMethodInstantiation(genericContext.MethodContext);
             if ((uint)index >= (uint)instantiation.Length)
                 return GcTypeKind.Ref;
             return ClassifyTypeHandle(instantiation[index]);
@@ -103,7 +103,7 @@ internal sealed class GcSignatureTypeProvider
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle classCtx = genericContext.ClassContext;
+            ITypeHandle classCtx = genericContext.ClassContext;
 
             if (rts.IsArray(classCtx, out _))
             {
@@ -117,7 +117,7 @@ internal sealed class GcSignatureTypeProvider
                 return ClassifyTypeHandle(rts.GetTypeParam(classCtx));
             }
 
-            ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(classCtx);
+            ITypeHandle[] instantiation = rts.GetInstantiation(classCtx);
             if ((uint)index >= (uint)instantiation.Length)
                 return GcTypeKind.Ref;
             return ClassifyTypeHandle(instantiation[index]);
@@ -150,7 +150,7 @@ internal sealed class GcSignatureTypeProvider
 
     /// <summary>
     /// Resolve a TypeDef/TypeRef token via the module's lookup tables and classify the
-    /// resulting <see cref="TypeHandle"/>. Falls back to a <paramref name="rawTypeKind"/>-based
+    /// resulting <see cref="ITypeHandle"/>. Falls back to a <paramref name="rawTypeKind"/>-based
     /// classification when the type has not been loaded.
     /// </summary>
     private GcTypeKind ClassifyTokenLookup(TargetPointer lookupTable, int token, byte rawTypeKind)
@@ -170,14 +170,14 @@ internal sealed class GcSignatureTypeProvider
     }
 
     /// <summary>
-    /// Classify a resolved <see cref="TypeHandle"/>. Mirrors native
+    /// Classify a resolved <see cref="ITypeHandle"/>. Mirrors native
     /// <c>SigPointer::PeekElemTypeNormalized</c> + <c>gElementTypeInfo[etype].m_gc</c>:
     /// enums collapse to their underlying primitive (<see cref="GcTypeKind.None"/>) so
     /// they are skipped during stack scanning, matching native behavior.
     /// </summary>
-    private GcTypeKind ClassifyTypeHandle(TypeHandle typeHandle)
+    private GcTypeKind ClassifyTypeHandle(ITypeHandle typeHandle)
     {
-        if (typeHandle.Address == TargetPointer.Null)
+        if (typeHandle.IsNull)
             return GcTypeKind.Ref;
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;

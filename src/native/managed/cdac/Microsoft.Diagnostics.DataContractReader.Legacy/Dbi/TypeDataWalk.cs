@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // Port of native DacDbiInterfaceImpl::TypeDataWalk
 //
 // Walks the flattened DebuggerIPCE_TypeArgData[] tree that the right side built in
-// CordbType::GatherTypeData and produces a TypeHandle for the loaded representation
+// CordbType::GatherTypeData and produces a ITypeHandle for the loaded representation
 // (exact, or canonical when generic code-sharing collapses reference type-args to
 // System.__Canon and value type-args to their canonical form).
 //
@@ -19,11 +19,11 @@ internal unsafe ref struct TypeDataWalk
 {
     private readonly Target _target;
     private readonly IRuntimeTypeSystem _rts;
-    private readonly TypeHandle _canonTh;
+    private readonly ITypeHandle _canonTh;
     private DebuggerIPCE_TypeArgData* _pCurrent;
     private uint _remaining;
 
-    public TypeDataWalk(Target target, IRuntimeTypeSystem rts, TypeHandle canonTh, DebuggerIPCE_TypeArgData* pData, uint nData)
+    public TypeDataWalk(Target target, IRuntimeTypeSystem rts, ITypeHandle canonTh, DebuggerIPCE_TypeArgData* pData, uint nData)
     {
         _target = target;
         _rts = rts;
@@ -55,11 +55,11 @@ internal unsafe ref struct TypeDataWalk
         }
     }
 
-    public TypeHandle ReadLoadedTypeHandle()
+    public ITypeHandle ReadLoadedTypeHandle()
     {
         DebuggerIPCE_TypeArgData* p = ReadOne();
         if (p == null)
-            return default;
+            return ITypeHandle.Null;
 
         CorElementType et = (CorElementType)DacDbiImpl.ReadLittleEndian(p->data.elementType);
         switch (et)
@@ -89,11 +89,11 @@ internal unsafe ref struct TypeDataWalk
     }
 
     // Read a single type argument in canonicalization-aware fashion.
-    private TypeHandle ReadLoadedTypeArg()
+    private ITypeHandle ReadLoadedTypeArg()
     {
         DebuggerIPCE_TypeArgData* p = ReadOne();
         if (p == null)
-            return default;
+            return ITypeHandle.Null;
 
         CorElementType et = (CorElementType)DacDbiImpl.ReadLittleEndian(p->data.elementType);
         switch (et)
@@ -114,59 +114,59 @@ internal unsafe ref struct TypeDataWalk
     }
 
     // Read an instantiation and ask the runtime-type-system for the loaded handle.
-    private TypeHandle ReadLoadedInstantiation(ulong vmAssembly, uint metadataToken, uint nTypeArgs)
+    private ITypeHandle ReadLoadedInstantiation(ulong vmAssembly, uint metadataToken, uint nTypeArgs)
     {
-        TypeHandle typeDef = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        ITypeHandle typeDef = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
         if (typeDef.IsNull)
-            return default;
+            return ITypeHandle.Null;
 
         if (nTypeArgs == 0)
             return typeDef;
 
-        ImmutableArray<TypeHandle>.Builder builder = ImmutableArray.CreateBuilder<TypeHandle>((int)nTypeArgs);
+        ImmutableArray<ITypeHandle>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle>((int)nTypeArgs);
         bool allOK = true;
         for (uint i = 0; i < nTypeArgs; i++)
         {
-            TypeHandle th = ReadLoadedTypeArg();
+            ITypeHandle th = ReadLoadedTypeArg();
             allOK &= !th.IsNull;
             builder.Add(th);
         }
         if (!allOK)
-            return default;
+            return ITypeHandle.Null;
 
         return _rts.GetConstructedType(typeDef, CorElementType.GenericInst, 0, builder.MoveToImmutable());
     }
 
-    private TypeHandle ArrayTypeArg(DebuggerIPCE_TypeArgData* pInfo)
+    private ITypeHandle ArrayTypeArg(DebuggerIPCE_TypeArgData* pInfo)
     {
-        TypeHandle elem = ReadLoadedTypeArg();
+        ITypeHandle elem = ReadLoadedTypeArg();
         if (elem.IsNull)
-            return default;
+            return ITypeHandle.Null;
         CorElementType et = (CorElementType)DacDbiImpl.ReadLittleEndian(pInfo->data.elementType);
         int rank = (int)DacDbiImpl.ReadLittleEndian(pInfo->data.ArrayTypeData_arrayRank);
-        return _rts.GetConstructedType(elem, et, rank, ImmutableArray<TypeHandle>.Empty);
+        return _rts.GetConstructedType(elem, et, rank, ImmutableArray<ITypeHandle>.Empty);
     }
 
-    private TypeHandle PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData* pInfo)
+    private ITypeHandle PtrOrByRefTypeArg(DebuggerIPCE_TypeArgData* pInfo)
     {
-        TypeHandle referent = ReadLoadedTypeArg();
+        ITypeHandle referent = ReadLoadedTypeArg();
         if (referent.IsNull)
-            return default;
+            return ITypeHandle.Null;
         CorElementType et = (CorElementType)DacDbiImpl.ReadLittleEndian(pInfo->data.elementType);
-        return _rts.GetConstructedType(referent, et, 0, ImmutableArray<TypeHandle>.Empty);
+        return _rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle>.Empty);
     }
 
     // A generic reference type collapses to System.__Canon
     // (and its type arguments are skipped); a value-type instantiation is recursively
     // resolved.
-    private TypeHandle ClassTypeArg(DebuggerIPCE_TypeArgData* pInfo)
+    private ITypeHandle ClassTypeArg(DebuggerIPCE_TypeArgData* pInfo)
     {
         ulong vmAssembly = DacDbiImpl.ReadLittleEndian(pInfo->data.ClassTypeData_vmAssembly);
         uint metadataToken = DacDbiImpl.ReadLittleEndian(pInfo->data.ClassTypeData_metadataToken);
         uint numTypeArgs = DacDbiImpl.ReadLittleEndian(pInfo->numTypeArgs);
         CorElementType et = (CorElementType)DacDbiImpl.ReadLittleEndian(pInfo->data.elementType);
 
-        TypeHandle typeDef = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        ITypeHandle typeDef = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
 
         if ((!typeDef.IsNull && _rts.IsValueType(typeDef)) || et == CorElementType.ValueType)
         {
@@ -180,25 +180,25 @@ internal unsafe ref struct TypeDataWalk
         }
     }
 
-    private TypeHandle FnPtrTypeArg(DebuggerIPCE_TypeArgData* pInfo)
+    private ITypeHandle FnPtrTypeArg(DebuggerIPCE_TypeArgData* pInfo)
     {
         uint numTypeArgs = DacDbiImpl.ReadLittleEndian(pInfo->numTypeArgs);
-        ImmutableArray<TypeHandle>.Builder builder = ImmutableArray.CreateBuilder<TypeHandle>((int)numTypeArgs);
+        ImmutableArray<ITypeHandle>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle>((int)numTypeArgs);
         bool allOK = true;
         for (uint i = 0; i < numTypeArgs; i++)
         {
-            TypeHandle th = ReadLoadedTypeArg();
+            ITypeHandle th = ReadLoadedTypeArg();
             allOK &= !th.IsNull;
             builder.Add(th);
         }
         if (!allOK)
-            return default;
+            return ITypeHandle.Null;
 
         // Non-default calling conventions are not supported (matches the exact-handle path).
-        return _rts.GetConstructedType(default, CorElementType.FnPtr, 0, builder.MoveToImmutable());
+        return _rts.GetConstructedType(ITypeHandle.Null, CorElementType.FnPtr, 0, builder.MoveToImmutable());
     }
 
-    private TypeHandle ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData* pInfo, CorElementType elementType)
+    private ITypeHandle ObjRefOrPrimitiveTypeArg(DebuggerIPCE_TypeArgData* pInfo, CorElementType elementType)
     {
         // Skip any children: they are part of a reference-typed argument that canonicalizes to __Canon.
         uint numTypeArgs = DacDbiImpl.ReadLittleEndian(pInfo->numTypeArgs);
@@ -210,7 +210,7 @@ internal unsafe ref struct TypeDataWalk
         return _rts.GetPrimitiveType(elementType);
     }
 
-    private TypeHandle TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    private ITypeHandle TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
     {
         ILoader loader = _target.Contracts.Loader;
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -226,10 +226,10 @@ internal unsafe ref struct TypeDataWalk
                 mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
                 break;
             default:
-                return default;
+                return ITypeHandle.Null;
         }
         if (mt == TargetPointer.Null)
-            return default;
+            return ITypeHandle.Null;
         return rts.GetTypeHandle(mt);
     }
 }
