@@ -764,7 +764,7 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
