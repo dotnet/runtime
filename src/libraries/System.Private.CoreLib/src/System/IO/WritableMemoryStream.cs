@@ -7,42 +7,117 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>
-    /// Provides a seekable, writable <see cref="MemoryStream"/> over a <see cref="Memory{Byte}"/> with fixed capacity.
+    /// Provides a seekable, writable <see cref="Stream"/> over a <see cref="Memory{Byte}"/> with fixed capacity.
     /// </summary>
     /// <remarks>
     /// <para>The stream cannot expand beyond the initial memory capacity.</para>
-    /// <para><see cref="MemoryStream.GetBuffer"/> throws and <see cref="MemoryStream.TryGetBuffer"/> returns <see langword="false"/>.</para>
+    /// <para><see cref="GetBuffer"/> throws and <see cref="TryGetBuffer"/> returns <see langword="false"/>.</para>
     /// </remarks>
-    public sealed class WritableMemoryStream : MemoryStream
+    public sealed class WritableMemoryStream : Stream
     {
         private Memory<byte> _memory;
+        private int _position;
+        private int _length;
+        private bool _isOpen;
+        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
         /// </summary>
         /// <param name="buffer">The <see cref="Memory{Byte}"/> to wrap.</param>
-        public WritableMemoryStream(Memory<byte> buffer) : base()
+        public WritableMemoryStream(Memory<byte> buffer)
         {
             _memory = buffer;
+            _isOpen = true;
         }
 
         /// <inheritdoc/>
-        public override int Capacity
+        public override bool CanRead => _isOpen;
+
+        /// <inheritdoc/>
+        public override bool CanSeek => _isOpen;
+
+        /// <inheritdoc/>
+        public override bool CanWrite => _isOpen;
+
+        /// <inheritdoc/>
+        public override long Length
+        {
+            get
+            {
+                EnsureNotClosed();
+                return _length;
+            }
+        }
+
+        /// <inheritdoc/>
+        public override long Position
+        {
+            get
+            {
+                EnsureNotClosed();
+                return _position;
+            }
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, int.MaxValue);
+                EnsureNotClosed();
+                _position = (int)value;
+            }
+        }
+
+        /// <inheritdoc/>
+        public override long Seek(long offset, SeekOrigin loc)
+        {
+            EnsureNotClosed();
+
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, int.MaxValue);
+
+            long target = loc switch
+            {
+                SeekOrigin.Begin => offset,
+                SeekOrigin.Current => _position + offset,
+                SeekOrigin.End => _length + offset,
+                _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(loc)),
+            };
+
+            if (target < 0)
+                throw new IOException(SR.IO_SeekBeforeBegin);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(target, int.MaxValue, nameof(offset));
+
+            _position = (int)target;
+            return _position;
+        }
+
+        /// <inheritdoc/>
+        public override void Flush() { }
+
+        /// <inheritdoc/>
+        public override Task FlushAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Task.CompletedTask;
+
+        /// <summary>Gets the size of the underlying buffer.</summary>
+        public int Capacity
         {
             get
             {
                 EnsureNotClosed();
                 return _memory.Length;
             }
-            set => throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
         }
 
-        /// <inheritdoc/>
-        public override byte[] GetBuffer() =>
+        /// <summary>Always throws; the underlying buffer is not exposed.</summary>
+        /// <exception cref="UnauthorizedAccessException">Always thrown.</exception>
+        public byte[] GetBuffer() =>
             throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
 
-        /// <inheritdoc/>
-        public override bool TryGetBuffer(out ArraySegment<byte> buffer)
+        /// <summary>Always returns <see langword="false"/>; the underlying buffer is not exposed.</summary>
+        /// <param name="buffer">When this method returns, contains the default value of <see cref="ArraySegment{Byte}"/>.</param>
+        /// <returns><see langword="false"/>.</returns>
+        public bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
             buffer = default;
             return false;
@@ -238,8 +313,9 @@ namespace System.IO
         /// <inheritdoc/>
         public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
 
-        /// <inheritdoc/>
-        public override byte[] ToArray()
+        /// <summary>Writes the stream contents to a byte array, regardless of the <see cref="Position"/>.</summary>
+        /// <returns>A new byte array containing a copy of the written contents.</returns>
+        public byte[] ToArray()
         {
             EnsureNotClosed();
             if (_length == 0)
@@ -252,8 +328,9 @@ namespace System.IO
             return copy;
         }
 
-        /// <inheritdoc/>
-        public override void WriteTo(Stream stream)
+        /// <summary>Writes the stream contents to another stream.</summary>
+        /// <param name="stream">The destination stream.</param>
+        public void WriteTo(Stream stream)
         {
             ArgumentNullException.ThrowIfNull(stream);
             EnsureNotClosed();
@@ -265,6 +342,7 @@ namespace System.IO
         protected override void Dispose(bool disposing)
         {
             _memory = default;
+            _isOpen = false;
             base.Dispose(disposing);
         }
 
