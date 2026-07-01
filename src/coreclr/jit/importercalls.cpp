@@ -10702,8 +10702,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     const char* methodName =
         info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
                                                     ArrLen(enclosingClassNames));
-    CORINFO_SIG_INFO sig;
-    eeGetMethodSig(method, &sig);
 
     JITDUMP("Named Intrinsic ");
 
@@ -10771,9 +10769,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Activator_AllocatorOf;
                         }
-                        else if (strcmp(methodName, "CreateInstance") == 0 && sig.hasTypeArg())
+                        else if (strcmp(methodName, "CreateInstance") == 0)
                         {
-                            result = NI_System_Activator_CreateInstance_T;
+                            CORINFO_SIG_INFO sig;
+                            eeGetMethodSig(method, &sig);
+                            if (sig.hasTypeArg())
+                            {
+                                result = NI_System_Activator_CreateInstance_T;
+                            }
                         }
                         else if (strcmp(methodName, "DefaultConstructorOf") == 0)
                         {
