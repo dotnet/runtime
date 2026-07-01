@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
-
 namespace System.Reflection.Internal
 {
     internal static class Hash
@@ -35,13 +33,20 @@ namespace System.Reflection.Internal
         /// </summary>
         /// <param name="data">The sequence of bytes</param>
         /// <returns>The FNV-1a hash of <paramref name="data"/></returns>
-        internal static int GetFNVHashCode(ReadOnlySpan<byte> data)
-        {
-            int hashCode = Hash.FnvOffsetBias;
+        internal static int GetFNVHashCode(ReadOnlySpan<byte> data) => AccumulateFNVHashCode(FnvOffsetBias, data);
 
+        /// <summary>
+        /// Compute the FNV-1a hash of a sequence of bytes
+        /// See http://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+        /// </summary>
+        /// <param name="hashCode">The current hash code</param>
+        /// <param name="data">The sequence of bytes</param>
+        /// <returns>The updated hash code</returns>
+        internal static int AccumulateFNVHashCode(int hashCode, ReadOnlySpan<byte> data)
+        {
             for (int i = 0; i < data.Length; i++)
             {
-                hashCode = unchecked((hashCode ^ data[i]) * Hash.FnvPrime);
+                hashCode = unchecked((hashCode ^ data[i]) * FnvPrime);
             }
 
             return hashCode;
