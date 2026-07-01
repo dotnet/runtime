@@ -331,6 +331,14 @@
            This is for performance reasons to reduce our helix payload size
            Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
       <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition="('%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true') and '%(Extension)' != '.OutOfProcessTest'" />
+
+      <!-- Tests can opt in to keeping their managed pdbs in the Helix payload by setting PreservePdbInHelixPayload=true. it drops a PreservePdb marker next to the test's pdbs. -->
+      <_PreservePdbMarkers Include="@(_MergedPayloadFiles)" Condition="'%(Extension)' == '.PreservePdb'" />
+      <_PreservePdbMarkerDirectories Include="@(_PreservePdbMarkers->'%(RootDir)%(Directory)')" KeepDuplicates="false" />
+      <_PreservedPdbFiles Include="%(_PreservePdbMarkerDirectories.Identity)**/*.pdb" Condition="'@(_PreservePdbMarkerDirectories)' != '' and '$(_NativeAotTest)' != 'true'" />
+      <ReducedMergedPayloadFilesFinal Include="@(_PreservedPdbFiles)" KeepDuplicates="false">
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </ReducedMergedPayloadFilesFinal>
     </ItemGroup>
 
     <PropertyGroup>

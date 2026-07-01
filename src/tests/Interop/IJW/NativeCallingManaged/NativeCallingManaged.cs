@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -53,6 +54,53 @@ namespace NativeCallingManaged
             TestFramework.EndTestCase();
 
             return success ? 100 : 99;
+        }
+
+        // Regression coverage for https://github.com/dotnet/runtime/issues/90563. Module::GetISymUnmanagedReader
+        // hands diasymreader a no-op IMetaDataImport2 instead of the module's real (RW-locked) importer.
+        // IjwNativeCallingManagedDll carries [assembly:Debuggable(true, true)] (== 0x101), so invoking one of its
+        // managed methods drives the JIT getBoundaries -> ISymUnmanagedReader path -- the second consumer of the
+        // no-op importer, distinct from the Exception.StackTrace path. This test JITs such a method by invoking it,
+        // then asserts the source file and line resolve from the module's classic PDB. Two guarantees fall out:
+        //   * On a checked build, if a future diasymreader upgrade calls a metadata method the no-op importer does
+        //     not implement, running this path fires the NOOPMD_NYI assert instead of silently passing.
+        //   * A resolved, non-zero line proves the classic PDB was actually read (the jit will silently drop it otherwise)
+        [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public static void ManagedMethodResolvesSourceLineFromClassicPdb()
+        {
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+            {
+                return;
+            }
+
+            Assembly ijwNativeDll = Assembly.Load("IjwNativeCallingManagedDll");
+
+            // The symbol reader looks for the PDB next to the module. Treat a missing PDB as a hard
+            // failure so the source-line assertions below cannot pass vacuously via a silent fallback.
+            string pdbPath = Path.ChangeExtension(ijwNativeDll.Location, ".pdb");
+            Assert.True(File.Exists(pdbPath), $"PDB was not deployed next to the IJW module: {pdbPath}");
+
+            Type testType = ijwNativeDll.GetType("TestClass");
+            MethodInfo throwMethod = testType.GetMethod("ThrowFromManaged");
+
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => throwMethod.Invoke(null, null));
+            Exception thrown = tie.InnerException;
+            Assert.NotNull(thrown);
+
+            StackFrame ijwFrame = null;
+            foreach (StackFrame frame in new StackTrace(thrown, fNeedFileInfo: true).GetFrames())
+            {
+                if (frame.GetMethod()?.DeclaringType == testType)
+                {
+                    ijwFrame = frame;
+                    break;
+                }
+            }
+
+            Assert.NotNull(ijwFrame);
+            Assert.EndsWith("IjwNativeCallingManagedDll.cpp", ijwFrame.GetFileName() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            Assert.True(ijwFrame.GetFileLineNumber() > 0, "Expected a non-zero source line resolved from the module's classic PDB.");
         }
     }
 }

@@ -1,18 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="exceptionstacktrace.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
-    <ProjectReference Include="FullPdbTestAssembly\FullPdbTestAssembly.csproj" Condition="'$(TargetOS)' == 'windows'">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Targets>GetTargetPath;GetFullPdbTargetPath</Targets>
-    </ProjectReference>
   </ItemGroup>
 </Project>
