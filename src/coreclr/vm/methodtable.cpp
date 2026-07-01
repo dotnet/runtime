@@ -1970,14 +1970,19 @@ namespace
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
-        // When firstFieldElementType is ELEMENT_TYPE_VALUETYPE, pFirstFieldValueType must be
-        // non-NULL; otherwise GetSize(NULL) would look up the type via DontLoadTypes, which can
-        // fail to find a generic instantiation that was canonicalized during recursive layout
-        // loading (e.g., EntityIdValue<UserId> replaced with EntityIdValue<__Canon>), causing a
-        // null-TypeHandle assert or a crash. Return false conservatively: the struct is not a
-        // fixed-buffer type and the normal per-field classification loop handles it correctly.
+        // When firstFieldElementType is ELEMENT_TYPE_VALUETYPE and pFirstFieldValueType is NULL,
+        // GetSize(NULL) would call LookupApproxFieldTypeHandle (DontLoadTypes), which can fail to
+        // find a generic instantiation that was canonicalized during recursive layout loading
+        // (e.g. EntityIdValue<UserId> replaced with EntityIdValue<__Canon>).  Load the approximate
+        // type handle instead: dropGenericArgumentLevel=TRUE always resolves to the canonical
+        // __Canon form, which is fully loaded and has the correct size for any shared instantiation.
+        if (firstFieldElementType == ELEMENT_TYPE_VALUETYPE && pFirstFieldValueType == nullptr)
+        {
+            pFirstFieldValueType = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+        }
+
         return (CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
-                            || (firstFieldElementType == ELEMENT_TYPE_VALUETYPE && pFirstFieldValueType != NULL))
+                            || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                         && (pFieldStart->GetOffset() == 0)
                         && pMT->HasLayout()
                         && (pMT->GetNumInstanceFieldBytes() % pFieldStart->GetSize(pFirstFieldValueType) == 0);
@@ -2131,11 +2136,25 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
-    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, ByValueClassCacheLookup(pByValueClassCache, 0));
+    // Pre-resolve the first field's MethodTable so HasImpliedRepeatedFields and all subsequent
+    // GetSize calls receive a valid (non-null) MT for value-type fields.
+    // ByValueClassCacheLookup returns NULL when pByValueClassCache is NULL (recursive calls).
+    // In that case the exact generic instantiation may not be in the type loader hash yet
+    // (e.g. EntityIdValue<UserId> replaced by EntityIdValue<__Canon> to break recursion),
+    // so GetSize(NULL) -> LookupApproxFieldTypeHandle (DontLoadTypes) would return a null
+    // TypeHandle and crash.  GetApproxFieldTypeHandleThrowing uses LoadTypes with
+    // dropGenericArgumentLevel=TRUE, which always resolves to the canonical __Canon form.
+    MethodTable* pFirstFieldValueTypeMT = ByValueClassCacheLookup(pByValueClassCache, 0);
+    if (pFirstFieldValueTypeMT == nullptr && pFieldStart->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+    {
+        pFirstFieldValueTypeMT = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+    }
+
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, pFirstFieldValueTypeMT);
 
     if (hasImpliedRepeatedFields)
     {
-        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
+        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(pFirstFieldValueTypeMT);
     }
 
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
@@ -2148,7 +2167,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         {
             pField = pFieldStart;
             fieldIndexForCacheLookup = 0;
-            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
+            fieldOffset = fieldIndex * pField->GetSize(pFirstFieldValueTypeMT);
         }
         else
         {
@@ -2161,22 +2180,18 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         CorElementType fieldType = pField->GetFieldType();
         SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
 
-        // Resolve the nested MethodTable for value-type fields. The cache entry covers the common
-        // case (set during MethodTableBuilder::InitializeFieldDescs). When pByValueClassCache is
-        // NULL (recursive classification call) the exact generic instantiation may not be in the
-        // cache at all — for example, EntityIdValue<UserId> may have been replaced by
-        // EntityIdValue<__Canon> to break recursion, so DontLoadTypes would fail to find it.
-        // In that case load the approximate type handle (LoadTypes), which will succeed because
-        // UserId itself is already registered in the type hash.
-        MethodTable* pFieldValueTypeMT = ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup);
-        if (fieldClassificationType == SystemVClassificationTypeStruct && pFieldValueTypeMT == NULL)
+        // Resolve the nested MethodTable for value-type fields.  For implied-repeated-field
+        // structs (inline arrays / fixed buffers) every iteration reuses the pre-resolved first
+        // field MT.  Otherwise look up the cache entry; when pByValueClassCache is NULL
+        // (recursive call) the exact generic instantiation may not be in the type loader hash
+        // yet, so fall back to GetApproxFieldTypeHandleThrowing which loads the canonical
+        // __Canon form and always succeeds.
+        MethodTable* pFieldValueTypeMT = hasImpliedRepeatedFields
+            ? pFirstFieldValueTypeMT
+            : ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup);
+        if (fieldClassificationType == SystemVClassificationTypeStruct && pFieldValueTypeMT == nullptr)
         {
-            TypeHandle th = pField->GetApproxFieldTypeHandleThrowing();
-            if (th.IsNull())
-            {
-                return false;
-            }
-            pFieldValueTypeMT = th.GetMethodTable();
+            pFieldValueTypeMT = pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
         }
 
         unsigned int fieldSize = pField->GetSize(pFieldValueTypeMT);
