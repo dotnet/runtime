@@ -1705,9 +1705,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
-    // We do not support splitting the prolog while we are still generating unwind info.
     if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && (emitCurIGinsCnt != 0) &&
-        !emitCurIG->endsWithAlignInstr() && !m_compiler->compGeneratingUnwindProlog)
+        !emitCurIG->endsWithAlignInstr())
     {
         emitNxtIG(true);
     }
@@ -3107,7 +3106,8 @@ void emitter::emitSplit(emitLocation*         startLoc,
         // IGs are marked as prolog or epilog. We don't actually know if two adjacent
         // IGs are part of the *same* prolog or epilog, so we have to assume they are.
 
-        if (igPrev && (((igPrev->igFlags & IGF_FUNCLET_PROLOG) && (ig->igFlags & IGF_FUNCLET_PROLOG)) ||
+        if (igPrev && (((igPrev->igFlags & IGF_PROLOG) && (ig->igFlags & IGF_PROLOG)) ||
+                       ((igPrev->igFlags & IGF_FUNCLET_PROLOG) && (ig->igFlags & IGF_FUNCLET_PROLOG)) ||
                        ((igPrev->igFlags & IGF_EPILOG) && (ig->igFlags & IGF_EPILOG))))
         {
             // We can't update the candidate
@@ -9994,11 +9994,6 @@ void emitter::emitNxtIG(bool extend)
         emitInitGCrefRegs = emitThisGCrefRegs;
         emitInitByrefRegs = emitThisByrefRegs;
     }
-
-    // Disallow starting a new IG while we are still generating unwind info,
-    // as that could allow our stress fragment splitting to split the prolog
-    // which is not supported.
-    assert(!m_compiler->compGeneratingUnwindProlog);
 
     /* Start generating the new group */
 
