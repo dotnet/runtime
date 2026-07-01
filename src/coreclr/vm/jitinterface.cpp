@@ -8931,19 +8931,38 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
     else if (isUnboxingStubOfInstantiatingStub)
     {
-        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
-            TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()))
         {
-            // This is an unboxing stub that points to an instantiating stub that requires a runtime lookup.
-            // Bail out.
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
             return false;
         }
 
-        // pInstArgMD is the wrapped instantiating stub in the unboxing stub.
-        //
-        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstArgMD;
-        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            if (info->pResolvedTokenVirtualMethod == nullptr)
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
+            ComputeRuntimeLookupForSharedGenericToken(
+                DevirtualizedMethodDescSlot,
+                info->pResolvedTokenVirtualMethod,
+                nullptr,
+                pInstArgMD,
+                m_pMethodBeingCompiled,
+                &info->instParamLookup);
+        }
+
+        if (!info->instParamLookup.lookupKind.needsRuntimeLookup)
+        {
+            // pInstArgMD is the wrapped instantiating stub in the unboxing stub.
+            //
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstArgMD;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
     }
 
     pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
