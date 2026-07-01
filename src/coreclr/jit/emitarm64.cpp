@@ -18060,6 +18060,12 @@ bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber
         return false;
     }
 
+    // PAGEOFFSET_12L requires alignment which is not guaranteed for NAOT
+    if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        return false;
+    }
+
     // The load must overwrite its own base so the full cell address is provably dead.
     if (reg1 != reg2)
     {
