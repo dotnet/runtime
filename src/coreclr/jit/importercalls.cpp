@@ -10770,7 +10770,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             CORINFO_SIG_INFO sig;
                             eeGetMethodSig(method, &sig);
-                            if (sig.hasTypeArg())
+                            if ((sig.sigInst.methInstCount == 1) && (sig.sigInst.classInstCount == 0))
                             {
                                 result = NI_System_Activator_CreateInstance_T;
                             }
