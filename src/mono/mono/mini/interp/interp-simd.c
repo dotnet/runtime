@@ -623,6 +623,36 @@ _interp_wasm_simd_assert_not_reached (v128_t lhs, v128_t rhs) {
 	g_assert_not_reached ();
 }
 
+// Per-arity stubs used by the regular (non-relaxed) libmono-wasm-simd.a as the
+// function-pointer-table targets for the RelaxedSimd intrinsic entries. The relaxed
+// variant of the library (libmono-wasm-relaxed-simd.a) is compiled with
+// HOST_WASM_RELAXED_SIMD=1 and uses real intrinsic wrappers instead.
+//
+// These are never called when RelaxedSimd.IsSupported reports false: the recognizer in
+// transform-simd.c keys the IsSupported answer off mono_interp_relaxed_simd_supported.
+#ifndef HOST_WASM_RELAXED_SIMD
+static void
+_mono_interp_simd_relaxed_unsupported_1 (gpointer res, gpointer v1) {
+	g_assert_not_reached ();
+}
+static void
+_mono_interp_simd_relaxed_unsupported_2 (gpointer res, gpointer v1, gpointer v2) {
+	g_assert_not_reached ();
+}
+static void
+_mono_interp_simd_relaxed_unsupported_3 (gpointer res, gpointer v1, gpointer v2, gpointer v3) {
+	g_assert_not_reached ();
+}
+#endif
+
+// Runtime feature flag queried by transform-simd.c so a single mono-ee-interp.a can be
+// linked against either libmono-wasm-simd.a (=0) or libmono-wasm-relaxed-simd.a (=1).
+#ifdef HOST_WASM_RELAXED_SIMD
+const int mono_interp_relaxed_simd_supported = 1;
+#else
+const int mono_interp_relaxed_simd_supported = 0;
+#endif
+
 #define LANE_COUNT(lane_type) (sizeof(v128_t) / sizeof(lane_type))
 
 // ensure the lane is valid by wrapping it (in AOT it would fail to compile)
@@ -893,6 +923,20 @@ _mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2, gpoin
 #define INTERP_WASM_SIMD_INTRINSIC_V_C2(name, arg1, c_function, wasm_opcode)
 #define INTERP_WASM_SIMD_INTRINSIC_V_C3(name, arg1, c_function, wasm_opcode)
 
+// Relaxed-SIMD function-body phase:
+//   * With HOST_WASM_RELAXED_SIMD: route to the regular wrappers (real intrinsic bodies).
+//   * Without: skip per-entry function generation; the table entries below resolve to
+//     the per-arity stubs defined above (_mono_interp_simd_relaxed_unsupported_{1,2,3}).
+#ifdef HOST_WASM_RELAXED_SIMD
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V   INTERP_WASM_SIMD_INTRINSIC_V_V
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  INTERP_WASM_SIMD_INTRINSIC_V_VV
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV INTERP_WASM_SIMD_INTRINSIC_V_VVV
+#else
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode)
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV(name, arg1, c_intrinsic, wasm_opcode)
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode)
+#endif
+
 #include "interp-simd-intrins.def"
 
 #undef INTERP_WASM_SIMD_INTRINSIC_V_P
@@ -904,6 +948,9 @@ _mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2, gpoin
 #undef INTERP_WASM_SIMD_INTRINSIC_V_C1
 #undef INTERP_WASM_SIMD_INTRINSIC_V_C2
 #undef INTERP_WASM_SIMD_INTRINSIC_V_C3
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV
 
 // Now generate the wasm opcode tables for the intrinsics
 

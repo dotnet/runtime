@@ -8910,6 +8910,8 @@ parse_cpu_features (const gchar *attr)
 	// MONO_CPU_WASM_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
+	else if (!strcmp (attr + prefix, "relaxed-simd"))
+		feature = MONO_CPU_WASM_RELAXED_SIMD;
 #else
 	(void)prefix; // unused
 #endif

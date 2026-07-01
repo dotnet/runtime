@@ -11956,4 +11956,34 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<long> ZeroExtendWideningUpper(Vector128<int> value) { throw null; }
         public static Vector128<ulong> ZeroExtendWideningUpper(Vector128<uint> value) { throw null; }
     }
+    [CLSCompliant(false)]
+    public abstract partial class RelaxedSimd
+    {
+        public static bool IsSupported { get { throw null; } }
+        public static Vector128<sbyte> Swizzle(Vector128<sbyte> vector, Vector128<sbyte> indices) { throw null; }
+        public static Vector128<byte> Swizzle(Vector128<byte> vector, Vector128<byte> indices) { throw null; }
+        public static Vector128<int> ConvertToInt32(Vector128<float> value) { throw null; }
+        public static Vector128<uint> ConvertToUInt32(Vector128<float> value) { throw null; }
+        public static Vector128<int> ConvertToInt32(Vector128<double> value) { throw null; }
+        public static Vector128<uint> ConvertToUInt32(Vector128<double> value) { throw null; }
+        public static Vector128<float> MultiplyAddEstimate(Vector128<float> a, Vector128<float> b, Vector128<float> c) { throw null; }
+        public static Vector128<double> MultiplyAddEstimate(Vector128<double> a, Vector128<double> b, Vector128<double> c) { throw null; }
+        public static Vector128<float> MultiplyAddNegatedEstimate(Vector128<float> a, Vector128<float> b, Vector128<float> c) { throw null; }
+        public static Vector128<double> MultiplyAddNegatedEstimate(Vector128<double> a, Vector128<double> b, Vector128<double> c) { throw null; }
+        public static Vector128<sbyte> LaneSelect(Vector128<sbyte> left, Vector128<sbyte> right, Vector128<sbyte> mask) { throw null; }
+        public static Vector128<byte> LaneSelect(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask) { throw null; }
+        public static Vector128<short> LaneSelect(Vector128<short> left, Vector128<short> right, Vector128<short> mask) { throw null; }
+        public static Vector128<ushort> LaneSelect(Vector128<ushort> left, Vector128<ushort> right, Vector128<ushort> mask) { throw null; }
+        public static Vector128<int> LaneSelect(Vector128<int> left, Vector128<int> right, Vector128<int> mask) { throw null; }
+        public static Vector128<uint> LaneSelect(Vector128<uint> left, Vector128<uint> right, Vector128<uint> mask) { throw null; }
+        public static Vector128<long> LaneSelect(Vector128<long> left, Vector128<long> right, Vector128<long> mask) { throw null; }
+        public static Vector128<ulong> LaneSelect(Vector128<ulong> left, Vector128<ulong> right, Vector128<ulong> mask) { throw null; }
+        public static Vector128<float> Min(Vector128<float> left, Vector128<float> right) { throw null; }
+        public static Vector128<float> Max(Vector128<float> left, Vector128<float> right) { throw null; }
+        public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<short> MultiplyRoundedQ15(Vector128<short> left, Vector128<short> right) { throw null; }
+        public static Vector128<short> DotProduct(Vector128<byte> left, Vector128<sbyte> right) { throw null; }
+        public static Vector128<int> DotProductAdd(Vector128<byte> left, Vector128<sbyte> right, Vector128<int> accumulator) { throw null; }
+    }
 }
