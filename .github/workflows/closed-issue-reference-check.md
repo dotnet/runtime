@@ -113,7 +113,8 @@ steps:
         | jq -s 'group_by(.number)
                  | map({number:.[0].number, count: length, refs: ([.[].ref] | unique)})' > "${refs}.grouped"
 
-      jq -s --slurpfile grouped "${refs}.grouped" --argjson max "$MAX" '
+      ranked="$(mktemp)"
+      jq -s --slurpfile grouped "${refs}.grouped" '
         ([.[] | select(.state=="CLOSED")]) as $closed
         | ($grouped[0]) as $g
         | [ $closed[] | . as $c
@@ -121,15 +122,33 @@ steps:
             | select($r != null)
             | { number:$c.number, url:$c.url, title:$c.title,
                 refs:($r.refs[0:15]), _count:$r.count } ]
-        | sort_by(-._count) | .[0:$max] | map(del(._count))
-      ' "$states" > "$OUT"
+        | sort_by(-._count) | map(del(._count))
+      ' "$states" > "$ranked"
 
-      rm -f "$refs" "${refs}.grouped" "$nums_file" "$states"
+      # Drop issues that already carry the advisory marker so the agent never has to
+      # reason about ones it would only skip, keeping up to MAX new candidates.
+      marker="<!-- closed-issue-reference-check:advice -->"
+      keptnums="$(mktemp)"; keptn=0
+      while read -r num; do
+        [ -z "$num" ] && continue
+        [ "$keptn" -ge "$MAX" ] && break
+        comments="$(gh api "repos/${REPO}/issues/${num}/comments" --paginate -q '.[].body' 2>/dev/null || true)"
+        if printf '%s' "$comments" | grep -qF "$marker"; then
+          echo "scan: #${num} already advised -> filtered"
+          continue
+        fi
+        echo "$num" >> "$keptnums"; keptn=$((keptn+1))
+      done < <(jq -r '.[].number' "$ranked")
+
+      keptjson="$(jq -R 'tonumber' "$keptnums" | jq -s '.')"
+      jq --argjson keep "$keptjson" 'map(select(.number as $n | ($keep | index($n)) != null))' "$ranked" > "$OUT"
+
+      rm -f "$refs" "${refs}.grouped" "$nums_file" "$states" "$ranked" "$keptnums"
       count="$(jq 'length' "$OUT")"
-      echo "scan: ${count} closed issue(s) still referenced in code -> ${OUT}"
+      echo "scan: ${count} closed issue(s) still referenced and not yet advised -> ${OUT}"
       jq -r '.[] | "  #\(.number) (\(.refs|length) refs) \(.title)"' "$OUT" || true
       if [ "$count" -eq 0 ] && [ -n "${GH_AW_SAFE_OUTPUTS:-}" ]; then
-        echo '{"type":"noop","message":"No closed issues are still referenced in code."}' >> "$GH_AW_SAFE_OUTPUTS"
+        echo '{"type":"noop","message":"No closed issues still referenced in code need advising."}' >> "$GH_AW_SAFE_OUTPUTS"
       fi
 
 safe-outputs:
@@ -157,17 +176,15 @@ You only suggest; you never act. The one write you can make is an `add-comment` 
 
 - **Work from `issue-candidates.json` only.** The scan already enumerated the issues and collected their code references, so re-deriving them wastes time and risks drift. Read a candidate's detail to verify it, but never grow the candidate set.
 - **Read issue content through the `github` MCP tools** (`min-integrity: merged`, the strictest gate — only content authored by established maintainers is trusted). If a result comes back `[Filtered]`, skip it and note the count rather than reaching for `gh issue view` or `gh api` to get around the gate — `gh` is only for cheap metadata the MCP tools cannot express.
-- **One comment per issue, ever.** Each comment carries the hidden marker `<!-- closed-issue-reference-check:advice -->`; if a candidate already has one, skip it — never post a second time on the same issue. Stop after 30 comments in a run.
+- **One comment per issue, ever.** Each comment carries the hidden marker `<!-- closed-issue-reference-check:advice -->`. The scan already removed issues that have this marker, so the candidate set is free of already-advised issues; never post a second time on the same issue. Stop after 30 comments in a run.
 
 ## Steps
 
-**1 — Load candidates.** Read `issue-candidates.json`: a JSON array, most-referenced first, each entry `{number, url, title, refs}` where `refs` lists the ``file:line`` locations. If it is missing, empty, or `[]`, skip to *Nothing to do*. Otherwise work through it in order.
+**1 — Load candidates.** Read `issue-candidates.json`: a JSON array, most-referenced first, each entry `{number, url, title, refs}` where `refs` lists the ``file:line`` locations. The scan has already dropped any issue that carries the advisory marker, so every entry is a fresh candidate. If it is missing, empty, or `[]`, skip to *Nothing to do*. Otherwise work through it in order.
 
 **2 — Confirm each case.** Pull the issue through the `github` MCP tools and check it is really still closed. The close reason tells you what to recommend: an issue closed as stale or inactive while the code still guards against it points toward reopening; one closed as fixed, by-design, duplicate, or won't-fix points toward removing the now-stale reference. When it is genuinely ambiguous, present both options rather than asserting one. Drop anything that no longer holds — already reopened, unrelated reference — with a short `-> skipped: <reason>`. A false advisory is worse than a missed one.
 
-**3 — Deduplicate.** Read the issue's comments and skip it if the marker is already present. An issue that has already been advised gets nothing this run.
-
-**4 — Comment.** For each surviving candidate, post one `add-comment` in this shape, filling `Referenced at` from the candidate's `refs`:
+**3 — Comment.** For each surviving candidate, post one `add-comment` in this shape, filling `Referenced at` from the candidate's `refs`:
 
 ```markdown
 <!-- closed-issue-reference-check:advice -->
