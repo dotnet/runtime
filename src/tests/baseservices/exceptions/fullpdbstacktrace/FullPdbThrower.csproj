@@ -5,8 +5,9 @@
     <DebugType Condition="'$(TargetOS)' == 'windows'">Full</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
-    <!-- This test is relatively uninteresting for native AOT where DIA isn't used -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- DIA isn't used under Native AOT at runtime, but ensure that ILC does create
+     line number blobs from full PDB that can be used in runtime stack traces. -->
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
     <PreservePdbInHelixPayload>true</PreservePdbInHelixPayload>
   </PropertyGroup>
   <ItemGroup>

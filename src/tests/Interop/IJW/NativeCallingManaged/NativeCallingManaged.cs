@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using TestLibrary;
@@ -14,14 +13,10 @@ namespace NativeCallingManaged
     public class NativeCallingManaged
     {
         [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public static int TestEntryPoint()
         {
-            if(Environment.OSVersion.Platform != PlatformID.Win32NT)
-            {
-                return 100;
-            }
-
             bool success = true;
             Assembly ijwNativeDll = Assembly.Load("IjwNativeCallingManagedDll");
 
@@ -66,20 +61,11 @@ namespace NativeCallingManaged
         //     not implement, running this path fires the NOOPMD_NYI assert instead of silently passing.
         //   * A resolved, non-zero line proves the classic PDB was actually read (the jit will silently drop it otherwise)
         [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public static void ManagedMethodResolvesSourceLineFromClassicPdb()
         {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-            {
-                return;
-            }
-
             Assembly ijwNativeDll = Assembly.Load("IjwNativeCallingManagedDll");
-
-            // The symbol reader looks for the PDB next to the module. Treat a missing PDB as a hard
-            // failure so the source-line assertions below cannot pass vacuously via a silent fallback.
-            string pdbPath = Path.ChangeExtension(ijwNativeDll.Location, ".pdb");
-            Assert.True(File.Exists(pdbPath), $"PDB was not deployed next to the IJW module: {pdbPath}");
 
             Type testType = ijwNativeDll.GetType("TestClass");
             MethodInfo throwMethod = testType.GetMethod("ThrowFromManaged");

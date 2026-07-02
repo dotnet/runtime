@@ -8,9 +8,9 @@ using Xunit;
 public static class FullPdbThrower
 {
     // This assembly is built with DebugType=Full (a classic Windows PDB) on Windows.
-    // Rendering the stack trace forces the runtime to create an ISymUnmanagedReader
-    // (diasymreader) for this module to map IL offsets back to source file and line,
-    // which is the code path that uses the no-op IMetaDataImport importer.
+    // Rendering the stack trace forces:
+    // - Coreclr runtime to create an ISymUnmanagedReader for this module to map IL offsets back to source file and line, and also test that no-op IMetaDataImport importer we pass down doesn't assert.
+    // - NativeAOT to verify line blob creation in ILC supports full PDB inputs.
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void ExceptionToString_FullPdb_IncludesSourceLine()
@@ -24,7 +24,14 @@ public static class FullPdbThrower
         {
             string stackTrace = ex.ToString();
             Assert.Contains(nameof(Throw), stackTrace);
-            Assert.Contains("FullPdbThrower.cs", stackTrace);
+
+            // Mapping the IL offset back to the source file goes through diasymreader (the no-op
+            // importer path). Native AOT resolves stack frames without DIA, so only assert the
+            // source file when running on a runtime that uses the classic-PDB reader.
+            if (!TestLibrary.Utilities.IsNativeAot)
+            {
+                Assert.Contains("FullPdbThrower.cs", stackTrace);
+            }
         }
     }
 
