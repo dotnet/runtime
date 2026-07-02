@@ -11085,10 +11085,15 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         bool          tryReusingPrevValue = false;
         ssize_t const minOffset           = min(prevData.offset, currData.offset);
         ssize_t const maxEndOffset        = max(prevEndOffset, currEndOffset);
-        // combinedSize spans at most two adjacent/overlapping stores (<= 2 * TARGET_POINTER_SIZE),
-        // so it always fits in int even though the offsets are ssize_t.
-        assert(FitsIn<int>(maxEndOffset - minOffset));
-        int const  combinedSize       = static_cast<int>(maxEndOffset - minOffset);
+
+        ssize_t const combinedSpan = maxEndOffset - minOffset;
+        if (!FitsIn<int>(combinedSpan))
+        {
+            // Offsets are too far apart (e.g. unrelated constant-address stores).
+            return;
+        }
+
+        int const  combinedSize       = static_cast<int>(combinedSpan);
         bool const prevContainsCurr   = (prevData.offset <= currData.offset) && (prevEndOffset >= currEndOffset);
         bool const currContainsPrev   = (currData.offset <= prevData.offset) && (currEndOffset >= prevEndOffset);
         bool const storesAreAdjacent  = (prevEndOffset == currData.offset) || (currEndOffset == prevData.offset);
