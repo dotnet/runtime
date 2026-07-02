@@ -14,7 +14,17 @@
 {
 }
 
-.class public auto ansi beforefieldinit Extender
+.class public auto ansi beforefieldinit CustomModifierTypeSpecBase_InvalidType_None
     extends class GenericBase`1<int32 modopt(int32)>
 {
+}
+
+.class public auto ansi beforefieldinit MethodSignatureTests
+    extends [System.Runtime]System.Object
+{
+    .method public static hidebysig int32 modopt(int32) CustomModifierTypeSpecReturn_Invalid_None() cil managed
+    {
+        ldc.i4.0
+        ret
+    }
 }
