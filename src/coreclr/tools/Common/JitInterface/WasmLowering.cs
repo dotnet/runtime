@@ -16,7 +16,7 @@ namespace Internal.JitInterface
     {
         public static MethodSignature GetStringCtorActualSignature(MethodSignature signature)
         {
-            Debug.Assert(signature.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor", signature) != null);
+            Debug.Assert(signature.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor"u8, signature) != null);
             Debug.Assert(signature.GenericParameterCount == 0);
             Debug.Assert(signature.Flags == 0);
 
