@@ -2487,6 +2487,17 @@ void emitter::emitDispIns(
             printf("r%d", id->idReg1());
             break;
             
+        case INS_fadds:
+        case INS_fsubs:
+        case INS_fmuls:
+        case INS_fdivs:
+        case INS_fadd:
+        case INS_fsub:
+        case INS_fmul:
+        case INS_fdiv:
+            printf("f%d, f%d, f%d", id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
+            break;
+            
         case INS_blr:
         case INS_nop:
         case INS_hwsync:
