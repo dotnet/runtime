@@ -19,7 +19,7 @@ namespace System.IO.Compression
         protected virtual bool SupportsDictionaries => false;
         protected virtual bool SupportsReset => false;
 
-        protected virtual string WindowLogParamName => "windowLog";
+        protected virtual string WindowLogParamName => "windowLog2";
         protected virtual string InputLengthParamName => "inputLength";
 
         protected abstract int ValidQuality { get; }
@@ -100,8 +100,8 @@ namespace System.IO.Compression
         protected abstract DictionaryAdapter CreateDictionary(ReadOnlySpan<byte> data, int quality);
 
         protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
-        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog);
-        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog);
+        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2);
+        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog2);
         protected abstract bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
         protected abstract bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary);
 
@@ -117,7 +117,7 @@ namespace System.IO.Compression
             foreach (int quality in InvalidQualitiesTestData)
             {
                 Assert.Throws<ArgumentOutOfRangeException>("quality", () => CreateEncoder(quality, ValidWindowLog));
-                Assert.Throws<ArgumentOutOfRangeException>("quality", () => TryCompress(input, output, out _, quality: quality, windowLog: ValidWindowLog));
+                Assert.Throws<ArgumentOutOfRangeException>("quality", () => TryCompress(input, output, out _, quality: quality, windowLog2: ValidWindowLog));
             }
         }
 
@@ -130,7 +130,7 @@ namespace System.IO.Compression
             foreach (int windowLog in InvalidWindowLogsTestData)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => CreateEncoder(ValidQuality, windowLog));
-                Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => TryCompress(input, output, out _, quality: ValidQuality, windowLog: windowLog));
+                Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => TryCompress(input, output, out _, quality: ValidQuality, windowLog2: windowLog));
             }
         }
 
@@ -166,7 +166,7 @@ namespace System.IO.Compression
             byte[] input = CreateTestData();
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
 
-            bool result = TryCompress(input, output, out int bytesWritten, quality: ValidQuality, windowLog: ValidWindowLog);
+            bool result = TryCompress(input, output, out int bytesWritten, quality: ValidQuality, windowLog2: ValidWindowLog);
 
             Assert.True(result);
             Assert.True(bytesWritten > 0);
@@ -182,7 +182,7 @@ namespace System.IO.Compression
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
             using DictionaryAdapter dictionary = CreateDictionary(CreateSampleDictionary(), ValidQuality);
 
-            bool result = TryCompress(input, output, out int bytesWritten, dictionary: dictionary, windowLog: ValidWindowLog);
+            bool result = TryCompress(input, output, out int bytesWritten, dictionary: dictionary, windowLog2: ValidWindowLog);
 
             Assert.True(result);
             Assert.True(bytesWritten > 0);

@@ -48,12 +48,12 @@ namespace System.IO.Compression
         /// Initializes a new instance of the <see cref="ZLibEncoder"/> class using the specified quality and window size.
         /// </summary>
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog"/> is not in the valid range (8-15 or -1).</exception>
+        /// <param name="windowLog2">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog2"/> is not in the valid range (8-15 or -1).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
-        public ZLibEncoder(int quality, int windowLog)
+        public ZLibEncoder(int quality, int windowLog2)
         {
-            _deflateEncoder = new DeflateEncoder(quality, windowLog, CompressionFormat.ZLib);
+            _deflateEncoder = new DeflateEncoder(quality, windowLog2, CompressionFormat.ZLib);
         }
 
         /// <summary>
@@ -139,11 +139,11 @@ namespace System.IO.Compression
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
+        /// <param name="windowLog2">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2)
         {
-            using var encoder = new ZLibEncoder(quality, windowLog);
+            using var encoder = new ZLibEncoder(quality, windowLog2);
             OperationStatus status = encoder.Compress(source, destination, out int consumed, out bytesWritten, isFinalBlock: true);
 
             bool success = status == OperationStatus.Done && consumed == source.Length;
