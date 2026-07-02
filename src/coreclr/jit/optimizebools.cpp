@@ -1074,11 +1074,35 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     // Update the flow.
     FlowEdge* const removedEdge  = m_b1->GetTrueEdge();
     FlowEdge* const retainedEdge = m_b1->GetFalseEdge();
+
+    // Will need to re-adjust the likelihoods of the outgoing edges of the combined b1+b2 block
+    const weight_t    b1RemovedLikelihood     = removedEdge->getLikelihood();
+    const weight_t    b1FallthroughLikelihood = retainedEdge->getLikelihood();
+    BasicBlock* const b1RemovedTarget         = removedEdge->getDestinationBlock();
+
     m_compiler->fgRemoveRefPred(removedEdge);
     m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
 
     // Repair profile.
     m_compiler->fgRepairProfileCondToUncond(m_b1, retainedEdge, removedEdge);
+
+    // The combined b1+b2 block reuses b2's edges, and their likelihoods must be prorated
+    // based on likelihood of b1->b2 (fallthrough) control flow.
+    // The edge to shared target (b1RemovedTarget) must also take into account b1->shared
+    // edge likelihood
+    if (m_b1->hasProfileWeight())
+    {
+        FlowEdge* const b2Edges[] = {m_b2->GetTrueEdge(), m_b2->GetFalseEdge()};
+        for (FlowEdge* const b2Edge : b2Edges)
+        {
+            weight_t combined = b1FallthroughLikelihood * b2Edge->getLikelihood();
+            if (b2Edge->getDestinationBlock() == b1RemovedTarget)
+            {
+                combined += b1RemovedLikelihood;
+            }
+            b2Edge->setLikelihood(min(1.0, combined));
+        }
+    }
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
