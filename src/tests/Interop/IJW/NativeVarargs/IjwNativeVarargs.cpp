@@ -8,6 +8,8 @@
 #include <array>
 #include <functional>
 #include <iostream>
+#include <cmath>
+#include <algorithm>
 using namespace System::Collections::Generic;
 
 public enum class TestCases
@@ -31,6 +33,21 @@ struct HFA
 };
 
 #pragma unmanaged
+
+// Floating-point varargs results can differ in the low-order bits between the
+// managed "expected" computation and the native summation.
+static bool AreClose(double expected, double actual)
+{
+    double diff = std::fabs(expected - actual);
+    double scale = std::max(std::fabs(expected), std::fabs(actual));
+
+    // 0.0001 (0.01%) relative tolerance. The lossy path is single-precision: near
+    // the test's ~1e10 magnitudes one float ULP is ~1.1e-7 relative, and summing
+    // 164 floats (41 HFAs x 4) compounds to a worst case of ~1.8e-5. 0.0001 sits
+    // ~5x above that so rounding never false-fails, yet stays tight enough to
+    // catch a real ABI/marshalling bug.
+    return diff <= scale * 0.0001;
+}
 
 int SumInts(std::size_t numElements, ...)
 {
@@ -243,7 +260,7 @@ private:
             values[39],
             values[40]
         );
-        bool result = expected == actual;
+        bool result = AreClose(expected, actual);
         if (!result)
         {
             std::cout << "RunDoublesTest Failed:" << "Expected:" << expected << '\t' << "Actual:" << actual << std::endl;
@@ -306,7 +323,7 @@ private:
             values[39],
             values[40]
         );
-        bool result = expected == actual;
+        bool result = AreClose(expected, actual);
         if (!result)
         {
             std::cout << "RunHFAsTest Failed:" << "Expected:" << expected << '\t' << "Actual:" << actual << std::endl;
@@ -470,7 +487,7 @@ private:
             floatValues[18], doubleValues[19],
             floatValues[19], doubleValues[20]
         );
-        bool result = expected == actual;
+        bool result = AreClose(expected, actual);
         if (!result)
         {
             std::cout << "RunWidenedFloatsTest Failed:" << "Expected:" << expected << '\t' << "Actual:" << actual << std::endl;
