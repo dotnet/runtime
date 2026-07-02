@@ -155,6 +155,24 @@ public class GenericVirtualMethodTests
     public static void RuntimeLookupInlining()
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static IDevirtTarget MakeTarget()
+        {
+            return new DevirtTarget();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Type LateInlinee<TInlinee>()
+        {
+            return MakeTarget().GetTypeArg<TInlinee>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type LateCaller<TWrong, TRight>()
+        {
+            return LateInlinee<TRight>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Type Inlinee<TInlinee>(IDevirtTarget target)
         {
             return target.GetTypeArg<TInlinee>();
@@ -166,9 +184,19 @@ public class GenericVirtualMethodTests
             return Inlinee<TRight>(new DevirtTarget());
         }
 
-        Type actual = Caller<string, object>();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type LateRootCaller<TWrong, TRight>()
+        {
+            return MakeTarget().GetTypeArg<TRight>();
+        }
+
+        Type immediateActual = Caller<string, object>();
+        Type lateActual = LateCaller<string, object>();
+        Type lateRootActual = LateRootCaller<string, object>();
         Type expected = typeof(object);
-        Assert.Equal(expected, actual);
+        Assert.Equal(expected, immediateActual);
+        Assert.Equal(expected, lateActual);
+        Assert.Equal(expected, lateRootActual);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
