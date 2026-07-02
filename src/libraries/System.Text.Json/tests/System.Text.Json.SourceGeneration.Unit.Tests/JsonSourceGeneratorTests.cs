@@ -1359,6 +1359,40 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void UserDefinedExperimentalAttribute_IsRecognized()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace System.Diagnostics.CodeAnalysis
+                {
+                    [System.AttributeUsage(System.AttributeTargets.All)]
+                    internal sealed class ExperimentalAttribute : System.Attribute
+                    {
+                        public ExperimentalAttribute(string diagnosticId) { DiagnosticId = diagnosticId; }
+                        public string DiagnosticId { get; }
+                        public string UrlFormat { get; set; } = "";
+                    }
+                }
+
+                [System.Diagnostics.CodeAnalysis.Experimental("EXP_USERDEF")]
+                public class Widget { public int X { get; set; } }
+
+                #pragma warning disable EXP_USERDEF
+                [JsonSerializable(typeof(Widget))]
+                #pragma warning restore EXP_USERDEF
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+
+            TypeGenerationSpec widget = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "Widget");
+            Assert.Equal(new[] { "EXP_USERDEF" }, widget.ExperimentalDiagnosticIds);
+            Assert.Equal(new[] { "EXP_USERDEF" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+        }
+
+        [Fact]
         public void ExperimentalSuppression_DoesNotLeakToUserCode()
         {
             string source = """
