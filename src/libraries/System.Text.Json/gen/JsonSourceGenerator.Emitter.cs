@@ -135,7 +135,7 @@ namespace System.Text.Json.SourceGeneration
                 _typeIndex.Clear();
             }
 
-            private static SourceWriter CreateSourceWriterWithContextHeader(ContextGenerationSpec contextSpec, bool isPrimaryContextSourceFile = false, string? interfaceImplementation = null)
+            private static SourceWriter CreateSourceWriterWithContextHeader(ContextGenerationSpec contextSpec, bool isPrimaryContextSourceFile = false, string? interfaceImplementation = null, ImmutableEquatableArray<string>? experimentalDiagnosticIds = null)
             {
                 var writer = new SourceWriter();
 
@@ -147,8 +147,21 @@ namespace System.Text.Json.SourceGeneration
 
                     // Suppress warnings about [Obsolete] member usage in generated code.
                     #pragma warning disable CS0612, CS0618
-
                     """);
+
+                if (experimentalDiagnosticIds is { Count: > 0 })
+                {
+                    // Suppress the specific [Experimental] diagnostic IDs referenced by this file's generated code,
+                    // mirroring the unconditional [Obsolete] suppression above but with user-defined, discovered IDs.
+                    writer.WriteLine();
+                    writer.WriteLine("// Suppress warnings about [Experimental] member usage in generated code.");
+                    foreach (string diagnosticId in experimentalDiagnosticIds)
+                    {
+                        writer.WriteLine($"#pragma warning disable {diagnosticId}");
+                    }
+                }
+
+                writer.WriteLine();
 
                 if (contextSpec.Namespace != null)
                 {
@@ -233,7 +246,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static SourceText GenerateForTypeWithBuiltInConverter(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeMetadata.ExperimentalDiagnosticIds);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
                 string typeInfoPropertyName = typeMetadata.TypeInfoPropertyName;
@@ -252,7 +265,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Debug.Assert(typeMetadata.ConverterType != null);
 
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeMetadata.ExperimentalDiagnosticIds);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
                 string converterFQN = typeMetadata.ConverterType.FullyQualifiedName;
@@ -273,7 +286,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 Debug.Assert(typeMetadata.NullableUnderlyingType != null);
 
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeMetadata.ExperimentalDiagnosticIds);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
                 string underlyingTypeFQN = typeMetadata.NullableUnderlyingType.FullyQualifiedName;
@@ -292,7 +305,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static SourceText GenerateForUnsupportedType(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeMetadata.ExperimentalDiagnosticIds);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
 
@@ -308,7 +321,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static SourceText GenerateForEnum(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeMetadata.ExperimentalDiagnosticIds);
 
                 string typeFQN = typeMetadata.TypeRef.FullyQualifiedName;
 
@@ -324,7 +337,7 @@ namespace System.Text.Json.SourceGeneration
 
             private SourceText GenerateForCollection(ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
             {
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeGenerationSpec.ExperimentalDiagnosticIds);
 
                 // Key metadata
                 TypeRef? collectionKeyType = typeGenerationSpec.CollectionKeyType;
@@ -504,7 +517,7 @@ namespace System.Text.Json.SourceGeneration
 
             private SourceText GenerateForObject(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeMetadata.ExperimentalDiagnosticIds);
 
                 string typeFriendlyName = typeMetadata.TypeInfoPropertyName;
                 ObjectConstructionStrategy constructionStrategy = typeMetadata.ConstructionStrategy;
@@ -621,7 +634,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static SourceText GenerateForUnion(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
             {
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, experimentalDiagnosticIds: typeMetadata.ExperimentalDiagnosticIds);
 
                 GenerateTypeInfoFactoryHeader(writer, typeMetadata);
 
@@ -1923,7 +1936,7 @@ namespace System.Text.Json.SourceGeneration
                     contextTypeName = contextTypeName.Substring(0, backTickIndex);
                 }
 
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, isPrimaryContextSourceFile: true);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, isPrimaryContextSourceFile: true, experimentalDiagnosticIds: contextSpec.ExperimentalDiagnosticIds);
 
                 GetLogicForDefaultSerializerOptionsInit(contextSpec.GeneratedOptionsSpec, writer);
 
@@ -2221,7 +2234,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static SourceText GetGetTypeInfoImplementation(ContextGenerationSpec contextSpec)
             {
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, interfaceImplementation: JsonTypeInfoResolverTypeRef);
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec, interfaceImplementation: JsonTypeInfoResolverTypeRef, experimentalDiagnosticIds: contextSpec.ExperimentalDiagnosticIds);
 
                 // JsonSerializerContext.GetTypeInfo override -- returns cached metadata via JsonSerializerOptions
                 writer.WriteLine($$"""

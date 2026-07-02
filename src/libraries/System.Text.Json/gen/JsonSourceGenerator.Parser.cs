@@ -59,6 +59,16 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
+            // Accumulates the [Experimental] diagnostic IDs referenced by the type currently being parsed.
+            // Cleared and snapshotted per type in ParseTypeGenerationSpec.
+            private readonly HashSet<string> _typeExperimentalIds = new(StringComparer.Ordinal);
+            // Accumulates the [Experimental] diagnostic IDs referenced by options-level converters, which
+            // only appear in the aggregate source files (not tied to any single generated type).
+            private readonly HashSet<string> _optionsExperimentalIds = new(StringComparer.Ordinal);
+            // Points to whichever of the two sets above should receive IDs gathered during the current
+            // parse phase, so the shared gather helpers don't need to know which phase they run in.
+            private HashSet<string> _currentExperimentalIds;
+
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
 
@@ -85,6 +95,7 @@ namespace System.Text.Json.SourceGeneration
                     knownSymbols.JsonConverterType != null;
 
                 _builtInSupportTypes = (knownSymbols.BuiltInSupportTypes ??= CreateBuiltInSupportTypeSet(knownSymbols));
+                _currentExperimentalIds = _typeExperimentalIds;
             }
 
             public ContextGenerationSpec? ParseContextGenerationSpec(ClassDeclarationSyntax contextClassDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
@@ -99,6 +110,7 @@ namespace System.Text.Json.SourceGeneration
                 // Ensure context-scoped metadata caches are empty.
                 Debug.Assert(_typesToGenerate.Count == 0);
                 Debug.Assert(_generatedTypes.Count == 0);
+                Debug.Assert(_optionsExperimentalIds.Count == 0);
                 Debug.Assert(_contextClassLocation is null);
 
                 INamedTypeSymbol? contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
@@ -171,6 +183,17 @@ namespace System.Text.Json.SourceGeneration
 
                 Debug.Assert(_generatedTypes.Count > 0);
 
+                // The aggregate source files (root context + GetJsonTypeInfo) reference every registered type by
+                // name, so they suppress the union of all per-type experimental IDs plus the options-level ones.
+                HashSet<string> contextExperimentalIds = new(_optionsExperimentalIds, StringComparer.Ordinal);
+                foreach (TypeGenerationSpec generatedType in _generatedTypes.Values)
+                {
+                    foreach (string diagnosticId in generatedType.ExperimentalDiagnosticIds)
+                    {
+                        contextExperimentalIds.Add(diagnosticId);
+                    }
+                }
+
                 ContextGenerationSpec contextGenSpec = new()
                 {
                     ContextType = new(contextTypeSymbol),
@@ -178,11 +201,16 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
+                    ExperimentalDiagnosticIds = contextExperimentalIds.Count == 0
+                        ? ImmutableEquatableArray<string>.Empty
+                        : contextExperimentalIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray(),
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.
                 _generatedTypes.Clear();
                 _typesToGenerate.Clear();
+                _optionsExperimentalIds.Clear();
+                _typeExperimentalIds.Clear();
                 _contextClassLocation = null;
                 return contextGenSpec;
             }
@@ -230,6 +258,11 @@ namespace System.Text.Json.SourceGeneration
                 // Trim compile-time erased metadata such as tuple labels and NRT annotations.
                 type = _knownSymbols.Compilation.EraseCompileTimeMetadata(type);
 
+                // Reaching this point means the type currently being parsed emits a strongly-typed reference
+                // to `type` in its generated code. Gather its [Experimental] IDs before the dedup return below
+                // so that every referencing type records them, even when `type` was already generated elsewhere.
+                AddExperimentalDiagnosticIds(type);
+
                 if (_generatedTypes.TryGetValue(type, out TypeGenerationSpec? spec))
                 {
                     return spec.TypeRef;
@@ -245,6 +278,58 @@ namespace System.Text.Json.SourceGeneration
                 });
 
                 return new TypeRef(type);
+            }
+
+            /// <summary>
+            /// Adds the <c>[Experimental]</c> diagnostic IDs declared on <paramref name="symbol"/> (if any) to the
+            /// set for the current parse phase, mirroring the generator's unconditional <c>[Obsolete]</c> suppression.
+            /// When <paramref name="symbol"/> is a type, also recurses into array element types and generic type
+            /// arguments from the type and its containing types, since <see cref="ISymbol.GetAttributes"/> on a
+            /// constructed generic returns the definition's attributes rather than the type arguments'.
+            /// </summary>
+            private void AddExperimentalDiagnosticIds(ISymbol? symbol)
+            {
+                if (symbol is null || _knownSymbols.ExperimentalAttributeType is null)
+                {
+                    return;
+                }
+
+                // For type references, also gather IDs from array element types and generic type arguments.
+                if (symbol is ITypeSymbol type)
+                {
+                    AddTypeArgumentDiagnosticIds(type);
+                }
+
+                foreach (AttributeData attributeData in symbol.GetAttributes())
+                {
+                    if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.ExperimentalAttributeType) &&
+                        attributeData.ConstructorArguments.Length > 0 &&
+                        attributeData.ConstructorArguments[0].Value is string diagnosticId &&
+                        SyntaxFacts.IsValidIdentifier(diagnosticId))
+                    {
+                        // ExperimentalAttribute.DiagnosticId is the first (required) constructor argument.
+                        // Only identifiers are safe to emit into #pragma warning disable directives.
+                        _currentExperimentalIds.Add(diagnosticId);
+                    }
+                }
+
+                void AddTypeArgumentDiagnosticIds(ITypeSymbol type)
+                {
+                    if (type is IArrayTypeSymbol arrayType)
+                    {
+                        AddExperimentalDiagnosticIds(arrayType.ElementType);
+                    }
+                    else if (type is INamedTypeSymbol namedType)
+                    {
+                        for (INamedTypeSymbol? current = namedType; current is not null; current = current.ContainingType)
+                        {
+                            foreach (ITypeSymbol typeArgument in current.TypeArguments)
+                            {
+                                AddExperimentalDiagnosticIds(typeArgument);
+                            }
+                        }
+                    }
+                }
             }
 
             private void ParseJsonSerializerContextAttributes(
@@ -329,6 +414,11 @@ namespace System.Text.Json.SourceGeneration
 
             private SourceGenerationOptionsSpec ParseJsonSourceGenerationOptionsAttribute(INamedTypeSymbol contextType, AttributeData attributeData)
             {
+                // Options-level converters are resolved below and are referenced only by the aggregate source
+                // files, so route any experimental IDs gathered during this call into the options-scoped set.
+                // The per-type set is the default target, restored before returning (see below).
+                _currentExperimentalIds = _optionsExperimentalIds;
+
                 JsonSourceGenerationMode? generationMode = null;
                 List<TypeRef>? converters = null;
                 List<TypeRef>? typeClassifiers = null;
@@ -506,6 +596,9 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                // Restore the per-type set as the default gather target now that options parsing is complete.
+                _currentExperimentalIds = _typeExperimentalIds;
+
                 return new SourceGenerationOptionsSpec
                 {
                     GenerationMode = generationMode,
@@ -592,6 +685,13 @@ namespace System.Text.Json.SourceGeneration
                 Debug.Assert(IsSymbolAccessibleWithin(typeToGenerate.Type, within: contextType), "should not generate metadata for inaccessible types.");
 
                 ITypeSymbol type = typeToGenerate.Type;
+
+                // Gather this type's [Experimental] IDs into the per-type set. Referenced types (members, ctor
+                // parameters, derived types, converters, etc.) add their IDs via EnqueueType and the funnel helpers
+                // as the type is parsed below; the accumulated set is snapshotted into the returned spec.
+                _currentExperimentalIds = _typeExperimentalIds;
+                _typeExperimentalIds.Clear();
+                AddExperimentalDiagnosticIds(type);
 
                 ClassType classType;
                 JsonPrimitiveTypeKind? primitiveTypeKind = GetPrimitiveTypeKind(type);
@@ -837,6 +937,9 @@ namespace System.Text.Json.SourceGeneration
                     ImplementsIJsonOnSerialized = implementsIJsonOnSerialized,
                     ImplementsIJsonOnSerializing = implementsIJsonOnSerializing,
                     ImmutableCollectionFactoryMethod = DetermineImmutableCollectionFactoryMethod(immutableCollectionFactoryTypeFullName),
+                    ExperimentalDiagnosticIds = _typeExperimentalIds.Count == 0
+                        ? ImmutableEquatableArray<string>.Empty
+                        : _typeExperimentalIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray(),
                 };
             }
 
@@ -2224,6 +2327,28 @@ namespace System.Text.Json.SourceGeneration
                     ? EnqueueType(memberType, generationMode)
                     : new TypeRef(memberType);
 
+                if (ignoreCondition != JsonIgnoreCondition.Always)
+                {
+                    // The generated code accesses this member's getter/setter, so suppress any [Experimental]
+                    // diagnostic declared on the member itself (its type is covered by EnqueueType above).
+                    AddExperimentalDiagnosticIds(memberInfo);
+
+                    // [Experimental] can also be applied directly to the accessor(s) the generated code invokes
+                    // (for example [get: Experimental(...)] / [set: Experimental(...)]).
+                    if (memberInfo is IPropertySymbol property)
+                    {
+                        if (canUseGetter)
+                        {
+                            AddExperimentalDiagnosticIds(property.GetMethod);
+                        }
+
+                        if (canUseSetter)
+                        {
+                            AddExperimentalDiagnosticIds(property.SetMethod);
+                        }
+                    }
+                }
+
                 return new PropertyGenerationSpec
                 {
                     NameSpecifiedInSourceCode = memberInfo.MemberNameNeedsAtSign() ? "@" + memberInfo.Name : memberInfo.Name,
@@ -2506,6 +2631,10 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
+                // The generated code invokes this constructor, so suppress any [Experimental] diagnostic declared
+                // on the constructor itself (parameter types are covered by EnqueueType below).
+                AddExperimentalDiagnosticIds(constructor);
+
                 ParameterGenerationSpec[] constructorParameters;
                 int paramCount = constructor?.Parameters.Length ?? 0;
                 constructorSetsRequiredMembers = constructor?.ContainsAttribute(_knownSymbols.SetsRequiredMembersAttributeType) == true;
@@ -2680,9 +2809,11 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                IMethodSymbol? accessibleParameterlessCtor = namedConverterType?.Constructors.FirstOrDefault(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType));
+
                 if (namedConverterType is null ||
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
-                    !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+                    accessibleParameterlessCtor is null)
                 {
                     ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                     return null;
@@ -2693,6 +2824,10 @@ namespace System.Text.Json.SourceGeneration
                     ReportDiagnostic(DiagnosticDescriptors.JsonStringEnumConverterNotSupportedInAot, attributeData.GetLocation(), declaringSymbol.ToDisplayString());
                 }
 
+                // The generated code instantiates this converter (including any generic type arguments) via
+                // its parameterless constructor, so suppress any [Experimental] diagnostic on either symbol.
+                AddExperimentalDiagnosticIds(namedConverterType);
+                AddExperimentalDiagnosticIds(accessibleParameterlessCtor);
                 return new TypeRef(namedConverterType);
             }
 
@@ -2700,16 +2835,22 @@ namespace System.Text.Json.SourceGeneration
             {
                 INamedTypeSymbol? namedClassifierType = classifierType as INamedTypeSymbol;
 
+                IMethodSymbol? accessibleParameterlessCtor = namedClassifierType?.Constructors.FirstOrDefault(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType));
+
                 if (namedClassifierType is null ||
                     namedClassifierType.IsAbstract ||
                     !_knownSymbols.JsonTypeClassifierFactoryType.IsAssignableFrom(namedClassifierType) ||
-                    !namedClassifierType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+                    accessibleParameterlessCtor is null)
                 {
                     // Reuse the converter-attribute diagnostic for this prototype; the conditions are analogous.
                     ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), classifierType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                     return null;
                 }
 
+                // The generated code instantiates this classifier factory (including any generic type arguments) via
+                // its parameterless constructor, so suppress any [Experimental] diagnostic on either symbol.
+                AddExperimentalDiagnosticIds(namedClassifierType);
+                AddExperimentalDiagnosticIds(accessibleParameterlessCtor);
                 return new TypeRef(namedClassifierType);
             }
 
