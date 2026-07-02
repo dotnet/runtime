@@ -40,6 +40,7 @@
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(Scenario)' == 'interpmode1'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'wasi'">00:30:00</_workItemTimeout>

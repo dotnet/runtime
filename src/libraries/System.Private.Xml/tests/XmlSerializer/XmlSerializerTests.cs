@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Runtime.Serialization.Tests;
@@ -2689,7 +2690,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 #endif
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
@@ -2701,6 +2701,46 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         }
         Assert.True(!weakRef.IsAlive);
     }
+
+#if !XMLSERIALIZERGENERATORTESTS
+    // The Generator tests only cover pre-generated serializers that are based on the types in SerializableAssembly.dll.
+    // For this test, we're testing a scenario where one of those types is used inside a generic container - aka, List<SerializationType>.
+    // Since 'List<>' is *not* defined in SerializableAssembly.dll, the pre-generated serializers do not include serializers for List<SerializationType>,
+    // Therefore, this test is excluded from the Generator tests.
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+    [InlineData("List")]
+    [InlineData("Array")]
+    public static void Xml_CollectibleTypeInGenericContainer(string containerKind)
+    {
+        ExecuteCollectibleContainerAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", containerKind, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    // Mono doesn't support collectible assemblies: RuntimeType.IsCollectible always returns false,
+    // so the serializer never engages its collectible weak-caching path. See dotnet/runtime#34072.
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    public static void Xml_RunAndCollectType_DoesNotRemainCached()
+    {
+        ExecuteRunAndCollectAndRelease(out WeakReference weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+#endif
 
     [Fact]
     public static void ValidateXElement()
@@ -2878,6 +2918,150 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         alc.Unload();
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteCollectibleContainerAndUnload(string assemblyfile, string typename, string containerKind, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests", true, fullPath);
+        wref = new WeakReference(alc);
+
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+        var baseType = asm.GetType(typename);
+        Assert.Equal(alc, AssemblyLoadContext.GetLoadContext(baseType.Assembly));
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        Type type;
+        object obj;
+        switch (containerKind)
+        {
+            case "List":
+                type = typeof(List<>).MakeGenericType(baseType);
+                // The type is collectible because it has a collectible type argument, but its
+                // Assembly is in the default ALC since that's where List<> is defined.
+                Assert.True(type.IsCollectible);
+                Assert.Equal(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(type.Assembly));
+
+                obj = Activator.CreateInstance(type);
+                object listItem = Activator.CreateInstance(baseType);
+                baseType.GetProperty("P1").SetValue(listItem, "test");
+                baseType.GetProperty("P2").SetValue(listItem, 42);
+                type.GetMethod("Add").Invoke(obj, [listItem]);
+                break;
+
+            case "Array":
+                type = baseType.MakeArrayType();
+                Assert.True(type.IsCollectible);
+
+                var array = Array.CreateInstance(baseType, 1);
+                object arrayItem = Activator.CreateInstance(baseType);
+                baseType.GetProperty("P1").SetValue(arrayItem, "test");
+                baseType.GetProperty("P2").SetValue(arrayItem, 42);
+                array.SetValue(arrayItem, 0);
+                obj = array;
+                break;
+
+            default:
+                throw new ArgumentException($"Unknown container kind: {containerKind}");
+        }
+
+        XmlSerializer serializer = new XmlSerializer(type);
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, obj);
+        ms.Position = 0;
+        var rtobj = serializer.Deserialize(ms);
+        Assert.NotNull(rtobj);
+
+        if (rtobj is Array rtArray)
+            Assert.Equal(1, rtArray.Length);
+        else if (rtobj is ICollection rtCollection)
+            Assert.Equal(1, rtCollection.Count);
+        else
+            Assert.Fail($"Expected deserialized object to be an Array or ICollection, but got {rtobj.GetType()}.");
+
+        alc.Unload();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteRunAndCollectAndRelease(out WeakReference wref)
+    {
+        string uniqueName = "XmlSerializerTests.RunAndCollect.Type_" + Guid.NewGuid().ToString("N");
+        var assemblyName = new AssemblyName(uniqueName);
+        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+            assemblyName,
+            AssemblyBuilderAccess.RunAndCollect);
+
+        ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(uniqueName);
+        TypeBuilder typeBuilder = moduleBuilder.DefineType(
+            uniqueName + ".SimpleType",
+            TypeAttributes.Public | TypeAttributes.Class);
+
+        typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        DefineAutoProperty(typeBuilder, "P1", typeof(string));
+        DefineAutoProperty(typeBuilder, "P2", typeof(int));
+
+        Type type = typeBuilder.CreateTypeInfo()!.AsType();
+
+        Assert.True(type.IsCollectible);
+        Assert.True(type.Assembly.IsCollectible);
+
+        wref = new WeakReference(type.Assembly);
+
+        object obj = Activator.CreateInstance(type)!;
+        type.GetProperty("P1")!.SetValue(obj, "test");
+        type.GetProperty("P2")!.SetValue(obj, 42);
+
+        XmlSerializer serializer = new XmlSerializer(type);
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, obj);
+
+        ms.Position = 0;
+        object? rtobj = serializer.Deserialize(ms);
+        Assert.NotNull(rtobj);
+        Assert.Equal("test", type.GetProperty("P1")!.GetValue(rtobj));
+        Assert.Equal(42, type.GetProperty("P2")!.GetValue(rtobj));
+    }
+
+    private static void DefineAutoProperty(TypeBuilder typeBuilder, string name, Type propertyType)
+    {
+        FieldBuilder field = typeBuilder.DefineField("_" + name, propertyType, FieldAttributes.Private);
+
+        MethodAttributes methodAttributes =
+            MethodAttributes.Public |
+            MethodAttributes.SpecialName |
+            MethodAttributes.HideBySig;
+
+        MethodBuilder getter = typeBuilder.DefineMethod(
+            "get_" + name,
+            methodAttributes,
+            propertyType,
+            Type.EmptyTypes);
+
+        ILGenerator getterIl = getter.GetILGenerator();
+        getterIl.Emit(OpCodes.Ldarg_0);
+        getterIl.Emit(OpCodes.Ldfld, field);
+        getterIl.Emit(OpCodes.Ret);
+
+        MethodBuilder setter = typeBuilder.DefineMethod(
+            "set_" + name,
+            methodAttributes,
+            null,
+            new[] { propertyType });
+
+        ILGenerator setterIl = setter.GetILGenerator();
+        setterIl.Emit(OpCodes.Ldarg_0);
+        setterIl.Emit(OpCodes.Ldarg_1);
+        setterIl.Emit(OpCodes.Stfld, field);
+        setterIl.Emit(OpCodes.Ret);
+
+        PropertyBuilder property = typeBuilder.DefineProperty(
+            name,
+            PropertyAttributes.None,
+            propertyType,
+            null);
+
+        property.SetGetMethod(getter);
+        property.SetSetMethod(setter);
+    }
 
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)

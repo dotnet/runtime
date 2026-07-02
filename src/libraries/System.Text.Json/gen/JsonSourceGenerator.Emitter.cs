@@ -61,6 +61,8 @@ namespace System.Text.Json.SourceGeneration
             private const string ReferenceHandlerTypeRef = "global::System.Text.Json.Serialization.ReferenceHandler";
             private const string EmptyTypeArray = "global::System.Array.Empty<global::System.Type>()";
 
+            private const string ByteArrayValueWriterMethodName = "WriteByteArrayValue";
+
             /// <summary>
             /// Contains an index from TypeRef to TypeGenerationSpec for the current ContextGenerationSpec.
             /// </summary>
@@ -83,6 +85,12 @@ namespace System.Text.Json.SourceGeneration
             /// requiring the <c>ValueTypeSetter</c> delegate type to be emitted.
             /// </summary>
             private bool _emitValueTypeSetterDelegate;
+
+            /// <summary>
+            /// Indicates that the fast-path serializer writes a <see cref="byte"/> array value,
+            /// requiring the on-demand byte[] writer helper to be emitted on the context.
+            /// </summary>
+            private bool _emitByteArrayValueHelper;
 
             /// <summary>
             /// The SourceText emit implementation filled by the individual Roslyn versions.
@@ -112,7 +120,7 @@ namespace System.Text.Json.SourceGeneration
                 string contextName = contextGenerationSpec.ContextType.Name;
 
                 // Add root context implementation.
-                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod, _emitValueTypeSetterDelegate));
+                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod, _emitValueTypeSetterDelegate, _emitByteArrayValueHelper));
 
                 // Add GetJsonTypeInfo override implementation.
                 AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
@@ -122,6 +130,7 @@ namespace System.Text.Json.SourceGeneration
 
                 _emitGetConverterForNullablePropertyMethod = false;
                 _emitValueTypeSetterDelegate = false;
+                _emitByteArrayValueHelper = false;
                 _propertyNames.Clear();
                 _typeIndex.Clear();
             }
@@ -620,6 +629,30 @@ namespace System.Text.Json.SourceGeneration
                 ImmutableEquatableArray<UnionCaseSpec> unionCases = typeMetadata.UnionCaseSpecs;
                 UnionCaseSpec? nullCase = unionCases.FirstOrDefault(c => c.IsNullable);
 
+                // C# rejects Nullable<T> in any pattern (CS8116: "It is not legal to use
+                // nullable type 'T?' in a pattern; use the underlying type 'T' instead")
+                // because at the CLR layer a boxed Nullable<T> with HasValue=true is
+                // bit-identical to a boxed T. So when a union declares both Foo(T) and
+                // Foo(Nullable<T>) the two ctors must map to the same `T` arm. The parser
+                // coalesces such collisions via ITypeSymbol equality on the underlying
+                // pattern key and tags exactly one declared case per collision group as
+                // the canonical switch arm (preferring the non-Nullable<T> sibling so
+                // most-derived dispatch reports typeof(T)). The null payload is handled
+                // separately by the `null =>` arm via nullCase.
+                int switchArmCount = 0;
+                bool armsMergeDeclaredCases = false;
+                foreach (UnionCaseSpec caseSpec in unionCases)
+                {
+                    if (caseSpec.IsSwitchArm)
+                    {
+                        switchArmCount++;
+                    }
+                    else
+                    {
+                        armsMergeDeclaredCases = true;
+                    }
+                }
+
                 string unionCasesExpr = unionCases.Count == 0
                     ? $"global::System.Array.Empty<{JsonUnionCaseInfoTypeRef}>()"
                     : $$"""new {{JsonUnionCaseInfoTypeRef}}[] { {{string.Join(", ", unionCases.Select(c => $"new {JsonUnionCaseInfoTypeRef}(typeof({c.CaseType.FullyQualifiedName})) {{ IsNullable = {(c.IsNullable ? "true" : "false")} }}"))}} }""";
@@ -645,23 +678,41 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine('{');
                     writer.Indentation++;
 
-                    for (int i = 0; i < unionCases.Count; i++)
+                    int ctorArmIndex = 0;
+                    foreach (UnionCaseSpec caseSpec in unionCases)
                     {
-                        string caseTypeFQN = unionCases[i].CaseType.FullyQualifiedName;
-                        writer.WriteLine($"{caseTypeFQN} caseValue{i} => new {genericArg}(caseValue{i}),");
+                        if (!caseSpec.IsSwitchArm)
+                        {
+                            continue;
+                        }
+
+                        string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
+                        writer.WriteLine($"{patternTypeFQN} caseValue{ctorArmIndex} => new {genericArg}(caseValue{ctorArmIndex}),");
+                        ctorArmIndex++;
                     }
 
                     if (nullCase is not null)
                     {
-                        writer.WriteLine($"null => new {genericArg}(({nullCase.CaseType.FullyQualifiedName}?)null),");
+                        writer.WriteLine($"null => new {genericArg}({FormatNullCast(nullCase)}null),");
                     }
 
                     writer.WriteLine($"_ => throw new {JsonExceptionTypeRef}(),");
                     writer.Indentation--;
                     writer.WriteLine("},");
 
-                    bool needsSingleCaseExhaustivenessPragma = unionCases.Count == 1;
-                    if (needsSingleCaseExhaustivenessPragma)
+                    // The deconstructor switch has no `_` arm — it relies on the union's
+                    // declared case set being exhaustively covered by its arms. Roslyn's
+                    // union exhaustiveness analyzer fails to recognize coverage in two
+                    // shapes today: (a) when switchArmCount == 1 the switch looks
+                    // non-exhaustive on `object?`-shaped surface area, and (b) when
+                    // Foo(T)+Foo(Nullable<T>) overloads merge into a single `T` arm the
+                    // Nullable<T> declared case isn't seen as covered. Tracked by
+                    // https://github.com/dotnet/roslyn/issues/83666; the fix is present
+                    // in Roslyn 5.9.0-1.26279.1 and later. Once the compiler bundled by
+                    // this repo's SDK reaches that version this pragma and the
+                    // `armsMergeDeclaredCases` plumbing can be removed.
+                    bool needsExhaustivenessPragma = switchArmCount == 1 || armsMergeDeclaredCases;
+                    if (needsExhaustivenessPragma)
                     {
                         writer.WriteLine("#pragma warning disable CS8509 // https://github.com/dotnet/roslyn/issues/83666");
                     }
@@ -689,13 +740,29 @@ namespace System.Text.Json.SourceGeneration
                     {
                         writer.WriteLine($"null => (typeof({nullCase.CaseType.FullyQualifiedName}), (object?)null),");
                     }
-
-                    // Cases are pre-sorted most-derived-first, so the first matching arm always
-                    // corresponds to the nearest declared case.
-                    for (int i = 0; i < unionCases.Count; i++)
+                    else
                     {
-                        string caseTypeFQN = unionCases[i].CaseType.FullyQualifiedName;
-                        writer.WriteLine($"{caseTypeFQN} caseValue{i} => (typeof({caseTypeFQN}), (object?)caseValue{i}),");
+                        // Always emit a null arm. C# pattern matching treats default(union)
+                        // as the null state (CS8655) and the union's Value property returns
+                        // null in that state. Routing to (null, null) signals
+                        // JsonUnionConverter to write JSON null instead of throwing.
+                        writer.WriteLine("null => ((global::System.Type?)null, (object?)null),");
+                    }
+
+                    // unionCases is in topological most-derived-first order, so the first
+                    // matching arm always corresponds to the nearest declared case for any
+                    // given runtime type.
+                    int deconArmIndex = 0;
+                    foreach (UnionCaseSpec caseSpec in unionCases)
+                    {
+                        if (!caseSpec.IsSwitchArm)
+                        {
+                            continue;
+                        }
+
+                        string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
+                        writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
+                        deconArmIndex++;
                     }
 
                     writer.Indentation--;
@@ -703,7 +770,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.Indentation--;
                     writer.WriteLine("},");
 
-                    if (needsSingleCaseExhaustivenessPragma)
+                    if (needsExhaustivenessPragma)
                     {
                         writer.WriteLine("#pragma warning restore CS8509");
                     }
@@ -724,6 +791,19 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('}');
 
                 return CompleteSourceFileAndReturnText(writer);
+            }
+
+            /// <summary>
+            /// Formats the cast prefix used by the <c>null =&gt;</c> arm of the constructor
+            /// switch (e.g. <c>(int?)</c>). For a Nullable&lt;T&gt; case the FQN already ends
+            /// in <c>?</c>, so we must not append another <c>?</c>.
+            /// </summary>
+            private static string FormatNullCast(UnionCaseSpec caseSpec)
+            {
+                string fqn = caseSpec.CaseType.FullyQualifiedName;
+                return caseSpec.CaseType.SpecialType is SpecialType.System_Nullable_T
+                    ? $"({fqn})"
+                    : $"({fqn}?)";
             }
 
             private void GeneratePropMetadataInitFunc(SourceWriter writer, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
@@ -1704,13 +1784,18 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static void GenerateSerializeValueStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string valueExpr)
+            private void GenerateSerializeValueStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string valueExpr)
             {
                 if (GetPrimitiveWriterMethod(typeSpec) is string primitiveWriterMethod)
                 {
                     if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.Char)
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}Value({valueExpr}.ToString());");
+                    }
+                    else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
+                    {
+                        writer.WriteLine($"{ByteArrayValueWriterMethodName}(writer, {valueExpr});");
+                        _emitByteArrayValueHelper = true;
                     }
                     else
                     {
@@ -1730,13 +1815,19 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static void GenerateSerializePropertyStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string propertyNameExpr, string valueExpr)
+            private void GenerateSerializePropertyStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string propertyNameExpr, string valueExpr)
             {
                 if (GetPrimitiveWriterMethod(typeSpec) is string primitiveWriterMethod)
                 {
                     if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.Char)
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}({propertyNameExpr}, {valueExpr}.ToString());");
+                    }
+                    else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
+                    {
+                        writer.WriteLine($"writer.WritePropertyName({propertyNameExpr});");
+                        writer.WriteLine($"{ByteArrayValueWriterMethodName}(writer, {valueExpr});");
+                        _emitByteArrayValueHelper = true;
                     }
                     else
                     {
@@ -1821,7 +1912,7 @@ namespace System.Text.Json.SourceGeneration
                     """);
             }
 
-            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate)
+            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate, bool emitByteArrayValueHelper)
             {
                 string contextTypeRef = contextSpec.ContextType.FullyQualifiedName;
                 string contextTypeName = contextSpec.ContextType.Name;
@@ -1874,6 +1965,24 @@ namespace System.Text.Json.SourceGeneration
                     """);
 
                 writer.WriteLine();
+
+                if (emitByteArrayValueHelper)
+                {
+                    writer.WriteLine($$"""
+                        private static void {{ByteArrayValueWriterMethodName}}({{Utf8JsonWriterTypeRef}} writer, byte[]? value)
+                        {
+                            if (value is null)
+                            {
+                                writer.WriteNullValue();
+                            }
+                            else
+                            {
+                                writer.WriteBase64StringValue(value);
+                            }
+                        }
+                        """);
+                    writer.WriteLine();
+                }
 
                 GenerateConverterHelpers(writer, emitGetConverterForNullablePropertyMethod);
 

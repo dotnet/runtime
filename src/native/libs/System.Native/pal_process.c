@@ -225,7 +225,7 @@ handler_from_sigaction (struct sigaction *sa)
     }
     else
     {
-        return sa->sa_handler;
+        return (VoidIntFn)sa->sa_handler;
     }
 }
 
@@ -334,7 +334,7 @@ static int32_t ForkAndExecProcessInternal(
     const char* filename, char* const argv[], char* const envp[], const char* cwd,
     int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
-    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig);
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig, int32_t startSuspended);
 
 #if HAVE_PR_SET_PDEATHSIG
 // Dedicated thread infrastructure for PR_SET_PDEATHSIG.
@@ -401,7 +401,7 @@ static void* PDeathSigThreadFunc(void* arg)
             req->filename, req->argv, req->envp, req->cwd,
             req->setCredentials, req->userId, req->groupId, req->groups, req->groupsLength,
             &childPid, req->stdinFd, req->stdoutFd, req->stderrFd,
-            req->inheritedFds, req->inheritedFdCount, req->startDetached, 1);
+            req->inheritedFds, req->inheritedFdCount, req->startDetached, 1, 0);
         req->childPid = childPid;
         req->errnoValue = errno;
 
@@ -535,7 +535,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* inheritedFds,
                                       int32_t inheritedFdCount,
                                       int32_t startDetached,
-                                      int32_t killOnParentExit)
+                                      int32_t killOnParentExit,
+                                      int32_t startSuspended)
 {
 #if HAVE_PR_SET_PDEATHSIG
     if (killOnParentExit)
@@ -554,14 +555,14 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         filename, argv, envp, cwd,
         setCredentials, userId, groupId, groups, groupsLength,
         childPid, stdinFd, stdoutFd, stderrFd,
-        inheritedFds, inheritedFdCount, startDetached, 0);
+        inheritedFds, inheritedFdCount, startDetached, 0, startSuspended);
 }
 
 static int32_t ForkAndExecProcessInternal(
     const char* filename, char* const argv[], char* const envp[], const char* cwd,
     int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
-    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig)
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t applyPDeathSig, int32_t startSuspended)
 {
 #if HAVE_FORK || defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
@@ -667,6 +668,12 @@ static int32_t ForkAndExecProcessInternal(
             flags |= POSIX_SPAWN_SETSID;
         }
 
+        // When startSuspended is set, start the process in a suspended state.
+        if (startSuspended)
+        {
+            flags |= POSIX_SPAWN_START_SUSPENDED;
+        }
+
         if ((result = posix_spawnattr_setflags(&attr, flags)) != 0
             || (result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0
             || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0 // Set the child's signal mask to match the parent's current mask
@@ -732,6 +739,13 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
 #if HAVE_FORK
+    if (startSuspended)
+    {
+        // POSIX_SPAWN_START_SUSPENDED is only available in the posix_spawn() path (macOS, !setCredentials).
+        // The fork() path does not support startSuspended.
+        errno = ENOTSUP;
+        return -1;
+    }
     bool success = true;
     int waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;
@@ -838,7 +852,10 @@ static int32_t ForkAndExecProcessInternal(
         struct sigaction sa_default;
         struct sigaction sa_old;
         memset(&sa_default, 0, sizeof(sa_default)); // On some architectures, sa_mask is a struct so assigning zero to it doesn't compile
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wstrict-prototypes"
         sa_default.sa_handler = SIG_DFL;
+    #pragma clang diagnostic pop
         for (int sig = 1; sig < NSIG; ++sig)
         {
             if (sig == SIGKILL || sig == SIGSTOP)
@@ -848,7 +865,12 @@ static int32_t ForkAndExecProcessInternal(
             if (!sigaction(sig, NULL, &sa_old))
             {
                 void (*oldhandler)(int) = handler_from_sigaction (&sa_old);
-                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
+                bool hasCustomHandler;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+                hasCustomHandler = oldhandler != SIG_IGN && oldhandler != SIG_DFL;
+#pragma clang diagnostic pop
+                if (hasCustomHandler)
                 {
                     // It has a custom handler, put the default handler back.
                     // We check first to preserve flags on default handlers.
@@ -1004,6 +1026,7 @@ done:;
     (void)inheritedFdCount;
     (void)startDetached;
     (void)applyPDeathSig;
+    (void)startSuspended;
     return -1;
 #endif
 }

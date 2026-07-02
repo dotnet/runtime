@@ -197,6 +197,10 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
 
 bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr);
 
+// Try to fold the page offset of a preceding relocatable "add Rd,Rd,#:lo12:sym" (PAGEOFFSET_12A)
+// into a "ldr Rd,[Rd]" to form "ldr Rd,[Rd,#:lo12:sym]" (PAGEOFFSET_12L), removing the add.
+bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
+
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
     assert(id->idIsLclVarPair());

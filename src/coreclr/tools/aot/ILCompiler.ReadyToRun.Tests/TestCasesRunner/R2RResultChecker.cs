@@ -116,6 +116,40 @@ internal static class R2RAssert
         return result;
     }
 
+    /// <summary>
+    /// Returns true if the manifest assembly MVID table in a composite image is present, holds a
+    /// whole number of 16-byte GUID entries, and starts on a 4-byte aligned RVA. The runtime reads
+    /// each entry as a GUID by value, so the table must be 4-byte aligned to avoid alignment faults
+    /// (SIGBUS) on architectures such as 32-bit ARM that do not permit unaligned multi-word loads.
+    /// </summary>
+    public static bool ManifestAssemblyMvidsTableIsAligned(ReadyToRunReader reader, out string diagnostic)
+    {
+        const int GuidByteSize = 16;
+        const int RequiredAlignment = 4;
+
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection section))
+        {
+            diagnostic = "Expected ManifestAssemblyMvids section not found.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        if (section.Size <= 0)
+            failures.Add("Expected ManifestAssemblyMvids section to be non-empty.");
+
+        if (section.Size % GuidByteSize != 0)
+            failures.Add($"ManifestAssemblyMvids section size {section.Size} should be a multiple of {GuidByteSize} (a table of GUIDs).");
+
+        if ((section.RelativeVirtualAddress % RequiredAlignment) != 0)
+            failures.Add($"ManifestAssemblyMvids section RVA 0x{section.RelativeVirtualAddress:X8} should be aligned to {RequiredAlignment} bytes.");
+
+        diagnostic = failures.Count == 0
+            ? $"ManifestAssemblyMvids table is {RequiredAlignment}-byte aligned ({section.Size / GuidByteSize} entries)."
+            : string.Join(Environment.NewLine, failures);
+        return failures.Count == 0;
+    }
+
     private static bool SectionRVAIsEven(ReadyToRunReader reader, ReadyToRunSectionType sectionType, List<string> failures)
     {
         if (!reader.ReadyToRunHeader.Sections.TryGetValue(sectionType, out ReadyToRunSection section))
@@ -944,6 +978,121 @@ internal static class R2RAssert
 
         diagnostic = $"Found '{kind}' fixup on method matching '{methodName}'.";
         return true;
+    }
+
+    /// <summary>
+    /// Returns true if the R2R image contains a compiled method with a matching declaring type and method name.
+    /// Optionally checks method-level generic instantiation args.
+    /// </summary>
+    public static bool HasCompiledMethod(ReadyToRunReader reader, string declaringType, string methodName, out string diagnostic, string[]? instanceArgs = null)
+    {
+        List<ReadyToRunMethod> allMethods = GetAllMethods(reader);
+        List<ReadyToRunMethod> matchingMethods = allMethods
+            .Where(m => m.DeclaringType == declaringType && m.Name == methodName)
+            .Where(m =>
+            {
+                if (instanceArgs is null)
+                    return m.InstanceArgs is null;
+                if (m.InstanceArgs is null || m.InstanceArgs.Length != instanceArgs.Length)
+                    return false;
+                for (int i = 0; i < instanceArgs.Length; i++)
+                {
+                    if (m.InstanceArgs[i] != instanceArgs[i])
+                        return false;
+                }
+                return true;
+            })
+            .ToList();
+
+        string expected = instanceArgs is null
+            ? $"'{declaringType}.{methodName}'"
+            : $"'{declaringType}.{methodName}<{string.Join(",", instanceArgs)}>'";
+
+        if (matchingMethods.Count > 0)
+        {
+            diagnostic = $"Found compiled method {expected}: [{string.Join(", ", matchingMethods.Select(m => m.SignatureString))}]";
+            return true;
+        }
+
+        diagnostic =
+            $"Expected compiled method {expected} not found.\n" +
+            $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name}"))}";
+        return false;
+    }
+
+    /// <summary>
+    /// Reads the raw IL byte stream of a method definition from a component MSIL file.
+    /// </summary>
+    private static bool TryGetMethodIL(string msilFilePath, string declaringType, string methodName, out byte[] il, out string diagnostic)
+    {
+        il = Array.Empty<byte>();
+
+        if (!File.Exists(msilFilePath))
+        {
+            diagnostic = $"Component MSIL file not found: '{msilFilePath}'.";
+            return false;
+        }
+
+        using var fileStream = new FileStream(msilFilePath, FileMode.Open, FileAccess.Read);
+        using var peReader = new PEReader(fileStream);
+        MetadataReader mr = peReader.GetMetadataReader();
+        foreach (TypeDefinitionHandle typeHandle in mr.TypeDefinitions)
+        {
+            TypeDefinition type = mr.GetTypeDefinition(typeHandle);
+            if (mr.GetString(type.Name) != declaringType)
+                continue;
+
+            foreach (MethodDefinitionHandle methodHandle in type.GetMethods())
+            {
+                MethodDefinition method = mr.GetMethodDefinition(methodHandle);
+                if (mr.GetString(method.Name) != methodName)
+                    continue;
+
+                int rva = method.RelativeVirtualAddress;
+                if (rva == 0)
+                {
+                    diagnostic = $"Method '{declaringType}.{methodName}' has no IL body (RVA 0).";
+                    return false;
+                }
+
+                il = peReader.GetMethodBody(rva).GetILBytes() ?? Array.Empty<byte>();
+                diagnostic = string.Empty;
+                return true;
+            }
+        }
+
+        diagnostic = $"Method '{declaringType}.{methodName}' not found in '{msilFilePath}'.";
+        return false;
+    }
+
+    /// <summary>
+    /// Returns true if the method's IL body was stripped by crossgen2 (--strip-il-bodies).
+    /// </summary>
+    public static bool MethodILIsStripped(string msilFilePath, string declaringType, string methodName, out string diagnostic)
+    {
+        if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
+            return false;
+
+        bool stripped = il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x14, 0x7A]);
+        diagnostic = stripped
+            ? $"IL of '{declaringType}.{methodName}' is stripped (ldnull; throw)."
+            : $"Expected IL of '{declaringType}.{methodName}' to be stripped, but it is present ({il.Length} bytes: {BitConverter.ToString(il)}).";
+        return stripped;
+    }
+
+    /// <summary>
+    /// Returns true if the method's full IL body is present in the component MSIL file.
+    /// </summary>
+    public static bool MethodILIsPresent(string msilFilePath, string declaringType, string methodName, out string diagnostic)
+    {
+        if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
+            return false;
+
+        bool present = !il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x14, 0x7A]);
+        diagnostic = present
+            ? $"IL of '{declaringType}.{methodName}' is present ({il.Length} bytes)."
+            : $"Expected IL of '{declaringType}.{methodName}' to be present, but it was stripped (ldnull; throw).";
+        return present;
     }
 }
 
