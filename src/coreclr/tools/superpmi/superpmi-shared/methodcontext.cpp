@@ -3270,8 +3270,10 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod key virtMethod-%016" PRIX64 ", objClass-%016" PRIX64 ", context-%016" PRIX64 " pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
+    printf("ResolveVirtualMethod key virtMethod-%016" PRIX64 ", callerMethod-%016" PRIX64 ", objClass-%016" PRIX64
+           ", context-%016" PRIX64 " pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
         key.virtualMethod,
+        key.callerMethod,
         key.objClass,
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
