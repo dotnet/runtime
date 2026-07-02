@@ -7139,17 +7139,13 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 }
 
 #if defined(FEATURE_HW_INTRINSICS)
+                case VNF_HWI_Vector_ExtractMostSignificantBits:
 #if defined(TARGET_XARCH)
-                case VNF_HWI_Vector256_ExtractMostSignificantBits:
-                case VNF_HWI_Vector512_ExtractMostSignificantBits:
                 case VNF_HWI_X86Base_MoveMask:
                 case VNF_HWI_AVX_MoveMask:
                 case VNF_HWI_AVX2_MoveMask:
                 case VNF_HWI_AVX512_MoveMask:
-#elif defined(TARGET_ARM64)
-                case VNF_HWI_Vector64_ExtractMostSignificantBits:
 #endif
-                case VNF_HWI_Vector128_ExtractMostSignificantBits:
                 {
                     // We have 1 bit per element, remaining upper bits are 0
 
@@ -8290,15 +8286,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
         switch (ni)
         {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_ExtractMostSignificantBits:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_ExtractMostSignificantBits:
+            case NI_Vector_ExtractMostSignificantBits:
+#if defined(TARGET_XARCH)
             case NI_X86Base_MoveMask:
             case NI_AVX_MoveMask:
             case NI_AVX2_MoveMask:
 #endif
-            case NI_Vector128_ExtractMostSignificantBits:
             {
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
@@ -8428,21 +8421,21 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_Vector64_ToVector128:
-            case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector_ToVector128:
+            case NI_Vector_ToVector128Unsafe:
             {
                 simd16_t result = {};
                 result.v64[0]   = GetConstantSimd8(arg0VN);
                 return VNForSimd16Con(result);
             }
 
-            case NI_Vector128_GetLower:
+            case NI_Vector_GetLower:
             {
                 simd8_t result = GetConstantSimd16(arg0VN).v64[0];
                 return VNForSimd8Con(result);
             }
 
-            case NI_Vector128_GetUpper:
+            case NI_Vector_GetUpper:
             {
                 simd8_t result = GetConstantSimd16(arg0VN).v64[1];
                 return VNForSimd8Con(result);
@@ -8555,67 +8548,75 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_Vector128_ToVector256:
-            case NI_Vector128_ToVector256Unsafe:
+            case NI_Vector_ToVector256:
+            case NI_Vector_ToVector256Unsafe:
             {
                 simd32_t result = {};
                 result.v128[0]  = GetConstantSimd16(arg0VN);
                 return VNForSimd32Con(result);
             }
 
-            case NI_Vector128_ToVector512:
+            case NI_Vector_ToVector512:
+            case NI_Vector_ToVector512Unsafe:
             {
                 simd64_t result = {};
-                result.v128[0]  = GetConstantSimd16(arg0VN);
+
+                if (simdSize == 16)
+                {
+                    result.v128[0] = GetConstantSimd16(arg0VN);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    result.v256[0] = GetConstantSimd32(arg0VN);
+                }
                 return VNForSimd64Con(result);
             }
 
-            case NI_Vector256_GetLower:
+            case NI_Vector_GetLower:
             {
-                simd16_t result = GetConstantSimd32(arg0VN).v128[0];
-                return VNForSimd16Con(result);
+                if (simdSize == 64)
+                {
+                    simd32_t result = GetConstantSimd64(arg0VN).v256[0];
+                    return VNForSimd32Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd16_t result = GetConstantSimd32(arg0VN).v128[0];
+                    return VNForSimd16Con(result);
+                }
             }
 
-            case NI_Vector256_GetUpper:
+            case NI_Vector_GetUpper:
             {
-                simd16_t result = GetConstantSimd32(arg0VN).v128[1];
-                return VNForSimd16Con(result);
+                if (simdSize == 64)
+                {
+                    simd32_t result = GetConstantSimd64(arg0VN).v256[1];
+                    return VNForSimd32Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd16_t result = GetConstantSimd32(arg0VN).v128[1];
+                    return VNForSimd16Con(result);
+                }
             }
 
-            case NI_Vector256_ToVector512:
-            case NI_Vector256_ToVector512Unsafe:
-            {
-                simd64_t result = {};
-                result.v256[0]  = GetConstantSimd32(arg0VN);
-                return VNForSimd64Con(result);
-            }
-
-            case NI_Vector512_GetLower:
-            {
-                simd32_t result = GetConstantSimd64(arg0VN).v256[0];
-                return VNForSimd32Con(result);
-            }
-
-            case NI_Vector512_GetUpper:
-            {
-                simd32_t result = GetConstantSimd64(arg0VN).v256[1];
-                return VNForSimd32Con(result);
-            }
-
-            case NI_Vector512_GetLower128:
+            case NI_Vector_GetLower128:
             {
                 simd16_t result = GetConstantSimd64(arg0VN).v128[0];
                 return VNForSimd16Con(result);
             }
 #endif // TARGET_XARCH
 
-            case NI_Vector128_AsVector2:
+            case NI_Vector_AsVector2:
             {
                 simd8_t result = GetConstantSimd16(arg0VN).v64[0];
                 return VNForSimd8Con(result);
             }
 
-            case NI_Vector128_AsVector3:
+            case NI_Vector_AsVector3:
             {
                 simd12_t result = {};
                 simd16_t vector = GetConstantSimd16(arg0VN);
@@ -8627,7 +8628,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForSimd12Con(result);
             }
 
-            case NI_Vector128_AsVector128Unsafe:
+            case NI_Vector_AsVector128Unsafe:
             {
                 if (TypeOfVN(arg0VN) == TYP_SIMD8)
                 {
@@ -8650,13 +8651,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 }
             }
 
-            case NI_Vector128_ToScalar:
-#ifdef TARGET_ARM64
-            case NI_Vector64_ToScalar:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_ToScalar:
-            case NI_Vector512_ToScalar:
-#endif
+            case NI_Vector_ToScalar:
             {
                 return EvaluateSimdGetElement(this, TypeOfVN(arg0VN), baseType, arg0VN, 0);
             }
@@ -8784,13 +8779,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
         switch (ni)
         {
-            case NI_Vector128_GetElement:
-#ifdef TARGET_ARM64
-            case NI_Vector64_GetElement:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_GetElement:
-            case NI_Vector512_GetElement:
-#endif
+            case NI_Vector_GetElement:
             {
                 var_types simdType = TypeOfVN(arg0VN);
                 int32_t   index    = GetConstantInt32(arg1VN);
@@ -8815,14 +8804,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 return EvaluateBinarySimd(this, GT_MUL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
-            case NI_Vector128_WithLower:
+            case NI_Vector_WithLower:
             {
                 simd16_t result = GetConstantSimd16(arg0VN);
                 result.v64[0]   = GetConstantSimd8(arg1VN);
                 return VNForSimd16Con(result);
             }
 
-            case NI_Vector128_WithUpper:
+            case NI_Vector_WithUpper:
             {
                 simd16_t result = GetConstantSimd16(arg0VN);
                 result.v64[1]   = GetConstantSimd8(arg1VN);
@@ -8831,32 +8820,38 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
-            case NI_Vector256_WithLower:
+            case NI_Vector_WithLower:
             {
-                simd32_t result = GetConstantSimd32(arg0VN);
-                result.v128[0]  = GetConstantSimd16(arg1VN);
-                return VNForSimd32Con(result);
+                if (simdSize == 64)
+                {
+                    simd64_t result = GetConstantSimd64(arg0VN);
+                    result.v256[0]  = GetConstantSimd32(arg1VN);
+                    return VNForSimd64Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd32_t result = GetConstantSimd32(arg0VN);
+                    result.v128[0]  = GetConstantSimd16(arg1VN);
+                    return VNForSimd32Con(result);
+                }
             }
 
-            case NI_Vector256_WithUpper:
+            case NI_Vector_WithUpper:
             {
-                simd32_t result = GetConstantSimd32(arg0VN);
-                result.v128[1]  = GetConstantSimd16(arg1VN);
-                return VNForSimd32Con(result);
-            }
-
-            case NI_Vector512_WithLower:
-            {
-                simd64_t result = GetConstantSimd64(arg0VN);
-                result.v256[0]  = GetConstantSimd32(arg1VN);
-                return VNForSimd64Con(result);
-            }
-
-            case NI_Vector512_WithUpper:
-            {
-                simd64_t result = GetConstantSimd64(arg0VN);
-                result.v256[1]  = GetConstantSimd32(arg1VN);
-                return VNForSimd64Con(result);
+                if (simdSize == 64)
+                {
+                    simd64_t result = GetConstantSimd64(arg0VN);
+                    result.v256[1]  = GetConstantSimd32(arg1VN);
+                    return VNForSimd64Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd32_t result = GetConstantSimd32(arg0VN);
+                    result.v128[1]  = GetConstantSimd16(arg1VN);
+                    return VNForSimd32Con(result);
+                }
             }
 #endif // TARGET_XARCH
 
@@ -9348,13 +9343,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             }
 #endif
 
-            case NI_Vector128_op_Equality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Equality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Equality:
-            case NI_Vector512_op_Equality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Equality:
             {
                 if (varTypeIsFloating(baseType))
                 {
@@ -9369,13 +9358,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
 
-            case NI_Vector128_op_Inequality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Inequality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Inequality:
-            case NI_Vector512_op_Inequality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Inequality:
             {
                 if (varTypeIsFloating(baseType))
                 {
@@ -9475,13 +9458,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
         switch (ni)
         {
-            case NI_Vector128_op_Equality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Equality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Equality:
-            case NI_Vector512_op_Equality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Equality:
             {
                 // We can't handle floating-point due to NaN
 
@@ -9492,13 +9469,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
 
-            case NI_Vector128_op_Inequality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Inequality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Inequality:
-            case NI_Vector512_op_Inequality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Inequality:
             {
                 // We can't handle floating-point due to NaN
 
@@ -9640,9 +9611,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 #ifndef TARGET_WASM
 // TODO-WASM: Implement bitwise select case
 #if defined(TARGET_XARCH)
-        case NI_Vector128_ConditionalSelect:
-        case NI_Vector256_ConditionalSelect:
-        case NI_Vector512_ConditionalSelect:
+        case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseSelect:
         case NI_Sve_ConditionalSelect:
@@ -9709,13 +9678,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
         }
 #endif // !defined(TARGET_WASM)
 
-        case NI_Vector128_WithElement:
-#ifdef TARGET_ARM64
-        case NI_Vector64_WithElement:
-#elif defined(TARGET_XARCH)
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
-#endif
+        case NI_Vector_WithElement:
         {
             if (!IsVNConstant(arg0VN) || !IsVNConstant(arg1VN) || !IsVNConstant(arg2VN))
             {
@@ -13883,7 +13846,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         };
 
-        // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
+        // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector_Zero
         if (opCount == 0)
         {
             // There are zero arg HWINTRINSICS operations that encode the result type, i.e.  Vector128_AllBitSet
