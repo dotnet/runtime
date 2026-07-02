@@ -2794,9 +2794,11 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                IMethodSymbol? accessibleParameterlessCtor = namedConverterType?.Constructors.FirstOrDefault(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType));
+
                 if (namedConverterType is null ||
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
-                    !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+                    accessibleParameterlessCtor is null)
                 {
                     ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                     return null;
@@ -2807,9 +2809,10 @@ namespace System.Text.Json.SourceGeneration
                     ReportDiagnostic(DiagnosticDescriptors.JsonStringEnumConverterNotSupportedInAot, attributeData.GetLocation(), declaringSymbol.ToDisplayString());
                 }
 
-                // The generated code instantiates this converter (including any generic type arguments), so
-                // suppress any [Experimental] diagnostic on it or on the types it is constructed over.
+                // The generated code instantiates this converter (including any generic type arguments) via
+                // its parameterless constructor, so suppress any [Experimental] diagnostic on either symbol.
                 AddExperimentalDiagnosticIds(namedConverterType);
+                AddExperimentalDiagnosticIds(accessibleParameterlessCtor);
                 return new TypeRef(namedConverterType);
             }
 
@@ -2817,19 +2820,22 @@ namespace System.Text.Json.SourceGeneration
             {
                 INamedTypeSymbol? namedClassifierType = classifierType as INamedTypeSymbol;
 
+                IMethodSymbol? accessibleParameterlessCtor = namedClassifierType?.Constructors.FirstOrDefault(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType));
+
                 if (namedClassifierType is null ||
                     namedClassifierType.IsAbstract ||
                     !_knownSymbols.JsonTypeClassifierFactoryType.IsAssignableFrom(namedClassifierType) ||
-                    !namedClassifierType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+                    accessibleParameterlessCtor is null)
                 {
                     // Reuse the converter-attribute diagnostic for this prototype; the conditions are analogous.
                     ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetLocation(), classifierType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                     return null;
                 }
 
-                // The generated code instantiates this classifier factory (including any generic type arguments),
-                // so suppress any [Experimental] diagnostic on it or on the types it is constructed over.
+                // The generated code instantiates this classifier factory (including any generic type arguments) via
+                // its parameterless constructor, so suppress any [Experimental] diagnostic on either symbol.
                 AddExperimentalDiagnosticIds(namedClassifierType);
+                AddExperimentalDiagnosticIds(accessibleParameterlessCtor);
                 return new TypeRef(namedClassifierType);
             }
 

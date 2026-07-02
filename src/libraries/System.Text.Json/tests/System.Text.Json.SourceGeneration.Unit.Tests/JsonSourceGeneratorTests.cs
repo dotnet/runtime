@@ -1019,6 +1019,82 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void ExperimentalConverterConstructor_IsSuppressed()
+        {
+            string source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                public class WidgetConverter : JsonConverter<ConvertedWidget>
+                {
+                    [Experimental("EXP_CONV_CTOR")]
+                    public WidgetConverter() { }
+
+                    public override ConvertedWidget Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new ConvertedWidget();
+                    public override void Write(Utf8JsonWriter writer, ConvertedWidget value, JsonSerializerOptions options) { }
+                }
+
+                [JsonConverter(typeof(WidgetConverter))]
+                public class ConvertedWidget
+                {
+                    public int X { get; set; }
+                }
+
+                [JsonSerializable(typeof(ConvertedWidget))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            TypeGenerationSpec convertedWidget = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "ConvertedWidget");
+            Assert.Equal(new[] { "EXP_CONV_CTOR" }, convertedWidget.ExperimentalDiagnosticIds);
+        }
+
+        [Fact]
+        public void ExperimentalTypeClassifierFactoryConstructor_IsSuppressed()
+        {
+            string source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.CompilerServices;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization.Metadata;
+
+                [JsonUnion(TypeClassifier = typeof(IntOrLongClassifier))]
+                [Union]
+                public readonly struct IntOrLongUnion : IUnion
+                {
+                    public IntOrLongUnion(int value) { Value = value; }
+                    public IntOrLongUnion(long value) { Value = value; }
+                    public object Value { get; }
+                }
+
+                public sealed class IntOrLongClassifier : JsonTypeClassifierFactory
+                {
+                    [Experimental("EXP_CLS_CTOR")]
+                    public IntOrLongClassifier() { }
+
+                    public override bool CanClassify(JsonTypeClassifierContext context) => true;
+                    public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
+                        (ref Utf8JsonReader reader) => typeof(int);
+                }
+
+                [JsonSerializable(typeof(IntOrLongUnion))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            TypeGenerationSpec union = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "IntOrLongUnion");
+            Assert.Equal(new[] { "EXP_CLS_CTOR" }, union.ExperimentalDiagnosticIds);
+        }
+
+        [Fact]
         public void NestedGenericOuterTypeArgument_IsSuppressed()
         {
             string source = """
