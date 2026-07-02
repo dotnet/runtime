@@ -2452,7 +2452,7 @@ void emitter::emitDispIns(
         case INS_fsub:
         case INS_fmul:
         case INS_fdiv:
-            printf("f%d, f%d, f%d", id->idReg3() - REG_F0, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+            printf("f%d, f%d, f%d", id->idReg1() - REG_F0, id->idReg2() - REG_F0, id->idReg3() - REG_F0);
             break;
             
         case INS_blr:
