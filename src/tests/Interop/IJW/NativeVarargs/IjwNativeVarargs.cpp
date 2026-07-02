@@ -30,6 +30,21 @@ struct HFA
     float f4;
 };
 
+    // Floating-point varargs results can differ in the low-order bits between the
+    // managed "expected" computation and the native summation.
+    static bool AreClose(double expected, double actual)
+    {
+        double diff = System::Math::Abs(expected - actual);
+        double scale = System::Math::Max(System::Math::Abs(expected), System::Math::Abs(actual));
+
+        // 0.0001 (0.01%) relative tolerance. The lossy path is single-precision: near
+        // the test's ~1e10 magnitudes one float ULP is ~1.1e-7 relative, and summing
+        // 164 floats (41 HFAs x 4) compounds to a worst case of ~1.8e-5. 0.0001 sits
+        // ~5x above that so rounding never false-fails, yet stays tight enough to
+        // catch a real ABI/marshalling bug.
+        return diff <= scale * 0.0001;
+    }
+
 #pragma unmanaged
 
 int SumInts(std::size_t numElements, ...)
@@ -317,21 +332,6 @@ private:
     static float AggregateHFAs(float current, HFA hfa)
     {
         return current + hfa.f1 + hfa.f2 + hfa.f3 + hfa.f4;
-    }
-
-    // Floating-point varargs results can differ in the low-order bits between the
-    // managed "expected" computation and the native summation.
-    static bool AreClose(double expected, double actual)
-    {
-        double diff = System::Math::Abs(expected - actual);
-        double scale = System::Math::Max(System::Math::Abs(expected), System::Math::Abs(actual));
-
-        // 0.0001 (0.01%) relative tolerance. The lossy path is single-precision: near
-        // the test's ~1e10 magnitudes one float ULP is ~1.1e-7 relative, and summing
-        // 164 floats (41 HFAs x 4) compounds to a worst case of ~1.8e-5. 0.0001 sits
-        // ~5x above that so rounding never false-fails, yet stays tight enough to
-        // catch a real ABI/marshalling bug.
-        return diff <= scale * 0.0001;
     }
 
     bool RunSumInt64sTest(System::Random^ rng)
