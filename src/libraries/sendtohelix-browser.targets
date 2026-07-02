@@ -129,6 +129,14 @@
     <HelixPreCommand Include="$(EnvVarCommand) XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(BrowserHost)' == 'osx' and '$(IsRunningLibraryTests)' == 'true'">
+    <HelixPreCommand Include="$(EnvVarCommand) DEVCERTS_KEYCHAIN=$HELIX_WORKITEM_ROOT/dotnet-devcerts.keychain-db" />
+    <HelixPreCommand Include="security create-keychain -p &quot;&quot; &quot;$DEVCERTS_KEYCHAIN&quot; || true" />
+    <HelixPreCommand Include="security set-keychain-settings &quot;$DEVCERTS_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="security unlock-keychain -p &quot;&quot; &quot;$DEVCERTS_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="security default-keychain -s &quot;$DEVCERTS_KEYCHAIN&quot;" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="$(EnvVarCommand) PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnChrome)' == 'true'" Include="$(EnvVarCommand) PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName):$PATH" />
