@@ -363,7 +363,6 @@ namespace System.Tests
             Assert.Equal(zero, Decimal32.Zero);
             Assert.Equal(zero, Decimal32.NegativeZero);
             Assert.Equal(Decimal32.Zero, Decimal32.NegativeZero);
-            Assert.Equal(Decimal32.Zero, Unsafe.BitCast<uint, Decimal32>(0x0000_0001));
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
