@@ -93,7 +93,11 @@ public unsafe class ExceptionStateTests
             NextThread: TargetPointer.Null,
             ThreadHandle: TargetPointer.Null,
             IsInteropDebuggingHijacked: false,
-            DebuggerFilterContext: TargetPointer.Null));
+            DebuggerFilterContext: TargetPointer.Null,
+            GCFrame: TargetPointer.Null,
+            IsExceptionInProgress: false,
+            OSExceptionRecord: TargetPointer.Null,
+            OSExceptionContextRecord: TargetPointer.Null));
 
         var target = new TestPlaceholderTarget.Builder(arch)
             .UseReader((ulong _, Span<byte> _) => -1)
@@ -477,7 +481,11 @@ public unsafe class ExceptionStateTests
             NextThread: TargetPointer.Null,
             ThreadHandle: TargetPointer.Null,
             IsInteropDebuggingHijacked: false,
-            DebuggerFilterContext: TargetPointer.Null));
+            DebuggerFilterContext: TargetPointer.Null,
+            GCFrame: TargetPointer.Null,
+            IsExceptionInProgress: false,
+            OSExceptionRecord: TargetPointer.Null,
+            OSExceptionContextRecord: TargetPointer.Null));
 
         var mockException = new Mock<IException>();
         mockException.Setup(e => e.GetExceptionData(exceptionObjectAddr)).Returns(new ExceptionData(

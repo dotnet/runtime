@@ -152,4 +152,22 @@ public class Async2ExecutionContext
 
         s_osrLocal.Value = val;
     }
+
+    [Fact]
+    public static void TestValueTask()
+    {
+        TestValueTaskAsync().GetAwaiter().GetResult();
+    }
+
+    private static async ValueTask TestValueTaskAsync()
+    {
+        s_local.Value = 42;
+        await ChangeThenReturnValueTask();
+        Assert.Equal(42, s_local.Value);
+    }
+
+    private static async ValueTask ChangeThenReturnValueTask()
+    {
+        s_local.Value = 123;
+    }
 }

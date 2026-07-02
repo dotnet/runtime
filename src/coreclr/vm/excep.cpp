@@ -2620,8 +2620,13 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
         }
         else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
         {
-            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP(stackTraceElem.ip))
+#endif
+            {
+                stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+                stackTraceElem.flags |= STEF_IP_ADJUSTED;
+            }
         }
     }
     else
@@ -10723,7 +10728,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 }
 
 #elif defined(TARGET_WASM)
-
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;
@@ -10735,7 +10740,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     if (pTransitionBlock != nullptr)
     {
         m_Context.InterpreterSP = pTransitionBlock->m_StackPointer;
-        m_Context.InterpreterFP = 0;
+        m_Context.InterpreterFP = GetWasmFramePointerFromStackPointer(m_Context.InterpreterSP);
         m_Context.InterpreterIP = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
         m_ReturnAddress = m_Context.InterpreterIP;
         m_Context.InterpreterWalkFramePointer = 0;

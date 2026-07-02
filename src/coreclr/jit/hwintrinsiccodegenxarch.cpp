@@ -902,6 +902,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AVXVNNI_MultiplyWideningAndAdd:
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                        case NI_AVX512v3_MultiplyWideningAndAdd:
+                        case NI_AVX512v3_MultiplyWideningAndAddSaturate:
                         case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
                         case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
                         {
@@ -1096,6 +1098,33 @@ void CodeGen::genHWIntrinsic_R_RM(
     }
 
     OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
+    genHWIntrinsic_R_RM(node, ins, attr, reg, rmOpDesc, rmOp, instOptions);
+}
+
+//------------------------------------------------------------------------
+// genHWIntrinsic_R_RM: Generates code for a hardware intrinsic node that takes a
+//                      register operand and a register/memory operand.
+//
+// Arguments:
+//    node        - The hardware intrinsic node
+//    ins         - The instruction being generated
+//    attr        - The emit attribute for the instruction being generated
+//    reg         - The register
+//    rmOpDesc    - The descriptor for the register/memory operand, already computed via genOperandDesc.
+//                  This overload lets a caller that has already resolved the operand (for example to make
+//                  an instruction-selection decision based on its containment) emit without calling the
+//                  non-idempotent genOperandDesc a second time.
+//    rmOp        - The register/memory operand node the descriptor was produced from
+//    instOptions - the existing intOpts
+void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node,
+                                  instruction         ins,
+                                  emitAttr            attr,
+                                  regNumber           reg,
+                                  OperandDesc&        rmOpDesc,
+                                  GenTree*            rmOp,
+                                  insOpts             instOptions)
+{
+    emitter* emit = GetEmitter();
 
     if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (rmOpDesc.GetKind() == OperandKind::Reg))
     {
@@ -2233,7 +2262,13 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector256_ToScalar:
         case NI_Vector512_ToScalar:
         {
-            if (op1->isContained() || op1->isUsedFromSpillTemp())
+            // genOperandDesc looks through a contained CreateScalar/CreateScalarUnsafe to the operand it
+            // wraps, which may itself live in a register (e.g. Vector128.CreateScalarUnsafe(x).ToScalar()).
+            // We therefore use the descriptor's containment - not op1 directly - to decide instruction
+            // selection: only a true memory operand can be read with a plain integer load.
+            OperandDesc op1Desc = genOperandDesc(ins, op1);
+
+            if (op1Desc.IsContained())
             {
                 if (varTypeIsIntegral(baseType))
                 {
@@ -2241,7 +2276,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                     ins  = ins_Move_Extend(baseType, false);
                     attr = emitTypeSize(baseType);
                 }
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1Desc, op1, instOptions);
             }
             else if (varTypeIsIntegral(baseType))
             {
@@ -2249,7 +2284,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 assert(HWIntrinsicInfo::IsVectorToScalar(intrinsicId));
 
                 attr = emitActualTypeSize(baseType);
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1Desc, op1, instOptions);
 
                 if (varTypeIsSmall(baseType))
                 {
@@ -2263,7 +2298,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 assert(instOptions == INS_OPTS_NONE);
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Desc.GetReg(), /* canSkip */ true);
             }
             break;
         }

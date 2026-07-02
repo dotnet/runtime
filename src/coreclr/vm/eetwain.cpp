@@ -1716,17 +1716,26 @@ EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletTo
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+#else
+typedef TADDR HandlerFn;
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp);
+
+DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
+DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
+#endif // TARGET_WASM
 
 static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 {
 #ifdef TARGET_ARM
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#elif defined(TARGET_WASM)
+    return (TADDR)ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP((TADDR)pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
 #endif
 }
 
-#endif // TARGET_WASM
 
 // Call catch, finally or filter funclet.
 // Return value:
@@ -1736,15 +1745,51 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
-#ifdef TARGET_WASM
-    _ASSERTE(!"CallFunclet for WASM not implemented yet");
-#else
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
+#ifdef TARGET_WASM
+    TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
+    // A handler that is lexically nested inside a funclet (e.g. a catch inside a finally) must
+    // run with the enclosing METHOD frame as its establishing frame.
+    if (pExInfo->m_frameIter.m_crawl.IsFunclet())
+    {
+        T_CONTEXT walkCtx = *(pRD->pCurrentContext);
+        for (;;)
+        {
+            UnwindStackFrame(&walkCtx);
+            EECodeInfo ci(dac_cast<PCODE>(GetIP(&walkCtx)));
+            if (!ci.IsValid())
+            {
+                // The funclet was invoked by the VM through CallFuncletWith[out]Throwable, so native
+                // unwinding terminates at that synthetic frame before reaching the method's own frame.
+                // Recover the establishing (method) frame pointer the helper stored next to the
+                // TERMINATE_R2R_STACK_WALK marker.
+                wasmFramePointer = GetWasmEstablishingFramePointerFromTerminator(GetSP(&walkCtx));
+                break;
+            }
+            if (!ci.IsFunclet())
+            {
+                // The funclet executes within the method's own native frame, which we reached directly
+                // by unwinding (no intervening CallFunclet helper frame).
+                wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(&walkCtx));
+                break;
+            }
+        }
+    }
+    TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
+    if (throwable != NULL)
+    {
+        dwResult = CallFuncletWithThrowable(handlerFnIndex, wasmFramePointer, OBJECTREFToObject(throwable), pFuncletCallerSP);
+    }
+    else
+    {
+        dwResult = CallFuncletWithoutThrowable(handlerFnIndex, wasmFramePointer, pFuncletCallerSP);
+    }
+#else
     if (isFilterFunclet)
     {
         // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
