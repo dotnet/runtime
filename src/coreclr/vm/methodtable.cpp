@@ -1970,6 +1970,17 @@ namespace
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
+        // When firstFieldElementType is ELEMENT_TYPE_VALUETYPE and pFirstFieldValueType is NULL,
+        // GetSize(NULL) would call LookupApproxFieldTypeHandle (DontLoadTypes), which can fail to
+        // find a generic instantiation that was canonicalized during recursive layout loading
+        // (e.g. EntityIdValue<UserId> replaced with EntityIdValue<__Canon>).  Load the approximate
+        // type handle instead: dropGenericArgumentLevel=TRUE always resolves to the canonical
+        // __Canon form, which is fully loaded and has the correct size for any shared instantiation.
+        if (firstFieldElementType == ELEMENT_TYPE_VALUETYPE && pFirstFieldValueType == nullptr)
+        {
+            pFirstFieldValueType = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+        }
+
         return (CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
                             || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                         && (pFieldStart->GetOffset() == 0)
@@ -2125,11 +2136,25 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
-    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, ByValueClassCacheLookup(pByValueClassCache, 0));
+    // Pre-resolve the first field's MethodTable so HasImpliedRepeatedFields and all subsequent
+    // GetSize calls receive a valid (non-null) MT for value-type fields.
+    // ByValueClassCacheLookup returns NULL when pByValueClassCache is NULL (recursive calls).
+    // In that case the exact generic instantiation may not be in the type loader hash yet
+    // (e.g. EntityIdValue<UserId> replaced by EntityIdValue<__Canon> to break recursion),
+    // so GetSize(NULL) -> LookupApproxFieldTypeHandle (DontLoadTypes) would return a null
+    // TypeHandle and crash.  GetApproxFieldTypeHandleThrowing uses LoadTypes with
+    // dropGenericArgumentLevel=TRUE, which always resolves to the canonical __Canon form.
+    MethodTable* pFirstFieldValueTypeMT = ByValueClassCacheLookup(pByValueClassCache, 0);
+    if (pFirstFieldValueTypeMT == nullptr && pFieldStart->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+    {
+        pFirstFieldValueTypeMT = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+    }
+
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, pFirstFieldValueTypeMT);
 
     if (hasImpliedRepeatedFields)
     {
-        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
+        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(pFirstFieldValueTypeMT);
     }
 
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
@@ -2142,7 +2167,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         {
             pField = pFieldStart;
             fieldIndexForCacheLookup = 0;
-            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
+            fieldOffset = fieldIndex * pField->GetSize(pFirstFieldValueTypeMT);
         }
         else
         {
@@ -2152,7 +2177,24 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
+        CorElementType fieldType = pField->GetFieldType();
+        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
+
+        // Resolve the nested MethodTable for value-type fields.  For implied-repeated-field
+        // structs (inline arrays / fixed buffers) every iteration reuses the pre-resolved first
+        // field MT.  Otherwise look up the cache entry; when pByValueClassCache is NULL
+        // (recursive call) the exact generic instantiation may not be in the type loader hash
+        // yet, so fall back to GetApproxFieldTypeHandleThrowing which loads the canonical
+        // __Canon form and always succeeds.
+        MethodTable* pFieldValueTypeMT = hasImpliedRepeatedFields
+            ? pFirstFieldValueTypeMT
+            : ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup);
+        if (fieldClassificationType == SystemVClassificationTypeStruct && pFieldValueTypeMT == nullptr)
+        {
+            pFieldValueTypeMT = pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+        }
+
+        unsigned int fieldSize = pField->GetSize(pFieldValueTypeMT);
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2162,22 +2204,14 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             return false;
         }
 
-        CorElementType fieldType = pField->GetFieldType();
-        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
-
 #ifdef _DEBUG
         LPCUTF8 fieldName;
         pField->GetName_NoThrow(&fieldName);
 #endif // _DEBUG
         if (fieldClassificationType == SystemVClassificationTypeStruct)
         {
-            TypeHandle th;
-            if (pByValueClassCache != NULL)
-                th = TypeHandle(pByValueClassCache[fieldIndexForCacheLookup]);
-            else
-                th = pField->GetApproxFieldTypeHandleThrowing();
-            _ASSERTE(!th.IsNull());
-            MethodTable* pFieldMT = th.GetMethodTable();
+            _ASSERTE(pFieldValueTypeMT != NULL);
+            MethodTable* pFieldMT = pFieldValueTypeMT;
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
