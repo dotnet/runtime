@@ -114,8 +114,6 @@ ValueNumFuncDef(LeadingZeroCount, 1, false, false)
 ValueNumFuncDef(TrailingZeroCount, 1, false, false)
 ValueNumFuncDef(PopCount, 1, false, false)
 
-ValueNumFuncDef(ManagedThreadId, 0, false, false)
-
 ValueNumFuncDef(ObjGetType, 1, false, true)
 ValueNumFuncDef(GetGcstaticBase, 1, false, true)
 ValueNumFuncDef(GetNongcstaticBase, 1, false, true)
