@@ -556,9 +556,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool IsUnsupportedType(ITypeSymbol type, HashSet<ITypeSymbol>? visitedTypes = null)
             {
+                if (type.TypeKind is TypeKind.Error)
+                {
+                    return true;
+                }
+
                 if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
                     type = ((INamedTypeSymbol)type).TypeArguments[0]; // extract the T from a Nullable<T>
+
+                    if (type.TypeKind is TypeKind.Error)
+                    {
+                        return true;
+                    }
                 }
 
                 if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IntPtr, type)  ||

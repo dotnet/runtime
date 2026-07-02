@@ -6,7 +6,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -208,6 +210,110 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public async Task IgnorePropertiesWithUnresolvableMetadataTypes()
+        {
+            CSharpCompilationOptions compilationOptions = new(OutputKind.DynamicallyLinkedLibrary);
+            MetadataReference[] commonReferences = s_compilationAssemblyRefs
+                .Select(a => MetadataReference.CreateFromFile(a.Location))
+                .ToArray();
+
+            CSharpCompilation transitiveDependencyCompilation = CSharpCompilation.Create(
+                assemblyName: $"TransitiveDependency_{Guid.NewGuid():N}",
+                syntaxTrees:
+                [
+                    CSharpSyntaxTree.ParseText("""
+                        namespace MissingTypes;
+
+                        public struct ValueTypeMessage {}
+                        public sealed class HttpRequestMessage {}
+                        public sealed class CredentialDescription {}
+                        """)
+                ],
+                references: commonReferences,
+                options: compilationOptions);
+
+            byte[] transitiveDependencyImage = CreateAssemblyImage(transitiveDependencyCompilation);
+            MetadataReference transitiveDependencyReference = MetadataReference.CreateFromImage(transitiveDependencyImage);
+
+            CSharpCompilation modelCompilation = CSharpCompilation.Create(
+                assemblyName: $"UnresolvableModel_{Guid.NewGuid():N}",
+                syntaxTrees:
+                [
+                    CSharpSyntaxTree.ParseText("""
+                        namespace UnresolvableModel;
+
+                        public sealed class DstsOptions
+                        {
+                            public MissingTypes.ValueTypeMessage? ValueTypeMessage { get; set; }
+                            public MissingTypes.HttpRequestMessage? HttpRequestMessage { get; set; }
+                            public MissingTypes.CredentialDescription? CredentialDescription { get; set; }
+                            public int Value { get; set; }
+                        }
+                        """)
+                ],
+                references: commonReferences.Concat([transitiveDependencyReference]),
+                options: compilationOptions);
+
+            byte[] modelAssemblyImage = CreateAssemblyImage(modelCompilation);
+            string testDir = Path.Combine(Path.GetTempPath(), $"ConfigBindingGen_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(testDir);
+
+            string transitiveDependencyPath = Path.Combine(testDir, "TransitiveDependency.dll");
+            string modelAssemblyPath = Path.Combine(testDir, "UnresolvableModel.dll");
+            File.WriteAllBytes(transitiveDependencyPath, transitiveDependencyImage);
+            File.WriteAllBytes(modelAssemblyPath, modelAssemblyImage);
+
+            Assembly transitiveDependencyAssembly = Assembly.LoadFrom(transitiveDependencyPath);
+            Assembly modelAssembly = Assembly.LoadFrom(modelAssemblyPath);
+
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using UnresolvableModel;
+
+                public static class Program
+                {
+                    public static void Main()
+                    {
+                        var configuration = new ConfigurationBuilder().Build();
+                        _ = configuration.Get<DstsOptions>();
+                    }
+                }
+                """;
+
+            List<Assembly> assemblyReferences = new(s_compilationAssemblyRefs)
+            {
+                modelAssembly
+            };
+
+            try
+            {
+                ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: assemblyReferences);
+
+                result.ValidateDiagnostics(ExpectedDiagnostics.None);
+                Assert.NotNull(result.GeneratedSource);
+                Assert.Contains("Value", result.GeneratedSource.Value.SourceText.ToString());
+                Assert.DoesNotContain("ValueTypeMessage", result.GeneratedSource.Value.SourceText.ToString());
+                Assert.DoesNotContain("HttpRequestMessage", result.GeneratedSource.Value.SourceText.ToString());
+                Assert.DoesNotContain("CredentialDescription", result.GeneratedSource.Value.SourceText.ToString());
+
+                GC.KeepAlive(transitiveDependencyAssembly);
+            }
+            finally
+            {
+                try
+                {
+                    Directory.Delete(testDir, recursive: true);
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
         }
 
         [Fact]
