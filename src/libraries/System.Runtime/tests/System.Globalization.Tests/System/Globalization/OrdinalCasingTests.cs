@@ -391,6 +391,15 @@ namespace System.Globalization.Tests
                     string upper = original.ToUpperOrdinal();
                     bool selfOic = string.Equals(original, upper, StringComparison.OrdinalIgnoreCase);
                     Assert.True(selfOic);
+
+                    // ToLowerOrdinal has its own invariant-mode path (InvariantModeCasing.ToLower) that must keep
+                    // the same OrdinalIgnoreCase consistency, including the characters (Kelvin, Ohm, Angstrom, ...)
+                    // whose simple lower mapping would otherwise move them out of their ordinal upper-casing class.
+                    string lower = original.ToLowerOrdinal();
+                    Assert.Equal(1, lower.Length);
+                    Assert.True(string.Equals(original, lower, StringComparison.OrdinalIgnoreCase),
+                        $"U+{c:X4} is not OrdinalIgnoreCase-equal to its ToLowerOrdinal fold U+{(int)lower[0]:X4} in invariant mode");
+                    Assert.Equal(lower[0], char.ToLowerOrdinal((char)c));
                 }
             }, options).Dispose();
         }

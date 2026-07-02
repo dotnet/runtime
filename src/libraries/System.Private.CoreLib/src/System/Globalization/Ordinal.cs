@@ -720,17 +720,44 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
             {
                 InvariantModeCasing.ToLower(source, destination);
+                PreserveOrdinalLowerCasingClass(source, destination);
                 return source.Length;
             }
 
             if (GlobalizationMode.UseNls)
             {
                 TextInfo.Invariant.ChangeCaseToLower(source, destination); // this is the best so far for NLS.
+                PreserveOrdinalLowerCasingClass(source, destination);
                 return source.Length;
             }
 
             OrdinalCasing.ToLowerOrdinal(source, destination);
             return source.Length;
+        }
+
+        // Ordinal lower casing must never move a character out of its ordinal upper-casing class, otherwise it
+        // would stop being consistent with OrdinalIgnoreCase (for example the Kelvin, Ohm and Angstrom signs). The
+        // ICU ordinal table encodes this directly, but invariant and NLS simple lowering do not, so restore any
+        // BMP character whose simple lower mapping changed its ordinal upper-casing form.
+        private static void PreserveOrdinalLowerCasingClass(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            for (int i = 0; i < source.Length; i++)
+            {
+                char c = source[i];
+
+                // The special characters are all single BMP scalars, so surrogate pairs never need adjustment.
+                if (char.IsHighSurrogate(c) && i + 1 < source.Length && char.IsLowSurrogate(source[i + 1]))
+                {
+                    i++;
+                    continue;
+                }
+
+                char lower = destination[i];
+                if (lower != c && !char.IsAscii(c) && TextInfo.ToUpperOrdinal(lower) != TextInfo.ToUpperOrdinal(c))
+                {
+                    destination[i] = c;
+                }
+            }
         }
     }
 }
