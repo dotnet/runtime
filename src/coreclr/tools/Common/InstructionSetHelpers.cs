@@ -94,6 +94,11 @@ namespace System.CommandLine
                     }
                 }
             }
+            else if (targetArchitecture == TargetArchitecture.Wasm32)
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");
+            }
 
             bool throttleAvx512 = false;
 

@@ -4602,7 +4602,8 @@ bool Compiler::impIsImplicitTailCallCandidate(
 #endif // !FEATURE_TAILCALL_OPT_SHARED_RETURN
 
     // must be call+ret or call+pop+ret
-    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive))
+    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive) &&
+        ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0))
     {
         return false;
     }
@@ -9052,7 +9053,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (compIsAsyncVersion())
                     {
-                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET))
+                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET) &&
+                            ((info.compFlags & CORINFO_FLG_SYNCH) == 0))
                         {
                             JITDUMP("\nRecognized tail-call in async version\n");
                             awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
@@ -9331,6 +9333,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
+                    prefixFlags &= ~PREFIX_TAILCALL;
                     goto RET;
                 }
 
@@ -11737,6 +11740,23 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //
 bool Compiler::impWrapTopOfStackInAwait()
 {
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    {
+        assert(!compIsForInlining());
+
+        if (lvaMonAcquired == BAD_VAR_NUM)
+        {
+            lvaMonAcquired = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+            lvaGetDesc(lvaMonAcquired)->lvType = TYP_I_IMPL;
+        }
+
+        GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
+        GenTree* lockObject =
+            info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(info.compThisArg, TYP_REF);
+        GenTree* exitMon = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, lockObject, varAddrNode);
+        impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+
     if (impFoldAwaitedTopOfStack())
     {
         return true;
@@ -11815,6 +11835,16 @@ bool Compiler::impWrapTopOfStackInAwait()
     if (impInlineRoot()->compIsAsyncVersion())
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
+
+#if FEATURE_TAILCALL_OPT
+        // We intentionally do not consult with the EE and canTailCall because
+        // this is us introducing a call as an implementation detail and not a
+        // user-introduced call.
+        if (asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
+        {
+            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+        }
+#endif
     }
     else
     {

@@ -796,6 +796,9 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+#if defined(FEATURE_SIMD)
+    void genCodeForVectorConstant(GenTree* treeNode);
+#endif
     void genCatchArg(GenTree* treeNode);
 #endif
 
@@ -1019,6 +1022,12 @@ protected:
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
+    void genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg);
+
+#ifdef DEBUG
+    void checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg);
+#endif
+
     class HWIntrinsicImmOpHelper final
     {
     public:

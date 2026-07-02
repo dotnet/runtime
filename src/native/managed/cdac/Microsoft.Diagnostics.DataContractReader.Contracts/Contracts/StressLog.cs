@@ -231,6 +231,16 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
         return false;
     }
 
+    public IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog)
+    {
+        ulong chunkSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
+        StressLogMemory stressLogMemory = target.ProcessedData.GetOrAdd<StressLogMemory>(stressLog.Logs);
+        foreach (TargetPointer chunk in stressLogMemory.Chunks)
+        {
+            yield return new StressLogMemoryRange(chunk, chunkSize);
+        }
+    }
+
     private sealed class StressLogMemory(IReadOnlyList<TargetPointer> chunks) : Data.IData<StressLogMemory>
     {
         public static StressLogMemory Create(Target target, TargetPointer address)
@@ -343,6 +353,7 @@ internal sealed class StressLog_1(Target target) : IStressLog
     public IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => traversal.GetThreadStressLogs(Logs);
     public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => traversal.GetStressMessages(threadLog);
     public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => traversal.IsPointerInStressLog(stressLog, pointer);
+    public IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog) => traversal.GetStressLogMemoryRanges(stressLog);
 }
 
 
@@ -356,4 +367,5 @@ internal sealed class StressLog_2(Target target) : IStressLog
     public IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => traversal.GetThreadStressLogs(Logs);
     public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => traversal.GetStressMessages(threadLog);
     public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => traversal.IsPointerInStressLog(stressLog, pointer);
+    public IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog) => traversal.GetStressLogMemoryRanges(stressLog);
 }
