@@ -341,11 +341,6 @@ void* pal_get_symbol(void* library, const char* name)
     return result;
 }
 
-static bool is_path_fully_qualified(const pal_char_t* path)
-{
-    return path[0] == DIR_SEPARATOR;
-}
-
 // Two-level stringize so PATH_MAX's value (not its name) can be used as an
 // explicit sscanf field width below.
 #define PROC_MAPS_STR2(x) #x
@@ -416,7 +411,7 @@ bool pal_get_loaded_library(
     const pal_char_t* lookup_name = library_name;
 #if defined(TARGET_OSX)
     pal_char_t* rpath_name = NULL;
-    if (!is_path_fully_qualified(library_name))
+    if (!pal_is_path_fully_qualified(library_name))
     {
         size_t cap = STRING_LENGTH(_X("@rpath/")) + pal_strlen(library_name) + 1;
         rpath_name = (pal_char_t*)malloc(cap * sizeof(pal_char_t));
@@ -435,7 +430,7 @@ bool pal_get_loaded_library(
 
     if (dll_maybe == NULL)
     {
-        if (is_path_fully_qualified(library_name))
+        if (pal_is_path_fully_qualified(library_name))
             return false;
 
         return get_loaded_library_from_proc_maps(library_name, dll, out_path);

@@ -802,16 +802,17 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 {
     out->clear();
 
-    // Preserve the historical contract that an empty input is treated as failure.
-    if (cstr[0] == '\0')
+    // Pass the explicit input length (excluding the terminating NUL) so the
+    // conversion writes only the content characters into the string's buffer.
+    // An empty input yields a length of 0, which MultiByteToWideChar reports as a
+    // failure - preserving the historical contract that empty input fails.
+    int len = static_cast<int>(::strlen(cstr));
+    int size = ::MultiByteToWideChar(CP_UTF8, 0, cstr, len, nullptr, 0);
+    if (size == 0)
         return false;
 
-    int len = ::MultiByteToWideChar(CP_UTF8, 0, cstr, -1, nullptr, 0);
-    if (len <= 0)
-        return false;
-
-    out->resize(static_cast<size_t>(len) - 1);
-    return pal_utf8_to_palstr(cstr, &(*out)[0], static_cast<size_t>(len));
+    out->resize(static_cast<size_t>(size));
+    return ::MultiByteToWideChar(CP_UTF8, 0, cstr, len, &(*out)[0], size) != 0;
 }
 
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;

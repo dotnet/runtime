@@ -205,30 +205,6 @@ static bool is_dir_separator(pal_char_t c)
     return c == DIR_SEPARATOR || c == ALT_DIR_SEPARATOR;
 }
 
-// Returns true if the path is relative to the current drive or working
-// directory (i.e. not rooted at a specific drive or UNC share), and therefore
-// must be canonicalized before it can be reliably used.
-static bool is_path_not_fully_qualified(const pal_char_t* path)
-{
-    size_t len = pal_strlen(path);
-
-    // Too short to encode a drive ("X:") or UNC ("\\") root.
-    if (len < 2)
-        return true;
-
-    // Starts with a separator: fully qualified only if it's a UNC path,
-    // i.e. the second character is also a separator ("\\server\share").
-    if (is_dir_separator(path[0]))
-        return !is_dir_separator(path[1]);
-
-    // Otherwise it must be a drive-rooted path of the form "X:\": at least
-    // three characters, a volume separator at index 1, and a directory
-    // separator at index 2.
-    return len < 3
-        || path[1] != VOLUME_SEPARATOR
-        || !is_dir_separator(path[2]);
-}
-
 // Returns true if the path needs normalization (canonicalization, and the \\?\
 // prefix for long paths): it isn't already normalized and is either not fully
 // qualified or at least MAX_PATH characters long.
@@ -237,7 +213,7 @@ static bool should_normalize_path(const pal_char_t* path)
     if (is_path_normalized(path))
         return false;
 
-    if (!is_path_not_fully_qualified(path) && pal_strlen(path) < MAX_PATH)
+    if (pal_is_path_fully_qualified(path) && pal_strlen(path) < MAX_PATH)
         return false;
 
     return true;
@@ -520,6 +496,9 @@ pal_char_t* pal_get_default_installation_dir(void)
 
 bool pal_is_path_fully_qualified(const pal_char_t* path)
 {
+    if (path == NULL)
+        return false;
+
     size_t len = pal_strlen(path);
     if (len < 2)
         return false;
@@ -538,7 +517,7 @@ bool pal_load_library(const pal_char_t* path, void** dll)
     const pal_char_t* load_path = path;
 
     // LoadLibraryEx with the search flags below requires a fully-qualified path.
-    if (is_path_not_fully_qualified(path))
+    if (!pal_is_path_fully_qualified(path))
     {
         full = pal_fullpath(path, false);
         if (full == NULL)
