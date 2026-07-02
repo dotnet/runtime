@@ -3001,6 +3001,11 @@ AGAIN:
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
+            if ((op1->gtFlags & GTF_HW_ZERO_OR_ALL_BITS_SET) != (op2->gtFlags & GTF_HW_ZERO_OR_ALL_BITS_SET))
+            {
+                return false;
+            }
+
             return GenTreeHWIntrinsic::Equals(op1->AsHWIntrinsic(), op2->AsHWIntrinsic());
 #endif
 
