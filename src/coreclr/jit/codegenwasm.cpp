@@ -371,7 +371,7 @@ void CodeGen::genHomeRegisterParamsOutsideProlog()
 //
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     const bool reportArg  = m_compiler->lvaReportParamTypeArg();
     const bool reportThis = m_compiler->lvaKeepAliveAndReportThis();
