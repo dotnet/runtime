@@ -77,5 +77,17 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             Assert.Throws<ArgumentNullException>("signaturePadding", () => new CoseSigner(RSA.Create(), null!, HashAlgorithmName.SHA256));
         }
+
+#if NET11_0_OR_GREATER
+        [Theory]
+        [InlineData(0)]
+        [InlineData(17)]
+        [InlineData(32)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        public void CoseSigner_PssPaddingWithInvalidSaltLength(int saltLength)
+        {
+            Assert.Throws<ArgumentException>("signaturePadding", () => new CoseSigner(RSA.Create(), RSASignaturePadding.CreatePss(saltLength), HashAlgorithmName.SHA256));
+        }
+#endif
     }
 }

@@ -112,6 +112,15 @@ namespace System.Security.Cryptography.Cose
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(signaturePadding);
 
+#if NET11_0_OR_GREATER
+            if (signaturePadding.Mode == RSASignaturePaddingMode.Pss)
+            {
+                if (signaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)
+                {
+                    throw new ArgumentException(SR.CoseSignerPssSaltLengthMustBeHashLength, nameof(signaturePadding));
+                }
+            }
+#endif
             CoseKey = new CoseKey(key, signaturePadding, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
