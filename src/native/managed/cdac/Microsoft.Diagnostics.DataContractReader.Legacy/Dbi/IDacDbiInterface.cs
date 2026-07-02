@@ -52,19 +52,16 @@ public enum VarLocType
     VLT_INVALID,
 }
 
-// Mirrors the native ICorDebugInfo::VarLoc tagged union: a VarLocType selector
-// followed by a union of location variants. The union begins at offset 4 and the
-// struct is 16 bytes: the union contains only 4-byte members, so it is 4-byte aligned.
-[StructLayout(LayoutKind.Explicit, Size = 16)]
+// Mirrors the native ICorDebugInfo::VarLoc tagged union: a VarLocType selector plus a union
+// payload, modelled as three 4-byte slots with typed accessors per VarLocType below.
+[StructLayout(LayoutKind.Sequential)]
 public struct VarLoc
 {
-    [FieldOffset(0)] public VarLocType vlType;
+    public VarLocType vlType;
 
-    // Union data: three positional slots covering all union variants.
-    // Different VarLocType values interpret these as different named fields.
-    [FieldOffset(4)] private uint _field1;
-    [FieldOffset(8)] private int _field2;
-    [FieldOffset(12)] private int _field3;
+    private uint _field1;
+    private int _field2;
+    private int _field3;
 
     // vlReg / vlReg_BYREF
     public uint vlrReg { get => _field1; set => _field1 = value; }

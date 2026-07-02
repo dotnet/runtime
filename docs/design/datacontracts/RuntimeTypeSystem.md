@@ -257,9 +257,7 @@ partial interface IRuntimeTypeSystem : IContract
     // Corresponds to native MethodDesc::IsAsyncMethod().
     public virtual bool IsAsyncMethod(MethodDescHandle methodDesc);
 
-    // Gets the raw signature bytes for a MethodDesc by checking the stored signature,
-    // then the async variant signature, then ECMA metadata. Returns false if no
-    // signature could be resolved.
+    // Return true and the raw signature bytes for a MethodDesc, or false if no signature could be resolved.
     public virtual bool TryGetMethodSignature(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature);
 
     // Return true if a MethodDesc is in a collectible module
@@ -1351,8 +1349,9 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
 | `AsyncMethodData` | `Flags` | Async method flags |
-| `AsyncMethodData` | `Sig` | Pointer to the async variant's signature blob |
-| `AsyncMethodData` | `cSig` | Count of bytes in the async variant's signature blob |
+| `AsyncMethodData` | `Signature` | The async variant's signature (see `Signature`) |
+| `Signature` | `SignaturePointer` | Pointer to the raw signature blob |
+| `Signature` | `SignatureLength` | Count of bytes in the raw signature blob |
 | `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
 
 The following data descriptor types are used only for their sizes when computing the total size of a `MethodDesc` instance.
@@ -1634,7 +1633,7 @@ And the various apis are implemented with the following algorithms
             AsyncMethodData asyncData = // Read AsyncMethodData for methodDesc
             if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
             {
-                signature = // Read asyncData.cSig bytes from asyncData.Sig
+                signature = // Read asyncData.Signature.SignatureLength bytes from asyncData.Signature.SignaturePointer
                 return true;
             }
         }

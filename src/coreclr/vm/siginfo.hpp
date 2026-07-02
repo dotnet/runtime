@@ -356,10 +356,18 @@ public:
 private:
     friend struct ::cdac_data<VASigCookie>;
     friend struct ::cdac_data<AsyncMethodData>;
+    friend struct ::cdac_data<Signature>;
 
     PCCOR_SIGNATURE m_pSig;
     DWORD           m_cbSig;
 };  // class Signature
+
+template<>
+struct cdac_data<Signature>
+{
+    static constexpr size_t SignaturePointer = offsetof(Signature, m_pSig);
+    static constexpr size_t SignatureLength = offsetof(Signature, m_cbSig);
+};
 
 
 #ifdef _DEBUG

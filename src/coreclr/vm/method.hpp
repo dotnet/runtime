@@ -153,8 +153,7 @@ template<>
 struct cdac_data<AsyncMethodData>
 {
     static constexpr size_t Flags = offsetof(AsyncMethodData, flags);
-    static constexpr size_t Sig = offsetof(AsyncMethodData, sig) + offsetof(Signature, m_pSig);
-    static constexpr size_t cSig = offsetof(AsyncMethodData, sig) + offsetof(Signature, m_cbSig);
+    static constexpr size_t Signature = offsetof(AsyncMethodData, sig);
 };
 
 //=============================================================

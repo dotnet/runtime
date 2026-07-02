@@ -32,8 +32,16 @@ public class MethodDescTests
                 Fields = new Dictionary<string, Target.FieldInfo>
                 {
                     [nameof(Data.AsyncMethodData.Flags)] = new Target.FieldInfo { Offset = 0 },
-                    [nameof(Data.AsyncMethodData.Sig)] = new Target.FieldInfo { Offset = (int)methodDescBuilder.TargetTestHelpers.PointerSize },
-                    [nameof(Data.AsyncMethodData.cSig)] = new Target.FieldInfo { Offset = (int)methodDescBuilder.TargetTestHelpers.PointerSize * 2 },
+                    [nameof(Data.AsyncMethodData.Signature)] = new Target.FieldInfo { Offset = (int)methodDescBuilder.TargetTestHelpers.PointerSize, TypeName = nameof(DataType.Signature) },
+                },
+            },
+            [DataType.Signature] = new Target.TypeInfo
+            {
+                Size = (uint)(methodDescBuilder.TargetTestHelpers.PointerSize * 2),
+                Fields = new Dictionary<string, Target.FieldInfo>
+                {
+                    [nameof(Data.Signature.SignaturePointer)] = new Target.FieldInfo { Offset = 0 },
+                    [nameof(Data.Signature.SignatureLength)] = new Target.FieldInfo { Offset = (int)methodDescBuilder.TargetTestHelpers.PointerSize },
                 },
             },
             [DataType.ArrayMethodDesc] = new Target.TypeInfo { Size = methodDescBuilder.ArrayMethodDescSize },

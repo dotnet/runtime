@@ -1696,21 +1696,20 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool TryGetMethodSignature(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
     {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-
-        if (methodDesc.Classification is MethodClassification.Dynamic or MethodClassification.EEImpl or MethodClassification.Array)
+        if (IsStoredSigMethodDesc(methodDescHandle, out signature))
         {
-            signature = AsStoredSigMethodDesc(methodDesc).Signature;
             return true;
         }
+
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
         if (methodDesc.HasAsyncMethodData)
         {
             Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(methodDesc.GetAddressOfAsyncMethodData());
             if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
             {
-                byte[] sig = new byte[asyncData.cSig];
-                _target.ReadBuffer(asyncData.Sig, sig.AsSpan());
+                byte[] sig = new byte[asyncData.Signature.SignatureLength];
+                _target.ReadBuffer(asyncData.Signature.SignaturePointer, sig.AsSpan());
                 signature = sig;
                 return true;
             }
