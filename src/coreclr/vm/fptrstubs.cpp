@@ -69,9 +69,15 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
     CONTRACTL_END
 
     Precode* pPrecode = NULL;
+
+    if (type != GetDefaultType(pMD))
     {
         CrstHolder ch(&m_hashTableCrst);
         pPrecode = m_hashTable.Lookup(PrecodeKey(pMD, type));
+    }
+    else
+    {
+        pPrecode = pMD->GetDefaultFuncPtrStub();
     }
 
     if (pPrecode != NULL)
@@ -128,6 +134,23 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
             pNewPrecode->SetTargetInterlocked(target);
         }
 
+        if (type == GetDefaultType(pMD))
+        {
+            // Set the default funcptr stub in the MethodDesc if it is not already set. If another thread beat us to it, then
+            // we will use the one that was set by the other thread.
+            if (pMD->SetDefaultFuncPtrStub(pNewPrecode))
+            {
+                pPrecode = pNewPrecode;
+                amt.SuppressRelease();
+            }
+            else
+            {
+                pPrecode = pMD->GetDefaultFuncPtrStub();
+                _ASSERTE(pPrecode != NULL);
+                setTargetAfterAddingToHashTable = false;
+            }
+        }
+        else
         {
             CrstHolder ch(&m_hashTableCrst);
 

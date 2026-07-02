@@ -269,6 +269,7 @@ struct MethodDescCodeData final
 #ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDescVersioningState VersioningState;
     NativeCodeVersion::OptimizationTier OptimizationTier;
+    Precode* DefaultFuncPtrStub;
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
@@ -2030,9 +2031,11 @@ public:
     HRESULT SetMethodDescAltJitPatchpointInfo(PatchpointInfo* pInfo);
     PatchpointInfo* GetMethodDescAltJitPatchpointInfo();
 #endif
+    bool SetDefaultFuncPtrStub(Precode* stub);
 #endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
     NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();
+    Precode* GetDefaultFuncPtrStub();
 #endif // FEATURE_CODE_VERSIONING
 
 public:
