@@ -33,6 +33,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(_IsIOSLikeRid)' == 'true' and '$(PublishReadyToRunStripInliningInfo)' != 'false'">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(_IsIOSLikeRid)' == 'true' and '$(PublishReadyToRunStripDebugInfo)' != 'false'">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(_IsIOSLikeRid)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--Os</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!--
