@@ -20,7 +20,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The host name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<AddressRecord> ResolveAddresses(string name)
             => DefaultResolver.ResolveAddresses(name);
 
@@ -34,7 +35,8 @@ namespace System.Net
         /// <see cref="AddressFamily.Unspecified"/> for both.
         /// </param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<AddressRecord> ResolveAddresses(string name, AddressFamily addressFamily)
             => DefaultResolver.ResolveAddresses(name, addressFamily);
 
@@ -44,7 +46,8 @@ namespace System.Net
         /// <param name="name">The host name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveAddressesAsync(name, cancellationToken);
 
@@ -59,7 +62,8 @@ namespace System.Net
         /// </param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, AddressFamily addressFamily, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveAddressesAsync(name, addressFamily, cancellationToken);
 
@@ -68,7 +72,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The name to resolve, typically in the form <c>_service._protocol.host</c>.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the SRV records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<SrvRecord> ResolveSrv(string name)
             => DefaultResolver.ResolveSrv(name);
 
@@ -78,7 +83,8 @@ namespace System.Net
         /// <param name="name">The name to resolve, typically in the form <c>_service._protocol.host</c>.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the SRV records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<SrvRecord>> ResolveSrvAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveSrvAsync(name, cancellationToken);
 
@@ -87,7 +93,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the MX records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<MxRecord> ResolveMx(string name)
             => DefaultResolver.ResolveMx(name);
 
@@ -97,7 +104,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the MX records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<MxRecord>> ResolveMxAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveMxAsync(name, cancellationToken);
 
@@ -106,7 +114,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the TXT records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<TxtRecord> ResolveTxt(string name)
             => DefaultResolver.ResolveTxt(name);
 
@@ -116,7 +125,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the TXT records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<TxtRecord>> ResolveTxtAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveTxtAsync(name, cancellationToken);
 
@@ -125,7 +135,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<CNameRecord> ResolveCName(string name)
             => DefaultResolver.ResolveCName(name);
 
@@ -135,7 +146,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<CNameRecord>> ResolveCNameAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveCNameAsync(name, cancellationToken);
 
@@ -144,7 +156,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The name to resolve, typically a reverse-lookup name such as <c>4.3.2.1.in-addr.arpa</c>.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the PTR records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<PtrRecord> ResolvePtr(string name)
             => DefaultResolver.ResolvePtr(name);
 
@@ -163,7 +176,8 @@ namespace System.Net
         /// <param name="name">The name to resolve, typically a reverse-lookup name such as <c>4.3.2.1.in-addr.arpa</c>.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the PTR records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<PtrRecord>> ResolvePtrAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolvePtrAsync(name, cancellationToken);
 
@@ -182,7 +196,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the NS records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static DnsResult<NsRecord> ResolveNs(string name)
             => DefaultResolver.ResolveNs(name);
 
@@ -192,7 +207,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the NS records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         public static Task<DnsResult<NsRecord>> ResolveNsAsync(string name, CancellationToken cancellationToken = default)
             => DefaultResolver.ResolveNsAsync(name, cancellationToken);
     }

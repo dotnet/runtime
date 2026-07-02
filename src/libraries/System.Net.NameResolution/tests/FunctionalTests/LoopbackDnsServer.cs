@@ -27,12 +27,13 @@ namespace System.Net.NameResolution.Tests
         private readonly Task _tcpListenTask;
         private readonly ConcurrentDictionary<(string Name, DnsRecordType Type), ResponseBuilder> _responses = new();
         private int _requestCount;
+        private int _tcpRequestCount;
 
         public IPEndPoint EndPoint { get; }
 
         public int RequestCount => _requestCount;
 
-        public int TcpRequestCount { get; private set; }
+        public int TcpRequestCount => _tcpRequestCount;
 
         private LoopbackDnsServer(Socket udp, Socket tcp, IPEndPoint endPoint)
         {
@@ -175,7 +176,7 @@ namespace System.Net.NameResolution.Tests
                     }
 
                     Interlocked.Increment(ref _requestCount);
-                    TcpRequestCount++;
+                    Interlocked.Increment(ref _tcpRequestCount);
 
                     byte[] response = ProcessQuery(query, isTcp: true);
                     if (response.Length > 0)

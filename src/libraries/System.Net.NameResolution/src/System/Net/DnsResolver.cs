@@ -64,7 +64,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The host name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<AddressRecord> ResolveAddresses(string name)
             => ResolveAddresses(name, AddressFamily.Unspecified);
@@ -79,7 +80,8 @@ namespace System.Net
         /// <see cref="AddressFamily.Unspecified"/> for both.
         /// </param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<AddressRecord> ResolveAddresses(string name, AddressFamily addressFamily)
         {
@@ -95,7 +97,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The name to resolve, typically in the form <c>_service._protocol.host</c>.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the SRV records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<SrvRecord> ResolveSrv(string name)
         {
@@ -111,7 +114,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the MX records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<MxRecord> ResolveMx(string name)
         {
@@ -127,7 +131,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the TXT records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<TxtRecord> ResolveTxt(string name)
         {
@@ -143,7 +148,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<CNameRecord> ResolveCName(string name)
         {
@@ -159,7 +165,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The name to resolve, typically a reverse-lookup name such as <c>4.3.2.1.in-addr.arpa</c>.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the PTR records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<PtrRecord> ResolvePtr(string name)
         {
@@ -191,7 +198,8 @@ namespace System.Net
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
         /// <returns>A <see cref="DnsResult{T}"/> containing the NS records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public DnsResult<NsRecord> ResolveNs(string name)
         {
@@ -208,7 +216,8 @@ namespace System.Net
         /// <param name="name">The host name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, CancellationToken cancellationToken = default)
             => ResolveAddressesAsync(name, AddressFamily.Unspecified, cancellationToken);
@@ -224,7 +233,8 @@ namespace System.Net
         /// </param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the address records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<AddressRecord>> ResolveAddressesAsync(string name, AddressFamily addressFamily, CancellationToken cancellationToken = default)
         {
@@ -239,7 +249,8 @@ namespace System.Net
         /// <param name="name">The name to resolve, typically in the form <c>_service._protocol.host</c>.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the SRV records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<SrvRecord>> ResolveSrvAsync(string name, CancellationToken cancellationToken = default)
         {
@@ -254,7 +265,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the MX records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<MxRecord>> ResolveMxAsync(string name, CancellationToken cancellationToken = default)
         {
@@ -269,7 +281,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the TXT records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<TxtRecord>> ResolveTxtAsync(string name, CancellationToken cancellationToken = default)
         {
@@ -284,7 +297,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the CNAME records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<CNameRecord>> ResolveCNameAsync(string name, CancellationToken cancellationToken = default)
         {
@@ -299,7 +313,8 @@ namespace System.Net
         /// <param name="name">The name to resolve, typically a reverse-lookup name such as <c>4.3.2.1.in-addr.arpa</c>.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the PTR records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<PtrRecord>> ResolvePtrAsync(string name, CancellationToken cancellationToken = default)
         {
@@ -329,7 +344,8 @@ namespace System.Net
         /// <param name="name">The domain name to resolve.</param>
         /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the NS records.</returns>
-        /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
         /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
         public Task<DnsResult<NsRecord>> ResolveNsAsync(string name, CancellationToken cancellationToken = default)
         {
