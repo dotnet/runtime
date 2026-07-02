@@ -1361,7 +1361,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             ValidateNativeCodeInfoAgainstLegacy(
                 vmMethodDesc, startAddress, fCodeAvailable,
-                pFixedArgCount, cdacVarInfos, cdacSeqPoints, hr);
+                pFixedArgCount, cdacVarInfos, cdacSeqPoints, hr,
+                varInfoRequested: fpVarInfoCallback != null,
+                seqPointsRequested: fpSeqPointCallback != null);
         }
 #endif
         return hr;

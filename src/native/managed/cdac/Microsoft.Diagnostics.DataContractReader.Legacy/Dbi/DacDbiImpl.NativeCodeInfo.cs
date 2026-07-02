@@ -117,7 +117,9 @@ public sealed unsafe partial class DacDbiImpl
         uint* pFixedArgCount,
         List<NativeVarInfo> cdacVarInfos,
         List<DbiOffsetMapping> cdacSeqPoints,
-        int hr)
+        int hr,
+        bool varInfoRequested,
+        bool seqPointsRequested)
     {
         uint dacFixedArgCount = 0;
         var dacData = new DebugNativeCodeData();
@@ -145,8 +147,11 @@ public sealed unsafe partial class DacDbiImpl
                     $"fixedArgCount mismatch - cDAC: {*pFixedArgCount}, DAC: {dacFixedArgCount}");
             }
 
-            AssertSeqPointsEqual(cdacSeqPoints, dacData.SeqPoints);
-            AssertVarInfosEqual(cdacVarInfos, dacData.VarInfos);
+            // Only compare lists whose callback was supplied.
+            if (seqPointsRequested)
+                AssertSeqPointsEqual(cdacSeqPoints, dacData.SeqPoints);
+            if (varInfoRequested)
+                AssertVarInfosEqual(cdacVarInfos, dacData.VarInfos);
         }
     }
 
