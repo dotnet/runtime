@@ -3539,6 +3539,16 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         // Call the code method without touching MethodDesc if possible
         PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
         MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // On portable-entrypoint (wasm) targets, CallClassConstructor invokes the cctor via a
+        // typed call_indirect, so the slot's portable entry point must resolve to real code
+        // (native R2R code or a correctly-typed interpreter thunk) rather than the temporary
+        // precode. The normal R2R method-entry fixups perform this for direct calls, but the
+        // cctor slot is fetched directly here and so must be made callable explicitly.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCctorCode);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
         caller.InvokeThrowing(pCctorCode, instantiatingArg);
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class constructor for type %pT\n", this);
