@@ -4700,6 +4700,20 @@ namespace System.Runtime.Intrinsics.Arm
         }
     }
     [System.CLSCompliantAttribute(false)]
+    public abstract partial class Sm4 : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal Sm4() { }
+        public static new bool IsSupported { get { throw null; } }
+
+        public static System.Runtime.Intrinsics.Vector128<uint> Encode(System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> roundKeys) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> KeyUpdate(System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> constant) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class Sve : System.Runtime.Intrinsics.Arm.AdvSimd
     {
@@ -7303,6 +7317,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static new bool IsSupported { get { throw null; } }
         public static System.Numerics.Vector<long> BitwiseRotateLeftBy1AndXor(System.Numerics.Vector<long> xor, System.Numerics.Vector<long> rol1) { throw null; }
         public static System.Numerics.Vector<ulong> BitwiseRotateLeftBy1AndXor(System.Numerics.Vector<ulong> xor, System.Numerics.Vector<ulong> rol1) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class SveSm4 : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal SveSm4() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Numerics.Vector<uint> Encode(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> roundKeys) { throw null; }
+        public static System.Numerics.Vector<uint> KeyUpdate(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> constant) { throw null; }
         public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
         {
             internal Arm64() { }
