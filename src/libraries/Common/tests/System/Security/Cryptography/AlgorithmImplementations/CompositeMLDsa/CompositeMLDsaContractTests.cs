@@ -809,26 +809,30 @@ namespace System.Security.Cryptography.Tests
         public static void TrySignData_CallsCore(CompositeMLDsaTestVector vector)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
+
+            byte[] message = vector.Message;
+            byte[] expectedSignature = vector.Signature;
+
             dsa.SignDataCoreHook = (_, _, _) => { return -1; };
-            dsa.AddFillDestination(vector.Signature);
-            dsa.AddDataBufferIsSameAssertion(vector.Message);
+            dsa.AddFillDestination(expectedSignature);
+            dsa.AddDataBufferIsSameAssertion(message);
             dsa.AddContextBufferIsSameAssertion(Array.Empty<byte>());
 
-            byte[] exported = dsa.SignData(vector.Message, Array.Empty<byte>());
+            byte[] exported = dsa.SignData(message, Array.Empty<byte>());
             AssertExtensions.LessThan(0, dsa.SignDataCoreCallCount);
-            AssertExtensions.SequenceEqual(exported, vector.Signature);
+            AssertExtensions.SequenceEqual(exported, expectedSignature);
 
-            byte[] signature = CreatePaddedFilledArray(vector.Signature.Length, 42);
+            byte[] signature = CreatePaddedFilledArray(expectedSignature.Length, 42);
 
             // Extra bytes in destination buffer should not be touched
             Memory<byte> destination = signature.AsMemory(PaddingSize, vector.Algorithm.MaxSignatureSizeInBytes);
             dsa.AddDestinationBufferIsSameAssertion(destination);
             dsa.SignDataCoreCallCount = 0;
 
-            int bytesWritten = dsa.SignData(vector.Message, destination.Span, Array.Empty<byte>());
-            Assert.Equal(vector.Signature.Length, bytesWritten);
+            int bytesWritten = dsa.SignData(message, destination.Span, Array.Empty<byte>());
+            Assert.Equal(expectedSignature.Length, bytesWritten);
             Assert.Equal(1, dsa.SignDataCoreCallCount);
-            AssertExpectedFill(signature, vector.Signature, PaddingSize, 42);
+            AssertExpectedFill(signature, expectedSignature, PaddingSize, 42);
         }
 
         [Theory]
@@ -836,15 +840,19 @@ namespace System.Security.Cryptography.Tests
         public static void VerifyData_CallsCore(CompositeMLDsaTestVector vector)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
+
+            byte[] message = vector.Message;
+            byte[] expectedSignature = vector.Signature;
+
             dsa.VerifyDataCoreHook = (_, _, _) => true;
-            dsa.AddDataBufferIsSameAssertion(vector.Message);
-            dsa.AddSignatureBufferIsSameAssertion(vector.Signature);
+            dsa.AddDataBufferIsSameAssertion(message);
+            dsa.AddSignatureBufferIsSameAssertion(expectedSignature);
             dsa.AddContextBufferIsSameAssertion(Array.Empty<byte>());
 
-            AssertExtensions.TrueExpression(dsa.VerifyData(vector.Message, vector.Signature, Array.Empty<byte>()));
+            AssertExtensions.TrueExpression(dsa.VerifyData(message, expectedSignature, Array.Empty<byte>()));
             AssertExtensions.Equal(1, dsa.VerifyDataCoreCallCount);
 
-            AssertExtensions.TrueExpression(dsa.VerifyData(vector.Message, vector.Signature, Array.Empty<byte>()));
+            AssertExtensions.TrueExpression(dsa.VerifyData(message, expectedSignature, Array.Empty<byte>()));
             AssertExtensions.Equal(2, dsa.VerifyDataCoreCallCount);
         }
 

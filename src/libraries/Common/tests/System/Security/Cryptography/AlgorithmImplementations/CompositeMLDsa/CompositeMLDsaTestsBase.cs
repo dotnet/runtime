@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Tests
             {
                 ExerciseSuccessfulVerify(publicKey, data, signature, []);
 
-                Assert.Throws<CryptographicException>(() => publicKey.SignData(data));
+                Assert.ThrowsAny<CryptographicException>(() => publicKey.SignData(data));
             }
         }
 

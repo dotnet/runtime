@@ -1,4 +1,4 @@
-<root>
+﻿<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -242,6 +242,9 @@
   </data>
   <data name="Cryptography_AndroidX509ChainContextInitializationFailed" xml:space="preserve">
     <value>The Android X.509 certificate chain could not be initialized.</value>
+  </data>
+  <data name="Cryptography_ArgCompositeMLDsaRequiresCompositeMLDsaKey" xml:space="preserve">
+    <value>Keys used with the CompositeMLDsaCng algorithm must have an algorithm group of CompositeMLDsa.</value>
   </data>
   <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
     <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>

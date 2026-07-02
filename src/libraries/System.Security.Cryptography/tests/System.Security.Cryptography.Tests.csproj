@@ -278,6 +278,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaCngTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaCngTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaFactoryTests.cs"
@@ -717,6 +719,8 @@
     <Compile Include="TestData.Cng.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestHelpers.Cng.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestHelpers.Cng.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.Cng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X25519WindowsHelpers.cs"
@@ -889,6 +893,8 @@
              Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaCngTests.Windows.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaCngTests.Windows.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaCngTests.Windows.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaCngTests.Windows.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemCngTests.Windows.cs"
