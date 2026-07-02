@@ -1254,6 +1254,22 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 
     Module *pModule = GetModule();
 
+#ifdef FEATURE_CODE_VERSIONING
+    if (InEnCEnabledModule())
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        if (pCodeVersionManager->GetILCodeVersioningState(dac_cast<PTR_Module>(pModule), GetMemberDef()) != NULL)
+        {
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ILCodeVersion activeVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
+            if (!activeVersion.IsNull() && !activeVersion.IsReJIT())
+            {
+                return activeVersion.GetIL();
+            }
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
     // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
     // Profilers can attach dynamic IL to methods with zero RVA.
     TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
@@ -3423,56 +3439,6 @@ void MethodDesc::ResetCodeEntryPoint()
 }
 #endif // FEATURE_TIERED_COMPILATION
 
-void MethodDesc::ResetCodeEntryPointForEnC()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!IsVersionable());
-    _ASSERTE(!IsVersionableWithPrecode());
-    _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
-
-    // Updates are expressed via metadata diff and a methoddef of a runtime async method
-    // would be resolved to the task-returning thunk.
-    // If we see a thunk here, fetch the async variant that owns the IL and reset that.
-    if (IsAsyncThunkMethod())
-    {
-        MethodDesc *otherVariant = GetAsyncVariantNoCreate();
-        _ASSERTE(otherVariant != NULL);
-        otherVariant->ResetCodeEntryPointForEnC();
-        return;
-    }
-
-#ifdef FEATURE_INTERPRETER
-    ClearInterpreterCodePointer();
-#endif
-
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    bool oldEntrypointHadNativeCode = GetPortableEntryPointIfExists() != (PCODE)NULL && PortableEntryPoint::ToPortableEntryPoint(GetPortableEntryPoint())->HasNativeCode();
-    ResetPortableEntryPoint();
-    if (oldEntrypointHadNativeCode)
-    {
-        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(GetPortableEntryPoint());
-    }
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
-        (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
-    if (HasPrecode())
-    {
-        GetPrecode()->ResetTargetInterlocked();
-    }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
-    if (HasNativeCodeSlot())
-    {
-        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
-        PCODE pCode = *ppCode;
-        LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
-            ppCode, pCode));
-        *ppCode = (PCODE)NULL;
-    }
-}
-
-
 //*******************************************************************************
 BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 {
@@ -3527,7 +3493,6 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     } CONTRACTL_END;
 
     _ASSERTE(!HasPrecode());
-    _ASSERTE(!IsVersionable());
 
     PCODE pExpected = GetTemporaryEntryPoint();
     PTR_PCODE pSlot = GetAddrOfSlot();
@@ -3538,6 +3503,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
+    _ASSERTE(!IsVersionable());
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     return fResult;

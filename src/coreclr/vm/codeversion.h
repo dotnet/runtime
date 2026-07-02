@@ -148,6 +148,13 @@ private:
 
 #ifdef FEATURE_CODE_VERSIONING
 
+enum CodeVersionSource : uint32_t
+{
+    kUnknown = 0,
+    kReJIT,
+    kEnC
+};
+
 enum class RejitFlags : uint32_t
 {
     // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
@@ -205,11 +212,15 @@ public:
 #endif
     PTR_COR_ILMETHOD GetIL() const;
     DWORD GetJitFlags() const;
+    bool IsReJIT() const;
+    SIZE_T GetEnCVersion() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
 
 #ifndef DACCESS_COMPILE
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
+    void SetSource(CodeVersionSource source);
+    void SetEnCVersion(SIZE_T encVersion);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
     HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier,
         NativeCodeVersion* pNativeCodeVersion, PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
@@ -402,6 +413,8 @@ public:
     DWORD GetJitFlags() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
     RejitFlags GetRejitState() const;
+    CodeVersionSource GetSource() const;
+    SIZE_T GetEnCVersion() const;
     BOOL GetEnableReJITCallback() const;
     PTR_ILCodeVersionNode GetNextILVersionNode() const;
     BOOL IsDeoptimized() const;
@@ -412,6 +425,8 @@ public:
     void SetRejitState(RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
+    void SetSource(CodeVersionSource source);
+    void SetEnCVersion(SIZE_T encVersion);
 #endif
 
 private:
@@ -422,6 +437,8 @@ private:
     Volatile<RejitFlags> m_rejitState;
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
+    CodeVersionSource m_source;
+    SIZE_T m_encVersion;
     InstrumentedILOffsetMapping m_instrumentedILMap;
     BOOL m_deoptimized;
 

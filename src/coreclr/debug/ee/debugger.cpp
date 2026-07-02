@@ -3380,7 +3380,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
-        if (!ilCodeVersion.IsDefaultVersion())
+        if (!ilCodeVersion.IsDefaultVersion() && ilCodeVersion.IsReJIT())
         {
             return CORDBG_E_SET_IP_IMPOSSIBLE;
         }
@@ -11940,6 +11940,7 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
         ilCodeVersion.SetJitFlags(COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS | COR_PRF_CODEGEN_DEBUG_INFO);
         ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
         ilCodeVersion.SetEnableReJITCallback(false);
+        ilCodeVersion.SetSource(CodeVersionSource::kReJIT);
     }
 
     _ASSERTE(!ilCodeVersion.IsNull());

@@ -1070,10 +1070,28 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     // If a MethodDesc is provided, it has to be consistent with the MethodDef token and the RVA.
     _ASSERTE((pMD == NULL) || ((pMD->GetMemberDef() == mdMethodToken) && (pMD->GetRVA() == methodRVA)));
 
-    TADDR pTargetIL; // target address of start of IL blob
+    TADDR pTargetIL = 0; // target address of start of IL blob
 
-    // This works for methods in dynamic modules, and methods overridden by a profiler.
-    pTargetIL = pModule->GetDynamicIL(mdMethodToken);
+#ifdef FEATURE_CODE_VERSIONING
+    // For a method that has been edited via EnC, the current IL (and its local variable
+    // signature token) lives on the active EnC IL code version rather than in the dynamic
+    // IL table, so fetch it from there.
+    {
+        CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersion activeVersion =
+            pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_Module>(pModule), mdMethodToken);
+        if (!activeVersion.IsNull() && !activeVersion.IsReJIT())
+        {
+            pTargetIL = dac_cast<TADDR>(activeVersion.GetIL());
+        }
+    }
+    if (pTargetIL == 0)
+#endif // FEATURE_CODE_VERSIONING
+    {
+        // This works for methods in dynamic modules, and methods overridden by a profiler.
+        pTargetIL = pModule->GetDynamicIL(mdMethodToken);
+    }
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
@@ -5464,46 +5482,37 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
 
     _ASSERTE(pLatestEnCVersion != NULL);
 
-    // @dbgtodo  inspection - once we do EnC, stop using DMIs.
-    // If the method wasn't EnCed, DMIs may not exist. And since this is DAC, we can't create them.
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
 
-    // We may not have the memory for the DebuggerMethodInfos in a minidump.
-    // When dump debugging EnC information isn't very useful so just fallback
-    // to default version.
-    DebuggerMethodInfo * pDMI = NULL;
-    DebuggerJitInfo * pDJI = NULL;
-    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    // Latest EnC version: the active IL code version for this method.
+    ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_Module>(pModule), mdMethod);
+    *pLatestEnCVersion = activeILVersion.IsNull()
+        ? (SIZE_T)CorDB_DEFAULT_ENC_FUNCTION_VERSION
+        : activeILVersion.GetEnCVersion();
+
+    // Jitted-instance EnC version: the version the native code at pNativeStartAddress was built from.
+    if (pJittedInstanceEnCVersion != NULL)
     {
-        if (g_pDebugger != NULL)
+        *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+        if (pNativeStartAddress != (CORDB_ADDRESS)NULL)
         {
-            pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, mdMethod);
-            if (pDMI != NULL)
+            NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(
+                dac_cast<PTR_MethodDesc>(pMD),
+                PINSTRToPCODE(CORDB_ADDRESS_TO_TADDR(pNativeStartAddress)));
+            if (!nativeCodeVersion.IsNull())
             {
-                pDJI = pDMI->FindJitInfo(pMD, CORDB_ADDRESS_TO_TADDR(pNativeStartAddress));
+                *pJittedInstanceEnCVersion = nativeCodeVersion.GetILCodeVersion().GetEnCVersion();
             }
         }
     }
-    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-    if (pDJI != NULL)
+#else // !FEATURE_CODE_VERSIONING
+    *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
+    if (pJittedInstanceEnCVersion != NULL)
     {
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = pDJI->m_encVersion;
-        }
-        *pLatestEnCVersion = pDMI->GetCurrentEnCVersion();
+        *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
     }
-    else
-    {
-        // If we have no DMI/DJI, then we must never have EnCed. So we can use default EnC info
-        // Several cases where we don't have a DMI/DJI:
-        // - LCG methods
-        // - method was never "touched" by debugger. (DJIs are created lazily).
-        if (pJittedInstanceEnCVersion != NULL)
-        {
-            *pJittedInstanceEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-        }
-        *pLatestEnCVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION;
-    }
+#endif // FEATURE_CODE_VERSIONING
 }
 
 // Get the address of the Debugger control block on the helper thread
@@ -7105,7 +7114,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(V
     // manager's active IL version hasn't yet asked the profiler for the IL body to use, in which case we want to filter it
     //  out from the return in this method.
     ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
-    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive)
+    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive || !activeILVersion.IsReJIT())
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7144,7 +7153,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_Native
 #ifdef FEATURE_REJIT
     NativeCodeVersionNode* pNativeCodeVersionNode = vmNativeCodeVersionNode.GetDacPtr();
     ILCodeVersion ilCodeVersion = pNativeCodeVersionNode->GetILCodeVersion();
-    if (ilCodeVersion.IsDefaultVersion())
+    if (ilCodeVersion.IsDefaultVersion() || !ilCodeVersion.IsReJIT())
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }

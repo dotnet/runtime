@@ -1207,13 +1207,11 @@ public:
 
 public:
 
-    // True iff it is possible to change the code this method will run using the CodeVersionManager. Note: EnC currently returns
-    // false here because it uses its own separate scheme to manage versionability. We will likely want to converge them at some
-    // point.
+    // True iff it is possible to change the code this method will run using the CodeVersionManager.
     bool IsVersionable()
     {
         WRAPPER_NO_CONTRACT;
-        return IsEligibleForTieredCompilation() || IsEligibleForReJIT();
+        return IsEligibleForTieredCompilation() || IsEligibleForReJIT() || (InEnCEnabledModule() && IsIL() && !IsWrapperStub());
     }
 
     // True iff all calls to the method should funnel through a Precode which can be updated to point to the current method
@@ -1248,7 +1246,9 @@ public:
             !IsWrapperStub() &&
 
             // Functional requirement
-            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this));
+            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this)) &&
+            // ReJIT and EnC are mutually exclusive
+            !InEnCEnabledModule();
 #else // FEATURE_REJIT
         return false;
 #endif
@@ -1347,7 +1347,9 @@ private:
             IsVtableSlot() &&
 
             // Functional requirement - True interface methods are not backpatched, see DoBackpatch()
-            !(IsInterface() && !IsStatic());
+            !(IsInterface() && !IsStatic()) &&
+            // EnC methods use precode
+            !InEnCEnabledModule();
 #else
         // Entry point slot backpatch is disabled for CrossGen
         return false;
@@ -1458,7 +1460,6 @@ public:
 #ifdef FEATURE_TIERED_COMPILATION
     void ResetCodeEntryPoint();
 #endif // FEATURE_TIERED_COMPILATION
-    void ResetCodeEntryPointForEnC();
 
 
 public:
@@ -1483,7 +1484,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !IsVersionable() && !InEnCEnabledModule();
+        return !IsVersionable();
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS

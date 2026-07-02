@@ -1031,6 +1031,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 {
                     ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
                     ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
+                    ilCodeVersion.SetSource(CodeVersionSource::kReJIT);
                 }
             }
 
@@ -1053,6 +1054,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 // So now we transfer it out to the SharedReJitInfo.
                 ilCodeVersion.SetJitFlags(pFuncControl->GetCodegenFlags());
                 ilCodeVersion.SetIL((COR_ILMETHOD*)pFuncControl->GetIL());
+                ilCodeVersion.SetSource(CodeVersionSource::kReJIT);
                 // ilCodeVersion is now the owner of the memory for the IL buffer
                 ilCodeVersion.SetInstrumentedILMap(pFuncControl->GetInstrumentedMapEntryCount(),
                     pFuncControl->GetInstrumentedMapEntries());
@@ -1138,7 +1140,7 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     }
 
     NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, pCodeStart);
-    if (nativeCodeVersion.IsNull())
+    if (nativeCodeVersion.IsNull() || !nativeCodeVersion.GetILCodeVersion().IsReJIT())
     {
         return 0;
     }
@@ -1189,7 +1191,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
     {
         ILCodeVersion curILVersion = *iter;
 
-        if (curILVersion.GetRejitState() == RejitFlags::kStateActive)
+        if (curILVersion.IsReJIT() && curILVersion.GetRejitState() == RejitFlags::kStateActive)
         {
             if (cnt < cReJitIds)
             {
