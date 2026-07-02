@@ -247,6 +247,9 @@ void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_c
 
 void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len)
 {
+    if (out_desc == NULL || out_desc_len == 0)
+        return;
+
 #if defined(TARGET_WINDOWS)
     pal_str_printf(out_desc, out_desc_len, _X("%s"), _STRINGIFY(VER_PRODUCTVERSION_STR));
 #else

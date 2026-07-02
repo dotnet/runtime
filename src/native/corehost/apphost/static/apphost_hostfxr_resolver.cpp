@@ -65,22 +65,21 @@ extern "C" void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_ch
 
     trace_info(_X("Using internal fxr"));
 
-    size_t root_len = pal_strlen(app_root);
-    resolver->dotnet_root = static_cast<pal_char_t*>(malloc((root_len + 1) * sizeof(pal_char_t)));
-    if (resolver->dotnet_root == nullptr)
+    size_t size = (pal_strlen(app_root) + 1) * sizeof(pal_char_t);
+    pal_char_t* dotnet_root = static_cast<pal_char_t*>(malloc(size));
+    pal_char_t* fxr_path = static_cast<pal_char_t*>(malloc(size));
+    if (dotnet_root == nullptr || fxr_path == nullptr)
     {
+        free(dotnet_root);
+        free(fxr_path);
         resolver->status_code = CoreHostLibMissingFailure;
         return;
     }
-    memcpy(resolver->dotnet_root, app_root, (root_len + 1) * sizeof(pal_char_t));
 
-    resolver->fxr_path = static_cast<pal_char_t*>(malloc((root_len + 1) * sizeof(pal_char_t)));
-    if (resolver->fxr_path == nullptr)
-    {
-        resolver->status_code = CoreHostLibMissingFailure;
-        return;
-    }
-    memcpy(resolver->fxr_path, app_root, (root_len + 1) * sizeof(pal_char_t));
+    memcpy(dotnet_root, app_root, size);
+    memcpy(fxr_path, app_root, size);
+    resolver->dotnet_root = dotnet_root;
+    resolver->fxr_path = fxr_path;
 }
 
 extern "C" void hostfxr_resolver_cleanup(hostfxr_resolver_t* resolver)
