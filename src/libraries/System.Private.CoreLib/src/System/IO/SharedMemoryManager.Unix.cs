@@ -596,6 +596,9 @@ namespace System.IO
                 if (statResult != 0)
                 {
                     Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    // While another process is creating this path, stat() can temporarily fail with ENOENT before the
+                    // directory appears, or with EACCES before the creating process has finished normalizing directory
+                    // permissions for cross-user access.
                     if ((error.Error == Interop.Error.ENOENT || error.Error == Interop.Error.EACCES) && RetryOnTransientPermissionFailure())
                     {
                         continue;
