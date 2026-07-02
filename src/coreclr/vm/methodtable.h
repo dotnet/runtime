@@ -1591,6 +1591,17 @@ public:
         return *GetSlotPtrRaw(slotNumber);
     }
 
+#ifndef DACCESS_COMPILE
+    PCODE GetSlotForVirtualVolatileLoadWithoutBarrier(UINT32 slotNum)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        CONSISTENCY_CHECK(slotNum < GetNumVirtuals());
+        // Virtual slots live in chunks pointed to by vtable indirections
+        return VolatileLoadWithoutBarrier(GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum));
+    }
+#endif // DACCESS_COMPILE
+
     // Special-case for when we know that the slot number corresponds
     // to a virtual method.
     inline PCODE GetSlotForVirtual(UINT32 slotNum)

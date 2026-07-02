@@ -6698,7 +6698,69 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
     if (m_containsMethodImpl && pMT != m_pDeclMT)
         return;
 
+    NewArrayHolder<bool> pSlotFlags;
+    bool nonAllocatedBitvector[16];
     unsigned nVirtuals = pMT->GetNumVirtuals();
+    unsigned unprocesssedNonOverridenSlots = 0;
+
+    bool* pBitVector = NULL;
+
+    if (pMT == m_pDeclMT)
+    {
+        // We have a concept of Method's which have never been overridden by a subclass or called, and in that case we don't actually
+        // need to fill in the MethodTable's vtable entry with a stub. We can detect that here on the Canonical methodtable,
+        // and setup the Decl/Impl MethodDescs's for a slot even if there are MethodImpls in the inheritance chain, since the 
+        // vtable entry will only be NULL if the method could not have been involved with a MethodImpl. This optimization
+        // is only really important for the scenario where we have these NULL entries, since the MethodImpl fallback
+        // case will end up using MehtodTable::GetMethodDescForSlot_NoThrow to get the MethodDesc for the slot, and that is O(N)
+        // for the number of Method defined in the type hierarchy, and the usage of MethodDataObject tends to be O(V) for the number
+        // of virtual method slots on the type, so we get O(V*N) processing time when the not MethodImpl optimization case
+        // fails, which needs addressing.
+
+        // This optimization is only an improvement, if there is a type which is containsMethodImpl in the hierarchy, so do not run it
+        // unless there is a MethodImpl in the hierarchy.
+        bool containsMethodImplInHierarchy = m_containsMethodImpl;
+        MethodTable *pMTWalk = pMT;
+        while (!containsMethodImplInHierarchy && pMTWalk != NULL)
+        {
+            containsMethodImplInHierarchy = pMTWalk->GetClass()->ContainsMethodImpls();
+            pMTWalk = pMTWalk->GetParentMethodTable();
+        }
+        
+        if (containsMethodImplInHierarchy)
+        {
+            MethodTable *pCanonMT = pMT->GetCanonicalMethodTable();
+
+            if (nVirtuals <= sizeof(nonAllocatedBitvector))
+            {
+                pBitVector = nonAllocatedBitvector;
+                memset(pBitVector, 0, sizeof(nonAllocatedBitvector));
+            }
+            else
+            {
+                pSlotFlags = new bool[nVirtuals];
+                pBitVector = pSlotFlags;
+                memset(pBitVector, 0, nVirtuals);
+            }
+
+            for (unsigned slot = 0; slot < nVirtuals; slot++)
+            {
+                PCODE pCode = pCanonMT->GetSlotForVirtualVolatileLoadWithoutBarrier(slot);
+
+                if (pCode == (PCODE)NULL)
+                {
+                    pBitVector[slot] = true;
+                    unprocesssedNonOverridenSlots += 1;
+                }
+            }
+
+            if (unprocesssedNonOverridenSlots == 0)
+            {
+                pBitVector = NULL;
+            }
+        }
+    }
+
     unsigned nVTableLikeSlots = pMT->GetCanonicalMethodTable()->GetNumVtableSlots();
 
     MethodTable::IntroducedMethodIterator it(pMT, FALSE);
@@ -6714,8 +6776,19 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         // data for, and the virtual methods of the parent and above
         if (pMT == m_pDeclMT)
         {
-            if (m_containsMethodImpl && slot < nVirtuals)
-                continue;
+            if (slot < nVirtuals)
+            {
+                if (pBitVector == NULL || !pBitVector[slot])
+                {
+                    if (m_containsMethodImpl)
+                        continue;
+                }
+                else
+                {
+                    _ASSERTE(unprocesssedNonOverridenSlots > 0);
+                    unprocesssedNonOverridenSlots -= 1;
+                }
+            }
 
             if (m_virtualsOnly && slot >= nVTableLikeSlots)
             {
@@ -6739,6 +6812,49 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         if (pEntry->GetImplMethodDesc() == NULL)
         {
             pEntry->SetImplMethodDesc(pMD);
+        }
+    }
+
+    while (unprocesssedNonOverridenSlots > 0)
+    {
+        pMT = pMT->GetParentMethodTable();
+        nVirtuals = pMT->GetNumVirtuals();
+        _ASSERTE(pMT != NULL);
+        _ASSERTE(pBitVector != NULL);
+        _ASSERTE(unprocesssedNonOverridenSlots > 0);
+        MethodTable::IntroducedMethodIterator it(pMT, FALSE);
+        for (; it.IsValid(); it.Next())
+        {
+            MethodDesc * pMD = it.GetMethodDesc();
+
+            unsigned slot = pMD->GetSlot();
+            if (slot == MethodTable::NO_SLOT)
+                continue;
+
+            if (slot >= nVirtuals)
+                continue;
+
+            if (!pBitVector[slot])
+            {
+                continue;
+            }
+            else
+            {
+                _ASSERTE(unprocesssedNonOverridenSlots > 0);
+                unprocesssedNonOverridenSlots -= 1;
+            }
+
+            MethodDataObjectEntry * pEntry = GetEntry(slot);
+
+            if (pEntry->GetDeclMethodDesc() == NULL)
+            {
+                pEntry->SetDeclMethodDesc(pMD);
+            }
+
+            if (pEntry->GetImplMethodDesc() == NULL)
+            {
+                pEntry->SetImplMethodDesc(pMD);
+            }
         }
     }
 } // MethodTable::MethodDataObject::FillEntryDataForAncestor
