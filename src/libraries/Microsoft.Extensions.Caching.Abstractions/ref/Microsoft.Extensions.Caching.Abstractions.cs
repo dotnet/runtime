@@ -177,9 +177,11 @@ namespace Microsoft.Extensions.Caching.Hybrid
     }
     public sealed class HybridCacheEntryOptions
     {
-        public System.TimeSpan? Expiration { get; init; }
-        public System.TimeSpan? LocalCacheExpiration { get; init; }
-        public HybridCacheEntryFlags? Flags { get; init; }
+        public System.TimeSpan? Expiration { get; set; }
+        public System.TimeSpan? LocalCacheExpiration { get; set; }
+        public HybridCacheEntryFlags? Flags { get; set; }
+        public long? LocalSize { get; set; }
+        public int Revision { get { throw null; } }
     }
     [System.Flags]
     public enum HybridCacheEntryFlags
@@ -200,6 +202,16 @@ namespace Microsoft.Extensions.Caching.Hybrid
             HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default);
 
         public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(string key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
+            => throw null;
+
+        public virtual System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state,
+            System.Func<TState, HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
+            => throw null;
+
+        public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(string key,
+            System.Func<HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
             HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
             => throw null;
 
