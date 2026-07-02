@@ -12531,6 +12531,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "System.Diagnostics.Debug",".cctor"},
         { "System.Object",".ctor"},
         { "System.Environment",".cctor"},
+	{ "System.Runtime.InteropServices.Marshal",".cctor"},
 	{ "Sys",".cctor"},
 	{ "System.Type",".cctor"},
 	{ "EmptyArray`1[__Canon]",".cctor"},
@@ -12543,6 +12544,15 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         { "System.Runtime.CompilerServices.TypeHandle",".ctor"},
 	{ "System.BitConverter",".cctor"},
 	{ "System.ReadOnlySpan`1[Int32]",".ctor"},
+	{ "System.Collections.Generic.StringEqualityComparer",".ctor"},
+	{ "System.Collections.Generic.EqualityComparer`1[__Canon]",".ctor"},
+	{ "System.OrdinalCaseSensitiveComparer",".cctor"},
+	{ "System.OrdinalCaseSensitiveComparer",".ctor"},
+	{ "System.OrdinalComparer",".ctor"},
+	{ "System.StringComparer",".ctor"},
+	{ "System.OrdinalIgnoreCaseComparer",".cctor"},
+	{ "System.OrdinalIgnoreCaseComparer",".ctor"},
+	{ "OrdinalIgnoreCaseComparer",".ctor"},
     };
 
     const size_t numInclusions = sizeof(jitInclusionList) / sizeof(jitInclusionList[0]);
