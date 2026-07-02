@@ -113,8 +113,6 @@ else()
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
                 -lexports.js
-                -Wl,--export=__stack_pointer
-                -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag
                 -Wl,--error-limit=0)
         elseif (CLR_CMAKE_TARGET_WASI)
             # wasm-component-ld wraps wasi:io@0.2.x imports into the WASI
