@@ -625,11 +625,12 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     InlineContext*         inlinersContext;
 };
 
-// LateDevirtualizationInfo
+// ExactContextInfo
 //
-// Used to fill in missing contexts during late devirtualization.
+// Used to fill in missing contexts during late devirtualization and
+// for getting the return type with shared generics.
 //
-struct LateDevirtualizationInfo
+struct ExactContextInfo
 {
     CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
