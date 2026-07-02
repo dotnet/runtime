@@ -5,18 +5,18 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public partial class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
+    public static class RSASignatureFormatterTests_NoKey
     {
         [Fact]
         public static void InvalidFormatterArguments_RSA()
         {
-            InvalidFormatterArguments(new RSAPKCS1SignatureFormatter());
+            AsymmetricSignatureFormatterTests.InvalidFormatterArguments(new RSAPKCS1SignatureFormatter());
         }
 
         [Fact]
         public static void InvalidDeformatterArguments_RSA()
         {
-            InvalidDeformatterArguments(new RSAPKCS1SignatureDeformatter());
+            AsymmetricSignatureFormatterTests.InvalidDeformatterArguments(new RSAPKCS1SignatureDeformatter());
         }
     }
 }

@@ -11,14 +11,14 @@ namespace System.Security.Cryptography.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class AsymmetricSignatureFormatterTests
     {
-        protected static void InvalidFormatterArguments(AsymmetricSignatureFormatter formatter)
+        protected internal static void InvalidFormatterArguments(AsymmetricSignatureFormatter formatter)
         {
             Assert.Throws<ArgumentNullException>(() => formatter.SetKey(null));
             Assert.Throws<ArgumentNullException>(() => formatter.CreateSignature((byte[])null));
             Assert.Throws<CryptographicUnexpectedOperationException>(() => formatter.CreateSignature(new byte[] { 0, 1, 2, 3 }));
         }
 
-        protected static void InvalidDeformatterArguments(AsymmetricSignatureDeformatter deformatter)
+        protected internal static void InvalidDeformatterArguments(AsymmetricSignatureDeformatter deformatter)
         {
             Assert.Throws<ArgumentNullException>(() => deformatter.SetKey(null));
             Assert.Throws<ArgumentNullException>(() => deformatter.VerifySignature((byte[])null, new byte[] { 0, 1, 2 }));

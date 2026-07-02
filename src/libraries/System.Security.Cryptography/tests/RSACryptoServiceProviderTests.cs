@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Rsa.Tests;
+using System.Security.Cryptography.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Csp.Tests
 {
-    public class RSACryptoServiceProviderTests
+    public static class RSACryptoServiceProviderTests
     {
         const int PROV_RSA_FULL = 1;
         const int PROV_RSA_AES = 24;
@@ -306,9 +307,11 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public static void SignHash_DefaultAlgorithm_Success()
         {
+            SkipTestException.ThrowUnless(RSACryptoServiceProviderProvider.Instance.SupportsSha1Signatures);
+
             byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
@@ -318,9 +321,11 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
+            SkipTestException.ThrowUnless(RSACryptoServiceProviderProvider.Instance.SupportsSha1Signatures);
+
             byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())

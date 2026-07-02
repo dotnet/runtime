@@ -2,17 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
+    public abstract class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
-        public static void VerifySignature_SHA1()
+        protected abstract RSAProvider RSAFactory { get; }
+
+        [ConditionalFact]
+        public void VerifySignature_SHA1()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             using (RSA rsa = RSAFactory.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
@@ -29,7 +34,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void VerifySignature_SHA256()
+        public void VerifySignature_SHA256()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -47,7 +52,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void InvalidHashAlgorithm()
+        public void InvalidHashAlgorithm()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -66,9 +71,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
-        public static void VerifyKnownSignature()
+        [ConditionalFact]
+        public void VerifyKnownSignature()
         {
+            SkipTestException.ThrowUnless(RSAFactory.SupportsSha1Signatures);
+
             byte[] hash = "012d161304fa0c6321221516415813022320620c".HexToByteArray();
             byte[] sig;
 
