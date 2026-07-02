@@ -2334,6 +2334,5 @@ namespace System.Security.Cryptography
             insufficientCollisionResistance = hashLambda < Algorithm.LambdaCollisionStrength;
             return hashAlgorithmIdentifier;
         }
-
     }
 }

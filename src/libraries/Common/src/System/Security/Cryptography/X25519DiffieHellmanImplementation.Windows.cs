@@ -236,11 +236,6 @@ namespace System.Security.Cryptography
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
         {
-            if (!Helpers.IsOSPlatformWindows)
-            {
-                return null;
-            }
-
             NTSTATUS status = Interop.BCrypt.BCryptOpenAlgorithmProvider(
                 out SafeBCryptAlgorithmHandle hAlgorithm,
                 BCryptNative.AlgorithmName.ECDH,
