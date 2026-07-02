@@ -220,7 +220,7 @@ namespace System.Net.NameResolution.Tests
 
             if (qdCount < 1)
             {
-                return DnsResponseBuilder.For(queryId, [], 0)
+                return DnsResponseBuilder.For(queryId, [], default)
                     .ResponseCode(DnsResponseCode.FormatError)
                     .SkipQuestion()
                     .Build();
@@ -241,7 +241,7 @@ namespace System.Net.NameResolution.Tests
 
             if (pos + 4 > query.Length)
             {
-                return DnsResponseBuilder.For(queryId, questionName, 0)
+                return DnsResponseBuilder.For(queryId, questionName, default)
                     .ResponseCode(DnsResponseCode.FormatError)
                     .Build();
             }
