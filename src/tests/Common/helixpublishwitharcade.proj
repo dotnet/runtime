@@ -326,11 +326,25 @@
       </_MergedPayloadFiles>
     </ItemGroup>
 
+    <!-- Tests opt into keeping their managed pdbs in the Helix payload with PreservePdbInHelixPayload=true, which drops a
+         <AssemblyName>.PreservePdb marker beside the pdbs in the per-test output directory. The merged wrapper directory that
+         seeds _MergedPayloadFiles is a flattened copy of every test's assemblies and pdbs but omits those marker files, so
+         probe the original per-test output tree ($(TestBinDir)) for the markers and collect the names of the pdbs that sit
+         next to them. A pdb with one of these names is kept below; because each pdb name only exists in its own merge group's
+         flattened payload, this preserves exactly the opted-in pdbs and lands them next to their dll. -->
+    <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''">
+      <_PreservePdbMarkers Include="$(TestBinDir)**\*.PreservePdb" />
+      <_PreservePdbMarkerDirectories Include="@(_PreservePdbMarkers->'%(RootDir)%(Directory)')" KeepDuplicates="false" />
+      <_PreservePdbSourceFiles Include="%(_PreservePdbMarkerDirectories.Identity)**\*.pdb" Condition="'@(_PreservePdbMarkerDirectories)' != ''" />
+    </ItemGroup>
+    <PropertyGroup Condition="'@(_MergedPayloadFiles)' != ''">
+      <_PreservePdbFileNames>;@(_PreservePdbSourceFiles->'%(Filename).pdb');</_PreservePdbFileNames>
+    </PropertyGroup>
+
     <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''" >
-      <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size
-           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
-      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition="('%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true') and '%(Extension)' != '.OutOfProcessTest'" />
+      <!-- Remove the managed pdbs from our payloads to reduce our helix payload size. 
+       In Native AOT the pdb is needed for crashdumps and also preserve test that opted into PreservePdbInHelixPayload. -->
+      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition="('%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true' or $(_PreservePdbFileNames.Contains(';%(Filename).pdb;'))) and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
     <PropertyGroup>

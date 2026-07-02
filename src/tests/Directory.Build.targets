@@ -459,6 +459,14 @@
         Lines="OutOfProcessTest"
         Overwrite="true"
         WriteOnlyWhenDifferent="true" />
+
+    <!-- Tests can opt in to preserving their pdbs in the Helix payload, which are otherwise stripped to reduce payload size.  -->
+    <WriteLinesToFile
+        Condition="'$(PreservePdbInHelixPayload)' == 'true'"
+        File="$(OutputPath)\$(AssemblyName).PreservePdb"
+        Lines="PreservePdb"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
   </Target>
 
   <PropertyGroup>

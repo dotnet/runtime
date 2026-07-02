@@ -6,6 +6,7 @@ set(MDRUNTIME_SOURCES
   mdfileformat.cpp
   metamodel.cpp
   metamodelro.cpp
+  noopmetadataimport.cpp
   recordpool.cpp
   mdinternaldisp.cpp
   mdinternalro.cpp
