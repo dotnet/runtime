@@ -325,6 +325,15 @@ namespace System.IO.Compression
         /// </summary>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
+        /// <summary>
+        /// Gets the "version made by" field of the entry as stored in the archive's central directory record.
+        /// </summary>
+        /// <remarks>
+        /// As defined by the ZIP file format specification, the low byte contains the version of the specification used to create the entry, and the high byte identifies the host system (platform) compatibility.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public ushort VersionMadeBy => (ushort)(((byte)_versionMadeByPlatform << 8) | (byte)_versionMadeBySpecification);
+
         internal ZipArchive.ChangeState Changes { get; private set; }
 
         internal bool OriginallyInArchive => _originallyInArchive;
