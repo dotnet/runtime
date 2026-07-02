@@ -4671,6 +4671,35 @@ namespace System.Runtime.Intrinsics.Arm
         }
     }
     [System.CLSCompliantAttribute(false)]
+    public abstract partial class Sha3 : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal Sha3() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<byte> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<byte> xor, System.Runtime.Intrinsics.Vector128<byte> value, System.Runtime.Intrinsics.Vector128<byte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<short> xor, System.Runtime.Intrinsics.Vector128<short> value, System.Runtime.Intrinsics.Vector128<short> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<int> xor, System.Runtime.Intrinsics.Vector128<int> value, System.Runtime.Intrinsics.Vector128<int> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<long> xor, System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<long> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<sbyte> xor, System.Runtime.Intrinsics.Vector128<sbyte> value, System.Runtime.Intrinsics.Vector128<sbyte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<ushort> xor, System.Runtime.Intrinsics.Vector128<ushort> value, System.Runtime.Intrinsics.Vector128<ushort> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<uint> xor, System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> BitwiseClearXor(System.Runtime.Intrinsics.Vector128<ulong> xor, System.Runtime.Intrinsics.Vector128<ulong> value, System.Runtime.Intrinsics.Vector128<ulong> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> BitwiseRotateLeftBy1AndXor(System.Runtime.Intrinsics.Vector128<ulong> xor, System.Runtime.Intrinsics.Vector128<ulong> rol1) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> Xor(System.Runtime.Intrinsics.Vector128<byte> value1, System.Runtime.Intrinsics.Vector128<byte> value2, System.Runtime.Intrinsics.Vector128<byte> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> Xor(System.Runtime.Intrinsics.Vector128<short> value1, System.Runtime.Intrinsics.Vector128<short> value2, System.Runtime.Intrinsics.Vector128<short> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> Xor(System.Runtime.Intrinsics.Vector128<int> value1, System.Runtime.Intrinsics.Vector128<int> value2, System.Runtime.Intrinsics.Vector128<int> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> Xor(System.Runtime.Intrinsics.Vector128<long> value1, System.Runtime.Intrinsics.Vector128<long> value2, System.Runtime.Intrinsics.Vector128<long> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> Xor(System.Runtime.Intrinsics.Vector128<sbyte> value1, System.Runtime.Intrinsics.Vector128<sbyte> value2, System.Runtime.Intrinsics.Vector128<sbyte> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> Xor(System.Runtime.Intrinsics.Vector128<ushort> value1, System.Runtime.Intrinsics.Vector128<ushort> value2, System.Runtime.Intrinsics.Vector128<ushort> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> Xor(System.Runtime.Intrinsics.Vector128<uint> value1, System.Runtime.Intrinsics.Vector128<uint> value2, System.Runtime.Intrinsics.Vector128<uint> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> Xor(System.Runtime.Intrinsics.Vector128<ulong> value1, System.Runtime.Intrinsics.Vector128<ulong> value2, System.Runtime.Intrinsics.Vector128<ulong> value3) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> XorRotateRight(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right, [ConstantExpected] byte count) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class Sve : System.Runtime.Intrinsics.Arm.AdvSimd
     {
@@ -7265,6 +7294,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> XorRotateRight(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<uint> XorRotateRight(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<ulong> XorRotateRight(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte count) { throw null; }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class SveSha3 : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal SveSha3() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Numerics.Vector<long> BitwiseRotateLeftBy1AndXor(System.Numerics.Vector<long> xor, System.Numerics.Vector<long> rol1) { throw null; }
+        public static System.Numerics.Vector<ulong> BitwiseRotateLeftBy1AndXor(System.Numerics.Vector<ulong> xor, System.Numerics.Vector<ulong> rol1) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
     }
 
     public enum SveMaskPattern : byte
@@ -10515,6 +10558,15 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAdd(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<sbyte> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
         }
     }
     [System.CLSCompliantAttribute(false)]

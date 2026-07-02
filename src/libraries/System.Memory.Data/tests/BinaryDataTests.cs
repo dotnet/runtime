@@ -679,7 +679,7 @@ namespace System.Tests
             Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Begin));
 
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek((long)int.MaxValue + 1, SeekOrigin.Begin));
-            Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(0, (SeekOrigin)3));
+            Assert.ThrowsAny<ArgumentException>(() => stream.Seek(0, (SeekOrigin)3));
         }
 
 
@@ -715,7 +715,7 @@ namespace System.Tests
             byte[] buffer = "some data"u8.ToArray();
             Stream stream = new BinaryData(buffer).ToStream();
             stream.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => stream.Position = -1);
+            Assert.Throws<ObjectDisposedException>(() => stream.Position = 0);
             Assert.Throws<ObjectDisposedException>(() => stream.Position);
             Assert.Throws<ObjectDisposedException>(() => stream.Seek(0, SeekOrigin.Begin));
             Assert.Throws<ObjectDisposedException>(() => stream.Read(buffer, 0, buffer.Length));

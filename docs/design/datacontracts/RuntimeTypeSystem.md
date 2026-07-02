@@ -66,13 +66,20 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     public virtual bool IsObject(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
+    // True if the CorElementType represents a GC-collectable object reference.
+    public virtual bool IsCorElementTypeObjRef(CorElementType elementType);
     // Returns the address of one of the runtime's well-known singleton MethodTables, or
     // TargetPointer.Null if the runtime has not yet initialized that global.
     public virtual TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind);
-    // True if the type is a GC-collectable object reference.
-    public virtual bool IsObjRef(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
+    public virtual bool IsByRefLike(TypeHandle typeHandle);
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
+    public virtual bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
@@ -295,6 +302,10 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if the method is a wrapper stub (unboxing or instantiating).
     public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
 
+    // Return true if the method is an unboxing stub (a wrapper around a
+    // value-type instance method that unboxes `this` before forwarding).
+    public virtual bool IsUnboxingStub(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -307,6 +318,7 @@ bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescRVA(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
+TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
@@ -331,8 +343,14 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS_LOW : uint
     {
         GenericsMask = 0x00000030,
-        GenericsMask_NonGeneric = 0x00000000,   // no instantiation
-        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
+        GenericsMask_NonGeneric = 0x00000000,            // no instantiation
+        GenericsMask_SharedInst = 0x00000020,            // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
+        GenericsMask_TypicalInstantiation = 0x00000030,  // the type instantiated at its formal parameters, e.g. List<T>
+
+        IsByRefLike = 0x00001000,                        // value type that may contain managed pointers (e.g. Span<T>, ReadOnlySpan<T>)
+
+        IsHFA = 0x00000800,                              // ARM/ARM64 only (FEATURE_HFA): Homogeneous Floating-point Aggregate.
+                                                         // On UNIX_AMD64_ABI this bit is reused as IsRegStructPassed.
 
         StringArrayValues = GenericsMask_NonGeneric,
     }
@@ -366,6 +384,7 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS2_ENUM : uint
     {
         DynamicStatics = 0x0002,
+        IsIntrinsicType = 0x0020,
     }
 
     // Encapsulates the MethodTable flags v1 uses
@@ -405,8 +424,12 @@ internal partial struct RuntimeTypeSystem_1
         public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+        public bool IsIntrinsicType => GetFlag(WFLAGS2_ENUM.IsIntrinsicType) != 0;
         public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
+        public bool IsSharedByGenericInstantiations => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_SharedInst);
+        public bool IsByRefLike => TestFlagWithMask(WFLAGS_LOW.IsByRefLike, WFLAGS_LOW.IsByRefLike);
+        public bool IsHFA => TestFlagWithMask(WFLAGS_LOW.IsHFA, WFLAGS_LOW.IsHFA);
     }
 
     [Flags]
@@ -640,6 +663,13 @@ Contracts used:
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
+    public bool IsCorElementTypeObjRef(CorElementType elementType) =>
+        elementType is CorElementType.Class
+            or CorElementType.Object
+            or CorElementType.String
+            or CorElementType.Array
+            or CorElementType.SzArray;
+
     public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind)
     {
         // Map the well-known kind to the corresponding runtime global. Returns
@@ -662,9 +692,38 @@ Contracts used:
         return value;
     }
 
-    public bool IsObjRef(TypeHandle typeHandle) => // Returns true if GetSignatureCorElementType returns Class, Array, or SzArray.
-
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
+
+    public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+
+    // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. Pseudocode:
+    //
+    //   TryGetHFAElementSize(th):
+    //       if targetArch is not ARM/ARM64:               return false
+    //       if !th.Flags.IsHFA:                           return false
+    //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign8 ? 8 : 4)
+    //       mt = th
+    //       loop (bounded depth):
+    //           if (elem = GetVectorHFAElementSize(mt)):  return (true, elem)
+    //           field = first non-static field of mt
+    //           if field is null:                         return false
+    //           switch field.ElementType:
+    //               R4:        return (true, 4)
+    //               R8:        return (true, 8)
+    //               ValueType: mt = GetFieldDescApproxTypeHandle(field); continue
+    //               default:   return false
+    //
+    //   GetVectorHFAElementSize(mt):                      // detects HVA shapes
+    //       if !mt.Flags.IsIntrinsicType:                 return 0
+    //       (ns, name) = typedef name+namespace via EcmaMetadata
+    //       elem = match on (ns, name):
+    //           "System.Numerics", "Vector`1":            NumInstanceFieldBytes (8 or 16, else 0)
+    //           "System.Runtime.Intrinsics", "Vector128`1": 16
+    //           "System.Runtime.Intrinsics", "Vector64`1":  8
+    //           _:                                          return 0
+    //       if !CorIsNumericalType(GetInstantiation(mt)[0]): return 0
+    //       return elem
+    public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize) { ... }
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
@@ -1889,7 +1948,7 @@ Determining where a shared generic method obtains its generic context:
                 return true;
         }
         MethodTable mt = _methodTables[md.MethodTable];
-        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+        return mt.Flags.IsSharedByGenericInstantiations;
     }
 ```
 
@@ -1915,6 +1974,17 @@ Determining if a method is a wrapper stub (unboxing or instantiating):
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         return md.IsUnboxingStub || IsInstantiatingStub(md);
     }
+```
+
+Determining if a method is an unboxing stub. An unboxing stub is a wrapper
+around a value-type instance method whose `this` is a boxed object: the
+stub unboxes `this` and forwards to the real instance method. The bit is
+stored in `MethodDescFlags3` and surfaces as the `IsUnboxingStub` flag on
+`MethodDesc`:
+
+```csharp
+    public bool IsUnboxingStub(MethodDescHandle methodDescHandle)
+        => _methodDescs[methodDescHandle.Address].IsUnboxingStub;
 ```
 
 Extracting a pointer to the `MethodDescVersioningState` data for a given method
@@ -2276,6 +2346,15 @@ TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, Ta
     // Like GetFieldDescStaticAddress, but resolves thread-local base pointers instead.
     // Uses GetGCThreadStaticsBasePointer / GetNonGCThreadStaticsBasePointer.
     // The unboxValueTypes parameter behaves the same as in GetFieldDescStaticAddress.
+}
+
+TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
+{
+    // Resolve enclosing MT -> Module -> MetadataReader, decode the field's
+    // signature using the SignatureDecoder contract with a SignatureTypeProvider
+    // bound to the enclosing class as generic context, and return the resulting
+    // TypeHandle. Returns TypeHandle.Null if any link in the chain is unavailable
+    // (e.g. uncached constructed instantiation).
 }
 ```
 

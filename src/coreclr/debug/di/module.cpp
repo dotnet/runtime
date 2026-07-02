@@ -296,7 +296,7 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
         // Since we've already done everything possible from the Module anyhow, just call the
         // stuff that talks to the debugger.
         // Don't do anything with the ptr returned here, since it's really m_pInternalMetaDataImport.
-        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, this);
+        pProcess->LookupMetaDataFromDebugger(this);
     }
 
     // If we still can't get it, throw.
@@ -788,10 +788,10 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         StringCopyHolder filePath;
 
 
-        _ASSERTE(!m_vmPEFile.IsNull());
+        _ASSERTE(!m_vmModule.IsNull());
         // MetaData lookup favors the NGEN image, which is what we want here.
         BOOL _mdFileInfoResult;
-        IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+        IfFailThrow(this->GetProcess()->GetDAC()->GetModuleMetaDataFileInfo(m_vmModule,
                                                                          &dwImageTimeStamp,
                                                                          &dwImageSize,
                                                                          &filePath,
@@ -804,13 +804,13 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         // If the timestamp and size don't match, then this is the wrong file!
         // Map the file and check them.
-        HandleHolder hMDFile = WszCreateFile(pszFullPathName,
+        HandleHolder hMDFile{ WszCreateFile(pszFullPathName,
                                               GENERIC_READ,
                                               FILE_SHARE_READ,
                                               NULL,                 // default security descriptor
                                               OPEN_EXISTING,
                                               FILE_ATTRIBUTE_NORMAL,
-                                              NULL);
+                                              NULL) };
 
         if (hMDFile == INVALID_HANDLE_VALUE)
         {
@@ -828,7 +828,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(dwFileHigh == 0);
 
-        HandleHolder hMap = CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
+        HandleHolder hMap{ CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL) };
         if (hMap == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't create mapping of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
@@ -1175,9 +1175,9 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
             DWORD dwImageSize = 0;      // unused
             StringCopyHolder filePath;
 
-            _ASSERTE(!m_vmPEFile.IsNull());
+            _ASSERTE(!m_vmModule.IsNull());
             BOOL _mdFileInfoResult;
-            IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+            IfFailThrow(this->GetProcess()->GetDAC()->GetModuleMetaDataFileInfo(m_vmModule,
                                                                              &dwImageTimeStamp,
                                                                              &dwImageSize,
                                                                              &filePath,

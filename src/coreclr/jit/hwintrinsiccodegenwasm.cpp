@@ -26,7 +26,32 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_WASM_SIMD("genHWIntrinsic");
+    // emitIns_v128_Imm
+    // emitIns_Lane
+    // emitIns_Memarg_Lane
+
+    const HWIntrinsic info(node);
+    genConsumeMultiOpOperands(node);
+
+    if (info.codeGenIsTableDriven())
+    {
+        instruction const ins = HWIntrinsicInfo::lookupIns(info.id, info.baseType, m_compiler);
+        assert(ins != INS_invalid);
+        if (info.category == HW_Category_SIMD)
+        {
+            GetEmitter()->emitIns(ins);
+        }
+        else
+        {
+            NYI_WASM_SIMD("!HW_Category_SIMD");
+        }
+    }
+    else
+    {
+        NYI_WASM_SIMD("!codeGenIsTableDriven");
+    }
+
+    WasmProduceReg(node);
 }
 
 #endif // FEATURE_HW_INTRINSICS

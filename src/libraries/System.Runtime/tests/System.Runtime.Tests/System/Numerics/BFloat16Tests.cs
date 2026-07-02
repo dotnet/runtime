@@ -532,13 +532,25 @@ namespace System.Numerics.Tests
 
             foreach ((float original, BFloat16 expected) in data)
             {
+                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
+                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
+                // permits NaN-payload canonicalization on these ops but doesn't require it --
+                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
+                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
+                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
+                // trip through the software conversion path in that environment. Gated on
+                // Mono specifically since other WASM runtimes don't share this lowering.
+                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
+                // be removed once the conversion path either avoids the canonicalizing ops
+                // or the host engines start preserving NaN payloads.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
 
         [MemberData(nameof(ExplicitConversion_FromSingle_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromSingle(float f, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)f;
@@ -618,13 +630,25 @@ namespace System.Numerics.Tests
 
             foreach ((double original, BFloat16 expected) in data)
             {
+                // WASM on Mono lowers `double.Min` / `double.Max` through `f64.min` / `f64.max`
+                // (and `double.IsNaN(...)` branches through `f64.add`). The WebAssembly spec
+                // permits NaN-payload canonicalization on these ops but doesn't require it --
+                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
+                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
+                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
+                // trip through the software conversion path in that environment. Gated on
+                // Mono specifically since other WASM runtimes don't share this lowering.
+                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
+                // be removed once the conversion path either avoids the canonicalizing ops
+                // or the host engines start preserving NaN payloads.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && double.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
 
         [MemberData(nameof(ExplicitConversion_FromDouble_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromDouble(double d, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)d;

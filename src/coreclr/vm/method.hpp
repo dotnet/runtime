@@ -75,6 +75,8 @@ enum class AsyncMethodFlags
     Thunk                      = 16,
     // A special thunk to drop return value in covariant return scenario
     ReturnDroppingThunk        = 32,
+    // Note: If adding more flags make sure to modify RequiresAsyncContextSaveAndRestore
+
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -115,6 +117,11 @@ inline AsyncMethodFlags operator|(AsyncMethodFlags lhs, AsyncMethodFlags rhs)
 inline AsyncMethodFlags operator&(AsyncMethodFlags lhs, AsyncMethodFlags rhs)
 {
     return (AsyncMethodFlags)((int)lhs & (int)rhs);
+}
+
+inline AsyncMethodFlags operator~(AsyncMethodFlags flags)
+{
+    return (AsyncMethodFlags)~(int)flags;
 }
 
 inline AsyncMethodFlags& operator|=(AsyncMethodFlags& lhs, AsyncMethodFlags rhs)
@@ -1781,6 +1788,19 @@ public:
         return FindOrCreateAssociatedMethodDesc(this, mt, FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, FALSE, mt->GetLoadLevel());
     }
 
+    // If this method supports async version codegen, then get the ordinary non-async method.
+    // For async version codegen the ordinary non-async method is the method whose IL we use
+    // for both compilations.
+    MethodDesc* GetOrdinaryVariantIfAsyncVersion()
+    {
+        if (SupportsAsyncVersionCodegen())
+        {
+            return GetOrdinaryVariant();
+        }
+
+        return this;
+    }
+
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
@@ -2169,7 +2189,7 @@ public:
 
         AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         // asynccall that is also async variant, but not a thunk
-        return asyncFlags == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+        return (asyncFlags & ~AsyncMethodFlags::IsAsyncVariantForValueTask) == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -2305,6 +2325,13 @@ public:
 public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,
+    // publish it into this method's portable entrypoint WITHOUT compiling interpreter byte code.
+    // Returns true if native code was found and published, false otherwise.
+    bool TryPublishR2RCodeForUnmanagedCallersOnly();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
@@ -3807,7 +3834,7 @@ public:
     PTR_DictionaryLayout GetDictLayoutRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pDictLayout;
+        return VolatileLoad(&m_pDictLayout);
     }
 
     PTR_MethodDesc IMD_GetWrappedMethodDesc()
@@ -3826,10 +3853,10 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            return pIMD->m_pDictLayout;
+            return VolatileLoad(&pIMD->m_pDictLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
-            return m_pDictLayout;
+            return VolatileLoad(&m_pDictLayout);
         else
             return NULL;
     }
@@ -3840,11 +3867,11 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            pIMD->m_pDictLayout = pNewLayout;
+            VolatileStore(&pIMD->m_pDictLayout, pNewLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
         {
-            m_pDictLayout = pNewLayout;
+            VolatileStore(&m_pDictLayout, pNewLayout);
         }
     }
 #endif // !DACCESS_COMPILE

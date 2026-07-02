@@ -153,6 +153,8 @@ CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ThrownObject, offsetof(ExInfo, m_excep
 CDAC_TYPE_FIELD(ExceptionInfo, T_UINT32, ExceptionFlags, cdac_data<ExInfo>::ExceptionFlagsValue)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackLowBound, cdac_data<ExInfo>::StackLowBound)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackHighBound, cdac_data<ExInfo>::StackHighBound)
+CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ExceptionRecord, cdac_data<ExInfo>::ExceptionRecord)
+CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ContextRecord, cdac_data<ExInfo>::ContextRecord)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
 #endif // TARGET_UNIX
@@ -1162,8 +1164,6 @@ CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CodePointer), ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
-// Offset to where stack arguments begin (just past the end of the TransitionBlock)
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgs, sizeof(TransitionBlock))
 // Offset to argument registers and first GCRefMap slot (platform-specific)
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegisters, sizeof(TransitionBlock))
@@ -1181,6 +1181,7 @@ CDAC_TYPE_END(TransitionBlock)
 CDAC_TYPE_BEGIN(FuncEvalFrame)
 CDAC_TYPE_SIZE(sizeof(FuncEvalFrame))
 CDAC_TYPE_FIELD(FuncEvalFrame, T_POINTER, DebuggerEvalPtr, cdac_data<FuncEvalFrame>::DebuggerEvalPtr)
+CDAC_TYPE_FIELD(FuncEvalFrame, TYPE(CodePointer), ReturnAddress, cdac_data<FuncEvalFrame>::ReturnAddress)
 CDAC_TYPE_END(FuncEvalFrame)
 
 CDAC_TYPE_BEGIN(DebuggerEval)
@@ -1204,6 +1205,11 @@ CDAC_TYPE_BEGIN(ExternalMethodFrame)
 CDAC_TYPE_SIZE(sizeof(ExternalMethodFrame))
 CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, Indirection, cdac_data<ExternalMethodFrame>::Indirection)
 CDAC_TYPE_END(ExternalMethodFrame)
+
+CDAC_TYPE_BEGIN(PInvokeCalliFrame)
+CDAC_TYPE_SIZE(sizeof(PInvokeCalliFrame))
+CDAC_TYPE_FIELD(PInvokeCalliFrame, T_POINTER, VASigCookiePtr, cdac_data<PInvokeCalliFrame>::VASigCookiePtr)
+CDAC_TYPE_END(PInvokeCalliFrame)
 
 CDAC_TYPE_BEGIN(DynamicHelperFrame)
 CDAC_TYPE_SIZE(sizeof(DynamicHelperFrame))
@@ -1725,6 +1731,7 @@ CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
 #endif // FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(CallingConvention, c1)
 CDAC_GLOBAL_CONTRACT(CodeVersions, c1)
 CDAC_GLOBAL_CONTRACT(CodeNotifications, c1)
 #ifdef FEATURE_COMWRAPPERS
