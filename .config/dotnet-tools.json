@@ -25,6 +25,12 @@
       "commands": [
         "slngen"
       ]
+    },
+    "microsoft.dotnet.helix.jobmonitor": {
+      "version": "11.0.0-beta.26330.2",
+      "commands": [
+        "dotnet-helix-job-monitor"
+      ]
     }
   }
 }

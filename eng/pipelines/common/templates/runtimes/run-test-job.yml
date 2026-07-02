@@ -30,6 +30,7 @@ parameters:
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 ### Test run job
 
@@ -290,6 +291,7 @@ jobs:
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
         runtimeVariant: ${{ parameters.runtimeVariant }}
         SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
