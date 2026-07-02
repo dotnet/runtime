@@ -11361,6 +11361,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 DEBUG_DESTROY_NODE(tree);
                 return op1;
             }
+            tree->AsOp()->CheckDivideByConstOptimized(this);
             break;
 
         case GT_UDIV:

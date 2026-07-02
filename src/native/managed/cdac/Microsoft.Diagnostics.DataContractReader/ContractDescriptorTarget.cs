@@ -57,6 +57,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
+    public delegate int SetTargetThreadContextDelegate(uint threadId, ReadOnlySpan<byte> context);
     public delegate int AllocVirtualDelegate(ulong size, out ulong allocatedAddress);
 
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -69,6 +70,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
     /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="setThreadContext">A callback to set a thread's context</param>
     /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
     /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
     /// <param name="target">The target object.</param>
@@ -78,11 +80,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual,
         Action<ContractRegistry>[] contractRegistrations,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
-        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, allocVirtual);
+        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual);
         if (TryReadContractDescriptor(
             contractDescriptor,
             dataTargetDelegates,
@@ -104,6 +107,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
     /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="setThreadContext">A callback to set a thread's context</param>
     /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
     /// <param name="isLittleEndian">Whether the target is little-endian</param>
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
@@ -115,6 +119,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual,
         bool isLittleEndian,
         int pointerSize,
@@ -127,7 +132,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 ContractDescriptor = contractDescriptor,
                 PointerData = globalPointerValues
             },
-            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, allocVirtual),
+            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual),
             contractRegistrations ?? []);
     }
 
@@ -412,6 +417,13 @@ public sealed unsafe class ContractDescriptorTarget : Target
     {
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
         int hr = _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
+        return hr == 0;
+    }
+
+    public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context)
+    {
+        // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
+        int hr = _dataTargetDelegates.SetThreadContext((uint)(threadId & uint.MaxValue), context);
         return hr == 0;
     }
 
@@ -932,6 +944,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
@@ -945,6 +958,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
         {
             return getThreadContext(threadId, contextFlags, buffer);
+        }
+        public int SetThreadContext(uint threadId, ReadOnlySpan<byte> context)
+        {
+            return setThreadContext(threadId, context);
         }
         public int WriteToTarget(ulong address, Span<byte> buffer)
         {

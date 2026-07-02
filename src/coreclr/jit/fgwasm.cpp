@@ -136,6 +136,13 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
         }
     }
 
+    // Sort handler entries by funclet index (descending), so
+    // that RPO and funclet emission order agree.
+    //
+    jitstd::sort(entryBlocks.begin(), entryBlocks.end(), [comp](BasicBlock* a, BasicBlock* b) {
+        return comp->funGetFuncIdx(a) > comp->funGetFuncIdx(b);
+    });
+
     // Also look for any non-funclet entry block that is only reachable EH.
     // These should have been connected up to special Wasm switches by fgWasmEhFlow.
     // If not, something is wrong.
@@ -1770,6 +1777,25 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Publish the index to block map for use during codegen.
     //
     fgIndexToBlockMap = initialLayout;
+
+    // Verify the physical block order (what codegen walks) agrees with the assigned
+    // preorder numbers (what the wasm intervals / codegen cursor are keyed on).
+    //
+#ifdef DEBUG
+    {
+        unsigned order = 0;
+        for (BasicBlock* const block : Blocks())
+        {
+            if (block->bbPreorderNum != order)
+            {
+                JITDUMP("Blocks out of order: " FMT_BB " has order %u, but bbPreorderNum=%u\n", block->bbNum, order,
+                        block->bbPreorderNum);
+            }
+            assert((block->bbPreorderNum == order) && "block order disagrees with preorder num");
+            order++;
+        }
+    }
+#endif // DEBUG
 
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
