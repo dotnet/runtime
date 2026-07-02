@@ -5360,6 +5360,15 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                 break;
             }
+
+            ssize_t imm8  = op2->AsIntCon()->IconValue();
+            ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+            if ((imm8 >= count) || (imm8 < 0))
+            {
+                // Using software fallback if index is out of range (throw exception)
+                return nullptr;
+            }
 #endif
 
             retNode = gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseType, simdSize);
