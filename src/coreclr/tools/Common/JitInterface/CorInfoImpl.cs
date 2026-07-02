@@ -3594,6 +3594,13 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
+        private void getWasmWellKnownGlobals(ref CORINFO_WASM_WELLKNOWN_GLOBALS pWellKnownGlobalsOut)
+        {
+            NodeFactory factory = _compilation.NodeFactory;
+            pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.StackPointerName)));
+            pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.ImageBaseName)));
+            pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.TableBaseName)));
+        }
         private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
         {
             instArg.lookupKind.needsRuntimeLookup = false;

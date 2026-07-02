@@ -13,8 +13,6 @@
 #include "gcinfoencoder.h"
 
 static const int LINEAR_MEMORY_INDEX = 0;
-// stackPointer is the 0th global in our generated Wasm modules
-static const int STACK_POINTER_GLOBAL = 0;
 
 #ifdef TARGET_64BIT
 static const instruction INS_I_load  = INS_i64_load;
@@ -153,7 +151,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     if (!m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam)
     {
         initialSPLclIndex = spLclIndex;
-        GetEmitter()->emitIns_I(INS_global_get, EA_PTRSIZE, STACK_POINTER_GLOBAL);
+        GetEmitter()->emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+                                (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, initialSPLclIndex);
     }
     else

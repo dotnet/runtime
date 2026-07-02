@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -156,7 +157,7 @@ namespace ILCompiler.ObjectWriter
                 _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
             };
         }
- 
+
         private void WriteSignatureIndexForFunction(MethodSignature managedSignature, WasmLowering.LoweringFlags flags, ISymbolNode node)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
@@ -556,7 +557,7 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<string, WasmGlobal> _definedGlobals = new();
 
         // TODO-Wasm: In the future, we may want to consider representing Wasm globals in the dependency graph so that they
-        // can be referenced by other nodes and we can make effective use of them.  
+        // can be referenced by other nodes and we can make effective use of them.
         private void WriteGlobal(SectionWriter writer, string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
         {
             WasmGlobal global = new WasmGlobal(
@@ -767,7 +768,7 @@ namespace ILCompiler.ObjectWriter
             WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, new Utf8String("webcilPayload"),
                 WasmDataSectionType.Passive, null);
 
-            // Create combined data section and emit 
+            // Create combined data section and emit
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.Emit(outputFileStream);
 #endif
@@ -872,6 +873,26 @@ namespace ILCompiler.ObjectWriter
                     throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
                 }
 
+                if (reloc.Type == RelocType.WASM_GLOBAL_INDEX_LEB)
+                {
+                    // The JIT references the well-known wasm globals (stack pointer / image base /
+                    // table base) via WASM_GLOBAL_INDEX_LEB relocations against the WasmWellKnownGlobalSymbolNode.
+                    // For R2R these globals live at fixed indices supplied by the runtime loader, so we
+                    // self-resolve them here to the global indices defined in the WebCIL specification.
+                    if (!_globalSymbolNameToGlobalIndex.TryGetValue(reloc.SymbolName, out var globalIndex))
+                    {
+                        throw new NotImplementedException($"Unexpected global symbol: {reloc.SymbolName}");
+                    }
+
+                    fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
+                    {
+                        Relocation.WriteValue(reloc.Type, pData, (int)globalIndex);
+                        WriteRelocFromDataSpan(reloc, pData, sectionStart);
+                    }
+
+                    continue;
+                }
+
                 SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
 
                 // The virtual address of the relocation we are resolving
@@ -950,7 +971,7 @@ namespace ILCompiler.ObjectWriter
                             //  i32.const <reloc>
                             //  i32.add
                             //  i32.load 0
-                            // So, the relocated address value should always represent an offset relative to image base. 
+                            // So, the relocated address value should always represent an offset relative to image base.
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
                             if (symbolWebcilSection is null)
@@ -966,7 +987,7 @@ namespace ILCompiler.ObjectWriter
                             // These relocs should be for cases of the form:
                             //  global.get $imageBase
                             //  i32.load <reloc>
-                            // So, the relocated address value should always represent an offset relative to image base. 
+                            // So, the relocated address value should always represent an offset relative to image base.
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
                             if (symbolWebcilSection is null)
@@ -1040,6 +1061,12 @@ namespace ILCompiler.ObjectWriter
         private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
             new([]),
             new([]));
+
+        private static readonly FrozenDictionary<Utf8String, int> _globalSymbolNameToGlobalIndex = FrozenDictionary.Create<Utf8String, int>([
+            new(new(WasmWellKnownGlobalSymbolNode.StackPointerName), StackPointerGlobalIndex),
+            new(new(WasmWellKnownGlobalSymbolNode.ImageBaseName),    ImageBaseGlobalIndex),
+            new(new(WasmWellKnownGlobalSymbolNode.TableBaseName),    TableBaseGlobalIndex)
+        ]);
 
         private WasmImport[] CreateDefaultGlobalImports()
         {

@@ -1043,6 +1043,13 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
     return original_ICorJitInfo->getWasmLowering(structHnd);
 }
 
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    mcs->AddCall("getWasmWellKnownGlobals");
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {

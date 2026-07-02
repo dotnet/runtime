@@ -83,6 +83,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ExternSymbolNode.cs" Link="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\GVMDependenciesNode.cs" Link="Compiler\DependencyAnalysis\GVMDependenciesNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodBodyNode.cs" Link="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
@@ -105,6 +106,8 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs" Link="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmTypeNode.cs" Link="Compiler\DependencyAnalysis\WasmTypeNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" Link="Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" Link="Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
