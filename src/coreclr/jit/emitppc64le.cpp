@@ -282,16 +282,65 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             assert(isFloatReg(reg1));
             assert(size == EA_8BYTE);
             break;
+	case INS_lea:
+	           // Load Effective Address - pseudo-instruction
+	           // On PPC64LE, this is implemented as addi (add immediate)
+	           // Used for computing addresses: addi targetReg, baseReg, offset
+	           assert(isGeneralRegister(reg1));
+	           // Size can be EA_4BYTE, EA_8BYTE, or EA_BYREF (EA_PTRSIZE)
+	           assert((size == EA_4BYTE) || (size == EA_8BYTE) || (size == EA_BYREF));
+	           // Convert INS_lea to INS_addi for actual emission
+	           ins = INS_addi;
+	           break;
+
 	case INS_addi:
-            // Add immediate - D-form instruction
-            // Used for computing addresses: addi targetReg, baseReg, offset
-            assert(isGeneralRegister(reg1));
-            // Size can be EA_4BYTE or EA_8BYTE (EA_PTRSIZE)
-            assert((size == EA_4BYTE) || (size == EA_8BYTE));
-            break;
-        default:
-            NYI("emitIns_R_S");
-            return;
+	           // Add immediate - D-form instruction
+	           // Used for computing addresses: addi targetReg, baseReg, offset
+	           assert(isGeneralRegister(reg1));
+	           // Size can be EA_4BYTE or EA_8BYTE (EA_PTRSIZE)
+	           assert((size == EA_4BYTE) || (size == EA_8BYTE));
+	           break;
+
+	       case INS_stb:
+	           // Store byte - D-form instruction
+	           assert(isGeneralRegister(reg1));
+	           assert(size == EA_1BYTE);
+	           break;
+
+	       case INS_sth:
+	           // Store halfword - D-form instruction
+	           assert(isGeneralRegister(reg1));
+	           assert(size == EA_2BYTE);
+	           break;
+
+	       case INS_stw:
+	           // Store word - D-form instruction
+	           assert(isGeneralRegister(reg1));
+	           assert(size == EA_4BYTE);
+	           break;
+
+	       case INS_std:
+	           // Store doubleword - DS-form instruction (must be 4-byte aligned)
+	           assert(isGeneralRegister(reg1));
+	           assert(size == EA_8BYTE);
+	           assert((imm & 0x3) == 0);
+	           break;
+
+	       case INS_stfs:
+	           // Store floating-point single - D-form instruction
+	           assert(isFloatReg(reg1));
+	           assert(size == EA_4BYTE);
+	           break;
+
+	       case INS_stfd:
+	           // Store floating-point double - D-form instruction
+	           assert(isFloatReg(reg1));
+	           assert(size == EA_8BYTE);
+	           break;
+
+	       default:
+	           NYI("emitIns_R_S");
+	           return;
     }
 
     // Validate immediate range for the selected instruction form.
@@ -2249,7 +2298,9 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     switch (ins)
     {
         case INS_b:
+        case INS_bl:
             // Unconditional branch - I-form (24-bit signed offset)
+            // INS_b: branch, INS_bl: branch and link
             fmt = IF_NONE; // Will be updated when instruction formats are fully defined
             break;
 
@@ -2413,13 +2464,6 @@ void emitter::emitDispIns(
             printf("r%d, %d(r%d)", id->idReg1(), (int)emitGetInsSC(id), id->idReg2());
             break;
             
-        case INS_stfs:
-        case INS_lfs:
-        case INS_stfd:
-        case INS_lfd:
-            printf("f%d, %d(r%d)", id->idReg1() - REG_F0, (int)emitGetInsSC(id), id->idReg2());
-            break;
-            
         case INS_cmpwi:
             printf("cr0, r%d, %d", id->idReg1(), (int)emitGetInsSC(id));
             break;
@@ -2440,7 +2484,6 @@ void emitter::emitDispIns(
             
         case INS_mflr:
         case INS_mtlr:
-        case INS_mtctr:
             printf("r%d", id->idReg1());
             break;
             
@@ -2456,7 +2499,6 @@ void emitter::emitDispIns(
             break;
             
         case INS_blr:
-        case INS_bctrl:
         case INS_nop:
         case INS_hwsync:
         case INS_lwsync:
