@@ -68,11 +68,17 @@ steps:
       name="${REPO#*/}"
 
       refs="$(mktemp)"
-      grep -rEnI "${owner}/${name}/issues/[0-9]+" $DIRS --include=*.cs 2>/dev/null \
-        | awk -v pat="${owner}/${name}/issues/" '
-            { split($0, a, ":"); path=a[1]; lineno=a[2];
-              n=$0; sub(".*" pat, "", n); sub(/[^0-9].*/, "", n);
-              if (n != "") print n "\t" path ":" lineno }' > "$refs"
+      raw="$(mktemp)"
+      # -o prints every issue URL on its own line (multiple per source line), each
+      # prefixed path:lineno:, so lines referencing several issues are all captured.
+      # grep exits 1 when there are no matches, which is not an error here.
+      grep -rEnoI "${owner}/${name}/issues/[0-9]+" $DIRS --include=*.cs 2>/dev/null > "$raw" \
+        || { rc=$?; [ "$rc" -eq 1 ] || exit "$rc"; }
+      awk -v pat="${owner}/${name}/issues/" '
+          { split($0, a, ":"); path=a[1]; lineno=a[2];
+            n=$0; sub(".*" pat, "", n); sub(/[^0-9].*/, "", n);
+            if (n != "") print n "\t" path ":" lineno }' "$raw" > "$refs"
+      rm -f "$raw"
 
       nums_file="$(mktemp)"
       cut -f1 "$refs" | sort -un > "$nums_file"
@@ -83,8 +89,17 @@ steps:
         local parts="$1"
         [ -z "$parts" ] && return 0
         local q="query{repository(owner:\"$owner\",name:\"$name\"){ ${parts} }}"
-        gh api graphql -f query="$q" 2>/dev/null \
-          | jq -c '.data.repository | to_entries[] | select(.value!=null) | .value' >> "$states" || true
+        # gh api graphql exits non-zero when an aliased issue(number:) points at a
+        # non-issue (e.g. a PR number) even though the other aliases resolve fine,
+        # so tolerate that but fail loudly on real API errors (auth/rate-limit/
+        # transient) that would otherwise yield an empty set and a false "none".
+        local resp
+        resp="$(gh api graphql -f query="$q" 2>/dev/null || true)"
+        if ! printf '%s' "$resp" | jq -e '.data.repository' >/dev/null 2>&1; then
+          echo "scan: GitHub GraphQL returned no repository data (auth/rate-limit/transient); aborting to avoid false negatives" >&2
+          exit 1
+        fi
+        printf '%s' "$resp" | jq -c '.data.repository | to_entries[] | select(.value!=null) | .value' >> "$states"
       }
       parts=""; cnt=0
       while read -r n; do
