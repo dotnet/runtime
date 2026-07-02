@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  eval:
+  pat_pool:
     if: >-
       github.repository == 'dotnet/runtime' &&
       github.event.issue.pull_request &&
@@ -26,6 +26,67 @@ jobs:
         startsWith(github.event.comment.body, '/ci-eval')
       )
     runs-on: ubuntu-latest
+    outputs:
+      pat_number: ${{ steps.select-pat-number.outputs.copilot_pat_number }}
+    steps:
+      - name: Select Copilot token from pool
+        id: select-pat-number
+        env:
+          COPILOT_PAT_0: ${{ secrets.COPILOT_PAT_0 }}
+          COPILOT_PAT_1: ${{ secrets.COPILOT_PAT_1 }}
+          COPILOT_PAT_2: ${{ secrets.COPILOT_PAT_2 }}
+          COPILOT_PAT_3: ${{ secrets.COPILOT_PAT_3 }}
+          COPILOT_PAT_4: ${{ secrets.COPILOT_PAT_4 }}
+          COPILOT_PAT_5: ${{ secrets.COPILOT_PAT_5 }}
+          COPILOT_PAT_6: ${{ secrets.COPILOT_PAT_6 }}
+          COPILOT_PAT_7: ${{ secrets.COPILOT_PAT_7 }}
+          COPILOT_PAT_8: ${{ secrets.COPILOT_PAT_8 }}
+          COPILOT_PAT_9: ${{ secrets.COPILOT_PAT_9 }}
+        run: |
+          PAT_NUMBERS=()
+          for i in $(seq 0 9); do
+            var="COPILOT_PAT_${i}"
+            if [ -n "${!var}" ]; then
+              PAT_NUMBERS+=("${i}")
+            fi
+          done
+          if [ ${#PAT_NUMBERS[@]} -eq 0 ]; then
+            echo "::notice::No PAT pool entries set — falling back to COPILOT_GITHUB_TOKEN."
+            exit 0
+          fi
+          PAT_INDEX=$(( RANDOM % ${#PAT_NUMBERS[@]} ))
+          PAT_NUMBER="${PAT_NUMBERS[$PAT_INDEX]}"
+          echo "Selected COPILOT_PAT_${PAT_NUMBER} from a pool of ${#PAT_NUMBERS[@]}."
+          echo "copilot_pat_number=${PAT_NUMBER}" >> "$GITHUB_OUTPUT"
+
+  eval:
+    needs: pat_pool
+    if: >-
+      github.repository == 'dotnet/runtime' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      (
+        startsWith(github.event.comment.body, '/ci-scan eval') ||
+        startsWith(github.event.comment.body, '/ci-fix eval') ||
+        startsWith(github.event.comment.body, '/ci-feedback eval') ||
+        startsWith(github.event.comment.body, '/ci-eval')
+      )
+    runs-on: ubuntu-latest
+    env:
+      COPILOT_GITHUB_TOKEN: >-
+        ${{
+          needs.pat_pool.outputs.pat_number == '0' && secrets.COPILOT_PAT_0 ||
+          needs.pat_pool.outputs.pat_number == '1' && secrets.COPILOT_PAT_1 ||
+          needs.pat_pool.outputs.pat_number == '2' && secrets.COPILOT_PAT_2 ||
+          needs.pat_pool.outputs.pat_number == '3' && secrets.COPILOT_PAT_3 ||
+          needs.pat_pool.outputs.pat_number == '4' && secrets.COPILOT_PAT_4 ||
+          needs.pat_pool.outputs.pat_number == '5' && secrets.COPILOT_PAT_5 ||
+          needs.pat_pool.outputs.pat_number == '6' && secrets.COPILOT_PAT_6 ||
+          needs.pat_pool.outputs.pat_number == '7' && secrets.COPILOT_PAT_7 ||
+          needs.pat_pool.outputs.pat_number == '8' && secrets.COPILOT_PAT_8 ||
+          needs.pat_pool.outputs.pat_number == '9' && secrets.COPILOT_PAT_9 ||
+          secrets.COPILOT_GITHUB_TOKEN
+        }}
     steps:
       - name: Acknowledge the command
         uses: actions/github-script@v7
@@ -74,9 +135,9 @@ jobs:
       - name: Guard on eval token
         id: guard
         run: |
-          if [ -z "${{ secrets.COPILOT_GITHUB_TOKEN }}" ]; then
+          if [ -z "$COPILOT_GITHUB_TOKEN" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::COPILOT_GITHUB_TOKEN not set — skipping the Vally eval run."
+            echo "::notice::No Copilot token available (COPILOT_PAT_* / COPILOT_GITHUB_TOKEN) — skipping the Vally eval run."
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
@@ -84,8 +145,6 @@ jobs:
       - name: Run the eval(s)
         if: steps.guard.outputs.run == 'true'
         id: run
-        env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
           : > report.md
           rc=0
