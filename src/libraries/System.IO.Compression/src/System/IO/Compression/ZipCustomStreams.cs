@@ -466,7 +466,12 @@ namespace System.IO.Compression
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _baseStream?.FlushAsync(cancellationToken) ?? Task.CompletedTask;
+            Task? task = _baseStream?.FlushAsync(cancellationToken);
+            if (task is not null)
+            {
+                return task;
+            }
+            return Task.CompletedTask;
         }
 
         protected override void Dispose(bool disposing)
