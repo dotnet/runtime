@@ -43,8 +43,8 @@ namespace System.Globalization
         // Every cell is array of 512 character for uppercasing mapping.
         private static readonly ushort[]?[] s_casingTable = InitCasingTable();
 
-        // s_lowerBasicLatin is covering the lower casing for the Basic Latin & C0 Controls range.
-        // we are not lazy initializing this range because it is the most common used range and we'll cache it anyway very early.
+        // s_lowerBasicLatin covers the lower casing for the Basic Latin & C0 Controls range.
+        // We don't lazily initialize this range because it is the most commonly used range and we'll cache it anyway very early.
         private static readonly ushort[] s_lowerBasicLatin =
         [
             // Lower Casing

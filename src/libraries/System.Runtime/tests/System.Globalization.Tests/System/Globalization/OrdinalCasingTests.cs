@@ -110,10 +110,10 @@ namespace System.Globalization.Tests
 
         // ToLowerOrdinal must stay consistent with OrdinalIgnoreCase: a character is always
         // OrdinalIgnoreCase-equal to its ordinal lower-cased form. This guards the special handling that keeps
-        // characters whose simple lower mapping would leave their class unchanged (for example the Kelvin, Ohm
-        // and Angstrom signs) instead of folding them into a character of a different class.
+        // characters unchanged when their simple lower mapping would move them out of their ordinal upper-casing
+        // equivalence class (for example the Kelvin, Ohm, and Angstrom signs) instead of folding them into a different class.
         [Fact]
-        public void ToLowerOrdinal_EveryBmpChar_IsOrdinalIgnoreCaseEqualToItself()
+        public void ToLowerOrdinal_EveryBmpChar_IsOrdinalIgnoreCaseEqualToItsFold()
         {
             for (int c = 0; c <= 0xFFFF; c++)
             {
