@@ -245,13 +245,27 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Completes the box with a result.</summary>
             /// <param name="result">The result.</param>
-            public void SetResult(TResult result) =>
+            public void SetResult(TResult result)
+            {
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                {
+                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
+                }
+
                 _valueTaskSource.SetResult(result);
+            }
 
             /// <summary>Completes the box with an error.</summary>
             /// <param name="error">The exception.</param>
-            public void SetException(Exception error) =>
+            public void SetException(Exception error)
+            {
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                {
+                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(this, AsyncInstrumentation.ActiveFlags);
+                }
+
                 _valueTaskSource.SetException(error);
+            }
 
             /// <summary>Gets the status of the box.</summary>
             public ValueTaskSourceStatus GetStatus(short token) => _valueTaskSource.GetStatus(token);
@@ -401,6 +415,11 @@ namespace System.Runtime.CompilerServices
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                {
+                    AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
+                }
+
                 ExecutionContext? context = Context;
 
                 if (context == ExecutionContext.DefaultFlowSuppressed)
@@ -440,16 +459,32 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
+            /// <summary>Gets the state machine as a boxed object. This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
 
             bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
             {
-                // TODO-AsyncProfiler: Implement when pooling async builders are fully supported in AsyncProfiler.
+                if (AsyncStateMachineDispatcherInfo.InstrumentCheckPoint)
+                {
+                    methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
+                    state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);
+                    nextContinuation = ContinuationForDiagnostics;
+                    return true;
+                }
+
                 methodId = 0;
                 state = -1;
                 nextContinuation = null;
                 return false;
+            }
+
+            private object? ContinuationForDiagnostics
+            {
+                get
+                {
+                    object? continuation = _valueTaskSource.ContinuationForDiagnostics;
+                    return ReferenceEquals(continuation, this) ? null : continuation;
+                }
             }
         }
     }

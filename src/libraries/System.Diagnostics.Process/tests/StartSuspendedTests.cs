@@ -180,7 +180,7 @@ namespace System.Diagnostics.Tests
     public class StartSuspendedTests_NonWindowsNonMacOS : ProcessTestBase
     {
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.OSX, "Resume is supported on Windows and macOS")]
+        [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Resume is supported on Windows and macOS, and SafeProcessHandle.Open is not supported on iOS and tvOS")]
         public void Resume_OnNonSupportedOS_ThrowsPlatformNotSupportedException()
         {
             using SafeProcessHandle handle = SafeProcessHandle.Open(Environment.ProcessId);

@@ -105,6 +105,18 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    // SIMD16 (Vector128) parameters are lowered to i32 in the wasm signature, so any
+    // v128 operation performed on them produces an invalid module (e.g. a v128 op with
+    // an i32 operand). Bail such methods to the interpreter until SIMD16 parameters are
+    // properly supported in the wasm calling convention.
+    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+    {
+        if (m_compiler->lvaGetDesc(lclNum)->TypeGet() == TYP_SIMD16)
+        {
+            NYI_WASM_SIMD("SIMD16 parameter");
+        }
+    }
+
     GetEmitter()->emitIns(INS_code_size);
 
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
@@ -138,7 +150,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     regNumber spReg = GetStackPointerReg(m_compiler->funCurrentFuncIdx());
     if (spReg == REG_NA)
     {
@@ -211,7 +223,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 //
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     if (!genUseBlockInit)
     {
         // Nothing to zero (genCheckUseBlockInit forces block-init for any non-empty range on wasm).
@@ -258,22 +270,6 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 //------------------------------------------------------------------------
 // genHomeRegisterParams: place register arguments into their RA-assigned locations.
 //
-// We can't actually do this task here because the prolog will overflow. Instead, we
-// do this later on and inject all the relevant code into the first basic block.
-// See genHomeRegisterParamsOutsideProlog, below.
-//
-// Arguments:
-//    initReg            - Unused
-//    initRegStillZeroed - Unused
-//
-void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
-{
-    // Intentionally empty
-}
-
-//------------------------------------------------------------------------
-// genHomeRegisterParamsOutsideProlog: place register arguments into their RA-assigned locations.
-//
 // For the WASM RA, we have a much simplified (compared to LSRA) contract of:
 // - If an argument is live on entry in a set of registers, then the RA will
 //   assign those registers to that argument on entry.
@@ -282,9 +278,14 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 // The main motivation for this (along with the obvious CQ implications) is
 // obviating the need to adapt the general "RegGraph"-based algorithm to
 // !HAS_FIXED_REGISTER_SET constraints (no reg masks).
-void CodeGen::genHomeRegisterParamsOutsideProlog()
+//
+// Arguments:
+//    initReg            - Unused
+//    initRegStillZeroed - Unused
+//
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 {
-    JITDUMP("*************** In genHomeRegisterParamsOutsideProlog()\n");
+    JITDUMP("*************** In genHomeRegisterParams()\n");
 
     auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
         assert(segment.IsPassedInRegister());
@@ -392,8 +393,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
-
 #ifdef DEBUG
     if (m_compiler->opts.dspCode)
         printf("\n__epilog:\n");
@@ -492,8 +491,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 //
 void CodeGen::genFuncletEpilog(BasicBlock* block)
 {
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
-
     if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
     {
         instGen(INS_end);
@@ -2748,8 +2745,15 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        var_types   type = tree->TypeGet();
-        instruction ins  = ins_Store(type);
+        var_types type = tree->TypeGet();
+        if (type == TYP_SIMD16)
+        {
+            // Storing a SIMD16 value emits v128.store, but the data operand is not
+            // materialized as a v128 (it comes through as an i32), producing an invalid
+            // module. Bail until SIMD16 store is properly supported.
+            NYI_WASM_SIMD("SIMD16 store indirect");
+        }
+        instruction ins = ins_Store(type);
 
         // TODO-WASM: Memory barriers
 
