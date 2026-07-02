@@ -1011,11 +1011,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
 
-            var diagnostics = result.NewCompilation.GetDiagnostics();
-            var expDiagnostics = diagnostics.Where(d => d.Id == "EXP_TEST");
-            Assert.Empty(expDiagnostics);
+            // Default validation asserts the post-generator compilation is warning/error-free, which is the
+            // real proof of suppression; the explicit check documents that EXP_TEST specifically is gone.
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            Assert.Empty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP_TEST"));
         }
 
         [Fact]
