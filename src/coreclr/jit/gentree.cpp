@@ -15174,6 +15174,10 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         // comparisons of two local variables can sometimes be folded
         return gtFoldExprCompare(tree);
     }
+    else if (tree->OperIs(GT_AND, GT_OR, GT_XOR))
+    {
+        return gtFoldAndOrXor(tree);
+    }
 
     return tree;
 }
@@ -15427,6 +15431,64 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     DISPTREE(cons);
 
     return cons;
+}
+
+//-----------------------------------------------------------------------------
+// gtFoldAndOrXor: Try various transformations on AND/OR/XOR tree
+//
+// Arguments:
+//     tree - The AND/OR/XOR tree
+//
+// Return Value:
+//     New tree if optimization was done, otherwise input tree.
+//
+GenTree* Compiler::gtFoldAndOrXor(GenTree* tree)
+{
+    assert(tree->OperIs(GT_AND, GT_OR, GT_XOR));
+
+    if (tree->OperIs(GT_OR))
+    {
+        // (x == 3) | (x > 3) -> x >= 3
+        // (x == 3) | (x < 3) -> x <= 3
+
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+
+        auto supportedOp = [](GenTree* op) {
+            return op->OperIsAnyLocal() || op->OperIsConst();
+        };
+        if (!supportedOp(op1->gtGetOp1()) || !supportedOp(op1->gtGetOp2()) || !supportedOp(op2->gtGetOp1()) ||
+            !supportedOp(op2->gtGetOp2()))
+        {
+            return tree;
+        }
+
+        if (!op1->OperIs(GT_EQ))
+        {
+            std::swap(op1, op2);
+        }
+
+        genTreeOps fusedCmp = GT_NONE;
+        if (op1->OperIs(GT_EQ))
+        {
+            if (op2->OperIs(GT_GT))
+            {
+                fusedCmp = GT_GE;
+            }
+            if (op2->OperIs(GT_LT))
+            {
+                fusedCmp = GT_LE;
+            }
+        }
+
+        if (fusedCmp != GT_NONE && GenTree::Compare(op1->gtGetOp2(), op2->gtGetOp2()) &&
+            GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
+        {
+            return gtNewOperNode(fusedCmp, tree->TypeGet(), op1->gtGetOp1(), op1->gtGetOp2());
+        }
+    }
+
+    return tree;
 }
 
 //------------------------------------------------------------------------
