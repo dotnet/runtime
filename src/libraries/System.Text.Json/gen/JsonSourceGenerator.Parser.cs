@@ -2332,6 +2332,21 @@ namespace System.Text.Json.SourceGeneration
                     // The generated code accesses this member's getter/setter, so suppress any [Experimental]
                     // diagnostic declared on the member itself (its type is covered by EnqueueType above).
                     AddExperimentalDiagnosticIds(memberInfo);
+
+                    // [Experimental] can also be applied directly to the accessor(s) the generated code invokes
+                    // (for example [get: Experimental(...)] / [set: Experimental(...)]).
+                    if (memberInfo is IPropertySymbol property)
+                    {
+                        if (canUseGetter)
+                        {
+                            AddExperimentalDiagnosticIds(property.GetMethod);
+                        }
+
+                        if (canUseSetter)
+                        {
+                            AddExperimentalDiagnosticIds(property.SetMethod);
+                        }
+                    }
                 }
 
                 return new PropertyGenerationSpec

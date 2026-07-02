@@ -1134,6 +1134,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void ExperimentalPropertyAccessor_IsSuppressed()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                public class WithExpAccessors
+                {
+                    public int GetterValue { [Experimental("EXP_GET_ACCESSOR")] get; set; }
+                    public int SetterValue { get; [Experimental("EXP_SET_ACCESSOR")] set; }
+                    public int UnusedSetterValue { get; [Experimental("EXP_UNUSED_SETTER")] private set; }
+                }
+
+                [JsonSerializable(typeof(WithExpAccessors))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            TypeGenerationSpec type = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "WithExpAccessors");
+            Assert.Equal(new[] { "EXP_GET_ACCESSOR", "EXP_SET_ACCESSOR" }, type.ExperimentalDiagnosticIds);
+            Assert.Equal(new[] { "EXP_GET_ACCESSOR", "EXP_SET_ACCESSOR" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+        }
+
+        [Fact]
         public void OptionsLevelExperimentalConverterTypeArgument_IsSuppressedInContextSources()
         {
             string source = """
