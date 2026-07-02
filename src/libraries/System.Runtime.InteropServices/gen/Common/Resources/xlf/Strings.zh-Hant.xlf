@@ -694,17 +694,17 @@
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription">
         <source>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</source>
-        <target state="new">Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</target>
+        <target state="translated">來源產生的 COM 介面屬性不支援 'static'、'extern'、'required' 或 'init' 修飾元/存取子。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceMessage">
         <source>The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</source>
-        <target state="new">The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</target>
+        <target state="translated">介面 '{1}' 上的屬性 '{0}' 使用 '{2}'，在來源產生的 COM 介面屬性上不支援</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceTitle">
         <source>Property uses an unsupported modifier or accessor for a source-generated COM interface</source>
-        <target state="new">Property uses an unsupported modifier or accessor for a source-generated COM interface</target>
+        <target state="translated">屬性針對來源產生的 COM 介面使用不支援的修飾元或存取子</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -849,17 +849,17 @@
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription">
         <source>Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</source>
-        <target state="new">Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</target>
+        <target state="translated">來源產生的 COM 介面的預設實作 (承載主體) 成員上的封送處理屬性 (例如 'MarshalUsing' 和 'MarshalAs') 沒有作用。預設實作是單純的受控程式碼，其會略過 COM 封送處理管線，且不會取得產生的虛設常式。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage">
         <source>The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</source>
-        <target state="new">The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</target>
+        <target state="translated">將忽略介面 '{1}' 上預設實作成員 '{0}' 上的封送處理屬性，因為預設實作不會產生 COM 封送處理程式碼</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle">
         <source>Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</source>
-        <target state="new">Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</target>
+        <target state="translated">來源產生的 COM 介面的預設實作成員上的封送處理屬性沒有作用</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
@@ -869,17 +869,17 @@
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription">
         <source>When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</source>
-        <target state="new">When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</target>
+        <target state="translated">將 'MarshalUsing' 套用至來源產生的 COM 介面屬性存取子 (透過 getter 上的 '[return: MarshalUsing(...)]' 或 setter 上的 '[param: MarshalUsing(...)]') 時，必須透過建構函式引數提供封送處理程式類型。只有數量或只有深度的形式 (在存取子上的 'MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)'，或 'MarshalUsing(ElementIndirectionDepth = ...)') 可能會無訊息地覆寫，或與屬性層級的 'MarshalUsing' 部分衝突。合併封送處理程式類型與存取子上單一 'MarshalUsing' 屬性的計數資訊。'ConstantElementCount' 和 'ElementIndirectionDepth' 也可以透過屬性層級的 'MarshalUsing' 提供; 但屬性或索引子存取子上不支援 'CountElementName'，因為在該內容中無法使用對等參數查詢。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage">
         <source>The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</source>
-        <target state="new">The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</target>
+        <target state="translated">介面 '{1}' 上屬性 '{0}' 的存取子上的 'MarshalUsing' 屬性必須指定封送處理程式類型。合併封送處理程式類型與存取子上單一 'MarshalUsing' 的計數，或在屬性宣告上指定 'ConstantElementCount' 或 'ElementIndirectionDepth'。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle">
         <source>'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</source>
-        <target state="new">'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</target>
+        <target state="translated">對來源產生的 COM 介面屬性存取子套用的 'MarshalUsing' 必須指定封送處理程式類型</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
@@ -1014,17 +1014,17 @@
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingDescription">
         <source>On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</source>
-        <target state="new">On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</target>
+        <target state="translated">在來源產生的 COM 介面上，屬性是完全抽象 (沒有存取子主體，被視為佔用 vtable 插槽的 COM 屬性) 或完全預設實作 (每個存取子有一個主體，被視為會略過 COM 封送處理的僅受控程式碼)。不支援在單一屬性內混合這兩個形式。</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingMessage">
         <source>The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</source>
-        <target state="new">The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</target>
+        <target state="translated">介面 '{1}' 上的屬性 '{0}' 混合抽象和預設實作的存取子。所有存取子都必須有主體，或均沒有主體。</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingTitle">
         <source>Property accessors on a source-generated COM interface must either all have bodies or none have bodies</source>
-        <target state="new">Property accessors on a source-generated COM interface must either all have bodies or none have bodies</target>
+        <target state="translated">來源產生的 COM 介面上的屬性存取子必須有主體或均沒有主體</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
