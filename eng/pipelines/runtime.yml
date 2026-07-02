@@ -976,6 +976,18 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_mac
+          alwaysRun: ${{ variables.isRollingBuild }}
+          runOnlyOnChromeVersionUpdate: true
+          shouldRunSmokeOnly: 'true'
+          nameSuffix: _SmokeMac
+          extraBuildArgs: /p:AotHostArchitecture=arm64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnChrome
+
       # WebAssembly CoreCLR
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
         parameters:
@@ -997,7 +1009,8 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnFirefox
-            - WasmTestOnV8
+            # ActiveIssue https://github.com/dotnet/runtime/issues/129849
+            # - WasmTestOnV8
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml

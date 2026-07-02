@@ -628,7 +628,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeThreadStaticIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" Link="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceDocumentsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceLineNumbersNode.cs" />

@@ -1761,8 +1761,8 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
 
     // Emit an entry for managed return value reporting, if needed.
     GenTreeCall* call = params.returnValueCall;
-    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || (m_compiler->genCallSite2DebugInfoMap == nullptr) ||
-        params.isJump)
+    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || !m_compiler->opts.compScopeInfo ||
+        (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
     {
         return;
     }
@@ -5740,8 +5740,10 @@ void CodeGen::genFnProlog()
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
-#ifndef TARGET_WASM // TODO-WASM: enable as needed.
+    // Save the generic context arg in the prolog so GetParamTypeArg can report it.
     genReportGenericContextArg(initReg, &initRegZeroed);
+
+#ifndef TARGET_WASM // TODO-WASM: enable as needed.
 
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.

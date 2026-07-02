@@ -192,24 +192,12 @@ namespace BinderTracingTests
             string subprocessName = Process.GetCurrentProcess().MainModule.FileName;
             var startInfo = new ProcessStartInfo(subprocessName, new[] { Assembly.GetExecutingAssembly().Location, method.Name })
             {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
+                UseShellExecute = false
             };
 
             Console.WriteLine($"[{DateTime.Now:T}] Launching process for {method.Name}...");
-            using (Process p = Process.Start(startInfo))
-            {
-                Console.WriteLine($"Started subprocess '{subprocessName}' with PID {p.Id} for {method.Name}...");
-                p.OutputDataReceived += (_, args) => Console.WriteLine(args.Data);
-                p.BeginOutputReadLine();
-
-                p.ErrorDataReceived += (_, args) => Console.Error.WriteLine(args.Data);
-                p.BeginErrorReadLine();
-
-                p.WaitForExit();
-                return p.ExitCode == 100;
-            }
+            ProcessExitStatus result = Process.Run(startInfo);
+            return result.ExitCode == 100;
         }
 
         private static void ValidateSingleBind(BinderEventListener listener, AssemblyName assemblyName, BindOperation expected)

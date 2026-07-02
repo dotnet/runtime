@@ -18,6 +18,7 @@ internal static class Entrypoints
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
         delegate* unmanaged<ulong, byte*, uint, void*, int> writeToTarget,
         delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
+        delegate* unmanaged<uint, uint, byte*, void*, int> writeThreadContext,
         delegate* unmanaged<uint, ulong*, void*, int> allocVirtual,
         void* delegateContext,
         IntPtr* handle)
@@ -52,6 +53,36 @@ internal static class Entrypoints
                 };
             }
 
+            // Build the setThreadContext delegate if the caller provided a callback
+            ContractDescriptorTarget.SetTargetThreadContextDelegate setThreadContextDelegate =
+                (uint threadId, ReadOnlySpan<byte> context) => HResults.E_NOTIMPL;
+
+            if (writeThreadContext != null)
+            {
+                setThreadContextDelegate = (uint threadId, ReadOnlySpan<byte> context) =>
+                {
+                    const nuint RequiredAlignment = 16;
+                    fixed (byte* contextPtr = context)
+                    {
+                        if (((nuint)contextPtr & (RequiredAlignment - 1)) == 0)
+                        {
+                            return writeThreadContext(threadId, (uint)context.Length, contextPtr, delegateContext);
+                        }
+
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, RequiredAlignment);
+                        try
+                        {
+                            context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                            return writeThreadContext(threadId, (uint)context.Length, alignedBuffer, delegateContext);
+                        }
+                        finally
+                        {
+                            NativeMemory.AlignedFree(alignedBuffer);
+                        }
+                    }
+                };
+            }
+
             // TODO: [cdac] Better error code/details
             if (!ContractDescriptorTarget.TryCreate(
                 descriptor,
@@ -80,6 +111,7 @@ internal static class Entrypoints
                         }
 
                         byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)buffer.Length, RequiredAlignment);
+                        NativeMemory.Clear(alignedBuffer, (nuint)buffer.Length);
                         try
                         {
                             int hr = readThreadContext(threadId, contextFlags, (uint)buffer.Length, alignedBuffer, delegateContext);
@@ -95,6 +127,7 @@ internal static class Entrypoints
                         }
                     }
                 },
+                setThreadContextDelegate,
                 allocDelegate,
                 [Contracts.CoreCLRContracts.Register],
                 out ContractDescriptorTarget? target))
@@ -311,6 +344,28 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = bufferToFill)
                 {
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                }
+            },
+            (threadId, context) =>
+            {
+                const nuint RequiredAlignment = 16;
+                fixed (byte* contextPtr = context)
+                {
+                    if (((nuint)contextPtr & (RequiredAlignment - 1)) == 0)
+                    {
+                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, contextPtr);
+                    }
+
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, RequiredAlignment);
+                    try
+                    {
+                        context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, alignedBuffer);
+                    }
+                    finally
+                    {
+                        NativeMemory.AlignedFree(alignedBuffer);
+                    }
                 }
             },
             allocVirtual,

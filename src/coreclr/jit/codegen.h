@@ -226,6 +226,7 @@ protected:
     void                       ensureCurrentFuncIsUnwindable();
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
+    void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -795,6 +796,9 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+#if defined(FEATURE_SIMD)
+    void genCodeForVectorConstant(GenTree* treeNode);
+#endif
     void genCatchArg(GenTree* treeNode);
 #endif
 
@@ -1018,6 +1022,12 @@ protected:
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
+    void genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg);
+
+#ifdef DEBUG
+    void checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg);
+#endif
+
     class HWIntrinsicImmOpHelper final
     {
     public:
@@ -1596,6 +1606,16 @@ public:
     };
 
     OperandDesc genOperandDesc(instruction ins, GenTree* op);
+
+#if defined(TARGET_XARCH)
+    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node,
+                             instruction         ins,
+                             emitAttr            attr,
+                             regNumber           reg,
+                             OperandDesc&        rmOpDesc,
+                             GenTree*            rmOp,
+                             insOpts             instOptions);
+#endif // TARGET_XARCH
 
     void inst_TT(instruction ins, emitAttr size, GenTree* op1);
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
