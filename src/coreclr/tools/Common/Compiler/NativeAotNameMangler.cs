@@ -129,6 +129,7 @@ namespace ILCompiler
         /// Dictionary given a mangled name for a given <see cref="TypeDesc"/>
         /// </summary>
         private Dictionary<TypeDesc, Utf8String> _mangledTypeNames = new Dictionary<TypeDesc, Utf8String>();
+        private Dictionary<string, Utf8String> _mangledAssemblyNames = new Dictionary<string, Utf8String>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Given a set of names <param name="set"/> check if <param name="origName"/>
@@ -195,6 +196,84 @@ namespace ILCompiler
             return Utf8String.Concat(EnterNameScopeSequence, name, ExitNameScopeSequence);
         }
 
+        private Utf8String GetMangledAssemblyName(EcmaAssembly assembly)
+        {
+            string assemblyName = assembly.GetName().Name;
+            lock (this)
+            {
+                if (_mangledAssemblyNames.TryGetValue(assemblyName, out Utf8String mangledName))
+                    return mangledName;
+
+                return ComputeMangledAssemblyName(assemblyName, (CompilerTypeSystemContext)assembly.Context);
+            }
+        }
+
+        private Utf8String ComputeMangledAssemblyName(string assemblyName, CompilerTypeSystemContext context)
+        {
+            lock (this)
+            {
+                if (!_mangledAssemblyNames.TryGetValue(assemblyName, out Utf8String name))
+                {
+                    var assemblies = new List<string>(context.InputFilePaths.Count + context.ReferenceFilePaths.Count + 1);
+                    var assemblySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    if (assemblySet.Add(assemblyName))
+                        assemblies.Add(assemblyName);
+                    foreach (string candidateAssemblyName in context.InputFilePaths.Keys)
+                    {
+                        if (assemblySet.Add(candidateAssemblyName))
+                            assemblies.Add(candidateAssemblyName);
+                    }
+                    foreach (string candidateAssemblyName in context.ReferenceFilePaths.Keys)
+                    {
+                        if (assemblySet.Add(candidateAssemblyName))
+                            assemblies.Add(candidateAssemblyName);
+                    }
+                    assemblies.Sort(CompareAssembliesForMangling);
+
+                    var deduplicator = new HashSet<Utf8String>();
+                    foreach (string candidateAssemblyName in assemblies)
+                    {
+                        if (_mangledAssemblyNames.TryGetValue(candidateAssemblyName, out Utf8String existingMangledName))
+                        {
+                            deduplicator.Add(existingMangledName);
+                            continue;
+                        }
+
+                        bool isSystemPrivate = IsSystemPrivateAssemblyName(candidateAssemblyName);
+                        string prefixAssemblyName = isSystemPrivate
+                            ? string.Concat("S.P.", candidateAssemblyName.AsSpan(15))
+                            : candidateAssemblyName;
+
+                        name = SanitizeName(new Utf8String(prefixAssemblyName));
+
+                        if (!isSystemPrivate)
+                            name = DisambiguateName(name, deduplicator);
+
+                        deduplicator.Add(name);
+                        _mangledAssemblyNames.Add(candidateAssemblyName, name);
+                    }
+
+                    name = _mangledAssemblyNames[assemblyName];
+                }
+                return name;
+            }
+
+            static int CompareAssembliesForMangling(string leftName, string rightName)
+            {
+                bool leftSystemPrivate = IsSystemPrivateAssemblyName(leftName);
+                bool rightSystemPrivate = IsSystemPrivateAssemblyName(rightName);
+                if (leftSystemPrivate != rightSystemPrivate)
+                    return leftSystemPrivate ? -1 : 1;
+
+                return string.CompareOrdinal(leftName, rightName);
+            }
+
+            static bool IsSystemPrivateAssemblyName(string assemblyName)
+            {
+                return assemblyName.StartsWith("System.Private.", StringComparison.Ordinal);
+            }
+        }
+
         /// <summary>
         /// If given <param name="type"/> is an <see cref="EcmaType"/> precompute its mangled type name
         /// along with all the other types from the same module as <param name="type"/>.
@@ -215,15 +294,7 @@ namespace ILCompiler
                     {
                         bool isSystemModule = ecmaType.Module == ecmaType.Context.SystemModule;
 
-                        string assemblyName = ((EcmaAssembly)ecmaType.Module).GetName().Name;
-                        bool isSystemPrivate = assemblyName.StartsWith("System.Private.");
-
-                        // Abbreviate System.Private to S.P. This might conflict with user defined assembly names,
-                        // but we already have a problem due to running SanitizeName without disambiguating the result
-                        // This problem needs a better fix.
-                        if (isSystemPrivate)
-                            assemblyName = string.Concat("S.P.", assemblyName.AsSpan(15));
-                        Utf8String prependAssemblyName = SanitizeName(new Utf8String(assemblyName));
+                        Utf8String prependAssemblyName = GetMangledAssemblyName((EcmaAssembly)ecmaType.Module);
 
                         var deduplicator = new HashSet<Utf8String>();
 
