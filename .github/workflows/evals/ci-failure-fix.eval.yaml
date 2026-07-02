@@ -69,6 +69,11 @@ stimuli:
           path: "out/decision.md"
           pattern: '\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported'
 
+      - type: file-not-matches
+        config:
+          path: "out/decision.md"
+          pattern: '(?is)Type:\s*create-pull-request.*Type:\s*add-comment|Type:\s*add-comment.*Type:\s*create-pull-request'
+
       - type: prompt
         name: fix-or-engages-owners
         config:

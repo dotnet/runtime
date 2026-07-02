@@ -57,7 +57,7 @@ stimuli:
       - type: file-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?im)^Labels:.*Known Build Error.*blocking-clean-ci'
+          pattern: '(?im)^Labels:\s*Known Build Error,\s*blocking-clean-ci(-optional)?\s*$'
 
       - type: file-matches
         config:
