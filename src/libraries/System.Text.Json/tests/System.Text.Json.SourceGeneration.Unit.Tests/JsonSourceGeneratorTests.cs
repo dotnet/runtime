@@ -1496,6 +1496,43 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void ReferencedExperimentalAttributeSymbolMismatch_IsSuppressed()
+        {
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedExperimentalPocoWithPolyfillCompilation();
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            string source = """
+                using ReferencedAssembly;
+                using System.Text.Json.Serialization;
+
+                namespace System.Diagnostics.CodeAnalysis
+                {
+                    [System.AttributeUsage(System.AttributeTargets.All)]
+                    public sealed class ExperimentalAttribute : System.Attribute
+                    {
+                        public ExperimentalAttribute(string diagnosticId) { DiagnosticId = diagnosticId; }
+                        public string DiagnosticId { get; }
+                        public string UrlFormat { get; set; } = "";
+                    }
+                }
+
+                #pragma warning disable EXP_TEST
+                [JsonSerializable(typeof(ExperimentalPocoFromLib))]
+                #pragma warning restore EXP_TEST
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+
+            TypeGenerationSpec poco = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "ExperimentalPocoFromLib");
+            Assert.Equal(new[] { "EXP_TEST" }, poco.ExperimentalDiagnosticIds);
+            Assert.Equal(new[] { "EXP_TEST" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+            Assert.Empty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP_TEST"));
+        }
+
+        [Fact]
         public void ExperimentalSuppression_DoesNotLeakToUserCode()
         {
             string source = """

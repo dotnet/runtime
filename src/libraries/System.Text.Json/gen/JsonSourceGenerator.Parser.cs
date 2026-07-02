@@ -113,106 +113,112 @@ namespace System.Text.Json.SourceGeneration
                 Debug.Assert(_optionsExperimentalIds.Count == 0);
                 Debug.Assert(_contextClassLocation is null);
 
-                INamedTypeSymbol? contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
-                Debug.Assert(contextTypeSymbol != null);
-
-                _contextClassLocation = contextTypeSymbol.GetLocation();
-                Debug.Assert(_contextClassLocation is not null);
-
-                if (!_knownSymbols.JsonSerializerContextType.IsAssignableFrom(contextTypeSymbol))
+                try
                 {
-                    ReportDiagnostic(DiagnosticDescriptors.JsonSerializableAttributeOnNonContextType, _contextClassLocation, contextTypeSymbol.ToDisplayString());
-                    return null;
+                    INamedTypeSymbol? contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
+                    Debug.Assert(contextTypeSymbol != null);
+
+                    _contextClassLocation = contextTypeSymbol.GetLocation();
+                    Debug.Assert(_contextClassLocation is not null);
+
+                    if (!_knownSymbols.JsonSerializerContextType.IsAssignableFrom(contextTypeSymbol))
+                    {
+                        ReportDiagnostic(DiagnosticDescriptors.JsonSerializableAttributeOnNonContextType, _contextClassLocation, contextTypeSymbol.ToDisplayString());
+                        return null;
+                    }
+
+                    // When a context class is split across multiple partial declarations with
+                    // [JsonSerializable] attributes on different partials, we only want to
+                    // generate code once (from the canonical partial) to avoid duplicate hintNames.
+                    if (!IsCanonicalPartialDeclaration(contextTypeSymbol, contextClassDeclaration))
+                    {
+                        return null;
+                    }
+
+                    ParseJsonSerializerContextAttributes(contextTypeSymbol,
+                        out List<TypeToGenerate>? rootSerializableTypes,
+                        out SourceGenerationOptionsSpec? options);
+
+                    if (rootSerializableTypes is null)
+                    {
+                        // No types were annotated with JsonSerializableAttribute.
+                        // Can only be reached if a [JsonSerializable(null)] declaration has been made.
+                        // Do not emit a diagnostic since a NRT warning will also be emitted.
+                        return null;
+                    }
+
+                    Debug.Assert(rootSerializableTypes.Count > 0);
+
+                    LanguageVersion? langVersion = _knownSymbols.Compilation.GetLanguageVersion();
+                    if (langVersion is null or < MinimumSupportedLanguageVersion)
+                    {
+                        // Unsupported lang version should be the first (and only) diagnostic emitted by the generator.
+                        ReportDiagnostic(DiagnosticDescriptors.JsonUnsupportedLanguageVersion, _contextClassLocation, langVersion?.ToDisplayString(), MinimumSupportedLanguageVersion.ToDisplayString());
+                        return null;
+                    }
+
+                    if (!TryGetNestedTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
+                    {
+                        // Class or one of its containing types is not partial so we can't add to it.
+                        ReportDiagnostic(DiagnosticDescriptors.ContextClassesMustBePartial, _contextClassLocation, contextTypeSymbol.Name);
+                        return null;
+                    }
+
+                    // Enqueue attribute data for spec generation
+                    foreach (TypeToGenerate rootSerializableType in rootSerializableTypes)
+                    {
+                        _typesToGenerate.Enqueue(rootSerializableType);
+                    }
+
+                    // Walk the transitive type graph generating specs for every encountered type.
+                    while (_typesToGenerate.Count > 0)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        TypeToGenerate typeToGenerate = _typesToGenerate.Dequeue();
+                        if (!_generatedTypes.ContainsKey(typeToGenerate.Type))
+                        {
+                            TypeGenerationSpec spec = ParseTypeGenerationSpec(typeToGenerate, contextTypeSymbol, options);
+                            _generatedTypes.Add(typeToGenerate.Type, spec);
+                        }
+                    }
+
+                    Debug.Assert(_generatedTypes.Count > 0);
+
+                    // The aggregate source files (root context + GetJsonTypeInfo) reference every registered type by
+                    // name, so they suppress the union of all per-type experimental IDs plus the options-level ones.
+                    HashSet<string> contextExperimentalIds = new(_optionsExperimentalIds, StringComparer.Ordinal);
+                    foreach (TypeGenerationSpec generatedType in _generatedTypes.Values)
+                    {
+                        foreach (string diagnosticId in generatedType.ExperimentalDiagnosticIds)
+                        {
+                            contextExperimentalIds.Add(diagnosticId);
+                        }
+                    }
+
+                    ContextGenerationSpec contextGenSpec = new()
+                    {
+                        ContextType = new(contextTypeSymbol),
+                        GeneratedTypes = _generatedTypes.Values.OrderBy(t => t.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
+                        Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
+                        ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
+                        GeneratedOptionsSpec = options,
+                        ExperimentalDiagnosticIds = contextExperimentalIds.Count == 0
+                            ? ImmutableEquatableArray<string>.Empty
+                            : contextExperimentalIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray(),
+                    };
+
+                    return contextGenSpec;
                 }
-
-                // When a context class is split across multiple partial declarations with
-                // [JsonSerializable] attributes on different partials, we only want to
-                // generate code once (from the canonical partial) to avoid duplicate hintNames.
-                if (!IsCanonicalPartialDeclaration(contextTypeSymbol, contextClassDeclaration))
+                finally
                 {
+                    // Parser instances are reused across context classes, so reset per-context state on all return paths.
+                    _generatedTypes.Clear();
+                    _typesToGenerate.Clear();
+                    _optionsExperimentalIds.Clear();
+                    _typeExperimentalIds.Clear();
+                    _currentExperimentalIds = _typeExperimentalIds;
                     _contextClassLocation = null;
-                    return null;
                 }
-
-                ParseJsonSerializerContextAttributes(contextTypeSymbol,
-                    out List<TypeToGenerate>? rootSerializableTypes,
-                    out SourceGenerationOptionsSpec? options);
-
-                if (rootSerializableTypes is null)
-                {
-                    // No types were annotated with JsonSerializableAttribute.
-                    // Can only be reached if a [JsonSerializable(null)] declaration has been made.
-                    // Do not emit a diagnostic since a NRT warning will also be emitted.
-                    return null;
-                }
-
-                Debug.Assert(rootSerializableTypes.Count > 0);
-
-                LanguageVersion? langVersion = _knownSymbols.Compilation.GetLanguageVersion();
-                if (langVersion is null or < MinimumSupportedLanguageVersion)
-                {
-                    // Unsupported lang version should be the first (and only) diagnostic emitted by the generator.
-                    ReportDiagnostic(DiagnosticDescriptors.JsonUnsupportedLanguageVersion, _contextClassLocation, langVersion?.ToDisplayString(), MinimumSupportedLanguageVersion.ToDisplayString());
-                    return null;
-                }
-
-                if (!TryGetNestedTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? classDeclarationList))
-                {
-                    // Class or one of its containing types is not partial so we can't add to it.
-                    ReportDiagnostic(DiagnosticDescriptors.ContextClassesMustBePartial, _contextClassLocation, contextTypeSymbol.Name);
-                    return null;
-                }
-
-                // Enqueue attribute data for spec generation
-                foreach (TypeToGenerate rootSerializableType in rootSerializableTypes)
-                {
-                    _typesToGenerate.Enqueue(rootSerializableType);
-                }
-
-                // Walk the transitive type graph generating specs for every encountered type.
-                while (_typesToGenerate.Count > 0)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    TypeToGenerate typeToGenerate = _typesToGenerate.Dequeue();
-                    if (!_generatedTypes.ContainsKey(typeToGenerate.Type))
-                    {
-                        TypeGenerationSpec spec = ParseTypeGenerationSpec(typeToGenerate, contextTypeSymbol, options);
-                        _generatedTypes.Add(typeToGenerate.Type, spec);
-                    }
-                }
-
-                Debug.Assert(_generatedTypes.Count > 0);
-
-                // The aggregate source files (root context + GetJsonTypeInfo) reference every registered type by
-                // name, so they suppress the union of all per-type experimental IDs plus the options-level ones.
-                HashSet<string> contextExperimentalIds = new(_optionsExperimentalIds, StringComparer.Ordinal);
-                foreach (TypeGenerationSpec generatedType in _generatedTypes.Values)
-                {
-                    foreach (string diagnosticId in generatedType.ExperimentalDiagnosticIds)
-                    {
-                        contextExperimentalIds.Add(diagnosticId);
-                    }
-                }
-
-                ContextGenerationSpec contextGenSpec = new()
-                {
-                    ContextType = new(contextTypeSymbol),
-                    GeneratedTypes = _generatedTypes.Values.OrderBy(t => t.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
-                    Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
-                    ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
-                    GeneratedOptionsSpec = options,
-                    ExperimentalDiagnosticIds = contextExperimentalIds.Count == 0
-                        ? ImmutableEquatableArray<string>.Empty
-                        : contextExperimentalIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray(),
-                };
-
-                // Clear the caches of generated metadata between the processing of context classes.
-                _generatedTypes.Clear();
-                _typesToGenerate.Clear();
-                _optionsExperimentalIds.Clear();
-                _typeExperimentalIds.Clear();
-                _contextClassLocation = null;
-                return contextGenSpec;
             }
 
             private static bool TryGetNestedTypeDeclarations(ClassDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)
@@ -289,7 +295,7 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private void AddExperimentalDiagnosticIds(ISymbol? symbol)
             {
-                if (symbol is null || _knownSymbols.ExperimentalAttributeType is null)
+                if (symbol is null)
                 {
                     return;
                 }
@@ -302,7 +308,7 @@ namespace System.Text.Json.SourceGeneration
 
                 foreach (AttributeData attributeData in symbol.GetAttributes())
                 {
-                    if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.ExperimentalAttributeType) &&
+                    if (IsExperimentalAttribute(attributeData.AttributeClass) &&
                         attributeData.ConstructorArguments.Length > 0 &&
                         attributeData.ConstructorArguments[0].Value is string diagnosticId &&
                         SyntaxFacts.IsValidIdentifier(diagnosticId))
@@ -331,6 +337,21 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
             }
+
+            private static bool IsExperimentalAttribute(INamedTypeSymbol? attributeClass)
+                => attributeClass is
+                {
+                    Name: "ExperimentalAttribute",
+                    ContainingNamespace:
+                    {
+                        Name: "CodeAnalysis",
+                        ContainingNamespace:
+                        {
+                            Name: "Diagnostics",
+                            ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true }
+                        }
+                    }
+                };
 
             private void ParseJsonSerializerContextAttributes(
                 INamedTypeSymbol contextClassSymbol,

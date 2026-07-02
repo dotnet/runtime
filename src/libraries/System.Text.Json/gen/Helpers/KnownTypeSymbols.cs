@@ -258,9 +258,6 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? SetsRequiredMembersAttributeType => GetOrResolveType("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", ref _SetsRequiredMembersAttributeType);
         private Option<INamedTypeSymbol?> _SetsRequiredMembersAttributeType;
 
-        public INamedTypeSymbol? ExperimentalAttributeType => GetOrResolveType("System.Diagnostics.CodeAnalysis.ExperimentalAttribute", ref _ExperimentalAttributeType);
-        private Option<INamedTypeSymbol?> _ExperimentalAttributeType;
-
         public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType);
         private Option<INamedTypeSymbol?> _UnsafeAccessorAttributeType;
 
