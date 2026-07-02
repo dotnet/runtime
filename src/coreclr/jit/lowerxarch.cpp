@@ -7771,11 +7771,11 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         else if (m_compiler->opts.Tier0OptimizationEnabled() && varTypeIsIntegral(castOp) &&
                  varTypeIsIntegral(castToType))
         {
-            // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
-            if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
-            {
-                srcIsContainable = true;
-            }
+            // Small-typed casts can always be re-expressed as memory loads at the cast's own
+            // extension direction; the load has a single use (containment implies it), so
+            // the load's own extension mode is irrelevant. This folds patterns like
+            // "movzx r, byte ptr [mem]; movsx r, r8" into a single "movsx r, byte ptr [mem]".
+            srcIsContainable = true;
         }
 
         if (srcIsContainable)
