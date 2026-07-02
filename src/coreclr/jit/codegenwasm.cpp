@@ -105,6 +105,18 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    // SIMD16 (Vector128) parameters are lowered to i32 in the wasm signature, so any
+    // v128 operation performed on them produces an invalid module (e.g. a v128 op with
+    // an i32 operand). Bail such methods to the interpreter until SIMD16 parameters are
+    // properly supported in the wasm calling convention.
+    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+    {
+        if (m_compiler->lvaGetDesc(lclNum)->TypeGet() == TYP_SIMD16)
+        {
+            NYI_WASM_SIMD("SIMD16 parameter");
+        }
+    }
+
     GetEmitter()->emitIns(INS_code_size);
 
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
@@ -350,6 +362,37 @@ void CodeGen::genHomeRegisterParamsOutsideProlog()
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// genReportGenericContextArg: spill the generic context (or "this") into its
+// GC-reportable frame slot in the prolog so the GC stack walk can locate it.
+// initReg / pInitRegZeroed are unused on wasm.
+//
+void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
+{
+    assert(m_compiler->compGeneratingProlog);
+
+    const bool reportArg  = m_compiler->lvaReportParamTypeArg();
+    const bool reportThis = m_compiler->lvaKeepAliveAndReportThis();
+    if (!reportArg && !reportThis)
+    {
+        return;
+    }
+
+    const unsigned contextArg = reportArg ? m_compiler->info.compTypeCtxtArg : m_compiler->info.compThisArg;
+    noway_assert(contextArg != BAD_VAR_NUM);
+
+    // The context arg is still in its incoming register at this point in the prolog.
+    const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(contextArg);
+    assert(abiInfo.HasExactlyOneRegisterSegment());
+    const regNumber reg = abiInfo.Segment(0).GetRegister();
+
+    // [FP + lvaCachedGenericContextArgOffset()] = contextArg
+    emitter* emit = GetEmitter();
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+    emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(reg));
+    emit->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaCachedGenericContextArgOffset());
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -2717,8 +2760,15 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        var_types   type = tree->TypeGet();
-        instruction ins  = ins_Store(type);
+        var_types type = tree->TypeGet();
+        if (type == TYP_SIMD16)
+        {
+            // Storing a SIMD16 value emits v128.store, but the data operand is not
+            // materialized as a v128 (it comes through as an i32), producing an invalid
+            // module. Bail until SIMD16 store is properly supported.
+            NYI_WASM_SIMD("SIMD16 store indirect");
+        }
+        instruction ins = ins_Store(type);
 
         // TODO-WASM: Memory barriers
 

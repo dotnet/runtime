@@ -3982,11 +3982,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero() && op1->IsTrueMask(node->GetSimdBaseType()) && op2->IsEmbMaskOp())
+                if (op3->IsVectorZero() && op2->IsEmbMaskOp())
                 {
-                    // When we are merging with zero, we can specialize
-                    // and avoid instantiating the vector constant.
-                    // Do this only if op1 was AllTrueMask
+                    // When we are merging with zero, we can specialize and avoid instantiating the vector constant.
                     switch (op2->AsHWIntrinsic()->GetHWIntrinsicId())
                     {
                         case NI_Sve2_AddPairwise:
@@ -3994,11 +3992,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_Sve2_MaxPairwise:
                         case NI_Sve2_MinNumberPairwise:
                         case NI_Sve2_MinPairwise:
-                            // This is an edge case where these instructions have unpredictable behaviour when
-                            // using predicated movprfx, so the unpredicated variant must be used here. This
-                            // prevents us from performing this optimization as we will need the constant vector
-                            // for masking the result.
-                            break;
+                        case NI_Sve2_ConvertToDoubleOdd:
+                        case NI_Sve2_ConvertToSingleOdd:
+                        case NI_Sve2_ConvertToSingleOddRoundToOdd:
+                            // This is an edge case where these instructions do not support predicated or any movprfx.
+                            if (!op1->IsTrueMask(node->GetSimdBaseType()))
+                            {
+                                // When op1 is not all-true, we will need the constant vector for masking the result.
+                                break;
+                            }
+                            FALLTHROUGH;
 
                         default:
                             MakeSrcContained(node, op3);
@@ -4083,6 +4086,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     MakeSrcContained(node, intrin.op4);
                     MakeSrcContained(node, intrin.op5);
+                }
+                break;
+
+            case NI_Sha3_XorRotateRight:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op3));
+                if (intrin.op3->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op3);
                 }
                 break;
 

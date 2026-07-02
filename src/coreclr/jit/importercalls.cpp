@@ -190,7 +190,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // to see any imperative security.
     // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
     // at the end, so tailcalls should be disabled.
-    // Async methods need to restore contexts, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
@@ -200,11 +199,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is Reverse P/Invoke";
-    }
-    else if (compIsAsync())
-    {
-        canTailCall             = false;
-        szCanTailCallFailReason = "Caller is async method";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -1209,6 +1203,18 @@ DONE:
         if (isExplicitTailCall && (stackState.esStackDepth != 0))
         {
             BADCODE("Stack should be empty after tailcall");
+        }
+
+        // Async methods need to restore contexts, so in general tailcalls
+        // should be disabled. The exception is a tail await: for those the JIT
+        // directly returns the callee's continuation to the caller and no
+        // context needs to be restored, so the async call can be turned into a
+        // real tail call. Any other tail call candidate in an async method
+        // must be disqualified.
+        if (canTailCall && compIsAsync() && (!call->AsCall()->IsAsync() || !call->AsCall()->GetAsyncInfo().IsTailAwait))
+        {
+            canTailCall             = false;
+            szCanTailCallFailReason = "Caller is async method and call is not a tail await";
         }
 
         // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
@@ -4314,7 +4320,21 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             // drop get_CurrentThread() call
                             impPopStack();
                             call->ReplaceWith(gtNewNothingNode(), this);
-                            retNode = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
+                            GenTreeCall* tidCall = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
+                            impConvertToUserCallAndMarkForInlining(tidCall);
+                            if (tidCall->IsInlineCandidate())
+                            {
+                                // The helper was converted into an inlinable user call; spill it to its own
+                                // statement and hand back a GT_RET_EXPR so the inliner can fold the property.
+                                impAppendTree(tidCall, CHECK_SPILL_ALL, impCurStmtDI, false);
+                                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(tidCall, TYP_INT);
+                                tidCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                                retNode                                          = retExpr;
+                            }
+                            else
+                            {
+                                retNode = tidCall;
+                            }
                         }
                     }
                 }

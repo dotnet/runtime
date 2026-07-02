@@ -66,9 +66,6 @@ public:
         bool fThrowEx);
 
 
-    // Check whether the version of the DBI matches the version of the runtime.
-    HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion);
-
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
 

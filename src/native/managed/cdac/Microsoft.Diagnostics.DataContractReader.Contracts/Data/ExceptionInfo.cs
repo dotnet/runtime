@@ -11,6 +11,8 @@ internal sealed partial class ExceptionInfo : IData<ExceptionInfo>
     [Field] public uint ExceptionFlags { get; }
     [Field] public TargetPointer StackLowBound { get; }
     [Field] public TargetPointer StackHighBound { get; }
+    [Field] public TargetPointer ExceptionRecord { get; }
+    [Field] public TargetPointer ContextRecord { get; }
 
     // Only present on Windows platforms
     [Field] public TargetPointer? ExceptionWatsonBucketTrackerBuckets { get; }

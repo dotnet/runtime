@@ -854,37 +854,6 @@ namespace Internal.JitInterface
             pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
         }
 
-        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
-        {
-            // Assume we can tail call unless proved otherwise
-            bool result = true;
-
-            if (!fIsTailPrefix)
-            {
-                MethodDesc caller = HandleToObject(callerHnd);
-
-                if (caller.OwningType is EcmaType ecmaOwningType
-                    && ecmaOwningType.Module.EntryPoint == caller)
-                {
-                    // Do not tailcall from the application entrypoint.
-                    // We want Main to be visible in stack traces.
-                    result = false;
-                }
-
-                if (caller.IsNoInlining)
-                {
-                    // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
-                    // to mean "I want to always see this method in stacktrace")
-                    //
-                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
-                    // to emit fast tail calls if optimizations are disabled.
-                    result = false;
-                }
-            }
-
-            return result;
-        }
-
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
             MethodIL methodIL = (MethodIL)HandleToObject((void*)module);
