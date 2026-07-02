@@ -596,7 +596,7 @@ namespace System.IO
                 if (statResult != 0)
                 {
                     Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                    if (error.Error == Interop.Error.ENOENT && RetryOnTransientPermissionFailure())
+                    if ((error.Error == Interop.Error.ENOENT || error.Error == Interop.Error.EACCES) && RetryOnTransientPermissionFailure())
                     {
                         continue;
                     }
