@@ -2217,6 +2217,11 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
     }
 
+    if (callInfo.IsValueTaskAsTask)
+    {
+        continuationFlags |= CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK;
+    }
+
     newContinuation      = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
     GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);

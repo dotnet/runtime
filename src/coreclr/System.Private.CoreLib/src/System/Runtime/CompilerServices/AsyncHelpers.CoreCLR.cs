@@ -22,6 +22,11 @@ namespace System.Runtime.CompilerServices
         ContinueOnThreadPool = 1 << 0,
         ContinueOnCapturedSynchronizationContext = 1 << 1,
         ContinueOnCapturedTaskScheduler = 1 << 2,
+        // This is an await of valueTask.AsTask() (e.g. valueTask.AsTask()
+        // returned from an async version). This flag affects how
+        // ValueTaskSourceContinuation handling computes the flags to pass to
+        // IValueTaskSource.OnCompleted.
+        ValueTaskAdaptedToTask = 1 << 3,
 
         AllContinuationFlags = ContinueOnThreadPool | ContinueOnCapturedSynchronizationContext | ContinueOnCapturedTaskScheduler,
 
@@ -30,20 +35,20 @@ namespace System.Runtime.CompilerServices
         // Otherwise the exact offset of the member is computed as
         //   DataOffset + (index - 1) * PointerSize
         //
-        ExecutionContextIndexFirstBit = 3,
+        ExecutionContextIndexFirstBit = 4,
         ExecutionContextIndexNumBits = 2,
 
-        ContinuationContextIndexFirstBit = 5,
+        ContinuationContextIndexFirstBit = 6,
         ContinuationContextIndexNumBits = 2,
 
-        ExceptionIndexFirstBit = 7,
+        ExceptionIndexFirstBit = 8,
         ExceptionIndexNumBits = 3,
 
         // For JIT, the continuation stores space for every possible type of
         // async callee's result. We need to represent the offset to each of
         // these, so we allocate the rest of the bits for this.
-        ResultIndexFirstBit = 10,
-        ResultIndexNumBits = 22,
+        ResultIndexFirstBit = 11,
+        ResultIndexNumBits = 21,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
@@ -825,7 +830,8 @@ namespace System.Runtime.CompilerServices
                         // the direct AsyncHelpers.Await(ValueTask/ValueTask<T>) path.
                         // In either case, that can only happen in nontransparent/user code.
                         Continuation contWithContinueFlags = valueTaskSourceCont;
-                        while ((contWithContinueFlags.Flags & ContinuationFlags.AllContinuationFlags) == 0 && contWithContinueFlags.Next != null)
+                        while ((contWithContinueFlags.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0 &&
+                               contWithContinueFlags.Next != null)
                         {
                             contWithContinueFlags = contWithContinueFlags.Next;
                         }
