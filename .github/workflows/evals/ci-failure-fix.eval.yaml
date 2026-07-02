@@ -2,8 +2,8 @@ name: ci-failure-fix-eval
 description: Quality gate for the CI failure fixer prompt (maintainer /ci-fix eval).
 
 defaults:
-  judge_model: claude-opus-4.6
-  model: claude-opus-4.6
+  judge_model: claude-opus-4.8
+  model: claude-opus-4.8
   runs: 1
   timeout: 12m
 

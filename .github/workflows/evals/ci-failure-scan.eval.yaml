@@ -2,8 +2,8 @@ name: ci-failure-scan-eval
 description: Quality gate for the CI failure scanner prompt (maintainer /ci-scan eval).
 
 defaults:
-  judge_model: claude-opus-4.6
-  model: claude-opus-4.6
+  judge_model: claude-opus-4.8
+  model: claude-opus-4.8
   runs: 1
   timeout: 12m
 
