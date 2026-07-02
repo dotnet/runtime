@@ -603,8 +603,6 @@ JNIEnv* GetJNIEnv(void);
 // APIs in this library.
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved);
 
-int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
-
 void* xmalloc (size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1) __wur;
 void* xcalloc (size_t nmemb, size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1,2) __wur;
 
