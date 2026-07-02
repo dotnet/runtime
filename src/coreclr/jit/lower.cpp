@@ -2559,7 +2559,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             }
             else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
+                // We need AVX2 for TYP_SIMD32 based op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
             else
