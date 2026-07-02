@@ -1093,6 +1093,41 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Equal(new[] { "EXP_OPTIONS" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
         }
 
+        [Fact]
+        public void MalformedExperimentalDiagnosticIds_AreNotEmitted()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP_VALID")]
+                public class ValidExperimentalType { public int Value { get; set; } }
+
+                [Experimental("EXP_BAD\n#error INJECTED_FROM_EXPERIMENTAL_ID")]
+                public class MalformedExperimentalType { public int Value { get; set; } }
+
+                public class MyPoco
+                {
+                    #pragma warning disable EXP_VALID
+                    public ValidExperimentalType Valid { get; set; }
+                    #pragma warning restore EXP_VALID
+                    public MalformedExperimentalType Malformed { get; set; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger, disableDiagnosticValidation: true);
+
+            TypeGenerationSpec myPoco = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "MyPoco");
+            Assert.Equal(new[] { "EXP_VALID" }, myPoco.ExperimentalDiagnosticIds);
+            Assert.Equal(new[] { "EXP_VALID" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+            Assert.Empty(result.NewCompilation.GetDiagnostics()
+                .Where(d => d.GetMessage().Contains("INJECTED_FROM_EXPERIMENTAL_ID", StringComparison.Ordinal)));
+        }
+
         public static IEnumerable<object[]> ExperimentalSuppressionSources()
         {
             // Experimental property member: the generated getter/setter is the sole usage.

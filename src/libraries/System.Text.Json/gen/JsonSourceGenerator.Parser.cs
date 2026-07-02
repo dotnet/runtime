@@ -305,9 +305,10 @@ namespace System.Text.Json.SourceGeneration
                     if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.ExperimentalAttributeType) &&
                         attributeData.ConstructorArguments.Length > 0 &&
                         attributeData.ConstructorArguments[0].Value is string diagnosticId &&
-                        diagnosticId.Length > 0)
+                        SyntaxFacts.IsValidIdentifier(diagnosticId))
                     {
                         // ExperimentalAttribute.DiagnosticId is the first (required) constructor argument.
+                        // Only identifiers are safe to emit into #pragma warning disable directives.
                         _currentExperimentalIds.Add(diagnosticId);
                     }
                 }
