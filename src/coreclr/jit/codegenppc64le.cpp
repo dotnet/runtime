@@ -122,12 +122,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
         case GT_CNS_DBL:
         {
-            JITDUMP("[PPC64LE CNS_DBL] Starting GT_CNS_DBL code generation\n");
             emitter* emit       = GetEmitter();
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
-            JITDUMP("[PPC64LE CNS_DBL] constValue=%f, size=%d, targetReg=%s\n",
-                    constValue, size, getRegName(targetReg));
 
             // For PPC64LE, we load floating-point constants via GPR and stack
             // Get the bit representation of the double/float value
@@ -144,8 +141,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 gprSize = EA_4BYTE;
                 storeIns = INS_stw;
                 loadIns = INS_lfs;
-                JITDUMP("[PPC64LE CNS_DBL] Float: bits=0x%08X, storeIns=stw, loadIns=lfs\n",
-                        (unsigned)constValueBits);
             }
             else
             {
@@ -154,38 +149,26 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 gprSize = EA_8BYTE;
                 storeIns = INS_std;
                 loadIns = INS_lfd;
-                JITDUMP("[PPC64LE CNS_DBL] Double: bits=0x%016llX, storeIns=std, loadIns=lfd\n",
-                        (unsigned long long)constValueBits);
             }
             
             // Get a temp integer register to hold the constant bits
             regNumber tempReg = internalRegisters.GetSingle(tree);
-            JITDUMP("[PPC64LE CNS_DBL] tempReg=%s\n", getRegName(tempReg));
             
             // Load the constant bit pattern into the temp GPR
             instGen_Set_Reg_To_Imm(gprSize, tempReg, constValueBits);
-            JITDUMP("[PPC64LE CNS_DBL] Loaded constant bits into tempReg\n");
             
             // For PPC64LE, we need to transfer the value via stack
             // Use the top of the local frame (genTotalFrameSize() - 16) for temporary storage
             // This ensures we don't overwrite the linkage area or parameter save area
             int offset = genTotalFrameSize() - 16;
-            JITDUMP("[PPC64LE CNS_DBL] Stack offset=%d, frameSize=%d\n", offset, genTotalFrameSize());
             
             // Store the GPR value to the temporary stack location
-            JITDUMP("[PPC64LE CNS_DBL] About to emit store: ins=%d %s, %d(r1)\n",
-                    storeIns, getRegName(tempReg), offset);
             emit->emitIns_R_R_I(storeIns, gprSize, tempReg, REG_SPBASE, offset);
-            JITDUMP("[PPC64LE CNS_DBL] Store instruction emitted\n");
             
             // Load the floating-point value from the temporary stack location
-            JITDUMP("[PPC64LE CNS_DBL] About to emit load: ins=%d %s, %d(r1)\n",
-                    loadIns, getRegName(targetReg), offset);
             emit->emitIns_R_R_I(loadIns, size, targetReg, REG_SPBASE, offset);
-            JITDUMP("[PPC64LE CNS_DBL] Load instruction emitted\n");
             
             regSet.verifyRegUsed(targetReg);
-            JITDUMP("[PPC64LE CNS_DBL] Completed GT_CNS_DBL code generation\n");
         }
         break;
 
@@ -852,8 +835,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 {
                     storeIns = INS_stfs;  // Store single (4 bytes)
                 }
-                JITDUMP("genPutArgStk (non-struct): Float register detected, overriding instruction to %s for %s (slotType=%s, attr=%d)\n",
-                        genInsName(storeIns), getRegName(srcReg), varTypeName(slotType), (int)storeAttr);
+                printf("HFA DEBUG: genPutArgStk (non-struct) - Float register detected, overriding instruction to %s for %s (slotType=%s, attr=%d)\n",
+                       genInsName(storeIns), getRegName(srcReg), varTypeName(slotType), (int)storeAttr);
             }
             
             emit->emitIns_S_R(storeIns, storeAttr, srcReg, varNumOut, argOffsetOut);
@@ -963,8 +946,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 IsPpc64leHfaLikeStruct(compiler, structHnd, &hfaType, &hfaSlots))
             {
                 isHfa = true;
-                JITDUMP("genPutArgStk: Detected HFA struct, loReg=%s, hfaType=%s, hfaSlots=%u\n",
-                        getRegName(loReg), varTypeName(hfaType), hfaSlots);
+                printf("HFA DEBUG genPutArgStk: Detected HFA struct, loReg=%s, hfaType=%s, hfaSlots=%u\n",
+                       getRegName(loReg), varTypeName(hfaType), hfaSlots);
             }
             
             while (remainingSize >= TARGET_POINTER_SIZE)
@@ -1107,8 +1090,8 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
         {
             moveType = TYP_FLOAT;
         }
-        JITDUMP("[PPC64LE HFA DEBUG] genPutArgReg: Float registers detected, overriding type from %s to %s for %s -> %s\n",
-                varTypeName(targetType), varTypeName(moveType), getRegName(op1->GetRegNum()), getRegName(targetReg));
+        printf("HFA DEBUG: genPutArgReg - Float registers detected, overriding type from %s to %s for %s -> %s\n",
+               varTypeName(targetType), varTypeName(moveType), getRegName(op1->GetRegNum()), getRegName(targetReg));
     }
 
     // If child node is not already in the register we need, move it
@@ -1199,8 +1182,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 isHfaStruct = IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots);
                 if (isHfaStruct)
                 {
-                    JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: HFA struct detected (type=%s, contained=%d)\n",
-                            varTypeName(targetType), source->isContained());
+                    printf("HFA DEBUG: genPutArgSplit - HFA struct detected (type=%s, contained=%d)\n",
+                           varTypeName(targetType), source->isContained());
                 }
             }
         }
@@ -1236,7 +1219,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // 3. Can't use integer instructions with float registers
             if (isHfaStruct)
             {
-                JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: HFA struct, using custom float load/store\n");
+                printf("HFA DEBUG: genPutArgSplit - HFA struct, using custom float load/store\n");
                 
                 // Get HFA element type and size
                 layout = varDsc->GetLayout();
@@ -1258,8 +1241,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                     
                     GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), targetReg, srcLclNum, fieldOffset);
                     
-                    JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: Loaded HFA field %d from V%02u+%u to %s\n",
-                            i, srcLclNum, fieldOffset, getRegName(targetReg));
+                    printf("HFA DEBUG: genPutArgSplit - Loaded HFA field %d from V%02u+%u to %s\n",
+                           i, srcLclNum, fieldOffset, getRegName(targetReg));
                 }
                 
                 // Store remaining fields to stack
@@ -1279,8 +1262,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                         GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), tempReg, srcLclNum, fieldOffset);
                         GetEmitter()->emitIns_S_R(storeIns, emitActualTypeSize(hfaType), tempReg, varNumOut, stackOffset);
                         
-                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: Stored HFA field %d from V%02u+%u to stack+%u\n",
-                                treeNode->gtNumRegs + i, srcLclNum, fieldOffset, stackOffset);
+                        printf("HFA DEBUG: genPutArgSplit - Stored HFA field %d from V%02u+%u to stack+%u\n",
+                               treeNode->gtNumRegs + i, srcLclNum, fieldOffset, stackOffset);
                     }
                 }
                 
@@ -1363,8 +1346,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
             structOffset = treeNode->gtNumRegs * fieldSize;
             
-            JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit: HFA struct offset calculation: gtNumRegs=%u, fieldSize=%u, structOffset=%u, layoutSize=%u\n",
-                    treeNode->gtNumRegs, fieldSize, structOffset, layout->GetSize());
+            printf("HFA DEBUG: genPutArgSplit - HFA struct offset calculation: gtNumRegs=%u, fieldSize=%u, structOffset=%u, layoutSize=%u\n",
+                   treeNode->gtNumRegs, fieldSize, structOffset, layout->GetSize());
         }
         else
         {
@@ -1631,8 +1614,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                     {
                         ins = INS_stfs;  // Store single (4 bytes)
                     }
-                    JITDUMP("[PPC64LE HFA DEBUG] genCodeForStoreLclVar: HFA detected (element type %s), overriding instruction to %s for %s -> V%02u (original type=%s, attr=%d, hfaSlots=%u, lvIsParam=%d)\n",
-                            varTypeName(hfaType), genInsName(ins), getRegName(dataReg), varNum, varTypeName(targetType), (int)attr, hfaSlots, varDsc->lvIsParam);
+                    printf("HFA DEBUG: genCodeForStoreLclVar - HFA detected (element type %s), overriding instruction to %s for %s -> V%02u (original type=%s, attr=%d, hfaSlots=%u, lvIsParam=%d)\n",
+                           varTypeName(hfaType), genInsName(ins), getRegName(dataReg), varNum, varTypeName(targetType), (int)attr, hfaSlots, varDsc->lvIsParam);
                 }
             }
 
@@ -1728,8 +1711,8 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
         {
             // This is an HFA struct, use the HFA element type
             storeType = hfaType;
-            JITDUMP("[PPC64LE HFA DEBUG] genCodeForStoreLclFld: HFA detected, overriding store type from %s to %s for %s -> V%02u+%u (hfaSlots=%u, lvIsParam=%d)\n",
-                    varTypeName(targetType), varTypeName(storeType), getRegName(dataReg), varNum, offset, hfaSlots, varDsc->lvIsParam);
+            printf("HFA DEBUG: genCodeForStoreLclFld - HFA detected, overriding store type from %s to %s for %s -> V%02u+%u (hfaSlots=%u, lvIsParam=%d)\n",
+                   varTypeName(targetType), varTypeName(storeType), getRegName(dataReg), varNum, offset, hfaSlots, varDsc->lvIsParam);
         }
     }
 
@@ -2254,8 +2237,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     switch (blkOp->gtBlkOpKind)
     {
         case GenTreeBlk::BlkOpKindCpObjUnroll:
-            // CpObj with GC pointers - not yet implemented for PPC64LE
-            NYI_POWERPC64("genCodeForStoreBlk: BlkOpKindCpObjUnroll");
+            assert(!blkOp->gtBlkOpGcUnsafe);
+            genCodeForCpObj(blkOp->AsBlk());
             break;
 
         case GenTreeBlk::BlkOpKindLoop:
@@ -2341,8 +2324,8 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
         {
             // This is an HFA struct, use the HFA element type
             loadType = hfaType;
-            JITDUMP("[PPC64LE HFA DEBUG] genCodeForLclFld: HFA detected, overriding load type from %s to %s for V%02u+%u -> %s (hfaSlots=%u, lvIsParam=%d)\n",
-                    varTypeName(targetType), varTypeName(loadType), varNum, offs, getRegName(targetReg), hfaSlots, varDsc->lvIsParam);
+            printf("HFA DEBUG: genCodeForLclFld - HFA detected, overriding load type from %s to %s for V%02u+%u -> %s (hfaSlots=%u, lvIsParam=%d)\n",
+                   varTypeName(targetType), varTypeName(loadType), varNum, offs, getRegName(targetReg), hfaSlots, varDsc->lvIsParam);
         }
     }
 
@@ -3151,6 +3134,186 @@ private:
 };
 
 #endif
+
+//------------------------------------------------------------------------
+// genCodeForCpObj: Generate code for CpObj nodes to copy structs that have interleaved
+//                  GC pointers. This will generate a sequence of loads/stores for each slot.
+//                  For non-GC slots, we will use ld/std instructions. For GC slots, we will
+//                  call the CORINFO_HELP_ASSIGN_BYREF helper.
+//
+// Arguments:
+//    cpObjNode - the GT_STORE_BLK node with GC pointers
+//
+// Notes:
+//    Based on ARM64 implementation, adapted for PPC64LE instructions.
+//
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
+{
+    GenTree*  dstAddr       = cpObjNode->Addr();
+    GenTree*  source        = cpObjNode->Data();
+    var_types srcAddrType   = TYP_BYREF;
+    bool      sourceIsLocal = false;
+
+    assert(source->isContained());
+    if (source->gtOper == GT_IND)
+    {
+        GenTree* srcAddr = source->gtGetOp1();
+        assert(!srcAddr->isContained());
+        srcAddrType = srcAddr->TypeGet();
+    }
+    else
+    {
+        noway_assert(source->IsLocal());
+        sourceIsLocal = true;
+    }
+
+    bool dstOnStack =
+        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+
+#ifdef DEBUG
+    assert(!dstAddr->isContained());
+
+    // This GenTree node has data about GC pointers, this means we're dealing
+    // with CpObj.
+    assert(cpObjNode->GetLayout()->HasGCPtr());
+#endif // DEBUG
+
+    // Consume the operands and get them into the right registers.
+    // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
+    genConsumeBlockOp(cpObjNode, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_SRC_BYREF, REG_NA);
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
+
+    ClassLayout* layout = cpObjNode->GetLayout();
+    unsigned     slots  = layout->GetSlotCount();
+
+    // Temp register(s) used to perform the sequence of loads and stores.
+    regNumber tmpReg  = internalRegisters.Extract(cpObjNode, RBM_ALLINT);
+    regNumber tmpReg2 = REG_NA;
+
+    assert(genIsValidIntReg(tmpReg));
+    assert(tmpReg != REG_WRITE_BARRIER_SRC_BYREF);
+    assert(tmpReg != REG_WRITE_BARRIER_DST_BYREF);
+
+    if (slots > 1)
+    {
+        tmpReg2 = internalRegisters.Extract(cpObjNode, RBM_ALLINT);
+        assert(tmpReg2 != tmpReg);
+        assert(genIsValidIntReg(tmpReg2));
+        assert(tmpReg2 != REG_WRITE_BARRIER_DST_BYREF);
+        assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
+    }
+
+    if (cpObjNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile CpObj operation
+        instGen_MemoryBarrier();
+    }
+
+    emitter* emit = GetEmitter();
+
+    // If we can prove it's on the stack we don't need to use the write barrier.
+    if (dstOnStack)
+    {
+        unsigned i = 0;
+        // Check if two or more remaining slots and use two ld/std pairs
+        while (i < slots - 1)
+        {
+            emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
+            emitAttr attr1 = emitTypeSize(layout->GetGCPtrType(i + 1));
+
+            // Load two slots
+            emit->emitIns_R_R_I(INS_ld, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
+            emit->emitIns_R_R_I(INS_ld, attr1, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
+            // Advance source pointer
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
+                                2 * TARGET_POINTER_SIZE);
+            // Store two slots
+            emit->emitIns_R_R_I(INS_std, attr0, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
+            emit->emitIns_R_R_I(INS_std, attr1, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE);
+            // Advance destination pointer
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
+                                2 * TARGET_POINTER_SIZE);
+            i += 2;
+        }
+
+        // Use a ld/std pair for the last remainder
+        if (i < slots)
+        {
+            emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
+
+            emit->emitIns_R_R_I(INS_ld, attr0, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
+                                TARGET_POINTER_SIZE);
+            emit->emitIns_R_R_I(INS_std, attr0, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
+                                TARGET_POINTER_SIZE);
+        }
+    }
+    else
+    {
+        unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
+
+        unsigned i = 0;
+        while (i < slots)
+        {
+            if (!layout->IsGCPtr(i))
+            {
+                // How many continuous non-gc slots do we have?
+                unsigned nonGcSlots = 0;
+                do
+                {
+                    nonGcSlots++;
+                    i++;
+                } while ((i < slots) && !layout->IsGCPtr(i));
+
+                const regNumber srcReg = REG_WRITE_BARRIER_SRC_BYREF;
+                const regNumber dstReg = REG_WRITE_BARRIER_DST_BYREF;
+                while (nonGcSlots > 0)
+                {
+                    // Copy at least two slots at a time
+                    if (nonGcSlots >= 2)
+                    {
+                        nonGcSlots -= 2;
+                        emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg, srcReg, 0);
+                        emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg2, srcReg, TARGET_POINTER_SIZE);
+                        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, srcReg, srcReg, 2 * TARGET_POINTER_SIZE);
+                        emit->emitIns_R_R_I(INS_std, EA_8BYTE, tmpReg, dstReg, 0);
+                        emit->emitIns_R_R_I(INS_std, EA_8BYTE, tmpReg2, dstReg, TARGET_POINTER_SIZE);
+                        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstReg, dstReg, 2 * TARGET_POINTER_SIZE);
+                    }
+                    else
+                    {
+                        nonGcSlots--;
+                        emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg, srcReg, 0);
+                        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, srcReg, srcReg, TARGET_POINTER_SIZE);
+                        emit->emitIns_R_R_I(INS_std, EA_8BYTE, tmpReg, dstReg, 0);
+                        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstReg, dstReg, TARGET_POINTER_SIZE);
+                    }
+                }
+            }
+            else
+            {
+                // In the case of a GC-Pointer we'll call the ByRef write barrier helper
+                genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+                gcPtrCount--;
+                i++;
+            }
+        }
+        assert(gcPtrCount == 0);
+    }
+
+    if (cpObjNode->IsVolatile())
+    {
+        // issue a load barrier after a volatile CpObj operation
+        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
+    }
+
+    // Clear the gcInfo for REG_WRITE_BARRIER_SRC_BYREF and REG_WRITE_BARRIER_DST_BYREF.
+    // While we normally update GC info prior to the last instruction that uses them,
+    // these actually live into the helper call.
+    gcInfo.gcMarkRegSetNpt(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
+}
 
 //----------------------------------------------------------------------------------
 // genCodeForCpBlkUnroll: Generate unrolled block copy code.
@@ -5202,8 +5365,68 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(block->KindIs(BBJ_CALLFINALLY));
+
+    BasicBlock* const nextBlock = block->Next();
+
+    // Generate a call to the finally, like this:
+    //      ld/mr       r3, [fp + offset] / sp    // Load r3 with PSPSym, or sp if PSPSym is not used
+    //      bl          finally-funclet
+    //      b           finally-return             // Only for non-retless finally calls
+    // The 'b' can be a NOP if we're going to the next block.
+
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
+    {
+        GetEmitter()->emitIns_R_S(INS_ld, EA_PTRSIZE, REG_R3, compiler->lvaPSPSym, 0);
+    }
+    else
+    {
+        GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R3, REG_SPBASE, /* canSkip */ false);
+    }
+
+    if (block->HasFlag(BBF_RETLESS_CALL))
+    {
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+
+        // We have a retless call, and the last instruction generated was a call.
+        // If the next block is in a different EH region (or is the end of the code
+        // block), then we need to generate a breakpoint here (since it will never
+        // get executed) to get proper unwind behavior.
+
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
+        {
+            instGen(INS_trap); // This should never get executed (PPC64 trap instruction)
+        }
+
+        return block;
+    }
+    else
+    {
+        // Because of the way the flowgraph is connected, the liveness info for this one instruction
+        // after the call is not (can not be) correct in cases where a variable has a last use in the
+        // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
+        GetEmitter()->emitDisableGC();
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+
+        // Now go to where the finally funclet needs to return to.
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
+        {
+            // Fall-through.
+            // TODO-PPC64-CQ: Can we get rid of this instruction, and just have the call return directly
+            // to the next instruction? This would depend on stack walking from within the finally
+            // handler working without this instruction being in this special EH region.
+            instGen(INS_nop);
+        }
+        else
+        {
+            inst_JMP(EJ_jmp, finallyContinuation);
+        }
+
+        GetEmitter()->emitEnableGC();
+
+        return nextBlock;
+    }
 }
 
 
