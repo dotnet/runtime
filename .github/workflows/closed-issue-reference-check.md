@@ -1,6 +1,6 @@
 ---
 name: "Closed Issue Reference Check"
-description: "Periodic check for closed issues whose numbers still appear in the source tree. A deterministic pre-step collects the references and resolves each issue's state; the agent re-checks every closed-but-referenced issue and posts one advisory comment recommending it be reopened or the reference removed."
+description: "Periodic check for closed issues still referenced by issue-URL links in C# source files under src. A deterministic pre-step collects those references and resolves each issue's state; the agent re-checks every closed-but-referenced issue and posts one advisory comment recommending it be reopened or the reference removed."
 
 permissions:
   contents: read
@@ -54,7 +54,8 @@ steps:
     run: |
       set -euo pipefail
 
-      # Find closed issues still referenced in *.cs, ranked by reference count, into issue-candidates.json.
+      # Find closed issues still referenced by issue-URL links in *.cs under src,
+      # ranked by reference count, into issue-candidates.json.
 
       if [ -n "${NODE_EXTRA_CA_CERTS:-}" ] && [ -z "${SSL_CERT_FILE:-}" ]; then
         export SSL_CERT_FILE="$NODE_EXTRA_CA_CERTS"
@@ -80,41 +81,47 @@ steps:
             if (n != "") print n "\t" path ":" lineno }' "$raw" > "$refs"
       rm -f "$raw"
 
-      nums_file="$(mktemp)"
-      cut -f1 "$refs" | sort -un > "$nums_file"
-      echo "scan: $(wc -l < "$nums_file" | tr -d ' ') unique referenced issue numbers under ${DIRS}"
+      # Group references by issue number and rank by reference count first, so state
+      # is resolved only for the most-referenced numbers instead of every number
+      # under the tree (which can be very large in a big repo).
+      grouped="$(mktemp)"
+      jq -R 'split("\t") | {number:(.[0]|tonumber), ref:.[1]}' "$refs" \
+        | jq -s 'sort_by(.number) | group_by(.number)
+                 | map({number:.[0].number, count: length, refs: ([.[].ref] | unique)})
+                 | sort_by(-.count)' > "$grouped"
+
+      probe_nums="$(mktemp)"
+      jq -r --argjson probe "$(( MAX * 10 ))" '.[0:$probe][].number' "$grouped" > "$probe_nums"
+      echo "scan: $(jq 'length' "$grouped") referenced issue numbers under ${DIRS}; resolving state for top $(wc -l < "$probe_nums" | tr -d ' ')"
 
       states="$(mktemp)"
       emit_query() {
         local parts="$1"
         [ -z "$parts" ] && return 0
         local q="query{repository(owner:\"$owner\",name:\"$name\"){ ${parts} }}"
-        # gh api graphql exits non-zero when an aliased issue(number:) points at a
-        # non-issue (e.g. a PR number) even though the other aliases resolve fine,
-        # so tolerate that but fail loudly on real API errors (auth/rate-limit/
-        # transient) that would otherwise yield an empty set and a false "none".
+        # issueOrPullRequest with an `... on Issue` fragment resolves PR numbers to an
+        # empty object rather than erroring, so no per-alias failures for PR links.
+        # Still verify `.data.repository` came back and abort loudly if not, rather
+        # than silently yielding an empty set and a false "nothing found".
         local resp
         resp="$(gh api graphql -f query="$q" 2>/dev/null || true)"
         if ! printf '%s' "$resp" | jq -e '.data.repository' >/dev/null 2>&1; then
           echo "scan: GitHub GraphQL returned no repository data (auth/rate-limit/transient); aborting to avoid false negatives" >&2
           exit 1
         fi
-        printf '%s' "$resp" | jq -c '.data.repository | to_entries[] | select(.value!=null) | .value' >> "$states"
+        printf '%s' "$resp" | jq -c '.data.repository | to_entries[] | .value | select(. != null and .state != null)' >> "$states"
       }
       parts=""; cnt=0
       while read -r n; do
-        parts+="i${n}: issue(number:${n}){number state title url} "
+        [ -z "$n" ] && continue
+        parts+="i${n}: issueOrPullRequest(number:${n}){ ... on Issue { number state title url } } "
         cnt=$((cnt+1))
         if [ "$cnt" -ge 100 ]; then emit_query "$parts"; parts=""; cnt=0; fi
-      done < "$nums_file"
+      done < "$probe_nums"
       emit_query "$parts"
 
-      jq -R 'split("\t") | {number:(.[0]|tonumber), ref:.[1]}' "$refs" \
-        | jq -s 'group_by(.number)
-                 | map({number:.[0].number, count: length, refs: ([.[].ref] | unique)})' > "${refs}.grouped"
-
       ranked="$(mktemp)"
-      jq -s --slurpfile grouped "${refs}.grouped" '
+      jq -s --slurpfile grouped "$grouped" '
         ([.[] | select(.state=="CLOSED")]) as $closed
         | ($grouped[0]) as $g
         | [ $closed[] | . as $c
@@ -143,13 +150,10 @@ steps:
       keptjson="$(jq -R 'tonumber' "$keptnums" | jq -s '.')"
       jq --argjson keep "$keptjson" 'map(select(.number as $n | ($keep | index($n)) != null))' "$ranked" > "$OUT"
 
-      rm -f "$refs" "${refs}.grouped" "$nums_file" "$states" "$ranked" "$keptnums"
+      rm -f "$refs" "$grouped" "$probe_nums" "$states" "$ranked" "$keptnums"
       count="$(jq 'length' "$OUT")"
       echo "scan: ${count} closed issue(s) still referenced and not yet advised -> ${OUT}"
       jq -r '.[] | "  #\(.number) (\(.refs|length) refs) \(.title)"' "$OUT" || true
-      if [ "$count" -eq 0 ] && [ -n "${GH_AW_SAFE_OUTPUTS:-}" ]; then
-        echo '{"type":"noop","message":"No closed issues still referenced in code need advising."}' >> "$GH_AW_SAFE_OUTPUTS"
-      fi
 
 safe-outputs:
   add-comment:
@@ -168,7 +172,7 @@ network:
 
 # Closed Issue Reference Check
 
-You reconcile closed issues with the code that still references them. A deterministic step has already scanned the source tree and written `issue-candidates.json` to the workspace root: every entry is a closed issue whose number still appears somewhere in the code. That usually means one of two things is out of date — the reference should be removed because the issue was genuinely resolved, or the issue was closed prematurely and should be reopened. Confirm each case and leave a single comment so a maintainer can decide.
+You reconcile closed issues with the code that still references them. A deterministic step has already scanned the C# source under `src` for issue-URL links (`<owner>/<repo>/issues/<n>`) and written `issue-candidates.json` to the workspace root: every entry is a closed issue still referenced by such a link. That usually means one of two things is out of date — the reference should be removed because the issue was genuinely resolved, or the issue was closed prematurely and should be reopened. Confirm each case and leave a single comment so a maintainer can decide.
 
 You only suggest; you never act. The one write you can make is an `add-comment` through `safe-outputs`. Do not change issue state, edit files, or use `gh` to write anything.
 
