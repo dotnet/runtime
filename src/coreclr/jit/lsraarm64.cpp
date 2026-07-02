@@ -2373,6 +2373,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
             break;
 
         case NI_Vector_ToVector128Unsafe:
+        case NI_Vector_AsVector128Unsafe:
         case NI_Vector_AsVector3:
         case NI_Vector_GetLower:
             delayFreeOp = intrinsicTree->Op(1);
