@@ -1733,10 +1733,7 @@ public:
                                                         BOOL allowCreate = TRUE,
                                                         ClassLoadLevel level = CLASS_LOADED)
     {
-        // by default async lookup matches the primaryMD
-        AsyncVariantLookup variantLookup = pPrimaryMD->IsReturnDroppingThunk() ? AsyncVariantLookup::ReturnDroppingThunk :
-                                           pPrimaryMD->IsAsyncVariantMethod()  ? AsyncVariantLookup::Async :
-                                                                                 AsyncVariantLookup::Ordinary;
+        AsyncVariantLookup variantLookup = pPrimaryMD->GetMatchingAsyncVariantLookup();
 
         return FindOrCreateAssociatedMethodDesc(
             pPrimaryMD,
