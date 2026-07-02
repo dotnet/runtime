@@ -173,6 +173,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 {
                                     foreach (PropertySpec property in objectSpec.Properties!)
                                     {
+                                        if (!_typeIndex.ShouldBindTo(property))
+                                        {
+                                            continue;
+                                        }
+
                                         TryRegisterTransitiveTypesForMethodGen(property.TypeRef);
 
                                         if (_typeIndex.GetTypeSpec(property.TypeRef) is ComplexTypeSpec)

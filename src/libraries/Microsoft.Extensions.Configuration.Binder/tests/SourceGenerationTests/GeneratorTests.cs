@@ -296,6 +296,46 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(emittedAssemblyImage);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ListOfTupleWithComplexElementInInternalPropertyTest()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public List<string> ExampleCollection { get; set; } = new();
+
+                    internal List<(string, ICollection<string>?)> UsesCollection =>
+                        [
+                            ("Label-1", ExampleCollection)
+                        ];
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Ensure the generated code can be compiled.
+            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
+            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
+            Assert.NotNull(emittedAssemblyImage);
+        }
+
         [Fact]
         public async Task BindingToCollectionOnlyTest()
         {
