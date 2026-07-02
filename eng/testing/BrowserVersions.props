@@ -7,7 +7,7 @@
     <macos_ChromeVersion>149.0.7827.201</macos_ChromeVersion>
     <macos_ChromeRevision>1625079</macos_ChromeRevision>
     <macos_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Mac_Arm/1625085</macos_ChromeBaseSnapshotUrl>
-    <macos_V8Version>14.9.207</macos_V8Version>
+    <macos_V8Version>15.1.103</macos_V8Version>
     <win_ChromeVersion>149.0.7827.201</win_ChromeVersion>
     <win_ChromeRevision>1625079</win_ChromeRevision>
     <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1625123</win_ChromeBaseSnapshotUrl>
