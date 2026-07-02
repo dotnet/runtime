@@ -39,7 +39,39 @@ namespace Internal.TypeVerifier
 
         public void Verify()
         {
+            VerifyBaseType();
+
             VerifyInterfaces();
+        }
+
+        private void VerifyBaseType()
+        {
+            TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
+            EcmaType type = _module.GetType(_typeDefinitionHandle);
+            EntityHandle baseType = typeDefinition.BaseType;
+            if (baseType.IsNil)
+            {
+                if (!type.IsObject && !type.IsModuleType && !type.IsInterface)
+                {
+                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    return;  
+                }
+            }
+            else
+            {
+                TypeDesc resolvedBaseType = _module.GetType(baseType);
+                
+                // Arrays, pointers, and generic variables are valid TypeSpec forms in other
+                // metadata and IL token contexts, so GetType must continue to resolve them. A
+                // BaseType TypeSpec is narrower: it has to name a constructed generic class.
+                if ((baseType.Kind == HandleKind.TypeSpecification && !resolvedBaseType.HasInstantiation) ||
+                    resolvedBaseType.IsValueType ||
+                    resolvedBaseType.IsInterface ||
+                    !resolvedBaseType.IsDefType)
+                {
+                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                }
+            }
         }
 
         public void VerifyInterfaces()
@@ -47,7 +79,8 @@ namespace Internal.TypeVerifier
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = _module.GetType(_typeDefinitionHandle);
 
-            if (type.IsInterface)
+            // Read the metadata bit directly to avoid resolving an invalid base type.
+            if ((typeDefinition.Attributes & System.Reflection.TypeAttributes.Interface) != 0)
             {
                 return;
             }
@@ -115,17 +148,37 @@ namespace Internal.TypeVerifier
 
         private string Format(TypeDesc type)
         {
-            if (_verifierOptions.IncludeMetadataTokensInErrorMessages)
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            if (_verifierOptions.IncludeMetadataTokensInErrorMessages && typeDefinition is EcmaType ecmaType)
             {
-                TypeDesc typeDesc = type.GetTypeDefinition();
-                EcmaModule module = (EcmaModule)((MetadataType)typeDesc).Module;
+                EcmaModule module = (EcmaModule)ecmaType.Module;
+                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(ecmaType.Handle));
+            }
 
-                return string.Format("{0}([{1}]0x{2:X8})", type, module, module.MetadataReader.GetToken(((EcmaType)type).Handle));
-            }
-            else
+            return type.ToString();
+        }
+
+        private string Format(EntityHandle handle)
+        {
+            if (handle.IsNil)
             {
-                return type.ToString();
+                return "nil";
             }
+
+            try
+            {
+                return Format(_module.GetType(handle));
+            }
+            catch (BadImageFormatException)
+            {
+            }
+            catch (TypeSystemException)
+            {
+            }
+
+            return _verifierOptions.IncludeMetadataTokensInErrorMessages ?
+                string.Format("{0}([{1}]0x{2:X8})", handle.Kind, _module, _module.MetadataReader.GetToken(handle)) :
+                handle.Kind.ToString();
         }
 
         private string Format(TypeDesc interfaceTypeDesc, EcmaModule module, InterfaceImplementation interfaceImplementation)

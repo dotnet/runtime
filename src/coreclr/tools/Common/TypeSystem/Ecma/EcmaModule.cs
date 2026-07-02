@@ -572,9 +572,10 @@ namespace Internal.TypeSystem.Ecma
             TypeSpecification typeSpecification = _metadataReader.GetTypeSpecification(handle);
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(typeSpecification.Signature);
+
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);
 
-            TypeDesc parsedType = parser.ParseType();
+            TypeDesc parsedType = parser.ParseTypeSpec();
             if (parsedType == null)
                 return parser.ResolutionFailure;
             else
