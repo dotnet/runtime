@@ -17,9 +17,9 @@ namespace NativeVarargsTest
     {
         // C++/CLI IJW varargs is Windows-only and unavailable on Nano Server.
         public static bool IsSupported => TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsWindowsNanoServer;
-
         [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(NativeVarargsTest), nameof(IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Fact]        
         public static int TestEntryPoint()
         {
             // Use the same seed for consistency between runs.
