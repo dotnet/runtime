@@ -53,7 +53,7 @@ namespace System.Net.Http
         internal uint _lastSeenHttp3MaxHeaderListSize;
 
         // Same as the above, but for SETTINGS_MAX_CONCURRENT_STREAMS.
-        internal uint _lastSeenHttp2MaxConcurrentStreams = Http2Connection.InitialMaxConcurrentStreams;
+        internal uint _lastSeenHttp2MaxConcurrentStreams;
 
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
@@ -82,7 +82,7 @@ namespace System.Net.Http
             _poolManager = poolManager;
             _kind = kind;
             _proxyUri = proxyUri;
-            _maxHttp11Connections = Settings._maxConnectionsPerServer;
+            _maxHttpConnections = Settings._maxConnectionsPerServer;
             _telemetryServerAddress = telemetryServerAddress;
 
             // The only case where 'host' will not be set is if this is a Proxy connection pool.
@@ -154,7 +154,7 @@ namespace System.Net.Http
                     // Don't enforce the max connections limit on proxy tunnels; this would mean that connections to different origin servers
                     // would compete for the same limited number of connections.
                     // We will still enforce this limit on the user of the tunnel (i.e. ProxyTunnel or SslProxyTunnel).
-                    _maxHttp11Connections = int.MaxValue;
+                    _maxHttpConnections = int.MaxValue;
 
                     _http2Enabled = false;
                     _http3Enabled = false;
