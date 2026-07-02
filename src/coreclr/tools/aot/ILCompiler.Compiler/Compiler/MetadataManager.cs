@@ -62,7 +62,7 @@ namespace ILCompiler
         protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
         protected readonly DynamicInvokeThunkGenerationPolicy _dynamicInvokeThunkGenerationPolicy;
 
-        private readonly List<InterfaceDispatchCellNode> _interfaceDispatchCells = new List<InterfaceDispatchCellNode>();
+        private readonly List<DispatchCellNode> _dispatchCells = new List<DispatchCellNode>();
         private readonly SortedSet<NonGCStaticsNode> _cctorContextsGenerated = new SortedSet<NonGCStaticsNode>(CompilerComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGCStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithNonGCStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
@@ -231,6 +231,12 @@ namespace ILCompiler
             var interfaceDispatchCellNode = new InterfaceDispatchCellSectionNode();
             header.Add(ReadyToRunSectionType.InterfaceDispatchCellRegion, interfaceDispatchCellNode);
 
+            var gvmDispatchCellInfoNode = new GvmDispatchCellInfoSectionNode();
+            header.Add(ReadyToRunSectionType.GvmDispatchCellInfoRegion, gvmDispatchCellInfoNode);
+
+            var gvmDispatchCellNode = new GvmDispatchCellSectionNode();
+            header.Add(ReadyToRunSectionType.GvmDispatchCellRegion, gvmDispatchCellNode);
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode);
@@ -314,9 +320,9 @@ namespace ILCompiler
                 _genericDictionariesGenerated.Add(dictionaryNode);
             }
 
-            if (obj is InterfaceDispatchCellNode dispatchCell)
+            if (obj is DispatchCellNode dispatchCell)
             {
-                _interfaceDispatchCells.Add(dispatchCell);
+                _dispatchCells.Add(dispatchCell);
             }
 
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
@@ -1050,9 +1056,9 @@ namespace ILCompiler
             return _reflectionStackTraceMappings;
         }
 
-        internal IEnumerable<InterfaceDispatchCellNode> GetInterfaceDispatchCells()
+        internal IEnumerable<DispatchCellNode> GetDispatchCells()
         {
-            return _interfaceDispatchCells;
+            return _dispatchCells;
         }
 
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()

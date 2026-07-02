@@ -692,17 +692,17 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to a dispatch cell.
     /// </summary>
-    internal sealed class VirtualDispatchCellGenericLookupResult : GenericLookupResult
+    internal sealed class DispatchCellGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 
         protected override int ClassCode => 643566930;
 
-        public VirtualDispatchCellGenericLookupResult(MethodDesc method)
+        public DispatchCellGenericLookupResult(MethodDesc method)
         {
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(method.IsVirtual);
-            Debug.Assert(method.OwningType.IsInterface);
+            Debug.Assert(method.HasInstantiation || method.OwningType.IsInterface);
 
             _method = method;
         }
@@ -726,7 +726,7 @@ namespace ILCompiler.DependencyAnalysis
                     dictionary = null;
                 }
 
-                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary);
+                return factory.DispatchCell(instantiatedMethod, dictionary);
             }
             else
             {
@@ -750,12 +750,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            return _method.HasInstantiation ? factory.NativeLayout.GvmCellDictionarySlot(_method) : factory.NativeLayout.InterfaceCellDictionarySlot(_method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
-            return comparer.Compare(_method, ((VirtualDispatchCellGenericLookupResult)other)._method);
+            return comparer.Compare(_method, ((DispatchCellGenericLookupResult)other)._method);
         }
 
         protected override int GetHashCodeImpl()
@@ -765,7 +765,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override bool EqualsImpl(GenericLookupResult obj)
         {
-            return ((VirtualDispatchCellGenericLookupResult)obj)._method == _method;
+            return ((DispatchCellGenericLookupResult)obj)._method == _method;
         }
     }
 

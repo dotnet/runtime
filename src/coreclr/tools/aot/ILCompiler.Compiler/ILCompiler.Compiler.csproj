@@ -473,9 +473,11 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVarianceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodImplNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GvmDispatchCellInfoSectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DispatchCellNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellInfoSectionNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InvalidProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
@@ -596,7 +598,6 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISpecialUnboxThunkNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodAssociatedDataNode.cs" />
@@ -749,9 +750,6 @@
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>Common\EETypeBuilderHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Internal\Runtime\InterfaceDispatchCellCachePointerFlags.cs">
-      <Link>Common\InterfaceDispatchCellCachePointerFlags.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\ModuleHeaders.cs">
       <Link>Common\ModuleHeaders.cs</Link>

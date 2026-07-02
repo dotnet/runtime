@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -15,10 +14,10 @@ using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNod
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a section of the executable where information about interface dispatch cells
+    /// Represents a section of the executable where information about GVM dispatch cells
     /// is stored.
     /// </summary>
-    public class InterfaceDispatchCellInfoSectionNode : ObjectNode, ISymbolDefinitionNode
+    public class GvmDispatchCellInfoSectionNode : ObjectNode, ISymbolDefinitionNode
     {
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
@@ -34,23 +33,26 @@ namespace ILCompiler.DependencyAnalysis
             foreach (DispatchCellNode node in new SortedSet<DispatchCellNode>(factory.MetadataManager.GetDispatchCells(), new DispatchCellComparer()))
             {
                 MethodDesc targetMethod = node.TargetMethod;
-                if (targetMethod.HasInstantiation)
+                if (!targetMethod.HasInstantiation)
                     continue;
-
-                int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
 
                 node.InitializeOffset(currentDispatchCellOffset);
 
-                IEETypeNode interfaceType = GetInterfaceTypeNode(factory, targetMethod);
+                int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, GetMethodForMetadata(targetMethod, out bool isAsyncVariant));
+                int flags = isAsyncVariant ? GvmDispatchCellFlags.IsAsyncVariant : 0;
+                int flagsAndToken = (token & MetadataManager.MetadataOffsetMask) | flags;
+
                 if (factory.Target.SupportsRelativePointers)
                 {
-                    builder.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32);
-                    builder.EmitInt(targetSlot);
+                    builder.EmitReloc(factory.MaximallyConstructableType(targetMethod.OwningType), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    builder.EmitReloc(factory.ConstructedGenericComposition(targetMethod.Instantiation), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    builder.EmitInt(flagsAndToken);
                 }
                 else
                 {
-                    builder.EmitPointerReloc(interfaceType);
-                    builder.EmitNaturalInt(targetSlot);
+                    builder.EmitPointerReloc(factory.MaximallyConstructableType(targetMethod.OwningType));
+                    builder.EmitPointerReloc(factory.ConstructedGenericComposition(targetMethod.Instantiation));
+                    builder.EmitNaturalInt(flagsAndToken);
                 }
 
                 currentDispatchCellOffset += node.Size;
@@ -60,13 +62,13 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchCellInfoSection_Start"u8);
+            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__GvmDispatchCellInfoSection_Start"u8);
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-        public override int ClassCode => (int)ObjectNodeOrder.InterfaceDispatchCellInfoSection;
+        public override int ClassCode => (int)ObjectNodeOrder.GvmDispatchCellInfoSection;
 
         public int Offset => 0;
 
@@ -78,34 +80,39 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList result = new DependencyList();
 
-            if (!factory.VTable(targetMethod.OwningType).HasKnownVirtualMethodUse)
-            {
-                result.Add(factory.VirtualMethodUse(targetMethod), "Interface method use");
-            }
+            MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            result.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
+
+            // GVM analysis happens on canonical forms, but this is potentially injecting new genericness
+            // into the system. Ensure reflection analysis can still see this.
+            if (targetMethod.IsAbstract)
+                factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref result, factory, canonMethod, methodIL: null);
 
             factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, targetMethod);
 
-            result.Add(GetInterfaceTypeNode(factory, targetMethod), "Interface type");
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref result, factory, GetMethodForMetadata(targetMethod, out _));
+
+            result.Add(factory.MaximallyConstructableType(targetMethod.OwningType), "Owning type of GVM decl");
+            result.Add(factory.ConstructedGenericComposition(targetMethod.Instantiation), "GVM instantiation info");
 
             return result;
         }
 
-        private static IEETypeNode GetInterfaceTypeNode(NodeFactory factory, MethodDesc targetMethod)
+        public static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
         {
-            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
-            // see a RuntimeTypeHandle representing this interface.
-            if (factory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations(targetMethod.OwningType))
+            isAsyncVariant = false;
+            MethodDesc targetMethodForMetadata = method.GetTypicalMethodDefinition();
+            if (targetMethodForMetadata.IsAsyncVariant())
             {
-                return factory.ConstructedTypeSymbol(targetMethod.OwningType);
+                targetMethodForMetadata = ((CompilerTypeSystemContext)method.Context).GetTargetOfAsyncVariantMethod(targetMethodForMetadata);
+                isAsyncVariant = true;
             }
-            else
-            {
-                return factory.NecessaryTypeSymbol(targetMethod.OwningType);
-            }
+
+            return targetMethodForMetadata;
         }
 
         /// <summary>
-        /// Comparer that groups interface dispatch cells by their callsite.
+        /// Comparer that groups GVM dispatch cells by their callsite.
         /// </summary>
         private sealed class DispatchCellComparer : IComparer<DispatchCellNode>
         {

@@ -1576,11 +1576,29 @@ namespace Internal.JitInterface
                     ((MethodILScope)HandleToObject((void*)pResolvedToken.tokenScope)).OwningMethod,
                     targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-                ComputeLookup(ref pResolvedToken,
-                    targetOfLookup,
-                    ReadyToRunHelperId.MethodHandle,
-                    HandleToObject(callerHandle),
-                    ref pResult->codePointerOrStubLookup);
+
+                if (pResult->exactContextNeedsRuntimeLookup)
+                {
+                    ComputeLookup(ref pResolvedToken,
+                        targetOfLookup,
+                        ReadyToRunHelperId.DispatchCell,
+                        HandleToObject(callerHandle),
+                        ref pResult->codePointerOrStubLookup);
+                    Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+                }
+                else
+                {
+                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+#pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                    pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
+                        _compilation.NodeFactory.DispatchCell(targetOfLookup
+#if !SUPPORT_JIT
+                        , _methodCodeNode
+#endif
+                        ));
+#pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                }
 
                 // RyuJIT will assert if we report CORINFO_CALLCONV_PARAMTYPE for a result of a ldvirtftn
                 // We don't need an instantiation parameter, so let's just not report it. Might be nice to
@@ -1596,7 +1614,7 @@ namespace Internal.JitInterface
                 {
                     ComputeLookup(ref pResolvedToken,
                         GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
-                        ReadyToRunHelperId.VirtualDispatchCell,
+                        ReadyToRunHelperId.DispatchCell,
                         HandleToObject(callerHandle),
                         ref pResult->codePointerOrStubLookup);
                     Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
@@ -1607,7 +1625,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
+                        _compilation.NodeFactory.DispatchCell(targetMethod
 #if !SUPPORT_JIT
                         , _methodCodeNode
 #endif

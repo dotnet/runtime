@@ -5,7 +5,9 @@
 #include <unixasmmacros.inc>
 
 // Dispatching version of RhpResolveInterfaceMethod
-LEAF_ENTRY RhpInterfaceDispatch, _TEXT
+.macro INTERFACE_DISPATCH DispatchName, ReturnTarget, DispatchCellReg
+
+LEAF_ENTRY \DispatchName, _TEXT
 
         // Load the MethodTable from the object instance in rdi.
         // Trigger an AV if we're dispatching on a null this.
@@ -14,23 +16,29 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         // to a NullReferenceException at the callsite.
         mov     r10, [rdi]
 
-        // r11 currently contains the indirection cell address.
-        cmp     qword ptr [r11], r10 // is this the monomorphic MethodTable?
-        jne     LOCAL_LABEL(Hashtable)
+        // DispatchCellReg currently contains the indirection cell address.
+        cmp     qword ptr [\DispatchCellReg], r10 // is this the monomorphic MethodTable?
+        jne     1f
 
-        mov     rax, [r11 + 8] // load the cached monomorphic resolved code address into rax
+        mov     rax, [\DispatchCellReg + 8] // load the cached monomorphic resolved code address into rax
+.if \ReturnTarget
+        ret
+.else
         jmp     rax
+.endif
 
-LOCAL_LABEL(Hashtable):
+1:
 
-        // r10 = MethodTable, r11 = indirection cell address
+        // r10 = MethodTable, DispatchCellReg = indirection cell address
         // Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
+.if !\ReturnTarget
         // Spill argument registers to the red zone below rsp
         // so we don't modify rsp (this is a LEAF_ENTRY with no unwind info).
         mov     [rsp - 8],  rcx
         mov     [rsp - 16], rdx
         mov     [rsp - 24], r8
         mov     [rsp - 32], r9
+.endif
 
         // Load the _table field (Entry[]) from the cache struct.
         mov     r8, qword ptr [C_VAR(g_pDispatchCache)]
@@ -38,7 +46,7 @@ LOCAL_LABEL(Hashtable):
 
         // Compute 32-bit hash from Key.GetHashCode():
         // hash = IntPtr.GetHashCode(RotateLeft(dispatchCell, 16) ^ objectType)
-        mov     rcx, r11
+        mov     rcx, \DispatchCellReg
         rol     rcx, 0x10
         xor     rcx, r10
         mov     r9, rcx
@@ -53,7 +61,7 @@ LOCAL_LABEL(Hashtable):
         shr     r9, cl
         xor     ecx, ecx
 
-LOCAL_LABEL(ProbeLoop):
+2:
         // Compute entry address: Element(table, index) = table + 0x10 + (index + 1) * 0x20
         lea     eax, [r9 + 1]
         movsxd  rax, eax
@@ -63,33 +71,37 @@ LOCAL_LABEL(ProbeLoop):
         // Read version snapshot before key comparison (seqlock protocol).
         mov     edx, dword ptr [rax]
         test    edx, 1
-        jne     LOCAL_LABEL(ProbeMiss)
+        jne     3f
 
         // Compare key (dispatchCell, objectType)
-        cmp     r11, qword ptr [rax + 8]
-        jne     LOCAL_LABEL(ProbeMiss)
+        cmp     \DispatchCellReg, qword ptr [rax + 8]
+        jne     3f
         cmp     r10, qword ptr [rax + 0x10]
-        jne     LOCAL_LABEL(ProbeMiss)
+        jne     3f
 
         // Read the cached code pointer, then re-verify the version has not changed.
         mov     r10, qword ptr [rax + 0x18]
         cmp     edx, dword ptr [rax]
-        jne     LOCAL_LABEL(CacheMiss)
+        jne     4f
 
         // Dispatch to cached target.
         mov     rax, r10
 
+.if \ReturnTarget
+        ret
+.else
         mov     r9,  [rsp - 32]
         mov     r8,  [rsp - 24]
         mov     rdx, [rsp - 16]
         mov     rcx, [rsp - 8]
 
         jmp     rax
+.endif
 
-LOCAL_LABEL(ProbeMiss):
+3:
         // If version is zero the rest of the bucket is unclaimed — stop probing.
         test    edx, edx
-        je      LOCAL_LABEL(CacheMiss)
+        je      4f
 
         // Quadratic reprobe: i++; index = (index + i) & tableMask
         inc     ecx
@@ -98,17 +110,25 @@ LOCAL_LABEL(ProbeMiss):
         add     eax, 0xFFFFFFFE
         and     r9d, eax
         cmp     ecx, 8
-        jl      LOCAL_LABEL(ProbeLoop)
+        jl      2b
 
-LOCAL_LABEL(CacheMiss):
+4:
+.if \ReturnTarget
+        jmp     C_FUNC(RhpCidResolve_Worker)
+.else
         mov     r9,  [rsp - 32]
         mov     r8,  [rsp - 24]
         mov     rdx, [rsp - 16]
         mov     rcx, [rsp - 8]
 
-LOCAL_LABEL(SlowPath):
-        // r11 contains indirection cell address
+        // DispatchCellReg contains indirection cell address
         lea     r10, [C_VAR(RhpCidResolve)]
         jmp     C_FUNC(RhpUniversalTransitionTailCall)
+.endif
 
-LEAF_END RhpInterfaceDispatch, _TEXT
+LEAF_END \DispatchName, _TEXT
+
+.endm
+
+        INTERFACE_DISPATCH RhpInterfaceDispatch, 0, r11
+        INTERFACE_DISPATCH RhpDispatchResolve, 1, rsi

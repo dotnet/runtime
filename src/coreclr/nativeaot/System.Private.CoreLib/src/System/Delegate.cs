@@ -139,12 +139,12 @@ namespace System
         }
 
         // This function is known to the compiler.
-        private void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
+        private void InitializeClosedInstanceWithGVMResolution(object firstParameter, IntPtr dispatchCell)
         {
             if (firstParameter is null)
                 throw new NullReferenceException();
 
-            IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
+            IntPtr functionResolution = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
 
             if (functionResolution == IntPtr.Zero)
             {

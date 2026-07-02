@@ -78,7 +78,7 @@ namespace Internal.Runtime
         public const int IsStdcall = 0x8;
     }
 
-    internal static class RuntimeMethodHandleConstants
+    internal static class GvmDispatchCellFlags
     {
         public const int IsAsyncVariant = unchecked((int)0x80000000);
     }

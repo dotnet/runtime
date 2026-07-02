@@ -255,7 +255,7 @@ namespace ILCompiler
 
                 case ReadyToRunHelperId.MethodDictionary:
                 case ReadyToRunHelperId.MethodEntry:
-                case ReadyToRunHelperId.VirtualDispatchCell:
+                case ReadyToRunHelperId.DispatchCell:
                 case ReadyToRunHelperId.MethodHandle:
                     return ((MethodDesc)targetOfLookup).IsRuntimeDeterminedExactMethod;
 

@@ -51,6 +51,9 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
       <Link>Internal\Runtime\DehydratedData.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DispatchCell.cs">
+      <Link>Internal\Runtime\DispatchCell.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
     </Compile>
@@ -112,6 +115,7 @@
     <Compile Include="$(CommonPath)System\Experimentals.cs">
       <Link>Common\Experimentals.cs</Link>
     </Compile>
+    <Compile Include="Internal\Runtime\Dispatch.cs" />
     <Compile Include="Internal\Runtime\FrozenObjectHeapManager.cs" />
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />

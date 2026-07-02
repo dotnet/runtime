@@ -907,11 +907,11 @@ namespace Internal.IL
 
                 if (exactContextNeedsRuntimeLookup)
                 {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, methodToLookup), reason);
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DispatchCell, methodToLookup), reason);
                 }
                 else
                 {
-                    _dependencies.Add(_factory.RuntimeMethodHandle(methodToLookup), reason);
+                    _dependencies.Add(_factory.DispatchCell(methodToLookup), reason);
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GVMLookupForSlot), reason);
@@ -920,11 +920,11 @@ namespace Internal.IL
             {
                 if (exactContextNeedsRuntimeLookup)
                 {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.VirtualDispatchCell, runtimeDeterminedMethod), reason);
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DispatchCell, runtimeDeterminedMethod), reason);
                 }
                 else
                 {
-                    _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
+                    _dependencies.Add(_factory.DispatchCell(method), reason);
                 }
             }
             else if (_compilation.NeedsSlotUseTracking(method.OwningType))

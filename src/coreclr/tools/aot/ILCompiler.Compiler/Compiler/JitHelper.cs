@@ -318,7 +318,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.GVMLookupForSlot:
-                    methodDesc = context.SystemModule.GetKnownType("System.Runtime"u8, "TypeLoaderExports"u8).GetKnownMethod("GVMLookupForSlot"u8, null);
+                    mangledName = "RhpDispatchResolve";
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
