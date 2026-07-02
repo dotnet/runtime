@@ -8941,7 +8941,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
         {
-            if (info->pResolvedTokenVirtualMethod == nullptr || info->callerMethod == nullptr)
+            if (info->pResolvedTokenVirtualMethod == nullptr)
             {
                 info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                 return false;
