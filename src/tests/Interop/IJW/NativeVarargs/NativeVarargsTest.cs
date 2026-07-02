@@ -17,7 +17,7 @@ namespace NativeVarargsTest
     {
         [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [Fact]        
+        [Fact]
         public static int TestEntryPoint()
         {
             // Use the same seed for consistency between runs.
