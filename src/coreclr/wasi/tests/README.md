@@ -100,8 +100,9 @@ Each smoke test is a managed executable that prints
 **`WASI-SMOKE-PASS:<name>`** on stdout when its scenario completes
 successfully. The runner scans stdout for that sentinel; a missing
 sentinel is a failure regardless of exit code. (This pre-dates the
-`CORERUN_EXIT_CODE` marker now emitted by corerun, which makes
-exit-code-based assertions viable for the `src/tests/` runner.)
+`WASM EXIT <n>` marker corerun now emits when
+`DOTNET_WASI_PRINT_EXIT_CODE=1`, which makes exit-code-based
+assertions viable for the `src/tests/` runner.)
 
 ### Adding a smoke test
 

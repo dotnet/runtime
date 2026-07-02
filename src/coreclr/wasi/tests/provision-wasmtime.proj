@@ -12,8 +12,10 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);NU1505</NoWarn>
-    <!-- Force the provisioning target to run even if the dir exists but
-         the stamp is missing or stale. -->
+    <!-- ProvisionWasmtime in eng/testing/wasi-provisioning.targets is gated
+         on !Exists($(WasmtimeDir)) — it will only download when the dir
+         is absent. To force a re-provision, delete $(WasmtimeDir) first
+         (default: artifacts/obj/wasmtime/) and re-run this build. -->
     <InstallWasmtimeForTests>true</InstallWasmtimeForTests>
   </PropertyGroup>
 

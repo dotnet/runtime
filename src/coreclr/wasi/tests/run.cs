@@ -108,7 +108,9 @@ if (tests.Count == 0)
     return 2;
 }
 
-string Rel(string p) => Path.GetRelativePath(testRoot, p);
+// Always return forward-slash paths so --list output and known-failures.txt
+// matching work identically on Windows and Unix.
+string Rel(string p) => Path.GetRelativePath(testRoot, p).Replace(Path.DirectorySeparatorChar, '/');
 
 if (listOnly)
 {
