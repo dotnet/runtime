@@ -515,6 +515,8 @@ else()
             add_link_options(-lc++-wasmexcept)
             add_link_options(-lc++abi-wasmexcept)
             add_link_options(-lunwind-wasmexcept)
+            add_link_options(-sWASMFS)
+            add_link_options(-lwasmfs)
 
             add_compile_options(-fwasm-exceptions)
             add_compile_options(-sWASM_LEGACY_EXCEPTIONS=0)

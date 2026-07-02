@@ -51,6 +51,7 @@ export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     instantiateWasm?: InstantiateWasmCallBack;
     onAbort?: (reason: any, extraJson?: string) => void;
     onExit?: (code: number) => void;
+    onRuntimeInitialized?: () => any;
     preInit?: (() => any)[];
     preRun?: (() => any)[];
     postRun?: (() => any)[];

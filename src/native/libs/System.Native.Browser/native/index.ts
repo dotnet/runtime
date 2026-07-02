@@ -56,12 +56,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 
     function setupEmscripten() {
         _ems_.Module.preInit = [() => {
-            if (_ems_.dotnetApi.getConfig) {
-                const virtualWorkingDirectory = _ems_.dotnetApi.getConfig().virtualWorkingDirectory;
-                _ems_.FS.createPath("/", virtualWorkingDirectory!, true, true);
-                _ems_.FS.chdir(virtualWorkingDirectory!);
-            }
-
             const orig_funcs_on_exit = _ems_.___funcs_on_exit;
             // it would be better to use addOnExit(), but it's called too late.
             // this can't be async

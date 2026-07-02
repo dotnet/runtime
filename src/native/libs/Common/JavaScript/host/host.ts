@@ -15,6 +15,11 @@ const RUNTIME_IDENTIFIER = "RUNTIME_IDENTIFIER";
 
 export function initializeCoreCLR(): number {
     const loaderConfig = _ems_.dotnetApi.getConfig();
+
+    const workingDirPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(loaderConfig.virtualWorkingDirectory!) as any;
+    _ems_._BrowserHost_SetWorkingDirectory(workingDirPtr);
+    _ems_._free(workingDirPtr);
+
     const hostContractPtr = _ems_._BrowserHost_CreateHostContract();
     const runtimeConfigProperties = new Map<string, string>();
     if (loaderConfig.runtimeConfig?.runtimeOptions?.configProperties) {

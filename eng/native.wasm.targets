@@ -92,6 +92,7 @@
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave" />
+      <EmccExportedFunction Include="_emscripten_stack_get_current" />
       <EmccExportedFunction Include="___stack_pointer" />
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
     </ItemGroup>

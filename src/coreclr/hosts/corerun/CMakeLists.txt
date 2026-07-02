@@ -87,6 +87,7 @@ else()
                     target_link_options(corerun PRIVATE --preload-file ${WASM_PRELOAD_DIR}@/)
                 endif()
             else()
+                target_sources(corerun PRIVATE ./wasm/wasmfs_root_override.cpp)
                 # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
                 target_link_options(corerun PRIVATE -sWASM_BIGINT=0)
 
@@ -94,8 +95,6 @@ else()
                 string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
                 string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
 
-                # Add Node.js host file system support.
-                target_link_options(corerun PRIVATE -sNODERAWFS=1 -lnodefs.js)
             endif()
             target_link_options(corerun PRIVATE
                 -sINITIAL_MEMORY=134217728
