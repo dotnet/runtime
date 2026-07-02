@@ -80,6 +80,7 @@ namespace ILCompiler
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
+            public const int Avx512Bmm = (1 << 18); // NativeAOT does not currently consume this here.
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {

@@ -52,7 +52,7 @@ public struct X86Context : IPlatformContext
         readonly get => new(Esp);
         set => Esp = (uint)value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Eip);
         set => Eip = (uint)value.Value;
@@ -70,6 +70,9 @@ public struct X86Context : IPlatformContext
         X86Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
     }
+
+    // Clears the x86 hardware trace flag (EFLAGS.TF, bit 0x100).
+    public void UnsetSingleStepFlag() => EFlags &= ~0x100u;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

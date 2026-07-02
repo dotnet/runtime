@@ -1325,10 +1325,10 @@ public:
         uint16_t proc_no[MAX_SUPPORTED_HEAPS];
         uint16_t node_no[MAX_SUPPORTED_HEAPS];
         uint16_t max_node_no = 0;
-        uint16_t heap_num;
+        int heap_num;
         for (heap_num = 0; heap_num < n_heaps; heap_num++)
         {
-            if (!GCToOSInterface::GetProcessorForHeap (heap_num, &proc_no[heap_num], &node_no[heap_num]))
+            if (!GCToOSInterface::GetProcessorForHeap (static_cast<uint16_t>(heap_num), &proc_no[heap_num], &node_no[heap_num]))
                 break;
             assert(proc_no[heap_num] < GCToOSInterface::GetMaxProcessorCount());
             if (!do_numa || node_no[heap_num] == NUMA_NODE_UNDEFINED)

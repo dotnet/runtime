@@ -54,6 +54,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
     /// <summary>
+    /// Gets an instance of the FeatureFlags contract for the target.
+    /// </summary>
+    public virtual IFeatureFlags FeatureFlags => GetContract<IFeatureFlags>();
+    /// <summary>
     /// Gets an instance of the PrecodeStubs contract for the target.
     /// </summary>
     public virtual IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
@@ -92,6 +96,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the Notifications contract for the target.
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
+    /// <summary>
+    /// Gets an instance of the CallingConvention contract for the target.
+    /// </summary>
+    public virtual ICallingConvention CallingConvention => GetContract<ICallingConvention>();
     /// <summary>
     /// Gets an instance of the CodeNotifications contract for the target.
     /// </summary>
