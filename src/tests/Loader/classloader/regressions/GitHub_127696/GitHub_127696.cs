@@ -14,21 +14,21 @@
 using System.Runtime.CompilerServices;
 using Xunit;
 
-interface IEntityId<T> where T : struct, IEntityId<T>
+public class GitHub_127696
 {
-    EntityIdValue<T> Value { get; }
-    static abstract T From(EntityIdValue<T> value);
-}
+    interface IEntityId<T> where T : struct, IEntityId<T>
+    {
+        EntityIdValue<T> Value { get; }
+        static abstract T From(EntityIdValue<T> value);
+    }
 
-readonly record struct EntityIdValue<T>(int Id) where T : struct, IEntityId<T>;
+    readonly record struct EntityIdValue<T>(int Id) where T : struct, IEntityId<T>;
 
-readonly record struct UserId(EntityIdValue<UserId> Value) : IEntityId<UserId>
-{
-    public static UserId From(EntityIdValue<UserId> value) => new(value);
-}
+    readonly record struct UserId(EntityIdValue<UserId> Value) : IEntityId<UserId>
+    {
+        public static UserId From(EntityIdValue<UserId> value) => new(value);
+    }
 
-public class Runtime_127696
-{
     [MethodImpl(MethodImplOptions.NoInlining)]
     static UserId? GetUserId(bool hasValue) => hasValue ? new UserId(new EntityIdValue<UserId>(42)) : null;
 
