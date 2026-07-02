@@ -276,7 +276,11 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 //
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
+#ifdef TARGET_WASM
+    if (tgtAddr->OperIs(GT_LCL_ADDR, GT_PARTIALLY_CONTAINED_LCL_ADDR))
+#else
     if (tgtAddr->OperIs(GT_LCL_ADDR))
+#endif
     {
         // No need for a GC barrier when writing to a local variable.
         return GCInfo::WBF_NoBarrier;

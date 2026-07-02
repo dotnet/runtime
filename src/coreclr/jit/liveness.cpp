@@ -2426,6 +2426,17 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 break;
             }
 
+#ifdef TARGET_WASM
+            case GT_PARTIALLY_CONTAINED_LCL_ADDR:
+                // WASM-TODO: Implement removal for dead partially contained lcl_addrs and their containers
+                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
+                {
+                    JITDUMP("WASM-TODO: Not removing unused partially contained local address:");
+                    DISPNODE(node);
+                }
+                break;
+#endif // TARGET_WASM
+
             case GT_LABEL:
             case GT_FTN_ADDR:
             case GT_CNS_INT:

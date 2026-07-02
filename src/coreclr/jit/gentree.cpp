@@ -11785,6 +11785,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_RETURN_SUSPEND:
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
+#ifdef TARGET_WASM
+        case GT_PARTIALLY_CONTAINED_LCL_ADDR:
+#endif
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
@@ -33944,6 +33947,12 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
+#ifdef TARGET_WASM
+    if (OperIs(GT_PARTIALLY_CONTAINED_LCL_ADDR))
+    {
+        return true;
+    }
+#endif
     return OperIsConst() || OperIs(GT_LCL_ADDR) || OperIs(GT_FTN_ADDR);
 }
 
