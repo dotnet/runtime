@@ -7,7 +7,9 @@
 
 #include "stublink.h"
 #include "utilcode.h"
+#if defined(TARGET_BROWSER)
 #include <emscripten/stack.h>
+#endif
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -34,7 +36,14 @@ struct HijackArgs
 inline void* GetCurrentSP()
 {
     WRAPPER_NO_CONTRACT;
+#if defined(TARGET_BROWSER)
     return (void*)emscripten_stack_get_current();
+#else
+    // WASI has no equivalent of emscripten_stack_get_current(). The interpreter
+    // walks the explicit InterpreterFrame chain rather than consulting native
+    // SP, so any caller is in a code path that won't actually run on WASI.
+    return nullptr;
+#endif
 }
 
 extern PCODE GetPreStubEntryPoint();

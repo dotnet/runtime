@@ -57,6 +57,7 @@ namespace System.Threading
                 while (!mainTask.IsCompleted)
                 {
                     ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally
@@ -80,6 +81,7 @@ namespace System.Threading
                 while (!mainTask.IsCompleted)
                 {
                     ThreadPoolWorkQueue.Dispatch();
+                    WasiFinalizerScheduler.DrainIfPending();
                 }
             }
             finally

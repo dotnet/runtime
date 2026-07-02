@@ -403,15 +403,15 @@ static const Entry s_libSystem_Native [] = {
 };
 
 static const Entry s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8 [] = {
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant) // System.Private.CoreLib
+    { "now", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now }, // System.Private.CoreLib
+    { "resolution", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution }, // System.Private.CoreLib
+    { "subscribe-duration", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration }, // System.Private.CoreLib
+    { "subscribe-instant", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant }, // System.Private.CoreLib
 };
 
 static const Entry s_wasi_3A_io_2F_poll_40_0_2_8 [] = {
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable) // System.Private.CoreLib
-    DllImportEntry(WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll) // System.Private.CoreLib
+    { "[resource-drop]pollable", (void*)&WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable }, // System.Private.CoreLib
+    { "poll", (void*)&WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll }, // System.Private.CoreLib
 };
 
 typedef struct PInvokeTable {

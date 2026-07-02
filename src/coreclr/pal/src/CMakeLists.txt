@@ -17,9 +17,9 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_HOST_ARCH_WASM)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
 
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-elseif(NOT CLR_CMAKE_TARGET_APPLE)
+elseif(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_HOST_ARCH_WASM)
   find_unwind_libs(UNWIND_LIBS)
-else()
+elseif(CLR_CMAKE_TARGET_APPLE)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_HOST_ARCH_WASM)
 
@@ -150,9 +150,7 @@ endif()
 set(SOURCES
   com/guid.cpp
   cruntime/wchar.cpp
-  debug/debug.cpp
   exception/seh.cpp
-  exception/signal.cpp
   file/directory.cpp
   file/file.cpp
   file/path.cpp
@@ -203,11 +201,18 @@ set(SOURCES
   synchmgr/synchcontrollers.cpp
   synchmgr/synchmanager.cpp
   synchmgr/wait.cpp
-  thread/context.cpp
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
 )
+
+if (NOT CLR_CMAKE_TARGET_WASI)
+  list(APPEND SOURCES
+    debug/debug.cpp
+    exception/signal.cpp
+    thread/context.cpp
+  )
+endif()
 
 set_source_files_properties(
     com/guid.cpp
@@ -249,11 +254,11 @@ if(CLR_CMAKE_TARGET_APPLE)
 
   target_compile_definitions(coreclrpal_dac PUBLIC -DUNW_REMOTE_ONLY)
 else()
-  if(NOT FEATURE_CROSSBITNESS)
+  if(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     add_library(coreclrpal_dac STATIC
       exception/remote-unwind.cpp
     )
-  endif(NOT FEATURE_CROSSBITNESS)
+  endif(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 endif(CLR_CMAKE_TARGET_APPLE)
 
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',

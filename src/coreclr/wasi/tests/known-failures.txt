@@ -1,0 +1,182 @@
+# CoreCLR-WASI known-failures list, consumed by run.cs --known-failures=.
+#
+# Format: one test-wrapper path per line, relative to the test-bin root
+#   (e.g. JIT/jit64/regress/ddb/113574/113574/113574.sh).
+# Blank lines and `# comments` are ignored.
+#
+# Tests listed here are excluded from the "unexpected failures" count.
+# An expected-failure that starts passing surfaces as an "unexpected pass"
+# in the summary so you can remove it from this list.
+#
+# Most platform-by-design exclusions live on the test project itself as
+# `<CLRTestTargetUnsupported Condition="'$(TargetsWasi)' == 'true'">`
+# (see umbrella issue #120708). This file only carries the residue: tests
+# that pass but are too slow or too flaky to include in the CI sweep.
+
+# ----- pure interpreter speed (no WASI bug, just slow) -----------------------
+#
+# 2^31 iteration loop in pure interpreter — runs forever within the 60s
+# default test timeout. Will become viable once R2R-WASM is on for tests.
+
+# Nested 2^16 * 2^16 (~4.3B) iterations per method; same family: as 113574.
+
+# ----- finalizer-timeout test (no separate finalizer thread on WASI) ---------
+#
+# Test starts a finalizer that sleeps past the runtime's "finalizer
+# stuck" detection. WASI has no separate FT; the synchronous shutdown
+# pump deadlocks waiting for the sleep to end -> times out.
+GC/Scenarios/FinalizeTimeout/FinalizeTimeout/FinalizeTimeout.sh
+
+# ----- bestfit-finalize: flaky under parallel load ---------------------------
+#
+# Solo runtime is ~115s on the WASM interpreter; under --jobs=8
+# contention from the rest of the GC sweep it slips past the 120s
+# timeout reproducibly. Listed here so the sweep stays clean; passes
+# on a solo retry. Expected to drop once R2R-WASM is on for tests.
+
+# ----- flaky under parallel sweep load ---------------------------------------
+#
+# All six pass cleanly in solo runs (WASM EXIT 100 reported) but
+# fail intermittently under --jobs=8 parallelism — they share state
+# through the test wrappers' takeLock/ReleaseLock guard. Listed here
+# so the sweep stays deterministic; pass on re-run with --jobs=1.
+JIT/Regression/JitBlue/GitHub_27169/GitHub_27169/GitHub_27169.sh
+Regressions/coreclr/GitHub_49826/test49826/test49826.sh
+Regressions/coreclr/GitHub_49982/test49982/test49982.sh
+Regressions/coreclr/GitHub_61104/test61104/test61104.sh
+baseservices/TieredCompilation/BasicTest_QuickJitOff_R2r/BasicTest_QuickJitOff_R2r.sh
+baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/BasicTest_QuickJitOn_R2r.sh
+
+# ----- RequiresProcessIsolation tests (silently 'Pass' in CI via xharness) ---
+#
+# CI's merged-runner path (xharness) silently no-ops every test marked
+# RequiresProcessIsolation=true on Browser/WASI via the OutOfProcessTest
+# framework gate (src/tests/Common/CoreCLRTestLibrary/OutOfProcessTest.cs).
+# The XUnitWrapperGenerator emits an if/no-else wrapper so the body never
+# runs and the result is recorded as Pass.
+#
+# Our local standalone sweep (run.cs) has no such gate, so these tests
+# really execute and really fail (PNSE, vararg, threading, etc.). They
+# are listed here for the local sweep instead of touching 72 csproj files.
+baseservices/callconvs/TestCallingConventions/TestCallingConventions.sh
+baseservices/exceptions/regressions/Dev11/154243/dynamicmethodliveness/dynamicmethodliveness.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/HandlerException/HandlerException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/MultipleException/MultipleException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/NestedException/NestedException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/RecursiveException/RecursiveException.sh
+baseservices/exceptions/simple/ParallelCrashTester/ParallelCrashTester.sh
+baseservices/exceptions/stackoverflow/stackoverflowtester/stackoverflowtester.sh
+baseservices/exceptions/unhandled/unhandledTester/unhandledTester.sh
+baseservices/exceptions/UnhandledExceptionHandler/Foreign/ForeignUnhandled/ForeignUnhandled.sh
+baseservices/exceptions/UnhandledExceptionHandler/HandlerRefuses/HandlerRefuses.sh
+baseservices/exceptions/UnhandledExceptionHandler/HandlerThrows/HandlerThrows.sh
+baseservices/exceptions/UnhandledExceptionHandler/NoEffectInMainThread/NoEffectInMainThread.sh
+baseservices/exceptions/UnhandledExceptionHandler/PInvoke/PInvokeUnhandled/PInvokeUnhandled.sh
+baseservices/exceptions/UnhandledExceptionHandler/UnhandledTrivial/UnhandledTrivial.sh
+baseservices/RuntimeConfiguration/TestConfigTester/TestConfigTester.sh
+baseservices/threading/regressions/576463/576463/576463.sh
+baseservices/threading/regressions/beta2/437017/437017.sh
+baseservices/threading/regressions/beta2/437044/437044.sh
+baseservices/TieredCompilation/BasicTestWithMcj/BasicTestWithMcj.sh
+GC/API/GC/Collect_Forced_1/Collect_Forced_1.sh
+GC/API/GC/Collect_Forced_2/Collect_Forced_2.sh
+GC/API/GC/Collect_Forced_3/Collect_Forced_3.sh
+GC/API/GC/GetAllocatedBytesForCurrentThread/GetAllocatedBytesForCurrentThread.sh
+GC/API/GC/GetConfigurationVariables/GetConfigurationVariables.sh
+GC/API/GC/GetTotalAllocatedBytes/GetTotalAllocatedBytes.sh
+GC/API/NoGCRegion/Callback_Svr/Callback_Svr.sh
+GC/API/NoGCRegion/Callback/Callback.sh
+GC/Coverage/LargeObjectAlloc/LargeObjectAlloc.sh
+GC/Features/BackgroundGC/foregroundgc/foregroundgc.sh
+GC/Scenarios/BinTree/thdtree/thdtree.sh
+GC/Scenarios/BinTree/thdtreegrowingobj/thdtreegrowingobj.sh
+GC/Scenarios/BinTree/thdtreelivingobj/thdtreelivingobj.sh
+GC/Scenarios/DoublinkList/dlbigleakthd/dlbigleakthd.sh
+GC/Scenarios/LeakGen/leakgenthrd/leakgenthrd.sh
+GC/Scenarios/THDChaos/thdchaos/thdchaos.sh
+GC/Scenarios/THDList/thdlist/thdlist.sh
+JIT/Directed/aliasing_retbuf/aliasing_retbuf/aliasing_retbuf.sh
+JIT/Directed/callconv/ThisCall/EmptyThisCallTest/EmptyThisCallTest.sh
+JIT/Directed/debugging/debuginfo/tester/tester.sh
+JIT/Directed/pinning/object-pin/object-pin/object-pin.sh
+JIT/Directed/pinvoke/tail_pinvoke/tail_pinvoke.sh
+JIT/Directed/StructABI/EmptyStructs/EmptyStructs.sh
+JIT/Directed/StructABI/StructABI/StructABI.sh
+JIT/Directed/tls/TestTLSWithLoadedDlls/TestTLSWithLoadedDlls.sh
+JIT/Methodical/Boxing/misc/concurgc_d/concurgc_d.sh
+JIT/Methodical/Boxing/misc/concurgc_r/concurgc_r.sh
+JIT/Methodical/cctor/misc/threads2_cs_d/threads2_cs_d.sh
+JIT/Methodical/cctor/misc/threads2_cs_do/threads2_cs_do.sh
+JIT/Methodical/cctor/misc/threads2_cs_r/threads2_cs_r.sh
+JIT/Methodical/cctor/misc/threads2_cs_ro/threads2_cs_ro.sh
+JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b65423/b65423/b65423.sh
+JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/b426654.sh
+JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_32Bit/GitHub_23199_Target_32Bit.sh
+JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_64Bit/GitHub_23199_Target_64Bit.sh
+JIT/Regression/JitBlue/Runtime_101046/Runtime_101046/Runtime_101046.sh
+JIT/Regression/VS-ia64-JIT/V1.2-M02/b108129/b108129/b108129.sh
+Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests.sh
+Loader/AssemblyDependencyResolver/MissingHostPolicyTests/MissingHostPolicyTests/MissingHostPolicyTests.sh
+Loader/CollectibleAssemblies/AssemblyOnDisk/AssemblyOnDisk/AssemblyOnDisk.sh
+Loader/CollectibleAssemblies/Statics/CollectibleStatics/CollectibleStatics.sh
+Loader/CollectibleAssemblies/Statics/CollectibleTLSStaticCollection/CollectibleTLSStaticCollection.sh
+Loader/ExternalAssemblyProbe/ExternalAssemblyProbe/ExternalAssemblyProbe.sh
+Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
+Loader/SystemCoreLibDirectory/SystemCoreLibDirectory/SystemCoreLibDirectory.sh
+Regressions/coreclr/GitHub_117393/test117393/test117393.sh
+Regressions/coreclr/GitHub_12224/Test12224/Test12224.sh
+
+# ----- WASM interpreter gaps (CI-side skipped via xunit ConditionalFact) -----
+#
+# All entries below rely on CoreCLR test-library gates that already
+# skip them on any WASM target when run through xunit (browser CI does
+# not fail these):
+#
+#   * IsVarArgSupported returns false when Utilities.IsCoreClrInterpreter
+#     is true (per PR #123377). Utilities.IsCoreClrInterpreter is true on
+#     PlatformDetection.IsWasm.
+#   * IsMultithreadingSupported is false on browser + wasi per
+#     RuntimeFeature.
+#   * xunit-level ActiveIssue / SkipOnCoreClrAttribute for the couple of
+#     tests whose failure mode is not one of the above.
+#
+# Our local run.cs sweep drives standalone-mode wrappers directly (no
+# xunit gating), so we list them here to keep the sweep clean. If any
+# of these ever pass under a fixed interpreter, the sweep will report an
+# "unexpected pass" and we can remove them.
+# https://github.com/dotnet/runtime/issues/130064
+
+# --- vararg calling convention (IsVarArgSupported=false on WASM) ---
+JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/MutualThdRecur-fptr.sh
+JIT/Methodical/Coverage/arglist_pos/arglist_pos.sh
+JIT/Methodical/refany/seq_d/seq_d.sh
+JIT/Methodical/refany/seq_r/seq_r.sh
+JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/b26323.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324a/b26324a.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324b/b26324b.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/b28901.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30838/b30838/b30838.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30864/b30864/b30864.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/b32374.sh
+JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b35784/b35784/b35784.sh
+JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/b409748.sh
+baseservices/typeequivalence/signatures/nopiatestil/nopiatestil.sh
+
+# --- calli through EH / IL-verified tailcall (IsCoreClrInterpreter=true on WASM) ---
+JIT/Directed/pinvoke/calli_excep/calli_excep.sh
+JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
+
+# --- threading (IsMultithreadingSupported=false on browser/wasi) ---
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorFourThreadsBFI/CircularCctorFourThreadsBFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads01BFI/CircularCctorThreeThreads01BFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads02BFI/CircularCctorThreeThreads02BFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads03BFI/CircularCctorThreeThreads03BFI.sh
+
+# --- interpreter EH clause dispatch (Dev11_468598 HndIndex family:, hijacking) ---
+# These carry xunit-level ActiveIssue / SkipOnCoreClrAttribute in the .il itself.
+JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
+JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Plain/Test_HndIndex_10_Plain.sh
+JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/Test_HndIndex_10_Reordered.sh
+
+# --- MethodImpl self-override on PortableEntryPoint (fixed in main by #126124) ---
+# Local sweep still trips this until the branch is re-verified against the fix.

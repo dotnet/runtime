@@ -66,6 +66,31 @@
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
+  <!-- WASI: ensure wasmtime is provisioned into $(WasmtimeDir) before the
+       correlation payload gets copied for the Helix send job. -->
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'" />
+
+  <PropertyGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+    <!-- Helix writes a .payload marker into the correlation-payload source
+         directory; $(WasmtimeDir) isn't writable, so stage a copy first
+         (matches sendtohelix-wasi.targets). -->
+    <WasmtimeDirForHelixPayload>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'helix-staging', 'wasmtime'))</WasmtimeDirForHelixPayload>
+  </PropertyGroup>
+
+  <!-- Stage $(WasmtimeDir) -> $(WasmtimeDirForHelixPayload) before the
+       correlation payload is assembled for the Helix send. -->
+  <Target Name="StageWasmtimeForHelixPayload"
+          Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'"
+          BeforeTargets="CoreTest"
+          Inputs="$(WasmtimeDir)\.stamp-wasmtime-version.txt"
+          Outputs="$(WasmtimeDirForHelixPayload)\.stamp-wasmtime-version.txt">
+    <ItemGroup>
+      <_WasmtimeFilesToStage Include="$(WasmtimeDir)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_WasmtimeFilesToStage)"
+          DestinationFiles="@(_WasmtimeFilesToStage->'$(WasmtimeDirForHelixPayload)%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
@@ -77,7 +102,12 @@
     <TargetsBrowserOnMono Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'mono'">true</TargetsBrowserOnMono>
     <TargetsBrowserOnCoreCLR>false</TargetsBrowserOnCoreCLR>
     <TargetsBrowserOnCoreCLR Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsBrowserOnCoreCLR>
-    <TargetsMobile Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">false</TargetsMobile>
+    <TargetsWasiOnCoreCLR>false</TargetsWasiOnCoreCLR>
+    <TargetsWasiOnCoreCLR Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsWasiOnCoreCLR>
+    <!-- Both wasm+CoreCLR flavours follow the desktop test path; the
+         mobile/xharness AppBundle path used by Mono wasm/wasi tests
+         doesn't apply (see mergedrunner.targets). -->
+    <TargetsMobile Condition="'$(TargetsBrowserOnCoreCLR)' == 'true' or '$(TargetsWasiOnCoreCLR)' == 'true'">false</TargetsMobile>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
     <MobileAppBundleDirName Condition="'$(TargetsBrowserOnMono)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
@@ -652,6 +682,7 @@
     <HelixPreCommand Include="export RunInterpreter=1" Condition=" '$(RunInterpreter)' == 'true' " />
     <HelixPreCommand Include="export RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="export RunWithNodeJS=1" Condition=" '$(TargetsBrowserOnCoreCLR)' == 'true' " />
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" Condition=" '$(TargetsWasiOnCoreCLR)' == 'true' " />
     <HelixPreCommand Include="export HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
     <HelixPreCommand Include="export LargeVersionBubble=1" Condition=" '$(LargeVersionBubble)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -712,6 +743,12 @@
 
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
+
+    <!-- WASI: stage the wasmtime host binary as a separate correlation
+         payload so the WASI PATH prepend in the pre-command finds it.
+         Uses the staged copy (see WasmtimeDirForHelixPayload) rather
+         than $(WasmtimeDir) directly, matching sendtohelix-wasi.targets. -->
+    <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(TargetsWasiOnCoreCLR)' == 'true'" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
     <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowserOnMono)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />

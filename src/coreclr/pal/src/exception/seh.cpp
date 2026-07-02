@@ -361,4 +361,9 @@ bool CatchHardwareExceptionHolder::IsEnabled()
     return pThread ? pThread->IsHardwareExceptionsEnabled() : false;
 }
 
+#if !defined(TARGET_WASI)
+// seh-unwind.cpp uses libunwind which is unavailable on wasm32-wasip2.
+// The WASI build provides equivalent stubs (PAL_VirtualUnwind, RtlCaptureContext,
+// etc.) in arch/wasm/stubs.cpp directly.
 #include "seh-unwind.cpp"
+#endif

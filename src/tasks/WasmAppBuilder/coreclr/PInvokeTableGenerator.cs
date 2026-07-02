@@ -174,7 +174,17 @@ internal sealed class PInvokeTableGenerator
                 .Where(l => l.Module == module && !l.Skip)
                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                 .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
-                .Select(l => $"    DllImportEntry({CEntryPoint(l.First())}) // {ListRefs(l)}{w.NewLine}")
+                .Select(l =>
+                {
+                    PInvoke p = l.First();
+                    // Runtime resolver looks up by managed EntryPoint.
+                    // [WasmImportLinkage] mangles the C symbol per module,
+                    // so emit the entry-point string explicitly rather than
+                    // stringifying the mangled name via DllImportEntry.
+                    if (p.WasmLinkage)
+                        return $"    {{ \"{EscapeLiteral(p.EntryPoint)}\", (void*)&{CEntryPoint(p)} }}, // {ListRefs(l)}{w.NewLine}";
+                    return $"    DllImportEntry({CEntryPoint(p)}) // {ListRefs(l)}{w.NewLine}";
+                })
                 .ToList();
 
             moduleImports[module] = imports;
