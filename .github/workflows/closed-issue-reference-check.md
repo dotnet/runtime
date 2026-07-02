@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: true
 
 tools:
-  bash: ["git", "find", "ls", "cat", "grep", "head", "tail", "wc", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "gh"]
+  bash: ["git", "find", "ls", "cat", "grep", "head", "tail", "wc", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname"]
 
 checkout:
   fetch-depth: 1
@@ -186,7 +186,7 @@ network:
 
 You review how closed issues are used to disable or guard code. A deterministic step has scanned the source and build files under `src` for issue-URL links that sit in a test-disabling or guarding construct — an `[ActiveIssue(...)]` attribute, a `Skip = ...`, or a project-exclusion comment — and written `issue-candidates.json` to the workspace root. Every entry is a closed issue still used this way. A closed issue that is still disabling a test usually means one of two things: the issue was not actually fixed and should be reopened, or the code is leaning on the issue link instead of stating, in the code itself, why the test is disabled. The reason belongs in the code so it is self-describing; an issue link is not a substitute for it, and is warranted only in the rare case a comment cannot capture.
 
-You only suggest; you never act. The one write you can make is an `add-comment` through `safe-outputs`. Do not change issue state, edit files, or use `gh` to write anything.
+You only suggest; you never act. The one write you can make is an `add-comment` through `safe-outputs`. Do not change issue state or edit files.
 
 ## Guardrails
 
