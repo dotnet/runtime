@@ -58,6 +58,16 @@
   <PropertyGroup Condition="'$(_NativeAotLibraryTestOnHelix)' == 'true'">
     <_PrebuiltNativeAOTLib>$(OriginalPublishDir)lib$(AssemblyName).a</_PrebuiltNativeAOTLib>
     <SkipIlcCompile>true</SkipIlcCompile>
+    <!--
+      This AppleBuildDependsOn overrides the one defined near the top of the file. The override is needed
+      because in the NativeAOT library test on Helix flow the static library lib$(AssemblyName).a is
+      already produced during the host publish step, so ILC is not run again here and SkipIlcCompile is
+      set to true. The list therefore leaves out the default AOT compile, marshaler scan and native
+      library build targets, and instead adds _StageNativeAotLinkInputsOnHelix between
+      _AppleResolveReferences and _AppleGenerateAppBundle. That target prepares the pre-built static
+      library as the link input so the app bundle is generated from it. Update this list if the Apple
+      build target order changes.
+    -->
     <AppleBuildDependsOn>PrepareForAppleBuild;_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;_InitializeCommonProperties;_BeforeAppleBuild;_AppleResolveReferences;_StageNativeAotLinkInputsOnHelix;_AppleGenerateAppBundle;_AfterAppleBuild;_AfterAppleBuildOnHelix</AppleBuildDependsOn>
   </PropertyGroup>
 
