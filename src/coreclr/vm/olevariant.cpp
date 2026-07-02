@@ -1664,8 +1664,8 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     {
         GCX_PREEMP();
 
-        SafeComHolder<ITypeInfo> pITI;
-        SafeComHolder<IRecordInfo> pRecInfo;
+        SafeComHolderPreemp<ITypeInfo> pITI;
+        SafeComHolderPreemp<IRecordInfo> pRecInfo;
         IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
         IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));

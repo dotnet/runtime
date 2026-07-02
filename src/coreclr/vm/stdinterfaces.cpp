@@ -637,7 +637,7 @@ static bool TryDeferToMscorlib(MethodTable* pClass, ITypeInfo** ppTI)
     // code to .NET 8+. Try to load the .NET Framework's TLB to support this scenario.
     if (pClass == CoreLibBinder::GetClass(CLASS__GUID))
     {
-        SafeComHolder<ITypeLib> pMscorlibTypeLib = NULL;
+        SafeComHolderPreemp<ITypeLib> pMscorlibTypeLib;
         if (SUCCEEDED(::LoadRegTypeLib(s_MscorlibGuid, 2, 4, 0, &pMscorlibTypeLib)))
         {
             if (SUCCEEDED(pMscorlibTypeLib->GetTypeInfoOfGuid(s_GuidForSystemGuid, ppTI)))
@@ -836,12 +836,12 @@ MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
     HRESULT hr;
 
     // Verify the associated TypeLib attribute
-    SafeComHolder<ITypeInfo> typeInfo;
+    SafeComHolderPreemp<ITypeInfo> typeInfo;
     hr = recInfo->GetTypeInfo(&typeInfo);
     if (FAILED(hr))
         return NULL;
 
-    SafeComHolder<ITypeLib> typeLib;
+    SafeComHolderPreemp<ITypeLib> typeLib;
     UINT index;
     hr = typeInfo->GetContainingTypeLib(&typeLib, &index);
     if (FAILED(hr))

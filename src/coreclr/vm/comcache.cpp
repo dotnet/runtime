@@ -1346,7 +1346,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     {
         // If the transition failed because of an aborted func eval, simply propagate
         // the HRESULT/IErrorInfo back to the caller as we cannot throw here.
-        SafeComHolder<IErrorInfo> pErrorInfo = CheckForFuncEvalAbortNoThrow(hr);
+        SafeComHolderPreemp<IErrorInfo> pErrorInfo{ CheckForFuncEvalAbortNoThrow(hr) };
         if (pErrorInfo != NULL)
         {
             LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the debugger is blocking it\n", m_pCtxCookie));
