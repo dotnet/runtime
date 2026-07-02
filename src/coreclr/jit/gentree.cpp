@@ -24379,6 +24379,13 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types type, GenTree* op1, var_t
         return vecCon;
     }
 
+#if defined(TARGET_ARM64)
+    if ((simdSize == 8) && (genTypeSize(simdBaseType) == 8))
+    {
+        hwIntrinsicID = NI_Vector_Create;
+    }
+#endif // TARGET_ARM64
+
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseType, simdSize);
 }
 
@@ -24494,6 +24501,13 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
 
         return vecCon;
     }
+
+#if defined(TARGET_ARM64)
+    if ((simdSize == 8) && (genTypeSize(simdBaseType) == 8))
+    {
+        hwIntrinsicID = NI_Vector_Create;
+    }
+#endif // TARGET_ARM64
 
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseType, simdSize);
 }
