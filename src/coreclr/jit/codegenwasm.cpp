@@ -105,6 +105,18 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    // SIMD16 (Vector128) parameters are lowered to i32 in the wasm signature, so any
+    // v128 operation performed on them produces an invalid module (e.g. a v128 op with
+    // an i32 operand). Bail such methods to the interpreter until SIMD16 parameters are
+    // properly supported in the wasm calling convention.
+    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+    {
+        if (m_compiler->lvaGetDesc(lclNum)->TypeGet() == TYP_SIMD16)
+        {
+            NYI_WASM_SIMD("SIMD16 parameter");
+        }
+    }
+
     GetEmitter()->emitIns(INS_code_size);
 
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
@@ -2748,8 +2760,15 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        var_types   type = tree->TypeGet();
-        instruction ins  = ins_Store(type);
+        var_types type = tree->TypeGet();
+        if (type == TYP_SIMD16)
+        {
+            // Storing a SIMD16 value emits v128.store, but the data operand is not
+            // materialized as a v128 (it comes through as an i32), producing an invalid
+            // module. Bail until SIMD16 store is properly supported.
+            NYI_WASM_SIMD("SIMD16 store indirect");
+        }
+        instruction ins = ins_Store(type);
 
         // TODO-WASM: Memory barriers
 
