@@ -228,7 +228,14 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     // Set the code entry point before recording the method for call counting to avoid a race. Otherwise, the tiering delay may
     // expire and enable call counting for the method before the entry point is set here, in which case calls to the method
     // would not be counted anymore.
-    pMethodDesc->SetCodeEntryPoint(codeEntryPoint);
+    if (pMethodDesc->MayHaveEntryPointSlotsToBackpatch())
+    {
+        pMethodDesc->SetBackpatchableEntryPoint(codeEntryPoint, false /* isFinalTier */);
+    }
+    else
+    {
+        pMethodDesc->SetCodeEntryPoint(codeEntryPoint);
+    }
     _ASSERTE(m_methodsPendingCountingForTier1 != nullptr);
     m_methodsPendingCountingForTier1->Append(pMethodDesc);
     return true;
