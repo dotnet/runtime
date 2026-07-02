@@ -284,8 +284,8 @@ namespace System.Text.Json.SourceGeneration
             /// Adds the <c>[Experimental]</c> diagnostic IDs declared on <paramref name="symbol"/> (if any) to the
             /// set for the current parse phase, mirroring the generator's unconditional <c>[Obsolete]</c> suppression.
             /// When <paramref name="symbol"/> is a type, also recurses into array element types and generic type
-            /// arguments, since <see cref="ISymbol.GetAttributes"/> on a constructed generic returns the definition's
-            /// attributes rather than the type arguments'.
+            /// arguments from the type and its containing types, since <see cref="ISymbol.GetAttributes"/> on a
+            /// constructed generic returns the definition's attributes rather than the type arguments'.
             /// </summary>
             private void AddExperimentalDiagnosticIds(ISymbol? symbol)
             {
@@ -318,11 +318,14 @@ namespace System.Text.Json.SourceGeneration
                     {
                         AddExperimentalDiagnosticIds(arrayType.ElementType);
                     }
-                    else if (type is INamedTypeSymbol { TypeArguments: { Length: > 0 } typeArguments })
+                    else if (type is INamedTypeSymbol namedType)
                     {
-                        foreach (ITypeSymbol typeArgument in typeArguments)
+                        for (INamedTypeSymbol? current = namedType; current is not null; current = current.ContainingType)
                         {
-                            AddExperimentalDiagnosticIds(typeArgument);
+                            foreach (ITypeSymbol typeArgument in current.TypeArguments)
+                            {
+                                AddExperimentalDiagnosticIds(typeArgument);
+                            }
                         }
                     }
                 }

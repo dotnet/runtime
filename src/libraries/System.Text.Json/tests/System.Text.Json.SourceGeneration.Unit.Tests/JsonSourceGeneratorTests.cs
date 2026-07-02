@@ -1019,6 +1019,45 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void NestedGenericOuterTypeArgument_IsSuppressed()
+        {
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP_NESTED")]
+                public class MyExperimentalType
+                {
+                    public int Value { get; set; }
+                }
+
+                public class Outer<T>
+                {
+                    public class Inner
+                    {
+                        public int Value { get; set; }
+                    }
+                }
+
+                public class MyPoco
+                {
+                    #pragma warning disable EXP_NESTED
+                    public Outer<MyExperimentalType>.Inner Value { get; set; }
+                    #pragma warning restore EXP_NESTED
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            TypeGenerationSpec myPoco = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "MyPoco");
+            Assert.Equal(new[] { "EXP_NESTED" }, myPoco.ExperimentalDiagnosticIds);
+        }
+
+        [Fact]
         public void OptionsLevelExperimentalConverterTypeArgument_IsSuppressedInContextSources()
         {
             string source = """
@@ -1572,4 +1611,3 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
     }
 }
-
