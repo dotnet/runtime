@@ -9,7 +9,7 @@ import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
 import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
-import { initPolyfills } from "./polyfills";
+import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
@@ -90,7 +90,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             }
 
             // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
-            await initPolyfills();
+            await initPolyfillsLoader();
 
             configInitialized = true;
             modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
