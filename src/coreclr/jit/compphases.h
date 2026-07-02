@@ -142,6 +142,8 @@ CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INTERBLOCK,  "Global local var liveness"
 
 CompPhaseNameMacro(PHASE_LOWERING_DECOMP,            "Lowering decomposition",         false, -1, false)
 CompPhaseNameMacro(PHASE_LOWERING,                   "Lowering nodeinfo",              false, -1, true)
+CompPhaseNameMacro(PHASE_CONSTANT_REUSE,             "Constant reuse",                 false, -1, true)
+CompPhaseNameMacro(PHASE_POST_LOWERING,              "Post-lowering cleanup",          false, -1, true)
 CompPhaseNameMacro(PHASE_STACK_LEVEL_SETTER,         "Calculate stack level slots",    false, -1, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN,                "Linear scan register alloc",     true,  -1, true)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_BUILD,          "LSRA build intervals",           false, PHASE_LINEAR_SCAN, false)

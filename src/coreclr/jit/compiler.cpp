@@ -5067,6 +5067,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_regAlloc); // PHASE_LOWERING
     m_pLowering->Run();
 
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (opts.OptimizationEnabled())
+    {
+        DoPhase(this, PHASE_CONSTANT_REUSE, &Compiler::fgOptimizeConstantReuse);
+    }
+#endif
+
+    DoPhase(this, PHASE_POST_LOWERING, &Compiler::fgPostLowering);
+
     // Set stack levels and analyze throw helper usage.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
@@ -5213,6 +5222,56 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fflush(compJitFuncInfoFile);
     }
 #endif // FUNC_INFO_LOGGING
+}
+
+//------------------------------------------------------------------------
+// fgPostLowering: Run cleanup that depends on lowered IR.
+//
+// Returns:
+//    PhaseStatus indicating whether the IR may have been changed.
+//
+PhaseStatus Compiler::fgPostLowering()
+{
+    // Recompute local var ref counts before potentially sorting for liveness.
+    // Note this does minimal work in cases where we are not going to sort.
+    const bool isRecompute    = true;
+    const bool setSlotNumbers = false;
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
+
+    if (m_dfsTree == nullptr)
+    {
+        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
+        // do this everywhere. The dead blocks are removed below.
+        m_dfsTree = fgComputeDfs();
+    }
+
+    // Remove dead blocks. We want to remove unreachable blocks even in MinOpts.
+    fgRemoveBlocksOutsideDfsTree();
+
+    if (backendRequiresLocalVarLifetimes())
+    {
+        assert(opts.OptimizationEnabled());
+
+        fgPostLowerLiveness();
+        // local var liveness can delete code, which may create empty blocks
+        bool modified = fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+
+        if (modified)
+        {
+            fgDfsBlocksAndRemove();
+            JITDUMP("had to run another liveness pass:\n");
+            fgPostLowerLiveness();
+        }
+
+        // Recompute local var ref counts again after liveness to reflect
+        // impact of any dead code removal. Note this may leave us with
+        // tracked vars that have zero refs.
+        lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    }
+
+    fgInvalidateDfsTree();
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //----------------------------------------------------------------------------------------------
