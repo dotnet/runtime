@@ -1643,7 +1643,7 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
 #elif defined(TARGET_ARM64)
         // For Arm64 we have count total bits to read, but
         // they are sizeof(TBase) bits apart. We set
-        // the result element to AllBitsSet or Zero depending
+        // the result element to One or Zero depending
         // on the corresponding mask bit
 
         isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
@@ -1655,11 +1655,17 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
 
         if (isSet)
         {
+#ifdef TARGET_ARM64
+            // TODO-SVE: We want to unify this output to 'AllBitsSet' as in other
+            // architectures, so we can benefit fully from optimizations on this value.
+            output = static_cast<TBase>(1);
+#else
             memset(&output, 0xFF, sizeof(TBase));
+#endif
         }
         else
         {
-            memset(&output, 0x00, sizeof(TBase));
+            output = static_cast<TBase>(0);
         }
 
         memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
@@ -1957,11 +1963,11 @@ bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
 
         if (i < finalOne)
         {
-            memset(&output, 0xFF, sizeof(TBase));
+            output = static_cast<TBase>(1);
         }
         else
         {
-            memset(&output, 0x00, sizeof(TBase));
+            output = static_cast<TBase>(0);
         }
 
         memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
@@ -2113,6 +2119,35 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
             unreached();
         }
     }
+}
+
+template <typename TSimd>
+TSimd ConvertToBitWiseMask(uint32_t baseTypeSize, const TSimd& elementWiseMask)
+{
+    TSimd    bitWiseMask = {};
+    uint32_t count       = sizeof(TSimd) / baseTypeSize;
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint32_t    index           = i * baseTypeSize;
+        const void* elementWiseAddr = &elementWiseMask.u8[index];
+        void*       bitWiseAddr     = &bitWiseMask.u8[index];
+
+        uint64_t maskBit = 0;
+        memcpy(&maskBit, elementWiseAddr, baseTypeSize);
+
+        if (maskBit == 1)
+        {
+            memset(bitWiseAddr, 0xff, baseTypeSize);
+        }
+        else
+        {
+            assert(maskBit == 0);
+            memset(bitWiseAddr, 0x0, baseTypeSize);
+        }
+    }
+
+    return bitWiseMask;
 }
 
 //------------------------------------------------------------------------

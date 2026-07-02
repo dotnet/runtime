@@ -2873,9 +2873,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateFalseMaskUInt64:
         {
             // Import as a constant vector 0
-            GenTreeVecCon* vecCon = gtNewVconNode(retType);
-            vecCon->gtSimdVal     = simd_t::Zero();
-            retNode               = vecCon;
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -2891,23 +2889,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateTrueMaskUInt64:
         {
             assert(sig->numArgs == 1);
+            assert(retType == TYP_MASK);
             op1 = impPopStack().val;
 
             // Where possible, import a constant mask to allow for optimisations.
             if (op1->IsIntegralConst())
             {
-                int64_t pattern = op1->AsIntConCommon()->IntegralValue();
-                simd_t  simdVal;
+                int64_t    pattern = op1->AsIntConCommon()->IntegralValue();
+                simdmask_t simdVal;
 
-                if (EvaluateSimdPatternToVector(simdBaseType, &simdVal, (SveMaskPattern)pattern))
+                if (EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &simdVal, (SveMaskPattern)pattern))
                 {
-                    retNode = gtNewVconNode(retType, &simdVal);
+                    GenTreeMskCon* mskCon = gtNewMskConNode(retType);
+                    mskCon->gtSimdMaskVal = simdVal;
+                    retNode               = mskCon;
                     break;
                 }
             }
 
             // Was not able to generate a pattern, instead import a truemaskall
-            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
             break;
         }
 
