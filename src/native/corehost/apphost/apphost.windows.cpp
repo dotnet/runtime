@@ -342,13 +342,13 @@ namespace
     }
 }
 
-void apphost::buffer_errors()
+extern "C" void apphost_buffer_errors()
 {
     trace::verbose(_X("Redirecting errors to custom writer."));
     trace::set_error_writer(buffering_trace_writer);
 }
 
-void apphost::write_buffered_errors(int error_code)
+extern "C" void apphost_write_buffered_errors(int error_code)
 {
     if (g_buffered_errors.empty())
         return;

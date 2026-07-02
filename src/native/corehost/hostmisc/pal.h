@@ -203,6 +203,28 @@ pal_char_t* pal_get_default_installation_dir(void);
 // on Windows, file path on Unix). Caller should free() the returned pointer.
 pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 
+// Returns true if path is fully qualified (absolute).
+// Equivalent to pal::is_path_fully_qualified.
+bool pal_is_path_fully_qualified(const pal_char_t* path);
+
+// Load the dynamic library at path. On success, stores the library handle in
+// *dll and returns true; returns false on failure. Equivalent to pal::load_library.
+bool pal_load_library(const pal_char_t* path, void** dll);
+
+// Unload a library previously loaded with pal_load_library.
+void pal_unload_library(void* library);
+
+// Resolve an exported symbol from a loaded library, or NULL if not found.
+void* pal_get_symbol(void* library, const char* name);
+
+#if defined(TARGET_WINDOWS)
+// Convert a narrow UTF-8 string to a pal_char_t (wide) string written into the
+// caller-provided buffer of out_len characters. Returns false if conversion
+// fails or the result does not fit. Windows-only; on Unix pal_char_t is char
+// and no conversion is needed.
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

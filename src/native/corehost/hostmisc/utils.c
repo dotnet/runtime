@@ -8,6 +8,12 @@
 #include <assert.h>
 #include <string.h>
 
+#if defined(TARGET_WINDOWS)
+#include <_version.h>
+#else
+#include <_version.c>
+#endif
+
 void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len)
 {
     if (path == NULL)
@@ -237,4 +243,22 @@ void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_c
         query, rid_value);
 
     free(rid);
+}
+
+void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len)
+{
+#if defined(TARGET_WINDOWS)
+    pal_str_printf(out_desc, out_desc_len, _X("%s"), _STRINGIFY(VER_PRODUCTVERSION_STR));
+#else
+    // sccsid is @(#)Version <file_version> [@Commit: <commit_hash>]; extract the commit portion if present.
+    char* commit_maybe = strchr(&sccsid[STRING_LENGTH("@(#)Version ")], '@');
+    if (commit_maybe != NULL)
+    {
+        pal_str_printf(out_desc, out_desc_len, _X("%s %s"), _STRINGIFY(HOST_VERSION), commit_maybe);
+    }
+    else
+    {
+        pal_str_printf(out_desc, out_desc_len, _X("%s"), _STRINGIFY(HOST_VERSION));
+    }
+#endif
 }

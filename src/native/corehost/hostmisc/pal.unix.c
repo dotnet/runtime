@@ -13,6 +13,7 @@
 
 #include <assert.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -296,4 +297,38 @@ pal_char_t* pal_get_default_installation_dir(void)
 #else
     return pal_strdup(_X("/usr/share/dotnet"));
 #endif
+}
+
+bool pal_is_path_fully_qualified(const pal_char_t* path)
+{
+    return path != NULL && path[0] == DIR_SEPARATOR;
+}
+
+bool pal_load_library(const pal_char_t* path, void** dll)
+{
+    *dll = dlopen(path, RTLD_LAZY);
+    if (*dll == NULL)
+    {
+        trace_error(_X("Failed to load %s, error: %s"), path, dlerror());
+        return false;
+    }
+    return true;
+}
+
+void pal_unload_library(void* library)
+{
+    if (dlclose(library) != 0)
+    {
+        trace_warning(_X("Failed to unload library, error: %s"), dlerror());
+    }
+}
+
+void* pal_get_symbol(void* library, const char* name)
+{
+    void* result = dlsym(library, name);
+    if (result == NULL)
+    {
+        trace_info(_X("Probed for and did not find library symbol %s, error: %s"), name, dlerror());
+    }
+    return result;
 }

@@ -4,44 +4,41 @@
 include_directories(..)
 
 set(SOURCES
-    ../bundle_marker.cpp
-    ./hostfxr_resolver.cpp
-    ../../corehost.cpp
+    ../apphost.c
+    ../bundle_marker.c
+    ./apphost_hostfxr_resolver.c
+    ../../fxr_resolver.c
 )
 
 set(HEADERS
     ../bundle_marker.h
-    ../../hostfxr_resolver.h
+    ../../hostmisc/pal.h
+    ../apphost_hostfxr_resolver.h
 )
-
-if(CLR_CMAKE_TARGET_WIN32)
-    add_compile_definitions(UNICODE)
-    list(APPEND SOURCES
-        ../apphost.windows.cpp)
-
-    list(APPEND HEADERS
-        ../apphost.windows.h)
-endif()
-
-if(CLR_CMAKE_TARGET_WIN32)
-    list(APPEND SOURCES ${HEADERS})
-endif()
 
 add_compile_definitions(FEATURE_APPHOST)
 
-add_executable(apphost ${SOURCES} ${RESOURCES})
+if(CLR_CMAKE_TARGET_WIN32)
+    list(APPEND SOURCES
+        ../apphost.windows.cpp)
+    list(APPEND HEADERS
+        ../apphost.windows.h)
 
-target_link_libraries(apphost PRIVATE hostmisc fxr_resolver)
-
-add_sanitizer_runtime_support(apphost)
-
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    disable_pax_mprotect(apphost)
+    add_compile_definitions(UNICODE)
 endif()
 
-install_with_stripped_symbols(apphost TARGETS corehost)
+list(APPEND SOURCES ${HEADERS})
+
+add_executable(apphost ${SOURCES} ${RESOURCES})
+
+target_include_directories(apphost PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 if(CLR_CMAKE_TARGET_WIN32)
+    target_link_libraries(apphost PRIVATE hostmisc shell32)
+
     # Disable manifest generation into the file .exe on Windows
     target_link_options(apphost PRIVATE "/MANIFEST:NO")
 
@@ -49,11 +46,14 @@ if(CLR_CMAKE_TARGET_WIN32)
     if (CLR_CMAKE_HOST_ARCH_AMD64)
         target_link_options(apphost PRIVATE "/CETCOMPAT")
     endif()
+else()
+    target_link_libraries(apphost PRIVATE hostmisc_c minipal_objects m)
+    disable_pax_mprotect(apphost)
 endif()
 
-if (CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(apphost PRIVATE shell32)
-endif()
+add_sanitizer_runtime_support(apphost)
+
+install_with_stripped_symbols(apphost TARGETS corehost)
 
 if (CLR_CMAKE_HOST_APPLE)
     adhoc_sign_with_entitlements(apphost "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
