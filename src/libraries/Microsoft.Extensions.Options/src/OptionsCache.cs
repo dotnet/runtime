@@ -97,11 +97,21 @@ namespace Microsoft.Extensions.Options
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
-#if !(NET || NETSTANDARD2_1)
-                () =>
-#endif
-                options));
+            return _cache.TryAdd(name ?? Options.DefaultName, CreateLazy(options));
+        }
+
+        internal void Set(string? name, TOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
+            if (GetType() != typeof(OptionsCache<TOptions>))
+            {
+                TryRemove(name);
+                TryAdd(name, options);
+                return;
+            }
+
+            _cache[name ?? Options.DefaultName] = CreateLazy(options);
         }
 
         /// <summary>
@@ -111,5 +121,12 @@ namespace Microsoft.Extensions.Options
         /// <returns><see langword="true"/> if anything was removed; otherwise, <see langword="false"/>.</returns>
         public virtual bool TryRemove(string? name) =>
             _cache.TryRemove(name ?? Options.DefaultName, out _);
+
+        private static Lazy<TOptions> CreateLazy(TOptions options) =>
+            new Lazy<TOptions>(
+#if !(NET || NETSTANDARD2_1)
+                () =>
+#endif
+                options);
     }
 }

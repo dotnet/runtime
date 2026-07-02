@@ -9,6 +9,9 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Asynchronously validates options.
     /// </summary>
+    /// <remarks>
+    /// Singleton implementations may be used concurrently by options services, such as <see cref="IOptionsMonitor{TOptions}"/>.
+    /// </remarks>
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
     public interface IAsyncValidateOptions<in TOptions> where TOptions : class
     {

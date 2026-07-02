@@ -16,11 +16,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <remarks>
         /// Synchronous validation runs when the options instance is created or accessed. When targeting .NET 11 or later,
-        /// asynchronous validation (including <c>AsyncValidationAttribute</c>-derived attributes)
-        /// runs once at startup, and only when <c>ValidateOnStart()</c> is also called.
-        /// If <c>ValidateOnStart()</c> is not called, attributes deriving from
-        /// <c>AsyncValidationAttribute</c> are never evaluated asynchronously: runtime options access triggers only
-        /// synchronous validation, which invokes the attribute's synchronous fallback instead.
+        /// asynchronous validation (including <c>AsyncValidationAttribute</c>-derived attributes) runs during startup
+        /// validation when <c>ValidateOnStart()</c> is also called, and during runtime reloads observed by
+        /// <c>IOptionsMonitor{TOptions}</c>. Monitor change notifications are published after asynchronous validation
+        /// succeeds. If <c>ValidateOnStart()</c> is not called, synchronous options access
+        /// triggers only synchronous validation, which invokes the attribute's synchronous fallback instead.
         /// When using <c>AsyncValidationAttribute</c>-derived attributes, ensure the synchronous
         /// <c>IsValid</c> fallback does not throw: synchronous validation still runs on every
         /// options access, so a throwing fallback surfaces as an exception on each access (for example
