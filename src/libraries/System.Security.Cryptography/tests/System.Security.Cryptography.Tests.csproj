@@ -541,7 +541,6 @@
     <Compile Include="DefaultECDsaProvider.cs" />
     <Compile Include="DefaultECDsaTests.cs" />
     <Compile Include="DefaultRSAProvider.cs" />
-    <Compile Include="DefaultRSATests.cs" />
     <Compile Include="DESProvider.cs" />
     <Compile Include="DESTests.cs" />
     <Compile Include="DSACreateTests.cs" />
@@ -598,6 +597,7 @@
     <Compile Include="RSAKeyExchangeFormatterTests.Default.cs" />
     <Compile Include="RSASignatureFormatterTests.NoKey.cs" />
     <Compile Include="RSATestRegistration.Default.cs" />
+    <Compile Include="RSATests.cs" />
     <Compile Include="Sha1Tests.cs" />
     <Compile Include="Sha1ManagedTests.cs" />
     <Compile Include="Sha256Tests.cs" />

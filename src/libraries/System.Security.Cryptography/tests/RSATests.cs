@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class DefaultRSATests
+    public static class RSATests
     {
         [Fact]
         public static void BaseVirtualsNotImplementedException()
