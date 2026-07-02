@@ -74,9 +74,9 @@ jobs:
       - name: Guard on eval token
         id: guard
         run: |
-          if [ -z "${{ secrets.COPILOT_EVAL_TOKEN }}" ]; then
+          if [ -z "${{ secrets.COPILOT_GITHUB_TOKEN }}" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::COPILOT_EVAL_TOKEN not set — skipping the Vally eval run."
+            echo "::notice::COPILOT_GITHUB_TOKEN not set — skipping the Vally eval run."
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
@@ -85,7 +85,7 @@ jobs:
         if: steps.guard.outputs.run == 'true'
         id: run
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_EVAL_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
           : > report.md
           rc=0
