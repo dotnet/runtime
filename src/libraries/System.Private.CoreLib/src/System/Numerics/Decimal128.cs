@@ -29,6 +29,8 @@ namespace System.Numerics
         private const int ExponentBias = 6176;
         private static UInt128 PositiveInfinityValue => new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
         private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
+        // Canonical ±0 use the IEEE 754 preferred representation for integer values,
+        // which stores zero with the biased exponent rather than the minimum exponent.
         private static UInt128 ZeroValue => new UInt128(0x3040_0000_0000_0000, 0);
         private static UInt128 NegativeZeroValue => new UInt128(0xB040_0000_0000_0000, 0);
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);

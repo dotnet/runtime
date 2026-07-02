@@ -23,6 +23,8 @@ namespace System.Numerics
         private const int ExponentBias = 398;
         private const ulong PositiveInfinityValue = 0x7800_0000_0000_0000;
         private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
+        // Canonical ±0 use the IEEE 754 preferred representation for integer values,
+        // which stores zero with the biased exponent rather than the minimum exponent.
         private const ulong ZeroValue = 0x31C0_0000_0000_0000;
         private const ulong NegativeZeroValue = 0xB1C0_0000_0000_0000;
         private const ulong QuietNaNValue = 0xFC00_0000_0000_0000;

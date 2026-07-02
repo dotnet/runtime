@@ -30,6 +30,8 @@ namespace System.Numerics
         private const int ExponentBias = 101;
         private const uint PositiveInfinityValue = 0x7800_0000;
         private const uint NegativeInfinityValue = 0xF800_0000;
+        // Canonical ±0 use the IEEE 754 preferred representation for integer values,
+        // which stores zero with the biased exponent rather than the minimum exponent.
         private const uint ZeroValue = 0x3280_0000;
         private const uint NegativeZeroValue = 0xB280_0000;
         private const uint QuietNaNValue = 0xFC00_0000;
