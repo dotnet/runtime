@@ -9,14 +9,14 @@ tokens { IncludedFileEof, SyntheticIncludedFileEof }
 
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 INT64: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
-FLOAT64: '-'? [0-9]+ ('.' [0-9]+ | [eE] '-'? [0-9]+);
-HEXBYTE: [0-9A-Fa-f][0-9A-Fa-f];
+FLOAT64: '-'? ([0-9]+ ('.' [0-9]+ ([eE] [+\-]? [0-9]+)? | [eE] [+\-]? [0-9]+) | '.' [0-9]+ ([eE] [+\-]? [0-9]+)?);
+// Blob hex bytes are parsed via the hexbyte parser rule; the HEXBYTE lexer token is defined later in this grammar.
 DCOLON: '::';
-ELLIPSIS: '..';
+ELLIPSIS: '...';
 NULL: 'null';
 NULLREF: 'nullref';
 HASH: '.hash';
-CHAR: 'char';
+CHAR: 'char' | 'wchar';
 STRING: 'string';
 BOOL: 'bool';
 INT8: 'int8';
@@ -26,12 +26,12 @@ INT64_: 'int64';
 FLOAT32: 'float32';
 FLOAT64_: 'float64';
 fragment UNSIGNED: 'unsigned';
-UINT8: 'uint8' | (UNSIGNED INT8);
-UINT16: 'uint16' | (UNSIGNED INT16);
-UINT32: 'uint32' | (UNSIGNED INT32_);
-UINT64: 'uint64' | (UNSIGNED INT64_);
+UINT8: 'uint8';
+UINT16: 'uint16';
+UINT32: 'uint32';
+UINT64: 'uint64';
 INT: 'int';
-UINT: 'uint' | (UNSIGNED 'int');
+UINT: 'uint';
 TYPE: 'type';
 OBJECT: 'object';
 MODULE: '.module';
@@ -59,11 +59,9 @@ IDISPATCH: 'idispatch';
 STRUCT: 'struct';
 INTERFACE: 'interface';
 SAFEARRAY: 'safearray';
-NESTEDSTRUCT: 'nested' STRUCT;
-VARIANTBOOL: VARIANT BOOL;
+// NESTEDSTRUCT, VARIANTBOOL, ANSIBSTR are now parser rules to handle whitespace
 BYVALSTR: 'byvalstr';
 ANSI: 'ansi';
-ANSIBSTR: ANSI BSTR;
 TBSTR: 'tbstr';
 METHOD: 'method';
 ANY: 'any';
@@ -93,9 +91,9 @@ THISCALL: 'thiscall';
 FASTCALL: 'fastcall';
 TYPE_PARAMETER: '!';
 METHOD_TYPE_PARAMETER: '!' '!';
-TYPEDREF: 'typedref';
-NATIVE_INT: 'native' 'int';
-NATIVE_UINT: ('native' 'unsigned' 'int') | ('native' 'uint');
+TYPEDREF: 'typedref' | 'refany';
+// NATIVE_INT and NATIVE_UINT are now parser rules (nativeInt, nativeUint)
+// to handle whitespace between 'native' and 'int'/'uint'.
 PARAM: '.param';
 CONSTRAINT: 'constraint';
 
@@ -106,8 +104,9 @@ REF: '&';
 ARRAY_TYPE_NO_BOUNDS: '[' ']';
 PTR: '*';
 
-QSTRING: '"' (~('"' | '\\') | '\\' ('"' | '\\'))* '"';
-SQSTRING: '\'' (~('\'' | '\\') | '\\' ('\'' | '\\'))* '\'';
+fragment ESC_SEQ: '\\' (["'\\/?abfnrtv0] | [0-7] [0-7]? [0-7]? | '\r'? '\n');
+QSTRING: '"' (~["\\\r\n] | ESC_SEQ)* '"';
+SQSTRING: '\'' (~['\\\r\n] | ESC_SEQ)* '\'';
 DOT: '.';
 PLUS: '+';
 
@@ -139,6 +138,7 @@ INSTR_NONE:
 	| 'stloc.3'
 	| 'ldnull'
 	| 'ldc.i4.m1'
+	| 'ldc.i4.M1'
 	| 'ldc.i4.0'
 	| 'ldc.i4.1'
 	| 'ldc.i4.2'
@@ -158,6 +158,7 @@ INSTR_NONE:
 	| 'ldind.i4'
 	| 'ldind.u4'
 	| 'ldind.i8'
+	| 'ldind.u8'
 	| 'ldind.i'
 	| 'ldind.r4'
 	| 'ldind.r8'
@@ -212,6 +213,7 @@ INSTR_NONE:
 	| 'ldelem.i4'
 	| 'ldelem.u4'
 	| 'ldelem.i8'
+	| 'ldelem.u8'
 	| 'ldelem.i'
 	| 'ldelem.r4'
 	| 'ldelem.r8'
@@ -245,6 +247,7 @@ INSTR_NONE:
 	| 'sub.ovf'
 	| 'sub.ovf.un'
 	| 'endfinally'
+	| 'endfault'
 	| 'stind.i'
 	| 'conv.u'
 	| 'prefix7'
@@ -373,10 +376,16 @@ INSTR_FIELD:
 INSTR_TOK: 'ldtoken';
 
 // ID needs to be last to ensure it doesn't take priority over other token types
-fragment IDSTART: [A-Za-z_#$@];
+fragment IDSTART: [A-Za-z_#$@?];
 fragment IDCONT: [A-Za-z0-9_#?$@`];
 DOTTEDNAME: (ID DOT)+ ID;
 ID: IDSTART IDCONT*;
+
+// HEXBYTE: matches exactly two hex digits. Defined AFTER INT32 and ID so that:
+// - Pure digit pairs (11, 00) match INT32 first (same length, INT32 defined earlier)
+// - Letter-starting pairs (B0, FF) match ID first (same length, ID defined earlier)
+// - Digit-letter pairs (3F, 0A) match HEXBYTE (2 chars beats INT32's 1-char match)
+HEXBYTE: [0-9A-Fa-f][0-9A-Fa-f];
 
 id:
 	ID
@@ -396,8 +405,11 @@ id:
 	| 'aggressiveoptimization'
 	| 'async'
 	| 'extended'
+	| VALUE
+	| INSTANCE
 	| SQSTRING;
-dottedName: DOTTEDNAME | ((ID '.')* ID);
+dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
+dottedNamePart: ID | VALUE | INSTANCE;
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -405,7 +417,7 @@ WS: [ \t\r\n] -> skip;
 SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
 COMMENT: '/*' .*? '*/' -> skip;
 
-decls: decl+;
+decls: decl*;
 
 decl:
 	classHead '{' classDecls '}'
@@ -451,9 +463,14 @@ assemblyBlock:
 mscorlib: '.mscorlib';
 
 languageDecl:
-	'.language' SQSTRING
-	| '.language' SQSTRING ',' SQSTRING
-	| '.language' SQSTRING ',' SQSTRING ',' SQSTRING;
+	'.language' languageString
+	| '.language' languageString ',' languageString
+	| '.language' languageString ',' languageString ',' languageString
+	// COMPAT: Accept space-separated QSTRING form (used by some IL tools)
+	| '.language' QSTRING QSTRING
+	| '.language' QSTRING QSTRING QSTRING;
+
+languageString: SQSTRING | QSTRING;
 
 typelist: '.typelist' '{' (className)* '}';
 
@@ -462,6 +479,8 @@ int64: INT64 | INT32;
 
 float64:
 	FLOAT64
+	| int32 '.'	/* trailing-dot integer as float (e.g., ldc.r8 1.) */
+	| int32
 	| FLOAT32 '(' int32 ')'
 	| FLOAT64_ '(' int64 ')';
 
@@ -529,9 +548,9 @@ serializTypeElement:
 
 /*  Module declaration */
 moduleHead:
-	MODULE
+	MODULE 'extern' dottedName
 	| MODULE dottedName
-	| MODULE 'extern' dottedName;
+	| MODULE;
 
 /*  VTable Fixup table declaration  */
 vtfixupDecl: '.vtfixup' '[' int32 ']' vtfixupAttr 'at' id;
@@ -604,7 +623,11 @@ extSourceSpec:
 	| esHead int32 ',' int32 ':' int32
 	| esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING
 	| esHead int32 ',' int32 ':' int32 ',' int32
-	| esHead int32 QSTRING;
+	| esHead int32 QSTRING
+	| esHead int32 ':' int32 QSTRING
+	| esHead int32 ':' int32 ',' int32 QSTRING
+	| esHead int32 ',' int32 ':' int32 QSTRING
+	| esHead int32 ',' int32 ':' int32 ',' int32 QSTRING;
 
 /*  Manifest declarations  */
 fileDecl:
@@ -676,11 +699,12 @@ instr:
 	| instr_string 'bytearray' '(' bytes ')'
 	| instr_sig callConv type sigArgs
 	| instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
-	| instr_switch '(' labels ')';
+	| instr_switch '(' labels ')'
+	| instr_switch '()';
 
 labels:
 	/* empty */
-	| (id | int32 ',')* (id | int32);
+	| ((id | int32) ',')* (id | int32);
 
 typeArgs: '<' (type ',')* type '>';
 
@@ -690,8 +714,7 @@ sigArgs: '(' (sigArg ',')* sigArg ')' | '()';
 
 sigArg:
 	ELLIPSIS
-	| paramAttr type marshalClause
-	| paramAttr type marshalClause id;
+	| paramAttr type marshalClause id?;
 
 /*  Class referencing  */
 
@@ -768,11 +791,11 @@ nativeTypeElement:
 	| marshalType=SAFEARRAY variantType ',' compQstring
 	| marshalType=INT
 	| marshalType=UINT
-	| marshalType=NESTEDSTRUCT
+	| 'nested' marshalType=STRUCT
 	| marshalType=BYVALSTR
-	| marshalType=ANSIBSTR
+	| ANSI marshalType=BSTR
 	| marshalType=TBSTR
-	| marshalType=VARIANTBOOL
+	| VARIANT marshalBool=BOOL
 	| marshalType=METHOD
 	| marshalType=LPSTRUCT
 	| 'as' marshalType=ANY
@@ -830,7 +853,8 @@ variantTypeElement:
 type: elementType typeModifiers*;
 
 typeModifiers:
-	'[' ']'						# SZArrayModifier
+	ARRAY_TYPE_NO_BOUNDS			# SZArrayModifier
+	| '[' ']'						# SZArrayModifier
 	| bounds					# ArrayModifier
 	| REF						# ByRefModifier
 	| PTR  				# PtrModifier
@@ -851,8 +875,8 @@ elementType:
 	| TYPE_PARAMETER dottedName
 	| TYPEDREF
 	| VOID
-	| NATIVE_INT
-	| NATIVE_UINT
+	| nativeInt
+	| nativeUint
 	| simpleType
 	| dottedName /* typedef */
 	| ELLIPSIS type;
@@ -870,13 +894,21 @@ simpleType:
 	| UINT8
 	| UINT16
 	| UINT32
-	| UINT64;
+	| UINT64
+	| 'unsigned' INT8
+	| 'unsigned' INT16
+	| 'unsigned' INT32_
+	| 'unsigned' INT64_;
 
 bound:
 	| ELLIPSIS
 	| int32
 	| int32 ELLIPSIS int32
 	| int32 ELLIPSIS;
+
+/* Parser rules for multi-word type tokens that need whitespace handling */
+nativeInt: 'native' INT;
+nativeUint: 'native' ('unsigned' INT | UINT);
 
 /*  Security declarations  */
 PERMISSION: '.permission';
@@ -893,8 +925,8 @@ secDecl:
 secAttrSetBlob: | (secAttrBlob ',')* secAttrBlob;
 
 secAttrBlob:
-	typeSpec '=' '{' customBlobNVPairs '}'
-	| 'class' SQSTRING '=' '{' customBlobNVPairs '}';
+	'class' SQSTRING '=' '{' customBlobNVPairs '}'
+	| typeSpec '=' '{' customBlobNVPairs '}';
 
 nameValPairs: (nameValPair ',')* nameValPair;
 
@@ -1036,9 +1068,10 @@ fieldAttr:
 	| 'privatescope'
 	| 'literal'
 	| 'notserialized'
+	| 'volatile'
 	| 'flags' '(' int32 ')';
 
-atOpt: /* EMPTY */ | 'at' id;
+atOpt: /* EMPTY */ | 'at' id | 'at' int32;
 
 initOpt: /* EMPTY */ | '=' fieldInit;
 
@@ -1088,7 +1121,7 @@ propDecl:
 
 marshalClause: /* EMPTY */ | 'marshal' '(' marshalBlob ')';
 
-marshalBlob: nativeType | '{' hexbytes '}';
+marshalBlob: nativeType | '{' hexbyte+ '}';
 
 paramAttr: paramAttrElement*;
 
@@ -1122,7 +1155,7 @@ methAttr: 'static'
 	| 'reqsecobj'
 	| 'flags' '(' int32 ')';
 
-pinvImpl: 'pinvokeimpl' '(' (compQstring ('as' compQstring)?)? pinvAttr* ')';
+pinvImpl: 'pinvokeimpl' '(' (compQstring ('as' compQstring)?)? pinvAttr* ')' | 'pinvokeimpl' '()';
 
 pinvAttr:
 	'nomangle'
@@ -1146,6 +1179,7 @@ methodName: '.ctor' | '.cctor' | dottedName;
 implAttr:
 	'native'
 	| 'cil'
+	| 'il'
 	| 'optil'
 	| 'managed'
 	| 'unmanaged'
@@ -1247,7 +1281,7 @@ ddHead: '.data' tls id '=' | '.data' tls;
 
 tls: /* EMPTY */ | 'tls' | 'cil';
 
-ddBody: '{' ddItemList '}' | ddItem;
+ddBody: '{' ddItemList '}' | ddItem+;
 
 ddItemList: (ddItem ',')* ddItem;
 
@@ -1256,6 +1290,7 @@ ddItemCount: /* EMPTY */ | '[' int32 ']';
 ddItem:
 	CHAR PTR '(' compQstring ')'
 	| REF '(' id ')'
+	| REF id
 	| 'bytearray' '(' bytes ')'
 	| FLOAT32 '(' float64 ')' ddItemCount
 	| FLOAT64_ '(' float64 ')' ddItemCount
@@ -1288,9 +1323,9 @@ fieldSerInit:
 	| BOOL '(' truefalse ')'
 	| 'bytearray' '(' bytes ')';
 
-bytes: hexbytes*;
+bytes: hexbyte*;
 
-hexbytes: HEXBYTE+;
+hexbyte: INT32 | ID | HEXBYTE;
 /*  Field/parameter initialization  */
 fieldInit: fieldSerInit | compQstring | NULLREF;
 

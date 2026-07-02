@@ -124,14 +124,19 @@ namespace ILAssembler
         /// <summary>
         /// Optimize long instructions to short.
         /// </summary>
-        /// <remarks>TODO: Not yet implemented - accepted for CLI compatibility.</remarks>
+        /// <remarks>Not yet implemented — accepted for CLI compatibility with native ilasm.</remarks>
         public bool Optimize { get; set; }
 
         /// <summary>
         /// Fold identical method bodies into one.
         /// </summary>
-        /// <remarks>TODO: Not yet implemented - accepted for CLI compatibility.</remarks>
+        /// <remarks>Not yet implemented — accepted for CLI compatibility with native ilasm.</remarks>
         public bool Fold { get; set; }
+
+        /// <summary>
+        /// Output file name (filename only, no directory). Used as default module name when no .module directive is present.
+        /// </summary>
+        public string? OutputFileName { get; set; }
 
         /// <summary>
         /// Try to create output file despite errors (results may be invalid).
