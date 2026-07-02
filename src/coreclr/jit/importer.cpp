@@ -11723,7 +11723,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //------------------------------------------------------------------------
 // impWrapTopOfStackInAwait:
 //   Wrap the value on the top of the stack in
-//   AsyncHelpers.TransparentAwaitWithResult.
+//   AsyncHelpers.TransparentAwait.
 //
 // Returns:
 //   True if successful. False if the EE could not create the call (only during
@@ -11735,7 +11735,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //   mistyped; the original IL returns a Task or ValueTask, but the runtime
 //   async version expects to return the unwrapped result. This function
 //   accomplishes the unwrapping by inserting an async call to
-//   AsyncHelpers.TransparentAwaitWithResult around the value on the top of the
+//   AsyncHelpers.TransparentAwait around the value on the top of the
 //   stack.
 //
 bool Compiler::impWrapTopOfStackInAwait()
@@ -11875,7 +11875,7 @@ bool Compiler::impWrapTopOfStackInAwait()
 //------------------------------------------------------------------------
 // impFoldAwaitedTopOfStack:
 //   Fold a few patterns where introducing a call to
-//   AsyncHelpers.TransparentAwaitWithResult is unnecessary.
+//   AsyncHelpers.TransparentAwait is unnecessary.
 //
 // Returns:
 //   True if the top of stack was folded and the importer stack was updated
