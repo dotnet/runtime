@@ -417,7 +417,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             var notNullCallback = new PostEvictionCallbackRegistration()
             {
-                EvictionCallback = (_, _, _, _) => {}
+                EvictionCallback = (_, _, _, _) => { }
             };
 
             options.PostEvictionCallbacks.Add(notNullCallback);
@@ -570,61 +570,53 @@ namespace Microsoft.Extensions.Caching.Memory
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/72879")] // issue in cache
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72890")] // issue in test
         public void GetAndSet_AreThreadSafe_AndUpdatesNeverLeavesNullValues()
         {
             var cache = CreateCache();
             string key = "myKey";
-            var cts = new CancellationTokenSource();
-            var readValueIsNull = false;
+            bool readValueIsNull = false;
 
             cache.Set(key, new Guid());
 
-            var task0 = Task.Run(() =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    cache.Set(key, Guid.NewGuid());
-                }
-            });
+            const int WriterCount = 2;
+            const int Iterations = 20_000;
+            using var barrier = new Barrier(WriterCount + 1);
 
-            var task1 = Task.Run(() =>
+            var writers = new Task[WriterCount];
+            for (int i = 0; i < WriterCount; i++)
             {
-                while (!cts.IsCancellationRequested)
+                writers[i] = Task.Run(() =>
                 {
-                    cache.Set(key, Guid.NewGuid());
-                }
-            });
+                    barrier.SignalAndWait();
+                    for (int j = 0; j < Iterations; j++)
+                    {
+                        cache.Set(key, Guid.NewGuid());
+                    }
+                });
+            }
 
-            var task2 = Task.Run(() =>
+            var reader = Task.Run(() =>
             {
-                while (!cts.IsCancellationRequested)
+                barrier.SignalAndWait();
+                for (int j = 0; j < Iterations; j++)
                 {
                     if (cache.Get(key) == null)
                     {
-                        // Stop this task and update flag for assertion
                         readValueIsNull = true;
                         break;
                     }
                 }
             });
 
-            var task3 = Task.Delay(TimeSpan.FromSeconds(7));
-
-            Task.WaitAny(task0, task1, task2, task3);
+            var all = new Task[WriterCount + 1];
+            Array.Copy(writers, all, WriterCount);
+            all[WriterCount] = reader;
+            Task.WaitAll(all);
 
             Assert.False(readValueIsNull);
-            Assert.Equal(TaskStatus.Running, task0.Status);
-            Assert.Equal(TaskStatus.Running, task1.Status);
-            Assert.Equal(TaskStatus.Running, task2.Status);
-            Assert.Equal(TaskStatus.RanToCompletion, task3.Status);
-
-            cts.Cancel();
-            Task.WaitAll(task0, task1, task2, task3);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72890")]
         public void OvercapacityPurge_AreThreadSafe()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -633,64 +625,38 @@ namespace Microsoft.Extensions.Caching.Memory
                 SizeLimit = 10,
                 CompactionPercentage = 0.5
             });
-            var cts = new CancellationTokenSource();
-            var limitExceeded = false;
 
-            var task0 = Task.Run(() =>
+            const int NumberOfThreads = 3;
+            const int IterationsPerThread = 10_000;
+            using var barrier = new Barrier(NumberOfThreads);
+            bool limitExceeded = false;
+
+            var tasks = new Task[NumberOfThreads];
+            for (int i = 0; i < NumberOfThreads; i++)
             {
-                while (!cts.IsCancellationRequested)
+                tasks[i] = Task.Run(() =>
                 {
-                    if (cache.Size > 10)
+                    barrier.SignalAndWait();
+                    for (int j = 0; j < IterationsPerThread; j++)
                     {
-                        limitExceeded = true;
-                        break;
+                        if (cache.Size > 10)
+                        {
+                            limitExceeded = true;
+                            break;
+                        }
+                        cache.Set(Guid.NewGuid(), Guid.NewGuid(), new MemoryCacheEntryOptions { Size = 1 });
                     }
-                    cache.Set(Guid.NewGuid(), Guid.NewGuid(), new MemoryCacheEntryOptions { Size = 1 });
-                }
-            }, cts.Token);
+                });
+            }
 
-            var task1 = Task.Run(() =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    if (cache.Size > 10)
-                    {
-                        limitExceeded = true;
-                        break;
-                    }
-                    cache.Set(Guid.NewGuid(), Guid.NewGuid(), new MemoryCacheEntryOptions { Size = 1 });
-                }
-            }, cts.Token);
+            Task.WaitAll(tasks);
 
-            var task2 = Task.Run(() =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    if (cache.Size > 10)
-                    {
-                        limitExceeded = true;
-                        break;
-                    }
-                    cache.Set(Guid.NewGuid(), Guid.NewGuid(), new MemoryCacheEntryOptions { Size = 1 });
-                }
-            }, cts.Token);
-
-            cts.CancelAfter(TimeSpan.FromSeconds(5));
-            var task3 = Task.Delay(TimeSpan.FromSeconds(7));
-
-            Task.WaitAll(task0, task1, task2, task3);
-
-            Assert.Equal(TaskStatus.RanToCompletion, task0.Status);
-            Assert.Equal(TaskStatus.RanToCompletion, task1.Status);
-            Assert.Equal(TaskStatus.RanToCompletion, task2.Status);
-            Assert.Equal(TaskStatus.RanToCompletion, task3.Status);
             CapacityTests.AssertCacheSize(cache.Count, cache);
             Assert.InRange(cache.Count, 0, 10);
             Assert.False(limitExceeded);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72890")]
         public void AddAndReplaceEntries_AreThreadSafe()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -699,46 +665,28 @@ namespace Microsoft.Extensions.Caching.Memory
                 SizeLimit = 20,
                 CompactionPercentage = 0.5
             });
-            var cts = new CancellationTokenSource();
 
-            var random = new Random();
+            const int NumberOfThreads = 3;
+            const int IterationsPerThread = 10_000;
+            using var barrier = new Barrier(NumberOfThreads);
 
-            var task0 = Task.Run(() =>
+            var tasks = new Task[NumberOfThreads];
+            for (int i = 0; i < NumberOfThreads; i++)
             {
-                while (!cts.IsCancellationRequested)
+                // Each thread gets its own Random; Random is not thread-safe.
+                var random = new Random(i);
+                tasks[i] = Task.Run(() =>
                 {
-                    var entrySize = random.Next(0, 5);
-                    cache.Set(random.Next(0, 10), entrySize, new MemoryCacheEntryOptions { Size = entrySize });
-                }
-            });
+                    barrier.SignalAndWait();
+                    for (int j = 0; j < IterationsPerThread; j++)
+                    {
+                        var entrySize = random.Next(0, 5);
+                        cache.Set(random.Next(0, 10), entrySize, new MemoryCacheEntryOptions { Size = entrySize });
+                    }
+                });
+            }
 
-            var task1 = Task.Run(() =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    var entrySize = random.Next(0, 5);
-                    cache.Set(random.Next(0, 10), entrySize, new MemoryCacheEntryOptions { Size = entrySize });
-                }
-            });
-
-            var task2 = Task.Run(() =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    var entrySize = random.Next(0, 5);
-                    cache.Set(random.Next(0, 10), entrySize, new MemoryCacheEntryOptions { Size = entrySize });
-                }
-            });
-
-            cts.CancelAfter(TimeSpan.FromSeconds(5));
-            var task3 = Task.Delay(TimeSpan.FromSeconds(7));
-
-            Task.WaitAll(task0, task1, task2, task3);
-
-            Assert.Equal(TaskStatus.RanToCompletion, task0.Status);
-            Assert.Equal(TaskStatus.RanToCompletion, task1.Status);
-            Assert.Equal(TaskStatus.RanToCompletion, task2.Status);
-            Assert.Equal(TaskStatus.RanToCompletion, task3.Status);
+            Task.WaitAll(tasks);
 
             var cacheSize = 0;
             for (var i = 0; i < 10; i++)
@@ -777,7 +725,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public void TryGetValueFromCacheWithNullKeyThrows()
         {
             var cache = CreateCache();
-            Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null,out long result));
+            Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null, out long result));
         }
 
         [Fact]
@@ -785,7 +733,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = CreateCache();
             Assert.Throws<ArgumentNullException>(() => cache.GetOrCreate<object>(null, null))
-;       }
+;
+        }
 
         [Fact]
         public async Task GetOrCreateAsyncFromCacheWithNullKeyThrows()

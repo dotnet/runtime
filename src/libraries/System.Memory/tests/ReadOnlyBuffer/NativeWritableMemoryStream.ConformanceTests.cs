@@ -36,4 +36,3 @@ namespace System.Memory.Tests
         }
     }
 }
-

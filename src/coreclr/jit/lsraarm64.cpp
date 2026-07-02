@@ -1430,32 +1430,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (embeddedOp != nullptr)
     {
         assert(delayFreeOp == nullptr);
-        delayFreeOp = getDelayFreeOperand(embeddedOp, /* embedded */ true);
+        delayFreeOp = getDelayFreeOperand(embeddedOp, intrinsicTree);
     }
 
     // Build any immediates
     BuildHWIntrinsicImmediate(intrinsicTree, intrin);
 
-    // Build any additional special cases
-    switch (intrin.id)
-    {
-        case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
-        case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
-        case NI_Sve2_GatherVectorNonTemporal:
-        case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
-        case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
-        case NI_Sve2_Scatter16BitNarrowingNonTemporal:
-        case NI_Sve2_Scatter32BitNarrowingNonTemporal:
-        case NI_Sve2_ScatterNonTemporal:
-            if (!varTypeIsSIMD(intrin.op2->gtType))
-            {
-                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
-            }
-            break;
-
-        default:
-            break;
-    }
+    // Build any internal temporary registers
+    BuildHWIntrinsicTempRegs(intrinsicTree, intrin, embeddedOp);
 
     // Build all Operands
     for (size_t opNum = 1; opNum <= intrin.numOperands; opNum++)
@@ -1801,6 +1783,47 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
     if (needBranchTargetReg)
     {
         buildInternalIntRegisterDefForNode(intrinsicTree);
+    }
+}
+
+//------------------------------------------------------------------------
+// BuildHWIntrinsicTempRegs: Build temporary registers used by HWIntrinsic codegen.
+//
+// Arguments:
+//    intrinsicTree - Intrinsic tree node for which need to build RefPositions for
+//    intrin        - Underlying intrinsic
+//    embeddedOp    - Embedded mask operand of intrinsicTree, if any
+//
+void LinearScan::BuildHWIntrinsicTempRegs(GenTreeHWIntrinsic* intrinsicTree,
+                                          const HWIntrinsic   intrin,
+                                          GenTreeHWIntrinsic* embeddedOp)
+{
+    switch (intrin.id)
+    {
+        case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorNonTemporal:
+        case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+        case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+        case NI_Sve2_Scatter16BitNarrowingNonTemporal:
+        case NI_Sve2_Scatter32BitNarrowingNonTemporal:
+        case NI_Sve2_ScatterNonTemporal:
+            if (!varTypeIsSIMD(intrin.op2->gtType))
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+            }
+            break;
+
+        case NI_Sve_ConditionalSelect:
+            if ((embeddedOp != nullptr) && embeddedOp->OperIsHWIntrinsic(NI_Sve_MultiplyAddRotateComplex))
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+                setInternalRegsDelayFree = true;
+            }
+            break;
+
+        default:
+            break;
     }
 }
 
@@ -2310,17 +2333,18 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 //
 // Arguments:
 //    intrinsicTree - Tree to check
-//    embedded - If this is an embedded operand
+//    user          - The user of intrinsicTree if intrinsicTree is an embedded operand
 //
 // Return Value:
 //    The operand that needs to be delay freed
 //
-GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded)
+GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenTreeHWIntrinsic* user)
 {
     bool isRMW = intrinsicTree->isRMWHWIntrinsic(m_compiler);
 
     const NamedIntrinsic intrinsicId = intrinsicTree->GetHWIntrinsicId();
     GenTree*             delayFreeOp = nullptr;
+    const bool           embedded    = user != nullptr;
 
     switch (intrinsicId)
     {
@@ -2376,6 +2400,23 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             assert(delayFreeOp != nullptr);
             break;
 
+        case NI_Sve2_ConvertToSingleOdd:
+        case NI_Sve2_ConvertToSingleOddRoundToOdd:
+            assert(isRMW);
+            if (embedded && user->OperIsHWIntrinsic(NI_Sve_ConditionalSelect) && user->Op(3)->IsVectorZero() &&
+                !user->Op(1)->IsTrueMask(user->GetSimdBaseType()))
+            {
+                // These instructions cannot use movprfx. Prefer the zero falseOp as the target so codegen can
+                // preserve inactive lanes by first copying active lanes from op1.
+                delayFreeOp = user->Op(3);
+            }
+            else
+            {
+                delayFreeOp = intrinsicTree->Op(1);
+            }
+            assert(delayFreeOp != nullptr);
+            break;
+
         default:
             if (isRMW)
             {
@@ -2400,6 +2441,25 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
                     delayFreeOp = intrinsicTree->Op(1);
                     assert(delayFreeOp != nullptr);
                 }
+            }
+            else if ((intrinsicTree->GetOperandCount() == 1) && embedded &&
+                     !HWIntrinsicInfo::IsReduceOperation(intrinsicId))
+            {
+                // Unary embedded masked operations are non-RMW, but also support movprfx.
+                assert(user->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
+
+                if (user->Op(1)->IsTrueMask(user->GetSimdBaseType()) && user->Op(3)->IsVectorZero())
+                {
+                    // When all lanes are active, falseOp is irrelevant and the embedded operation can write back to
+                    // op1.
+                    delayFreeOp = intrinsicTree->Op(1);
+                }
+                else
+                {
+                    // Mark the falseOp of the conditional select as delay free.
+                    delayFreeOp = user->Op(3);
+                }
+                assert(delayFreeOp != nullptr);
             }
             break;
     }

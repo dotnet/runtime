@@ -98,7 +98,7 @@ namespace Microsoft.Win32.SafeHandles
         private static unsafe Interop.Kernel32.SafeJobHandle CreateKillOnParentExitJob()
         {
             Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION limitInfo = default;
-            limitInfo.BasicLimitInformation.LimitFlags = Interop.Kernel32.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+            limitInfo.BasicLimitInformation.LimitFlags = Interop.Kernel32.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | Interop.Kernel32.JOB_OBJECT_LIMIT_BREAKAWAY_OK;
 
             Interop.Kernel32.SafeJobHandle jobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
             if (jobHandle.IsInvalid || !Interop.Kernel32.SetInformationJobObject(

@@ -427,20 +427,36 @@ CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
     );
 
+struct CLRMapViewTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type ptr)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-FORCEINLINE void VoidCLRUnmapViewOfFile(void *ptr) { CLRUnmapViewOfFile(ptr); }
-typedef Wrapper<void *, DoNothing, VoidCLRUnmapViewOfFile> CLRMapViewHolder;
-#else
-typedef Wrapper<void *, DoNothing, DoNothing> CLRMapViewHolder;
+        if (ptr != NULL)
+            CLRUnmapViewOfFile(ptr);
 #endif
+    }
+};
+using CLRMapViewHolder = LifetimeHolder<CLRMapViewTraits>;
 
 #ifdef TARGET_UNIX
+struct PALPEFileTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type ptr)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-FORCEINLINE void VoidPALUnloadPEFile(void *ptr) { PAL_LOADUnloadPEFile(ptr); }
-typedef Wrapper<void *, DoNothing, VoidPALUnloadPEFile> PALPEFileHolder;
-#else
-typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
+        if (ptr != NULL)
+            PAL_LOADUnloadPEFile(ptr);
 #endif
+    }
+};
+using PALPEFileHolder = LifetimeHolder<PALPEFileTraits>;
 #endif // TARGET_UNIX
 
 #define SetupThreadForComCall(OOMRetVal)            \
@@ -456,21 +472,26 @@ typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
 #define SetupForComCallDWORD() SetupThreadForComCall(ERROR_OUTOFMEMORY)
 
 // A holder for NATIVE_LIBRARY_HANDLE.
-FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
+struct NativeLibraryHandleTraits final
 {
-    WRAPPER_NO_CONTRACT;
+    using Type = NATIVE_LIBRARY_HANDLE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
 
-    if (h == NULL)
-        return;
+        if (h == NULL)
+            return;
 
 #ifdef HOST_UNIX
-    PAL_FreeLibraryDirect(h);
+        PAL_FreeLibraryDirect(h);
 #else
-    FreeLibrary(h);
+        FreeLibrary(h);
 #endif
-}
+    }
+};
 
-typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, 0> NativeLibraryHandleHolder;
+using NativeLibraryHandleHolder = LifetimeHolder<NativeLibraryHandleTraits>;
 
 extern thread_local size_t t_CantStopCount;
 
