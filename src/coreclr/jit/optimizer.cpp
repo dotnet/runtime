@@ -3741,10 +3741,47 @@ PhaseStatus Compiler::optHoistLoopCode()
 
     optComputeInterestingVarSets();
 
+    // Build a method-wide tally of integral-constant occurrences keyed by VN.
+    //
+    // The hoister uses this to gate hoisting of plain integral constants: a single-occurrence
+    // constant isn't worth hoisting because the preheader copy doesn't replace the original
+    // in-loop materialization (CSE would need a second occurrence to introduce a temp).
+    // See issue #92170.
+    //
+    // Skip when both constant CSE flavors are disabled; in that case the hoister can't
+    // produce a profitable constant hoist anyway, so there's no point paying for the scan.
+    //
+    LoopHoistContext hoistCtxt(this);
+    if (optConstantCSEEnabled() || optSharedConstantCSEEnabled())
+    {
+        hoistCtxt.m_constantUseCount = new (this, CMK_LoopHoist) VNToCountMap(getAllocator(CMK_LoopHoist));
+        for (BasicBlock* const block : Blocks())
+        {
+            for (Statement* const stmt : block->NonPhiStatements())
+            {
+                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+                {
+                    if (!tree->OperIs(GT_CNS_INT, GT_CNS_LNG))
+                    {
+                        continue;
+                    }
+
+                    ValueNum vn = tree->gtVNPair.GetLiberal();
+                    if (vn == ValueNumStore::NoVN)
+                    {
+                        continue;
+                    }
+
+                    unsigned* pCount = hoistCtxt.m_constantUseCount->LookupPointerOrAdd(vn, 0);
+                    (*pCount)++;
+                }
+            }
+        }
+    }
+
     // Consider all the loops, visiting child loops first.
     //
-    bool             modified = false;
-    LoopHoistContext hoistCtxt(this);
+    bool modified = false;
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
 #if LOOP_HOIST_STATS
@@ -4422,6 +4459,29 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 // can't hoist because we might then hoist above the expression that led assertion prop to make
                 // that decision. This can happen in JitOptRepeat, where hoisting can follow assertion prop.
                 return false;
+            }
+            else if (node->IsIntegralConst() && !node->IsIconHandle(GTF_ICON_STATIC_HDL) &&
+                     !node->IsIconHandle(GTF_ICON_CLASS_HDL) && !node->IsIconHandle(GTF_ICON_STR_HDL) &&
+                     !node->IsIconHandle(GTF_ICON_OBJ_HDL))
+            {
+                // Don't hoist plain integral constants unless they appear more than once in the method.
+                // Hoisting injects a preheader clone that relies on CSE to introduce a temp; if there is
+                // only one in-method occurrence, the preheader copy just bloats code without removing the
+                // original in-loop materialization. See issue #92170.
+                //
+                // When constant CSE is disabled, m_constantUseCount is null and we don't gate hoisting
+                // here (the in-loop materialization will be left alone anyway since CSE can't replace it).
+                //
+                if (m_hoistContext->m_constantUseCount != nullptr)
+                {
+                    ValueNum vn    = node->gtVNPair.GetLiberal();
+                    unsigned count = 0;
+                    if ((vn == ValueNumStore::NoVN) || !m_hoistContext->m_constantUseCount->Lookup(vn, &count) ||
+                        (count < 2))
+                    {
+                        return false;
+                    }
+                }
             }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.

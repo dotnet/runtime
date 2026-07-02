@@ -1790,7 +1790,12 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         if (!enableConstCSE &&
             // Unconditionally allow these constant handles to be CSE'd
             !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
-            !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+            !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL) &&
+            // Also unconditionally allow CSE/hoist for constants that don't fit as imm32
+            // or that require relocation. On targets where these can't be encoded as an
+            // instruction immediate, every use costs a full-size constant load, so reuse
+            // via CSE or a hoisted temp is generally profitable. See issue #92170.
+            tree->IsIntCnsFitsInI32() && !tree->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
         {
             return false;
         }
@@ -4717,6 +4722,24 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 cse_def_cost += 1;
                 cse_use_cost += 1;
             }
+
+            // For constants, the alternative to CSE is to rematerialize the value at each
+            // use - essentially as cheap as a callee-trash register move. So a low-use-count
+            // constant CSE that spans a call may not save enough to justify forcing a
+            // callee-saved register into the prolog/epilog. Charge for that here when the
+            // use count is low enough that the trade-off is borderline. See issue #92170.
+            //
+            // Restricted to TARGET_XARCH: on arm64/loongarch64/riscv64 a 64-bit constant
+            // takes multiple instructions to rematerialize, so the alternative isn't as
+            // cheap and discouraging the CSE actively bloats code.
+            //
+#if defined(TARGET_XARCH)
+            if (candidate->Expr()->OperIsConst() && (candidate->CseDsc()->csdUseCount <= 2))
+            {
+                cse_def_cost += 1;
+                cse_use_cost += 1;
+            }
+#endif
         }
 
         // If we don't have a lot of variables to enregister or we have a floating point type
@@ -4733,6 +4756,61 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             }
         }
     }
+
+#if defined(TARGET_XARCH)
+    // For shared-constant CSE: not every use can fold the +delta into a useful encoding.
+    // Address-mode uses (IND, LEA, ADD) absorb the delta into a lea/disp; compare/call/return
+    // consume the value with no register-write follow-on. But ALU ops like XOR/AND/OR/MUL
+    // must MATERIALIZE the value into a fresh register before consuming it, which on AMD pays
+    // the 2-cycle "complex-lea" latency and can extend the critical path. Charge for those
+    // uses so the heuristic prefers keeping the original mov-imm at the use site when most
+    // consumers are computes. See issue #92170.
+    //
+    if (candidate->IsSharedConst())
+    {
+        weight_t computeUseWtCnt = 0;
+        for (treeStmtLst* lst = &candidate->CseDsc()->csdTreeList; lst != nullptr; lst = lst->tslNext)
+        {
+            GenTree* const useTree = lst->tslTree;
+            if (!IS_CSE_USE(useTree->gtCSEnum))
+            {
+                continue;
+            }
+            Compiler::FindLinkData link   = m_compiler->gtFindLink(lst->tslStmt, useTree);
+            GenTree* const         parent = link.parent;
+            if (parent == nullptr)
+            {
+                continue;
+            }
+            switch (parent->OperGet())
+            {
+                case GT_XOR:
+                case GT_AND:
+                case GT_OR:
+                case GT_MUL:
+                case GT_MULHI:
+                case GT_NEG:
+                case GT_NOT:
+                case GT_BSWAP:
+                case GT_BSWAP16:
+                    computeUseWtCnt += lst->tslBlock->getBBWeight(m_compiler);
+                    break;
+                default:
+                    // ADD/SUB fold into lea; IND/STOREIND/LEA fold into addressing mode;
+                    // CMP/EQ/NE/LT/.. and CALL/RETURN don't extend a dep chain through a
+                    // written register. No extra charge.
+                    break;
+            }
+        }
+        if (computeUseWtCnt > 0)
+        {
+            // Charge ~2 cycles per compute use to model the complex-lea materialization
+            // cost on AMD (lea r, [base+index+disp] is 2 cycles on Zen, vs 1 cycle for a
+            // simple `add reg, imm` or a `mov reg, imm`).
+            extra_yes_cost += (unsigned)(computeUseWtCnt * 2);
+        }
+    }
+#endif
 
     // estimate the cost from lost codesize reduction if we do not perform the CSE
     if (candidate->Size() > cse_use_cost)
@@ -4897,13 +4975,15 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     // Verify that all of the ValueNumbers in this list are correct as
     // Morph will change them when it performs a mutating operation.
     //
-    bool         setRefCnt      = true;
-    bool         allSame        = true;
-    bool         isSharedConst  = successfulCandidate->IsSharedConst();
-    ValueNum     bestVN         = ValueNumStore::NoVN;
-    bool         bestIsDef      = false;
-    ssize_t      bestConstValue = 0;
-    treeStmtLst* lst            = &dsc->csdTreeList;
+    bool         setRefCnt            = true;
+    bool         allSame              = true;
+    bool         isSharedConst        = successfulCandidate->IsSharedConst();
+    ValueNum     bestVN               = ValueNumStore::NoVN;
+    bool         bestIsDef            = false;
+    ssize_t      bestConstValue       = 0;
+    ssize_t      maxConstValue        = 0;
+    bool         seenSharedConstValue = false;
+    treeStmtLst* lst                  = &dsc->csdTreeList;
 
     while (lst != nullptr)
     {
@@ -4927,8 +5007,10 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
                 if (isSharedConst)
                 {
                     // set bestConstValue and bestIsDef
-                    bestConstValue = curConstValue;
-                    bestIsDef      = isDef;
+                    bestConstValue       = curConstValue;
+                    maxConstValue        = curConstValue;
+                    seenSharedConstValue = true;
+                    bestIsDef            = isDef;
                 }
             }
             else if (currVN != bestVN)
@@ -4951,6 +5033,10 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
                     bestVN         = currVN;
                     bestConstValue = curConstValue;
                     bestIsDef      = isDef;
+                }
+                if (curConstValue > maxConstValue)
+                {
+                    maxConstValue = curConstValue;
                 }
             }
 
@@ -4979,8 +5065,41 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         lst = lst->tslNext;
     }
 
-    dsc->csdConstDefValue = bestConstValue;
-    dsc->csdConstDefVN    = bestVN;
+    // For shared-constant CSEs on x64, center the def value at the midpoint of the
+    // actual constant range so the use-side deltas distribute symmetrically around
+    // zero. This lets lea use the disp8 (signed 8-bit) displacement encoding for the
+    // full bucket range, halving the encoded size compared with a min-anchored base.
+    //
+    // Other targets use unsigned offsets in their primary addressing modes (or
+    // separate add/sub instructions for negative displacements), so centering
+    // forces extra subtracts and is a net loss there.
+    //
+#if defined(TARGET_AMD64)
+    const bool centerSharedConst = true;
+#else
+    const bool centerSharedConst = false;
+#endif
+    if (centerSharedConst && isSharedConst && seenSharedConstValue &&
+        ((cseLclVarTyp == TYP_INT) || (cseLclVarTyp == TYP_LONG)))
+    {
+        const ssize_t centerValue = bestConstValue + ((maxConstValue - bestConstValue) / 2);
+        dsc->csdConstDefValue     = centerValue;
+        // Allocate a VN that matches the centered constant value, so the stored
+        // VN agrees with the actual value of the temp's def node.
+        if (cseLclVarTyp == TYP_LONG)
+        {
+            dsc->csdConstDefVN = m_compiler->vnStore->VNForLongCon(static_cast<INT64>(centerValue));
+        }
+        else
+        {
+            dsc->csdConstDefVN = m_compiler->vnStore->VNForIntCon(static_cast<INT32>(centerValue));
+        }
+    }
+    else
+    {
+        dsc->csdConstDefValue = bestConstValue;
+        dsc->csdConstDefVN    = bestVN;
+    }
 
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -5886,12 +6005,12 @@ bool Compiler::optSharedConstantCSEEnabled()
     {
         enableSharedConstCSE = true;
     }
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
-    else if (configValue == CONST_CSE_ENABLE_ARM_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_XARCH)
+    else if (configValue == CONST_CSE_ENABLE_TARGETED)
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARMARCH || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_RISCV64 || TARGET_XARCH
 
     return enableSharedConstCSE;
 }
@@ -5912,7 +6031,7 @@ bool Compiler::optConstantCSEEnabled()
         enableConstCSE = true;
     }
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
-    else if ((configValue == CONST_CSE_ENABLE_ARM_RISCV64) || (configValue == CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING))
+    else if ((configValue == CONST_CSE_ENABLE_TARGETED) || (configValue == CONST_CSE_ENABLE_TARGETED_NO_SHARING))
     {
         enableConstCSE = true;
     }
