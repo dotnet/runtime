@@ -325,6 +325,7 @@ namespace ILCompiler
             public const int Zba = (1 << 0);
             public const int Zbb = (1 << 1);
             public const int Zbs = (1 << 2);
+            public const int Zicond = (1 << 3);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -334,6 +335,8 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("zbb");
                 if ((flags & Zbs) != 0)
                     builder.AddSupportedInstructionSet("zbs");
+                if ((flags & Zicond) != 0)
+                    builder.AddSupportedInstructionSet("zicond");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -347,6 +350,7 @@ namespace ILCompiler
                     InstructionSet.RiscV64_Zba => Zba,
                     InstructionSet.RiscV64_Zbb => Zbb,
                     InstructionSet.RiscV64_Zbs => Zbs,
+                    InstructionSet.RiscV64_Zicond => Zicond,
 
                     _ => throw new NotSupportedException(((InstructionSet_RiscV64)instructionSet).ToString())
                 };

@@ -6253,6 +6253,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
         }
+
+        if (JitConfig.EnableRiscV64Zicond() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
+        }
 #endif
 
         // These calls are important and explicitly ordered to ensure that the flags are correct in
