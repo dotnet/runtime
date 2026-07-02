@@ -1073,7 +1073,7 @@ internal static class R2RAssert
         if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
             return false;
 
-        bool stripped = il.AsSpan().SequenceEqual([0x14, 0x7A]);
+        bool stripped = il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x14, 0x7A]);
         diagnostic = stripped
             ? $"IL of '{declaringType}.{methodName}' is stripped (ldnull; throw)."
             : $"Expected IL of '{declaringType}.{methodName}' to be stripped, but it is present ({il.Length} bytes: {BitConverter.ToString(il)}).";
@@ -1088,7 +1088,7 @@ internal static class R2RAssert
         if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
             return false;
 
-        bool present = !il.AsSpan().SequenceEqual([0x14, 0x7A]);
+        bool present = !il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x14, 0x7A]);
         diagnostic = present
             ? $"IL of '{declaringType}.{methodName}' is present ({il.Length} bytes)."
             : $"Expected IL of '{declaringType}.{methodName}' to be present, but it was stripped (ldnull; throw).";
