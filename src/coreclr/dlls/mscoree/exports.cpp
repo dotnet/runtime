@@ -106,8 +106,8 @@ struct HostPropertyArraysTraits final
         {
             if (IsKnownHostProperty(arrays.keys[i]))
             {
-                delete[] const_cast<WCHAR*>(arrays.keysW[i]);
-                delete[] const_cast<WCHAR*>(arrays.valuesW[i]);
+                delete[] arrays.keysW[i];
+                delete[] arrays.valuesW[i];
             }
         }
 
