@@ -668,6 +668,14 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
 
 namespace
 {
+    // Sentinel body emitted by crossgen2 --strip-il-bodies for methods whose IL was removed
+    // (see CopiedMethodILNode.s_minimalILBody in ILCompiler.ReadyToRun). The two-byte opcode
+    // 0xFE 0x24 is intentionally unassigned/invalid, so it can never collide with a real method
+    // body. Keep these values in sync with the crossgen2-side definition.
+    const DWORD STRIPPED_IL_SENTINEL_CODE_SIZE = 2;
+    const BYTE STRIPPED_IL_SENTINEL_BYTE0 = 0xFE;
+    const BYTE STRIPPED_IL_SENTINEL_BYTE1 = 0x24;
+
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(MethodDesc* pMD, PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pDecoderMemory)
     {
         STANDARD_VM_CONTRACT;
@@ -706,11 +714,15 @@ namespace
         Module* pModule = pMD->GetModule();
         if (pModule->IsReadyToRun()
             && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
-            && pHeader->GetCodeSize() == 2
-            && pHeader->Code[0] == 0xFE
-            && pHeader->Code[1] == 0x24)
+            && pHeader->GetCodeSize() == STRIPPED_IL_SENTINEL_CODE_SIZE
+            && pHeader->Code[0] == STRIPPED_IL_SENTINEL_BYTE0
+            && pHeader->Code[1] == STRIPPED_IL_SENTINEL_BYTE1)
         {
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_STRIPPED_IL_BODY);
+            // The IL body was stripped from the ReadyToRun image but is unexpectedly needed at
+            // runtime. Catch the sentinel here, before it reaches the JIT or interpreter, and
+            // fail fast: this is an unrecoverable image/configuration error, not a catchable one.
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                W("A method body required at runtime was stripped from the ReadyToRun image (crossgen2 --strip-il-bodies)."));
         }
 
         return pHeader;
