@@ -1596,6 +1596,8 @@ namespace System.Text
         /// Returns a copy of <paramref name="value"/> converted to uppercase using the casing rules used by
         /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
         /// </summary>
+        /// <param name="value">The character to convert.</param>
+        /// <returns>The uppercase equivalent of <paramref name="value"/>.</returns>
         public static Rune ToUpperOrdinal(Rune value)
         {
             if (value.IsAscii)
@@ -1615,6 +1617,8 @@ namespace System.Text
         /// <summary>
         /// Returns a copy of <paramref name="value"/> converted to lowercase using ordinal (simple, one-to-one) casing rules.
         /// </summary>
+        /// <param name="value">The character to convert.</param>
+        /// <returns>The lowercase equivalent of <paramref name="value"/>.</returns>
         public static Rune ToLowerOrdinal(Rune value)
         {
             if (value.IsAscii)
