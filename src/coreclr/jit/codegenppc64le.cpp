@@ -122,9 +122,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
         case GT_CNS_DBL:
         {
+            JITDUMP("[PPC64LE CNS_DBL] Starting GT_CNS_DBL code generation\n");
             emitter* emit       = GetEmitter();
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
+            JITDUMP("[PPC64LE CNS_DBL] constValue=%f, size=%d, targetReg=%s\n",
+                    constValue, size, getRegName(targetReg));
 
             // For PPC64LE, we load floating-point constants via GPR and stack
             // Get the bit representation of the double/float value
@@ -141,6 +144,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 gprSize = EA_4BYTE;
                 storeIns = INS_stw;
                 loadIns = INS_lfs;
+                JITDUMP("[PPC64LE CNS_DBL] Float: bits=0x%08X, storeIns=stw, loadIns=lfs\n",
+                        (unsigned)constValueBits);
             }
             else
             {
@@ -149,26 +154,38 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 gprSize = EA_8BYTE;
                 storeIns = INS_std;
                 loadIns = INS_lfd;
+                JITDUMP("[PPC64LE CNS_DBL] Double: bits=0x%016llX, storeIns=std, loadIns=lfd\n",
+                        (unsigned long long)constValueBits);
             }
             
             // Get a temp integer register to hold the constant bits
             regNumber tempReg = internalRegisters.GetSingle(tree);
+            JITDUMP("[PPC64LE CNS_DBL] tempReg=%s\n", getRegName(tempReg));
             
             // Load the constant bit pattern into the temp GPR
             instGen_Set_Reg_To_Imm(gprSize, tempReg, constValueBits);
+            JITDUMP("[PPC64LE CNS_DBL] Loaded constant bits into tempReg\n");
             
             // For PPC64LE, we need to transfer the value via stack
             // Use the top of the local frame (genTotalFrameSize() - 16) for temporary storage
             // This ensures we don't overwrite the linkage area or parameter save area
             int offset = genTotalFrameSize() - 16;
+            JITDUMP("[PPC64LE CNS_DBL] Stack offset=%d, frameSize=%d\n", offset, genTotalFrameSize());
             
             // Store the GPR value to the temporary stack location
+            JITDUMP("[PPC64LE CNS_DBL] About to emit store: ins=%d %s, %d(r1)\n",
+                    storeIns, getRegName(tempReg), offset);
             emit->emitIns_R_R_I(storeIns, gprSize, tempReg, REG_SPBASE, offset);
+            JITDUMP("[PPC64LE CNS_DBL] Store instruction emitted\n");
             
             // Load the floating-point value from the temporary stack location
+            JITDUMP("[PPC64LE CNS_DBL] About to emit load: ins=%d %s, %d(r1)\n",
+                    loadIns, getRegName(targetReg), offset);
             emit->emitIns_R_R_I(loadIns, size, targetReg, REG_SPBASE, offset);
+            JITDUMP("[PPC64LE CNS_DBL] Load instruction emitted\n");
             
             regSet.verifyRegUsed(targetReg);
+            JITDUMP("[PPC64LE CNS_DBL] Completed GT_CNS_DBL code generation\n");
         }
         break;
 

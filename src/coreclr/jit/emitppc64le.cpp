@@ -2413,6 +2413,13 @@ void emitter::emitDispIns(
             printf("r%d, %d(r%d)", id->idReg1(), (int)emitGetInsSC(id), id->idReg2());
             break;
             
+        case INS_stfs:
+        case INS_lfs:
+        case INS_stfd:
+        case INS_lfd:
+            printf("f%d, %d(r%d)", id->idReg1() - REG_F0, (int)emitGetInsSC(id), id->idReg2());
+            break;
+            
         case INS_cmpwi:
             printf("cr0, r%d, %d", id->idReg1(), (int)emitGetInsSC(id));
             break;
@@ -2433,10 +2440,23 @@ void emitter::emitDispIns(
             
         case INS_mflr:
         case INS_mtlr:
+        case INS_mtctr:
             printf("r%d", id->idReg1());
             break;
             
+        case INS_fadds:
+        case INS_fsubs:
+        case INS_fmuls:
+        case INS_fdivs:
+        case INS_fadd:
+        case INS_fsub:
+        case INS_fmul:
+        case INS_fdiv:
+            printf("f%d, f%d, f%d", id->idReg3() - REG_F0, id->idReg1() - REG_F0, id->idReg2() - REG_F0);
+            break;
+            
         case INS_blr:
+        case INS_bctrl:
         case INS_nop:
         case INS_hwsync:
         case INS_lwsync:
