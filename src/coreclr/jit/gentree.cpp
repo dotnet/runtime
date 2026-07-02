@@ -4777,6 +4777,13 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // We want the more complex tree to be evaluated first.
         if ((level < lvl2) && !multiOp->AsHWIntrinsic()->IsUserCall() && gtCanSwapOrder(op1, op2))
         {
+#if defined(TARGET_WASM)
+            // TODO-WASM-CQ: Wasm's stack-machine codegen requires operands to be evaluated in
+            // source order, so we cannot honor GTF_REVERSE_OPS here. For commutative HW
+            // intrinsics we could instead physically swap multiOp->Op(1)/Op(2) to retain the
+            // CQ benefit (mirroring the binary commutative path in gtSetEvalOrder). For now,
+            // just skip the swap to keep evaluation order intact.
+#else
             if (multiOp->IsReverseOp())
             {
                 multiOp->ClearReverseOp();
@@ -4787,6 +4794,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             }
 
             std::swap(level, lvl2);
+#endif // TARGET_WASM
         }
 
         if (level < 1)
@@ -8791,6 +8799,15 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_LOCKADD:
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
+        // DIV/UDIV/MOD/UMOD support an ordering side effect so that, once assertion
+        // propagation proves the divide cannot throw (GTF_DIV_MOD_NO_BY_ZERO for any of
+        // them, plus GTF_DIV_MOD_NO_OVERFLOW for the signed ones) and the node would
+        // otherwise look movable, it stays pinned below the dominating check that
+        // justified the flag.
+        case GT_DIV:
+        case GT_UDIV:
+        case GT_MOD:
+        case GT_UMOD:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
@@ -10436,7 +10453,12 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
             // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
             return false;
         }
-        else if (isPow2(divisorValue))
+        // Match the lowering acceptance for absolute value: lowering's TryLowerConstIntDivOrMod
+        // turns negative pow2 divisors into shift+neg and negative non-pow2 divisors into
+        // signed magic-divide sequences, both of which require the divisor be a literal.
+        size_t absDivisorValue = (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue)
+                                                               : static_cast<size_t>(std::abs(divisorValue));
+        if (isPow2(absDivisorValue))
         {
             return true;
         }
@@ -10486,7 +10508,9 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
+    // For signed divides also accept negative magic divisors (e.g. -3, -5); lowering generates
+    // a reciprocal-multiply sequence for those, see TryLowerConstIntDivOrMod.
+    if (!comp->opts.MinOpts() && (!isSignedDivide || (divisorValue >= 3) || (divisorValue <= -3)))
     {
         // All checks pass we can perform the division operation using a reciprocal multiply.
         return true;
@@ -13155,6 +13179,10 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     else if (ilNum == (unsigned)ICorDebugInfo::TYPECTXT_ILNUM)
     {
         ilName = "TypeCtx";
+    }
+    else if (ilNum == (unsigned)ICorDebugInfo::ASYNC_CONTINUATION_ILNUM)
+    {
+        ilName = "AsyncCont";
     }
     else if (ilNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
     {

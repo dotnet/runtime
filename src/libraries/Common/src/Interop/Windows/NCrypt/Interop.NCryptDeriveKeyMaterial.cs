@@ -15,6 +15,7 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a key from a secret agreement
         /// </summary>
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static partial ErrorCode NCryptDeriveKey(
             SafeNCryptSecretHandle hSharedSecret,
@@ -25,6 +26,7 @@ internal static partial class Interop
             out int pcbResult,
             SecretAgreementFlags dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static partial ErrorCode NCryptDeriveKey(
             SafeNCryptSecretHandle hSharedSecret,

@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// C implementation of the fxr_resolver_* APIs (the C++ fxr_resolver:: namespace
-// in fxr_resolver.cpp now delegates here). try_get_existing_fxr stays in C++
-// because pal::get_loaded_library is templated/typed for C++ callers.
-
 #include "fxr_resolver.h"
 
 #include "fx_ver.h"
@@ -21,14 +17,9 @@
      | fxr_search_location_environment_variable \
      | fxr_search_location_global)
 
-typedef struct
-{
-    c_fx_ver_t max_ver;
-} find_max_version_context_t;
-
 static bool find_max_version_callback(const pal_char_t* entry_name, void* ctx_in)
 {
-    find_max_version_context_t* ctx = (find_max_version_context_t*)ctx_in;
+    c_fx_ver_t* max_ver = (c_fx_ver_t*)ctx_in;
 
     trace_info(_X("Considering fxr version=[%s]..."), entry_name);
 
@@ -40,14 +31,14 @@ static bool find_max_version_callback(const pal_char_t* entry_name, void* ctx_in
         return true;
     }
 
-    if (!c_fx_ver_is_empty(&ctx->max_ver) && c_fx_ver_compare(&ver, &ctx->max_ver) <= 0)
+    if (!c_fx_ver_is_empty(max_ver) && c_fx_ver_compare(&ver, max_ver) <= 0)
     {
         c_fx_ver_cleanup(&ver);
         return true;
     }
 
-    c_fx_ver_cleanup(&ctx->max_ver);
-    ctx->max_ver = ver; // transfer ownership of pre/build
+    c_fx_ver_cleanup(max_ver);
+    *max_ver = ver; // transfer ownership of pre/build
     return true;
 }
 
@@ -58,23 +49,23 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
 {
     trace_info(_X("Reading fx resolver directory=[%s]"), fxr_root);
 
-    find_max_version_context_t ctx;
-    c_fx_ver_init(&ctx.max_ver);
+    c_fx_ver_t max_ver;
+    c_fx_ver_init(&max_ver);
 
-    pal_readdir_onlydirectories(fxr_root, find_max_version_callback, &ctx);
+    pal_readdir_onlydirectories(fxr_root, find_max_version_callback, &max_ver);
 
-    if (c_fx_ver_is_empty(&ctx.max_ver))
+    if (c_fx_ver_is_empty(&max_ver))
     {
         trace_error(_X("Error: [%s] does not contain any version-numbered child folders"), fxr_root);
-        c_fx_ver_cleanup(&ctx.max_ver);
+        c_fx_ver_cleanup(&max_ver);
         return false;
     }
 
     // SemVer does not define a size limit on version string, but calls out a reasonable max of 255 characters:
     // https://semver.org/#does-semver-have-a-size-limit-on-the-version-string
     pal_char_t max_ver_str[256];
-    c_fx_ver_as_str(&ctx.max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
-    c_fx_ver_cleanup(&ctx.max_ver);
+    c_fx_ver_as_str(&max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
+    c_fx_ver_cleanup(&max_ver);
 
     pal_char_t* fxr_dir = utils_append_path_alloc(fxr_root, max_ver_str);
     if (fxr_dir == NULL)
@@ -442,4 +433,16 @@ bool fxr_resolver_try_get_path_from_dotnet_root(
     bool ok = get_latest_fxr(fxr_dir, out_fxr_path);
     free(fxr_dir);
     return ok;
+}
+
+bool fxr_resolver_try_get_existing_fxr(pal_dll_t* out_fxr, pal_char_t** out_fxr_path)
+{
+    *out_fxr = NULL;
+    *out_fxr_path = NULL;
+
+    if (!pal_get_loaded_library(LIBFXR_NAME, "hostfxr_main", out_fxr, out_fxr_path))
+        return false;
+
+    trace_verbose(_X("Found previously loaded library %s [%s]."), LIBFXR_NAME, *out_fxr_path);
+    return true;
 }

@@ -105,12 +105,3 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
     _ASSERTE(!"RISCV64:NYI");
     return S_OK;
 }
-
-
-// This is just a convenience function to convert a regdisplay into a Context.
-// Since a context has more info than a regdisplay, the conversion isn't perfect
-// and the context can't be fully accurate.
-void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT *pInputContext)
-{
-    _ASSERTE(!"RISCV64:NYI");
-}

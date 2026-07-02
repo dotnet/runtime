@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial ErrorCode NCryptGetProperty(
             SafeNCryptHandle hObject,
@@ -20,6 +21,7 @@ internal static partial class Interop
             out int pcbResult,
             CngPropertyOptions dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial ErrorCode NCryptSetProperty(
             SafeNCryptHandle hObject,

@@ -539,9 +539,7 @@ struct MSLAYOUT Debugger_JITFuncData
 struct MSLAYOUT Debugger_STRData
 {
     FramePointer            fp;
-    // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
     DT_CONTEXT *            ctx;
-    DebuggerREGDISPLAY *    rd;
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 
@@ -799,30 +797,6 @@ typedef DacDbiArrayList<DebuggerIPCE_BasicTypeData> ArgInfoList;
 
 // TypeParamsList encapsulate a list of type parameters and the length of the list
 typedef DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> TypeParamsList;
-
-// A struct for passing version information from DBI to DAC.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDacDbiProtocolBreakingChangeCounter = 1;
-
-struct DbiVersion
-{
-    DWORD m_dwFormat;               // the format of this DbiVersion instance
-    DWORD m_dwDbiVersionMS;         // version of the DBI DLL, in the convention used by VS_FIXEDFILEINFO
-    DWORD m_dwDbiVersionLS;
-    DWORD m_dwProtocolBreakingChangeCounter;  // initially this was reserved and always set to 0
-	                                          // Now we use it as a counter to explicitly introduce breaking changes
-	                                          // between DBI and DAC when we have our IPC transport in the middle
-	                                          // If DBI and DAC don't agree on the same value CheckDbiVersion will return CORDBG_E_INCOMPATIBLE_PROTOCOL
-	                                          // Please document every time this value changes
-	                                          // 0 - initial value
-	                                          // 1 - Indicates that the protocol now supports the GetRemoteInterfaceHashAndTimestamp message
-	                                          //     The message must have ID 2, with signature:
-	                                          //     OUT DWORD & hash1, OUT DWORD & hash2, OUT DWORD & hash3, OUT DWORD & hash4, OUT DWORD & timestamp1, OUT DWORD & timestamp2
-	                                          //     The hash can be used as an indicator of many other breaking changes providing
-	                                          //     easier automated enforcement during development. It is NOT recommended to use
-	                                          //     the hash as a release versioning mechanism however.
-    DWORD m_dwReservedMustBeZero1;  // reserved for future use
-};
 
 // Opaque user defined data used in callbacks
 typedef void* CALLBACK_DATA;
