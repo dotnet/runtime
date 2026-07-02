@@ -4220,7 +4220,8 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     assert(genIsValidFloatReg(tmpFpReg));
 
     // Calculate stack offset for temporary storage
-    int tmpOffset = 0;
+    // Use space at top of local frame to avoid corrupting backchain at 0(r1)
+    int tmpOffset = genTotalFrameSize() - 16;
 
     // Step 1: Handle 32-bit to 64-bit extension if needed
     regNumber extendedReg = srcReg;

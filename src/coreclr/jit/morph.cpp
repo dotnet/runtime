@@ -2146,6 +2146,28 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 }
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_POWERPC64)
+            if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment())
+            {
+                // Struct passed according to hardware floating-point calling convention (HFA)
+                assert(!arg.NewAbiInfo.HasAnyStackSegment());
+                assert(howToPassStruct == Compiler::SPK_ByValue || howToPassStruct == Compiler::SPK_PrimitiveType);
+                if (arg.NewAbiInfo.NumSegments > 1)
+                {
+                    // On PPC64LE, "getPrimitiveTypeForStruct" will incorrectly return "TYP_FLOAT"
+                    // for HFA structs like "struct { float, float }", and retyping to a primitive here
+                    // will cause the multi-reg morphing to not kick in (the struct needs to be passed
+                    // in multiple FP registers). Here we just keep "structBaseType" as "TYP_STRUCT".
+                    // TODO-PPC64LE: fix "getPrimitiveTypeForStruct".
+                    structBaseType = TYP_STRUCT;
+                }
+                else
+                {
+                    assert(arg.NewAbiInfo.NumSegments == 1);
+                    structBaseType = arg.NewAbiInfo.Segment(0).GetRegisterType();
+                }
+            }
+#endif // defined(TARGET_POWERPC64)
             arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
             arg.AbiInfo.ArgType     = structBaseType == TYP_UNKNOWN ? argx->TypeGet() : structBaseType;
         }
