@@ -1689,7 +1689,7 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 //
 void CodeGen::psiBegProlog()
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     m_compiler->compResetScopeLists();
 
@@ -1775,7 +1775,7 @@ void CodeGen::psiBegProlog()
 //
 void CodeGen::psiEndProlog()
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     varLiveKeeper->psiClosePrologVariableRanges();
 }
 

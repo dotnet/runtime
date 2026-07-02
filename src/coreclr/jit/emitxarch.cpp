@@ -6205,7 +6205,7 @@ void emitter::spillIntArgRegsToShadowSlots()
     instrDesc*     id;
     UNATIVE_OFFSET sz;
 
-    assert(emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     for (argNum = 0; argNum < MAX_REG_ARG; ++argNum)
     {

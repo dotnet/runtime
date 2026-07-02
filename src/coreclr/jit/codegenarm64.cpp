@@ -34,7 +34,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
-    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(m_compiler->compGeneratingEpilog);
 
     regMaskTP rsRestoreRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -1387,6 +1387,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(block != NULL);
     assert(m_compiler->bbIsFuncletBeg(block));
 
+    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
+
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -1550,6 +1552,8 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
     if (verbose)
         printf("*************** In genFuncletEpilog()\n");
 #endif
+
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     bool unwindStarted = false;
 
@@ -1879,7 +1883,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 
@@ -5407,7 +5411,7 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
@@ -5513,7 +5517,7 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (!m_compiler->compIsProfilerHookNeeded())
     {
@@ -5601,7 +5605,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (delta == 0)
     {
@@ -5643,7 +5647,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (frameSize == 0)
     {

@@ -1634,7 +1634,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     // Give profiler a chance to back out of hooking this method
     if (!m_compiler->compIsProfilerHookNeeded())
@@ -1802,7 +1802,7 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     assert(arm_Valid_Imm_For_Add_SP(delta));
     GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
@@ -1836,7 +1836,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (frameSize == 0)
     {
@@ -1937,7 +1937,7 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
 //
 void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted)
 {
-    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(m_compiler->compGeneratingEpilog);
 
     if (frameSize == 0)
         return;
@@ -2046,7 +2046,7 @@ void CodeGen::genMov32RelocatableImmediate(emitAttr size, BYTE* addr, regNumber 
  */
 regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog() || GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog);
 
     // We can't do this optimization with callee saved floating point registers because
     // the stack would be allocated in a wrong spot.
@@ -2135,7 +2135,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 
 bool CodeGen::genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog)
 {
-    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(m_compiler->compGeneratingEpilog);
 
     if (!jmpEpilog && regSet.rsMaskPreSpillRegs(true) == RBM_NONE)
         return true;
@@ -2145,7 +2145,7 @@ bool CodeGen::genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog)
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
-    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(m_compiler->compGeneratingEpilog);
 
     regMaskTP maskPopRegs      = regSet.rsGetModifiedCalleeSavedRegsMask();
     regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
@@ -2256,6 +2256,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(block != NULL);
     assert(m_compiler->bbIsFuncletBeg(block));
 
+    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
+
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -2315,6 +2317,8 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
     if (verbose)
         printf("*************** In genFuncletEpilog()\n");
 #endif
+
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     // Just as for the main function, we delay starting the unwind codes until we have
     // an instruction which we know needs an unwind code. This is to support code like
@@ -2449,7 +2453,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 

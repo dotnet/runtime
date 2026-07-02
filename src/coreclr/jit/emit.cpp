@@ -2012,10 +2012,16 @@ void emitter::emitCheckIGList()
 
 void emitter::emitBegProlog()
 {
+    assert(m_compiler->compGeneratingProlog);
+
 #if EMIT_TRACK_STACK_DEPTH
+
     /* Don't measure stack depth inside the prolog, it's misleading */
+
     emitCntStackDepth = 0;
+
     assert(emitCurStackLvl == 0);
+
 #endif
 
     emitNoGCRequestCount = 1;
@@ -2039,13 +2045,12 @@ void emitter::emitBegProlog()
 /*****************************************************************************
  *
  *  Mark the code offset of the current location as the end of the prolog,
- *  so it can be used later to compute the actual size of the prolog for
- *  GCInfo purposes. We may still generate more code into "prolog" IGs.
+ *  so it can be used later to compute the actual size of the prolog.
  */
 
 void emitter::emitMarkPrologEnd()
 {
-    assert(emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     emitPrologEndPos.CaptureLocation(this);
 }
 
@@ -2056,7 +2061,7 @@ void emitter::emitMarkPrologEnd()
 
 void emitter::emitEndProlog()
 {
-    assert(emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     emitNoGCRequestCount = 0;
     emitNoGCIG           = false;
@@ -2361,16 +2366,6 @@ void emitter::emitFinishPrologEpilogGeneration()
     emitCurIG = nullptr;
 }
 
-bool emitter::emitGeneratingPrologOrFuncletProlog() const
-{
-    return emitIGisInProlog(emitCurIG) || emitIGisInFuncletProlog(emitCurIG);
-}
-
-bool emitter::emitGeneratingEpilogOrFuncletEpilog() const
-{
-    return emitIGisInEpilog(emitCurIG) || emitIGisInFuncletEpilog(emitCurIG);
-}
-
 /*****************************************************************************
  *
  *  Common code for prolog / epilog beginning. Convert the placeholder group to actual code IG,
@@ -2617,7 +2612,7 @@ bool emitter::emitHasEpilogEnd()
 
 void emitter::emitStartExitSeq()
 {
-    assert(emitGeneratingEpilogOrFuncletEpilog());
+    assert(m_compiler->compGeneratingEpilog);
 
     emitExitSeqBegLoc.CaptureLocation(this);
 }
@@ -2636,7 +2631,7 @@ void emitter::emitStartExitSeq()
 
 void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 {
-    assert(emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     assert(offsHi > offsLo);
 
 #ifdef DEBUG
@@ -9929,7 +9924,6 @@ void emitter::emitInitIG(insGroup* ig)
        sure we act the same in non-DEBUG builds.
     */
 
-    ig->igData   = nullptr;
     ig->igSize   = 0;
     ig->igGCregs = RBM_NONE;
     ig->igInsCnt = 0;
@@ -9947,6 +9941,8 @@ void emitter::emitInitIG(insGroup* ig)
     // Explicitly call init, since IGs don't actually have a constructor.
     ig->igBlocks.jitstd::list<BasicBlock*>::init(m_compiler->getAllocator(CMK_DebugOnly));
 #endif
+
+    ig->igData = nullptr;
 }
 
 /*****************************************************************************

@@ -144,9 +144,8 @@ void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
     // code generation isn't actually adding to set of modified registers.
     // Frame layout is only affected by callee-saved registers, so only ensure that callee-saved
     // registers aren't modified after final frame layout.
-    assert((m_compiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) ||
-           m_compiler->GetEmitter()->emitGeneratingPrologOrFuncletProlog() ||
-           m_compiler->GetEmitter()->emitGeneratingEpilogOrFuncletEpilog() ||
+    assert((m_compiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_compiler->compGeneratingProlog ||
+           m_compiler->compGeneratingEpilog ||
            (((rsModifiedRegsMask | mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
 
 #ifdef DEBUG
@@ -174,9 +173,8 @@ void RegSet::rsRemoveRegsModified(regMaskTP mask)
     assert(rsModifiedRegsMaskInitialized);
 
     // See comment in rsSetRegsModified().
-    assert((m_compiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) ||
-           m_compiler->GetEmitter()->emitGeneratingPrologOrFuncletProlog() ||
-           m_compiler->GetEmitter()->emitGeneratingEpilogOrFuncletEpilog() ||
+    assert((m_compiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_compiler->compGeneratingProlog ||
+           m_compiler->compGeneratingEpilog ||
            (((rsModifiedRegsMask & ~mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
 
 #ifdef DEBUG

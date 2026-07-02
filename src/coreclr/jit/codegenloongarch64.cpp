@@ -339,7 +339,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
@@ -445,6 +445,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(block != NULL);
     assert(m_compiler->bbIsFuncletBeg(block));
 
+    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
+
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -519,6 +521,8 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         printf("*************** In genFuncletEpilog()\n");
     }
 #endif
+
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     m_compiler->unwindBegEpilog();
 
@@ -621,6 +625,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         printf("*************** In genFnEpilog()\n");
     }
 #endif // DEBUG
+
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     VarSetOps::Assign(m_compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
     gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
@@ -4320,7 +4326,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (!m_compiler->getNeedsGSSecurityCookie())
     {
@@ -6135,7 +6141,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (delta == 0)
     {
@@ -6168,7 +6174,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (frameSize == 0)
     {
@@ -6520,7 +6526,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
  */
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -6643,7 +6649,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
-    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(m_compiler->compGeneratingEpilog);
 
     regMaskTP regsToRestoreMask = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -6753,7 +6759,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
 
     if (!m_compiler->compIsProfilerHookNeeded())
     {

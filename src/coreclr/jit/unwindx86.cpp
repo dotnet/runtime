@@ -70,8 +70,8 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 //
 void Compiler::unwindReserve()
 {
-    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
-    assert(!GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(!compGeneratingProlog);
+    assert(!compGeneratingEpilog);
 
     for (FuncInfoDsc* const func : Funcs())
     {
@@ -88,8 +88,8 @@ void Compiler::unwindReserve()
 //
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
-    assert(!GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(!compGeneratingProlog);
+    assert(!compGeneratingEpilog);
 
     for (FuncInfoDsc* const func : Funcs())
     {

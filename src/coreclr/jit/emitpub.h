@@ -58,9 +58,6 @@ void emitGeneratePrologEpilog();
 void emitStartPrologEpilogGeneration();
 void emitFinishPrologEpilogGeneration();
 
-bool emitGeneratingPrologOrFuncletProlog() const;
-bool emitGeneratingEpilogOrFuncletEpilog() const;
-
 /************************************************************************/
 /*           Record a code position and later convert it to offset      */
 /************************************************************************/

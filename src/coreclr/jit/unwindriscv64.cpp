@@ -47,7 +47,7 @@ void Compiler::unwindAllocStack(unsigned size)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
+        if (compGeneratingProlog)
         {
             unwindAllocStackCFI(size);
         }
@@ -90,7 +90,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
+        if (compGeneratingProlog)
         {
             unwindSetFrameRegCFI(reg, offset);
         }
@@ -158,7 +158,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
+        if (compGeneratingProlog)
         {
             FuncInfoDsc*   func     = funCurrentFunc();
             UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -702,7 +702,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::unwindBegProlog()
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(compGeneratingProlog);
     assert(!compGeneratingUnwindProlog);
     compGeneratingUnwindProlog = true;
 
@@ -731,14 +731,14 @@ void Compiler::unwindBegProlog()
 
 void Compiler::unwindEndProlog()
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(compGeneratingProlog);
     assert(compGeneratingUnwindProlog);
     compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
-    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(compGeneratingEpilog);
     assert(!compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = true;
 
@@ -754,7 +754,7 @@ void Compiler::unwindBegEpilog()
 
 void Compiler::unwindEndEpilog()
 {
-    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(compGeneratingEpilog);
     assert(compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = false;
 }
@@ -779,8 +779,8 @@ void Compiler::unwindPadding()
 // all its funclets.
 void Compiler::unwindReserve()
 {
-    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
-    assert(!GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
+    assert(!compGeneratingProlog);
+    assert(!compGeneratingEpilog);
 
     for (FuncInfoDsc* const func : Funcs())
     {

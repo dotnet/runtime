@@ -150,7 +150,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     regNumber spReg = GetStackPointerReg(m_compiler->funCurrentFuncIdx());
     if (spReg == REG_NA)
     {
@@ -223,7 +223,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 //
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(m_compiler->compGeneratingProlog);
     if (!genUseBlockInit)
     {
         // Nothing to zero (genCheckUseBlockInit forces block-init for any non-empty range on wasm).
@@ -270,6 +270,22 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 //------------------------------------------------------------------------
 // genHomeRegisterParams: place register arguments into their RA-assigned locations.
 //
+// We can't actually do this task here because the prolog will overflow. Instead, we
+// do this later on and inject all the relevant code into the first basic block.
+// See genHomeRegisterParamsOutsideProlog, below.
+//
+// Arguments:
+//    initReg            - Unused
+//    initRegStillZeroed - Unused
+//
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    // Intentionally empty
+}
+
+//------------------------------------------------------------------------
+// genHomeRegisterParamsOutsideProlog: place register arguments into their RA-assigned locations.
+//
 // For the WASM RA, we have a much simplified (compared to LSRA) contract of:
 // - If an argument is live on entry in a set of registers, then the RA will
 //   assign those registers to that argument on entry.
@@ -278,14 +294,9 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 // The main motivation for this (along with the obvious CQ implications) is
 // obviating the need to adapt the general "RegGraph"-based algorithm to
 // !HAS_FIXED_REGISTER_SET constraints (no reg masks).
-//
-// Arguments:
-//    initReg            - Unused
-//    initRegStillZeroed - Unused
-//
-void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+void CodeGen::genHomeRegisterParamsOutsideProlog()
 {
-    JITDUMP("*************** In genHomeRegisterParams()\n");
+    JITDUMP("*************** In genHomeRegisterParamsOutsideProlog()\n");
 
     auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
         assert(segment.IsPassedInRegister());
@@ -393,6 +404,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
+
 #ifdef DEBUG
     if (m_compiler->opts.dspCode)
         printf("\n__epilog:\n");
@@ -491,6 +504,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 //
 void CodeGen::genFuncletEpilog(BasicBlock* block)
 {
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
+
     if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
     {
         instGen(INS_end);
