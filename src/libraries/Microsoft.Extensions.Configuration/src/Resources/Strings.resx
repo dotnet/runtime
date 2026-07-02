@@ -120,6 +120,12 @@
   <data name="Error_NoSources" xml:space="preserve">
     <value>A configuration source is not registered. Please register one before setting a value.</value>
   </data>
+  <data name="Error_ReferenceComposedValueMissing" xml:space="preserve">
+    <value>The reference '{0}' used in the composed value at '{1}' resolved to no value.</value>
+  </data>
+  <data name="Error_ReferenceTemplateInvalid" xml:space="preserve">
+    <value>The composed value template at '{0}' is not a valid format string.</value>
+  </data>
   <data name="InvalidNullArgument" xml:space="preserve">
     <value>Null is not a valid value for '{0}'.</value>
   </data>
@@ -128,5 +134,26 @@
   </data>
   <data name="StreamConfigurationSourceStreamCannotBeNull" xml:space="preserve">
     <value>Source.Stream cannot be null.</value>
+  </data>
+  <data name="Error_ReferenceSubjectEmpty" xml:space="preserve">
+    <value>The reference subject must be a non-empty configuration key after trimming leading and trailing ':' delimiters.</value>
+  </data>
+  <data name="Error_ReferenceTargetsRequired" xml:space="preserve">
+    <value>At least one non-empty reference target must be provided.</value>
+  </data>
+  <data name="Error_ReferenceTargetInvalid" xml:space="preserve">
+    <value>'{0}' is not a valid reference target pattern. Each ':'-separated segment must be non-empty; '*' is permitted only as a whole segment.</value>
+  </data>
+  <data name="Error_ReferencePatternInvalid" xml:space="preserve">
+    <value>'{0}' is not a valid reference pattern. Each ':'-separated segment must be non-empty; '*' matches a run of characters within a segment; '**' is permitted only as a whole segment and matches zero or more segments.</value>
+  </data>
+  <data name="Error_ReferenceCycle" xml:space="preserve">
+    <value>The configured references form a cycle starting at subject '{0}' (revisits '{1}').</value>
+  </data>
+  <data name="Error_ReferenceTargetNotAllowed" xml:space="preserve">
+    <value>Subject '{0}' has selection '{1}' which the reference parser resolved to '{2}', but that target is not permitted by the rule.</value>
+  </data>
+  <data name="Error_ReferenceSourceContextualBuildOnly" xml:space="preserve">
+    <value>ReferenceConfigurationSource must be built through the contextual Build overload that supplies the upstream provider list; the standard IConfigurationSource.Build cannot satisfy it.</value>
   </data>
 </root>
