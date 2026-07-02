@@ -94,6 +94,8 @@ if (!Directory.Exists(searchRoot))
 // its own (CLRTest.Execute.Bash.targets only emits .sh for runnable tests).
 // We filter out the runner-script files installed under Tests/Core_Root.
 string coreRootAbs = Path.GetFullPath(coreRoot);
+if (!coreRootAbs.EndsWith(Path.DirectorySeparatorChar))
+    coreRootAbs += Path.DirectorySeparatorChar;
 List<string> tests = Directory.EnumerateFiles(searchRoot, "*.sh", SearchOption.AllDirectories)
     .Where(p => !Path.GetFullPath(p).StartsWith(coreRootAbs, StringComparison.Ordinal))
     .OrderBy(p => p, StringComparer.Ordinal)

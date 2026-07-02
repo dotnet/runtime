@@ -57,17 +57,13 @@ extern "C" void SystemJS_ScheduleFinalization();
 extern "C" void WasiFinalizer_Schedule();
 #endif
 
-// Cross-target callback that runs one FinalizerThreadWorkerIteration on the
-// current thread. On browser this is invoked from a JS microtask after the
-// SystemJS_ScheduleFinalization queue tick; on WASI it is a QCall invoked by
-// WasiEventLoop after WasiFinalizer_TryClearPending observes the flag.
-// The implementation is identical on both targets; each just exports it
-// under the symbol its host actually imports.
-#ifdef TARGET_BROWSER
-extern "C" void SystemJS_ExecuteFinalizationCallback()
-#else // TARGET_WASI
-extern "C" void WasiFinalizer_RunWorker()
-#endif
+// Runs one FinalizerThreadWorkerIteration on the current thread. Body is
+// identical on browser and WASI; the surrounding entry-point shape differs:
+//   - Browser: raw wasm export invoked from a JS microtask after
+//     SystemJS_ScheduleFinalization enqueued it. Not a QCall.
+//   - WASI: QCall invoked from managed WasiEventLoop after
+//     WasiFinalizer_TryClearPending observes the flag.
+static void RunFinalizerIterationOnCurrentThread()
 {
     CONTRACTL
     {
@@ -84,6 +80,21 @@ extern "C" void WasiFinalizer_RunWorker()
     }
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
+
+#ifdef TARGET_BROWSER
+extern "C" void SystemJS_ExecuteFinalizationCallback()
+{
+    RunFinalizerIterationOnCurrentThread();
+}
+#else // TARGET_WASI
+extern "C" void QCALLTYPE WasiFinalizer_RunWorker()
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    RunFinalizerIterationOnCurrentThread();
+    END_QCALL;
+}
+#endif
 
 #endif // TARGET_BROWSER || TARGET_WASI
 
