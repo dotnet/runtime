@@ -139,8 +139,9 @@
 #define REG_SHIFT                REG_NA
 #define RBM_SHIFT                RBM_ALLINT
 
-// This is a general scratch register that does not conflict with the argument registers
+// Scratch registers that do not conflict with the argument registers, usually for use in function prolog
 #define REG_SCRATCH              REG_R9
+#define REG_SCRATCH_V            REG_V9
 
 // This is a general register that can be optionally reserved for other purposes during codegen
 #define REG_OPT_RSVD             REG_IP1

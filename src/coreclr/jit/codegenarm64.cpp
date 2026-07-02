@@ -5965,4 +5965,20 @@ BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
     return excpRaisingBlock;
 }
 
+//
+void CodeGen::genPoisonUnknownSizeVariable(int varNum, char poisonVal)
+{
+    assert(varNum >= 0);
+    LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
+
+    // We should not see mask locals being address exposed.
+    assert(varDsc->IsAddressExposed());
+    noway_assert(varDsc->TypeGet() == TYP_SIMD);
+
+    // mov z9.b, #poisonVal
+    GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, (ssize_t)poisonVal, INS_OPTS_SCALABLE_B);
+    // str z9, [x19, $index MUL VL]
+    GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, varNum, 0);
+}
+
 #endif // TARGET_ARM64

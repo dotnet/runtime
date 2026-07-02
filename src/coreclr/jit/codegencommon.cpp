@@ -8474,6 +8474,14 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 
         assert(varDsc->lvOnFrame);
 
+#ifdef TARGET_ARM64
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            genPoisonUnknownSizeVariable(varNum, (char)poisonVal);
+            continue;
+        }
+#endif
+
         unsigned int size = m_compiler->lvaLclStackHomeSize(varNum);
         if ((size / TARGET_POINTER_SIZE) > 16)
         {

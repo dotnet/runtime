@@ -2450,6 +2450,18 @@ void LinearScan::buildIntervals()
             currentLoc += 2;
         }
 
+#ifdef TARGET_ARM64
+        if (m_compiler->compUsesUnknownSizeFrame && (block == m_compiler->fgFirstBB))
+        {
+            regMaskTP killed;
+            killed.AddRegNumInMask(REG_SCRATCH);
+            killed.AddRegNumInMask(REG_SCRATCH_V);
+
+            addKillForRegs(killed, currentLoc + 1);
+            currentLoc += 2;
+        }
+#endif
+
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange)
         {
