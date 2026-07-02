@@ -124,7 +124,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm install -g @microsoft/vally-cli
+      - run: npm install -g @microsoft/vally-cli@0.7.0
 
       - name: Lint the selected spec(s)
         run: |
@@ -146,21 +146,24 @@ jobs:
         if: steps.guard.outputs.run == 'true'
         id: run
         run: |
-          : > report.md
+          workdir="$RUNNER_TEMP/vally"
+          mkdir -p "$workdir"
+          report="$workdir/report.md"
+          : > "$report"
           rc=0
           for spec in ${{ steps.sel.outputs.specs }}; do
             name="$(basename "$spec" .eval.yaml)"
-            echo "## $name" >> report.md
+            echo "## $name" >> "$report"
             if vally eval --eval-spec "$spec" --skill-dir .github/workflows \
-                 --workspace "./ws-$name" --output-dir "./out-$name" > "log-$name.txt" 2>&1; then
-              echo "✅ passed" >> report.md
+                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" > "$workdir/log-$name.txt" 2>&1; then
+              echo "✅ passed" >> "$report"
             else
               rc=1
-              echo "❌ failed" >> report.md
+              echo "❌ failed" >> "$report"
             fi
-            md="$(ls -t ./out-$name/*/eval-results.md 2>/dev/null | head -1 || true)"
-            if [ -n "$md" ]; then { echo; echo '<details><summary>details</summary>'; echo; cat "$md"; echo; echo '</details>'; } >> report.md; fi
-            echo >> report.md
+            md="$(ls -t "$workdir/out-$name"/*/eval-results.md 2>/dev/null | head -1 || true)"
+            if [ -n "$md" ]; then { echo; echo '<details><summary>details</summary>'; echo; cat "$md"; echo; echo '</details>'; } >> "$report"; fi
+            echo >> "$report"
           done
           exit $rc
 
@@ -170,8 +173,9 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const path = require('path');
             let body = '_eval report unavailable_';
-            try { body = fs.readFileSync('report.md', 'utf8'); } catch {}
+            try { body = fs.readFileSync(path.join(process.env.RUNNER_TEMP, 'vally', 'report.md'), 'utf8'); } catch {}
             const marker = '<!-- ci-workflow-eval -->';
             const header = '> [!NOTE]\n> AI/Copilot-generated eval report (Vally), triggered by a maintainer eval command.\n\n';
             const out = `${marker}\n${header}${body}`;
