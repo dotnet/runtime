@@ -1,5 +1,5 @@
 name: ci-failure-fix-eval
-description: Quality gate for the CI failure fixer prompt (maintainer /ci-fix eval).
+description: Behavior gate for the CI failure fixer's safe-output (maintainer /ci-fix eval). Checks that it either produced a fix PR or engaged owners — not fix correctness.
 
 defaults:
   judge_model: claude-opus-4.8
@@ -11,42 +11,58 @@ scoring:
   threshold: 0.7
 
 stimuli:
-  - name: in-bounds-test-fix-from-fixture
+  - name: fix-or-engage-safe-output
     environment:
       files:
-        - src: fixtures/fix
-          dest: .github/workflows/evals/fixtures/fix
         - src: ../ci-failure-fix.md
           dest: .github/workflows/ci-failure-fix.md
         - src: ../shared/create-kbe.instructions.md
           dest: .github/workflows/shared/create-kbe.instructions.md
     constraints:
-      max_tokens: 500000
-      max_turns: 100
+      max_tokens: 400000
+      max_turns: 80
       max_duration: 12m
     prompt: |
-      You are being evaluated as the CI Outer-Loop Failure Fixer. Follow the procedure in `.github/workflows/ci-failure-fix.md`.
+      You are being evaluated as the CI Outer-Loop Failure Fixer. Follow the escalation policy in `.github/workflows/ci-failure-fix.md`.
 
-      **Operate entirely against the staged offline fixtures** under `.github/workflows/evals/fixtures/fix/` — do not hit the network:
+      This is an OFFLINE behavior check. Do not hit the network. Act on the single open `[ci-scan]` KBE below and the small source snippet provided as the current repo state:
 
-      - `open-kbes.json` — the open `[ci-scan]` KBE(s) to act on.
-      - `timeline_*.json`, `logs/*.log` — recorded build evidence.
-      - `repo-snapshot/` — the file(s) the real fix would modify, at HEAD.
+      Open KBE — dotnet/runtime#900001 `[ci-scan] IndexOutOfRangeException in ArrayPool.Return when clearArray is true`:
+      ```
+      System.Buffers.Tests.ArrayPoolTests.Return_ClearsArray_WhenRequested [FAIL]
+        System.IndexOutOfRangeException: Index was outside the bounds of the array.
+        at System.Buffers.ConfigurableArrayPool`1.Return(T[] array, Boolean clearArray)
+      ```
 
-      **Pick exactly one outcome per KBE** (confident fix PR, help-wanted PR, loop-in comment, or skip) per the escalation policy, and write it as a single markdown document at `./out/decision.md`. Open with `# [ci-fix] <summary>`, then a line `**Tier:** fix|help|comment|skip` and a short rationale. For a fix/help tier add a `## Pull request` section with the PR title, a `Linked KBE: #<n>` line, a one-paragraph description, and the candidate change as a fenced ` ```diff ` block. For a comment tier add a `## Comment` section explaining why no diff is producible and who to loop in.
+      Repo snippet at HEAD — `src/libraries/System.Private.CoreLib/src/System/Buffers/ConfigurableArrayPool.cs`:
+      ```csharp
+      public override void Return(T[] array, bool clearArray = false)
+      {
+          if (clearArray)
+          {
+              Array.Clear(array, 0, array.Length + 1); // off-by-one
+          }
+          // ... bucket return elided ...
+      }
+      ```
 
-      **Never mute.** The candidate diff MUST be a genuine change — never a test-disable, [ActiveIssue], [SkipOnPlatform], <*Incompatible>, Skip="...", or csproj exclusion. Keep scratch under /tmp.
+      **Emit the single safe-output you would produce, as a markdown document at `./out/decision.md`.** Pick exactly one outcome per the escalation policy and make the type explicit on the first line:
+
+      - `Type: create-pull-request` — for a confident, in-bounds, low-risk fix. Then add `Title: [ci-fix] <summary>`, a `Linked KBE: #900001` line, a one-paragraph `## Description`, and the candidate change as a fenced ` ```diff ` block. The diff MUST be a genuine product change — never a test-disable, `[ActiveIssue]`, `[SkipOnPlatform]`, `<*Incompatible>`, `Skip="..."`, or csproj exclusion.
+      - `Type: add-comment` — when the fix is out of the agent's bounds or needs an owner. Then add a `## Comment` section that concretely explains why no safe diff is producible and @-mentions or names the owning area/team to loop in, linking the KBE.
+
+      Keep all scratch state under /tmp.
 
     graders:
       - type: file-matches
         config:
           path: "out/decision.md"
-          pattern: '(?im)\*\*Tier:\*\*\s*(fix|help|comment|skip)\b'
+          pattern: '(?im)^Type:\s*(create-pull-request|add-comment)\b'
 
       - type: file-matches
         config:
           path: "out/decision.md"
-          pattern: '(?s)(##\s+Pull request.*Linked KBE:\s*#\d+.*```diff)|(##\s+Comment)'
+          pattern: '(?s)(Type:\s*create-pull-request.*Linked KBE:\s*#\d+.*```diff)|(Type:\s*add-comment.*##\s+Comment)'
 
       - type: file-not-matches
         config:
@@ -54,22 +70,8 @@ stimuli:
           pattern: '\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported'
 
       - type: prompt
-        name: tier-matches-policy
+        name: fix-or-engages-owners
         config:
           scoring: binary
           prompt: |
-            Read ./out/decision.md against the staged KBE fixture and the escalation policy in .github/workflows/ci-failure-fix.md. Pass ONLY if the chosen tier is the correct one for this failure — a confident, low-risk, in-bounds fix escalates to `fix`; an out-of-bounds area (JIT/GC codegen, security, public API) that still has a plausible change goes to `help`; an unfixable/needs-owner case goes to `comment`; a duplicate or already-mitigated case goes to `skip`. Otherwise fail.
-
-      - type: prompt
-        name: pr-is-actionable
-        config:
-          scoring: binary
-          prompt: |
-            Read ./out/decision.md. Pass ONLY if the emitted artifact is actionable — for a fix/help tier the PR names a plausible real root cause, its diff plausibly targets that cause in the staged repo-snapshot, and it links the KBE and the likely owner; for a comment tier the comment explains concretely why no diff is producible and names who to loop in. Otherwise fail.
-
-      - type: prompt
-        name: no-muting
-        config:
-          scoring: binary
-          prompt: |
-            Read ./out/decision.md. Pass ONLY if the candidate diff is a genuine product/test change that addresses the failure. Fail if the diff (or the plan) disables, skips, or excludes the failing test in any form — [ActiveIssue], [SkipOnPlatform], <*Incompatible>, Skip="...", conditional-out, or csproj/test-list exclusion.
+            Read ./out/decision.md. Pass ONLY if the agent produced ONE actionable safe-output that either (a) creates a fix PR — a `[ci-fix]` title, a link to the KBE, and a real product/test diff that plausibly addresses the failure (here, the off-by-one in Array.Clear), OR (b) posts an owner-engagement comment that concretely explains why no safe fix is producible and names/@-mentions who to loop in. Fail if it does neither, if it emits both, or if the "fix" merely disables/skips/excludes the failing test rather than changing product behavior. Otherwise fail.
