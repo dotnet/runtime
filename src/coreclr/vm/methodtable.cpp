@@ -4141,7 +4141,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
     AccessCheckContext accessContext(NULL, pAskingMT);
 
     if (!ClassLoader::CanAccessClass(&accessContext,
-                                     pTargetMT,                 //the desired class
+                                     TargetTypeForAccessCheck(pTargetMT),                 //the desired class
                                      pTargetMT->GetAssembly(),  //the desired class's assembly
                                      *AccessCheckOptions::s_pNormalAccessChecks
                                     ))
