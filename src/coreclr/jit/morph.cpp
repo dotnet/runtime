@@ -11352,6 +11352,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 DEBUG_DESTROY_NODE(tree);
                 return op1;
             }
+            tree->AsOp()->CheckDivideByConstOptimized(this);
             break;
 
         case GT_UDIV:
@@ -15153,10 +15154,9 @@ PhaseStatus Compiler::fgPromoteStructs()
         bool       promotedVar = false;
         LclVarDsc* varDsc      = lvaGetDesc(lclNum);
 
-        // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
-        // its fields.  Instead, we will attempt to enregister the entire struct.
-        if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || isOpaqueSIMDLclVar(varDsc)))
+        if (varTypeIsSIMDOrMask(varDsc) || varDsc->IsBitcastToSimd())
         {
+            // Attempt to enregister the entire struct.
             varDsc->lvRegStruct = true;
         }
         // Don't promote if we have reached the tracking limit.

@@ -225,6 +225,21 @@ void* pal_get_symbol(void* library, const char* name);
 bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
 #endif
 
+// Handle to a loaded dynamic library.
+#if defined(_WIN32)
+typedef HMODULE pal_dll_t;
+#else
+typedef void* pal_dll_t;
+#endif
+
+// Find a library named library_name that is already loaded into the current
+// process (without loading it if it is not). symbol_name is used to obtain an
+// address inside the library so that its on-disk path can be resolved. On
+// success returns true, sets *dll to the library handle, and sets *out_path to
+// a heap-allocated path (caller must free()). Returns false if the library is
+// not already loaded.
+bool pal_get_loaded_library(const pal_char_t* library_name, const char* symbol_name, /*out*/ pal_dll_t* dll, /*out*/ pal_char_t** out_path);
+
 #ifdef __cplusplus
 }
 #endif

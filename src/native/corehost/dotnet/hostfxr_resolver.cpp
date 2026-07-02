@@ -6,11 +6,13 @@
 #include "pal.h"
 #include "fxr_resolver.h"
 #include "trace.h"
+#include "utils.h"
+#include "error_codes.h"
 #include "hostfxr_resolver.h"
 
 namespace
 {
-    const fxr_resolver::search_location s_dotnet_search_location = fxr_resolver::search_location_default;
+    const fxr_search_location s_dotnet_search_location = fxr_search_location_default;
 }
 
 hostfxr_main_bundle_startupinfo_fn hostfxr_resolver_t::resolve_main_bundle_startupinfo()
@@ -39,7 +41,22 @@ hostfxr_main_fn hostfxr_resolver_t::resolve_main_v1()
 
 hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
 {
-    if (!fxr_resolver::try_get_path(app_root, s_dotnet_search_location, nullptr, &m_dotnet_root, &m_fxr_path))
+    bool resolved;
+    {
+        pal_char_t* dotnet_root = nullptr;
+        pal_char_t* fxr_path = nullptr;
+        resolved = fxr_resolver_try_get_path(app_root.c_str(), s_dotnet_search_location, nullptr, &dotnet_root, &fxr_path);
+        if (resolved)
+        {
+            m_dotnet_root.assign(dotnet_root);
+            m_fxr_path.assign(fxr_path);
+        }
+
+        free(dotnet_root);
+        free(fxr_path);
+    }
+
+    if (!resolved)
     {
         m_status_code = StatusCode::CoreHostLibMissingFailure;
     }

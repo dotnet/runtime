@@ -627,7 +627,7 @@ private:
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
+                    m_compiler->impMarkInlineCandidate(call, context, &callInfo, inlinersContext);
 
                     if (call->IsInlineCandidate())
                     {

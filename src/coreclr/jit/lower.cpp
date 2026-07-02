@@ -4089,8 +4089,9 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
                     value++;
                     loValue = value & UINT32_MAX;
                     hiValue = (value >> 32) & UINT32_MAX;
-                    loSrc2->AsIntCon()->SetIconValue(loValue);
-                    hiSrc2->AsIntCon()->SetIconValue(hiValue);
+                    // Sign-extend (not zero-extend) so the stored value matches across host pointer sizes.
+                    loSrc2->AsIntCon()->SetValueTruncating(static_cast<int32_t>(loValue));
+                    hiSrc2->AsIntCon()->SetValueTruncating(static_cast<int32_t>(hiValue));
 
                     condition = cmp->OperIs(GT_LE) ? GT_LT : GT_GE;
                     mustSwap  = false;
@@ -6232,6 +6233,17 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
             regType = call->TypeGet();
         }
 #endif
+
+#if defined(TARGET_WASM)
+        CORINFO_CLASS_HANDLE clsHnd = layout->GetClassHandle();
+        if (clsHnd != NO_CLASS_HANDLE)
+        {
+            CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(clsHnd);
+            assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
+            regType = WasmClassifier::ToJitType(wasmAbiType);
+        }
+#endif // TARGET_WASM
+
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
         LowerStoreIndirCommon(store->AsStoreInd());
@@ -9236,7 +9248,7 @@ void Lowering::FindInducedParameterRegisterLocals()
             // accesses larger to generate smaller code.
 
 #ifdef TARGET_WASM
-            var_types fullWidthType = TYP_LONG;
+            var_types fullWidthType = genActualType(regSegment->GetRegisterType());
 #else
             var_types fullWidthType = TYP_I_IMPL;
 #endif
@@ -9466,7 +9478,11 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_HWINTRINSIC:
+            // TODO-WASM: SIMD12 is still maintained through lowering.
+            // Fix the below once we've determined our lowering path for SIMD12.
+#ifndef TARGET_WASM
             assert(!node->TypeIs(TYP_SIMD12));
+#endif
             break;
 #endif // FEATURE_SIMD
 
@@ -9492,6 +9508,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
+#if !defined(TARGET_WASM)
             if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
             {
                 // Emitter does not correctly handle live updates for LCL_ADDR
@@ -9504,6 +9521,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
                 assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
                 // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
             }
+#endif // !TARGET_WASM
 
             assert(varDsc->lvDoNotEnregister);
             break;

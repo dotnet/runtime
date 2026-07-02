@@ -5127,6 +5127,29 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     ArrayStack<PredInfo>    matchedPredInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<BasicBlock*> retryBlocks(getAllocator(CMK_ArrayStack));
 
+    auto tryRemoveAndFixFlow = [&](BasicBlock* emptyBlock, BasicBlock* newTarget) -> bool {
+        assert(emptyBlock->isEmpty());
+        assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
+
+        // Try to remove emptyBlock and make its preds jump directly to newTarget
+        //
+        bool canRemove =
+            !emptyBlock->HasFlag(BBF_DONT_REMOVE) && (emptyBlock != fgFirstBB) && (emptyBlock != fgOSREntryBB);
+        if (canRemove)
+        {
+            for (BasicBlock* const pred : emptyBlock->PredBlocksEditing())
+            {
+                fgReplaceJumpTarget(pred, emptyBlock, newTarget);
+            }
+
+            // We don't want removal to decrease weight of successor, so make it weightless.
+            emptyBlock->bbWeight = BB_ZERO_WEIGHT;
+            fgRemoveBlock(emptyBlock, true);
+        }
+
+        return canRemove;
+    };
+
     // Try tail merging a block.
     // If return value is true, retry.
     // May also add to retryBlocks.
@@ -5219,21 +5242,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     fgUnlinkStmt(predBlock, stmt);
 
-                    bool canRemove =
-                        predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) && predBlock != fgFirstBB;
-                    if (canRemove)
+                    if (predBlock->isEmpty())
                     {
-                        for (BasicBlock* const pred : predBlock->PredBlocksEditing())
-                        {
-                            fgReplaceJumpTarget(pred, predBlock, commSucc);
-                        }
-
-                        fgRemoveBlock(predBlock, true);
-
-                        if (commSucc->hasProfileWeight())
-                        {
-                            commSucc->increaseBBProfileWeight(predBlock->bbWeight);
-                        }
+                        tryRemoveAndFixFlow(predBlock, commSucc);
                     }
 
                     // Add one of the matching stmts to block, and
@@ -5274,10 +5285,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
-            BasicBlock* crossJumpVictim       = nullptr;
-            Statement*  crossJumpStmt         = nullptr;
-            bool        haveNoSplitVictim     = false;
-            bool        haveFallThroughVictim = false;
+            BasicBlock* crossJumpVictim = nullptr;
+            Statement*  crossJumpStmt   = nullptr;
+            unsigned    bestRank        = UINT32_MAX;
 
             for (PredInfo& info : matchedPredInfo.TopDownOrder())
             {
@@ -5291,46 +5301,40 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     continue;
                 }
 
-                bool const isNoSplit     = stmt == predBlock->firstStmt();
-                bool const isFallThrough = (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsToNext());
+                auto getRank = [=]() -> unsigned {
+                    bool const isNoSplit     = stmt == predBlock->firstStmt();
+                    bool const isFallThrough = (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsToNext());
 
-                // Is this block possibly better than what we have?
-                //
-                bool useBlock = false;
-
-                if (crossJumpVictim == nullptr)
-                {
-                    // Pick an initial candidate.
-                    useBlock = true;
-                }
-                else if (isNoSplit && isFallThrough)
-                {
-                    // This is the ideal choice.
+                    // From most to least preferable.
                     //
-                    useBlock = true;
-                }
-                else if (!haveNoSplitVictim && isNoSplit)
+                    if (isNoSplit && isFallThrough)
+                    {
+                        return 0;
+                    }
+                    if (isNoSplit)
+                    {
+                        return 1;
+                    }
+                    if (isFallThrough)
+                    {
+                        return 2;
+                    }
+
+                    return 3;
+                };
+
+                unsigned const rank = getRank();
+                bool           pick = rank < bestRank;
+                if (rank == bestRank)
                 {
-                    useBlock = true;
-                }
-                else if (!haveNoSplitVictim && !haveFallThroughVictim && isFallThrough)
-                {
-                    useBlock = true;
+                    pick = predBlock->bbID < crossJumpVictim->bbID;
                 }
 
-                if (useBlock)
+                if (pick)
                 {
-                    crossJumpVictim       = predBlock;
-                    crossJumpStmt         = stmt;
-                    haveNoSplitVictim     = isNoSplit;
-                    haveFallThroughVictim = isFallThrough;
-                }
-
-                // If we have the perfect victim, stop looking.
-                //
-                if (haveNoSplitVictim && haveFallThroughVictim)
-                {
-                    break;
+                    crossJumpVictim = predBlock;
+                    crossJumpStmt   = stmt;
+                    bestRank        = rank;
                 }
             }
 
@@ -5339,7 +5343,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // If this block requires splitting, then split it.
             // Note we know that stmt has a prev stmt.
             //
-            if (haveNoSplitVictim)
+            if (crossJumpStmt == crossJumpTarget->firstStmt())
             {
                 JITDUMP("Will cross-jump to " FMT_BB "\n", crossJumpTarget->bbNum);
             }
@@ -5368,21 +5372,15 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                bool canRemove = predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) && predBlock != fgFirstBB;
-                if (canRemove)
-                {
-                    for (BasicBlock* const pred : predBlock->PredBlocksEditing())
-                    {
-                        fgReplaceJumpTarget(pred, predBlock, crossJumpTarget);
-                    }
-                    fgRemoveBlock(predBlock, true);
 
-                    if (commSucc != nullptr && commSucc->hasProfileWeight())
-                    {
-                        commSucc->increaseBBProfileWeight(predBlock->bbWeight);
-                    }
+                // For tail merge we have a common successor of predBlock and
+                // crossJumpTarget, so the profile update can be done locally.
+                if (crossJumpTarget->hasProfileWeight())
+                {
+                    crossJumpTarget->increaseBBProfileWeight(predBlock->bbWeight);
                 }
-                else
+
+                if (!(predBlock->isEmpty() && tryRemoveAndFixFlow(predBlock, crossJumpTarget)))
                 {
                     if (commSucc != nullptr)
                     {
@@ -5394,13 +5392,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                         FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
                         predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                     }
-                }
-
-                // For tail merge we have a common successor of predBlock and
-                // crossJumpTarget, so the profile update can be done locally.
-                if (crossJumpTarget->hasProfileWeight())
-                {
-                    crossJumpTarget->increaseBBProfileWeight(predBlock->bbWeight);
                 }
             }
 

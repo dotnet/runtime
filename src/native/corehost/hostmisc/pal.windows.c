@@ -22,7 +22,9 @@
 #define ALT_DIR_SEPARATOR L'/'
 #define VOLUME_SEPARATOR  L':'
 
-pal_char_t* pal_get_own_executable_path(void)
+// Returns the full path of `module` (or the current executable when `module`
+// is NULL) as a heap-allocated string, or NULL on failure. Caller must free().
+static pal_char_t* get_module_file_name(HMODULE module)
 {
     // GetModuleFileNameW returns 0 on failure, the number of characters
     // written (not including the terminating null) on success, and the buffer
@@ -42,7 +44,7 @@ pal_char_t* pal_get_own_executable_path(void)
         }
         buf = new_buf;
 
-        size_written = GetModuleFileNameW(NULL, buf, size);
+        size_written = GetModuleFileNameW(module, buf, size);
     } while (size_written == size);
 
     if (size_written == 0)
@@ -52,6 +54,11 @@ pal_char_t* pal_get_own_executable_path(void)
     }
 
     return buf;
+}
+
+pal_char_t* pal_get_own_executable_path(void)
+{
+    return get_module_file_name(NULL);
 }
 
 bool pal_directory_exists(const pal_char_t* path)
@@ -513,12 +520,10 @@ pal_char_t* pal_get_default_installation_dir(void)
 
 bool pal_is_path_fully_qualified(const pal_char_t* path)
 {
-    if (path == NULL)
-        return false;
-
     size_t len = pal_strlen(path);
     if (len < 2)
         return false;
+
     // UNC and DOS device paths (e.g. \\server\share or \\?\C:\).
     if (is_dir_separator(path[0]))
         return path[1] == _X('?') || is_dir_separator(path[1]);
@@ -623,4 +628,27 @@ bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
         return false;
 
     return MultiByteToWideChar(CP_UTF8, 0, utf8, -1, out, (int)out_len) > 0;
+}
+
+bool pal_get_loaded_library(
+    const pal_char_t* library_name,
+    const char* symbol_name,
+    pal_dll_t* dll,
+    pal_char_t** out_path)
+{
+    (void)symbol_name;
+    *dll = NULL;
+    *out_path = NULL;
+
+    HMODULE dll_maybe = GetModuleHandleW(library_name);
+    if (dll_maybe == NULL)
+        return false;
+
+    pal_char_t* path = get_module_file_name(dll_maybe);
+    if (path == NULL)
+        return false;
+
+    *dll = dll_maybe;
+    *out_path = path;
+    return true;
 }
