@@ -271,17 +271,19 @@ namespace Internal.TypeSystem.Ecma
 
         private SignatureTypeCode ParseTypeCodeImpl(bool skipPinned = true)
         {
-            for (; ; )
-            {
-                SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
+            return ParseTypeCodeImpl(_reader.ReadSignatureTypeCode(), skipPinned);
+        }
 
+        private SignatureTypeCode ParseTypeCodeImpl(SignatureTypeCode typeCode, bool skipPinned = true)
+        {
+            for (; ; typeCode = _reader.ReadSignatureTypeCode())
+            {
                 if (typeCode == SignatureTypeCode.RequiredModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
                     if (typeHandle.Kind == HandleKind.TypeSpecification)
                     {
                         ReportInvalidTypeSpec();
-                        continue;
                     }
 
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
@@ -294,7 +296,6 @@ namespace Internal.TypeSystem.Ecma
                     if (typeHandle.Kind == HandleKind.TypeSpecification)
                     {
                         ReportInvalidTypeSpec();
-                        continue;
                     }
 
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
@@ -340,13 +341,13 @@ namespace Internal.TypeSystem.Ecma
             // rooted forms, and other forms used by existing tools/runtimes. The only
             // top-level TypeSpec form that does not make sense is a direct
             // CLASS/VALUETYPE TypeDefOrRef, represented here as SignatureTypeCode.TypeHandle
-            SignatureTypeCode typeCode = ParseTypeCode();
+            SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
             if (typeCode == SignatureTypeCode.TypeHandle)
             {
                 ReportInvalidTypeSpec();
             }
 
-            return ParseType(typeCode);
+            return ParseType(ParseTypeCodeImpl(typeCode));
         }
 
         public bool IsFieldSignature
