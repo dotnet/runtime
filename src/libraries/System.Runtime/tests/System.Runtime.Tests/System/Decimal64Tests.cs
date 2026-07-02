@@ -337,7 +337,7 @@ namespace System.Tests
             yield return new object[] { Decimal64.Parse("4e-399"), Decimal64.Zero, 0 };
             yield return new object[] { Decimal64.Parse("5e-399"), Decimal64.Zero, 0 };
             yield return new object[] { Decimal64.Parse("5.00001e-399"), Decimal64.Epsilon, 0 };
-            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-400"), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-398"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("5." + new string('0', 300) + "1e-399"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("6e-399"), Decimal64.Parse("1e-398"), 0 };
             yield return new object[] { Decimal64.Parse("1" + new string('0', 21) + "1e-420"), Decimal64.Epsilon, 0 };

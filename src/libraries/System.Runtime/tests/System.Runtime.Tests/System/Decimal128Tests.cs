@@ -334,7 +334,7 @@ namespace System.Tests
             yield return new object[] { Decimal128.Parse("4e-6177"), Decimal128.Zero, 0 };
             yield return new object[] { Decimal128.Parse("5e-6177"), Decimal128.Zero, 0 };
             yield return new object[] { Decimal128.Parse("5.00001e-6177"), Decimal128.Epsilon, 0 };
-            yield return new object[] { Decimal128.Parse("0.5" + new string('0', 300) + "1e-6178"), Decimal128.Epsilon, 0 };
+            yield return new object[] { Decimal128.Parse("0.5" + new string('0', 300) + "1e-6176"), Decimal128.Epsilon, 0 };
             yield return new object[] { Decimal128.Parse("5." + new string('0', 300) + "1e-6177"), Decimal128.Epsilon, 0 };
             yield return new object[] { Decimal128.Parse("6e-6177"), Decimal128.Parse("1e-6176"), 0 };
             yield return new object[] { Decimal128.Parse("1" + new string('0', 43) + "1e-6220"), Decimal128.Epsilon, 0 };
