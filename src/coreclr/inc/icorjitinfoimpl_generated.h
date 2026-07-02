@@ -309,6 +309,10 @@ void getReadyToRunDelegateCtorHelper(
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_LOOKUP* pLookup) override;
 
+bool getParameterlessCtor(
+          CORINFO_CLASS_HANDLE targetType,
+          CORINFO_METHOD_HANDLE* ctor) override;
+
 CorInfoInitClassResult initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,

@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.Remoting;
 
 namespace System
@@ -35,6 +37,7 @@ namespace System
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, object?[]? args, object?[]? activationAttributes) =>
             CreateInstance(type, ConstructorDefault, null, args, null, activationAttributes);
 
+        [Intrinsic]
         [DebuggerHidden]
         [DebuggerStepThrough]
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) =>
@@ -58,5 +61,45 @@ namespace System
 
             return o != null ? new ObjectHandle(o) : null;
         }
+
+#if !MONO
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        [StackTraceHidden]
+        private static unsafe void CallConstructorStruct(void* constructor, ref byte instance)
+        {
+            try
+            {
+#if NATIVEAOT
+                RawCalliHelper.CallDefaultStructConstructor((nint)constructor, ref instance);
+#else
+                InstanceCalliHelper.Call((delegate*<ref byte, void>)constructor, ref instance);
+#endif
+            }
+            catch (Exception exception)
+            {
+                throw new TargetInvocationException(exception);
+            }
+        }
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        [StackTraceHidden]
+        private static unsafe void CallConstructor(void* constructor, object instance)
+        {
+            try
+            {
+#if NATIVEAOT
+                RawCalliHelper.Call((nint)constructor, instance);
+#else
+                InstanceCalliHelper.Call((delegate*<object, void>)constructor, instance);
+#endif
+            }
+            catch (Exception exception)
+            {
+                throw new TargetInvocationException(exception);
+            }
+        }
+#endif
     }
 }

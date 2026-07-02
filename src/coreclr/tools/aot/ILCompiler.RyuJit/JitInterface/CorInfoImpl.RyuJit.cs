@@ -462,6 +462,26 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool getParameterlessCtor(CORINFO_CLASS_STRUCT_* targetType, CORINFO_METHOD_STRUCT_** ctor)
+        {
+            TypeDesc targetTypeDesc = HandleToObject(targetType);
+            MethodDesc defaultConstructor = targetTypeDesc.GetDefaultConstructor();
+            if (defaultConstructor != null)
+            {
+                if (defaultConstructor.IsPublic)
+                {
+                    *ctor = ObjectToHandle(defaultConstructor);
+                    return true;
+                }
+            }
+            else if (targetTypeDesc.IsValueType)
+            {
+                *ctor = null;
+                return true;
+            }
+            return false;
+        }
+
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
         {
             ReadyToRunHelper id;
@@ -801,6 +821,11 @@ namespace Internal.JitInterface
                     return _compilation.NodeFactory.ExternIndirectFunctionSymbol(new Utf8String("__guard_check_icall_fptr"u8));
                 case CorInfoHelpFunc.CORINFO_HELP_DISPATCH_INDIRECT_CALL:
                     return _compilation.NodeFactory.ExternIndirectFunctionSymbol(new Utf8String("__guard_dispatch_icall_fptr"u8));
+
+                case CorInfoHelpFunc.CORINFO_HELP_CALLCONSTRUCTORSTRUCT:
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Activator"u8, "CallConstructorStruct"u8, null));
+                case CorInfoHelpFunc.CORINFO_HELP_CALLCONSTRUCTOR:
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Activator"u8, "CallConstructor"u8, null));
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());

@@ -3865,6 +3865,160 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Activator_CreateInstance:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObject:
+            {
+                CORINFO_CLASS_HANDLE type     = NO_CLASS_HANDLE;
+                bool                 needsBox = true;
+                if (sig->numArgs == 0)
+                {
+                    assert(sig->sigInst.methInstCount == 1);
+                    CORINFO_SIG_INFO exactSig;
+                    info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
+                    type     = exactSig.sigInst.methInst[0];
+                    needsBox = false;
+                }
+                else
+                {
+                    assert(sig->numArgs == 1);
+                    assert(sig->sigInst.methInstCount == 0);
+                    gtIsTypeof(impStackTop().val, &type);
+                }
+
+                if (type == NO_CLASS_HANDLE)
+                {
+                    return nullptr;
+                }
+
+                bool isValueType = eeIsValueClass(type);
+                bool isNullable  = info.compCompHnd->isNullableType(type) == TypeCompareState::Must;
+
+                CORINFO_METHOD_HANDLE ctor = NO_METHOD_HANDLE;
+                if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObject)
+                {
+                    if (isNullable)
+                    {
+                        return nullptr;
+                    }
+                }
+                else if (!info.compCompHnd->getParameterlessCtor(type, &ctor))
+                {
+                    return nullptr;
+                }
+
+                // TODO-perf: handle lookups
+                bool structFastpath = isValueType && !needsBox;
+                if (eeIsSharedInst(type) && (!structFastpath || ctor != NO_METHOD_HANDLE))
+                {
+                    return nullptr;
+                }
+
+                // TODO: impl ftn ptrs
+                if (IsNativeAot() && ctor != NO_METHOD_HANDLE)
+                {
+                    return nullptr;
+                }
+
+                assert(info.compCompHnd->isNullableType(type) != TypeCompareState::May);
+
+                impPopStack(sig->numArgs);
+
+                GenTree* instance;
+                unsigned lclNum = lvaGrabTemp(true DEBUGARG("NewObj constructor temp"));
+                if (structFastpath)
+                {
+                    CorInfoType jitTyp = sig->retType;
+
+                    if (impIsPrimitive(jitTyp))
+                    {
+                        lvaTable[lclNum].lvType = JITtype2varType(jitTyp);
+                    }
+                    else
+                    {
+                        lvaSetStruct(lclNum, type, true /* unsafe value cls check */);
+                    }
+
+                    bool bbInALoop  = impBlockIsInALoop(compCurBB);
+                    bool bbIsReturn = compCurBB->KindIs(BBJ_RETURN) &&
+                                      (!compIsForInlining() || (impInlineInfo->iciBlock->KindIs(BBJ_RETURN)));
+                    LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+                    if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
+                    {
+                        // Append a tree to zero-out the temp
+                        GenTree* newObjInit =
+                            gtNewZeroConNode(lclDsc->TypeIs(TYP_STRUCT) ? TYP_INT : lclDsc->TypeGet());
+
+                        impStoreToTemp(lclNum, newObjInit, CHECK_SPILL_NONE);
+                    }
+                    else
+                    {
+                        JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
+                        lclDsc->lvSuppressedZeroInit = 1;
+                        compSuppressedZeroInit       = true;
+                    }
+
+                    if (ctor != NO_METHOD_HANDLE)
+                    {
+                        lclDsc->lvHasLdAddrOp = true;
+                    }
+
+                    instance = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+                }
+                else if (isNullable)
+                {
+                    return gtNewNull();
+                }
+                else
+                {
+                    bool            hasSideEffects = true;
+                    CorInfoHelpFunc helperTemp     = info.compCompHnd->getNewHelper(type, &hasSideEffects);
+
+                    if (hasSideEffects)
+                    {
+                        JITDUMP("\nSpilling stack for finalizable newobj\n");
+                        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("finalizable newobj spill"));
+                    }
+
+                    GenTreeAllocObj* allocObj =
+                        gtNewAllocObjNode(helperTemp, hasSideEffects, type, TYP_REF, gtNewIconEmbClsHndNode(type));
+
+                    compCurBB->SetFlags(BBF_HAS_NEWOBJ);
+                    optMethodFlags |= OMF_HAS_NEWOBJ;
+
+                    impStoreToTemp(lclNum, allocObj, CHECK_SPILL_NONE);
+
+                    assert(lvaTable[lclNum].lvSingleDef == 0);
+                    lvaTable[lclNum].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def local\n", lclNum);
+
+                    lvaSetClass(lclNum, type, true /* is Exact */);
+
+                    instance = gtNewLclvNode(lclNum, TYP_REF);
+                    if (isValueType)
+                    {
+                        instance =
+                            gtNewOperNode(GT_ADD, TYP_BYREF, instance, gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
+                    }
+                }
+
+                if (ctor != NO_METHOD_HANDLE)
+                {
+                    CORINFO_CALL_INFO callInfo;
+                    callInfo.hMethod     = ctor;
+                    callInfo.methodFlags = info.compCompHnd->getMethodAttribs(ctor);
+
+                    GenTree* constructor = impMethodPointer(&callInfo);
+
+                    unsigned helper = isValueType ? CORINFO_HELP_CALLCONSTRUCTORSTRUCT : CORINFO_HELP_CALLCONSTRUCTOR;
+                    GenTreeCall* invoke = gtNewHelperCallNode(helper, TYP_VOID, constructor, instance);
+                    impConvertToUserCallAndMarkForInlining(invoke);
+
+                    impAppendTree(invoke, CHECK_SPILL_ALL, impCurStmtDI, false);
+                }
+
+                return gtNewLclvNode(lclNum, JITtype2varType(sig->retType));
+            }
+
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
@@ -10732,6 +10886,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Activator_AllocatorOf;
                         }
+                        else if (strcmp(methodName, "CreateInstance") == 0)
+                        {
+                            result = NI_System_Activator_CreateInstance;
+                        }
                         else if (strcmp(methodName, "DefaultConstructorOf") == 0)
                         {
                             result = NI_System_Activator_DefaultConstructorOf;
@@ -11379,6 +11537,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "GetMethodTable") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                            }
+                            else if (strcmp(methodName, "GetUninitializedObject") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObject;
                             }
                             else if (strcmp(methodName, "SetNextCallGenericContext") == 0)
                             {

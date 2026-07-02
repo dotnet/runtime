@@ -87,9 +87,9 @@
 
 // NOTE: Make this window really wide if you want to read the table...
 
-DEFINE_CLASS(ACTIVATOR,             System,                 Activator)
-DEFINE_METHOD(ACTIVATOR,            CREATE_INSTANCE_OF_T,   CreateInstance, GM_RetT)
-DEFINE_METHOD(ACTIVATOR,            CREATE_DEFAULT_INSTANCE_OF_T,   CreateDefaultInstance,  GM_RetT)
+DEFINE_CLASS(ACTIVATOR,     System,                  Activator)
+DEFINE_METHOD(ACTIVATOR,    CALL_CONSTRUCTOR_STRUCT, CallConstructorStruct, NoSig)
+DEFINE_METHOD(ACTIVATOR,    CALL_CONSTRUCTOR,        CallConstructor,       NoSig)
 
 DEFINE_CLASS(ACCESS_VIOLATION_EXCEPTION, System,            AccessViolationException)
 DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, IP,                _ip)

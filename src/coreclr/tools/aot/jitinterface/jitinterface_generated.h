@@ -83,6 +83,7 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* pLookup);
+    bool (* getParameterlessCtor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE targetType, CORINFO_METHOD_HANDLE* ctor);
     CorInfoInitClassResult (* initClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context);
     void (* classMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_CLASS_HANDLE (* getBuiltinClass)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoClassId classId);
@@ -908,6 +909,16 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getReadyToRunDelegateCtorHelper(_thisHandle, &pException, pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
     if (pException != nullptr) throw pException;
+}
+
+    virtual bool getParameterlessCtor(
+          CORINFO_CLASS_HANDLE targetType,
+          CORINFO_METHOD_HANDLE* ctor)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getParameterlessCtor(_thisHandle, &pException, targetType, ctor);
+    if (pException != nullptr) throw pException;
+    return temp;
 }
 
     virtual CorInfoInitClassResult initClass(

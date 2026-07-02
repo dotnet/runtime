@@ -2331,6 +2331,33 @@ void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     *pLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value);
 }
 
+void MethodContext::recGetParameterlessCtor(CORINFO_CLASS_HANDLE targetType, CORINFO_METHOD_HANDLE* ctor, bool result)
+{
+    if (GetParameterlessCtor == nullptr)
+        GetParameterlessCtor = new LightWeightMap<DWORDLONG, DLD>();
+
+    DWORDLONG key = CastHandle(targetType);
+    DLD value;
+    value.A = CastHandle(*ctor);
+    value.B = result ? 1 : 0;
+    GetParameterlessCtor->Add(key, value);
+    DEBUG_REC(dmpGetObjectType(key, value));
+}
+
+void MethodContext::dmpGetParameterlessCtor(DWORDLONG key, DLD value)
+{
+    printf("GetParameterlessCtor key class-%016" PRIX64 ", value res-%u meth-%016" PRIX64 "", key, value.B, value.A);
+}
+
+bool MethodContext::repGetParameterlessCtor(CORINFO_CLASS_HANDLE targetType, CORINFO_METHOD_HANDLE* ctor)
+{
+    DWORDLONG key = CastHandle(targetType);
+    DLD value = LookupByKeyOrMiss(GetParameterlessCtor, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetObjectType(key, value));
+    *ctor = (CORINFO_METHOD_HANDLE)value.A;
+    return value.B != 0;
+}
+
 void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP pNativeEntrypoint,CORINFO_METHOD_HANDLE methodHandle)
 {
     if (GetHelperFtn == nullptr)

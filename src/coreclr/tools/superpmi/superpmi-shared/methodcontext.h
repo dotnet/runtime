@@ -326,6 +326,10 @@ public:
                                             CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
 
+    void recGetParameterlessCtor(CORINFO_CLASS_HANDLE targetType, CORINFO_METHOD_HANDLE* ctor, bool result);
+    void dmpGetParameterlessCtor(DWORDLONG key, DLD value);
+    bool repGetParameterlessCtor(CORINFO_CLASS_HANDLE targetType, CORINFO_METHOD_HANDLE* ctor);
+
     void recGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP pNativeEntrypoint,CORINFO_METHOD_HANDLE methodHandle);
     void dmpGetHelperFtn(DWORD key, Agnostic_GetHelperFtn value);
     void repGetHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint,CORINFO_METHOD_HANDLE *pMethodHandle);
@@ -1214,6 +1218,7 @@ enum mcPackets
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
     Packet_GetAwaitReturnCall = 238,
+    Packet_GetParameterlessCtor = 239,
 };
 
 void SetDebugDumpVariables();

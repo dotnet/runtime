@@ -821,6 +821,14 @@ void interceptor_ICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     mc->recGetReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
 }
 
+bool interceptor_ICJI::getParameterlessCtor(CORINFO_CLASS_HANDLE targetType, CORINFO_METHOD_HANDLE* ctor)
+{
+    mc->cr->AddCall("getParameterlessCtor");
+    bool result = original_ICorJitInfo->getParameterlessCtor(targetType, ctor);
+    mc->recGetParameterlessCtor(targetType, ctor, result);
+    return result;
+}
+
 // This function tries to initialize the class (run the class constructor).
 // this function returns whether the JIT must insert helper calls before
 // accessing static field or method.

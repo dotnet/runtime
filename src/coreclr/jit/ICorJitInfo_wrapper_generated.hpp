@@ -716,6 +716,16 @@ void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
+bool WrapICorJitInfo::getParameterlessCtor(
+          CORINFO_CLASS_HANDLE targetType,
+          CORINFO_METHOD_HANDLE* ctor)
+{
+    API_ENTER(getParameterlessCtor);
+    bool temp = wrapHnd->getParameterlessCtor(targetType, ctor);
+    API_LEAVE(getParameterlessCtor);
+    return temp;
+}
+
 CorInfoInitClassResult WrapICorJitInfo::initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,
