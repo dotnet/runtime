@@ -224,7 +224,7 @@ namespace System
             if (value._upper > uint.MaxValue)
             {
                 // The default behavior of decimal conversions is to always throw on overflow
-                Number.ThrowOverflowException(SR.Overflow_Decimal);
+                Number.ThrowDecimalOverflowException();
             }
 
             uint hi32 = (uint)(value._upper);
