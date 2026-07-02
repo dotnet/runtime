@@ -105,6 +105,9 @@ namespace System.Numerics.Tensors.Tests
         public delegate bool SpanIsAllAnyDelegate(ReadOnlySpan<T> x);
 
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+        protected virtual bool IsUnsignedInteger =>
+            typeof(T) == typeof(byte) || typeof(T) == typeof(ushort) || typeof(T) == typeof(uint) ||
+            typeof(T) == typeof(ulong) || typeof(T) == typeof(char);
 
         protected virtual int? IndexOfSizeExceedingMaxValue() =>
             (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)) ? Helpers.SizeGreaterThanByte :
