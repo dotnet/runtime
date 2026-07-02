@@ -166,6 +166,14 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX512v3;
         }
 
+        case InstructionSet_AVXIFMA:
+        case InstructionSet_AVX512v2:
+        {
+            // AvxIfma.V512 lifts under AVX512v2, which carries the EVEX-encoded
+            // VPMADD52*UQ on ZMM. Same rationale as AvxVnni.V512 above.
+            return InstructionSet_AVX512v2;
+        }
+
         default:
         {
             return InstructionSet_NONE;
@@ -276,7 +284,14 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
             }
             else if (strcmp(className + 3, "Ifma") == 0)
             {
-                return InstructionSet_AVXIFMA;
+                if (compSupportsHWIntrinsic(InstructionSet_AVXIFMA))
+                {
+                    return InstructionSet_AVXIFMA;
+                }
+                else
+                {
+                    return InstructionSet_AVX512v2;
+                }
             }
             else if (strncmp(className + 3, "Vnni", 4) == 0)
             {
