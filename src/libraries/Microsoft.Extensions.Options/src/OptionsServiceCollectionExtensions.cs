@@ -23,11 +23,13 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ArgumentNullException.ThrowIfNull(services);
 
-            services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptions<>), typeof(UnnamedOptionsManager<>)));
+            services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptions<>), typeof(UnnamedOptionsManagerWithAsyncValidation<>)));
             services.TryAdd(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(OptionsManager<>)));
             services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsMonitor<>), typeof(OptionsMonitorWithAsyncValidation<>)));
-            services.TryAdd(ServiceDescriptor.Transient(typeof(IOptionsFactory<>), typeof(OptionsFactory<>)));
+            services.TryAdd(ServiceDescriptor.Transient(typeof(IOptionsFactory<>), typeof(OptionsFactoryWithAsyncValidation<>)));
             services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsMonitorCache<>), typeof(OptionsCache<>)));
+            services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsAsyncValidationApplicability<>), typeof(OptionsAsyncValidationApplicability<>)));
+            services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsAsyncValidationCoordinator<>), typeof(OptionsAsyncValidationCoordinator<>)));
             return services;
         }
 

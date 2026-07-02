@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,40 +36,74 @@ namespace Microsoft.Extensions.DependencyInjection
                     vo._validators[(typeof(TOptions), optionsBuilder.Name)] = () => options.Get(optionsBuilder.Name);
                 });
 
-            // Register async validator entries if any IAsyncValidateOptions<TOptions> are registered
+            // Register async validator entries if any IAsyncValidateOptions<TOptions> are registered.
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>, IEnumerable<IAsyncValidateOptions<TOptions>>>((vo, options, asyncValidators) =>
+                .Configure<OptionsAsyncValidationCoordinator<TOptions>>((vo, asyncValidationCoordinator) =>
                 {
-                    // Materialize the validators into a list to check if any are registered
-                    var validators = new List<IAsyncValidateOptions<TOptions>>(asyncValidators);
-                    if (validators.Count > 0)
+                    if (asyncValidationCoordinator.HasApplicableAsyncValidators(optionsBuilder.Name))
                     {
-                        vo._asyncValidators[(typeof(TOptions), optionsBuilder.Name)] = async (CancellationToken ct) =>
-                        {
-                            // Retrieve the options value (already created by sync Validate() call)
-                            TOptions optionsValue = options.Get(optionsBuilder.Name);
-
-                            // Run async validators
-                            List<string>? failures = null;
-                            foreach (IAsyncValidateOptions<TOptions> validator in validators)
-                            {
-                                ValidateOptionsResult result = await validator.ValidateAsync(optionsBuilder.Name, optionsValue, ct).ConfigureAwait(false);
-                                if (result is not null && result.Failed)
-                                {
-                                    failures ??= new List<string>();
-                                    failures.AddRange(result.Failures);
-                                }
-                            }
-
-                            if (failures is not null && failures.Count > 0)
-                            {
-                                throw new OptionsValidationException(optionsBuilder.Name, typeof(TOptions), failures);
-                            }
-                        };
+                        var validationState = new StartupValidationState<TOptions>(optionsBuilder.Name, asyncValidationCoordinator);
+                        vo._validators[(typeof(TOptions), optionsBuilder.Name)] = validationState.Validate;
+                        vo._asyncValidators[(typeof(TOptions), optionsBuilder.Name)] = validationState.ValidateAsync;
                     }
                 });
 
             return optionsBuilder;
+        }
+
+        private sealed class StartupValidationState<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>
+            where TOptions : class
+        {
+            private readonly string _name;
+            private readonly OptionsAsyncValidationCoordinator<TOptions> _asyncValidationCoordinator;
+            private readonly object _syncObj = new object();
+            private TOptions? _syncValidatedOptions;
+            private bool _hasSyncValidatedOptions;
+
+            public StartupValidationState(string name, OptionsAsyncValidationCoordinator<TOptions> asyncValidationCoordinator)
+            {
+                _name = name;
+                _asyncValidationCoordinator = asyncValidationCoordinator;
+            }
+
+            public void Validate()
+            {
+                TOptions options = _asyncValidationCoordinator.ValidateSync(_name);
+                lock (_syncObj)
+                {
+                    _syncValidatedOptions = options;
+                    _hasSyncValidatedOptions = true;
+                }
+            }
+
+            public async Task ValidateAsync(CancellationToken cancellationToken)
+            {
+                TOptions options = GetOrCreateSyncValidatedOptions();
+                await _asyncValidationCoordinator.ValidateAndPublishAsync(_name, options, cancellationToken).ConfigureAwait(false);
+            }
+
+            private TOptions GetOrCreateSyncValidatedOptions()
+            {
+                lock (_syncObj)
+                {
+                    if (_hasSyncValidatedOptions)
+                    {
+                        return _syncValidatedOptions!;
+                    }
+                }
+
+                TOptions options = _asyncValidationCoordinator.ValidateSync(_name);
+                lock (_syncObj)
+                {
+                    if (!_hasSyncValidatedOptions)
+                    {
+                        _syncValidatedOptions = options;
+                        _hasSyncValidatedOptions = true;
+                    }
+
+                    return _syncValidatedOptions!;
+                }
+            }
         }
     }
 }

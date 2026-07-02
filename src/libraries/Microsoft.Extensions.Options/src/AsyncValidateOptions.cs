@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IAsyncValidateOptions{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
-    public class AsyncValidateOptions<TOptions> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions> : IAsyncValidateOptions<TOptions>, IAsyncValidateOptionsName where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions}"/>.
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Options
     /// </summary>
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
     /// <typeparam name="TDep">Dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep> : IAsyncValidateOptions<TOptions>, IAsyncValidateOptionsName where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep}"/>.
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
     /// <typeparam name="TDep1">First dependency type.</typeparam>
     /// <typeparam name="TDep2">Second dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2> : IAsyncValidateOptions<TOptions>, IAsyncValidateOptionsName where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2}"/>.
@@ -205,7 +205,7 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep1">First dependency type.</typeparam>
     /// <typeparam name="TDep2">Second dependency type.</typeparam>
     /// <typeparam name="TDep3">Third dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3> : IAsyncValidateOptions<TOptions>, IAsyncValidateOptionsName where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2, TDep3}"/>.
@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep2">Second dependency type.</typeparam>
     /// <typeparam name="TDep3">Third dependency type.</typeparam>
     /// <typeparam name="TDep4">Fourth dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : IAsyncValidateOptions<TOptions>, IAsyncValidateOptionsName where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2, TDep3, TDep4}"/>.
@@ -369,7 +369,7 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep3">Third dependency type.</typeparam>
     /// <typeparam name="TDep4">Fourth dependency type.</typeparam>
     /// <typeparam name="TDep5">Fifth dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : IAsyncValidateOptions<TOptions>, IAsyncValidateOptionsName where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2, TDep3, TDep4, TDep5}"/>.

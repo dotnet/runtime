@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.ExceptionServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 
@@ -25,17 +20,9 @@ namespace Microsoft.Extensions.Options
     {
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;
-        private readonly IServiceScopeFactory? _asyncValidationScopeFactory;
-        private readonly AsyncValidationState? _asyncValidationState;
+        private readonly OptionsAsyncValidationCoordinator<TOptions>? _asyncValidationCoordinator;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
         internal event Action<TOptions, string>? _onChange;
-
-        private ConcurrentDictionary<string, bool> CacheKeys => GetAsyncValidationState().CacheKeys;
-        private ConcurrentDictionary<string, int> ReloadVersions => GetAsyncValidationState().ReloadVersions;
-        private ConcurrentDictionary<string, ExceptionDispatchInfo> ReloadFailures => GetAsyncValidationState().ReloadFailures;
-        private ConcurrentDictionary<string, TaskCompletionSource<object?>> PendingReloads => GetAsyncValidationState().PendingReloads;
-        private ConcurrentDictionary<string, object> ReloadLocks => GetAsyncValidationState().ReloadLocks;
-        private ConcurrentDictionary<string, object> CacheLocks => GetAsyncValidationState().CacheLocks;
 
         /// <summary>
         /// Initializes a new instance of <see cref="OptionsMonitor{TOptions}"/> with the specified factory, sources, and cache.
@@ -44,16 +31,15 @@ namespace Microsoft.Extensions.Options
         /// <param name="sources">The sources used to listen for changes to the options instance.</param>
         /// <param name="cache">The cache used to store options.</param>
         public OptionsMonitor(IOptionsFactory<TOptions> factory, IEnumerable<IOptionsChangeTokenSource<TOptions>> sources, IOptionsMonitorCache<TOptions> cache)
-            : this(factory, sources, cache, asyncValidationScopeFactory: null)
+            : this(factory, sources, cache, asyncValidationCoordinator: null)
         {
         }
 
-        internal OptionsMonitor(IOptionsFactory<TOptions> factory, IEnumerable<IOptionsChangeTokenSource<TOptions>> sources, IOptionsMonitorCache<TOptions> cache, IServiceScopeFactory? asyncValidationScopeFactory)
+        internal OptionsMonitor(IOptionsFactory<TOptions> factory, IEnumerable<IOptionsChangeTokenSource<TOptions>> sources, IOptionsMonitorCache<TOptions> cache, OptionsAsyncValidationCoordinator<TOptions>? asyncValidationCoordinator)
         {
             _factory = factory;
             _cache = cache;
-            _asyncValidationScopeFactory = asyncValidationScopeFactory;
-            _asyncValidationState = asyncValidationScopeFactory is not null ? new AsyncValidationState() : null;
+            _asyncValidationCoordinator = asyncValidationCoordinator;
 
             void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
@@ -83,134 +69,29 @@ namespace Microsoft.Extensions.Options
             }
         }
 
-        private AsyncValidationState GetAsyncValidationState()
-        {
-            AsyncValidationState? state = _asyncValidationState;
-            Debug.Assert(state is not null);
-            return state;
-        }
-
         private void InvokeChanged(string? name)
         {
             name ??= Options.DefaultName;
-            IServiceScopeFactory? asyncValidationScopeFactory = _asyncValidationScopeFactory;
-            if (asyncValidationScopeFactory is null)
+            OptionsAsyncValidationCoordinator<TOptions>? asyncValidationCoordinator = _asyncValidationCoordinator;
+            if (asyncValidationCoordinator is null ||
+                !asyncValidationCoordinator.HasApplicableAsyncValidators(name))
             {
                 InvokeChangedSynchronously(name);
                 return;
             }
 
-            lock (GetReloadLock(name))
-            {
-                InvokeChangedWithAsyncValidation(name, asyncValidationScopeFactory);
-            }
+            TOptions options = asyncValidationCoordinator.ValidateAndPublish(name);
+            _onChange?.Invoke(options, name);
         }
 
-        private void InvokeChangedWithAsyncValidation(string name, IServiceScopeFactory asyncValidationScopeFactory)
+        private TOptions GetWithAsyncValidation(string name, OptionsAsyncValidationCoordinator<TOptions> asyncValidationCoordinator)
         {
-            object cacheLock = GetCacheLock(name);
-            int version;
-            TaskCompletionSource<object?> pendingReload = CreatePendingReload();
-            lock (cacheLock)
+            if (!asyncValidationCoordinator.HasApplicableAsyncValidators(name))
             {
-                version = ReloadVersions.AddOrUpdate(name, 1, static (_, currentVersion) => currentVersion + 1);
-                PendingReloads[name] = pendingReload;
+                return GetSynchronously(name);
             }
 
-            AsyncServiceScope scope;
-            try
-            {
-                scope = asyncValidationScopeFactory.CreateAsyncScope();
-            }
-            catch (Exception ex)
-            {
-                RecordReloadFailure(name, version, ex);
-                CompletePendingReload(name, version, pendingReload);
-                throw;
-            }
-
-            IAsyncValidateOptions<TOptions>[] asyncValidations;
-            try
-            {
-                asyncValidations = ResolveAsyncValidations(scope.ServiceProvider);
-            }
-            catch (Exception ex)
-            {
-                RecordReloadFailure(name, version, ex);
-                CompletePendingReload(name, version, pendingReload);
-                DisposeAsyncValidationScope(scope);
-                throw;
-            }
-
-            if (asyncValidations.Length == 0)
-            {
-                try
-                {
-                    DisposeAsyncValidationScope(scope);
-                }
-                catch (Exception ex)
-                {
-                    RecordReloadFailure(name, version, ex);
-                    CompletePendingReload(name, version, pendingReload);
-                    throw;
-                }
-
-                InvokeChangedSynchronously(name, version, pendingReload);
-                return;
-            }
-
-            TOptions candidateOptions;
-            try
-            {
-                candidateOptions = _factory.Create(name);
-                ValidateAsync(name, candidateOptions, asyncValidations).GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                RecordReloadFailure(name, version, ex);
-                CompletePendingReload(name, version, pendingReload);
-                DisposeAsyncValidationScope(scope);
-                throw;
-            }
-
-            try
-            {
-                DisposeAsyncValidationScope(scope);
-            }
-            catch (Exception ex)
-            {
-                RecordReloadFailure(name, version, ex);
-                CompletePendingReload(name, version, pendingReload);
-                throw;
-            }
-
-            Action<TOptions, string>? onChange;
-            try
-            {
-                lock (cacheLock)
-                {
-                    if (!ReloadVersions.TryGetValue(name, out int currentVersion) ||
-                        currentVersion != version)
-                    {
-                        pendingReload.TrySetResult(null);
-                        return;
-                    }
-
-                    SetCachedOptions(name, candidateOptions);
-                    ReloadFailures.TryRemove(name, out _);
-                    RemoveCurrentPendingReload(name, version, pendingReload);
-                    pendingReload.TrySetResult(null);
-                    onChange = _onChange;
-                }
-            }
-            catch (Exception ex)
-            {
-                RecordReloadFailure(name, version, ex);
-                CompletePendingReload(name, version, pendingReload);
-                throw;
-            }
-
-            onChange?.Invoke(candidateOptions, name);
+            return asyncValidationCoordinator.GetOrValidate(name);
         }
 
         /// <summary>
@@ -220,7 +101,18 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions CurrentValue
         {
-            get => Get(Options.DefaultName);
+            get
+            {
+                if (_asyncValidationCoordinator is null &&
+                    (GetType() == typeof(OptionsMonitor<TOptions>) || GetType() == typeof(OptionsMonitorWithAsyncValidation<TOptions>)) &&
+                    _cache is OptionsCache<TOptions> optionsCache &&
+                    optionsCache.TryGetValue(Options.DefaultName, out TOptions? options))
+                {
+                    return options;
+                }
+
+                return Get(Options.DefaultName);
+            }
         }
 
         /// <summary>
@@ -232,258 +124,51 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public virtual TOptions Get(string? name)
         {
-            if (_asyncValidationScopeFactory is not null)
+            string localName = name ?? Options.DefaultName;
+            OptionsAsyncValidationCoordinator<TOptions>? asyncValidationCoordinator = _asyncValidationCoordinator;
+            if (asyncValidationCoordinator is not null)
             {
-                string localName = name ?? Options.DefaultName;
-                IOptionsFactory<TOptions> localFactory = _factory;
-
-                if (_cache.GetType() == typeof(OptionsCache<TOptions>))
-                {
-                    OptionsCache<TOptions> asyncOptionsCache = (OptionsCache<TOptions>)_cache;
-                    return GetWithAsyncValidation(localName, asyncOptionsCache, localFactory);
-                }
-
-                while (true)
-                {
-                    Task? pendingReload = null;
-
-                    lock (GetCacheLock(localName))
-                    {
-                        if (ReloadFailures.TryGetValue(localName, out ExceptionDispatchInfo? reloadFailure))
-                        {
-                            reloadFailure.Throw();
-                        }
-
-                        if (CacheKeys.ContainsKey(localName))
-                        {
-                            TOptions options = _cache.GetOrAdd(localName, () => localFactory.Create(localName));
-                            return options;
-                        }
-
-                        if (PendingReloads.TryGetValue(localName, out TaskCompletionSource<object?>? pendingReloadSource))
-                        {
-                            pendingReload = pendingReloadSource.Task;
-                        }
-                        else
-                        {
-                            TOptions options = _cache.GetOrAdd(localName, () => localFactory.Create(localName));
-                            CacheKeys.TryAdd(localName, true);
-                            return options;
-                        }
-                    }
-
-                    pendingReload.GetAwaiter().GetResult();
-                }
+                return GetWithAsyncValidation(localName, asyncValidationCoordinator);
             }
 
             if (_cache is not OptionsCache<TOptions> optionsCache)
             {
                 // copying captured variables to locals avoids allocating a closure if we don't enter the if
-                string localName = name ?? Options.DefaultName;
                 IOptionsFactory<TOptions> localFactory = _factory;
                 return _cache.GetOrAdd(localName, () => localFactory.Create(localName));
             }
 
-            // non-allocating fast path
-            return optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), _factory);
+            if (optionsCache.TryGetValue(localName, out TOptions? cachedOptions))
+            {
+                return cachedOptions;
+            }
 
+            // non-allocating fast path
+            return optionsCache.GetOrAdd(localName, static (name, factory) => factory.Create(name), _factory);
         }
 
-        private TOptions GetWithAsyncValidation(string name, OptionsCache<TOptions> optionsCache, IOptionsFactory<TOptions> factory)
+        private TOptions GetSynchronously(string name)
         {
-            while (true)
+            if (_cache is not OptionsCache<TOptions> optionsCache)
             {
-                if (ReloadFailures.TryGetValue(name, out ExceptionDispatchInfo? reloadFailureAfterCacheRead))
-                {
-                    reloadFailureAfterCacheRead.Throw();
-                }
-
-                if (optionsCache.TryGetValue(name, out TOptions? cachedOptions))
-                {
-                    return cachedOptions;
-                }
-
-                Task? pendingReload = null;
-
-                lock (GetCacheLock(name))
-                {
-                    if (optionsCache.TryGetValue(name, out cachedOptions))
-                    {
-                        if (ReloadFailures.TryGetValue(name, out ExceptionDispatchInfo? cachedReloadFailure))
-                        {
-                            cachedReloadFailure.Throw();
-                        }
-
-                        return cachedOptions;
-                    }
-
-                    if (ReloadFailures.TryGetValue(name, out ExceptionDispatchInfo? reloadFailure))
-                    {
-                        reloadFailure.Throw();
-                    }
-
-                    if (PendingReloads.TryGetValue(name, out TaskCompletionSource<object?>? pendingReloadSource))
-                    {
-                        pendingReload = pendingReloadSource.Task;
-                    }
-                    else
-                    {
-                        TOptions options = optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), factory);
-                        CacheKeys.TryAdd(name, true);
-                        return options;
-                    }
-                }
-
-                pendingReload.GetAwaiter().GetResult();
+                IOptionsFactory<TOptions> localFactory = _factory;
+                return _cache.GetOrAdd(name, () => localFactory.Create(name));
             }
+
+            if (optionsCache.TryGetValue(name, out TOptions? cachedOptions))
+            {
+                return cachedOptions;
+            }
+
+            return optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), _factory);
         }
 
         private void InvokeChangedSynchronously(string name)
         {
             _cache.TryRemove(name);
-            _asyncValidationState?.CacheKeys.TryRemove(name, out _);
             TOptions syncOptions = Get(name);
             _onChange?.Invoke(syncOptions, name);
         }
-
-        private void InvokeChangedSynchronously(string name, int version, TaskCompletionSource<object?> pendingReload)
-        {
-            TOptions syncOptions;
-            try
-            {
-                syncOptions = _factory.Create(name);
-            }
-            catch (Exception ex)
-            {
-                RecordReloadFailure(name, version, ex);
-                CompletePendingReload(name, version, pendingReload);
-                throw;
-            }
-
-            Action<TOptions, string>? onChange;
-            try
-            {
-                lock (GetCacheLock(name))
-                {
-                    if (!ReloadVersions.TryGetValue(name, out int currentVersion) ||
-                        currentVersion != version)
-                    {
-                        pendingReload.TrySetResult(null);
-                        return;
-                    }
-
-                    SetCachedOptions(name, syncOptions);
-                    ReloadFailures.TryRemove(name, out _);
-                    RemoveCurrentPendingReload(name, version, pendingReload);
-                    pendingReload.TrySetResult(null);
-                    onChange = _onChange;
-                }
-            }
-            catch (Exception ex)
-            {
-                RecordReloadFailure(name, version, ex);
-                CompletePendingReload(name, version, pendingReload);
-                throw;
-            }
-
-            onChange?.Invoke(syncOptions, name);
-        }
-
-        private static IAsyncValidateOptions<TOptions>[] ResolveAsyncValidations(IServiceProvider serviceProvider)
-        {
-            IEnumerable<IAsyncValidateOptions<TOptions>> asyncValidations = serviceProvider.GetServices<IAsyncValidateOptions<TOptions>>();
-            return asyncValidations as IAsyncValidateOptions<TOptions>[] ?? new List<IAsyncValidateOptions<TOptions>>(asyncValidations).ToArray();
-        }
-
-        private static TaskCompletionSource<object?> CreatePendingReload() =>
-            new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        private static void DisposeAsyncValidationScope(AsyncServiceScope scope)
-        {
-            ValueTask disposeTask = scope.DisposeAsync();
-            if (disposeTask.IsCompleted)
-            {
-                disposeTask.GetAwaiter().GetResult();
-                return;
-            }
-
-            disposeTask.AsTask().GetAwaiter().GetResult();
-        }
-
-        private static async Task ValidateAsync(string name, TOptions options, IAsyncValidateOptions<TOptions>[] asyncValidations)
-        {
-            List<string>? failures = null;
-            foreach (IAsyncValidateOptions<TOptions> validation in asyncValidations)
-            {
-                ValidateOptionsResult result = await validation.ValidateAsync(name, options, CancellationToken.None).ConfigureAwait(false);
-                if (result is not null && result.Failed)
-                {
-                    failures ??= new List<string>();
-                    failures.AddRange(result.Failures);
-                }
-            }
-
-            if (failures is not null && failures.Count > 0)
-            {
-                throw new OptionsValidationException(name, typeof(TOptions), failures);
-            }
-        }
-
-        private void CompletePendingReload(string name, int version, TaskCompletionSource<object?> pendingReload)
-        {
-            lock (GetCacheLock(name))
-            {
-                RemoveCurrentPendingReload(name, version, pendingReload);
-            }
-
-            pendingReload.TrySetResult(null);
-        }
-
-        private void RemoveCurrentPendingReload(string name, int version, TaskCompletionSource<object?> pendingReload)
-        {
-            if (ReloadVersions.TryGetValue(name, out int currentVersion) &&
-                currentVersion == version &&
-                PendingReloads.TryGetValue(name, out TaskCompletionSource<object?>? currentPendingReload) &&
-                ReferenceEquals(currentPendingReload, pendingReload))
-            {
-                PendingReloads.TryRemove(name, out _);
-            }
-        }
-
-        private void RecordReloadFailure(string name, int version, Exception ex)
-        {
-            lock (GetCacheLock(name))
-            {
-                if (!ReloadVersions.TryGetValue(name, out int currentVersion) ||
-                    currentVersion == version)
-                {
-                    ReloadFailures[name] = ExceptionDispatchInfo.Capture(ex);
-                }
-            }
-        }
-
-        private void SetCachedOptions(string name, TOptions options)
-        {
-            if (_cache is OptionsCache<TOptions> optionsCache)
-            {
-                optionsCache.Set(name, options);
-                CacheKeys.TryAdd(name, true);
-                return;
-            }
-
-            lock (GetCacheLock(name))
-            {
-                _cache.TryRemove(name);
-                _cache.TryAdd(name, options);
-                CacheKeys.TryAdd(name, true);
-            }
-        }
-
-        private object GetCacheLock(string name) =>
-            CacheLocks.GetOrAdd(name, static _ => new object());
-
-        private object GetReloadLock(string name) =>
-            ReloadLocks.GetOrAdd(name, static _ => new object());
 
         /// <summary>
         /// Registers a listener to be called whenever <typeparamref name="TOptions"/> changes.
@@ -509,16 +194,6 @@ namespace Microsoft.Extensions.Options
             }
 
             _registrations.Clear();
-        }
-
-        private sealed class AsyncValidationState
-        {
-            public readonly ConcurrentDictionary<string, bool> CacheKeys = new ConcurrentDictionary<string, bool>(StringComparer.Ordinal);
-            public readonly ConcurrentDictionary<string, int> ReloadVersions = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
-            public readonly ConcurrentDictionary<string, ExceptionDispatchInfo> ReloadFailures = new ConcurrentDictionary<string, ExceptionDispatchInfo>(StringComparer.Ordinal);
-            public readonly ConcurrentDictionary<string, TaskCompletionSource<object?>> PendingReloads = new ConcurrentDictionary<string, TaskCompletionSource<object?>>(StringComparer.Ordinal);
-            public readonly ConcurrentDictionary<string, object> ReloadLocks = new ConcurrentDictionary<string, object>(StringComparer.Ordinal);
-            public readonly ConcurrentDictionary<string, object> CacheLocks = new ConcurrentDictionary<string, object>(StringComparer.Ordinal);
         }
 
         internal sealed class ChangeTrackerDisposable : IDisposable
@@ -547,20 +222,8 @@ namespace Microsoft.Extensions.Options
             IEnumerable<IOptionsChangeTokenSource<TOptions>> sources,
             IOptionsMonitorCache<TOptions> cache,
             IServiceProvider serviceProvider)
-            : base(factory, sources, cache, GetAsyncValidationScopeFactory(serviceProvider))
+            : base(factory, sources, cache, OptionsAsyncValidation.GetCoordinator<TOptions>(serviceProvider))
         {
-        }
-
-        private static IServiceScopeFactory? GetAsyncValidationScopeFactory(IServiceProvider serviceProvider)
-        {
-            IServiceProviderIsService? serviceProviderIsService = serviceProvider.GetService<IServiceProviderIsService>();
-            if (serviceProviderIsService is not null &&
-                !serviceProviderIsService.IsService(typeof(IAsyncValidateOptions<TOptions>)))
-            {
-                return null;
-            }
-
-            return serviceProvider.GetService<IServiceScopeFactory>();
         }
     }
 }

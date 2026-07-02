@@ -50,6 +50,17 @@ namespace Microsoft.Extensions.Options.Tests
             await task;
         }
 
+        private static async Task<FakeOptions> CompleteCurrentValueValidationAsync(IOptionsMonitor<FakeOptions> monitor, ControllableAsyncValidator validator, bool result = true)
+        {
+            Task<FakeOptions> currentValueTask = Task.Run(() => monitor.CurrentValue);
+            FakeOptions validatingOptions = await WaitAsync(validator.Started);
+            validator.Complete(result);
+            FakeOptions options = await WaitAsync(currentValueTask);
+            validator.Reset();
+
+            return options;
+        }
+
         private class CountIncrement : IConfigureNamedOptions<FakeOptions>
         {
             private OptionsMonitorTest _test;
@@ -331,7 +342,7 @@ namespace Microsoft.Extensions.Options.Tests
 
             var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
             Assert.NotNull(monitor);
-            Assert.Equal("1", monitor.CurrentValue.Message);
+            Assert.Equal("1", (await CompleteCurrentValueValidationAsync(monitor, validator)).Message);
 
             var changed = CreateTaskCompletionSource<string>();
             monitor.OnChange(o => changed.SetResult(o.Message));
@@ -364,7 +375,7 @@ namespace Microsoft.Extensions.Options.Tests
 
             var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
             Assert.NotNull(monitor);
-            Assert.Equal("1", monitor.CurrentValue.Message);
+            Assert.Equal("1", (await CompleteCurrentValueValidationAsync(monitor, validator)).Message);
 
             var changed = CreateTaskCompletionSource<string>();
             monitor.OnChange(o => changed.SetResult(o.Message));
@@ -468,28 +479,95 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void AsyncValidationFailureWithCustomCacheIsObservedByGetAndDoesNotNotify()
+        public async Task ConcurrentInitialAsyncValidationDoesNotBlockReload()
+        {
+            for (int iteration = 0; iteration < 20; iteration++)
+            {
+                SetupInvokeCount = 0;
+                var services = new ServiceCollection().AddOptions();
+                services.AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
+                var changeToken = new FakeChangeToken();
+                services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new FakeSource(changeToken));
+                services.AddOptions<FakeOptions>()
+                    .Validate(static (FakeOptions _, CancellationToken _) => Task.FromResult(true), "async fail");
+
+                using ServiceProvider sp = services.BuildServiceProvider();
+
+                var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+                Assert.NotNull(monitor);
+
+                using var start = new ManualResetEventSlim();
+                Task<FakeOptions>[] initialReads = Enumerable.Range(0, 32)
+                    .Select(_ => Task.Run(() =>
+                    {
+                        start.Wait();
+                        return monitor.CurrentValue;
+                    }))
+                    .ToArray();
+
+                start.Set();
+                FakeOptions[] initialValues = await WaitAsync(Task.WhenAll(initialReads));
+                Assert.All(initialValues, options => Assert.Equal("1", options.Message));
+
+                await WaitAsync(Task.Run(changeToken.InvokeChangeCallback));
+                Assert.Equal("2", monitor.CurrentValue.Message);
+            }
+        }
+
+        [Fact]
+        public void OptionsValueWithAsyncOnlyValidatorReturnsReloadedValidatedValue()
+        {
+            var services = new ServiceCollection().AddOptions();
+            services.AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
+            var changeToken = new FakeChangeToken();
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new FakeSource(changeToken));
+            services.AddOptions<FakeOptions>()
+                .Validate(static (FakeOptions _, CancellationToken _) => Task.FromResult(true), "async fail");
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            var options = sp.GetRequiredService<IOptions<FakeOptions>>();
+
+            FakeOptions initialOptions = monitor.CurrentValue;
+            Assert.Equal("1", initialOptions.Message);
+            Assert.Same(initialOptions, options.Value);
+
+            changeToken.InvokeChangeCallback();
+
+            FakeOptions reloadedOptions = options.Value;
+            Assert.Equal("2", reloadedOptions.Message);
+            Assert.NotSame(initialOptions, reloadedOptions);
+            Assert.Same(reloadedOptions, monitor.CurrentValue);
+        }
+
+        [Fact]
+        public async Task AsyncValidationFailureWithCustomCacheIsObservedByGetAndDoesNotNotify()
         {
             var services = new ServiceCollection().AddOptions();
             services.AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
             services.AddSingleton<IOptionsMonitorCache<FakeOptions>, TestOptionsCache>();
             var changeToken = new FakeChangeToken();
             services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new FakeSource(changeToken));
-            services.AddSingleton<IAsyncValidateOptions<FakeOptions>>(new AsyncValidateOptions<FakeOptions>(
-                Options.DefaultName,
-                static (_, _) => Task.FromResult(false),
-                "Async validation failed."));
+            var validator = new ControllableAsyncValidator();
+            services.AddSingleton<IAsyncValidateOptions<FakeOptions>>(validator);
 
             var sp = services.BuildServiceProvider();
 
             var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
             Assert.NotNull(monitor);
-            Assert.Equal("1", monitor.CurrentValue.Message);
+            Assert.Equal("1", (await CompleteCurrentValueValidationAsync(monitor, validator)).Message);
 
             var changed = CreateTaskCompletionSource<string>();
             monitor.OnChange(o => changed.SetResult(o.Message));
 
-            OptionsValidationException reloadException = Assert.Throws<OptionsValidationException>(changeToken.InvokeChangeCallback);
+            Task reloadTask = Task.Run(changeToken.InvokeChangeCallback);
+            FakeOptions rejectedOptions = await WaitAsync(validator.Started);
+            Assert.Equal("2", rejectedOptions.Message);
+
+            validator.Complete(false);
+
+            OptionsValidationException reloadException = await Assert.ThrowsAsync<OptionsValidationException>(async () => await reloadTask);
             Assert.Contains("Async validation failed.", reloadException.Failures);
 
             Assert.False(changed.Task.IsCompleted);
@@ -523,8 +601,8 @@ namespace Microsoft.Extensions.Options.Tests
             var observer = sp.GetRequiredService<AsyncValidationObserver>();
             changeToken.InvokeChangeCallback();
 
-            Assert.Equal(1, observer.ValidationCount);
-            Assert.Equal(1, observer.DisposeCount);
+            Assert.Equal(2, observer.ValidationCount);
+            Assert.Equal(3, observer.DisposeCount);
             Assert.Equal("2", monitor.CurrentValue.Message);
         }
 
@@ -537,29 +615,33 @@ namespace Microsoft.Extensions.Options.Tests
             services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new FakeSource(changeToken));
             var changeToken2 = new FakeChangeToken();
             services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new FakeSource(changeToken2));
-            var validator = new SequencedAsyncValidator(expectedCallCount: 2);
+            var validator = new SequencedAsyncValidator(expectedCallCount: 3);
             services.AddSingleton<IAsyncValidateOptions<FakeOptions>>(validator);
 
             var sp = services.BuildServiceProvider();
 
             var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
             Assert.NotNull(monitor);
-            Assert.Equal("1", monitor.CurrentValue.Message);
+            Task<FakeOptions> initialValueTask = Task.Run(() => monitor.CurrentValue);
+            FakeOptions initialOptions = await WaitAsync(validator.Started(0));
+            Assert.Equal("1", initialOptions.Message);
+            validator.Complete(0, result: true);
+            Assert.Equal("1", (await WaitAsync(initialValueTask)).Message);
 
             Task firstReloadTask = Task.Run(changeToken.InvokeChangeCallback);
 
-            FakeOptions firstOptions = await WaitAsync(validator.Started(0));
+            FakeOptions firstOptions = await WaitAsync(validator.Started(1));
             Assert.Equal("2", firstOptions.Message);
 
             Task secondReloadTask = Task.Run(changeToken2.InvokeChangeCallback);
 
-            validator.Complete(0, result: true);
+            validator.Complete(1, result: true);
             await WaitAsync(firstReloadTask);
 
-            FakeOptions secondOptions = await WaitAsync(validator.Started(1));
+            FakeOptions secondOptions = await WaitAsync(validator.Started(2));
             Assert.Equal("3", secondOptions.Message);
 
-            validator.Complete(1, result: true);
+            validator.Complete(2, result: true);
             await WaitAsync(secondReloadTask);
 
             Assert.Equal(1, validator.MaxActiveCount);
@@ -855,6 +937,40 @@ namespace Microsoft.Extensions.Options.Tests
                     new OptionsFactory<FakeOptions>(Enumerable.Empty<IConfigureOptions<FakeOptions>>(), Enumerable.Empty<IPostConfigureOptions<FakeOptions>>()),
                     Enumerable.Empty<IOptionsChangeTokenSource<FakeOptions>>(),
                     cache);
+        }
+
+        [Fact]
+        public void CurrentValueCallsOverriddenGetWhenDefaultValueIsCached()
+        {
+            var cache = new OptionsCache<FakeOptions>();
+            Assert.True(cache.TryAdd(Options.DefaultName, new FakeOptions { Message = "cached" }));
+
+            var monitor = new OverridingOptionsMonitor(
+                new OptionsFactory<FakeOptions>(Enumerable.Empty<IConfigureOptions<FakeOptions>>(), Enumerable.Empty<IPostConfigureOptions<FakeOptions>>()),
+                Enumerable.Empty<IOptionsChangeTokenSource<FakeOptions>>(),
+                cache);
+
+            Assert.Equal("overridden", monitor.CurrentValue.Message);
+            Assert.Equal(1, monitor.GetCalls);
+        }
+
+        private sealed class OverridingOptionsMonitor : OptionsMonitor<FakeOptions>
+        {
+            public OverridingOptionsMonitor(
+                IOptionsFactory<FakeOptions> factory,
+                IEnumerable<IOptionsChangeTokenSource<FakeOptions>> sources,
+                IOptionsMonitorCache<FakeOptions> cache)
+                : base(factory, sources, cache)
+            {
+            }
+
+            public int GetCalls { get; private set; }
+
+            public override FakeOptions Get(string? name)
+            {
+                GetCalls++;
+                return new FakeOptions { Message = "overridden" };
+            }
         }
 
         private sealed class DerivedOptionsCache : OptionsCache<FakeOptions>

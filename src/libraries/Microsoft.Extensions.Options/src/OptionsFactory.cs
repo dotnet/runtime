@@ -102,4 +102,37 @@ namespace Microsoft.Extensions.Options
             return Activator.CreateInstance<TOptions>();
         }
     }
+
+    internal sealed class OptionsFactoryWithAsyncValidation<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
+        IOptionsFactory<TOptions>
+        where TOptions : class
+    {
+        private readonly OptionsFactory<TOptions> _factory;
+        private readonly OptionsAsyncValidationApplicability<TOptions> _asyncValidationApplicability;
+
+        public OptionsFactoryWithAsyncValidation(
+            IEnumerable<IConfigureOptions<TOptions>> setups,
+            IEnumerable<IPostConfigureOptions<TOptions>> postConfigures,
+            IEnumerable<IValidateOptions<TOptions>> validations,
+            OptionsAsyncValidationApplicability<TOptions> asyncValidationApplicability)
+        {
+            _factory = new OptionsFactory<TOptions>(setups, postConfigures, validations);
+            _asyncValidationApplicability = asyncValidationApplicability;
+        }
+
+        public TOptions Create(string name)
+        {
+            string localName = name ?? Options.DefaultName;
+            if (!OptionsAsyncValidation.IsSyncGuardSuppressed<TOptions>(localName) &&
+                _asyncValidationApplicability.HasApplicableAsyncOnlyValidators(localName))
+            {
+                throw new OptionsValidationException(
+                    localName,
+                    typeof(TOptions),
+                    new[] { OptionsAsyncValidation.GetSyncValidationFailureMessage<TOptions>(localName) });
+            }
+
+            return _factory.Create(localName);
+        }
+    }
 }
