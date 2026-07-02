@@ -305,7 +305,8 @@ enum infoHdrAdjustConstants {
     SET_EPILOGSIZE_MAX = 10,  // Change to 6
     SET_EPILOGCNT_MAX = 4,
     SET_UNTRACKED_MAX = 3,
-    SET_RET_KIND_MAX = 3,   // 2 bits for ReturnKind
+    SET_RET_KIND_MAX_V4 = 3,   // 2 bits for ReturnKind
+    SET_RET_KIND_MAX_V5 = 7,   // 3 bits for ReturnKind + isAsync
     SET_NOGCREGIONS_MAX = 4,
     ADJ_ENCODING_MAX = 0x7f, // Maximum valid encoding in a byte
                              // Also used to mask off next bit from each encoding byte.
@@ -358,8 +359,10 @@ enum infoHdrAdjust {
 // Second set of opcodes, when first code is 0x4F
 enum infoHdrAdjust2 {
     SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
-    SET_NOGCREGIONS_CNT = SET_RETURNKIND + SET_RET_KIND_MAX + 1,        // 0x04
-    FFFF_NOGCREGION_CNT = SET_NOGCREGIONS_CNT + SET_NOGCREGIONS_MAX + 1 // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+    SET_NOGCREGIONS_CNT_V4 = SET_RETURNKIND + SET_RET_KIND_MAX_V4 + 1,        // 0x04
+    FFFF_NOGCREGION_CNT_V4 = SET_NOGCREGIONS_CNT_V4 + SET_NOGCREGIONS_MAX + 1, // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+    SET_NOGCREGIONS_CNT_V5 = SET_RETURNKIND + SET_RET_KIND_MAX_V5 + 1,        // 0x08
+    FFFF_NOGCREGION_CNT_V5 = SET_NOGCREGIONS_CNT_V5 + SET_NOGCREGIONS_MAX + 1, // 0x0D There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
 };
 
 #define HAS_UNTRACKED               ((unsigned int) -1)
@@ -410,6 +413,7 @@ struct InfoHdrSmall {
     unsigned char  genericsContext : 1;//4 [1]      function reports a generics context parameter is present
     unsigned char  genericsContextIsMethodDesc : 1;//4[2]
     unsigned char  returnKind : 2; // 4 [4]  Available GcInfo v2 onwards, previously undefined
+    unsigned char  isAsync : 1;    // 4 [5]
     unsigned short argCount;          // 5,6        in bytes
     unsigned int   frameSize;         // 7,8,9,10   in bytes
     unsigned int   untrackedCnt;      // 11,12,13,14
@@ -909,13 +913,62 @@ struct X86GcInfoEncoding {
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) && !defined(TARGET_64BIT)
 
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 
-#define TargetGcInfoEncoding InterpreterGcInfoEncoding
+#define TargetGcInfoEncoding Wasm32GcInfoEncoding
+
+// TODO-WASM: Investigate normalizing stack slots to save space based on wasm stack alignment
+
+struct Wasm32GcInfoEncoding {
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
+    static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return (x); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
+    static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
+    static const bool CODE_OFFSETS_NEED_NORMALIZATION = false;
+    static inline constexpr uint32_t NORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+    static inline constexpr uint32_t DENORMALIZE_CODE_OFFSET (uint32_t x) { return (x); }
+
+    static const int PSP_SYM_STACK_SLOT_ENCBASE = 6;
+    static const int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+    static const int SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+    static const int GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+    static const int CODE_LENGTH_ENCBASE = 6;
+    static const int SIZE_OF_RETURN_KIND_IN_SLIM_HEADER = 2;
+    static const int SIZE_OF_RETURN_KIND_IN_FAT_HEADER = 2;
+    static const int STACK_BASE_REGISTER_ENCBASE = 3;
+    static const int SIZE_OF_STACK_AREA_ENCBASE = 6;
+    static const int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
+    static const int REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+    static const int NUM_REGISTERS_ENCBASE = 3;
+    static const int NUM_STACK_SLOTS_ENCBASE = 5;
+    static const int NUM_UNTRACKED_SLOTS_ENCBASE = 5;
+    static const int NORM_PROLOG_SIZE_ENCBASE = 4;
+    static const int NORM_EPILOG_SIZE_ENCBASE = 3;
+    static const int NORM_CODE_OFFSET_DELTA_ENCBASE = 3;
+    static const int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
+    static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
+    static const int REGISTER_ENCBASE = 3;
+    static const int REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
+    static const int STACK_SLOT_ENCBASE = 6;
+    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int NUM_SAFE_POINTS_ENCBASE = 4;
+    static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+    static const int NUM_EH_CLAUSES_ENCBASE = 2;
+    static const int POINTER_SIZE_ENCBASE = 3;
+    static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
+    static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
+};
 
 #else // No target defined
 

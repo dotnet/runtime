@@ -18,6 +18,7 @@ internal static partial class Interop
             BCRYPT_PAD_OAEP = 4,
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptEncrypt(
             SafeBCryptKeyHandle hKey,
@@ -31,6 +32,7 @@ internal static partial class Interop
             out int cbResult,
             BCryptEncryptFlags dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptDecrypt(
             SafeBCryptKeyHandle hKey,
@@ -52,7 +54,7 @@ internal static partial class Interop
             BCryptEncryptFlags dwFlags)
         {
             // BCryptEncrypt does not accept null/0, only non-null/0.
-            ReadOnlySpan<byte> notNull = stackalloc byte[1];
+            ReadOnlySpan<byte> notNull = [0];
             scoped ReadOnlySpan<byte> effectiveSource;
 
             if (source.IsEmpty)

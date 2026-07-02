@@ -44,7 +44,7 @@ Supported target architectures:
 
 - Download and install [OpenJDK 23](https://openjdk.org/projects/jdk/23/)
 - Download and install [Android Studio](https://developer.android.com/studio/install) and the following:
-  - Android SDK (minimum supported API level is 21)
+  - Android SDK (minimum supported API level is 24)
   - Android NDK r27c
 
 > [!NOTE]

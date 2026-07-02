@@ -157,6 +157,13 @@ namespace Microsoft.Extensions
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorAndIgnoredProperty(string color, int length)
+        {
+            [ConfigurationIgnore]
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
+
         public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
         {
             public string Color { get; } = color;
@@ -213,6 +220,30 @@ namespace Microsoft.Extensions
         }
 
         public record RecordWithArrayParameter(string[] Array);
+
+        public class GetterOnlyCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
+        public class SettableCollectionWithCaseMismatchedCtorParameter
+        {
+            public SettableCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; set; }
+        }
+
+        public class GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter(IList<string> instances) => Instances = instances;
+            public IList<string> Instances { get; }
+        }
+
+        public class ParamsCollectionCtor
+        {
+            public ParamsCollectionCtor(params List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 

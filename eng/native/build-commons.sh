@@ -101,7 +101,7 @@ build_native()
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-        local ANDROID_API_LEVEL=21
+        local ANDROID_API_LEVEL=24
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -263,6 +263,7 @@ usage()
     echo ""
     echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -riscv64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
+    echo "-arch: target architecture (defaults to running architecture); alternative to the BuildArch flags above."
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
     echo "-ci: indicates if this is a CI build."
@@ -493,6 +494,16 @@ while :; do
 
         ppc64le|-ppc64le)
             __TargetArch=ppc64le
+            ;;
+
+        arch|-arch)
+            if [[ -n "$2" ]]; then
+                __TargetArch=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+                shift
+            else
+                echo "ERROR: 'arch' requires a non-empty option argument"
+                exit 1
+            fi
             ;;
 
         os|-os)

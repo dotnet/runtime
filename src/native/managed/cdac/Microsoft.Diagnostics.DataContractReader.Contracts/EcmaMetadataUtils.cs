@@ -10,7 +10,7 @@ public static class EcmaMetadataUtils
     internal const int RowIdBitCount = 24;
     internal const uint RIDMask = (1 << RowIdBitCount) - 1;
 
-    internal static uint GetRowId(uint token) => token & RIDMask;
+    public static uint GetRowId(uint token) => token & RIDMask;
 
     internal static uint MakeToken(uint rid, uint table) => rid | (table << RowIdBitCount);
 
@@ -22,6 +22,7 @@ public static class EcmaMetadataUtils
         mdtTypeDef = 0x02 << 24,
         mdtFieldDef = 0x04 << 24,
         mdtMethodDef = 0x06 << 24,
+        mdtSignature = 0x11 << 24,
     }
 
     public const uint TokenTypeMask = 0xff000000;

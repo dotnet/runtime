@@ -20,7 +20,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
+    <!-- UsePureLlvmToolchain links exclusively with the LLVM toolchain (lld + compiler-rt)
+         instead of the GNU toolchain (ld + libgcc). Default the linker flavor to lld. -->
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(UsePureLlvmToolchain)' == 'true'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'openbsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'android'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
@@ -48,10 +52,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">armv7</CrossCompileArch>
 
       <CrossCompileAbi>gnu</CrossCompileAbi>
-      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android-'))">android21</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android-'))">android24</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl-')) or $(CrossCompileRid.StartsWith('alpine-'))">musl</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
-      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi21</CrossCompileAbi>
+      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi24</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-musl-arm'">musleabihf</CrossCompileAbi>
     </PropertyGroup>
 
@@ -60,11 +64,22 @@ The .NET Foundation licenses this file to you under the MIT license.
       <Output TaskParameter="ExitCode" PropertyName="_IsAlpineExitCode" />
     </Exec>
 
+    <!-- tizen's gcc toolchain needs extra linker args -->
+    <Exec Command="test -f &quot;$(SysRoot)/etc/os-release&quot; &amp;&amp; grep -q ID=tizen &quot;$(SysRoot)/etc/os-release&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' != ''">
+      <Output TaskParameter="ExitCode" PropertyName="_IsTizenExitCode" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(_IsTizenExitCode)' == '0'">
+      <_TizenToolchainLibDir>lib</_TizenToolchainLibDir>
+      <_TizenToolchainLibDir Condition="'$(_targetArchitecture)' == 'arm64' or '$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'riscv64'">lib64</_TizenToolchainLibDir>
+    </PropertyGroup>
+
     <PropertyGroup>
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' != '0'">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' == '0'">$(CrossCompileArch)-alpine-linux-$(CrossCompileAbi)</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd14</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('openbsd')))">$(CrossCompileArch)-unknown-openbsd</TargetTriple>
 
       <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">@rpath/$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
 
@@ -102,12 +117,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">14.0</AppleMinOSVersion>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'x64'">x86_64-apple-macos$(AppleMinOSVersion)</TargetTriple>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'arm64'">arm64-apple-macos$(AppleMinOSVersion)</TargetTriple>
+      <_AppleSdkName>macosx</_AppleSdkName>
     </PropertyGroup>
 
     <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(CrossCompileArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
       Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' CrossCompileArch = '$(CrossCompileArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
 
-    <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
+    <PropertyGroup Condition="'$(_IsApplePlatform)' == 'true'">
       <Xcrun Condition="'$(Xcrun)' == ''">xcrun</Xcrun>
       <_WhereXcrun>0</_WhereXcrun>
     </PropertyGroup>
@@ -116,13 +132,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_HasDefaultSysRoot Condition="'$(SysRoot)' != ''">true</_HasDefaultSysRoot>
     </PropertyGroup>
 
-    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsiOSLikePlatform)' == 'true' And '$(_HasDefaultSysRoot)' != 'true'">
+    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' == 'true' And '$(_HasDefaultSysRoot)' != 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
     </Exec>
     <Error Condition="'$(_WhereXcrun)' != '0' and '$(_IsiOSLikePlatform)' == 'true'"
       Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
 
-    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsApplePlatform)' == 'true'" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
     </Exec>
     <Error Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsiOSLikePlatform)' == 'true' and !Exists('$(SysRoot)')"
@@ -221,14 +237,14 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NativeSystemLibrary Include="stdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
-      <NativeSystemLibrary Include="dl" />
+      <NativeSystemLibrary Include="dl" Condition="'$(_targetOS)' != 'openbsd'" />
       <NativeSystemLibrary Include="objc" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftCore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftFoundation" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="z" Condition="'$(UseSystemZlib)' == 'true'" />
       <NativeSystemLibrary Include="brotlienc;brotlidec;brotlicommon" Condition="'$(UseSystemBrotli)' == 'true'" />
       <NativeSystemLibrary Include="zstd" Condition="'$(UseSystemZstd)' == 'true'" />
-      <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic'" />
+      <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic' and '$(_targetOS)' != 'openbsd'" />
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="m" />
@@ -238,15 +254,17 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <LinkerArg Include="-gz=zlib" Condition="'$(CompressSymbols)' != 'false'" />
-      <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
+      <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" Shim="true" />
+      <!-- Use the LLVM compiler runtime (compiler-rt) instead of libgcc. -->
+      <LinkerArg Include="--rtlib=compiler-rt" Condition="'$(UsePureLlvmToolchain)' == 'true'" Shim="true" />
       <LinkerArg Include="@(NativeLibrary)" />
-      <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" />
-      <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" />
-      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" />
-      <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
+      <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" Shim="true" />
+      <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" Shim="true" />
+      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" Shim="true" />
+      <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" Shim="true" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,-install_name,&quot;$(SharedLibraryInstallName)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="-Wl,--build-id=sha1" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <LinkerArg Include="-Wl,--build-id=sha1" Condition="'$(_IsApplePlatform)' != 'true'" Shim="true" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,-e,0x0" Condition="'$(NativeLib)' == 'Shared' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-pthread" Condition="'$(_IsApplePlatform)' != 'true'" />
@@ -262,10 +280,16 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-pie -Wl,-pie" Condition="'$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == '' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
       <LinkerArg Include="-Wl,-no-pie" Condition="'$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == '' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' == 'false'" />
       <!-- binskim warning BA3010 The GNU_RELRO segment is missing -->
-      <LinkerArg Include="-Wl,-z,relro" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <LinkerArg Include="-Wl,-z,relro" Condition="'$(_IsApplePlatform)' != 'true'" Shim="true" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
-      <LinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" />
-      <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != ''" />
+      <LinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" Shim="true" />
+      <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != ''" Shim="true" />
+      <!-- OpenBSD enforces IBT/BTCFI on amd64. NativeAOT codegen is not endbr64-instrumented, so
+           indirect branches (e.g. switch jump tables) to non-endbr64 targets fault with SIGILL.
+           Opt out of branch-target CFI enforcement via the PT_OPENBSD_NOBTCFI program header. -->
+      <LinkerArg Include="-Wl,-z,nobtcfi" Condition="'$(_targetOS)' == 'openbsd'" />
+      <!-- Opt out of OpenBSD's execute-only text so NativeAOT can read its own stub bytes (RhGetCodeTarget). -->
+      <LinkerArg Include="-Wl,--no-execute-only" Condition="'$(_targetOS)' == 'openbsd'" />
       <!-- this workaround can be deleted once the minimum supported glibc version
            (runtime's official build machine's glibc version) is at least 2.33
            see https://github.com/bminor/glibc/commit/99468ed45f5a58f584bab60364af937eb6f8afda -->
@@ -274,6 +298,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-L&quot;$(SysRoot)/usr/local/lib&quot; -lgssapi_krb5" Condition="'$(_targetOS)' == 'freebsd'" />
       <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
       <LinkerArg Include="-L&quot;$(SysRoot)/usr/local/lib&quot; -linotify" Condition="'$(_targetOS)' == 'freebsd'" />
+      <!-- OpenBSD's GSSAPI is provided by the Heimdal package, which ships only a versioned shared object. -->
+      <LinkerArg Include="-L&quot;$(SysRoot)/usr/local/heimdal/lib&quot; -l:libgssapi.so.9.0 -Wl,-rpath,/usr/local/heimdal/lib" Condition="'$(_targetOS)' == 'openbsd'" />
+      <!-- OpenBSD's inotify is the libinotify port, which ships only a versioned shared object. -->
+      <LinkerArg Include="-L&quot;$(SysRoot)/usr/local/lib/inotify&quot; -l:libinotify.so.4.0 -Wl,-rpath,/usr/local/lib/inotify" Condition="'$(_targetOS)' == 'openbsd'" />
       <LinkerArg Include="@(ExtraLinkerArg->'-Wl,%(Identity)')" />
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(_IsApplePlatform)' == 'true'" />
       <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />
@@ -282,6 +310,9 @@ The .NET Foundation licenses this file to you under the MIT license.
            This is required only for 64-bit binaries.
       -->
       <LinkerArg Include="-Wl,-z,max-page-size=16384" Condition=" '$(_linuxLibcFlavor)' == 'bionic' and '$(NativeLib)' == 'Shared' and ('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')" />
+
+      <!-- Tizen requires additional linker args -->
+      <LinkerArg Include="-L&quot;$(SysRoot)/$(_TizenToolchainLibDir)&quot;" Condition="'$(_IsTizenExitCode)' == '0'" />
     </ItemGroup>
 
     <Exec Command="xcodebuild -version" Condition="'$(_IsApplePlatform)' == 'true' and '$(UseLdClassicXCodeLinker)' == ''" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
@@ -374,5 +405,61 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup Condition="'$(_IsApplePlatform)' == 'true' and '$(StripSymbols)' == 'true' and $(_DsymUtilOutput.Contains('--minimize'))">
       <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="CreateShimExes"
+          Condition="'$(_AggregateExecutable)' == 'true'"
+          DependsOnTargets="LinkNative;WriteAggregateExecutableShimRspFiles"
+          Inputs="$(NativeBinary);@(_AggregateExecutableReferencePath->'%(ShimSource)');@(_AggregateExecutableReferencePath->'%(ShimCompileLinkRspFile)')"
+          Outputs="@(_AggregateExecutableShim);@(_AggregateExecutableShimSymbol)">
+
+    <Exec Command="&quot;$(CppLinker)&quot; @&quot;%(_AggregateExecutableReferencePath.ShimCompileLinkRspFile)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
+          Command="&quot;$(ObjCopyName)&quot; --only-keep-debug &quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot; &quot;%(_AggregateExecutableReferencePath.ShimBinary)$(NativeSymbolExt)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
+          Command="&quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(NativeDebugSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
+          Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;%(_AggregateExecutableReferencePath.ShimBinary)$(NativeSymbolExt)&quot; &quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;" />
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true'"
+          IgnoreStandardErrorWarningFormat="true"
+          Command="
+            dsymutil $(DsymUtilOptions) &quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot; &amp;&amp;
+            strip -no_code_signature_warning -x &quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;" />
+  </Target>
+
+  <Target Name="WriteAggregateExecutableShimRspFiles"
+          Condition="'$(_AggregateExecutable)' == 'true'"
+          DependsOnTargets="LinkNative">
+
+    <ItemGroup>
+      <_AggregateExecutableReferencePath>
+        <ShimSourceCode><![CDATA[extern int %(_AggregateExecutableReferencePath.EntryPointSymbol)(int, char**);
+
+int main(int argc, char** argv)
+{
+    return %(_AggregateExecutableReferencePath.EntryPointSymbol)(argc, argv);
+}
+]]></ShimSourceCode>
+      </_AggregateExecutableReferencePath>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_AggregateExecutableShimCompilerAndLinkerArg Include="@(LinkerArg)" Condition="'%(LinkerArg.Shim)' == 'true'" />
+      <_AggregateExecutableShimCompilerAndLinkerArg Include="-Wl,-rpath,'$ORIGIN'" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_AggregateExecutableShimCompilerAndLinkerArg Include="-Wl,-rpath,@executable_path" Condition="'$(_IsApplePlatform)' == 'true'" />
+
+      <!-- binskim warning BA3001 PIE disabled on executable -->
+      <_AggregateExecutableShimCompilerAndLinkerArg Include="-pie -Wl,-pie" Condition="'$(_IsApplePlatform)' != 'true' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
+      <!-- binskim error BA3003: The stack protector was not found -->
+      <_AggregateExecutableShimCompilerAndLinkerArg Include="-fstack-protector-strong" />
+
+      <_AggregateExecutableShimNativeLibraryArg Include="-L&quot;$(NativeOutputPath)&quot;" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_AggregateExecutableShimNativeLibraryArg Include="-l:$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)" Condition="'$(_IsApplePlatform)' != 'true'" />
+      <_AggregateExecutableShimNativeLibraryArg Include="&quot;$(NativeBinary)&quot;" Condition="'$(_IsApplePlatform)' == 'true'" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(NativeIntermediateOutputPath);$(NativeOutputPath)" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimSource)" Lines="$([MSBuild]::Escape('%(_AggregateExecutableReferencePath.ShimSourceCode)'))" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="%(_AggregateExecutableReferencePath.ShimCompileLinkRspFile)" Lines="@(_AggregateExecutableShimCompilerAndLinkerArg);&quot;%(_AggregateExecutableReferencePath.ShimSource)&quot;;@(_AggregateExecutableShimNativeLibraryArg);-o;&quot;%(_AggregateExecutableReferencePath.ShimBinary)&quot;" Overwrite="true" Encoding="utf-8" WriteOnlyWhenDifferent="true" />
   </Target>
 </Project>

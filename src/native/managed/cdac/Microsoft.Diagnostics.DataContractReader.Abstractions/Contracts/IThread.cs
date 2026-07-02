@@ -5,6 +5,13 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+[Flags]
+public enum ThreadContextSource
+{
+    None = 0,
+    Debugger = 1,
+}
+
 public record struct ThreadStoreData(
     int ThreadCount,
     TargetPointer FirstThread,
@@ -26,6 +33,15 @@ public enum ThreadState
     Unstarted           = 0x00000400,   // Thread has never been started
     Stopped             = 0x00010000,   // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
+    WaitSleepJoin       = 0x02000000,   // Thread is in a Sleep(), Wait(), Join()
+    Detached            = unchecked((int)0x80000000), // Thread was detached
+}
+
+[Flags]
+public enum DebuggerControlledThreadState
+{
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
 }
 
 public record struct ThreadData(
@@ -38,14 +54,26 @@ public record struct ThreadData(
     TargetPointer AllocContextLimit,
     TargetPointer Frame,
     TargetPointer FirstNestedException,
-    TargetPointer TEB,
+    TargetPointer ExposedObjectHandle,
     TargetPointer LastThrownObjectHandle,
-    TargetPointer NextThread);
+    TargetPointer CurrentCustomDebuggerNotificationHandle,
+    bool LastThrownObjectIsUnhandled,
+    bool HasUnhandledException,
+    TargetPointer NextThread,
+    TargetPointer ThreadHandle,
+    bool IsInteropDebuggingHijacked,
+    TargetPointer DebuggerFilterContext,
+    TargetPointer GCFrame,
+    bool IsExceptionInProgress,
+    TargetPointer OSExceptionRecord,
+    TargetPointer OSExceptionContextRecord);
 
 public interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
 
+    void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
+    void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
     ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
@@ -55,7 +83,6 @@ public interface IThread : IContract
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
-    TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }
 

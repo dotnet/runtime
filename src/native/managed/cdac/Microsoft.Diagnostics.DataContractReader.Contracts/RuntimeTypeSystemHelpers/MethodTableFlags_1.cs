@@ -22,8 +22,12 @@ internal struct MethodTableFlags_1
     internal enum WFLAGS_LOW : uint
     {
         GenericsMask = 0x00000030,
-        GenericsMask_NonGeneric = 0x00000000,   // no instantiation
-        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
+        GenericsMask_NonGeneric = 0x00000000,            // no instantiation
+        GenericsMask_SharedInst = 0x00000020,            // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
+        GenericsMask_TypicalInstantiation = 0x00000030,  // the type instantiated at its formal parameters, e.g. List<T>
+
+        IsByRefLike = 0x00001000,                        // value type that may contain managed pointers (e.g. Span<T>, ReadOnlySpan<T>)
+        IsHFA = 0x00000800,                              // ARM/ARM64 only (FEATURE_HFA); reused on UNIX_AMD64_ABI as IsRegStructPassed
 
         StringArrayValues =
             GenericsMask_NonGeneric |
@@ -38,15 +42,18 @@ internal struct MethodTableFlags_1
         Category_Array = 0x00080000,
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array_Mask = 0x000C0000,
+        Category_ValueType_Mask = 0x000C0000,
         Category_ElementType_Mask = 0x000E0000,
         Category_ValueType = 0x00040000,
         Category_Nullable = 0x00050000,
-        Category_PrimitiveValueType = 0x00060000,
+        Category_Primitive = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000, // GC depends on this bit.
+        RequiresAlign8 = 0x00800000,
 
         ContainsGCPointers = 0x01000000,
+        IsTrackedReferenceWithFinalizer = 0x04000000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                         // otherwise the lower bits are used for WFLAGS_LOW
@@ -56,6 +63,7 @@ internal struct MethodTableFlags_1
     internal enum WFLAGS2_ENUM : uint
     {
         DynamicStatics = 0x0002,
+        IsIntrinsicType = 0x0020,
     }
 
     public uint MTFlags { get; init; }
@@ -93,15 +101,22 @@ internal struct MethodTableFlags_1
 
     public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
     public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
+    public bool IsValueType => GetFlag(WFLAGS_HIGH.Category_ValueType_Mask) == WFLAGS_HIGH.Category_ValueType;
     public bool IsString => HasComponentSize && !IsArray && ComponentSizeBits == 2;
     public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
     public bool IsStringOrArray => HasComponentSize;
     public ushort ComponentSize => HasComponentSize ? ComponentSizeBits : (ushort)0;
     public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
     public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
+    public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
     public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
+    public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
     public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+    public bool IsIntrinsicType => GetFlag(WFLAGS2_ENUM.IsIntrinsicType) != 0;
     public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
+    public bool IsSharedByGenericInstantiations => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_SharedInst);
+    public bool IsByRefLike => TestFlagWithMask(WFLAGS_LOW.IsByRefLike, WFLAGS_LOW.IsByRefLike);
+    public bool IsHFA => TestFlagWithMask(WFLAGS_LOW.IsHFA, WFLAGS_LOW.IsHFA);
     public bool ContainsGenericVariables => GetFlag(WFLAGS_HIGH.ContainsGenericVariables) != 0;
 
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)

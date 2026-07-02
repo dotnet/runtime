@@ -90,6 +90,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             Directory.Delete(_projectDir, recursive: true);
         Directory.CreateDirectory(_projectDir);
 
+        // Create an empty global.json so the SDK resolver doesn't walk up
+        // to the repo root's global.json which may contain relative "paths"
+        // entries that don't apply in the test directory.
+        File.WriteAllText(Path.Combine(_projectDir, "global.json"), "{}");
+
         File.WriteAllText(Path.Combine(_projectDir, "nuget.config"),
                             GetNuGetConfigWithLocalPackagesPath(
                                         GetNuGetConfigPath(),

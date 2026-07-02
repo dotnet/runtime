@@ -97,7 +97,7 @@ namespace System
             /// The evaluation stack will have a 1 at the top if all processing was completed at invoked level
             /// of recursion, and a 0 at the top if we're still inside of a conditional that requires more processing.
             /// </returns>
-            private static string EvaluateInternal(
+            private static unsafe string EvaluateInternal(
                 string format, ref int pos, FormatParam[] args, Stack<FormatParam> stack,
                 ref FormatParam[]? dynamicVars, ref FormatParam[]? staticVars)
             {

@@ -344,6 +344,12 @@ typedef ptrdiff_t ssize_t;
 #define DEBUGARG(x)
 #endif
 
+#if defined(DEBUG) || defined(TARGET_WASM)
+#define INDEBUG_OR_WASM(x) x
+#else
+#define INDEBUG_OR_WASM(x)
+#endif
+
 #if defined(DEBUG) || defined(LATE_DISASM)
 #define INDEBUG_LDISASM_COMMA(x) x,
 #else
@@ -725,12 +731,12 @@ inline size_t unsigned_abs(ssize_t x)
     return ((size_t)std::abs((int64_t)x));
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline size_t unsigned_abs(int64_t x)
 {
     return ((size_t)std::abs(x));
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/

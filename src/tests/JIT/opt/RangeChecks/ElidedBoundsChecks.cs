@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
@@ -83,6 +84,136 @@ public class ElidedBoundsChecks
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool TryStripFirstChar(ref ReadOnlySpan<char> span, char value)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if (!span.IsEmpty && span[0] == value)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Sum4Increasing(int[] a) => a[0] + a[1] + a[2] + a[3];
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Sum4Span(ReadOnlySpan<int> s) => s[0] + s[1] + s[2] + s[3];
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Sum4MixedOrder(int[] a) => a[2] + a[3] + a[0] + a[1];
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int DivBetweenBCs(int[] a, int divisor)
+    {
+        // The divide must not be reordered with a[5]: when divisor == 0 we
+        // must observe DivideByZeroException, not IndexOutOfRangeException.
+        int x = a[3];
+        int y = 100 / divisor;
+        return x + y + a[5];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int NreBetweenBCs(int[] a, int[] b)
+    {
+        // First touch of b may throw NRE; that must not be reordered with
+        // a[5]: when b == null we must observe NullReferenceException.
+        int x = a[3];
+        int y = b.Length;
+        return x + y + a[5];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int LocalLiveInCatch(int[] a)
+    {
+        // The store `x = 99` is between two BCs in a try block whose local is
+        // live in the catch. It must act as a barrier: if a[3]'s BC were
+        // strengthened to length 6, the IOOB would fire before x=99 and the
+        // catch would observe x == -1 instead of 99.
+        int x = -1;
+        try
+        {
+            int t = a[3];
+            x = 99;
+            return t + a[5];
+        }
+        catch (IndexOutOfRangeException)
+        {
+            return x;
+        }
+    }
+
+    static int s_finallyObserved;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int LocalLiveInFinally(int[] a)
+    {
+        // Same idea, but the local is live into a finally rather than a catch.
+        int x = -1;
+        try
+        {
+            int t = a[3];
+            x = 99;
+            return t + a[5];
+        }
+        finally
+        {
+            s_finallyObserved = x;
+        }
+    }
+
+    static int s_storeObserved;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int StoreBetweenBCs(int[] a)
+    {
+        // A heap-visible store between two BCs must act as a barrier: if a
+        // is too short for a[5], the store to s_storeObserved must still be
+        // observable (i.e., the strengthened check must not throw IOOB
+        // before the store).
+        int t = a[3];
+        s_storeObserved = 99;
+        return t + a[5];
+    }
+
+    static int s_callObserved;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void MarkCalled()
+    {
+        s_callObserved = 99;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int CallBetweenBCs(int[] a)
+    {
+        // A call between two BCs must act as a barrier even if the callee
+        // doesn't throw: the call's side effects (here, writing s_callObserved)
+        // must remain observable when the second BC fails.
+        int t = a[3];
+        MarkCalled();
+        return t + a[5];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int TwoArrays(int[] a, int[] b)
+    {
+        // Two arrays with distinct length VNs interleaved: bounds checks
+        // for `a` and `b` must not coalesce into a single group.
+        return a[0] + b[0] + a[3] + b[1];
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int UnsignedShiftBySignBit(int i)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        ReadOnlySpan<int> vals = [0, 1];
+        return vals[i >>> 31];
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -117,6 +248,92 @@ public class ElidedBoundsChecks
             return 0;
 
         if (IndexPlusConstLessThanLen("hello".AsSpan()) != false)
+            return 0;
+
+        ReadOnlySpan<char> chars = "hello".AsSpan();
+        if (TryStripFirstChar(ref chars, 'h') != true)
+            return 0;
+
+        chars = ReadOnlySpan<char>.Empty;
+        if (TryStripFirstChar(ref chars, 'h') != false)
+            return 0;
+
+        // Bounds-check coalescing: 4 constant indices, same length VN.
+        int[] arr4 = new int[] { 10, 20, 30, 40 };
+        if (Sum4Increasing(arr4) != 100)
+            return 0;
+        if (Sum4Span(arr4) != 100)
+            return 0;
+        if (Sum4MixedOrder(arr4) != 100)
+            return 0;
+
+        // Short array: must throw IndexOutOfRangeException.
+        Assert.Throws<IndexOutOfRangeException>(() => Sum4Increasing(new int[3]));
+        Assert.Throws<IndexOutOfRangeException>(() => Sum4MixedOrder(new int[3]));
+
+        // Exception ordering must be preserved across non-IOOB throwers.
+        int[] arr6 = new int[] { 1, 2, 3, 4, 5, 6 };
+        if (DivBetweenBCs(arr6, 5) != (arr6[3] + 100 / 5 + arr6[5]))
+            return 0;
+
+        // divisor == 0 with a too short for a[5]: must be DivideByZero, not IOOB.
+        Assert.Throws<DivideByZeroException>(() => DivBetweenBCs(new int[4], 0));
+
+        // b == null with a too short for a[5]: must be NRE, not IOOB.
+        Assert.Throws<NullReferenceException>(() => NreBetweenBCs(new int[4], null));
+
+        // Local live in catch handler: a[3]'s BC must not be strengthened to
+        // a[5] across the `x = 99` store, otherwise the catch would see -1.
+        if (LocalLiveInCatch(new int[4]) != 99)
+            return 0;
+
+        // Local live in finally: same constraint, observed via static field.
+        s_finallyObserved = 0;
+        try
+        {
+            LocalLiveInFinally(new int[4]);
+            return 0;
+        }
+        catch (IndexOutOfRangeException) { }
+        if (s_finallyObserved != 99)
+            return 0;
+
+        // Heap-visible store between BCs must remain observable when the
+        // second BC fails. If we (incorrectly) strengthened a[3] to a[5],
+        // the IOOB would fire before the store and s_storeObserved would
+        // stay 0.
+        s_storeObserved = 0;
+        if (StoreBetweenBCs(arr6) != (arr6[3] + arr6[5]))
+            return 0;
+        if (s_storeObserved != 99)
+            return 0;
+        s_storeObserved = 0;
+        Assert.Throws<IndexOutOfRangeException>(() => StoreBetweenBCs(new int[4]));
+        if (s_storeObserved != 99)
+            return 0;
+
+        // Non-throwing call between BCs must also act as a barrier.
+        s_callObserved = 0;
+        if (CallBetweenBCs(arr6) != (arr6[3] + arr6[5]))
+            return 0;
+        if (s_callObserved != 99)
+            return 0;
+        s_callObserved = 0;
+        Assert.Throws<IndexOutOfRangeException>(() => CallBetweenBCs(new int[4]));
+        if (s_callObserved != 99)
+            return 0;
+
+        // Distinct length VNs must not be merged into a single group.
+        int[] a4 = new int[] { 1, 2, 3, 4 };
+        int[] b2 = new int[] { 10, 20 };
+        if (TwoArrays(a4, b2) != (a4[0] + b2[0] + a4[3] + b2[1]))
+            return 0;
+        // a too short for a[3]: must throw IOOB.
+        Assert.Throws<IndexOutOfRangeException>(() => TwoArrays(new int[3], b2));
+        // b too short for b[1]: must throw IOOB.
+        Assert.Throws<IndexOutOfRangeException>(() => TwoArrays(a4, new int[1]));
+
+        if (UnsignedShiftBySignBit(-1) != 1 || UnsignedShiftBySignBit(0) != 0)
             return 0;
 
         return 100;

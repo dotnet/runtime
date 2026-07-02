@@ -442,7 +442,7 @@ namespace System.Net.Http.Headers
         }
 
         // Attempt to decode MIME encoded strings.
-        private static bool TryDecodeMime(string? input, [NotNullWhen(true)] out string? output)
+        private static unsafe bool TryDecodeMime(string? input, [NotNullWhen(true)] out string? output)
         {
             Debug.Assert(input != null);
 

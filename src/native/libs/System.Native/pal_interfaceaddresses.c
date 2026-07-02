@@ -11,17 +11,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <assert.h>
-#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
+#if HAVE_GETIFADDRS
 #include <ifaddrs.h>
-#endif
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-#if HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
-#if HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
-#include "pal_ifaddrs.h" // fallback for Android API 21-23
 #endif
 #if HAVE_NET_IF_H
 #include <net/if.h>
@@ -118,56 +109,12 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 }
 #endif /* TARGET_WASI */
 
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-// This workaround is necessary as long as we support Android API 21-23 and it can be removed once
-// we drop support for these old Android versions.
-static int (*getifaddrs)(struct ifaddrs**) = NULL;
-static void (*freeifaddrs)(struct ifaddrs*) = NULL;
-
-static void try_loading_getifaddrs(void)
-{
-    if (android_get_device_api_level() >= 24)
-    {
-        // Bionic on API 24+ contains the getifaddrs/freeifaddrs functions but the NDK doesn't expose those functions
-        // in ifaddrs.h when the minimum supported SDK is lower than 24 and therefore we need to load them manually
-        void *libc = dlopen("libc.so", RTLD_NOW);
-        if (libc)
-        {
-            getifaddrs = (int (*)(struct ifaddrs**)) dlsym(libc, "getifaddrs");
-            freeifaddrs = (void (*)(struct ifaddrs*)) dlsym(libc, "freeifaddrs");
-        }
-    }
-    else
-    {
-        // Bionic on API 21-23 doesn't contain the implementation of getifaddrs/freeifaddrs at all
-        // and we need to reimplement it using netlink (see pal_ifaddrs)
-        getifaddrs = _netlink_getifaddrs;
-        freeifaddrs = _netlink_freeifaddrs;
-    }
-}
-
-static bool ensure_getifaddrs_is_loaded(void)
-{
-    static pthread_once_t getifaddrs_is_loaded = PTHREAD_ONCE_INIT;
-    pthread_once(&getifaddrs_is_loaded, try_loading_getifaddrs);
-    return getifaddrs != NULL && freeifaddrs != NULL;
-}
-#endif
-
 int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-    if (!ensure_getifaddrs_is_loaded())
-    {
-        errno = ENOTSUP;
-        return -1;
-    }
-#endif
-
-#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
+#if HAVE_GETIFADDRS
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -226,6 +173,18 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                 struct sockaddr_in6* sain6 = (struct sockaddr_in6*)current->ifa_addr;
                 memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
                 uint32_t scopeId = sain6->sin6_scope_id;
+
+#ifdef TARGET_OPENBSD
+                // OpenBSD's KAME-derived stack embeds the scope id (interface index) in the second
+                // 16-bit word of a link-local address and leaves sin6_scope_id set to 0. Recover the
+                // scope id from the address bytes and restore the canonical link-local form.
+                if (scopeId == 0 && iai.AddressBytes[0] == 0xFE && (iai.AddressBytes[1] & 0xC0) == 0x80)
+                {
+                    scopeId = (uint32_t)((iai.AddressBytes[2] << 8) | iai.AddressBytes[3]);
+                    iai.AddressBytes[2] = 0;
+                    iai.AddressBytes[3] = 0;
+                }
+#endif
 
                 struct sockaddr_in6* mask_sain6 = (struct sockaddr_in6*)current->ifa_netmask;
                 iai.PrefixLength = mask_sain6 != NULL ? mask2prefix((uint8_t*)&mask_sain6->sin6_addr.s6_addr, NUM_BYTES_IN_IPV6_ADDRESS) : NUM_BYTES_IN_IPV6_ADDRESS * 8;
@@ -316,15 +275,7 @@ c_static_assert(sizeof(NetworkInterfaceInfo) >= sizeof(IpAddressInfo));
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#ifdef ANDROID_GETIFADDRS_WORKAROUND
-    if (!ensure_getifaddrs_is_loaded())
-    {
-        errno = ENOTSUP;
-        return -1;
-    }
-#endif
-
-#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
+#if HAVE_GETIFADDRS
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;

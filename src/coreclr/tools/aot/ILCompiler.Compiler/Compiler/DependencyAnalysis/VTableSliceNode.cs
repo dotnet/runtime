@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Finalizers are called via a field on the MethodTable, not through the VTable
-                if (isObjectType && method.Name.SequenceEqual("Finalize"u8))
+                if (isObjectType && method.Name == "Finalize"u8)
                     continue;
 
                 // Current type doesn't define this slot.
@@ -203,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
             // Finalizers are called via a field on the MethodTable, not through the VTable
-            if (_type.IsObject && virtualMethod.Name.SequenceEqual("Finalize"u8))
+            if (_type.IsObject && virtualMethod.Name == "Finalize"u8)
                 return;
 
             _usedMethods.Add(virtualMethod);

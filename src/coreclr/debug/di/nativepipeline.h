@@ -50,20 +50,6 @@ public:
 
     virtual BOOL DebugSetProcessKillOnExit(bool fKillOnExit) = 0;
 
-    // Create
-    virtual HRESULT CreateProcessUnderDebugger(
-        MachineInfo machineInfo,
-        LPCWSTR lpApplicationName,
-        LPCWSTR lpCommandLine,
-        LPSECURITY_ATTRIBUTES lpProcessAttributes,
-        LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        BOOL bInheritHandles,
-        DWORD dwCreationFlags,
-        LPVOID lpEnvironment,
-        LPCWSTR lpCurrentDirectory,
-        LPSTARTUPINFOW lpStartupInfo,
-        LPPROCESS_INFORMATION lpProcessInformation) = 0;
-
     // Attach
     virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor) = 0;
 

@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
 
 allocator::allocator (unsigned int num_b, int fbb, alloc_list* b, int gen)
 {
@@ -1319,27 +1328,6 @@ bool gc_heap::new_allocation_allowed (int gen_number)
     }
 #endif //MULTIPLE_HEAPS
     return TRUE;
-}
-
-inline
-ptrdiff_t gc_heap::get_desired_allocation (int gen_number)
-{
-    return dd_desired_allocation (dynamic_data_of (gen_number));
-}
-
-inline
-ptrdiff_t  gc_heap::get_new_allocation (int gen_number)
-{
-    return dd_new_allocation (dynamic_data_of (gen_number));
-}
-
-//return the amount allocated so far in gen_number
-inline
-ptrdiff_t  gc_heap::get_allocation (int gen_number)
-{
-    dynamic_data* dd = dynamic_data_of (gen_number);
-
-    return dd_desired_allocation (dd) - dd_new_allocation (dd);
 }
 
 #ifdef SHORT_PLUGS
@@ -3253,29 +3241,6 @@ exit:
     return soh_alloc_state;
 }
 
-#ifdef BACKGROUND_GC
-inline
-void gc_heap::bgc_track_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Increment (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: inc lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-inline
-void gc_heap::bgc_untrack_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Decrement (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: dec lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-#endif //BACKGROUND_GC
-
 size_t gc_heap::get_uoh_seg_size (size_t size)
 {
     size_t default_seg_size =
@@ -4118,8 +4083,8 @@ void gc_heap::balance_heaps (alloc_context* acontext)
         if (set_home_heap)
         {
             /*
-                        // Since we are balancing up to MAX_SUPPORTED_CPUS, no need for this.
-                        if (n_heaps > MAX_SUPPORTED_CPUS)
+                        // Since we are balancing up to MAX_SUPPORTED_HEAPS, no need for this.
+                        if (n_heaps > MAX_SUPPORTED_HEAPS)
                         {
                             // on machines with many processors cache affinity is really king, so don't even try
                             // to balance on these.
@@ -4549,41 +4514,6 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
     while (status == a_state_retry_allocate);
 
     return (status == a_state_can_allocate);
-}
-
-inline
-CObjectHeader* gc_heap::allocate (size_t jsize, alloc_context* acontext, uint32_t flags)
-{
-    size_t size = Align (jsize);
-    assert (size >= Align (min_obj_size));
-    {
-    retry:
-        uint8_t*  result = acontext->alloc_ptr;
-        acontext->alloc_ptr+=size;
-        if (acontext->alloc_ptr <= acontext->alloc_limit)
-        {
-            CObjectHeader* obj = (CObjectHeader*)result;
-            assert (obj != 0);
-            return obj;
-        }
-        else
-        {
-            acontext->alloc_ptr -= size;
-
-#ifdef _MSC_VER
-#pragma inline_depth(0)
-#endif //_MSC_VER
-
-            if (! allocate_more_space (acontext, size, flags, 0))
-                return 0;
-
-#ifdef _MSC_VER
-#pragma inline_depth(20)
-#endif //_MSC_VER
-
-            goto retry;
-        }
-    }
 }
 
 void  gc_heap::leave_allocation_segment (generation* gen)
@@ -5418,15 +5348,6 @@ generation*  gc_heap::ensure_ephemeral_heap_segment (generation* consing_gen)
 #endif //!USE_REGIONS
 
 inline
-void gc_heap::init_alloc_info (generation* gen, heap_segment* seg)
-{
-    generation_allocation_segment (gen) = seg;
-    generation_allocation_pointer (gen) = heap_segment_mem (seg);
-    generation_allocation_limit (gen) = generation_allocation_pointer (gen);
-    generation_allocation_context_start_region (gen) = generation_allocation_pointer (gen);
-}
-
-inline
 heap_segment* gc_heap::get_next_alloc_seg (generation* gen)
 {
 #ifdef USE_REGIONS
@@ -5880,3 +5801,5 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     return obj;
 }
+
+} // namespace SVR/WKS

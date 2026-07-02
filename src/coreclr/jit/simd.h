@@ -5,7 +5,7 @@
 #define _SIMD_H_
 
 template <typename T>
-static bool ElementsAreSame(T* array, size_t size)
+static bool ElementsAreSame(const T* array, size_t size)
 {
     for (size_t i = 1; i < size; i++)
     {
@@ -16,7 +16,7 @@ static bool ElementsAreSame(T* array, size_t size)
 }
 
 template <typename T>
-static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
+static bool ElementsAreAllBitsSetOrZero(const T* array, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
@@ -305,7 +305,6 @@ struct simd64_t
 static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
 struct simdmask_t
 {
     union
@@ -376,13 +375,51 @@ struct simdmask_t
     }
 };
 static_assert(sizeof(simdmask_t) == 8);
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
 #if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;
 #endif
+
+static bool ElementsAreAllBitsSetOrZero(const simd_t* simdVal, var_types simdBaseType, unsigned elementCount)
+{
+    assert(simdVal != nullptr);
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u8[0], elementCount);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u16[0], elementCount);
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u32[0], elementCount);
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u64[0], elementCount);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
@@ -594,6 +631,7 @@ inline void EvaluateUnaryMask(
         }
     }
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 inline void EvaluateExtractMSB(simdmask_t* result, const TSimd& arg0)
@@ -656,7 +694,6 @@ inline void EvaluateExtractMSB(var_types baseType, simdmask_t* result, const TSi
         }
     }
 }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0)

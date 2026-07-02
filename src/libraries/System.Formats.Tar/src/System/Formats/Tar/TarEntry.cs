@@ -285,7 +285,9 @@ namespace System.Formats.Tar
                     // This entry came from a reader, so if the underlying stream is unseekable, we need to
                     // manually advance the stream pointer to the next header before doing the substitution
                     // The original stream will get disposed when the reader gets disposed.
-                    _readerOfOrigin.AdvanceDataStreamIfNeeded();
+                    ValueTask vt = _readerOfOrigin.AdvanceDataStreamIfNeededCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+                    Debug.Assert(vt.IsCompleted, "Synchronous AdvanceDataStreamIfNeeded completed asynchronously.");
+                    vt.GetAwaiter().GetResult();
                     // We only do this once
                     _readerOfOrigin = null;
                 }
@@ -379,6 +381,13 @@ namespace System.Formats.Tar
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
+                // On Windows, reject rooted-but-not-fully-qualified symlink targets (e.g., "\Windows\win.ini").
+                // Unlike files, symlink targets are resolved at access time, not extraction time,
+                // so Path.GetFullPath here cannot reliably predict what drive the OS will resolve them against.
+                if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
+                {
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
+                }
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
@@ -562,8 +571,19 @@ namespace System.Formats.Tar
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             using (FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: false)))
             {
-                // Important: The DataStream will be written from its current position
-                DataStream?.CopyTo(fs);
+                if (_header._gnuSparseDataStream is GnuSparseStream { Position: 0 } sparseStream)
+                {
+                    // Sparse-aware extraction: write only the populated segments, seeking over holes
+                    // so file systems can leave them as actual sparse holes (NTFS once marked sparse;
+                    // most Unix file systems do this automatically).
+                    TryMarkFileSparse(fs);
+                    sparseStream.CopyPopulatedDataTo(fs);
+                }
+                else
+                {
+                    // Important: The DataStream will be written from its current position
+                    DataStream?.CopyTo(fs);
+                }
             }
 
             AttemptSetLastWriteTime(destinationFileName, ModificationTime);
@@ -581,7 +601,12 @@ namespace System.Formats.Tar
             FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: true));
             await using (fs.ConfigureAwait(false))
             {
-                if (DataStream != null)
+                if (_header._gnuSparseDataStream is GnuSparseStream { Position: 0 } sparseStream)
+                {
+                    TryMarkFileSparse(fs);
+                    await sparseStream.CopyPopulatedDataToAsync(fs, cancellationToken).ConfigureAwait(false);
+                }
+                else if (DataStream != null)
                 {
                     // Important: The DataStream will be written from its current position
                     await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
@@ -610,7 +635,11 @@ namespace System.Formats.Tar
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,
                 Share = FileShare.None,
-                PreallocationSize = Length,
+                // Skip preallocation for GNU sparse entries: the entry's Length is the expanded
+                // (real) size, while the archive only contains the much smaller packed data.
+                // Preallocating to the expanded size would reserve disk space that bears no
+                // relation to the archive contents and can fail surprisingly on small volumes.
+                PreallocationSize = _header._gnuSparseDataStream is null ? Length : 0,
                 Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 

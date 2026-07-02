@@ -232,7 +232,7 @@ private:
         virtual bool IsLAHashKeyToTrackers() const override { return true; }
     };
 
-    class EMPTY_BASES_DECL KeyToValuesHashTraits : public DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *>
+    class EMPTY_BASES KeyToValuesHashTraits : public DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *>
     {
     private:
         typedef DefaultSHashTraits<KeyValueStoreOrLAHashKeyToTrackers *> Base;
@@ -308,7 +308,7 @@ private:
         static LADependentHandleToNativeObject *CreateDependentHandle(
             LoaderAllocator *loaderAllocator,
             LADependentKeyToValuesHash *dependentKeyValueStoreHash);
-        ~LAHashDependentHashTracker(); // only accessible via DecRefCount()
+        ~LAHashDependentHashTracker(); // only accessible via Release()
 
     public:
         bool IsLoaderAllocatorLive() const { return _dependentHandle->GetDependentObject() != NULL; }
@@ -325,13 +325,13 @@ private:
         LoaderAllocator *GetLoaderAllocatorUnsafe() const { return _loaderAllocator; }
 
     #ifndef DACCESS_COMPILE
-        void IncRefCount()
+        void AddRef()
         {
             _ASSERTE(_refCount != 0);
             ++_refCount;
         }
 
-        void DecRefCount()
+        void Release()
         {
             _ASSERTE(_refCount != 0);
             if (--_refCount == 0)
@@ -339,20 +339,10 @@ private:
                 delete this;
             }
         }
-
-        static void StaticDecRefCount(LAHashDependentHashTracker *dependentTracker)
-        {
-            if (dependentTracker != NULL)
-            {
-                dependentTracker->DecRefCount();
-            }
-        }
-
-        using NewTrackerHolder = SpecializedWrapper<LAHashDependentHashTracker, StaticDecRefCount>;
     #endif // !DACCESS_COMPILE
     };
 
-    class EMPTY_BASES_DECL LAHashDependentHashTrackerHashTraits : public DefaultSHashTraits<LAHashDependentHashTracker *>
+    class EMPTY_BASES LAHashDependentHashTrackerHashTraits : public DefaultSHashTraits<LAHashDependentHashTracker *>
     {
     public:
         typedef TCount count_t;
@@ -379,7 +369,7 @@ private:
         #ifndef DACCESS_COMPILE
             // Dependent trackers may be stored in multiple hash tables and are ref-counted when added/removed from a hash
             // table. The ref count decrement may also delete the tracker.
-            dependentTracker->DecRefCount();
+            dependentTracker->Release();
         #endif
         }
 

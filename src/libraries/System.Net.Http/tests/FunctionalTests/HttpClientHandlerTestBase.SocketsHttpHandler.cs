@@ -37,7 +37,6 @@ namespace System.Net.Http.Functional.Tests
                 try
                 {
                     return QuicConnection.IsSupported
-                        && IsNotAzureLinux3VM
                         && (bool)Type.GetType("System.Net.Http.GlobalHttpSettings+SocketsHttpHandler, System.Net.Http").GetProperty("AllowHttp3").GetValue(null);
                 }
                 catch (System.PlatformNotSupportedException)
@@ -47,9 +46,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // https://github.com/dotnet/runtime/issues/123216
-        public static bool IsNotAzureLinux3VM => !PlatformDetection.IsAzureLinux || PlatformDetection.IsInContainer;
-
         protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, bool allowAllCertificates = true)
         {
             useVersion ??= HttpVersion.Version11;
@@ -57,7 +53,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
             // Browser doesn't support ServerCertificateCustomValidationCallback
-            if (allowAllCertificates && PlatformDetection.IsNotBrowser)
+            if (allowAllCertificates && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }

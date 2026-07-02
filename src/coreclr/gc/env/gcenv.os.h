@@ -6,6 +6,9 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
+#include <new>
+using std::nothrow;
+
 #include <minipal/mutex.h>
 
 #define NUMA_NODE_UNDEFINED UINT16_MAX
@@ -138,12 +141,12 @@ public:
 typedef void (*GCThreadFunction)(void* param);
 
 #ifdef HOST_64BIT
-// Right now we support maximum 1024 procs - meaning that we will create at most
+// Right now we support maximum 1024 heaps - meaning that we will create at most
 // that many GC threads and GC heaps.
-#define MAX_SUPPORTED_CPUS 1024
+#define MAX_SUPPORTED_HEAPS 1024
 #define MAX_SUPPORTED_NODES 64
 #else
-#define MAX_SUPPORTED_CPUS 64
+#define MAX_SUPPORTED_HEAPS 64
 #define MAX_SUPPORTED_NODES 16
 #endif // HOST_64BIT
 
@@ -152,7 +155,8 @@ class AffinitySet
 {
     static const size_t BitsPerBitsetEntry = 8 * sizeof(uintptr_t);
 
-    uintptr_t m_bitset[MAX_SUPPORTED_CPUS / BitsPerBitsetEntry];
+    uintptr_t *m_bitset = nullptr;
+    size_t m_bitsetDataSize = 0;
 
     static uintptr_t GetBitsetEntryMask(size_t cpuIndex)
     {
@@ -166,11 +170,31 @@ class AffinitySet
 
 public:
 
-    static const size_t BitsetDataSize = MAX_SUPPORTED_CPUS / BitsPerBitsetEntry;
+    // Delete copy and move constructors and assignment operators since this class manages a raw pointer.
+    AffinitySet() = default;
+    AffinitySet(const AffinitySet&) = delete;
+    AffinitySet& operator=(const AffinitySet&) = delete;
+    AffinitySet(AffinitySet&&) = delete;
+    AffinitySet& operator=(AffinitySet&&) = delete;
 
-    AffinitySet()
+    bool Initialize(int cpuCount)
     {
-        memset(m_bitset, 0, sizeof(m_bitset));
+        assert(m_bitset == nullptr);
+
+        m_bitsetDataSize = (cpuCount + BitsPerBitsetEntry - 1) / BitsPerBitsetEntry;
+        m_bitset = new (nothrow) uintptr_t[m_bitsetDataSize];
+        if (m_bitset == nullptr)
+        {
+            return false;
+        }
+
+        memset(m_bitset, 0, sizeof(uintptr_t) * m_bitsetDataSize);
+        return true;
+    }
+
+    ~AffinitySet()
+    {
+        delete[] m_bitset;
     }
 
     uintptr_t* GetBitsetData()
@@ -181,25 +205,28 @@ public:
     // Check if the set contains a processor
     bool Contains(size_t cpuIndex) const
     {
+        assert(GetBitsetEntryIndex(cpuIndex) < m_bitsetDataSize);
         return (m_bitset[GetBitsetEntryIndex(cpuIndex)] & GetBitsetEntryMask(cpuIndex)) != 0;
     }
 
     // Add a processor to the set
     void Add(size_t cpuIndex)
     {
+        assert(GetBitsetEntryIndex(cpuIndex) < m_bitsetDataSize);
         m_bitset[GetBitsetEntryIndex(cpuIndex)] |= GetBitsetEntryMask(cpuIndex);
     }
 
     // Remove a processor from the set
     void Remove(size_t cpuIndex)
     {
+        assert(GetBitsetEntryIndex(cpuIndex) < m_bitsetDataSize);
         m_bitset[GetBitsetEntryIndex(cpuIndex)] &= ~GetBitsetEntryMask(cpuIndex);
     }
 
     // Check if the set is empty
     bool IsEmpty() const
     {
-        for (size_t i = 0; i < MAX_SUPPORTED_CPUS / BitsPerBitsetEntry; i++)
+        for (size_t i = 0; i < m_bitsetDataSize; i++)
         {
             if (m_bitset[i] != 0)
             {
@@ -210,11 +237,17 @@ public:
         return true;
     }
 
+    // Return the capacity of the affinity set (maximum number of processor indices it can hold)
+    size_t MaxCpuCount() const
+    {
+        return m_bitsetDataSize * BitsPerBitsetEntry;
+    }
+
     // Return number of processors in the affinity set
     size_t Count() const
     {
         size_t count = 0;
-        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+        for (size_t i = 0; i < m_bitsetDataSize * BitsPerBitsetEntry; i++)
         {
             if (Contains(i))
             {
@@ -478,6 +511,13 @@ public:
     // Return:
     //  Number of processors on the machine
     static uint32_t GetTotalProcessorCount();
+
+    // Gets the maximum number of processors that could potentially exist on
+    // the machine (including offlined ones). Processor indices returned by
+    // GetCurrentProcessorNumber are guaranteed to be less than this value.
+    // Return:
+    //  Maximum number of processors
+    static uint32_t GetMaxProcessorCount();
 
     // Is NUMA support available
     static bool CanEnableGCNumaAware();
