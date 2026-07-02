@@ -13,7 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Net
 {
     /// <summary>Provides simple domain name resolution functionality.</summary>
-    public static class Dns
+    public static partial class Dns
     {
         /// <summary>Gets the host name of the local machine.</summary>
         public static string GetHostName()
