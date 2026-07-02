@@ -21,6 +21,7 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a secret agreement for generating shared key material
         /// </summary>
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Interop.Libraries.NCrypt)]
         private static partial ErrorCode NCryptSecretAgreement(
             SafeNCryptKeyHandle hPrivKey,

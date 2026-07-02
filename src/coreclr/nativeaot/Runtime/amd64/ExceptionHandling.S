@@ -143,6 +143,7 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
         END_PROLOGUE
 
         mov     rbx, rdi
+        mov     r12, r8                                             // Save ExKind
         INLINE_GETTHREAD
         mov     rdi, rbx
 
@@ -161,7 +162,7 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
         mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx          // init the exception object to null
         mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1  // init to the first pass
         mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], r8b      // ExKind (from r8b)
+        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], r12b     // ExKind
 
         // link the ExInfo into the thread's ExInfo chain
         mov     rdx, [rax + OFFSETOF__Thread__m_pExInfoStackHead]

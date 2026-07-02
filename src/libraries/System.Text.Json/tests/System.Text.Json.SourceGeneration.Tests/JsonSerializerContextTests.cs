@@ -1164,5 +1164,42 @@ namespace System.Text.Json.SourceGeneration.Tests
         internal partial class NestedGenericConverterContext : JsonSerializerContext
         {
         }
+
+        public class ClassWithMultipleByteArrayProperties
+        {
+            public byte[]? Data1 { get; set; }
+            public byte[]? Data2 { get; set; }
+            public byte[]? Data3 { get; set; }
+        }
+
+        [JsonSerializable(typeof(ClassWithMultipleByteArrayProperties))]
+        internal partial class MultipleByteArrayContext : JsonSerializerContext
+        {
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 }, null)]
+        [InlineData(null, new byte[] { 4, 5, 6 }, new byte[] { 7, 8, 9 })]
+        [InlineData(null, null, null)]
+        public static void ClassWithMultipleByteArrayProperties_Roundtrip(byte[]? data1, byte[]? data2, byte[]? data3)
+        {
+            var value = new ClassWithMultipleByteArrayProperties
+            {
+                Data1 = data1,
+                Data2 = data2,
+                Data3 = data3,
+            };
+
+            string json = JsonSerializer.Serialize(value, MultipleByteArrayContext.Default.ClassWithMultipleByteArrayProperties);
+
+            if (data1 is null) Assert.Contains("\"Data1\":null", json);
+            if (data2 is null) Assert.Contains("\"Data2\":null", json);
+            if (data3 is null) Assert.Contains("\"Data3\":null", json);
+
+            ClassWithMultipleByteArrayProperties deserialized = JsonSerializer.Deserialize(json, MultipleByteArrayContext.Default.ClassWithMultipleByteArrayProperties);
+            Assert.Equal(value.Data1, deserialized.Data1);
+            Assert.Equal(value.Data2, deserialized.Data2);
+            Assert.Equal(value.Data3, deserialized.Data3);
+        }
     }
 }
