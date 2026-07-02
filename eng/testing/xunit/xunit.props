@@ -18,6 +18,8 @@
 
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
+    <!-- TODO: Remove this explicit PackageReference once NuGet stops raising NU1703 for packages like this one that don't provide an asset for the current target framework. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="4.5.0" NoWarn="NU1703" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
 
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version
