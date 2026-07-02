@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
         protected string GetDotNetExeForArchitecture()
         {
-            var executableName = DotnetCommandName;
+            var executableName = GetHostDotNetExecutable();
             // We expect x64 dotnet.exe to be on the path but we have to go searching for the x86 version.
             if (DotNetCommands.IsRunningX86OnX64(DeploymentParameters.RuntimeArchitecture))
             {
@@ -116,17 +116,51 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
             return executableName;
         }
 
+        // Mirrors dotnet/arcade's RemoteExecutor host resolution. The runtime libraries Helix harness runs
+        // tests against the testhost via $RUNTIME_PATH/dotnet by absolute path and doesn't add dotnet to PATH
+        // (that is only done for workload tests), so launching the host by the bare command name can fail on
+        // machines without a global dotnet. Use the host running this test, and when that isn't dotnet (for
+        // example an apphost-based testhost) resolve the muxer next to the running shared framework.
+        private static string GetHostDotNetExecutable()
+        {
+            string hostName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet.exe" : "dotnet";
+
+            string hostRunner = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(hostRunner) && string.Equals(Path.GetFileName(hostRunner), hostName, StringComparison.OrdinalIgnoreCase))
+            {
+                return hostRunner;
+            }
+
+            // The running host isn't dotnet (e.g. an apphost). dotnet is located three directories above the
+            // runtime directory, for example:
+            //   runtime -> <root>/shared/Microsoft.NETCore.App/<version>
+            //   dotnet  -> <root>/dotnet
+            // This also works for a locally built runtime/testhost.
+            var runtimeDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            if (!string.IsNullOrEmpty(runtimeDirectory))
+            {
+                string dotnetRoot = Path.GetFullPath(Path.Combine(runtimeDirectory, "..", "..", ".."));
+                string muxer = Path.Combine(dotnetRoot, hostName);
+                if (File.Exists(muxer))
+                {
+                    return muxer;
+                }
+            }
+
+            return DotnetCommandName;
+        }
+
         protected void ShutDownIfAnyHostProcess(Process hostProcess)
         {
-            if (hostProcess != null && !hostProcess.HasExited)
+            if (hostProcess is not null && IsRunning(hostProcess))
             {
                 Logger.LogInformation("Attempting to cancel process {0}", hostProcess.Id);
 
                 // Shutdown the host process.
                 hostProcess.KillTree();
-                if (!hostProcess.HasExited)
+                if (IsRunning(hostProcess))
                 {
-                    Logger.LogWarning("Unable to terminate the host process with process Id '{processId}", hostProcess.Id);
+                    Logger.LogWarning("Unable to terminate the host process with process Id '{processId}'", hostProcess.Id);
                 }
                 else
                 {
@@ -136,6 +170,22 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
             else
             {
                 Logger.LogWarning("Host process already exited or never started successfully.");
+            }
+        }
+
+        // Process.HasExited throws InvalidOperationException ("No process is associated with this object")
+        // when the process was never started (and also after the Process has been disposed, which disassociates
+        // it). Treat that as "not running" so shutdown cleanup stays non-throwing rather than masking the
+        // original start failure with a misleading exception.
+        private static bool IsRunning(Process hostProcess)
+        {
+            try
+            {
+                return !hostProcess.HasExited;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
             }
         }
 
