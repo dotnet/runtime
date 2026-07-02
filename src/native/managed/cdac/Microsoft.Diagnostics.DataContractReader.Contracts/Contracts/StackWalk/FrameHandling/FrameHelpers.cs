@@ -217,12 +217,16 @@ internal sealed class FrameHelpers
     public TargetCodePointer GetReturnAddress(Data.Frame frame)
     {
         FrameType frameType = GetFrameType(frame.Identifier);
+        TargetCodePointer returnAddress;
         switch (frameType)
         {
             // InlinedCallFrame: returns 0 if inactive, else m_pCallerReturnAddress
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
-                return InlinedCallFrameHasActiveCall(icf) ? icf.CallerReturnAddress : TargetCodePointer.Null;
+                returnAddress = InlinedCallFrameHasActiveCall(icf)
+                    ? icf.CallerReturnAddress
+                    : TargetCodePointer.Null;
+                break;
 
             // TransitionFrame types: read return address from the transition block
             case FrameType.FramedMethodFrame:
@@ -234,12 +238,14 @@ internal sealed class FrameHelpers
             case FrameType.DynamicHelperFrame:
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
                 Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
-                return tb.ReturnAddress;
+                returnAddress = tb.ReturnAddress;
+                break;
 
             // SoftwareExceptionFrame: stored m_ReturnAddress
             case FrameType.SoftwareExceptionFrame:
                 Data.SoftwareExceptionFrame sef = _target.ProcessedData.GetOrAdd<Data.SoftwareExceptionFrame>(frame.Address);
-                return sef.ReturnAddress;
+                returnAddress = sef.ReturnAddress;
+                break;
 
             // ResumableFrame / RedirectedThreadFrame: RIP from captured context
             case FrameType.ResumableFrame:
@@ -263,12 +269,14 @@ internal sealed class FrameHelpers
             // HijackFrame: stored m_ReturnAddress
             case FrameType.HijackFrame:
                 Data.HijackFrame hf = _target.ProcessedData.GetOrAdd<Data.HijackFrame>(frame.Address);
-                return hf.ReturnAddress;
+                returnAddress = hf.ReturnAddress;
+                break;
 
             // TailCallFrame: stored m_ReturnAddress
             case FrameType.TailCallFrame:
                 Data.TailCallFrame tcf = _target.ProcessedData.GetOrAdd<Data.TailCallFrame>(frame.Address);
-                return tcf.ReturnAddress;
+                returnAddress = tcf.ReturnAddress;
+                break;
 
             // FuncEvalFrame: returns 0 during exception eval
             case FrameType.FuncEvalFrame:
@@ -276,12 +284,15 @@ internal sealed class FrameHelpers
                 Data.DebuggerEval dbgEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
                 if (!dbgEval.EvalUsesHijack)
                     return TargetCodePointer.Null;
-                return funcEval.ReturnAddress;
+                returnAddress = funcEval.ReturnAddress;
+                break;
 
             // Base Frame and unknown types: return 0 (matches native Frame::GetReturnAddressPtr_Impl)
             default:
                 return TargetCodePointer.Null;
         }
+
+        return CodePointerUtils.StripPtrAuthFromReturnAddress(returnAddress, _target);
     }
 
     /// <summary>

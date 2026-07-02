@@ -25,11 +25,7 @@ internal static class CodePointerUtils
         {
             return new TargetCodePointer(address.Value | Arm32ThumbBit);
         }
-        else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            return new TargetCodePointer(address.Value & Arm64PtrAuthMask);
-        }
-        Debug.Assert(flags == default);
+        Debug.Assert((flags & ~CodePointerFlags.HasArm64PtrAuth) == 0);
         return new TargetCodePointer(address.Value);
     }
 
@@ -41,12 +37,24 @@ internal static class CodePointerUtils
         {
             return new TargetPointer(code.Value & ~Arm32ThumbBit);
         }
-        else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            return new TargetPointer(code.Value & Arm64PtrAuthMask);
-        }
-        Debug.Assert(flags == default);
+        Debug.Assert((flags & ~CodePointerFlags.HasArm64PtrAuth) == 0);
         return new TargetPointer(code.Value);
+    }
+
+    internal static TargetCodePointer StripPtrAuthFromReturnAddress(TargetCodePointer returnAddress, Target target)
+    {
+        if (returnAddress == TargetCodePointer.Null)
+        {
+            return TargetCodePointer.Null;
+        }
+
+        IPlatformMetadata metadata = target.Contracts.PlatformMetadata;
+        CodePointerFlags flags = metadata.GetCodePointerFlags();
+        if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
+        {
+            return new TargetCodePointer(returnAddress.Value & Arm64PtrAuthMask);
+        }
+        return returnAddress;
     }
 
 }

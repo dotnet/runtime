@@ -112,11 +112,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         {
             return codePointer.AsTargetPointer & ~1ul;
         }
-        if (_codePointerFlags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            return CodePointerUtils.AddressFromCodePointer(codePointer, _target);
-        }
-        Debug.Assert(_codePointerFlags == 0);
+        Debug.Assert((_codePointerFlags & ~CodePointerFlags.HasArm64PtrAuth) == 0);
         return codePointer.AsTargetPointer;
     }
 

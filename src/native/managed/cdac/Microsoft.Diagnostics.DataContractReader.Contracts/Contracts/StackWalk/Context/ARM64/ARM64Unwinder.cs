@@ -752,7 +752,7 @@ internal class ARM64Unwinder(Target target)
                     return false;
                 }
 
-                status = UnwindCustom(ref context, curCode);
+                status = UnwindCustom(ref context, curCode, isReturnAddressSigned);
                 finalPcFromLr = false;
             }
 
@@ -819,7 +819,7 @@ internal class ARM64Unwinder(Target target)
             if (finalPcFromLr)
             {
                 context.Pc = isReturnAddressSigned
-                    ? CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(context.Lr), _target).Value
+                    ? CodePointerUtils.StripPtrAuthFromReturnAddress(new TargetCodePointer(context.Lr), _target).Value
                     : context.Lr;
             }
         }
@@ -829,7 +829,8 @@ internal class ARM64Unwinder(Target target)
 
     private unsafe bool UnwindCustom(
         ref ARM64Context context,
-        byte customCode)
+        byte customCode,
+        bool isReturnAddressSigned)
     {
         ulong startingSp = context.Sp;
 
@@ -976,7 +977,9 @@ internal class ARM64Unwinder(Target target)
 
             case 0xec:  // MSFT_OP_CLEAR_UNWOUND_TO_CALL
                 context.ContextFlags &= (uint)~ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL;
-                context.Pc = CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(context.Lr), _target).Value;
+                context.Pc = isReturnAddressSigned
+                    ? CodePointerUtils.StripPtrAuthFromReturnAddress(new TargetCodePointer(context.Lr), _target).Value
+                    : context.Lr;
                 break;
 
             default:
