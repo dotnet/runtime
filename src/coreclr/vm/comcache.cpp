@@ -1030,7 +1030,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     }
     else
     {
-        SafeComHolderPreemp<IMarshal> pMarshal = NULL;
+        SafeComHolderPreemp<IMarshal> pMarshal;
 
         // If not, then we can try to determine if the component aggregates the FTM via IMarshal.
         hr = SafeQueryInterfacePreemp(pUnk, IID_IMarshal, (IUnknown **)&pMarshal);

@@ -102,7 +102,7 @@ Unknown_QueryInterface_Internal(ComCallWrapper* pWrap, IUnknown* pUnk, REFIID ri
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    SafeComHolderPreemp<IUnknown> pDestItf = NULL;
+    SafeComHolderPreemp<IUnknown> pDestItf;
 
     // Validate the arguments.
     if (!ppv)
@@ -171,8 +171,7 @@ ErrExit:
     {
         // If we succeeded in obtaining the requested IP, set ppv to the interface.
         _ASSERTE(pDestItf != NULL);
-        *ppv = pDestItf;
-        pDestItf.SuppressRelease();
+        *ppv = pDestItf.Detach();
     }
 
     return hr;
@@ -958,9 +957,7 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
         }
         if (bUseThisErrorInfo)
         {
-            pRetErrorInfo = pErrorInfo;
-            pErrorInfo.SuppressRelease();
-            pErrorInfo = NULL;
+            pRetErrorInfo = pErrorInfo.Detach();
         }
     }
 
@@ -2089,7 +2086,7 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
 
     // In case of CoreCLR, we always use the standard marshaller.
 
-    SafeComHolderPreemp<IUnknown> pMarshalerObj = NULL;
+    SafeComHolderPreemp<IUnknown> pMarshalerObj;
     IfFailRet(CoCreateFreeThreadedMarshaler(NULL, &pMarshalerObj));
     return SafeQueryInterfacePreemp(pMarshalerObj, IID_IMarshal, (IUnknown**)ppMarshalRet);
 }
@@ -2134,7 +2131,7 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
         }
     }
 
-    SafeComHolderPreemp<IMarshal> pMsh = NULL;
+    SafeComHolderPreemp<IMarshal> pMsh;
     hr = GetSpecialMarshaler(pMarsh, pSimpleWrap, dwDestContext, (IMarshal **)&pMsh);
     if (FAILED(hr))
         return hr;
@@ -2163,7 +2160,7 @@ HRESULT __stdcall Marshal_GetMarshalSizeMax (
 
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pMarsh);
 
-    SafeComHolderPreemp<IMarshal> pMsh = NULL;
+    SafeComHolderPreemp<IMarshal> pMsh;
     HRESULT hr = GetSpecialMarshaler(pMarsh, pSimpleWrap, dwDestContext, (IMarshal **)&pMsh);
     if (FAILED(hr))
         return hr;
@@ -2204,7 +2201,7 @@ HRESULT __stdcall Marshal_MarshalInterface (
         }
     }
 
-    SafeComHolderPreemp<IMarshal> pMsh = NULL;
+    SafeComHolderPreemp<IMarshal> pMsh;
     hr = GetSpecialMarshaler(pMarsh, pSimpleWrap, dwDestContext, (IMarshal **)&pMsh);
     if (FAILED(hr))
         return hr;

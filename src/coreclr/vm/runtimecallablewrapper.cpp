@@ -1248,7 +1248,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     LogInteropAddRef(pUnk, cbRef, "RCWCache::CreateRCW: Addref pUnk because creating new RCW");
 
     // Make sure we release AddRef-ed pUnk in case of exceptions
-    SafeComHolderPreemp<IUnknown> pUnkHolder = pUnk;
+    SafeComHolderPreemp<IUnknown> pUnkHolder{ pUnk };
 
     // Log the creation
     LogRCWCreate(pWrap, pUnk);
@@ -1256,7 +1256,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     // Initialize wrapper
     pWrap->Initialize(pUnk, dwSyncBlockIndex, pClassMT);
 
-    pUnkHolder.SuppressRelease();
+    pUnkHolder.Detach();
 
     RETURN pWrap;
 }

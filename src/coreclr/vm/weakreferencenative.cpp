@@ -60,10 +60,10 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
 
     // Using the IWeakReference*, get ahold of the target native COM object's IInspectable*.  If this resolve fails, then we
     // assume that the underlying native COM object is no longer alive, and thus we cannot create a new RCW for it.
-    SafeComHolderPreemp<IInspectable> pTarget = nullptr;
+    SafeComHolderPreemp<IInspectable> pTarget;
     if (SUCCEEDED(pComWeakReference->Resolve(IID_IInspectable, &pTarget)))
     {
-        if (!pTarget.IsNull())
+        if (pTarget != nullptr)
         {
             // Get the IUnknown identity for the underlying object
             SafeQueryInterfacePreemp(pTarget, IID_IUnknown, &pTargetIdentity);
@@ -123,8 +123,7 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
         SafeComHolderPreemp<IWeakReference> weakReferenceHolder;
         if (!FAILED(pWeakReferenceSource->GetWeakReference(&weakReferenceHolder)))
         {
-            weakReferenceHolder.SuppressRelease();
-            pWeakReference = weakReferenceHolder.GetValue();
+            pWeakReference = weakReferenceHolder.Detach();
         }
     }
 
