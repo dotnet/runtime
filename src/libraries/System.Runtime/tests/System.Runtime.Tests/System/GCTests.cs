@@ -297,7 +297,7 @@ namespace System.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsMultithreadingSupported))] // Races finalization across threads; meaningless on single-threaded platforms.
         public static void WaitForPendingFinalizersRaces()
         {
             Task.Run(Test);

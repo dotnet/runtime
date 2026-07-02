@@ -140,6 +140,40 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL1(int32_t, CallInterpreter_D64_RetI32, double);
+    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_D64_RetI32, double arg0, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            double args[1];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = arg0;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL1(int64_t, CallInterpreter_D64_RetI64, double);
+    WASM_CALLABLE_FUNC_2(int64_t, CallInterpreter_D64_RetI64, double arg0, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            double args[1];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = arg0;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        int64_t result = 0;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return result;
+    }
     FCDECL2(int32_t, CallInterpreter_I32_I32_RetI32, int32_t, int32_t);
     WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_I32_RetI32, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
     {
@@ -152,6 +186,24 @@ namespace
         transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    FCDECL2(int32_t, CallInterpreter_I32_S8_RetI32, int32_t, int8_t*);
+    WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_S8_RetI32, int32_t arg0, int8_t* arg1, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[2];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = (int64_t)arg0;
+        memcpy(&transitionBlock.args[1], arg1, 8);
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
         void * result = NULL;
@@ -304,6 +356,9 @@ const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
     { "Iiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32 },
     { "Iiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32 },
     { "Iiiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "Iidp", (void*)&CallInterpreter_D64_RetI32 },
+    { "Ildp", (void*)&CallInterpreter_D64_RetI64 },
+    { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 }
 };
 
 const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
@@ -367,21 +422,6 @@ extern "C" __attribute__((naked)) PCODE STDCALL DelayLoad_MethodCall(TransitionB
          "local.get 0\n" /* Reload the saved previous __stack_pointer value for restoration into the stack global */
          "global.set __stack_pointer\n"
          "return" :: "i" (DelayLoad_MethodCallImpl));
-}
-
-extern "C" void STDCALL DelayLoad_Helper()
-{
-    PORTABILITY_ASSERT("DelayLoad_Helper is not implemented on wasm");
-}
-
-extern "C" void STDCALL DelayLoad_Helper_Obj()
-{
-    PORTABILITY_ASSERT("DelayLoad_Helper_Obj is not implemented on wasm");
-}
-
-extern "C" void STDCALL DelayLoad_Helper_ObjObj()
-{
-    PORTABILITY_ASSERT("DelayLoad_Helper_ObjObj is not implemented on wasm");
 }
 
 extern "C" void STDCALL PInvokeImportThunk()
@@ -480,12 +520,26 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     PORTABILITY_ASSERT("FaultingExceptionFrame::UpdateRegDisplay_Impl is not implemented on wasm");
 }
 
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     pRD->IsCallerContextValid = FALSE;
 
     pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
-    pRD->pCurrentContext->InterpreterSP = GetSP();
+    TADDR sp = GetSP();
+    pRD->pCurrentContext->InterpreterSP = sp;
+
+    // Recover the frame pointer so GC-info readers can locate frame slots, but only when
+    // the stack pointer refers to a real R2R frame. When this frame represents a transition
+    // out of interpreted code, GetSP() returns the address just past the TransitionBlock (the
+    // outgoing argument area) rather than a frame pointer (see TransitionFrame::GetSP). Decoding
+    // that would dereference arbitrary memory, so leave the frame pointer as 0 in that case.
+    TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
+    bool hasR2RStackPointer = (pTransitionBlock != NULL) &&
+                              (pTransitionBlock->m_ReturnAddress != 0) &&
+                              (pTransitionBlock->m_StackPointer != 0);
+    pRD->pCurrentContext->InterpreterFP = hasR2RStackPointer ? GetWasmFramePointerFromStackPointer(sp) : 0;
 
     SyncRegDisplayToCurrentContext(pRD);
 
@@ -538,6 +592,12 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInv
          "i32.store       0\n"               // And save a terminator to the stack frame.
 
          "local.get       3\n"               // Get the stack pointer
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK_FP_OFFSET) "\n"
+         "i32.add\n"                          // Compute the address next to the terminator
+         "local.get       1\n"               // Get the establishing (method) frame pointer argument
+         "i32.store       0\n"               // Save it so a handler nested in this funclet can recover its establishing frame.
+
+         "local.get       3\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
          "local.get       2\n"               // Get the exception object for the funclet
          "local.get       0\n"               // Get the funclet address to call
@@ -565,6 +625,12 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletTo
          "local.get       2\n"               // Get the stack pointer
          "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
          "i32.store       0\n"               // And save a terminator to the stack frame.
+
+         "local.get       2\n"               // Get the stack pointer
+         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK_FP_OFFSET) "\n"
+         "i32.add\n"                          // Compute the address next to the terminator
+         "local.get       1\n"               // Get the establishing (method) frame pointer argument
+         "i32.store       0\n"               // Save it so a handler nested in this funclet can recover its establishing frame.
 
          "local.get       2\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
@@ -1449,6 +1515,15 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
     }
 }
 
+// Recover the establishing (method) frame pointer stored by CallFuncletWith[out]Throwable next to the
+// TERMINATE_R2R_STACK_WALK marker. 'sp' must point at such a synthetic terminator frame (i.e. the SP
+// reached after natively unwinding a funclet that the VM invoked via CallFunclet).
+TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp)
+{
+    _ASSERTE(*(int*)sp == TERMINATE_R2R_STACK_WALK);
+    return *(TADDR*)(sp + TERMINATE_R2R_STACK_WALK_FP_OFFSET);
+}
+
 TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
 {
     TADDR fp = GetWasmFramePointerFromStackPointer(sp);
@@ -1498,6 +1573,7 @@ RtlVirtualUnwind (
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
         ContextRecord->InterpreterSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
         ContextRecord->InterpreterIP = GetWasmVirtualIPFromStackPointer(ContextRecord->InterpreterSP);
+        ContextRecord->InterpreterFP = GetWasmFramePointerFromStackPointer(ContextRecord->InterpreterSP);
     }
     else
     {
@@ -1505,6 +1581,7 @@ RtlVirtualUnwind (
         _ASSERTE(FALSE);
         ContextRecord->InterpreterIP = 0;
         ContextRecord->InterpreterSP = 0;
+        ContextRecord->InterpreterFP = 0;
     }
 
     return nullptr;

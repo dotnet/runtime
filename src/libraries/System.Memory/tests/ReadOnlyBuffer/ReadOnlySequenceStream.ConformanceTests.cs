@@ -35,8 +35,6 @@ namespace System.Memory.Tests
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData)
             => Task.FromResult<Stream?>(null);
 
-        [Theory]
-        [MemberData(nameof(AllSeekModes))]
         public override async Task Seek_PastEnd_ReadReturns0(SeekMode mode)
         {
             await base.Seek_PastEnd_ReadReturns0(mode);

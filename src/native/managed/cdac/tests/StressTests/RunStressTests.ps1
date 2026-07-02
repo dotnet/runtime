@@ -11,14 +11,18 @@
 
     Supports Windows, Linux, and macOS.
 
-    The DOTNET_CdacStress environment variable controls WHEN verification fires:
-      TRIGGERS:
-        0x001 = ALLOC — verify at every managed allocation
-      MODIFIER:
-        0x200 = VERBOSE — rich per-ref diagnostics in the log
+    The DOTNET_CdacStress environment variable is split into byte regions:
+      WHERE (byte 0): when verification fires
+        0x00000001 = ALLOC — verify at every managed allocation
+      WHAT (byte 1): which sub-check runs at each fired trigger
+        0x00000100 = GCREFS  — compare cDAC GetStackReferences vs runtime GC roots
+        0x00000200 = ARGITER — compare cDAC EnumerateArguments vs runtime ComputeCallRefMap
+      MODIFIER (byte 2):
+        0x00010000 = VERBOSE — rich per-ref diagnostics in the log
 
-    The runtime's own GC root enumeration is the single oracle. Any trigger
-    causes cDAC's GetStackReferences output to be compared against it.
+    The runtime's own GC root enumeration is the single oracle for GCREFS.
+    A useful configuration combines at least one WHERE bit with at least one
+    WHAT bit (e.g. 0x101 = ALLOC + GCREFS).
 
 .PARAMETER Configuration
     Runtime configuration: Checked (default) or Debug.
@@ -32,9 +36,10 @@
     specific failure.
 
 .PARAMETER CdacStress
-    Hex value for DOTNET_CdacStress flags. Default: 0x001 (ALLOC).
+    Hex value for DOTNET_CdacStress flags. Default: 0x101 (ALLOC + GCREFS).
     Common values:
-      0x001 = ALLOC (allocation points only, every hit verified)
+      0x101 = ALLOC + GCREFS  (allocation points, GC-refs comparison)
+      0x301 = ALLOC + GCREFS + ARGITER  (also runs the ArgIterator sub-check)
 
 .PARAMETER Debuggee
     Which debuggee(s) to run. Default: All.
@@ -49,7 +54,7 @@
 .EXAMPLE
     ./RunStressTests.ps1 -SkipBuild
     ./RunStressTests.ps1 -Debuggee BasicAlloc -SkipBuild
-    ./RunStressTests.ps1 -CdacStress 0x201 -SkipBuild              # ALLOC + VERBOSE
+    ./RunStressTests.ps1 -CdacStress 0x10101 -SkipBuild           # ALLOC + GCREFS + VERBOSE
 #>
 param(
     [ValidateSet("Checked", "Debug")]
@@ -58,7 +63,7 @@ param(
     [ValidateSet("Release", "Checked", "Debug")]
     [string]$CdacConfiguration = "Release",
 
-    [string]$CdacStress = "0x001",
+    [string]$CdacStress = "0x101",
 
     [string[]]$Debuggee = @(),
 
