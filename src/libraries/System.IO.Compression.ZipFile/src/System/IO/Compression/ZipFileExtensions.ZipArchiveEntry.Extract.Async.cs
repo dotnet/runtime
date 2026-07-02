@@ -109,7 +109,7 @@ public static partial class ZipFileExtensions
         catch
         {
             // Clean up the temporary file if extraction failed
-            if (tempPath is not null && File.Exists(tempPath))
+            if (tempPath is not null)
             {
                 // Ignore exceptions during cleanup; the original exception is more important
                 try { File.Delete(tempPath); } catch { }
@@ -118,7 +118,65 @@ public static partial class ZipFileExtensions
         }
     }
 
-    internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Asynchronously creates a file on the file system with the entry's contents using the specified extraction options.
+    /// </summary>
+    public static Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, ZipExtractionOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, options.Password, cancellationToken);
+    }
+
+    private static async Task ExtractToFileAsync(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);
+
+        // When overwriting, extract to a temporary file first to avoid corrupting the destination file
+        // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
+        string extractPath = destinationFileName;
+        string? tempPath = null;
+
+        if (overwrite && File.Exists(destinationFileName))
+        {
+            tempPath = Path.GetTempFileName();
+            extractPath = tempPath;
+        }
+
+        try
+        {
+            FileStream fs = new FileStream(extractPath, fileStreamOptions);
+            await using (fs.ConfigureAwait(false))
+            {
+                Stream es = await source.OpenAsync(password.Span, cancellationToken: cancellationToken).ConfigureAwait(false);
+                await using (es.ConfigureAwait(false))
+                {
+                    await es.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            // Move the temporary file to the destination only after successful extraction
+            if (tempPath is not null)
+            {
+                File.Move(tempPath, destinationFileName, overwrite: true);
+            }
+
+            ExtractToFileFinalize(source, destinationFileName);
+        }
+        catch
+        {
+            // Clean up the temporary file if extraction failed
+            if (tempPath is not null)
+            {
+                try { File.Delete(tempPath); } catch { }
+            }
+            throw;
+        }
+    }
+
+    internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, ReadOnlyMemory<char> password = default, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -127,7 +185,7 @@ public static partial class ZipFileExtensions
             // If it is a file:
             // Create containing directory:
             Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-            await source.ExtractToFileAsync(fileDestinationPath, overwrite: overwrite, cancellationToken).ConfigureAwait(false);
+            await ExtractToFileAsync(source, fileDestinationPath, overwrite, password, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -17,6 +17,9 @@
     <Compile Include="CompressionStreamUnitTests.ZLib.cs" />
     <Compile Include="CompressionStreamUnitTests.Deflate.cs" />
     <Compile Include="CompressionStreamUnitTests.Gzip.cs" />
+    <Compile Include="ZipCryptoStreamConformanceTests.cs" />
+    <Compile Include="WinZipAesStreamConformanceTests.cs" />
+    <Compile Include="ZipCryptoStreamWrappedConformanceTests.cs" />
     <Compile Include="Utilities\ClampedReadStream.cs" />
     <Compile Include="Utilities\StripHeaderAndFooter.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />

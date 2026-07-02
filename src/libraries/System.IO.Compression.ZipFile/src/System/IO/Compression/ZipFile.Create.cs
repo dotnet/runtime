@@ -400,6 +400,50 @@ namespace System.IO.Compression
                                                CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
             DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding);
 
+        /// <summary>
+        /// Creates a zip archive at the specified path containing the files and directories from the specified directory,
+        /// using the specified creation options.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived.</param>
+        /// <param name="destinationArchiveFileName">The path of the archive to be created.</param>
+        /// <param name="options">The creation options including compression level, encryption, encoding, and whether to include the base directory.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destinationArchiveFileName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, ZipFileCreationOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+            {
+                throw new ArgumentException(SR.EmptyPassword, nameof(options));
+            }
+
+            (sourceDirectoryName, destinationArchiveFileName) = GetFullPathsForDoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName);
+
+            using ZipArchive archive = Open(destinationArchiveFileName, ZipArchiveMode.Create, options.EntryNameEncoding);
+            CreateZipArchiveFromDirectory(sourceDirectoryName, archive, options.CompressionLevel, options.IncludeBaseDirectory, options.Password.Span, options.EncryptionMethod);
+        }
+
+        /// <summary>
+        /// Creates a zip archive in the specified stream containing the files and directories from the specified directory,
+        /// using the specified creation options.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived.</param>
+        /// <param name="destination">The stream where the zip archive is to be stored.</param>
+        /// <param name="options">The creation options including compression level, encryption, encoding, and whether to include the base directory.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destination"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, ZipFileCreationOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+            {
+                throw new ArgumentException(SR.EmptyPassword, nameof(options));
+            }
+
+            sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, options.CompressionLevel);
+
+            using ZipArchive archive = new ZipArchive(destination, ZipArchiveMode.Create, leaveOpen: true, options.EntryNameEncoding);
+            CreateZipArchiveFromDirectory(sourceDirectoryName, archive, options.CompressionLevel, options.IncludeBaseDirectory, options.Password.Span, options.EncryptionMethod);
+        }
+
         private static void DoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
                                                   CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding)
 
@@ -424,7 +468,8 @@ namespace System.IO.Compression
         }
 
         private static void CreateZipArchiveFromDirectory(string sourceDirectoryName, ZipArchive archive,
-                                                          CompressionLevel? compressionLevel, bool includeBaseDirectory)
+                                                          CompressionLevel? compressionLevel, bool includeBaseDirectory,
+                                                          ReadOnlySpan<char> password = default, ZipEncryptionMethod encryptionMethod = ZipEncryptionMethod.None)
         {
             (bool directoryIsEmpty, string basePath, DirectoryInfo di, FileSystemEnumerable<(string, CreateEntryType)> fse) =
                 InitializeCreateZipArchiveFromDirectory(sourceDirectoryName, includeBaseDirectory);
@@ -437,17 +482,13 @@ namespace System.IO.Compression
                 {
                     case CreateEntryType.File:
                         {
-                            // Create entry for file:
                             string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
-                            ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel);
+                            ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel, password, encryptionMethod);
                         }
                         break;
                     case CreateEntryType.Directory:
                         if (ArchivingUtils.IsDirEmpty(fullPath))
                         {
-                            // Create entry marking an empty dir:
-                            // FullName never returns a directory separator character on the end,
-                            // but Zip archives require it to specify an explicit directory:
                             string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length), appendPathSeparator: true);
                             archive.CreateEntry(entryName);
                         }
