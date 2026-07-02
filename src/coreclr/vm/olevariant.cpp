@@ -2205,7 +2205,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    SafeComHolder<ITypeInfo> pTypeInfo = NULL;
+    SafeComHolderAny<ITypeInfo> pTypeInfo;
     RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.

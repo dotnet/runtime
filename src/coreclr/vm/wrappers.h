@@ -52,19 +52,32 @@ private:
 };
 
 template <typename TYPE>
-inline void SafeComRelease(TYPE *value)
+struct SafeComHolderAnyTraits final
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    static_assert(
+        std::is_base_of<IUnknown, TYPE>::value,
+        "TYPE must derive from IUnknown");
 
-    SafeRelease((IUnknown*)value);
-}
+    using Type = TYPE*;
+    static constexpr Type Default() { return nullptr; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
 
+        SafeRelease(value);
+    }
+};
+
+// Releases the held COM interface regardless of the current GC mode, switching
+// to preemptive internally when required. Use SafeComHolderPreemp instead when
+// the release will always occur in preemptive mode.
 template<typename _TYPE>
-using SafeComHolder = SpecializedWrapper<_TYPE, SafeComRelease<_TYPE>>;
+using SafeComHolderAny = LifetimeHolder<SafeComHolderAnyTraits<_TYPE>>;
 
 template <typename TYPE>
 struct SafeComHolderPreempTraits final
@@ -89,7 +102,7 @@ struct SafeComHolderPreempTraits final
 };
 
 // Use this holder if you're already in preemptive mode for other reasons,
-// use SafeComHolder otherwise.
+// use SafeComHolderAny otherwise.
 template<typename _TYPE>
 using SafeComHolderPreemp = LifetimeHolder<SafeComHolderPreempTraits<_TYPE>>;
 

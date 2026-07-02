@@ -816,7 +816,7 @@ public:
 //-----------------------------------------------------------------------------
 // NOTE: THIS IS UNSAFE TO USE IN THE VM for interop COM objects!!
 //  WE DO NOT CORRECTLY CHANGE TO PREEMPTIVE MODE BEFORE CALLING RELEASE!!
-//  USE SafeComHolder
+//  USE SafeComHolderAny
 //
 // ReleaseHolder : COM Interface holder for use outside the VM (or on well known instances
 //                  which do not need preemptive Release)

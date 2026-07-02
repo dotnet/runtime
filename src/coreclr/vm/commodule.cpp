@@ -181,7 +181,7 @@ namespace
         mdToken             rs;             // resolution scope
         DWORD               dwFlags;
 
-        SafeComHolder<IMetaDataImport> pImport;
+        SafeComHolderAny<IMetaDataImport> pImport;
         IfFailThrow( pEmit->QueryInterface(IID_IMetaDataImport, (void **)&pImport) );
         IfFailThrow( pImport->GetTypeDefProps(td, szTypeDef, MAX_CLASSNAME_LENGTH, NULL, &dwFlags, NULL) );
         if ( IsTdNested(dwFlags) )

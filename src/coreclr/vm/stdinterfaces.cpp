@@ -664,9 +664,9 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     ComMethodTable *pComMT              = NULL;
     MethodTable* pOriginalClass         = pClass;
     HRESULT                 hr          = S_OK;
-    SafeComHolder<ITypeLib> pITLB       = NULL;
-    SafeComHolder<ITypeInfo> pTI        = NULL;
-    SafeComHolder<ITypeInfo> pTIDef     = NULL;  // Default typeinfo of a coclass.
+    SafeComHolderAny<ITypeLib> pITLB;
+    SafeComHolderAny<ITypeInfo> pTI;
+    SafeComHolderAny<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
     ComCallWrapperTemplate *pTemplate   = NULL;
 
     GCX_PREEMP();
@@ -744,8 +744,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
         IfFailGo(pITLB->GetTypeInfoOfGuid(clsid, &pTI));
         IfFailGo(GetDefaultInterfaceForCoclass(pTI, &pTIDef));
 
-        *ppTI = pTIDef;
-        pTIDef.SuppressRelease();
+        *ppTI = pTIDef.Detach();
     }
     else
     {

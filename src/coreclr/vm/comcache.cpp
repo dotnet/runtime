@@ -899,7 +899,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 
     HRESULT hrCDH = S_OK;
     IUnknown * pUnk = NULL;
-    SafeComHolder<IStream> spStream;
+    SafeComHolderAny<IStream> spStream;
 
     CheckValidIUnkEntry();
 
@@ -938,7 +938,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
         // GetInterface for the current context
         HRESULT hr;
         hr = CoUnmarshalInterface(spStream, IID_IUnknown, reinterpret_cast<void**>(&pUnk));
-        spStream.Release();
+        spStream.Free();
 
         if (FAILED(hr))
         {

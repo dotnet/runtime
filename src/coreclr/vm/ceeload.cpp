@@ -1756,7 +1756,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // where right now...</REVISIT_TODO>
         HRESULT hr = S_OK;
 
-        SafeComHolder<ISymUnmanagedBinder> pBinder;
+        SafeComHolderAny<ISymUnmanagedBinder> pBinder;
 
         if (g_pDebugInterface == NULL)
         {
@@ -1784,11 +1784,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // hard disk for files.
         ErrorModeHolder errorMode{};
 
-        SafeComHolder<ISymUnmanagedReader> pReader;
+        SafeComHolderAny<ISymUnmanagedReader> pReader;
 
         if (fInMemorySymbols)
         {
-            SafeComHolder<IStream> pIStream( NULL );
+            SafeComHolderAny<IStream> pIStream( NULL );
 
             // If debug stream is already specified, don't bother to go through fusion
             // This is the common case for case 2 (hosted modules) and case 3 (Ref.Emit).
@@ -1831,7 +1831,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         if (SUCCEEDED(hr))
         {
-            m_pISymUnmanagedReader = pReader.Extract();
+            m_pISymUnmanagedReader = pReader.Detach();
             LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %s\n", GetDebugName()));
         }
         else
@@ -1890,7 +1890,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     STANDARD_VM_CONTRACT;
 
     // Create a IStream from the memory for the syms.
-    SafeComHolder<CGrowableStream> pStream(new CGrowableStream());
+    SafeComHolderAny<CGrowableStream> pStream(new CGrowableStream());
 
     // Do not need to AddRef the CGrowableStream because the constructor set it to 1
     // ref count already. The Module will keep a copy for its own use.
