@@ -4,6 +4,7 @@
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Runtime112629.cs" />
     <ProjectReference Include="AssemblyWithDot\AssemblyWithDot.csproj" Aliases="AssemblyWithDot" />
     <ProjectReference Include="AssemblyWithUnderscore\AssemblyWithUnderscore.csproj" Aliases="AssemblyWithUnderscore" />
   </ItemGroup>

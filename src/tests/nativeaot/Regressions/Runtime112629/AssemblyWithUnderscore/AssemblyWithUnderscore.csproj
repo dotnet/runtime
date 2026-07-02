@@ -2,4 +2,7 @@
   <PropertyGroup>
     <AssemblyName>A_B</AssemblyName>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TestType.cs" />
+  </ItemGroup>
 </Project>
