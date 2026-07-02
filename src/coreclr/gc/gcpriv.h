@@ -1660,9 +1660,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
-#endif
 
     PER_HEAP_ISOLATED_METHOD int get_plan_gen_num (int gen_number);
 
@@ -2445,11 +2443,9 @@ private:
 #endif //USE_REGIONS
                            );
     PER_HEAP_METHOD void delete_heap_segment (heap_segment* seg, BOOL consider_hoarding=FALSE);
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD BOOL insert_ro_segment (heap_segment* seg);
     PER_HEAP_METHOD void remove_ro_segment (heap_segment* seg);
     PER_HEAP_METHOD void update_ro_segment (heap_segment* seg, uint8_t* allocated, uint8_t* committed);
-#endif //FEATURE_BASICFREEZE
 
 #ifndef USE_REGIONS
     PER_HEAP_METHOD BOOL set_ro_segment_in_range (heap_segment* seg);
@@ -2568,11 +2564,9 @@ private:
     PER_HEAP_METHOD BOOL mark_array_bit_set (size_t mark_bit);
     PER_HEAP_METHOD void mark_array_clear_marked (uint8_t* add);
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD void seg_set_mark_array_bits_soh (heap_segment* seg);
     PER_HEAP_METHOD void clear_mark_array (uint8_t* from, uint8_t* end);
     PER_HEAP_METHOD void seg_clear_mark_array_bits_soh (heap_segment* seg);
-#endif // FEATURE_BASICFREEZE
 
     PER_HEAP_METHOD void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
@@ -2895,12 +2889,10 @@ private:
                                       BOOL& allocate_in_condemned);
 #endif //!USE_REGIONS
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD void seg_set_mark_bits (heap_segment* seg);
     PER_HEAP_METHOD void seg_clear_mark_bits (heap_segment* seg);
     PER_HEAP_METHOD void mark_ro_segments();
     PER_HEAP_METHOD void sweep_ro_segments();
-#endif // FEATURE_BASICFREEZE
 
     PER_HEAP_METHOD void convert_to_pinned_plug (BOOL& last_npinned_plug_p,
                                  BOOL& last_pinned_plug_p,
@@ -5692,9 +5684,7 @@ public:
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int n_max_heaps;
 #endif //MULTIPLE_HEAPS
 
-#ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_FIELD_MAINTAINED sorted_table* seg_table;
-#endif //FEATURE_BASICFREEZE
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION

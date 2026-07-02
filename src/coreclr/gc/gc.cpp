@@ -674,9 +674,7 @@ size_t      gc_heap::g_mark_list_piece_total_size;
 
 seg_mapping* seg_mapping_table;
 
-#ifdef FEATURE_BASICFREEZE
 sorted_table* gc_heap::seg_table;
-#endif //FEATURE_BASICFREEZE
 
 #ifdef MULTIPLE_HEAPS
 GCEvent     gc_heap::ee_suspend_event;
@@ -1545,7 +1543,6 @@ void gc_history_global::print()
 #endif //DT_LOG
 }
 
-#ifdef FEATURE_BASICFREEZE
 sorted_table*
 sorted_table::make_sorted_table ()
 {
@@ -1745,9 +1742,7 @@ sorted_table::clear()
     count = 1;
     buckets()[0].add = MAX_PTR;
 }
-#endif //FEATURE_BASICFREEZE
 
-#ifdef FEATURE_BASICFREEZE
 
 heap_segment* ro_segment_lookup (uint8_t* o)
 {
@@ -1760,7 +1755,6 @@ heap_segment* ro_segment_lookup (uint8_t* o)
         return 0;
 }
 
-#endif //FEATURE_BASICFREEZE
 
 #ifdef MULTIPLE_HEAPS
 inline
@@ -1781,10 +1775,8 @@ gc_heap* seg_mapping_table_heap_of_worker (uint8_t* o)
 
 #ifdef _DEBUG
     heap_segment* seg = ((o > entry->boundary) ? entry->seg1 : entry->seg0);
-#ifdef FEATURE_BASICFREEZE
     if ((size_t)seg & ro_in_entry)
         seg = (heap_segment*)((size_t)seg & ~ro_in_entry);
-#endif //FEATURE_BASICFREEZE
 
 #ifdef TRACE_GC
     if (seg)
@@ -1815,10 +1807,8 @@ gc_heap* seg_mapping_table_heap_of_worker (uint8_t* o)
 // Only returns a valid seg if we can actually find o on the seg.
 heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address))
         return ro_segment_lookup (o);
-#endif //FEATURE_BASICFREEZE
 
     size_t index = (size_t)o >> gc_heap::min_segment_size_shr;
     seg_mapping* entry = &seg_mapping_table[index];
@@ -1849,10 +1839,8 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
         (uint8_t*)(entry->seg0), (uint8_t*)(entry->seg1)));
 
     heap_segment* seg = ((o > entry->boundary) ? entry->seg1 : entry->seg0);
-#ifdef FEATURE_BASICFREEZE
     if ((size_t)seg & ro_in_entry)
         seg = (heap_segment*)((size_t)seg & ~ro_in_entry);
-#endif //FEATURE_BASICFREEZE
 #endif //USE_REGIONS
 
     if (seg)
@@ -1873,7 +1861,6 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
         dprintf (2, ("could not find obj %p in any existing segments", o));
     }
 
-#ifdef FEATURE_BASICFREEZE
     // TODO: This was originally written assuming that the seg_mapping_table would always contain entries for ro
     // segments whenever the ro segment falls into the [g_gc_lowest_address,g_gc_highest_address) range.  I.e., it had an
     // extra "&& (size_t)(entry->seg1) & ro_in_entry" expression.  However, at the moment, grow_brick_card_table does
@@ -1886,7 +1873,6 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
         if (seg && !in_range_for_segment (o, seg))
             seg = 0;
     }
-#endif //FEATURE_BASICFREEZE
 
     return seg;
 }
@@ -3009,12 +2995,10 @@ gc_heap::init_semi_shared()
     max_decommit_step_size = max (max_decommit_step_size, MIN_DECOMMIT_SIZE);
 #endif //MULTIPLE_HEAPS
 
-#ifdef FEATURE_BASICFREEZE
     seg_table = sorted_table::make_sorted_table();
 
     if (!seg_table)
         goto cleanup;
-#endif //FEATURE_BASICFREEZE
 
 #ifndef USE_REGIONS
     segment_standby_list = 0;
@@ -3768,11 +3752,9 @@ gc_heap::destroy_semi_shared()
     if (g_mark_list)
         delete[] g_mark_list;
 
-#ifdef FEATURE_BASICFREEZE
     //destroy the segment map
     seg_table->delete_sorted_table();
     delete[] (char*)seg_table;
-#endif //FEATURE_BASICFREEZE
 }
 
 void
@@ -4436,10 +4418,8 @@ inline void testGCShadow(Object** ptr)
         // TODO: erroneous asserts in here.
         if(*shadow!=INVALIDGCVALUE)
         {
-#ifdef FEATURE_BASICFREEZE
             // Write barriers for stores of references to frozen objects may be optimized away.
             if (!g_theGCHeap->IsInFrozenSegment (*ptr))
-#endif // FEATURE_BASICFREEZE
             {
                 _ASSERTE(!"Pointer updated without using write barrier");
             }
@@ -4749,10 +4729,8 @@ gc_heap* seg_mapping_table_heap_of (uint8_t* o)
 #ifdef MULTIPLE_HEAPS
 gc_heap* seg_mapping_table_heap_of_gc (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     if ((o < g_gc_lowest_address) || (o >= g_gc_highest_address))
         return 0;
-#endif //FEATURE_BASICFREEZE
 
     return seg_mapping_table_heap_of_worker (o);
 }
