@@ -241,6 +241,7 @@ public class Edge
 public class Test
 {
     public static int exitCode = 0;
+  [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
   [Fact]
   public static int TestEntryPoint()
   {

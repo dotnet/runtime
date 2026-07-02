@@ -93,6 +93,7 @@ public class Test_GetGCMemoryInfo
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/37950", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is not compatible with GC stress because it captures GC indices and asserts no ephemeral GC occurred between measurements.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

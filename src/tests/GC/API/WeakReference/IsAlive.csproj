@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for JitOptimizationSensitive -->
+    <!-- Needed for CLRTestExecutionArguments -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestExecutionArguments />
     <CLRTestPriority>1</CLRTestPriority>
@@ -8,10 +8,10 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
-  <PropertyGroup>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="IsAlive.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

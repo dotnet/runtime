@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for CLRTestExecutionArguments -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestExecutionArguments />
-    <GCStressIncompatible>true</GCStressIncompatible>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
   </PropertyGroup>
   <PropertyGroup>

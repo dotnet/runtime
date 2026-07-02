@@ -261,7 +261,7 @@ namespace Repro
         }
 
         [Fact]
-        [SkipOnCoreClr("this test simply takes too long to complete under GC stress; it is not fundamentally incompatible", RuntimeTestModes.AnyGCStress)]
+        [SkipOnCoreClr("This test times out on Arm64 under GC stress.", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             int result = Test(   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
