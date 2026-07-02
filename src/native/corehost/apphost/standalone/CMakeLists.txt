@@ -7,7 +7,6 @@ set(SOURCES
     ../apphost.c
     ../bundle_marker.c
     ./apphost_hostfxr_resolver.c
-    ../../fxr_resolver.c
 )
 
 set(HEADERS
@@ -31,10 +30,7 @@ list(APPEND SOURCES ${HEADERS})
 
 add_executable(apphost ${SOURCES} ${RESOURCES})
 
-target_include_directories(apphost PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+target_link_libraries(apphost PRIVATE fxr_resolver)
 
 if(CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(apphost PRIVATE hostmisc shell32)
