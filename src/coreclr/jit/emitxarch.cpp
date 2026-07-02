@@ -87,10 +87,8 @@ bool emitter::IsAvx512OnlyInstruction(instruction ins)
 
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
-#ifdef TARGET_AMD64
-    return (ins >= FIRST_APX_INSTRUCTION) && (ins <= LAST_APX_INSTRUCTION);
-#endif // TARGET_AMD64
-    return false;
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Encoding_APX_EVEX) != 0;
 }
 
 bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
@@ -375,7 +373,29 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 {
     if (!UseEvexEncoding())
     {
-        return false;
+        // When standard EVEX encoding is not available (e.g., HW intrinsics disabled),
+        // APX-promoted instructions can still use EVEX via promoted encoding.
+        if (!UsePromotedEVEXEncoding())
+        {
+            return false;
+        }
+
+        insFlags flags = CodeGenInterface::instInfo[ins];
+        return ((flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
+    }
+
+    // Fast path: most SIMD instructions have Encoding_EVEX set directly.
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    if ((flags & Encoding_EVEX) != 0)
+    {
+        return true;
+    }
+
+    // APX-only instructions and instructions with NDD/NF support
+    // can be EVEX-encoded when promoted EVEX encoding is available.
+    if ((flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0)
+    {
+        return UsePromotedEVEXEncoding();
     }
 
     // These can use compSupportsHWIntrinsic as we'll get here for
@@ -433,10 +453,24 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 
         default:
         {
-            insFlags flags = CodeGenInterface::instInfo[ins];
-            return (flags & Encoding_EVEX) != 0;
+            // Already handled by the fast paths above.
+            return false;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// IsSimdEvexEncodableInstruction: Answer the question- Is this a SIMD (non-APX) EVEX-encodable instruction.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if ins is EVEX-encodable and is not an APX-promoted legacy instruction.
+//
+bool emitter::IsSimdEvexEncodableInstruction(instruction ins) const
+{
+    return IsEvexEncodableInstruction(ins) && !IsApxExtendedEvexInstruction(ins);
 }
 
 //------------------------------------------------------------------------
@@ -512,22 +546,8 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return false;
     }
 
-    if (IsApxNddCompatibleInstruction(ins))
-    {
-        return true;
-    }
-
-    if (IsApxNfCompatibleInstruction(ins))
-    {
-        return true;
-    }
-
-    if (IsApxOnlyInstruction(ins))
-    {
-        return true;
-    }
-
-    return false;
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0;
 #else // !TARGET_AMD64
     return false;
 #endif
@@ -618,16 +638,38 @@ bool emitter::IsLegacyMap1(code_t code) const
 }
 
 //------------------------------------------------------------------------
-// Answer the question: Is this a SIMD instruction.
+// IsSimdVexOrEvexEncodableInstruction: Answer the question: Is this a SIMD instruction
+// that is VEX or EVEX encodable.
 //
 // Arguments:
 //    ins - The instruction to check.
 //
 // Returns:
-//    `true` if ins is a SIMD instruction.
+//    `true` if ins is a SIMD instruction that is VEX or EVEX encodable.
 //
-bool emitter::IsVexOrEvexEncodableInstruction(instruction ins) const
+// Notes:
+//    This intentionally returns false for legacy / general-purpose instructions, even when
+//    they are APX-promoted and therefore EVEX-encodable (see IsEvexEncodableInstruction).
+//    Such instructions are routed through the instrDesc-aware TakesEvexPrefix / TakesRex2Prefix
+//    paths instead of the SIMD VEX/EVEX sizing path.
+//
+bool emitter::IsSimdVexOrEvexEncodableInstruction(instruction ins) const
 {
+    // Fast path: only SIMD-range instructions (SSE/AVX/AVX512, including BMI and opmask) are ever
+    // VEX or EVEX encoded as SIMD instructions. Everything outside that range is either a legacy /
+    // general-purpose instruction or an APX-only instruction, none of which is a SIMD instruction.
+    //
+    // Post APX-EVEX, the large volume of legacy instructions we emit are EVEX-promotable (NDD/NF)
+    // and would otherwise reach IsEvexEncodableInstruction only to be rejected as non-SIMD. Since
+    // those are never in the SIMD range, this single range check short-circuits them up front and
+    // avoids the more expensive IsVexEncodableInstruction / IsEvexEncodableInstruction work.
+    if (!IsSimdInstruction(ins))
+    {
+        return false;
+    }
+
+    // For SIMD-range instructions the APX-extended-EVEX exclusion never applies, so it suffices to
+    // ask whether the instruction is VEX or EVEX encodable.
     return IsVexEncodableInstruction(ins) || IsEvexEncodableInstruction(ins);
 }
 
@@ -1961,6 +2003,54 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return false;
     }
 
+    // APX-promoted instructions (legacy, VEX-origin, or APX-only) that are not natively EVEX-encodable
+    // need special handling: only use EVEX when an EVEX-requiring context is active.
+    // This preserves the REX2 preference for instructions that only need EGPR encoding.
+    if (IsApxExtendedEvexInstruction(ins))
+    {
+        if (IsSimdInstruction(ins))
+        {
+            // SIMD instructions promoted via APX-VEX-EVEX follow the normal EVEX path below.
+            // (This covers BMI promoted to EVEX for EGPR, etc.)
+        }
+        else
+        {
+            // APX-Legacy-EVEX and APX-only instructions: only use EVEX when required.
+            if (id->idIsNoApxEvexPromotion())
+            {
+                return false;
+            }
+
+            if (IsApxNddCompatibleInstruction(ins) && id->idIsEvexNdContextSet())
+            {
+                return true;
+            }
+
+            if (IsApxNfCompatibleInstruction(ins) && id->idIsEvexNfContextSet())
+            {
+                return true;
+            }
+
+            if (IsApxOnlyInstruction(ins))
+            {
+                return true;
+            }
+
+#if defined(DEBUG)
+            if (m_compiler->DoJitStressPromotedEvexEncoding())
+            {
+                if (insIsCMOV(ins))
+                {
+                    return false;
+                }
+                return true;
+            }
+#endif // DEBUG
+
+            return false;
+        }
+    }
+
     if (!IsVexEncodableInstruction(ins))
     {
         // Only supports the EVEX encoding
@@ -1974,6 +2064,16 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         // them to EVEX, so only return true when APX is available.
         if (IsKMOVInstruction(ins))
         {
+#if defined(DEBUG)
+            // KMOV only gains an EVEX form through APX promotion (MAP4), not the standard
+            // VEX-to-EVEX path. It is therefore excluded from DoJitStressEvexEncoding and
+            // instead stressed here under the promoted-EVEX stress knob.
+            if (m_compiler->DoJitStressPromotedEvexEncoding())
+            {
+                return true;
+            }
+#endif // DEBUG
+
             // Use EVEX only when needed.
             return HasExtendedGPReg(id);
         }
@@ -2004,8 +2104,25 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #if defined(DEBUG)
     if (m_compiler->DoJitStressEvexEncoding())
     {
-        // Requires the EVEX encoding due to STRESS mode
-        return true;
+        // Requires the EVEX encoding due to STRESS mode.
+        // BMI and KMOV instructions must not be promoted here: their EVEX form uses MAP4
+        // (APX-extended), not the standard VEX-to-EVEX promotion path. They are instead
+        // stressed via the promoted-EVEX stress knob below.
+        if (!IsBMIInstruction(ins) && !IsKMOVInstruction(ins))
+        {
+            return true;
+        }
+    }
+
+    if (m_compiler->DoJitStressPromotedEvexEncoding())
+    {
+        // BMI instructions only gain an EVEX form through APX promotion (MAP4), so they are
+        // excluded from the standard EVEX stress above and promoted here instead. KMOV is
+        // handled in its dedicated branch (it always has a mask register and returns earlier).
+        if (IsBMIInstruction(ins))
+        {
+            return true;
+        }
     }
 #endif // DEBUG
 
@@ -2082,68 +2199,16 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 #if defined(DEBUG)
     if (m_compiler->DoJitStressRex2Encoding())
     {
+        // Skip instructions whose length is observed by the runtime/unwinder.
+        if (ins == INS_i_jmp || ins == INS_tail_i_jmp)
+        {
+            // These instructions have hard-coded instruction length in some VM stubs, stressing REX2 encoding may
+            // change the instruction length and cause issues, like infinite loop in the case of jmp.
+            return false;
+        }
         return true;
     }
 #endif // DEBUG
-
-    return false;
-#else // !TARGET_AMD64
-    return false;
-#endif
-}
-
-//------------------------------------------------------------------------
-// TakesApxExtendedEvexPrefix: Checks if the instruction should be legacy-promoted-EVEX encoded.
-//
-// Arguments:
-//    instruction -- processor instruction to check
-//
-// Return Value:
-//    true if this instruction requires a legacy-promoted-EVEX prefix.
-//
-bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
-{
-#ifdef TARGET_AMD64
-    instruction ins = id->idIns();
-    if (!IsApxExtendedEvexInstruction(ins))
-    {
-        return false;
-    }
-
-    if (IsSimdInstruction(ins))
-    {
-        // This check should reject any instruction not from legacy map-0 or 1.
-        return false;
-    }
-
-    if (id->idIsNoApxEvexPromotion())
-    {
-        return false;
-    }
-
-    if (IsApxNddCompatibleInstruction(ins) && id->idIsEvexNdContextSet())
-    {
-        // The instruction uses APX-ND hint, and it requires EVEX.
-        return true;
-    }
-
-    if (IsApxNfCompatibleInstruction(ins) && id->idIsEvexNfContextSet())
-    {
-        // The instruction uses APX-NF hint, and it requires EVEX.
-        return true;
-    }
-
-#if defined(DEBUG)
-    if (m_compiler->DoJitStressPromotedEvexEncoding())
-    {
-        // EVEX prefixed CMOV has different semantics from non-EVEX CMOV, so we should not promote CMOV in stress mode.
-        return !insIsCMOV(ins);
-    }
-#endif // DEBUG
-    if (IsApxOnlyInstruction(ins))
-    {
-        return true;
-    }
 
     return false;
 #else // !TARGET_AMD64
@@ -2209,7 +2274,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     // Only AVX512 instructions require EVEX prefix
     // After APX, some instructions in legacy or VEX space will be promoted to EVEX.
     instruction ins = id->idIns();
-    assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsEvexEncodableInstruction(ins));
 
     if (instrIsExtendedReg3opImul(ins))
     {
@@ -2229,9 +2294,19 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (IsApxExtendedEvexInstruction(ins))
     {
-        if (!IsEvexEncodableInstruction(ins))
+        insFlags flags = CodeGenInterface::instInfo[ins];
+        if ((flags & (Encoding_VEX | Encoding_EVEX)) == 0)
         {
-            // Legacy-promoted instructions are not labeled with Encoding_EVEX.
+            // Legacy and APX-only instructions promoted to EVEX are encoded in opcode Map 4, so set
+            // the mmm[2] bit (MAP4_IN_BYTE_EVEX_PREFIX = P0[2]). This covers both APX-only instructions
+            // (CCMP, CFCMOV, CTEST, PUSH2/POP2, ...) and APX-promoted legacy instructions
+            // (ADD, SUB, IMUL, INC, DEC, ...), all of which move to Map 4 under EVEX.
+            //
+            // VEX- and EVEX-origin instructions that are merely APX-promoted (e.g. BLSR with NF via
+            // INS_Flags_Has_NF) keep their original map (map 2 for 0F38, etc.); their mm bits are
+            // written later by emitExtractEvexPrefix from the opcode's leading bytes. Applying MAP4
+            // to those instructions would merge mmm[2]=1 with mm=0b10 from 0F38 extraction,
+            // producing mmm=0b110 (map 6) instead of the correct 0b010 (map 2).
             code |= MAP4_IN_BYTE_EVEX_PREFIX;
         }
 
@@ -2841,38 +2916,19 @@ unsigned RegEncoding(regNumber reg)
 // AVX:  specific bits within VEX prefix need to be set in bit-inverted form.
 emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
 {
-    instruction ins = id->idIns();
-
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (hasEvexPrefix(code))
     {
-        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code))
-        {
-            // W-bit is available in 4-byte EVEX prefix that starts with byte 62.
-            assert(hasEvexPrefix(code));
-
-            // W-bit is the only bit that is added in non bit-inverted form.
-            return emitter::code_t(code | 0x0000800000000000ULL);
-        }
-        else
-        {
-            assert(IsVexEncodableInstruction(ins));
-
-            // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
-            assert(hasVexPrefix(code));
-
-            // W-bit is the only bit that is added in non bit-inverted form.
-            return emitter::code_t(code | 0x00008000000000ULL);
-        }
-    }
-#ifdef TARGET_AMD64
-    else if (TakesApxExtendedEvexPrefix(id))
-    {
-        // If the instruction is not VEX/EVEX encodable, and has EVEX prefix,
-        // then it is legacy promoted EVEX.
-        assert(hasEvexPrefix(code));
-        assert(IsApxExtendedEvexInstruction(ins));
+        // W-bit is available in 4-byte EVEX prefix that starts with byte 62.
+        // W-bit is the only bit that is added in non bit-inverted form.
         return emitter::code_t(code | 0x0000800000000000ULL);
     }
+    else if (hasVexPrefix(code))
+    {
+        // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
+        // W-bit is the only bit that is added in non bit-inverted form.
+        return emitter::code_t(code | 0x00008000000000ULL);
+    }
+#ifdef TARGET_AMD64
     else if (hasRex2Prefix(code))
     {
         return emitter::code_t(code | 0x000800000000ULL);
@@ -2888,39 +2944,21 @@ emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
 
 emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
 {
-    instruction ins = id->idIns();
-
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (hasEvexPrefix(code))
     {
-        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
-        {
-            // R-bit is available in 4-byte EVEX prefix that starts with byte 62.
-            assert(hasEvexPrefix(code));
-
-            // R-bit is added in bit-inverted form.
-            return code & 0xFF7FFFFFFFFFFFFFULL;
-        }
-        else
-        {
-            assert(IsVexEncodableInstruction(ins));
-
-            // R-bit is supported by both 2-byte and 3-byte VEX prefix
-            assert(hasVexPrefix(code));
-
-            // R-bit is added in bit-inverted form.
-            return code & 0xFF7FFFFFFFFFFFULL;
-        }
-    }
-    else if (TakesApxExtendedEvexPrefix(id))
-    {
-        assert(hasEvexPrefix(code));
-        assert(IsApxExtendedEvexInstruction(ins));
+        // R-bit is available in 4-byte EVEX prefix that starts with byte 62.
         // R-bit is added in bit-inverted form.
         return code & 0xFF7FFFFFFFFFFFFFULL;
     }
+    else if (hasVexPrefix(code))
+    {
+        // R-bit is supported by both 2-byte and 3-byte VEX prefix
+        // R-bit is added in bit-inverted form.
+        return code & 0xFF7FFFFFFFFFFFULL;
+    }
     else if (TakesRex2Prefix(id))
     {
-        assert(IsRex2EncodableInstruction(ins));
+        assert(IsRex2EncodableInstruction(id->idIns()));
         return code |= 0xD50400000000ULL; // REX2.B3
     }
 
@@ -2929,39 +2967,21 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
 
 emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
 {
-    instruction ins = id->idIns();
-
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (hasEvexPrefix(code))
     {
-        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
-        {
-            // X-bit is available in 4-byte EVEX prefix that starts with byte 62.
-            assert(hasEvexPrefix(code));
-
-            // X-bit is added in bit-inverted form.
-            return code & 0xFFBFFFFFFFFFFFFFULL;
-        }
-        else
-        {
-            assert(IsVexEncodableInstruction(ins));
-
-            // X-bit is available only in 3-byte VEX prefix that starts with byte C4.
-            assert(hasVexPrefix(code));
-
-            // X-bit is added in bit-inverted form.
-            return code & 0xFFBFFFFFFFFFFFULL;
-        }
-    }
-    else if (TakesApxExtendedEvexPrefix(id))
-    {
-        assert(hasEvexPrefix(code));
-        assert(IsApxExtendedEvexInstruction(ins));
+        // X-bit is available in 4-byte EVEX prefix that starts with byte 62.
         // X-bit is added in bit-inverted form.
         return code & 0xFFBFFFFFFFFFFFFFULL;
     }
+    else if (hasVexPrefix(code))
+    {
+        // X-bit is available only in 3-byte VEX prefix that starts with byte C4.
+        // X-bit is added in bit-inverted form.
+        return code & 0xFFBFFFFFFFFFFFULL;
+    }
     else if (TakesRex2Prefix(id))
     {
-        assert(IsRex2EncodableInstruction(ins));
+        assert(IsRex2EncodableInstruction(id->idIns()));
         return code |= 0xD50200000000ULL; // REX2.B3
     }
 
@@ -2970,38 +2990,21 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
 
 emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
 {
-    instruction ins = id->idIns();
-
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (hasEvexPrefix(code))
     {
-        if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
-        {
-            // B-bit is available in 4-byte EVEX prefix that starts with byte 62.
-            assert(hasEvexPrefix(code));
-
-            // B-bit is added in bit-inverted form.
-            return code & 0xFFDFFFFFFFFFFFFFULL;
-        }
-        else
-        {
-            assert(IsVexEncodableInstruction(ins));
-
-            // B-bit is available only in 3-byte VEX prefix that starts with byte C4.
-            assert(hasVexPrefix(code));
-
-            // B-bit is added in bit-inverted form.
-            return code & 0xFFDFFFFFFFFFFFULL;
-        }
-    }
-    else if (TakesApxExtendedEvexPrefix(id))
-    {
-        assert(IsApxExtendedEvexInstruction(ins));
-        // R-bit is added in bit-inverted form.
+        // B-bit is available in 4-byte EVEX prefix that starts with byte 62.
+        // B-bit is added in bit-inverted form.
         return code & 0xFFDFFFFFFFFFFFFFULL;
+    }
+    else if (hasVexPrefix(code))
+    {
+        // B-bit is available only in 3-byte VEX prefix that starts with byte C4.
+        // B-bit is added in bit-inverted form.
+        return code & 0xFFDFFFFFFFFFFFULL;
     }
     else if (TakesRex2Prefix(id))
     {
-        assert(IsRex2EncodableInstruction(ins));
+        assert(IsRex2EncodableInstruction(id->idIns()));
         return code |= 0xD50100000000ULL; // REX2.B3
     }
 
@@ -3086,7 +3089,7 @@ bool isPrefix(BYTE b)
 //
 emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) const
 {
-    assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsEvexEncodableInstruction(ins));
 
     code_t evexPrefix = (code >> 32) & 0xFFFFFFFF;
     code &= 0x00000000FFFFFFFFLL;
@@ -3713,7 +3716,7 @@ unsigned emitter::emitGetRexPrefixSize(instruction ins)
 {
     // In case of AVX instructions, REX prefixes are part of VEX prefix.
     // And hence requires no additional byte to encode REX prefixes.
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (IsSimdVexOrEvexEncodableInstruction(ins))
     {
         return 0;
     }
@@ -3727,12 +3730,12 @@ unsigned emitter::emitGetRexPrefixSize(instrDesc* id, instruction ins)
 {
     // In case of AVX instructions, REX prefixes are part of VEX prefix.
     // And hence requires no additional byte to encode REX prefixes.
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (IsSimdVexOrEvexEncodableInstruction(ins))
     {
         return 0;
     }
 
-    if (TakesApxExtendedEvexPrefix(id))
+    if (TakesEvexPrefix(id))
     {
         return 0;
     }
@@ -3777,7 +3780,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
     instruction ins          = id->idIns();
     unsigned    adjustedSize = 0;
 
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (IsSimdVexOrEvexEncodableInstruction(ins))
     {
         unsigned prefixAdjustedSize = 0;
 
@@ -3850,7 +3853,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
     else if (IsRex2EncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
         unsigned prefixAdjustedSize = 0;
-        if (TakesApxExtendedEvexPrefix(id))
+        if (TakesEvexPrefix(id))
         {
             prefixAdjustedSize = 4;
             // If the opcode will be prefixed by EVEX, then all the map-1-legacy instructions can remove the escape
@@ -3872,7 +3875,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         }
 
         emitAttr attr = id->idOpSize();
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !TakesApxExtendedEvexPrefix(id))
+        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !TakesEvexPrefix(id))
         {
             // Most 16-bit operand instructions will need a 0x66 prefix.
             prefixAdjustedSize++;
@@ -3930,7 +3933,7 @@ unsigned emitter::emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexP
 
     if (includeRexPrefixSize && hasRexPrefix(code))
     {
-        if (instrIsExtendedReg3opImul(id->idIns()) && TakesApxExtendedEvexPrefix(id))
+        if (instrIsExtendedReg3opImul(id->idIns()) && TakesEvexPrefix(id))
         {
             // there is a special case when calculating the size of IMUL with APX-EVEX,
             // IMUL_08 or beyond will have a built-in REX prefix with its opcode,
@@ -4615,7 +4618,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
-            assert(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id));
+            assert(TakesRex2Prefix(id) || TakesEvexPrefix(id));
             if (hasRex2Prefix(*code))
             {
                 *code |= 0x001000000000ULL; // REX2.B4
@@ -4675,7 +4678,7 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
-            assert(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id));
+            assert(TakesRex2Prefix(id) || TakesEvexPrefix(id));
             if (hasRex2Prefix(*code))
             {
                 *code |= 0x004000000000ULL; // REX2.R4
@@ -4714,7 +4717,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
     instruction ins = id->idIns();
 
     assert(reg < REG_STK);
-    assert(IsVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
     assert(hasVexOrEvexPrefix(code));
 
     // Get 4-bit register encoding
@@ -4729,7 +4732,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
     // Both prefix encodes register operand in 1's complement form
     assert(regBits <= 0xF);
 
-    if (IsVexOrEvexEncodableInstruction(ins))
+    if (IsSimdVexOrEvexEncodableInstruction(ins))
     {
         if (TakesEvexPrefix(id) && codeEvexMigrationCheck(code)) // TODO-XArch-AVX512: Remove codeEvexMigrationCheck().
         {
@@ -4769,7 +4772,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
     }
     else
     {
-        assert(TakesApxExtendedEvexPrefix(id));
+        assert(TakesEvexPrefix(id));
         assert(hasEvexPrefix(code));
 #if defined(TARGET_AMD64)
         // TODO-XARCH-AVX512 I don't like that we redefine regBits on the EVEX case.
@@ -4822,7 +4825,7 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         if (IsExtendedGPReg(reg))
         {
             // Separate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
-            assert(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id));
+            assert(TakesRex2Prefix(id) || TakesEvexPrefix(id));
             if (hasRex2Prefix(*code))
             {
                 *code |= 0x002000000000ULL; // REX2.X4
@@ -5240,8 +5243,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += (IsSimdInstruction(ins) || TakesApxExtendedEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize)
-                                                                         : 5;
+        sz += (IsSimdInstruction(ins) || TakesEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize) : 5;
     }
     else
     {
@@ -5303,7 +5305,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 #endif // !FEATURE_FIXED_OUT_ARGS
     }
 
-    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
+    if (IsEvexEncodableInstruction(ins))
     {
         if (tryCompress)
         {
@@ -5318,7 +5320,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
                 SetEvexCompressedDisplacement(id);
             }
         }
-        else if (TakesEvexPrefix(id))
+        else if (TakesEvexPrefix(id) && !(IsApxExtendedEvexInstruction(ins) && !IsSimdInstruction(ins)))
         {
             // EVEX requires compressed displacement to fit in a byte
             dspInByte = false;
@@ -5482,7 +5484,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         dspInByte = false; // relocs can't be placed in a byte
         dspIsZero = false; // relocs won't always be zero
     }
-    else if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
+    else if (IsEvexEncodableInstruction(ins))
     {
         ssize_t compressedDsp;
 
@@ -7293,7 +7295,7 @@ void emitter::emitIns_R_I(instruction         ins,
     }
     sz += emitGetAdjustedSize(id, insCodeMI(ins));
 #ifdef TARGET_AMD64
-    if (reg == REG_EAX && !instrIs3opImul(ins) && TakesApxExtendedEvexPrefix(id))
+    if (reg == REG_EAX && !instrIs3opImul(ins) && TakesEvexPrefix(id))
     {
         // ACC form is not promoted into EVEX space, need to emit with MI form.
         sz += 1;
@@ -12639,6 +12641,14 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
     {
         return;
     }
+
+    // APX-promoted non-SIMD instructions reuse the EVEX.b context bits for NDD/NF,
+    // so HasEmbeddedBroadcast may return a false positive. Skip them.
+    if (IsApxExtendedEvexInstruction(id->idIns()) && !IsSimdInstruction(id->idIns()))
+    {
+        return;
+    }
+
     ssize_t baseSize   = GetInputSizeInBytes(id);
     ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id, /* ignoreEmbeddedBroadcast */ true);
     printf(" {1to%d}", vectorSize / baseSize);
@@ -12692,6 +12702,12 @@ void emitter::emitDispEmbRounding(instrDesc* id) const
 void emitter::emitDispEmbMasking(instrDesc* id) const
 {
     if (!IsEvexEncodableInstruction(id->idIns()))
+    {
+        return;
+    }
+
+    // APX-promoted non-SIMD instructions don't use embedded masking.
+    if (!IsSimdInstruction(id->idIns()))
     {
         return;
     }
@@ -12964,7 +12980,7 @@ void emitter::emitDispIns(
 
         case IF_CNS:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
             emitDispConstant(id, /* skipComma */ true);
             break;
         }
@@ -12973,7 +12989,7 @@ void emitter::emitDispIns(
         case IF_AWR:
         case IF_ARW:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
 
             if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
             {
@@ -13220,7 +13236,7 @@ void emitter::emitDispIns(
         case IF_SWR:
         case IF_SRW:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
             printf("%s", sstr);
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -13659,7 +13675,7 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_RRD:
         case IF_RWR_RWR_RRD:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
             regNumber reg2 = id->idReg2();
@@ -13690,7 +13706,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_RRD_CNS:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
 
             printf("%s", emitRegName(id->idReg1(), attr));
@@ -13744,7 +13760,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_RRD_RRD:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins));
             assert(UseVEXEncoding());
 
             printf("%s", emitRegName(id->idReg1(), attr));
@@ -13844,7 +13860,7 @@ void emitter::emitDispIns(
         case IF_RWR:
         case IF_RRW:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispShift(ins);
             break;
@@ -14021,7 +14037,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_MRD_OFF:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
             printf("%s, %s", emitRegName(id->idReg1(), attr), "offset");
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -14058,7 +14074,7 @@ void emitter::emitDispIns(
         case IF_MWR:
         case IF_MRW:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
             printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -14068,7 +14084,7 @@ void emitter::emitDispIns(
 
         case IF_MRD_OFF:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
             printf("offset ");
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -14103,7 +14119,7 @@ void emitter::emitDispIns(
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
 
             if (ins == INS_lea)
             {
@@ -14139,7 +14155,7 @@ void emitter::emitDispIns(
         case IF_METHOD:
         case IF_METHPTR:
         {
-            assert(!IsEvexEncodableInstruction(id->idIns()));
+            assert(!IsSimdEvexEncodableInstruction(id->idIns()));
             methodName = m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
 
             if (id->idInsFmt() == IF_METHPTR)
@@ -14769,7 +14785,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code += 4;
         }
     }
-    else if (!IsSSEInstruction(ins) && !IsVexOrEvexEncodableInstruction(ins))
+    else if (!IsSSEInstruction(ins) && !IsSimdVexOrEvexEncodableInstruction(ins))
     {
         /* Is the operand size larger than a byte? */
 
@@ -14781,7 +14797,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
             {
                 // Output a size prefix for a 16-bit operand
-                if (TakesApxExtendedEvexPrefix(id))
+                if (TakesEvexPrefix(id))
                 {
                     assert(IsApxExtendedEvexInstruction(ins));
                     assert(hasEvexPrefix(code));
@@ -14850,7 +14866,7 @@ GOT_DSP:
         dspInByte = false; // relocs can't be placed in a byte
         dspIsZero = false; // relocs won't always be zero
     }
-    else if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
+    else if (IsEvexEncodableInstruction(ins))
     {
         ssize_t compressedDsp;
 
@@ -14860,16 +14876,16 @@ GOT_DSP:
             assert(isCompressed && dspInByte);
             dsp = compressedDsp;
         }
-        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
+        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins) &&
+                 !(IsApxExtendedEvexInstruction(ins) && !IsSimdInstruction(ins)))
         {
             assert(!(TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins)));
             dspInByte = false;
         }
         else
         {
-            // TODO-XArch-APX: for now, Extended Evex instruction will not have compressed displacement, or more
-            // accurately, extended evex may not have compressed displacement optimization as the scaling factor is
-            // constantly 1.
+            // APX extended EVEX instructions (non-SIMD) do not have compressed displacement —
+            // the scaling factor is constantly 1, so use regular disp8/disp32 logic.
             dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
         dspIsZero = (dsp == 0);
@@ -15649,7 +15665,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code += 4;
         }
     }
-    else if (!IsSSEInstruction(ins) && !IsVexOrEvexEncodableInstruction(ins))
+    else if (!IsSSEInstruction(ins) && !IsSimdVexOrEvexEncodableInstruction(ins))
     {
         // Is the operand size larger than a byte?
         switch (size)
@@ -15663,7 +15679,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
                 {
-                    if (!TakesApxExtendedEvexPrefix(id))
+                    if (!TakesEvexPrefix(id))
                     {
                         dst += emitOutputByte(dst, 0x66);
                     }
@@ -15687,7 +15703,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                  * overflow, whereas setting the lower bit to 1 just works out
                  */
                 {
-                    if (TakesApxExtendedEvexPrefix(id))
+                    if (TakesEvexPrefix(id))
                     {
                         assert(hasEvexPrefix(code));
                         code = AddRexWPrefix(id, code);
@@ -15737,7 +15753,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     adr = m_compiler->lvaFrameAddress(varNum, &EBPbased);
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
 
-    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
+    if (IsEvexEncodableInstruction(ins))
     {
         ssize_t compressedDsp;
 
@@ -15747,7 +15763,8 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             assert(isCompressed && dspInByte);
             dsp = (int)compressedDsp;
         }
-        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
+        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins) &&
+                 !(IsApxExtendedEvexInstruction(ins) && !IsSimdInstruction(ins)))
         {
 #if FEATURE_FIXED_OUT_ARGS
             // TODO-AMD64-CQ: We should be able to accurately predict this when FEATURE_FIXED_OUT_ARGS
@@ -15760,6 +15777,8 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         else
         {
+            // APX extended EVEX instructions (non-SIMD) do not have compressed displacement —
+            // the scaling factor is constantly 1, so use regular disp8/disp32 logic.
             dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
     }
@@ -15805,7 +15824,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // Adjust the offset by the amount currently pushed on the CPU stack
         dsp += emitCurStackLvl;
 
-        if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
+        if (IsEvexEncodableInstruction(ins))
         {
             // We cannot reliably predict the encoding size up front so we shouldn't
             // have encountered a scenario marked with compressed displacement. We
@@ -16517,7 +16536,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
     // We would to update GC info correctly
     assert(!IsSSEInstruction(ins));
-    assert(!IsVexOrEvexEncodableInstruction(ins));
+    assert(!IsSimdVexOrEvexEncodableInstruction(ins));
 
     // Get the 'base' opcode
     switch (ins)
@@ -16536,7 +16555,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
                 // Can't use the compact form, use the long form
                 ins = (instruction)(ins + 1);
-                if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
+                if (size == EA_2BYTE && !TakesEvexPrefix(id))
                 {
                     // Output a size prefix for a 16-bit operand
                     dst += emitOutputByte(dst, 0x66);
@@ -16699,7 +16718,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case INS_setle_apx:
         case INS_setg_apx:
         {
-            assert(TakesApxExtendedEvexPrefix(id));
+            assert(TakesEvexPrefix(id));
             assert(size == EA_1BYTE);
 
             code = insCodeMR(ins);
@@ -16732,7 +16751,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 // Set the 'w' bit to get the large version
                 code |= 0x1;
 
-                if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
+                if (size == EA_2BYTE && !TakesEvexPrefix(id))
                 {
                     // Output a size prefix for a 16-bit operand
                     dst += emitOutputByte(dst, 0x66);
@@ -16929,7 +16948,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
         if (size == EA_2BYTE)
         {
-            if (!TakesApxExtendedEvexPrefix(id))
+            if (!TakesEvexPrefix(id))
             {
                 assert(ins == INS_crc32);
                 dst += emitOutputByte(dst, 0x66);
@@ -16949,7 +16968,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((ins == INS_push2) || (ins == INS_pop2))
     {
         assert(size == EA_PTRSIZE);
-        assert(TakesApxExtendedEvexPrefix(id));
+        assert(TakesEvexPrefix(id));
         code = insCodeMR(ins);
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
@@ -16964,14 +16983,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         // TODO-XArch-APX:
         // some instructions with NDD form might go into this path with EVEX prefix.
-        // might consider having a separate path with checks like: TakesApxExtendedEvexPrefix
-        // essentially, we need to make it clear on the priority and necessity of REX2 and EVEX:
+        // TakesEvexPrefix now covers both SIMD EVEX and APX-promoted EVEX.
         // REX2 is needed iff EGPRs are involved.
         // EVEX is needed when NDD, NF or other features are involved.
-        // So the logic should be:
-        // checking if those new features are used, then check if EGPRs are involved.
-        // EGPRs will be supported by EVEX anyway, so don't need to check in the first place.
-        assert(!TakesSimdPrefix(id) || TakesApxExtendedEvexPrefix(id));
+        assert(!TakesSimdPrefix(id) || TakesEvexPrefix(id));
         code = insCodeMR(ins);
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
@@ -16990,7 +17005,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
-                if (TakesApxExtendedEvexPrefix(id))
+                if (TakesEvexPrefix(id))
                 {
                     assert(hasEvexPrefix(code));
                     // Evex.pp should already be added when adding the prefix.
@@ -17009,7 +17024,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 // Set the 'w' bit to get the large version
 
 #ifdef TARGET_AMD64
-                if (TakesApxExtendedEvexPrefix(id))
+                if (TakesEvexPrefix(id))
                 {
                     assert(hasEvexPrefix(code));
                     // Evex.pp should already be added when adding the prefix
@@ -17127,7 +17142,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((code & 0xFF) == 0x00)
     {
         // This case happens for some SSE/AVX instructions only
-        assert(IsVexOrEvexEncodableInstruction(ins) || Is4ByteSSEInstruction(ins));
+        assert(IsSimdVexOrEvexEncodableInstruction(ins) || Is4ByteSSEInstruction(ins));
 
         dst += emitOutputByte(dst, (code >> 8) & 0xFF);
         dst += emitOutputByte(dst, (0xC0 | regCode));
@@ -17191,7 +17206,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
     code_t code;
 
     instruction ins = id->idIns();
-    assert(IsVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins) ||
            IsApxExtendedEvexInstruction(ins));
     regNumber targetReg = id->idReg1();
@@ -17283,7 +17298,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
     else if ((code & 0xFF) == 0x00)
     {
         // This case happens for AVX instructions only
-        assert(IsVexOrEvexEncodableInstruction(ins));
+        assert(IsSimdVexOrEvexEncodableInstruction(ins));
 
         dst += emitOutputByte(dst, (code >> 8) & 0xFF);
         dst += emitOutputByte(dst, (0xC0 | regCode));
@@ -17480,7 +17495,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             }
         }
 
-        if (TakesApxExtendedEvexPrefix(id))
+        if (TakesEvexPrefix(id))
         {
             // ACC form does not have support for promoted EVEX.
             useACC = false;
@@ -17546,7 +17561,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         case EA_2BYTE:
             // Output a size prefix for a 16-bit operand
-            if (!TakesApxExtendedEvexPrefix(id))
+            if (!TakesEvexPrefix(id))
             {
                 dst += emitOutputByte(dst, 0x66);
             }
@@ -17725,7 +17740,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
 
     // We would to update GC info correctly
     assert(!IsSSEInstruction(ins));
-    assert(!IsVexOrEvexEncodableInstruction(ins));
+    assert(!IsSimdVexOrEvexEncodableInstruction(ins));
 
 #ifdef TARGET_AMD64
     // all these opcodes take a sign-extended 4-byte immediate, max
@@ -17831,7 +17846,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
     // SSE/AVX doesnt make any sense here
     assert(!IsSSEInstruction(ins));
-    assert(!IsVexOrEvexEncodableInstruction(ins));
+    assert(!IsSimdVexOrEvexEncodableInstruction(ins));
 
     size_t ssz;
     size_t lsz;
@@ -18201,7 +18216,7 @@ bool emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, ssize_t* comp
 {
     instruction ins = id->idIns();
 
-    assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsEvexEncodableInstruction(ins));
     assert(id->idHasMem() && !id->idHasMemGen());
     assert(!id->idIsDspReloc());
     assert(compressedDsp != nullptr);
@@ -18909,7 +18924,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             // Output a size prefix for a 16-bit operand
-            if (size == EA_2BYTE && !TakesApxExtendedEvexPrefix(id))
+            if (size == EA_2BYTE && !TakesEvexPrefix(id))
             {
                 dst += emitOutputByte(dst, 0x66);
             }
@@ -18996,7 +19011,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RRD_RRD_RRD:
         {
             // This should only be called on AVX instructions
-            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins));
 
             regNumber op4Reg = id->idReg4();
 
@@ -19224,7 +19239,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else if ((code & 0xFF) == 0x00)
             {
                 // This case happens for some SSE/AVX instructions only
-                assert(IsVexOrEvexEncodableInstruction(ins) || Is4ByteSSEInstruction(ins));
+                assert(IsSimdVexOrEvexEncodableInstruction(ins) || Is4ByteSSEInstruction(ins));
 
                 dst += emitOutputByte(dst, (code >> 8) & 0xFF);
                 dst += emitOutputByte(dst, (0xC0 | regcode));
@@ -19646,7 +19661,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRW_RRD_SRD:
         case IF_RWR_RWR_SRD:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
             if (IsApxNddEncodableInstruction(ins) && id->idIsEvexNdContextSet())
             {
@@ -19684,7 +19699,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RRD_SRD_RRD:
         {
             // This should only be called on AVX instructions
-            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins));
 
             code = insCodeRM(ins);
             code = AddX86PrefixIfNeeded(id, code, size);
@@ -19919,7 +19934,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RWR_MRD:
         {
             // This should only be called on AVX instructions
-            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins));
 
             code = insCodeRM(ins);
             code = AddX86PrefixIfNeeded(id, code, size);
@@ -19945,7 +19960,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RRD_MRD_RRD:
         {
             // This should only be called on AVX instructions
-            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(IsSimdVexOrEvexEncodableInstruction(ins));
 
             code = insCodeRM(ins);
             code = AddX86PrefixIfNeeded(id, code, size);
