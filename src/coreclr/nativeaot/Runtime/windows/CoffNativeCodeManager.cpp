@@ -22,6 +22,21 @@
 
 #include "eventtracebase.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+EXTERN_C PEXCEPTION_ROUTINE NTAPI RtlVirtualUnwindWithSpForPacSign(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL,
+    OUT PULONG64 SpForPacSign OPTIONAL
+    );
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
 
 // Disable contracts
@@ -812,7 +827,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                     &contextPointers);
 
     pRegisterSet->SP = context.Sp;
-    pRegisterSet->IP = context.Pc;
+    pRegisterSet->IP = (PCODE)PacStripPtr((void*)context.Pc);
 
     if (!(flags & USFF_GcUnwind))
     {
@@ -841,7 +856,8 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                 REGDISPLAY *    pRegisterSet,       // in
-                                                PTR_PTR_VOID *  ppvRetAddrLocation) // out
+                                                PTR_PTR_VOID *  ppvRetAddrLocation, // out
+                                                uintptr_t *     pSpForArm64PacSign) // out
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
@@ -872,6 +888,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #endif
 
 #if defined(TARGET_AMD64)
+    *pSpForArm64PacSign = 0;
     context.Rsp = pRegisterSet->GetSP();
     context.Rbp = pRegisterSet->GetFP();
     context.Rip = pRegisterSet->GetIP();
@@ -888,6 +905,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)(context.Rsp - sizeof (PVOID));
     return true;
 #elif defined(TARGET_ARM64)
+    *pSpForArm64PacSign = 0;
 
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
@@ -923,14 +941,20 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #endif
     contextPointers.Lr = pRegisterSet->pLR;
 
-    RtlVirtualUnwind(NULL,
+    RtlVirtualUnwindWithSpForPacSign(NULL,
         dac_cast<TADDR>(m_moduleBase),
         pRegisterSet->IP,
         (PRUNTIME_FUNCTION)pNativeMethodInfo->runtimeFunction,
         &context,
         &HandlerData,
         &EstablisherFrame,
-        &contextPointers);
+        &contextPointers,
+        (PULONG64)pSpForArm64PacSign);
+
+    if (context.Pc == 0)
+    {
+        return false;
+    }
 
     if (contextPointers.Lr == pRegisterSet->pLR)
     {
@@ -945,6 +969,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)contextPointers.Lr;
     return true;
 #else
+    *pSpForArm64PacSign = 0;
     EstablisherFrame = 0;
     HandlerData = NULL;
     return false;
