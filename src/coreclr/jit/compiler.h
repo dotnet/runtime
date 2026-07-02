@@ -5389,6 +5389,8 @@ protected:
 #endif // TARGET_ARM64
 
 #endif // FEATURE_HW_INTRINSICS
+    GenTree* evalVectorCount(CORINFO_CLASS_HANDLE vectorHandle, var_types simdBaseType);
+
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
                                      int                  memberRef,
@@ -10084,6 +10086,14 @@ private:
     // by the hardware.  It is allocated when/if such situations are encountered during Lowering.
     unsigned lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 
+    CORINFO_CLASS_HANDLE vectorTHandle;
+
+    CORINFO_CLASS_HANDLE GetVectorTHandle()
+    {
+        assert(vectorTHandle != nullptr);
+        return vectorTHandle;
+    }
+
     bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -10155,9 +10165,20 @@ private:
     int getSIMDTypeAlignment(var_types simdType);
 
 public:
-    // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
+    // ---------------------------------------------------------------------------------------
+    // getCompileTimeVectorTByteLength: Get the number of bytes in a System.Numeric.Vector<T>
+    //                                  for the current compilation, compatible with available
+    //                                  InstructionSet flags.
+    //
     // Note - cannot be used for System.Runtime.Intrinsic
-    uint32_t getVectorTByteLength()
+    //
+    // Returns:
+    //   The size in bytes of Vector<T>.
+    //   Arm64: This function may return the sentinel value SIZE_UNKNOWN to indicate that the
+    //          size of Vector<T> is not known at compile time. A compilation in JIT mode may
+    //          call getRuntimeVectorTByteLength to determine the actual size instead.
+    //
+    uint32_t getCompileTimeVectorTByteLength()
     {
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always
@@ -10209,9 +10230,33 @@ public:
         // TODO-WASM: Verify if we need a more complicated condition here
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"getVectorTByteLength() unimplemented on target arch");
+        assert(!"getCompileTimeVectorTByteLength() unimplemented on target arch");
         unreached();
 #endif
+    }
+
+    //-------------------------------------------------------------------------------------
+    // getRuntimeVectorTByteLength: Get the size of Vector<T> that will be used at runtime
+    //
+    // Returns:
+    //   The size of Vector<T> as resolved in EE metadata.
+    //
+    // Notes:
+    //   We rely on a cached value for the handle of Vector<T> set in getBaseTypeAndSizeOfSIMDType
+    //   to query the size. This function may assert if called early in Import before the handle
+    //   has been discovered.
+    uint32_t getRuntimeVectorTByteLength()
+    {
+        uint32_t compileTimeLength = getCompileTimeVectorTByteLength();
+
+        if (compileTimeLength == SIZE_UNKNOWN)
+        {
+            assert(!IsAot());
+            uint32_t size = info.compCompHnd->getClassSize(GetVectorTHandle());
+            return size;
+        }
+
+        return compileTimeLength;
     }
 
     // The minimum and maximum possible number of bytes in a SIMD vector.

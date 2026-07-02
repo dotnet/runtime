@@ -1676,7 +1676,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_AsVector512:
         {
             assert(sig->numArgs == 1);
-            uint32_t vectorTByteLength = getVectorTByteLength();
+            uint32_t vectorTByteLength = getCompileTimeVectorTByteLength();
 
             if (vectorTByteLength == 0)
             {
