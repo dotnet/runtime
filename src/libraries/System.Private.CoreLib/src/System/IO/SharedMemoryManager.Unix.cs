@@ -575,11 +575,11 @@ catch (Exception)
                         {
                             FileSystem.SetUnixFileMode(directoryPath, permissionsMask);
                         }
-                        catch (Exception)
-                        {
-                            Directory.Delete(directoryPath);
-                            throw;
-                        }
+catch (Exception)
+{
+    try { Directory.Delete(directoryPath); } catch { }
+    throw;
+}
 
                         return true;
                     }
