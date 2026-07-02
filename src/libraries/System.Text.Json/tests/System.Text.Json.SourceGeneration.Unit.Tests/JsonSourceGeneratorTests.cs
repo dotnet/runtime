@@ -1018,6 +1018,41 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(expDiagnostics);
         }
 
+        [Fact]
+        public void OptionsLevelExperimentalConverterTypeArgument_IsSuppressedInContextSources()
+        {
+            string source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                [Experimental("EXP_OPTIONS")]
+                public class MyExperimentalType { }
+
+                public class MyConverter<T> : JsonConverter<object>
+                {
+                    public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => null;
+                    public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) { }
+                }
+
+                public class MyPoco
+                {
+                    public object Prop { get; set; }
+                }
+
+                #pragma warning disable EXP_OPTIONS
+                [JsonSourceGenerationOptions(Converters = new[] { typeof(MyConverter<MyExperimentalType>) })]
+                #pragma warning restore EXP_OPTIONS
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext { }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            Assert.Equal(new[] { "EXP_OPTIONS" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+        }
 
         public static IEnumerable<object[]> ExperimentalSuppressionSources()
         {
