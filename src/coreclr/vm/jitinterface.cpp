@@ -9003,6 +9003,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
 /*********************************************************************/
 void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CorInfoLookupIntrinsicType      type,
     CORINFO_METHOD_HANDLE           callerHandle,
     CORINFO_GENERICHANDLE_RESULT *  pResult)
 {

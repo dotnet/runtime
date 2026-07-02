@@ -162,6 +162,12 @@ namespace System.Runtime.CompilerServices
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
 #endif
 
+        [Intrinsic]
+        [RequiresDynamicCode("AOT must recognize usages of the method to preserve reflection info and generate stubs")]
+        public static Delegate GetDelegate(nint method, ref Delegate? storage)
+        {
+            throw new NotSupportedException("GetDelegate must be used in runtime recognized patterns");
+        }
 
         // The following intrinsics return true if input is a compile-time constant
         // Feel free to add more overloads on demand

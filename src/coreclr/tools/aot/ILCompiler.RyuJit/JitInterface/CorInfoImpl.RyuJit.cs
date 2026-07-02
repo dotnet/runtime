@@ -766,6 +766,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuation;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_CREATE_DELEGATE:
+                    id = ReadyToRunHelper.CreateSharedDelegate;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                     return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
@@ -1855,31 +1859,48 @@ namespace Internal.JitInterface
             offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
         }
 
-        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoLookupIntrinsicType type, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             // Resolved token as a potentially RuntimeDetermined object.
-            MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+            // currently only methods and fields are handled
+            MethodDesc method = null;
+            FieldDesc field = null;
+            object runtimeObject = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            switch (pResolvedToken.tokenType)
+            {
+                case CorInfoTokenKind.CORINFO_TOKENKIND_Method:
+                    method = (MethodDesc)runtimeObject;
+                    break;
+                case CorInfoTokenKind.CORINFO_TOKENKIND_Field:
+                    field = (FieldDesc)runtimeObject;
+                    break;
+                default:
+                    Debug.Fail($"Unexpected token type: {pResolvedToken.tokenType}");
+                    break;
+            }
 
             pResult.compileTimeHandle = null;
 
-            switch (method.GetName())
+            (object entity, ReadyToRunHelperId helper, CorInfoGenericHandleType handleType) data = type switch
             {
-                case "Of":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, HandleToObject(callerHandle), ref pResult.lookup);
-                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
-                    break;
-                case "DefaultConstructorOf":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, HandleToObject(callerHandle), ref pResult.lookup);
-                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;
-                    break;
-                case "AllocatorOf":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, HandleToObject(callerHandle), ref pResult.lookup);
-                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_UNKNOWN;
-                    break;
-                default:
-                    Debug.Fail("Unexpected raw handle intrinsic");
-                    break;
-            }
+                CorInfoLookupIntrinsicType.CORINFO_GENERICINTRINSIC_FIRSTPARAMETER =>
+                    (method?.Instantiation[0], ReadyToRunHelperId.TypeHandle, CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS),
+                CorInfoLookupIntrinsicType.CORINFO_GENERICINTRINSIC_DEFAULTCONSTRUCTOR =>
+                    (method?.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD),
+                CorInfoLookupIntrinsicType.CORINFO_GENERICINTRINSIC_OBJECTALLOCATOR =>
+                    (method?.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, CorInfoGenericHandleType.CORINFO_HANDLETYPE_UNKNOWN),
+                CorInfoLookupIntrinsicType.CORINFO_GENERICINTRINSIC_DECLARINGTYPE =>
+                    (method?.OwningType ?? field?.OwningType, ReadyToRunHelperId.TypeHandle, CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS),
+                CorInfoLookupIntrinsicType.CORINFO_GENERICINTRINSIC_FIELDTYPE =>
+                    (field?.FieldType, ReadyToRunHelperId.TypeHandle, CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS),
+                _ => default
+            };
+            Debug.Assert(data.helper != ReadyToRunHelperId.Invalid, "Unexpected lookup intrinsic type");
+            Debug.Assert(data.entity is not null, "Null resolved object");
+
+            ComputeLookup(ref pResolvedToken, data.entity, data.helper, HandleToObject(callerHandle), ref pResult.lookup);
+            pResult.handleType = data.handleType;
         }
 
         private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)

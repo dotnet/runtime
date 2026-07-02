@@ -223,7 +223,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultComparerClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultEqualityComparerClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getSZArrayHelperEnumeratorClass;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void> expandRawHandleIntrinsic;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CorInfoLookupIntrinsicType, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void> expandRawHandleIntrinsic;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte> isIntrinsicType;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, bool*, CorInfoCallConvExtension> getUnmanagedCallConv;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, byte> pInvokeMarshalingRequired;
@@ -698,12 +698,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _expandRawHandleIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
+        private static void _expandRawHandleIntrinsic(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoLookupIntrinsicType type, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.expandRawHandleIntrinsic(ref *pResolvedToken, callerHandle, ref *pResult);
+                _this.expandRawHandleIntrinsic(ref *pResolvedToken, type, callerHandle, ref *pResult);
             }
             catch (Exception ex)
             {

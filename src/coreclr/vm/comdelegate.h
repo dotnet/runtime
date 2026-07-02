@@ -37,6 +37,8 @@ public:
     FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
     FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
 
+    static DELEGATEREF CreateShared(MethodDesc* pTargetMD, MethodTable* delegateMt, MethodTable* targetMt);
+
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
 
@@ -86,6 +88,7 @@ public:
 };
 
 extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, QCall::ObjectHandleOnStack target, PCODE method);
+extern "C" void QCALLTYPE Delegate_CreateDelegate(PCODE method, MethodTable* delegateMt, MethodTable* targetMt, QCall::ObjectHandleOnStack objHandle);
 
 extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
 

@@ -3517,6 +3517,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     bool betterToExpand = false;
 
+    // this must be expanded as it relies on JIT expansion
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate)
+    {
+        mustExpand     = true;
+        betterToExpand = true;
+    }
+
     // Allow some lightweight intrinsics in Tier0 which can improve throughput
     // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
     if (!mustExpand && opts.Tier0OptimizationEnabled())
@@ -3773,6 +3780,196 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate:
+            {
+                assert(sig->sigInst.methInstCount == 0);
+
+                StackEntry fieldStack = impStackTop();
+
+                CORINFO_FIELD_HANDLE targetField = NO_FIELD_HANDLE;
+
+                GenTree*  baseAddr = nullptr;
+                FieldSeq* fldSeq   = nullptr;
+                ssize_t   offset   = 0;
+                if (fieldStack.seTypeInfo.HasFieldToken() &&
+                    fieldStack.val->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
+                {
+                    assert(fldSeq != nullptr);
+                    targetField = fldSeq->GetFieldHandle();
+                }
+
+                if (targetField == NO_FIELD_HANDLE)
+                {
+                    JITDUMP("Delegate literals require a direct field address\n");
+                    return nullptr;
+                }
+
+                StackEntry methodStack = impStackTop(1);
+
+                CORINFO_METHOD_HANDLE targetMethod = NO_METHOD_HANDLE;
+                if (methodStack.val->OperIs(GT_FTN_ADDR))
+                {
+                    targetMethod = methodStack.val->AsFptrVal()->gtFptrMethod;
+                }
+                else if (methodStack.seTypeInfo.IsMethod())
+                {
+                    targetMethod = methodStack.seTypeInfo.GetMethodPointerInfo()->m_token.hMethod;
+                }
+
+                if (targetMethod == NO_METHOD_HANDLE)
+                {
+                    JITDUMP("Delegate literals require a direct ftn ptr\n");
+                    return nullptr;
+                }
+
+                CORINFO_SIG_INFO callSig;
+                info.compCompHnd->getMethodSig(targetMethod, &callSig);
+
+                CORINFO_CLASS_HANDLE closureType = NO_CLASS_HANDLE;
+                if (callSig.hasThis())
+                {
+                    closureType = info.compCompHnd->getMethodClass(targetMethod);
+                }
+                else if (callSig.numArgs != 0)
+                {
+                    info.compCompHnd->getArgType(&callSig, callSig.args, &closureType);
+                }
+
+                GenTree* closureMT = nullptr;
+                if (callSig.hasThis())
+                {
+                    assert(closureType != NO_CLASS_HANDLE);
+                    TypeCompareState state = info.compCompHnd->isGenericType(closureType);
+                    // we should always see the declaring type enough to know if it's generic
+                    assert(state != TypeCompareState::May);
+
+                    if (state != TypeCompareState::MustNot || eeIsValueClass(closureType))
+                    {
+                        if (eeIsSharedInst(closureType))
+                        {
+                            assert(methodStack.seTypeInfo.IsMethod());
+                            assert(methodStack.seTypeInfo.GetMethodPointerInfo()->m_token.tokenType ==
+                                   CORINFO_TOKENKIND_Method);
+
+                            if (!IsNativeAot())
+                            {
+                                // TODO: impl expandRawHandleIntrinsic in CoreCLR and R2R
+                                return nullptr;
+                            }
+
+                            mdToken ldftnToken = methodStack.seTypeInfo.GetMethodPointerInfo()->m_token.token;
+
+                            CORINFO_RESOLVED_TOKEN resolvedToken;
+                            resolvedToken.tokenContext = impTokenLookupContextHandle;
+                            resolvedToken.tokenScope   = info.compScopeHnd;
+                            resolvedToken.token        = ldftnToken;
+                            resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+
+                            CORINFO_GENERICHANDLE_RESULT embedInfo;
+                            info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken,
+                                                                       CORINFO_GENERICINTRINSIC_DECLARINGTYPE,
+                                                                       info.compMethodHnd, &embedInfo);
+
+                            closureMT = impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(ldftnToken),
+                                                        embedInfo.compileTimeHandle);
+                        }
+                        else
+                        {
+                            closureMT = gtNewIconEmbClsHndNode(closureType);
+                        }
+                    }
+                }
+
+                CORINFO_CLASS_HANDLE delegateType = NO_CLASS_HANDLE;
+                CorInfoType          fieldCorType = info.compCompHnd->getFieldType(targetField, &delegateType);
+                assert(fieldCorType == CORINFO_TYPE_CLASS);
+
+                GenTree* delegateMT;
+                bool     isShared = eeIsSharedInst(delegateType);
+                if (isShared)
+                {
+                    if (!IsNativeAot())
+                    {
+                        // TODO: impl expandRawHandleIntrinsic in CoreCLR and R2R
+                        return nullptr;
+                    }
+
+                    mdToken fieldToken = fieldStack.seTypeInfo.GetFieldToken();
+
+                    CORINFO_RESOLVED_TOKEN resolvedToken;
+                    resolvedToken.tokenContext = impTokenLookupContextHandle;
+                    resolvedToken.tokenScope   = info.compScopeHnd;
+                    resolvedToken.token        = fieldToken;
+                    resolvedToken.tokenType    = CORINFO_TOKENKIND_Field;
+
+                    CORINFO_GENERICHANDLE_RESULT embedInfo;
+                    info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, CORINFO_GENERICINTRINSIC_FIELDTYPE,
+                                                               info.compMethodHnd, &embedInfo);
+
+                    delegateMT =
+                        impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(fieldToken), embedInfo.compileTimeHandle);
+                }
+                else
+                {
+                    delegateMT = gtNewIconEmbClsHndNode(delegateType);
+                }
+
+                JITDUMP("Delegate creation info: method %s type %s storage %s closure %s needs instance %i\n",
+                        eeGetMethodFullName(targetMethod), eeGetClassName(delegateType),
+                        eeGetFieldName(targetField, true),
+                        closureType == NO_CLASS_HANDLE ? "none" : eeGetClassName(closureType),
+                        closureMT == nullptr ? 0 : 1);
+
+                GenTree* aotInfo = nullptr;
+                if (IsNativeAot())
+                {
+                    bool throwIfClosed = false;
+                    if (!callSig.hasThis())
+                    {
+                        throwIfClosed = closureType == NO_CLASS_HANDLE || eeIsValueClass(closureType);
+                    }
+
+                    uint32_t infoBits = callSig.hasThis() ? 0 : 1;
+                    infoBits |= throwIfClosed ? 2 : 0;
+                    infoBits |= callSig.totalILArgs() << 2;
+                    aotInfo = gtNewIconNode(infoBits);
+
+                    JITDUMP("Additional NativeAOT info: static %u throw if closed %u args %u\n", infoBits & 1,
+                            infoBits >> 1 & 1, infoBits >> 2);
+                }
+
+                GenTree* storage   = impPopStack().val;
+                GenTree* methodPtr = impPopStack().val;
+
+                GenTree* storageClone;
+                storage = impCloneExpr(storage, &storageClone, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("RuntimeHelpers.GetDelegate storage"));
+
+                unsigned delegateSlot = lvaGrabTemp(false DEBUGARG("delegateSlot"));
+                impStoreToTemp(delegateSlot, gtNewIndir(TYP_REF, storage), CHECK_SPILL_ALL);
+
+                GenTreeOp* nullcheck = gtNewOperNode(GT_NE, TYP_INT, gtNewLclVarNode(delegateSlot), gtNewNull());
+
+                if (closureMT == nullptr)
+                {
+                    closureMT = gtNewIconNode(0, TYP_I_IMPL);
+                }
+                GenTreeCall* helper = gtNewHelperCallNode(CORINFO_HELP_CREATE_DELEGATE, TYP_REF, methodPtr,
+                                                          storageClone, delegateMT, closureMT, aotInfo);
+
+                GenTree*      storeCold = gtNewTempStore(delegateSlot, helper);
+                GenTreeColon* colon     = gtNewColonNode(TYP_VOID, gtNewNothingNode(), storeCold);
+                GenTreeQmark* qmark     = gtNewQmarkNode(TYP_VOID, nullcheck, colon);
+                qmark->SetThenNodeLikelihood(100);
+
+                impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+
+                lvaSetClass(delegateSlot, delegateType, !isShared);
+                retNode = gtNewLclVarNode(delegateSlot);
+                JITDUMP("Expanded GetDelegate\n");
+                break;
+            }
+
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
                 GenTree* op1 = impPopStack().val;
@@ -3876,8 +4073,24 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 resolvedToken.token        = memberRef;
                 resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
+                CorInfoLookupIntrinsicType type;
+                switch (ni)
+                {
+                    case NI_Internal_Runtime_MethodTable_Of:
+                        type = CORINFO_GENERICINTRINSIC_FIRSTPARAMETER;
+                        break;
+                    case NI_System_Activator_AllocatorOf:
+                        type = CORINFO_GENERICINTRINSIC_OBJECTALLOCATOR;
+                        break;
+                    case NI_System_Activator_DefaultConstructorOf:
+                        type = CORINFO_GENERICINTRINSIC_DEFAULTCONSTRUCTOR;
+                        break;
+                    default:
+                        UNREACHABLE();
+                }
+
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
-                info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, info.compMethodHnd, &embedInfo);
+                info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, type, info.compMethodHnd, &embedInfo);
 
                 GenTree* rawHandle =
                     impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(memberRef), embedInfo.compileTimeHandle);
@@ -11362,6 +11575,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "InitializeArray") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+                            }
+                            else if (strcmp(methodName, "GetDelegate") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate;
                             }
                             else if (strcmp(methodName, "IsKnownConstant") == 0)
                             {

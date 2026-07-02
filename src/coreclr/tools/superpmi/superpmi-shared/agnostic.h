@@ -457,6 +457,7 @@ struct Agnostic_EmbedGenericHandle
 struct Agnostic_ExpandRawHandleIntrinsic
 {
     Agnostic_CORINFO_RESOLVED_TOKENin ResolvedToken;
+    DWORD                             type;
     DWORDLONG                         hCallerHandle;
 };
 

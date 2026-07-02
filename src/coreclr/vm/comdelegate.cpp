@@ -772,6 +772,9 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
+static MapSHash<MethodTable*, Object*> s_frozenTargetMap;
+static CrstStatic s_targetCrst;
+
 // One time init.
 void COMDelegate::Init()
 {
@@ -785,6 +788,8 @@ void COMDelegate::Init()
 #if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
 #endif
+
+    s_targetCrst.Init(CrstFrozenDelegateTarget);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -1781,6 +1786,120 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     }
 
     GCPROTECT_END();
+    END_QCALL;
+}
+
+DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* delegateMt, MethodTable* targetMt)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    assert(pTargetMD != NULL);
+    assert(delegateMt != NULL);
+
+    // this should only be reachable from the JIT
+    assert(!TypeHandle(delegateMt).IsCanonicalSubtype());
+    assert(delegateMt->IsDelegate());
+
+    assert(targetMt == NULL || !TypeHandle(targetMt).IsCanonicalSubtype());
+
+    MethodDesc* pDelegateInvoke = FindDelegateInvokeMethod(delegateMt);
+
+    UINT invokeCount = MethodDescToNumFixedArgs(pDelegateInvoke);
+    UINT methodCount = MethodDescToNumFixedArgs(pTargetMD);
+    bool isStatic = pTargetMD->IsStatic();
+    if (!isStatic)
+    {
+        methodCount++; // count 'this'
+    }
+
+    bool isOpen = invokeCount == methodCount;
+        // reject invalid closed delegates
+    if (!isOpen && isStatic)
+    {
+        MetaSig sig(pTargetMD);
+        if (sig.NextArgNormalized() == ELEMENT_TYPE_END || sig.GetLastTypeHandleThrowing().IsValueType())
+        {
+            return NULL;
+        }
+    }
+
+    // we create delegates without a target here unless needed
+    Object* target = NULL;
+    if (targetMt != NULL)
+    {
+        if (targetMt->HasFinalizer() || targetMt->HasClassConstructor())
+        {
+            return NULL;
+        }
+
+        if (!IsDynamicScope(GetScopeHandle(targetMt->GetModule())))
+        {
+            // we need to lock to access the global map
+            CrstHolder crst(&s_targetCrst);
+
+            if (!s_frozenTargetMap.Lookup(targetMt, &target))
+            {
+                target = OBJECTREFToObject(TryAllocateFrozenObject(targetMt));
+                if (target != NULL)
+                {
+                    s_frozenTargetMap.Add(targetMt, target);
+                }
+            }
+        }
+    }
+
+    struct
+    {
+        DELEGATEREF delegate;
+        OBJECTREF target;
+    } gc;
+
+    gc.delegate = NULL;
+    gc.target   = ObjectToOBJECTREF(target);
+
+    GCPROTECT_BEGIN(gc);
+    if (targetMt != NULL)
+    {
+        if (gc.target == NULL)
+        {
+            // we should mostly get here with collectible types
+            // TODO: pool non FOH targets too
+            gc.target = AllocateObject(targetMt);
+        }
+        assert(gc.target != NULL);
+    }
+
+    gc.delegate = (DELEGATEREF)AllocateObject(delegateMt);
+
+    MethodTable* declaringType = targetMt == nullptr ? pTargetMD->GetMethodTable() : targetMt;
+    BindToMethod(&gc.delegate, &gc.target, pTargetMD, declaringType, isOpen);
+    GCPROTECT_END();
+
+    return gc.delegate;
+}
+
+extern "C" void QCALLTYPE Delegate_CreateDelegate(PCODE method, MethodTable* delegateMt, MethodTable* targetMt, QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(method != (PCODE)NULL);
+    _ASSERTE(delegateMt != (PCODE)NULL);
+    BEGIN_QCALL;
+
+    MethodDesc* methodDesc = NonVirtualEntry2MethodDesc(method);
+
+    {
+        GCX_COOP();
+        DELEGATEREF delegate = COMDelegate::CreateShared(methodDesc, delegateMt, targetMt);
+        objHandle.Set(delegate);
+    }
+
     END_QCALL;
 }
 

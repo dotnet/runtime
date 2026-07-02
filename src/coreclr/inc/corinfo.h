@@ -590,6 +590,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+    CORINFO_HELP_CREATE_DELEGATE,
+
     CORINFO_HELP_COUNT,
 };
 
@@ -1251,6 +1253,15 @@ enum CorInfoGenericHandleType
 
 //----------------------------------------------------------------------------
 // Embedding type, method and field handles (for "ldtoken" or to pass back to helpers)
+
+enum CorInfoLookupIntrinsicType
+{
+    CORINFO_GENERICINTRINSIC_FIRSTPARAMETER,
+    CORINFO_GENERICINTRINSIC_DEFAULTCONSTRUCTOR,
+    CORINFO_GENERICINTRINSIC_OBJECTALLOCATOR,
+    CORINFO_GENERICINTRINSIC_DECLARINGTYPE,
+    CORINFO_GENERICINTRINSIC_FIELDTYPE
+};
 
 // Result of calling embedGenericHandle
 struct CORINFO_GENERICHANDLE_RESULT
@@ -2302,6 +2313,7 @@ public:
     // should be looked up at runtime.
     virtual void expandRawHandleIntrinsic(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+        CorInfoLookupIntrinsicType      type,
         CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
 
