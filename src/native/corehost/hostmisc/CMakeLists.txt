@@ -4,10 +4,13 @@
 include(configure.cmake)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
-set(SOURCES
+set(C_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
     ${CMAKE_CURRENT_LIST_DIR}/trace.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.c
+)
+
+set(CXX_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
 )
@@ -21,17 +24,21 @@ set(HEADERS
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
-    list(APPEND SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c
+    list(APPEND C_SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c)
+    list(APPEND CXX_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/pal.windows.cpp
         ${CMAKE_CURRENT_LIST_DIR}/longfile.windows.cpp)
     list(APPEND HEADERS
         ${CMAKE_CURRENT_LIST_DIR}/longfile.h)
 else()
-    list(APPEND SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
+    list(APPEND C_SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c)
+    list(APPEND CXX_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
 endif()
+
+set(SOURCES ${C_SOURCES} ${CXX_SOURCES})
 
 # hostmisc must be an "object library" as we want to build it once
 # and embed the objects into static libraries we ship (like libnethost).
@@ -75,3 +82,11 @@ endif()
 set_target_properties(hostmisc_public PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 add_library(hostmisc::public ALIAS hostmisc_public)
+
+# C-only subset of hostmisc.
+add_library(hostmisc_c OBJECT ${C_SOURCES})
+target_link_libraries(hostmisc_c PUBLIC hostmisc_interface)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    target_link_libraries(hostmisc_c PUBLIC minipal_objects)
+endif()
+set_target_properties(hostmisc_c PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
