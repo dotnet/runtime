@@ -173,7 +173,7 @@ var_types Compiler::getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls
 //    sizeBytes if non-null is set to size in bytes.
 //
 // Notes:
-//    If the size of the struct is already known call structSizeMightRepresentSIMDType
+//    If the size of the struct is already known call structMightRepresentSIMDType
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls

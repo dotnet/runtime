@@ -10606,12 +10606,36 @@ public:
         return threshold;
     }
 
-    // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
-    // structs will fit the criteria.
-    bool structSizeMightRepresentSIMDType(size_t structSize)
+    //---------------------------------------------------------------------------------------------
+    // structMightRepresentSIMDType: Can this class handle be a SIMD type?
+    //
+    // Returns:
+    //   false if it is not possible for this class handle to be a SIMD type, otherwise true.
+    //
+    // Notes:
+    //   SIMD types are currently all value classes annotated with the [Intrinsic] attribute.
+    //   This is a first stage filter, caller should verify exact SIMD types by name.
+    bool structMightRepresentSIMDType(CORINFO_CLASS_HANDLE clsHnd)
     {
+        uint32_t structFlags   = info.compCompHnd->getClassAttribs(clsHnd);
+        uint32_t filteredFlags = structFlags & (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR |
+                                                CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_INTRINSIC_TYPE);
+        uint32_t desiredFlags  = (CORINFO_FLG_VALUECLASS | CORINFO_FLG_INTRINSIC_TYPE);
+
+        if (filteredFlags != desiredFlags)
+        {
+            return false;
+        }
+
+        unsigned structSize = info.compCompHnd->getClassSize(clsHnd);
 #ifdef FEATURE_SIMD
-        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
+#ifdef TARGET_ARM64
+        const uint32_t max =
+            compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
+#else
+        const uint32_t max = getMaxVectorByteLength();
+#endif // TARGET_ARM64
+        return (structSize >= getMinVectorByteLength()) && (structSize <= max);
 #else
         return false;
 #endif // FEATURE_SIMD
