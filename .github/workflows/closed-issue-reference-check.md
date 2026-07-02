@@ -1,6 +1,6 @@
 ---
 name: "Closed Issue Reference Check"
-description: "Periodic check for closed issues still referenced by issue-URL links in C# source files under src. A deterministic pre-step collects those references and resolves each issue's state; the agent re-checks every closed-but-referenced issue and posts one advisory comment recommending it be reopened or the reference removed."
+description: "Periodic check that flags closed issues still used to disable or guard code — an ActiveIssue attribute, a Skip, or a project-exclusion comment — where the code leans on the issue link instead of stating the reason. A deterministic pre-step collects those references; the agent reads the surrounding code and advises making it self-describing, or reopening the issue if it was not actually fixed."
 
 permissions:
   contents: read
@@ -35,9 +35,6 @@ concurrency:
   cancel-in-progress: true
 
 tools:
-  github:
-    toolsets: [issues, pull_requests, repos, search]
-    min-integrity: merged
   bash: ["git", "find", "ls", "cat", "grep", "head", "tail", "wc", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "gh"]
 
 checkout:
@@ -54,8 +51,8 @@ steps:
     run: |
       set -euo pipefail
 
-      # Find closed issues still referenced by issue-URL links in *.cs under src,
-      # ranked by reference count, into issue-candidates.json.
+      # Find closed issues still used to disable or guard code (ActiveIssue, Skip, or a
+      # project-exclusion comment) under src, tagged by construct, into issue-candidates.json.
 
       if [ -n "${NODE_EXTRA_CA_CERTS:-}" ] && [ -z "${SSL_CERT_FILE:-}" ]; then
         export SSL_CERT_FILE="$NODE_EXTRA_CA_CERTS"
@@ -70,24 +67,39 @@ steps:
 
       refs="$(mktemp)"
       raw="$(mktemp)"
-      # -o prints every issue URL on its own line (multiple per source line), each
-      # prefixed path:lineno:, so lines referencing several issues are all captured.
-      # grep exits 1 when there are no matches, which is not an error here.
-      grep -rEnoI "${owner}/${name}/issues/[0-9]+" $DIRS --include=*.cs 2>/dev/null > "$raw" \
+      # Match issue-URL links in source and build files. Keep the full matched line
+      # (not grep -o) so awk can pull every issue number on it and classify the
+      # construct the link sits in. grep exits 1 on no matches, which is not an error.
+      grep -rEnI "${owner}/${name}/issues/[0-9]+" $DIRS \
+        --include=*.cs --include=*.csproj --include=*.proj --include=*.props --include=*.targets 2>/dev/null > "$raw" \
         || { rc=$?; [ "$rc" -eq 1 ] || exit "$rc"; }
       awk -v pat="${owner}/${name}/issues/" '
-          { split($0, a, ":"); path=a[1]; lineno=a[2];
-            n=$0; sub(".*" pat, "", n); sub(/[^0-9].*/, "", n);
-            if (n != "") print n "\t" path ":" lineno }' "$raw" > "$refs"
+          {
+            split($0, a, ":"); path=a[1]; lineno=a[2];
+            kind = "reference";
+            if ($0 ~ /ActiveIssue/) kind = "ActiveIssue";
+            else if ($0 ~ /Skip[ \t]*=/) kind = "Skip";
+            else if (path ~ /\.(csproj|proj|props|targets)$/ && $0 ~ /<!--/) kind = "build-exclusion";
+            s = $0;
+            while (match(s, pat "[0-9]+")) {
+              n = substr(s, RSTART, RLENGTH); sub(".*/issues/", "", n);
+              if (n != "") print n "\t" path ":" lineno "\t" kind;
+              s = substr(s, RSTART + RLENGTH);
+            }
+          }' "$raw" > "$refs"
       rm -f "$raw"
 
-      # Group references by issue number and rank by reference count first, so state
-      # is resolved only for the most-referenced numbers instead of every number
-      # under the tree (which can be very large in a big repo).
+      # Group references by issue number, keep only issues that appear in at least one
+      # disabling construct, and rank by reference count. State is resolved only for the
+      # top numbers instead of every one (which can be very large in a big repo).
       grouped="$(mktemp)"
-      jq -R 'split("\t") | {number:(.[0]|tonumber), ref:.[1]}' "$refs" \
+      jq -R 'split("\t") | {number:(.[0]|tonumber), location:.[1], kind:.[2]}' "$refs" \
         | jq -s 'sort_by(.number) | group_by(.number)
-                 | map({number:.[0].number, count: length, refs: ([.[].ref] | unique)})
+                 | map({ number: .[0].number,
+                         kinds: ([.[].kind] | unique),
+                         refs:  ([.[] | {location, kind}] | unique) })
+                 | map(select(.kinds | any(. == "ActiveIssue" or . == "Skip" or . == "build-exclusion")))
+                 | map(.count = (.refs | length))
                  | sort_by(-.count)' > "$grouped"
 
       probe_nums="$(mktemp)"
@@ -172,39 +184,39 @@ network:
 
 # Closed Issue Reference Check
 
-You reconcile closed issues with the code that still references them. A deterministic step has already scanned the C# source under `src` for issue-URL links (`<owner>/<repo>/issues/<n>`) and written `issue-candidates.json` to the workspace root: every entry is a closed issue still referenced by such a link. That usually means one of two things is out of date — the reference should be removed because the issue was genuinely resolved, or the issue was closed prematurely and should be reopened. Confirm each case and leave a single comment so a maintainer can decide.
+You review how closed issues are used to disable or guard code. A deterministic step has scanned the source and build files under `src` for issue-URL links that sit in a test-disabling or guarding construct — an `[ActiveIssue(...)]` attribute, a `Skip = ...`, or a project-exclusion comment — and written `issue-candidates.json` to the workspace root. Every entry is a closed issue still used this way. A closed issue that is still disabling a test usually means one of two things: the issue was not actually fixed and should be reopened, or the code is leaning on the issue link instead of stating, in the code itself, why the test is disabled. The reason belongs in the code so it is self-describing; an issue link is not a substitute for it, and is warranted only in the rare case a comment cannot capture.
 
 You only suggest; you never act. The one write you can make is an `add-comment` through `safe-outputs`. Do not change issue state, edit files, or use `gh` to write anything.
 
 ## Guardrails
 
-- **Work from `issue-candidates.json` only.** The scan already enumerated the issues and collected their code references, so re-deriving them wastes time and risks drift. Read a candidate's detail to verify it, but never grow the candidate set.
-- **Read issue content through the `github` MCP tools** (`min-integrity: merged`, the strictest gate — only content authored by established maintainers is trusted). If a result comes back `[Filtered]`, skip it and note the count rather than reaching for `gh issue view` or `gh api` to get around the gate — `gh` is only for cheap metadata the MCP tools cannot express.
+- **Work from `issue-candidates.json` only.** The scan already collected the references and the construct each one sits in, so never grow the candidate set. The issue's own content is not the point — the code around each reference is.
+- **Judge from the code, not the issue.** For each reference, read the lines around it and decide whether the code already states why it is disabled. A reference that already carries a clear reason next to it is fine; leave it. Flag only where the issue link is the sole explanation.
 - **One comment per issue, ever.** Each comment carries the hidden marker `<!-- closed-issue-reference-check:advice -->`. The scan already removed issues that have this marker, so the candidate set is free of already-advised issues; never post a second time on the same issue. Stop after 30 comments in a run.
 
 ## Steps
 
-**1 — Load candidates.** Read `issue-candidates.json`: a JSON array, most-referenced first, each entry `{number, url, title, refs}` where `refs` lists the ``file:line`` locations. The scan has already dropped any issue that carries the advisory marker, so every entry is a fresh candidate. If it is missing, empty, or `[]`, skip to *Nothing to do*. Otherwise work through it in order.
+**1 — Load candidates.** Read `issue-candidates.json`: a JSON array, most-referenced first, each entry `{number, url, title, refs}` where each ref is `{location: "file:line", kind}` and `kind` is `ActiveIssue`, `Skip`, or `build-exclusion`. If it is missing, empty, or `[]`, skip to *Nothing to do*. Otherwise work through it in order.
 
-**2 — Confirm each case.** Pull the issue through the `github` MCP tools and check it is really still closed. The close reason tells you what to recommend: an issue closed as stale or inactive while the code still guards against it points toward reopening; one closed as fixed, by-design, duplicate, or won't-fix points toward removing the now-stale reference. When it is genuinely ambiguous, present both options rather than asserting one. Drop anything that no longer holds — already reopened, unrelated reference — with a short `-> skipped: <reason>`. A false advisory is worse than a missed one.
+**2 — Read the code and judge self-description.** For each reference, open the file and read the few lines around `location`. Ask whether the code states, on its own, why the test is disabled or guarded, or whether the issue link is the only explanation. A bare `[ActiveIssue("<url>")]` or an exclusion annotated only with the issue link is not self-describing; a nearby comment that states the actual failure or condition is. Drop an issue when every one of its references already reads clearly without the link, or when a reference is unrelated or stale — with a short `-> skipped: <reason>`. A false advisory is worse than a missed one.
 
-**3 — Comment.** For each surviving candidate, post one `add-comment` in this shape, filling `Referenced at` from the candidate's `refs`:
+**3 — Comment.** For each issue that still has at least one link-only reference, post one `add-comment` in this shape, listing those references and their `kind`:
 
 ```markdown
 <!-- closed-issue-reference-check:advice -->
-**Closed issue still referenced in code:** this issue is closed but its number still appears in the source tree, so it should be **reopened** — or the references removed if it was closed intentionally.
+**Closed issue still gating code without a stated reason.** This closed issue is referenced by a test-disabling or guarding construct, but the code relies on the issue link instead of describing why the code is disabled. Make the code self-describing — state the key reason in a comment next to it and drop the bare link — or reopen the issue if it was not actually fixed.
 
 **Referenced at:**
-- `path/to/File.cs:123`
-- `path/to/Other.cs:45`
+- `path/to/File.cs:123` — ActiveIssue
+- `path/to/tests.proj:370` — build-exclusion
 
 _Automated suggestion; a maintainer makes the call._
 ```
 
 ## Nothing to do
 
-If the file was empty, or every candidate was dropped or already advised, call `noop` instead of commenting:
+If the file was empty, or every candidate was already self-describing or dropped, call `noop` instead of commenting:
 
 ```json
-{"noop": {"message": "No reopen recommendations: [brief explanation]"}}
+{"noop": {"message": "No recommendations: [brief explanation]"}}
 ```
