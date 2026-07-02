@@ -1828,15 +1828,15 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
         regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
 
-#ifndef TARGET_64BIT
-        // The two-register FP/mixed encodings (VLT_REG_FP_REG_FP and the mixed
-        // VLT_REG_FP_REG / VLT_REG_REG_FP forms) and their DBI read path assume each
-        // register holds an 8-byte half of the value, so they are only implemented
-        // for 64-bit targets. On a 32-bit target a value returned in two
-        // floating-point registers (e.g. an ARM32 HFA such as a struct of two floats
-        // or doubles) cannot yet be represented; skip emitting MRV info for it rather
-        // than producing an encoding the debugger cannot decode. A pair of integer
-        // registers (e.g. x86 EAX:EDX) is still encoded below as VLT_REG_REG.
+#if !defined(TARGET_64BIT)
+        // Multi-register debug-info encodings that involve floating-point
+        // registers assume each register holds an 8-byte half of the value, so
+        // they are only implemented for 64-bit targets. On a 32-bit target a
+        // value returned in two floating-point registers (e.g. an ARM32 HFA such
+        // as a struct of two floats or doubles) cannot yet be represented; skip
+        // emitting MRV info for it rather than producing an encoding the debugger
+        // cannot decode. A pair of integer registers (e.g. x86 EAX:EDX) is still
+        // encoded below as VLT_REG_REG.
         //
         // Supporting this on ARM32 also depends on implementing managed FP-register
         // value inspection there, which is itself unimplemented (the single-register
@@ -1847,14 +1847,18 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         {
             return;
         }
+#elif !defined(TARGET_AMD64)
+        // This unified RegNum encoding is implemented only for AMD64. Other 64-bit
+        // targets still need dedicated encodings to represent FP-containing
+        // two-register returns without ambiguity, so suppress those cases here
+        // instead of emitting an encoding the debugger cannot decode.
+        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+        {
+            return;
+        }
 #endif // !TARGET_64BIT
 
-        // Either register may be an integer or a floating-point register. On
-        // platforms where structs can be returned in a mix of int and float
-        // registers (SysV x64, RISC-V), or in two float registers (e.g. a 16-byte
-        // Vector128 returned in XMM0+XMM1 on Unix x64), storeVariableInTwoRegisters
-        // selects the appropriate VLT_REG_REG / VLT_REG_FP_* encoding.
-        info.returnValueLoc.storeVariableInTwoRegisters(reg1, reg2);
+        info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
     }
     else if (varTypeIsFloating(call))
     {
@@ -1862,17 +1866,12 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         info.returnValueLoc.vlType         = VLT_FPSTK;
         info.returnValueLoc.vlFPstk.vlfReg = 0;
 #else
-        // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
-        // platform-specific XMM0/V0 base when converting to CorDebugRegister.
-        info.returnValueLoc.vlType       = VLT_REG_FP;
-        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
+        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
 #endif
     }
     else if (varTypeUsesFloatReg(call))
     {
-        // VLT_REG_FP uses a 0-based FP register index.
-        info.returnValueLoc.vlType       = VLT_REG_FP;
-        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
+        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
     }
     else
     {

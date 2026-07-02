@@ -393,16 +393,6 @@ static void DoNativeVarInfo(
         trans.DoEncodedRegIdx(pVar->loc.vlRegReg.vlrrReg2);
         break;
 
-    // Multi-register returns where at least one register is a floating-point register.
-    // These reuse the vlRegReg layout, so the two register indices are encoded
-    // just like VLT_REG_REG.
-    case ICorDebugInfo::VLT_REG_FP_REG_FP:
-    case ICorDebugInfo::VLT_REG_FP_REG:     // fall through
-    case ICorDebugInfo::VLT_REG_REG_FP:     // fall through
-        trans.DoEncodedRegIdx(pVar->loc.vlRegReg.vlrrReg1);
-        trans.DoEncodedRegIdx(pVar->loc.vlRegReg.vlrrReg2);
-        break;
-
     case ICorDebugInfo::VLT_REG_STK:
         trans.DoEncodedRegIdx(pVar->loc.vlRegStk.vlrsReg);
         trans.DoEncodedRegIdx(pVar->loc.vlRegStk.vlrsStk.vlrssBaseReg);

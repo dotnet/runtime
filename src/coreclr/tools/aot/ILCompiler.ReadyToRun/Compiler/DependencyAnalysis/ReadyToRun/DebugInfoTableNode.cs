@@ -286,14 +286,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.C);
                         break;
-                    case VarLocType.VLT_REG_FP_REG_FP:
-                    case VarLocType.VLT_REG_FP_REG:
-                    case VarLocType.VLT_REG_REG_FP:
-                        // Two-register location where at least one register is an fp
-                        // register. Encoded with two register fields like VLT_REG_REG.
-                        writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
-                        writer.WriteUInt((uint)nativeVarInfo.varLoc.C);
-                        break;
                     case VarLocType.VLT_REG_STK:
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.C);

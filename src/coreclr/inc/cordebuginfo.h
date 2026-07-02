@@ -147,6 +147,23 @@ public:
         REGNUM_R13,
         REGNUM_R14,
         REGNUM_R15,
+        REGNUM_FP_FIRST,
+        REGNUM_XMM0 = REGNUM_FP_FIRST,
+        REGNUM_XMM1,
+        REGNUM_XMM2,
+        REGNUM_XMM3,
+        REGNUM_XMM4,
+        REGNUM_XMM5,
+        REGNUM_XMM6,
+        REGNUM_XMM7,
+        REGNUM_XMM8,
+        REGNUM_XMM9,
+        REGNUM_XMM10,
+        REGNUM_XMM11,
+        REGNUM_XMM12,
+        REGNUM_XMM13,
+        REGNUM_XMM14,
+        REGNUM_XMM15,
 #elif TARGET_LOONGARCH64
         REGNUM_R0,
         REGNUM_RA,
@@ -263,10 +280,6 @@ public:
         VLT_FPSTK,      // variable lives on the floating-point stack
         VLT_FIXED_VA,   // variable is a fixed argument in a varargs function (relative to VARARGS_HANDLE)
 
-        VLT_REG_FP_REG_FP, // variable lives in two fp registers (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64)
-        VLT_REG_FP_REG,    // low part lives in an fp register, high part in an int register (mixed multi-reg return)
-        VLT_REG_REG_FP,    // low part lives in an int register, high part in an fp register (mixed multi-reg return)
-
         VLT_COUNT,
         VLT_INVALID,
     };
@@ -292,17 +305,12 @@ public:
         signed      vlsOffset;
     };
 
-    // VLT_REG_REG -- TYP_LONG with both uint32_ts enregistred
+    // VLT_REG_REG -- value lives in two registers.
     // eg. RBM_EAXEDX
     //
-    // VLT_REG_FP_REG_FP / VLT_REG_FP_REG / VLT_REG_REG_FP also reuse the vlRegReg
-    // struct to describe a value that lives in two registers where at least one of
-    // them is a floating-point register (e.g. a 16-byte struct returned in XMM0+XMM1
-    // on Unix x64, or a mixed int/fp multi-register return). vlrrReg1 holds the low
-    // 8 bytes of the value, vlrrReg2 the high 8 bytes. For a register that is an fp
-    // register the value stored is a 0-based fp register index (the consumer adds the
-    // platform-specific XMM0/F0 base), matching the VLT_REG_FP convention; for an int
-    // register the value is the ordinary register number.
+    // vlrrReg1 holds the low part of the value, vlrrReg2 the high part. The
+    // registers may be integer RegNum values or, on platforms that include them
+    // in RegNum, floating-point RegNum values.
 
     struct vlRegReg
     {

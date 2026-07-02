@@ -8358,7 +8358,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 #if defined(TARGET_ARM) // @ARMTODO
         hr = E_NOTIMPL;
 #elif defined(TARGET_AMD64)
-        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_AMD64_XMM0,
+        hr = m_nativeFrame->GetLocalFloatingPointValue(ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg),
                                                        type, ppValue);
 #elif defined(TARGET_ARM64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_ARM64_V0,
@@ -8398,39 +8398,36 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_REG_REG:
+#if defined(TARGET_AMD64)
+        {
+            const ICorDebugInfo::RegNum lowReg  = pNativeVarInfo->loc.vlRegReg.vlrrReg1;
+            const ICorDebugInfo::RegNum highReg = pNativeVarInfo->loc.vlRegReg.vlrrReg2;
+            const bool lowIsFloat  = lowReg >= ICorDebugInfo::REGNUM_FP_FIRST;
+            const bool highIsFloat = highReg >= ICorDebugInfo::REGNUM_FP_FIRST;
+
+            if (lowIsFloat || highIsFloat)
+            {
+                // AMD64 extends RegNum with XMM registers, so VLT_REG_REG can
+                // represent mixed int/fp pairs. Other targets still require
+                // dedicated encodings for FP-containing multi-register values.
+                hr = m_nativeFrame->GetLocalTwoRegisterValue(
+                    lowIsFloat ? lowReg - ICorDebugInfo::REGNUM_FP_FIRST
+                               : ConvertRegNumToCorDebugRegister(lowReg),
+                    lowIsFloat,
+                    highIsFloat ? highReg - ICorDebugInfo::REGNUM_FP_FIRST
+                                : ConvertRegNumToCorDebugRegister(highReg),
+                    highIsFloat,
+                    type,
+                    ppValue);
+                break;
+            }
+        }
+#endif
         hr = m_nativeFrame->GetLocalDoubleRegisterValue(
                             ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg2),
                             ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg1),
                             type, ppValue);
         break;
-
-#if defined(TARGET_64BIT)
-    // The value lives in two registers, at least one of which is a floating-point
-    // register (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64, or a mixed
-    // int/fp multi-register return). vlrrReg1 holds the low 8 bytes and vlrrReg2 the
-    // high 8 bytes; fp registers are stored as 0-based fp register indices while int
-    // registers are ordinary register numbers (converted to CorDebugRegister here).
-    case ICorDebugInfo::VLT_REG_FP_REG_FP:
-        hr = m_nativeFrame->GetLocalTwoRegisterValue(
-                            pNativeVarInfo->loc.vlRegReg.vlrrReg1, true,
-                            pNativeVarInfo->loc.vlRegReg.vlrrReg2, true,
-                            type, ppValue);
-        break;
-
-    case ICorDebugInfo::VLT_REG_FP_REG:
-        hr = m_nativeFrame->GetLocalTwoRegisterValue(
-                            pNativeVarInfo->loc.vlRegReg.vlrrReg1, true,
-                            ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg2), false,
-                            type, ppValue);
-        break;
-
-    case ICorDebugInfo::VLT_REG_REG_FP:
-        hr = m_nativeFrame->GetLocalTwoRegisterValue(
-                            ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg1), false,
-                            pNativeVarInfo->loc.vlRegReg.vlrrReg2, true,
-                            type, ppValue);
-        break;
-#endif // TARGET_64BIT
 
     case ICorDebugInfo::VLT_REG_STK:
         {

@@ -79,14 +79,6 @@ bool CodeGenInterface::siVarLoc::vlIsInReg(regNumber reg) const
         case CodeGenInterface::VLT_FPSTK:
             return false;
 
-        case CodeGenInterface::VLT_REG_FP_REG_FP:
-        case CodeGenInterface::VLT_REG_FP_REG:
-        case CodeGenInterface::VLT_REG_REG_FP:
-            // These describe values that live (at least partly) in floating-point
-            // registers, recorded as 0-based fp register indices rather than raw
-            // register numbers, so they cannot be compared against "reg" here.
-            return false;
-
         default:
             assert(!"Bad locType");
             return false;
@@ -132,9 +124,6 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack(regNumber reg, signed offset) const
         case CodeGenInterface::VLT_REG:
         case CodeGenInterface::VLT_REG_FP:
         case CodeGenInterface::VLT_REG_REG:
-        case CodeGenInterface::VLT_REG_FP_REG_FP:
-        case CodeGenInterface::VLT_REG_FP_REG:
-        case CodeGenInterface::VLT_REG_REG_FP:
         case CodeGenInterface::VLT_FPSTK:
             return false;
 
@@ -159,8 +148,37 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 }
 
 //------------------------------------------------------------------------
-// storeVariableInRegisters: Convert the siVarLoc instance in a register
-//  location using the given registers.
+// mapRegNumToDebugRegNum: Map a JIT regNumber to the register number encoding
+// used in debug info.
+//
+// Arguments:
+//    reg - the JIT register to encode.
+//
+// Return Value:
+//    The debug-info register number for reg.
+//
+// static
+ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumber reg)
+{
+    assert(genIsValidIntReg(reg) || genIsValidFloatReg(reg));
+
+#ifdef TARGET_AMD64
+    constexpr unsigned fpRegDebugNumBase = ICorDebugInfo::REGNUM_FP_FIRST;
+#else
+    constexpr unsigned fpRegDebugNumBase = 0;
+#endif
+
+    if (genIsValidFloatReg(reg))
+    {
+        return static_cast<ICorDebugInfo::RegNum>(fpRegDebugNumBase + (reg - REG_FP_FIRST));
+    }
+
+    return static_cast<ICorDebugInfo::RegNum>(reg);
+}
+
+//------------------------------------------------------------------------
+// storeVariableInRegisters: Convert the siVarLoc instance into a register
+// location using the given registers.
 //
 // Arguments:
 //    reg       - the first register where the variable is placed.
@@ -169,71 +187,19 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 //
 void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumber otherReg)
 {
-    assert(genIsValidIntReg(reg));
-    assert(otherReg == REG_NA || genIsValidIntReg(otherReg));
+    assert(genIsValidIntReg(reg) || genIsValidFloatReg(reg));
+    assert((otherReg == REG_NA) || genIsValidIntReg(otherReg) || genIsValidFloatReg(otherReg));
 
     if (otherReg == REG_NA)
     {
-        // Only one register is used
-        vlType       = VLT_REG;
-        vlReg.vlrReg = reg;
+        vlType       = genIsValidFloatReg(reg) ? VLT_REG_FP : VLT_REG;
+        vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
     }
     else
     {
-        // Two register are used
         vlType            = VLT_REG_REG;
-        vlRegReg.vlrrReg1 = reg;
-        vlRegReg.vlrrReg2 = otherReg;
-    }
-}
-
-//------------------------------------------------------------------------
-// storeVariableInTwoRegisters: Convert the siVarLoc instance into a two-register
-//  location, where either register may be an integer or a floating-point register.
-//
-// Arguments:
-//    reg1  - the register holding the low 8 bytes of the value.
-//    reg2  - the register holding the high 8 bytes of the value.
-//
-// Notes:
-//    This generalizes storeVariableInRegisters to support values that live in a
-//    pair of registers where at least one is a floating-point register (e.g. a
-//    16-byte struct returned in XMM0+XMM1 on Unix x64, or a mixed int/fp
-//    multi-register return). Floating-point registers are recorded as a 0-based
-//    fp register index (reg - REG_FP_FIRST), matching the VLT_REG_FP convention;
-//    integer registers are recorded as their ordinary register number.
-//
-void CodeGenInterface::siVarLoc::storeVariableInTwoRegisters(regNumber reg1, regNumber reg2)
-{
-    assert(reg1 != REG_NA);
-    assert(reg2 != REG_NA);
-
-    const bool fpReg1 = genIsValidFloatReg(reg1);
-    const bool fpReg2 = genIsValidFloatReg(reg2);
-
-    if (!fpReg1 && !fpReg2)
-    {
-        vlType            = VLT_REG_REG;
-        vlRegReg.vlrrReg1 = reg1;
-        vlRegReg.vlrrReg2 = reg2;
-    }
-    else if (fpReg1 && fpReg2)
-    {
-        vlType            = VLT_REG_FP_REG_FP;
-        vlRegReg.vlrrReg1 = (regNumber)(reg1 - REG_FP_FIRST);
-        vlRegReg.vlrrReg2 = (regNumber)(reg2 - REG_FP_FIRST);
-    }
-    else if (fpReg1)
-    {
-        vlType            = VLT_REG_FP_REG;
-        vlRegReg.vlrrReg1 = (regNumber)(reg1 - REG_FP_FIRST);
-        vlRegReg.vlrrReg2 = reg2;
-    }
-    else
-    {
-        vlType            = VLT_REG_REG_FP;
-        vlRegReg.vlrrReg1 = reg1;
-        vlRegReg.vlrrReg2 = (regNumber)(reg2 - REG_FP_FIRST);
+        vlRegReg.vlrrReg1 = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
+        vlRegReg.vlrrReg2 = static_cast<regNumber>(mapRegNumToDebugRegNum(otherReg));
     }
 }
 
@@ -297,9 +263,6 @@ bool CodeGenInterface::siVarLoc::Equals(const siVarLoc* lhs, const siVarLoc* rhs
             return (lhs->vlReg.vlrReg == rhs->vlReg.vlrReg);
 
         case VLT_REG_REG:
-        case VLT_REG_FP_REG_FP:
-        case VLT_REG_FP_REG:
-        case VLT_REG_REG_FP:
             return (lhs->vlRegReg.vlrrReg1 == rhs->vlRegReg.vlrrReg1) &&
                    (lhs->vlRegReg.vlrrReg2 == rhs->vlRegReg.vlrrReg2);
 
@@ -476,10 +439,8 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
-            // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
-            // platform-specific XMM0/V0 base when converting to CorDebugRegister.
             this->vlType       = VLT_REG_FP;
-            this->vlReg.vlrReg = (regNumber)(varDsc->GetRegNum() - REG_FP_FIRST);
+            this->vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(varDsc->GetRegNum()));
             break;
 
 #else // !TARGET_64BIT
@@ -508,10 +469,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #endif // FEATURE_MASKED_HW_INTRINSICS
         {
             this->vlType = VLT_REG_FP;
-
-            // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
-            // platform-specific XMM0/V0 base when converting to CorDebugRegister.
-            this->vlReg.vlrReg = (regNumber)(varDsc->GetRegNum() - REG_FP_FIRST);
+            this->vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(varDsc->GetRegNum()));
             break;
         }
 #endif // FEATURE_SIMD
@@ -589,7 +547,6 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
     {
         case VLT_REG:
         case VLT_REG_BYREF:
-        case VLT_REG_FP:
             printf("%s", getRegName(varLoc->vlReg.vlrReg));
             if (varLoc->vlType == VLT_REG_BYREF)
             {
@@ -597,12 +554,14 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             }
             break;
 
-        case VLT_REG_FP_REG_FP:
-        case VLT_REG_FP_REG:
-        case VLT_REG_REG_FP:
-            // At least one of the two registers is an fp register, recorded as a
-            // 0-based fp register index, so just print the raw register fields.
-            printf("reg1=%d reg2=%d (fp multi-reg)", varLoc->vlRegReg.vlrrReg1, varLoc->vlRegReg.vlrrReg2);
+        case VLT_REG_FP:
+#ifdef TARGET_AMD64
+            printf("%s",
+                   getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg -
+                                                    ICorDebugInfo::REGNUM_FP_FIRST)));
+#else
+            printf("%s", getRegName(varLoc->vlReg.vlrReg));
+#endif
             break;
 
         case VLT_STK:
@@ -621,11 +580,37 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             }
             break;
 
-#ifndef TARGET_AMD64
         case VLT_REG_REG:
+#ifdef TARGET_AMD64
+            if (varLoc->vlRegReg.vlrrReg1 >= ICorDebugInfo::REGNUM_FP_FIRST)
+            {
+                printf("%s",
+                       getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlRegReg.vlrrReg1 -
+                                                        ICorDebugInfo::REGNUM_FP_FIRST)));
+            }
+            else
+            {
+                printf("%s", getRegName(varLoc->vlRegReg.vlrrReg1));
+            }
+
+            printf("-");
+
+            if (varLoc->vlRegReg.vlrrReg2 >= ICorDebugInfo::REGNUM_FP_FIRST)
+            {
+                printf("%s",
+                       getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlRegReg.vlrrReg2 -
+                                                        ICorDebugInfo::REGNUM_FP_FIRST)));
+            }
+            else
+            {
+                printf("%s", getRegName(varLoc->vlRegReg.vlrrReg2));
+            }
+#else
             printf("%s-%s", getRegName(varLoc->vlRegReg.vlrrReg1), getRegName(varLoc->vlRegReg.vlrrReg2));
+#endif
             break;
 
+#ifndef TARGET_AMD64
         case VLT_REG_STK:
             if ((int)varLoc->vlRegStk.vlrsStk.vlrssBaseReg != (int)ICorDebugInfo::REGNUM_AMBIENT_SP)
             {
@@ -1508,9 +1493,6 @@ void CodeGen::checkICodeDebugInfo()
     assert((unsigned)ICorDebugInfo::VLT_STK2 == CodeGenInterface::VLT_STK2);
     assert((unsigned)ICorDebugInfo::VLT_FPSTK == CodeGenInterface::VLT_FPSTK);
     assert((unsigned)ICorDebugInfo::VLT_FIXED_VA == CodeGenInterface::VLT_FIXED_VA);
-    assert((unsigned)ICorDebugInfo::VLT_REG_FP_REG_FP == CodeGenInterface::VLT_REG_FP_REG_FP);
-    assert((unsigned)ICorDebugInfo::VLT_REG_FP_REG == CodeGenInterface::VLT_REG_FP_REG);
-    assert((unsigned)ICorDebugInfo::VLT_REG_REG_FP == CodeGenInterface::VLT_REG_REG_FP);
     assert((unsigned)ICorDebugInfo::VLT_COUNT == CodeGenInterface::VLT_COUNT);
     assert((unsigned)ICorDebugInfo::VLT_INVALID == CodeGenInterface::VLT_INVALID);
 
@@ -1811,27 +1793,7 @@ void CodeGen::psiBegProlog()
 
         if (reg1 != REG_NA)
         {
-            if (reg2 == REG_NA)
-            {
-                if (genIsValidFloatReg(reg1))
-                {
-                    // FP parameter in a single XMM/V register — encode as VLT_REG_FP
-                    // with a 0-based FP register index.
-                    varLocation.vlType       = VLT_REG_FP;
-                    varLocation.vlReg.vlrReg = (regNumber)(reg1 - REG_FP_FIRST);
-                }
-                else
-                {
-                    varLocation.storeVariableInRegisters(reg1, REG_NA);
-                }
-            }
-            else
-            {
-                // Two-register parameter. Either register may be an integer or a
-                // floating-point register (e.g. mixed int/fp struct passing on
-                // SysV x64); storeVariableInTwoRegisters selects the right encoding.
-                varLocation.storeVariableInTwoRegisters(reg1, reg2);
-            }
+            varLocation.storeVariableInRegisters(reg1, reg2);
         }
         else
         {

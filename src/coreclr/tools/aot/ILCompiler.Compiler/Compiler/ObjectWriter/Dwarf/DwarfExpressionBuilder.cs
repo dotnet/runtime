@@ -104,6 +104,23 @@ namespace ILCompiler.ObjectWriter
             REGNUM_R13,
             REGNUM_R14,
             REGNUM_R15,
+            REGNUM_FP_FIRST,
+            REGNUM_XMM0 = REGNUM_FP_FIRST,
+            REGNUM_XMM1,
+            REGNUM_XMM2,
+            REGNUM_XMM3,
+            REGNUM_XMM4,
+            REGNUM_XMM5,
+            REGNUM_XMM6,
+            REGNUM_XMM7,
+            REGNUM_XMM8,
+            REGNUM_XMM9,
+            REGNUM_XMM10,
+            REGNUM_XMM11,
+            REGNUM_XMM12,
+            REGNUM_XMM13,
+            REGNUM_XMM14,
+            REGNUM_XMM15,
             REGNUM_COUNT,
             REGNUM_SP = REGNUM_RSP,
             REGNUM_FP = REGNUM_RBP
@@ -144,7 +161,7 @@ namespace ILCompiler.ObjectWriter
                         RegNumAmd64.REGNUM_R13 => 13,
                         RegNumAmd64.REGNUM_R14 => 14,
                         RegNumAmd64.REGNUM_R15 => 15,
-                        _ => regNum - (int)RegNumAmd64.REGNUM_COUNT + 17 // FP registers
+                        _ => regNum - (int)RegNumAmd64.REGNUM_FP_FIRST + 17 // FP registers
                     };
 
                 case TargetArchitecture.X86:

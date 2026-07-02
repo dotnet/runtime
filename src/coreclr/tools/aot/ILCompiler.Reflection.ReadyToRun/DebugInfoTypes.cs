@@ -107,10 +107,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         VLT_FPSTK,      // variable lives on the floating-point stack
         VLT_FIXED_VA,   // variable is a fixed argument in a varargs function (relative to VARARGS_HANDLE)
 
-        VLT_REG_FP_REG_FP, // variable lives in two fp registers (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64)
-        VLT_REG_FP_REG,    // low part lives in an fp register, high part in an int register (mixed multi-reg return)
-        VLT_REG_REG_FP,    // low part lives in an int register, high part in an fp register (mixed multi-reg return)
-
         VLT_COUNT,
         VLT_INVALID,
     }

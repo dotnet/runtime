@@ -519,10 +519,6 @@ public:
         VLT_FPSTK,
         VLT_FIXED_VA,
 
-        VLT_REG_FP_REG_FP,
-        VLT_REG_FP_REG,
-        VLT_REG_REG_FP,
-
         VLT_COUNT,
         VLT_INVALID
     };
@@ -634,8 +630,9 @@ public:
         bool vlIsOnStack(regNumber reg, signed offset) const;
         bool vlIsOnStack() const;
 
+        static ICorDebugInfo::RegNum mapRegNumToDebugRegNum(regNumber reg);
+
         void storeVariableInRegisters(regNumber reg, regNumber otherReg);
-        void storeVariableInTwoRegisters(regNumber reg1, regNumber reg2);
         void storeVariableOnStack(regNumber stackBaseReg, NATIVE_OFFSET variableStackOffset);
 
         siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed);

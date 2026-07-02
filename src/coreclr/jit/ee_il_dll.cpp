@@ -902,7 +902,12 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             break;
 
         case CodeGenInterface::VLT_REG_FP:
+#ifdef TARGET_AMD64
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + var->loc.vlReg.vlrReg -
+                                                           ICorDebugInfo::REGNUM_FP_FIRST)));
+#else
             printf("%s", getRegName((regNumber)(var->loc.vlReg.vlrReg + REG_FP_FIRST)));
+#endif
             break;
 
         case CodeGenInterface::VLT_STK:
@@ -922,23 +927,24 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             break;
 
         case CodeGenInterface::VLT_REG_REG:
+        {
+#ifdef TARGET_AMD64
+            auto toJitRegNum = [](regNumber reg) {
+                if (reg >= ICorDebugInfo::REGNUM_FP_FIRST)
+                {
+                    return static_cast<regNumber>(REG_FP_FIRST + reg - ICorDebugInfo::REGNUM_FP_FIRST);
+                }
+
+                return reg;
+            };
+
+            printf("%s-%s", getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg1)),
+                   getRegName(toJitRegNum(var->loc.vlRegReg.vlrrReg2)));
+#else
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
+#endif
             break;
-
-        case CodeGenInterface::VLT_REG_FP_REG_FP:
-            printf("%s-%s", getRegName((regNumber)(var->loc.vlRegReg.vlrrReg1 + REG_FP_FIRST)),
-                   getRegName((regNumber)(var->loc.vlRegReg.vlrrReg2 + REG_FP_FIRST)));
-            break;
-
-        case CodeGenInterface::VLT_REG_FP_REG:
-            printf("%s-%s", getRegName((regNumber)(var->loc.vlRegReg.vlrrReg1 + REG_FP_FIRST)),
-                   getRegName(var->loc.vlRegReg.vlrrReg2));
-            break;
-
-        case CodeGenInterface::VLT_REG_REG_FP:
-            printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1),
-                   getRegName((regNumber)(var->loc.vlRegReg.vlrrReg2 + REG_FP_FIRST)));
-            break;
+        }
 
 #ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_STK:

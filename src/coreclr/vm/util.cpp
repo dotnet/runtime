@@ -176,9 +176,6 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
                varLoc1.vlStk.vlsOffset  == varLoc2.vlStk.vlsOffset;
 
     case ICorDebugInfo::VLT_REG_REG:
-    case ICorDebugInfo::VLT_REG_FP_REG_FP:
-    case ICorDebugInfo::VLT_REG_FP_REG:
-    case ICorDebugInfo::VLT_REG_REG_FP:
         return varLoc1.vlRegReg.vlrrReg1 == varLoc2.vlRegReg.vlrrReg1 &&
                varLoc1.vlRegReg.vlrrReg2 == varLoc2.vlRegReg.vlrrReg2;
 
