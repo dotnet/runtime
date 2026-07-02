@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint && obj is not IAsyncStateMachineBox)
                 {
                     box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
                 }
@@ -181,7 +181,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint && obj is not IAsyncStateMachineBox)
                 {
                     box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
                 }

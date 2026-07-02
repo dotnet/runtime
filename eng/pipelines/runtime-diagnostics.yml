@@ -3,8 +3,8 @@
 # Pipeline overview:
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by 3 SOS
-#                      legs that run on top of it: cDAC, cDAC_no_fallback, DAC.
+#                      -rc release -lc release -clrinterpreter) consumed by 4 SOS
+#                      legs that run on top of it: cDAC, cDAC_fallback, cDAC_verify, DAC.
 #                      Each leg sets testInterpreter: true so interpreter coverage
 #                      is exercised inline (no separate Interpreter leg).
 #
@@ -70,6 +70,7 @@ parameters:
   type: object
   default:
     - windows_x64
+    - windows_x86
     - linux_x64
     - windows_arm64
     - linux_arm64
@@ -146,24 +147,48 @@ extends:
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
                 displayName: Build Assets
+            # The cDAC (mscordaccore_universal) is built by tools.cdac but is not part of the shared
+            # framework (testhost), so upload it separately for the cDAC-only SOS leg to consume.
+            - powershell: |
+                $cdacDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\mscordaccore_universal\*\win-$(archType)\publish" | Select-Object -ExpandProperty FullName -First 1
+                Write-Host "##vso[task.setvariable variable=cdacDir]$cdacDir"
+              displayName: 'Set Path to cDAC Artifacts'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(cdacDir)
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
+                displayName: cDAC Assets
 
       # SOS test legs: each depends on the shared build above. Differ only in
-      # name (artifact namespace) and the cDAC fallback flags.
+      # name (artifact namespace) and the cDAC/DAC load mode.
+
+      # cDAC: the runtime-under-test's own standalone cDAC (mscordaccore_universal) loaded through SOS's
+      # standard cDAC hosting path (overlaying the freshly built cDAC next to sos.dll).
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: cDAC
-          useCdac: true
+          dacMode: cdac
+
+      # cDAC_fallback / cDAC_verify: the in-box DAC hosts the cDAC contract reader, with per-API fallback
+      # to the legacy DAC (fallback) or no fallback but still verifying against it (verify).
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: cDAC_fallback
+          dacMode: cdacfallback
 
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
-          name: cDAC_no_fallback
-          useCdac: true
-          noFallback: true
+          name: cDAC_verify
+          dacMode: cdacverify
 
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: DAC
-          useCdac: false
+          dacMode: dac
 
     # ----------------------------------------------------------------------
     # cDAC managed-side unit tests + DataGenerator tests. Standalone, no

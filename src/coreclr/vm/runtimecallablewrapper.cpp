@@ -357,7 +357,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
     {
         pOuter.SuppressRelease();
         pClassFact.SuppressRelease();
-        pNewRCW.SuppressRelease();
+        pNewRCW.Detach();
     }
 
     return oref;
@@ -1687,7 +1687,7 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
     }
     GCPROTECT_END();
 
-    pNewWrap.SuppressRelease();
+    pNewWrap.Detach();
 }
 
 //--------------------------------------------------------------------------------
