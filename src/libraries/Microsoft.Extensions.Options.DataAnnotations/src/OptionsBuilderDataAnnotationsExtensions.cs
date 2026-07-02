@@ -19,7 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// asynchronous validation (including <c>AsyncValidationAttribute</c>-derived attributes) runs during startup
         /// validation when <c>ValidateOnStart()</c> is also called, and during runtime reloads observed by
         /// <c>IOptionsMonitor{TOptions}</c>. Monitor change notifications are published after asynchronous validation
-        /// succeeds. If <c>ValidateOnStart()</c> is not called, synchronous options access
+        /// succeeds. If asynchronous reload validation fails, later monitor reads throw that validation failure until
+        /// a subsequent reload validates successfully. If <c>ValidateOnStart()</c> is not called, synchronous options access
         /// triggers only synchronous validation, which invokes the attribute's synchronous fallback instead.
         /// When using <c>AsyncValidationAttribute</c>-derived attributes, ensure the synchronous
         /// <c>IsValid</c> fallback does not throw: synchronous validation still runs on every

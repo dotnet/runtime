@@ -122,6 +122,81 @@ namespace Microsoft.Extensions.Options.Tests
             }
         }
 
+        private sealed class SequencedAsyncValidator : IAsyncValidateOptions<FakeOptions>
+        {
+            private readonly object _lock = new object();
+            private readonly List<TaskCompletionSource<FakeOptions>> _started;
+            private readonly List<TaskCompletionSource<bool>> _results;
+            private int _callCount;
+            private int _activeCount;
+
+            public SequencedAsyncValidator(int expectedCallCount)
+            {
+                _started = Enumerable.Range(0, expectedCallCount)
+                    .Select(_ => CreateTaskCompletionSource<FakeOptions>())
+                    .ToList();
+                _results = Enumerable.Range(0, expectedCallCount)
+                    .Select(_ => CreateTaskCompletionSource<bool>())
+                    .ToList();
+            }
+
+            public int MaxActiveCount { get; private set; }
+
+            public Task<FakeOptions> Started(int index)
+            {
+                lock (_lock)
+                {
+                    return _started[index].Task;
+                }
+            }
+
+            public void Complete(int index, bool result)
+            {
+                TaskCompletionSource<bool> resultSource;
+                lock (_lock)
+                {
+                    resultSource = _results[index];
+                }
+
+                resultSource.SetResult(result);
+            }
+
+            public async Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
+            {
+                int index;
+                TaskCompletionSource<FakeOptions> startedSource;
+                Task<bool> resultTask;
+                lock (_lock)
+                {
+                    index = _callCount++;
+                    if ((uint)index >= (uint)_started.Count)
+                    {
+                        throw new InvalidOperationException("Unexpected validation call.");
+                    }
+
+                    _activeCount++;
+                    MaxActiveCount = Math.Max(MaxActiveCount, _activeCount);
+                    startedSource = _started[index];
+                    resultTask = _results[index].Task;
+                }
+
+                startedSource.SetResult(options);
+                try
+                {
+                    return await resultTask.ConfigureAwait(false)
+                        ? ValidateOptionsResult.Success
+                        : ValidateOptionsResult.Fail("Async validation failed.");
+                }
+                finally
+                {
+                    lock (_lock)
+                    {
+                        _activeCount--;
+                    }
+                }
+            }
+        }
+
         private sealed class AsyncValidationDependency : IDisposable
         {
             private readonly AsyncValidationObserver _observer;
@@ -276,7 +351,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public async Task AsyncValidationFailureKeepsPreviousOptionsAndDoesNotNotify()
+        public async Task AsyncValidationFailureIsObservedByGetAndDoesNotNotify()
         {
             var services = new ServiceCollection().AddOptions();
             services.AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
@@ -305,7 +380,8 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Contains("Async validation failed.", ex.Failures);
 
             Assert.False(changed.Task.IsCompleted);
-            Assert.Equal("1", monitor.CurrentValue.Message);
+            OptionsValidationException getException = Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+            Assert.Contains("Async validation failed.", getException.Failures);
 
             validator.Reset();
             Task successfulReloadTask = Task.Run(changeToken.InvokeChangeCallback);
@@ -392,7 +468,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void AsyncValidationFailureWithCustomCacheKeepsPreviousOptionsAndDoesNotNotify()
+        public void AsyncValidationFailureWithCustomCacheIsObservedByGetAndDoesNotNotify()
         {
             var services = new ServiceCollection().AddOptions();
             services.AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
@@ -417,7 +493,8 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Contains("Async validation failed.", reloadException.Failures);
 
             Assert.False(changed.Task.IsCompleted);
-            Assert.Equal("1", monitor.CurrentValue.Message);
+            OptionsValidationException getException = Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+            Assert.Contains("Async validation failed.", getException.Failures);
         }
 
         [Fact]
@@ -449,6 +526,44 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal(1, observer.ValidationCount);
             Assert.Equal(1, observer.DisposeCount);
             Assert.Equal("2", monitor.CurrentValue.Message);
+        }
+
+        [Fact]
+        public async Task AsyncValidationReloadsForSameNameDoNotRunInParallel()
+        {
+            var services = new ServiceCollection().AddOptions();
+            services.AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
+            var changeToken = new FakeChangeToken();
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new FakeSource(changeToken));
+            var changeToken2 = new FakeChangeToken();
+            services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new FakeSource(changeToken2));
+            var validator = new SequencedAsyncValidator(expectedCallCount: 2);
+            services.AddSingleton<IAsyncValidateOptions<FakeOptions>>(validator);
+
+            var sp = services.BuildServiceProvider();
+
+            var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            Assert.NotNull(monitor);
+            Assert.Equal("1", monitor.CurrentValue.Message);
+
+            Task firstReloadTask = Task.Run(changeToken.InvokeChangeCallback);
+
+            FakeOptions firstOptions = await WaitAsync(validator.Started(0));
+            Assert.Equal("2", firstOptions.Message);
+
+            Task secondReloadTask = Task.Run(changeToken2.InvokeChangeCallback);
+
+            validator.Complete(0, result: true);
+            await WaitAsync(firstReloadTask);
+
+            FakeOptions secondOptions = await WaitAsync(validator.Started(1));
+            Assert.Equal("3", secondOptions.Message);
+
+            validator.Complete(1, result: true);
+            await WaitAsync(secondReloadTask);
+
+            Assert.Equal(1, validator.MaxActiveCount);
+            Assert.Equal("3", monitor.CurrentValue.Message);
         }
 
         [Fact]

@@ -34,6 +34,7 @@ namespace Microsoft.Extensions.Options
         private ConcurrentDictionary<string, int> ReloadVersions => GetAsyncValidationState().ReloadVersions;
         private ConcurrentDictionary<string, ExceptionDispatchInfo> ReloadFailures => GetAsyncValidationState().ReloadFailures;
         private ConcurrentDictionary<string, TaskCompletionSource<object?>> PendingReloads => GetAsyncValidationState().PendingReloads;
+        private ConcurrentDictionary<string, object> ReloadLocks => GetAsyncValidationState().ReloadLocks;
         private ConcurrentDictionary<string, object> CacheLocks => GetAsyncValidationState().CacheLocks;
 
         /// <summary>
@@ -92,12 +93,21 @@ namespace Microsoft.Extensions.Options
         private void InvokeChanged(string? name)
         {
             name ??= Options.DefaultName;
-            if (_asyncValidationScopeFactory is null)
+            IServiceScopeFactory? asyncValidationScopeFactory = _asyncValidationScopeFactory;
+            if (asyncValidationScopeFactory is null)
             {
                 InvokeChangedSynchronously(name);
                 return;
             }
 
+            lock (GetReloadLock(name))
+            {
+                InvokeChangedWithAsyncValidation(name, asyncValidationScopeFactory);
+            }
+        }
+
+        private void InvokeChangedWithAsyncValidation(string name, IServiceScopeFactory asyncValidationScopeFactory)
+        {
             object cacheLock = GetCacheLock(name);
             int version;
             TaskCompletionSource<object?> pendingReload = CreatePendingReload();
@@ -110,7 +120,7 @@ namespace Microsoft.Extensions.Options
             AsyncServiceScope scope;
             try
             {
-                scope = _asyncValidationScopeFactory.CreateAsyncScope();
+                scope = asyncValidationScopeFactory.CreateAsyncScope();
             }
             catch (Exception ex)
             {
@@ -239,15 +249,15 @@ namespace Microsoft.Extensions.Options
 
                     lock (GetCacheLock(localName))
                     {
+                        if (ReloadFailures.TryGetValue(localName, out ExceptionDispatchInfo? reloadFailure))
+                        {
+                            reloadFailure.Throw();
+                        }
+
                         if (CacheKeys.ContainsKey(localName))
                         {
                             TOptions options = _cache.GetOrAdd(localName, () => localFactory.Create(localName));
                             return options;
-                        }
-
-                        if (ReloadFailures.TryGetValue(localName, out ExceptionDispatchInfo? reloadFailure))
-                        {
-                            reloadFailure.Throw();
                         }
 
                         if (PendingReloads.TryGetValue(localName, out TaskCompletionSource<object?>? pendingReloadSource))
@@ -283,6 +293,11 @@ namespace Microsoft.Extensions.Options
         {
             while (true)
             {
+                if (ReloadFailures.TryGetValue(name, out ExceptionDispatchInfo? reloadFailureAfterCacheRead))
+                {
+                    reloadFailureAfterCacheRead.Throw();
+                }
+
                 if (optionsCache.TryGetValue(name, out TOptions? cachedOptions))
                 {
                     return cachedOptions;
@@ -294,6 +309,11 @@ namespace Microsoft.Extensions.Options
                 {
                     if (optionsCache.TryGetValue(name, out cachedOptions))
                     {
+                        if (ReloadFailures.TryGetValue(name, out ExceptionDispatchInfo? cachedReloadFailure))
+                        {
+                            cachedReloadFailure.Throw();
+                        }
+
                         return cachedOptions;
                     }
 
@@ -434,25 +454,12 @@ namespace Microsoft.Extensions.Options
         {
             lock (GetCacheLock(name))
             {
-                if ((!ReloadVersions.TryGetValue(name, out int currentVersion) ||
-                     currentVersion == version) &&
-                    !TryGetCachedOptions(name, out _))
+                if (!ReloadVersions.TryGetValue(name, out int currentVersion) ||
+                    currentVersion == version)
                 {
                     ReloadFailures[name] = ExceptionDispatchInfo.Capture(ex);
                 }
             }
-        }
-
-        private bool TryGetCachedOptions(string name, [MaybeNullWhen(false)] out TOptions options)
-        {
-            if (_cache.GetType() == typeof(OptionsCache<TOptions>))
-            {
-                OptionsCache<TOptions> optionsCache = (OptionsCache<TOptions>)_cache;
-                return optionsCache.TryGetValue(name, out options);
-            }
-
-            options = default;
-            return CacheKeys.ContainsKey(name);
         }
 
         private void SetCachedOptions(string name, TOptions options)
@@ -474,6 +481,9 @@ namespace Microsoft.Extensions.Options
 
         private object GetCacheLock(string name) =>
             CacheLocks.GetOrAdd(name, static _ => new object());
+
+        private object GetReloadLock(string name) =>
+            ReloadLocks.GetOrAdd(name, static _ => new object());
 
         /// <summary>
         /// Registers a listener to be called whenever <typeparamref name="TOptions"/> changes.
@@ -507,6 +517,7 @@ namespace Microsoft.Extensions.Options
             public readonly ConcurrentDictionary<string, int> ReloadVersions = new ConcurrentDictionary<string, int>(StringComparer.Ordinal);
             public readonly ConcurrentDictionary<string, ExceptionDispatchInfo> ReloadFailures = new ConcurrentDictionary<string, ExceptionDispatchInfo>(StringComparer.Ordinal);
             public readonly ConcurrentDictionary<string, TaskCompletionSource<object?>> PendingReloads = new ConcurrentDictionary<string, TaskCompletionSource<object?>>(StringComparer.Ordinal);
+            public readonly ConcurrentDictionary<string, object> ReloadLocks = new ConcurrentDictionary<string, object>(StringComparer.Ordinal);
             public readonly ConcurrentDictionary<string, object> CacheLocks = new ConcurrentDictionary<string, object>(StringComparer.Ordinal);
         }
 
