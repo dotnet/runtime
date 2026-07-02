@@ -3209,11 +3209,19 @@ NoSpecialCase:
         FALLTHROUGH;
 
     case MethodDescSlot:
+    case DevirtualizedMethodDescSlot:
     case MethodEntrySlot:
     case DispatchStubAddrSlot:
         {
             // Encode containing type
-            if (pResolvedToken->pTypeSpec != NULL)
+            if (entryKind == DevirtualizedMethodDescSlot)
+            {
+                // For shared GVM devirtualization use the devirtualized method owner type from pTemplateMD.
+                _ASSERTE(pTemplateMD != NULL);
+                sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+                sigBuilder.AppendPointer(pTemplateMD->GetMethodTable());
+            }
+            else if (pResolvedToken->pTypeSpec != NULL)
             {
                 SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
                 sigptr.ConvertToInternalExactlyOne(pModule, NULL, &sigBuilder);
@@ -8887,13 +8895,26 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
         {
-            // TODO: Support for runtime lookup
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
+            if (info->pResolvedTokenVirtualMethod == nullptr)
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
+            ComputeRuntimeLookupForSharedGenericToken(
+                DevirtualizedMethodDescSlot,
+                info->pResolvedTokenVirtualMethod,
+                nullptr,
+                pInstantiatedMD,
+                GetMethod(info->callerMethod),
+                &info->instParamLookup);
         }
 
-        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
-        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        if (!info->instParamLookup.lookupKind.needsRuntimeLookup)
+        {
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
     }
     else if (pInstArgMD->RequiresInstMethodTableArg())
     {
@@ -8910,19 +8931,38 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
     else if (isUnboxingStubOfInstantiatingStub)
     {
-        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
-            TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()))
         {
-            // This is an unboxing stub that points to an instantiating stub that requires a runtime lookup.
-            // Bail out.
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
             return false;
         }
 
-        // pInstArgMD is the wrapped instantiating stub in the unboxing stub.
-        //
-        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstArgMD;
-        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            if (info->pResolvedTokenVirtualMethod == nullptr || info->callerMethod == nullptr)
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
+            ComputeRuntimeLookupForSharedGenericToken(
+                DevirtualizedMethodDescSlot,
+                info->pResolvedTokenVirtualMethod,
+                nullptr,
+                pInstArgMD,
+                GetMethod(info->callerMethod),
+                &info->instParamLookup);
+        }
+
+        if (!info->instParamLookup.lookupKind.needsRuntimeLookup)
+        {
+            // pInstArgMD is the wrapped instantiating stub in the unboxing stub.
+            //
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstArgMD;
+            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        }
     }
 
     pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
@@ -8936,6 +8976,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     if (pDevirtMD->IsUnboxingStub())
     {
         MethodDesc* pUnboxedMD = pDevirtMD->GetMethodTable()->GetUnboxedEntryPointMD(pDevirtMD);
+        if (pUnboxedMD->IsInstantiatingStub()) pUnboxedMD = pUnboxedMD->GetWrappedMethodDesc();
         info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = (CORINFO_METHOD_HANDLE) pUnboxedMD;
     }
 

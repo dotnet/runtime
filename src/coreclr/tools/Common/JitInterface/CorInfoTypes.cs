@@ -1165,6 +1165,7 @@ namespace Internal.JitInterface
         // [In] arguments of resolveVirtualMethod
         //
         public CORINFO_METHOD_STRUCT_* virtualMethod;
+        public CORINFO_METHOD_STRUCT_* callerMethod;
         public CORINFO_CLASS_STRUCT_* objClass;
         public CORINFO_CONTEXT_STRUCT* context;
         public CORINFO_RESOLVED_TOKEN* pResolvedTokenVirtualMethod;

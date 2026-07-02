@@ -1086,7 +1086,7 @@ DEVIRT:
         else if (call->AsCall()->IsDelegateInvoke())
         {
             considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, call->AsCall()->gtCallMethHnd,
-                                            NO_CLASS_HANDLE, nullptr);
+                                            NO_CLASS_HANDLE, nullptr, pResolvedToken);
         }
     }
 
@@ -1367,6 +1367,7 @@ DONE:
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
             info->ilLocation                           = impCurStmtDI.GetLocation();
+            info->resolvedToken                        = *pResolvedToken;
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
@@ -8013,7 +8014,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                                                bool                    isInterface,
                                                CORINFO_METHOD_HANDLE   baseMethod,
                                                CORINFO_CLASS_HANDLE    baseClass,
-                                               CORINFO_CONTEXT_HANDLE* pContextHandle)
+                                               CORINFO_CONTEXT_HANDLE* pContextHandle,
+                                               CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
@@ -8094,7 +8096,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 dvInfo.virtualMethod               = baseMethod;
                 dvInfo.objClass                    = exactCls;
                 dvInfo.context                     = originalContext;
-                dvInfo.pResolvedTokenVirtualMethod = nullptr;
+                dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
 
                 JITDUMP("GDV exact: resolveVirtualMethod (method %p class %p context %p)\n", dvInfo.virtualMethod,
                         dvInfo.objClass, dvInfo.context);
@@ -9229,7 +9231,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle,
+                                        pResolvedToken);
 
         return;
     }
@@ -9273,7 +9276,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle,
+                                        pResolvedToken);
         return;
     }
 
@@ -9290,6 +9294,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     //
     CORINFO_DEVIRTUALIZATION_INFO dvInfo;
     dvInfo.virtualMethod               = baseMethod;
+    dvInfo.callerMethod                = info.compMethodHnd;
     dvInfo.objClass                    = objClass;
     dvInfo.context                     = *pContextHandle;
     dvInfo.detail                      = CORINFO_DEVIRTUALIZATION_UNKNOWN;
@@ -9395,7 +9400,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle,
+                                        pResolvedToken);
         return;
     }
 

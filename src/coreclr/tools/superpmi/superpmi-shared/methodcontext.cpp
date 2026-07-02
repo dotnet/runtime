@@ -3238,6 +3238,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodKey key;
     ZeroMemory(&key, sizeof(key)); // Zero token including any struct padding
     key.virtualMethod  = CastHandle(info->virtualMethod);
+    key.callerMethod   = CastHandle(info->callerMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
@@ -3290,6 +3291,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodKey key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.virtualMethod  = CastHandle(info->virtualMethod);
+    key.callerMethod   = CastHandle(info->callerMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
@@ -3297,7 +3299,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     if (key.pResolvedTokenVirtualMethodNonNull)
         key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
 
-    Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": %016" PRIX64 "-%016" PRIX64 "-%016" PRIX64 "-%08X", key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
+    Agnostic_ResolveVirtualMethodResult result = LookupByKeyOrMiss(ResolveVirtualMethod, key, ": %016" PRIX64 "-%016" PRIX64 "-%016" PRIX64 "-%016" PRIX64 "-%08X", key.virtualMethod, key.callerMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
 
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
