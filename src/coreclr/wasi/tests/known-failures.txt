@@ -178,5 +178,3 @@ JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
 JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Plain/Test_HndIndex_10_Plain.sh
 JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/Test_HndIndex_10_Reordered.sh
 
-# --- MethodImpl self-override on PortableEntryPoint (fixed in main by #126124) ---
-# Local sweep still trips this until the branch is re-verified against the fix.
