@@ -2384,7 +2384,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
                 if (intrinsicId == NI_Vector_GetLower)
                 {
-                    attr = emitTypeSize(simdType);
+                    attr = emitTypeSize(node->TypeGet());
                 }
                 else if (intrinsicId == NI_Vector_ToVector256Unsafe)
                 {
