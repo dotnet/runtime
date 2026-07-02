@@ -971,12 +971,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             _ = scenario;
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-
-            // RunJsonSourceGenerator's default validation asserts the resulting compilation has no
-            // warnings or errors (max severity Info). That whole-compilation check is what enforces
-            // suppression: if the generated code left any experimental ID unsuppressed -- or emitted
-            // any other lurking warning -- this call fails. A narrow "no EXP diagnostics" filter would
-            // miss those other warnings.
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
@@ -1157,7 +1151,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             TypeGenerationSpec type = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "WithExpAccessors");
             Assert.Equal(new[] { "EXP_GET_ACCESSOR", "EXP_SET_ACCESSOR" }, type.ExperimentalDiagnosticIds);
-            Assert.Equal(new[] { "EXP_GET_ACCESSOR", "EXP_SET_ACCESSOR" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
         }
 
         [Fact]
@@ -1193,7 +1186,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
-            Assert.Equal(new[] { "EXP_OPTIONS" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+            // EXP_OPTIONS originates from an options-level converter type argument, so it lands on the options
+            // spec (not any per-type spec) and the emitter unions it into the aggregate context sources.
+            Assert.Equal(new[] { "EXP_OPTIONS" }, result.ContextGenerationSpecs.Single().GeneratedOptionsSpec!.ExperimentalDiagnosticIds);
         }
 
         [Fact]
@@ -1226,7 +1221,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             TypeGenerationSpec myPoco = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "MyPoco");
             Assert.Equal(new[] { "EXP_VALID" }, myPoco.ExperimentalDiagnosticIds);
-            Assert.Equal(new[] { "EXP_VALID" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
             Assert.Empty(result.NewCompilation.GetDiagnostics()
                 .Where(d => d.GetMessage().Contains("INJECTED_FROM_EXPERIMENTAL_ID", StringComparison.Ordinal)));
         }
@@ -1457,8 +1451,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Equal(new[] { "EXP100" }, typeA.ExperimentalDiagnosticIds);
             Assert.Equal(new[] { "EXP200" }, typeB.ExperimentalDiagnosticIds);
 
-            // The aggregate source files suppress the union of all per-type IDs.
-            Assert.Equal(new[] { "EXP100", "EXP200" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
+            // The aggregate source files suppress the union of all per-type IDs, reconstituted by the emitter.
+            // Default diagnostic validation is enabled above, so an unsuppressed EXP100/EXP200 in those files
+            // (both registered types are [Experimental]) would surface as a generation error and fail this test.
         }
 
         [Fact]
@@ -1492,7 +1487,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             TypeGenerationSpec widget = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "Widget");
             Assert.Equal(new[] { "EXP_USERDEF" }, widget.ExperimentalDiagnosticIds);
-            Assert.Equal(new[] { "EXP_USERDEF" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
         }
 
         [Fact]
@@ -1528,7 +1522,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             TypeGenerationSpec poco = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "ExperimentalPocoFromLib");
             Assert.Equal(new[] { "EXP_TEST" }, poco.ExperimentalDiagnosticIds);
-            Assert.Equal(new[] { "EXP_TEST" }, result.ContextGenerationSpecs.Single().ExperimentalDiagnosticIds);
             Assert.Empty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP_TEST"));
         }
 
