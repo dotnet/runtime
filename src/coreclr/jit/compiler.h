@@ -7854,6 +7854,9 @@ public:
 protected:
     void     optValnumCSE_Init();
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
+#ifdef TARGET_ARM64
+    void optEnableArm64AddrModeCseForPairing();
+#endif
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_SetUpAsyncByrefKills();

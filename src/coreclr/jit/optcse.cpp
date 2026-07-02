@@ -5663,6 +5663,189 @@ CSE_HeuristicCommon* Compiler::optGetCSEheuristic()
     return optCSEheuristic;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// optEnableArm64AddrModeCseForPairing: re-enable CSE for "base + index"
+//    address expressions that can enable "ldp"/"stp" pair formation.
+//
+// Notes:
+//    On Arm64, a "base + index" address that feeds an addressing mode is marked
+//    GTF_ADDRMODE_NO_CSE, because "[base, index]" is a free addressing mode and
+//    CSE'ing it would just introduce a redundant "add". However, Arm64 cannot
+//    encode both a register index and a constant offset in a single access
+//    ("[base, index, #16]" is illegal). So when the same "base + index" is
+//    accessed at multiple offsets (for example adjacent vector loads/stores at
+//    "base + i" and "base + i + 16"), the "base + index" must be materialized
+//    into a register anyway. Making it CSE-able then lets the JIT compute it
+//    once and form "ldp"/"stp" pairs.
+//
+//    This routine clears GTF_ADDRMODE_NO_CSE on such "base + index" nodes, but
+//    only when doing so is expected to be profitable: either two or more uses
+//    carry a non-zero offset (so an "add" would otherwise be duplicated), or two
+//    uses are at offsets that differ by the access size (so a pair instruction
+//    can be formed). This preserves the common case where a "base + index" is
+//    reused at the same offset and "[base, index]" was already optimal.
+//
+void Compiler::optEnableArm64AddrModeCseForPairing()
+{
+    struct AddrModeUses
+    {
+        ArrayStack<ssize_t>* offsets;
+        unsigned             accessSize;
+        bool                 profitable;
+    };
+
+    struct Candidate
+    {
+        GenTree* baseIndex;
+        ValueNum vn;
+    };
+
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, AddrModeUses> AddrModeMap;
+
+    CompAllocator         allocator = getAllocator(CMK_CSE);
+    AddrModeMap           addrModeUses(allocator);
+    ArrayStack<Candidate> candidates(allocator);
+
+    // Decompose an indir address into its "base + index" subexpression (a GT_ADD
+    // with the constant offset, if any, folded out) and the offset.
+    auto getBaseIndex = [](GenTree* addr, ssize_t* offset) -> GenTree* {
+        addr               = addr->gtEffectiveVal();
+        *offset            = 0;
+        GenTree* baseIndex = addr;
+        if (addr->OperIs(GT_ADD))
+        {
+            GenTree* op2 = addr->gtGetOp2();
+            if (op2->IsCnsIntOrI() && !op2->IsIconHandle())
+            {
+                *offset   = op2->AsIntCon()->IconValue();
+                baseIndex = addr->gtGetOp1()->gtEffectiveVal();
+            }
+        }
+        return baseIndex;
+    };
+
+    // Walk the IR once, gathering the candidate "base + index" nodes and, per value
+    // number, the offsets they are accessed with.
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            for (GenTree* const node : stmt->TreeList())
+            {
+                if (!node->OperIsIndir() || node->TypeIs(TYP_STRUCT))
+                {
+                    continue;
+                }
+
+                ssize_t  offset;
+                GenTree* baseIndex = getBaseIndex(node->AsIndir()->Addr(), &offset);
+
+                // Require a genuine "base + index": a GT_ADD whose second operand is a
+                // register index, not a constant. A "base + constant" address is already
+                // addressable as "[base, #imm]" and must not be treated as an index.
+                if (!baseIndex->OperIs(GT_ADD) || !varTypeIsIntegralOrI(baseIndex) ||
+                    baseIndex->gtGetOp2()->IsCnsIntOrI() || ((baseIndex->gtFlags & GTF_ADDRMODE_NO_CSE) == 0))
+                {
+                    continue;
+                }
+
+                ValueNum vn = baseIndex->gtVNPair.GetLiberal();
+                if (vn == ValueNumStore::NoVN)
+                {
+                    continue;
+                }
+
+                AddrModeUses* uses = addrModeUses.LookupPointer(vn);
+                if (uses == nullptr)
+                {
+                    AddrModeUses newUses;
+                    newUses.offsets    = new (allocator) ArrayStack<ssize_t>(allocator);
+                    newUses.accessSize = genTypeSize(node);
+                    newUses.profitable = false;
+                    addrModeUses.Set(vn, newUses);
+                    uses = addrModeUses.LookupPointer(vn);
+                }
+                uses->offsets->Push(offset);
+
+                candidates.Push({baseIndex, vn});
+            }
+        }
+    }
+
+    if (candidates.Height() == 0)
+    {
+        return;
+    }
+
+    // Determine which value numbers are profitable to CSE: either two or more uses
+    // carry a non-zero offset (so an "add" would otherwise be duplicated), or two
+    // uses are at offsets that differ by the access size (so an "ldp"/"stp" pair can
+    // be formed). Pairs only exist for 4-, 8-, and 16-byte accesses, so the adjacency
+    // case is restricted to those sizes.
+    int profitableCount = 0;
+    for (AddrModeMap::Node* const entry : AddrModeMap::KeyValueIteration(&addrModeUses))
+    {
+        AddrModeUses*        uses       = addrModeUses.LookupPointer(entry->GetKey());
+        ArrayStack<ssize_t>* offsets    = uses->offsets;
+        ssize_t              accessSize = (ssize_t)uses->accessSize;
+        const bool           pairable   = (accessSize == 4) || (accessSize == 8) || (accessSize == 16);
+
+        int  nonZeroCount = 0;
+        bool adjacent     = false;
+
+        // Track offsets already seen so adjacency can be detected in O(n): an offset is
+        // adjacent when "offset +/- accessSize" was seen at an earlier use of this VN.
+        typedef JitHashTable<ssize_t, JitSmallPrimitiveKeyFuncs<ssize_t>, bool> OffsetSet;
+        OffsetSet                                                               seenOffsets(allocator);
+        for (int i = 0; i < offsets->Height(); i++)
+        {
+            ssize_t offset = offsets->Bottom(i);
+            if (offset != 0)
+            {
+                nonZeroCount++;
+            }
+            if (pairable && !adjacent &&
+                (seenOffsets.Lookup(offset - accessSize) || seenOffsets.Lookup(offset + accessSize)))
+            {
+                adjacent = true;
+            }
+            seenOffsets.Set(offset, true, OffsetSet::Overwrite);
+        }
+
+        if ((nonZeroCount >= 2) || adjacent)
+        {
+            uses->profitable = true;
+            profitableCount++;
+        }
+    }
+
+    if (profitableCount == 0)
+    {
+        return;
+    }
+
+    // Re-enable CSE for the profitable "base + index" expressions.
+    for (int i = 0; i < candidates.Height(); i++)
+    {
+        const Candidate& candidate = candidates.BottomRef(i);
+
+        if ((candidate.baseIndex->gtFlags & GTF_ADDRMODE_NO_CSE) == 0)
+        {
+            continue;
+        }
+
+        AddrModeUses* uses = addrModeUses.LookupPointer(candidate.vn);
+        if ((uses != nullptr) && uses->profitable)
+        {
+            candidate.baseIndex->gtFlags &= ~GTF_ADDRMODE_NO_CSE;
+            JITDUMP("Re-enabled CSE for Arm64 base+index addr mode [%06u] (" FMT_VN ") to enable pairing\n",
+                    dspTreeID(candidate.baseIndex), candidate.vn);
+        }
+    }
+}
+#endif // TARGET_ARM64
+
 //------------------------------------------------------------------------
 // optOptimizeValnumCSEs: Perform common sub-expression elimination
 //
@@ -5687,6 +5870,10 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
     optValnumCSE_phase = true;
     optCSEweight       = -1.0f;
     bool madeChanges   = false;
+
+#ifdef TARGET_ARM64
+    optEnableArm64AddrModeCseForPairing();
+#endif
 
     optValnumCSE_Init();
 
