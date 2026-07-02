@@ -190,13 +190,49 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 
         if (checkForHelpers)
         {
-            if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(m_compiler))
+            if (MayUseThrowHelperBlock(node))
             {
                 SetThrowHelperBlocks(node, block);
             }
         }
     }
     assert(currentStackLevel == 0);
+}
+
+//------------------------------------------------------------------------
+// MayUseThrowHelperBlock: Check whether codegen may branch to a throw helper block.
+//
+// Arguments:
+//   node - The node to process.
+//
+// Return Value:
+//   True if the node may branch to a throw helper block.
+//
+bool StackLevelSetter::MayUseThrowHelperBlock(GenTree* node)
+{
+    if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(m_compiler))
+    {
+        return true;
+    }
+
+#if defined(TARGET_WASM)
+    switch (node->OperGet())
+    {
+        case GT_NULLCHECK:
+        case GT_IND:
+        case GT_STORE_BLK:
+        case GT_STOREIND:
+            return (node->gtFlags & GTF_IND_NONFAULTING) == 0;
+
+        case GT_CALL:
+            return node->AsCall()->NeedsNullCheck();
+
+        default:
+            break;
+    }
+#endif // defined(TARGET_WASM)
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -213,7 +249,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 {
-    assert(node->OperMayThrow(m_compiler));
+    assert(MayUseThrowHelperBlock(node));
 
     // Check that it uses throw block, find its kind, find the block, set level.
     switch (node->OperGet())

@@ -22,12 +22,12 @@ using std::nothrow;
 #include "winwrap.h"
 #include <wchar.h>
 #include <ole2.h>
-#include <oleauto.h>
 #include "clrtypes.h"
 #include "safewrap.h"
 #include "volatile.h"
 #include <daccess.h>
 #include "clrhost.h"
+#include "dn_xxhash.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
 #include "check.h"
@@ -1955,15 +1955,29 @@ inline COUNT_T HashPtr(COUNT_T currentHash, PTR_VOID ptr)
 inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
 {
     LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
 
-    BYTE const *pbDataEnd = pbData + iSize;
+    ULONG hash = 5381;
+    hash += (ULONG)iSize;
 
-    for (/**/ ; pbData < pbDataEnd; pbData++)
+    // Process 4 bytes at a time.
+    while (iSize >= sizeof(uint32_t))
     {
-        hash = ((hash << 5) + hash) ^ *pbData;
+        uint32_t val;
+        memcpy(&val, pbData, sizeof(val));
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
+        pbData += sizeof(val);
+        iSize -= sizeof(val);
     }
-    return hash;
+
+    // Process remaining bytes.
+    if (iSize > 0)
+    {
+        uint32_t val = 0;
+        memcpy(&val, pbData, iSize);
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
+    }
+
+    return xxHash<xxHashDefaultTraits>::MixFinal(hash);
 }
 
 // Helper function for hashing a string char by char.
@@ -1995,58 +2009,12 @@ inline ULONG HashString(LPCWSTR szStr)
     return hash;
 }
 
-inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-
-    // hash the string two characters at a time
-    ULONG *ptr = (ULONG *)szStr;
-
-    // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= u16_strlen(szStr));
-    SIZE_T cDwordCount = (cchStr + 1) / 2;
-
-    for (SIZE_T i = 0; i < cDwordCount; i++)
-    {
-        hash = ((hash << 5) + hash) ^ ptr[i];
-    }
-
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringA(LPCSTR szStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ toupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
 // Case-insensitive string hash function.
 inline ULONG HashiString(LPCWSTR szStr)
 {
     LIMITED_METHOD_CONTRACT;
     ULONG   hash = 5381;
     while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ towupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringN(LPCWSTR szStr, DWORD count)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0 && count--)
     {
         hash = ((hash << 5) + hash) ^ towupper(*szStr);
         szStr++;
@@ -3043,6 +3011,11 @@ INT32 GetArm64Rel21(UINT32 * pCode);
 INT32 GetArm64Rel12(UINT32 * pCode);
 
 //*****************************************************************************
+//  Extract the page offset from an ldr (unsigned immediate) instruction
+//*****************************************************************************
+INT32 GetArm64Rel12Ldr(UINT32 * pCode);
+
+//*****************************************************************************
 //  Deposit the PC-Relative offset 'imm28' into a b or bl instruction
 //*****************************************************************************
 void PutArm64Rel28(UINT32 * pCode, INT32 imm28);
@@ -3056,6 +3029,11 @@ void PutArm64Rel21(UINT32 * pCode, INT32 imm21);
 //  Deposit the page offset 'imm12' into an add instruction
 //*****************************************************************************
 void PutArm64Rel12(UINT32 * pCode, INT32 imm12);
+
+//*****************************************************************************
+//  Deposit the page offset 'imm12' into an ldr (unsigned immediate) instruction
+//*****************************************************************************
+void PutArm64Rel12Ldr(UINT32 * pCode, INT32 imm12);
 
 //*****************************************************************************
 //  Extract the PC-Relative page address and page offset from pcalau12i+add/ld

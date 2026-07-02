@@ -37,6 +37,14 @@ public abstract class Target
     public abstract bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
 
     /// <summary>
+    /// Sets the context of the given thread from the supplied buffer
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread whose context is to be set. The identifier is defined by the operating system.</param>
+    /// <param name="context">Buffer containing the new thread context. The contents must be a platform context structure of the size expected by the target.</param>
+    /// <returns>true if successful, false otherwise</returns>
+    public abstract bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context);
+
+    /// <summary>
     /// Reads a well-known global pointer value from the target process
     /// </summary>
     /// <param name="global">The name of the global</param>

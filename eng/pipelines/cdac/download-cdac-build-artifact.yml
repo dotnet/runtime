@@ -1,0 +1,13 @@
+# download-cdac-build-artifact.yml -- per-platform download of the
+# CdacBuildArtifacts_<plat> tarball published by the CdacBuild job.
+# Extracts into artifacts/bin/, so every test leg sees the same coreclr +
+# libs + cDAC + test-csproj outputs that CdacBuild produced. Used as a
+# preBuildStep by every test leg in the Cdac stage (and by CdacXPlatDumpTests).
+
+steps:
+- template: /eng/pipelines/common/download-artifact-step.yml
+  parameters:
+    artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+    artifactFileName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+    unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+    displayName: 'cDAC Shared Build Artifacts'

@@ -58,8 +58,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("intentionallyMissingImportAsync must be a Function but was undefined", ex.Message);
         }
 
-#if !FEATURE_WASM_MANAGED_THREADS // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
-        [Fact]
+        // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public async Task CancelableImportAsync()
         {
             var cts = new CancellationTokenSource();
@@ -71,7 +71,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", new CancellationToken(true)));
             Assert.Equal("Error: OperationCanceledException", actualEx.Message);
         }
-#endif
 
         [Fact]
         public unsafe void GlobalThis()
@@ -286,11 +285,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var ex = Assert.Throws<JSException>(() => doubleThrows(1, 2));
             Assert.Equal("Error: test 1 2", ex.Message);
 
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.Contains("create_function", ex.StackTrace);
-#else
-            Assert.Contains("omitted JavaScript stack trace", ex.StackTrace);
-#endif
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.Contains("create_function", ex.StackTrace);
+            }
+            else
+            {
+                Assert.Contains("omitted JavaScript stack trace", ex.StackTrace);
+            }
         }
 
         [Fact]
@@ -1297,9 +1299,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task JsImportResolvedPromiseReturnsCompletedTask()
         {
             var promise = JavaScriptTestHelper.ReturnResolvedPromise();
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.False(promise.IsCompleted);
-#endif
+
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.False(promise.IsCompleted);
+            }
+
             await promise;
             Assert.True(promise.IsCompleted);
         }
@@ -1587,20 +1592,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
             Assert.Contains("throw-0-msg", exThrow0.Message);
             Assert.DoesNotContain(" at ", exThrow0.Message);
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.Contains("throw0fn", exThrow0.StackTrace);
-#else
-            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
-#endif
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.Contains("throw0fn", exThrow0.StackTrace);
+            }
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
             Assert.DoesNotContain(" at ", exThrow1.Message);
-#if !FEATURE_WASM_MANAGED_THREADS
-            Assert.Contains("throw1fn", exThrow1.StackTrace);
-#else
-            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
-#endif
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                Assert.Contains("throw1fn", exThrow1.StackTrace);
+            }
+            else
+            {
+                Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
+            }
 
             // anything is a system.object, sometimes it would be JSObject wrapper
             if (typeof(T).IsPrimitive)
