@@ -5335,9 +5335,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
 #elif defined(TARGET_ARM64)
-            bool isIndexConst = true;
+            bool     isIndexConst = true;
+            GenTree* indexOp      = impStackTop(1).val;
 
-            if (!impStackTop(1).val->OperIsConst())
+            if (!indexOp->OperIsConst())
             {
                 if (!opts.OptimizationEnabled())
                 {
@@ -5346,6 +5347,17 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     return nullptr;
                 }
                 isIndexConst = false;
+            }
+            else
+            {
+                ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                if ((imm8 >= count) || (imm8 < 0))
+                {
+                    // Using software fallback if index is out of range (throw exception)
+                    return nullptr;
+                }
             }
 #endif
 
@@ -5359,15 +5371,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseType, simdSize);
                 retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                 break;
-            }
-
-            ssize_t imm8  = op2->AsIntCon()->IconValue();
-            ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-            if ((imm8 >= count) || (imm8 < 0))
-            {
-                // Using software fallback if index is out of range (throw exception)
-                return nullptr;
             }
 #endif
 
