@@ -92,13 +92,13 @@ extern "C" void hostfxr_resolver_cleanup(hostfxr_resolver_t* resolver)
     resolver->fxr_path = nullptr;
 }
 
-#if defined(HOST_UNIX) && !defined(TARGET_X86) && !defined(TARGET_ANDROID)
+#if defined(FEATURE_STATIC_CREATEDUMP)
 extern void initialize_static_createdump();
 #endif
 
 extern "C" void apphost_static_init(void)
 {
-#if defined(HOST_UNIX) && !defined(TARGET_X86) && !defined(TARGET_ANDROID)
+#if defined(FEATURE_STATIC_CREATEDUMP)
     initialize_static_createdump();
 #endif
 }
