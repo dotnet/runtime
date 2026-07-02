@@ -711,7 +711,7 @@ namespace
             && pHeader->Code[1] == 0x24)
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
-                W("A method body required at runtime was stripped from the ReadyToRun image (crossgen2 --strip-il-bodies)."));
+                W("A method body required at runtime was stripped from the ReadyToRun image."));
         }
 
         return pHeader;
