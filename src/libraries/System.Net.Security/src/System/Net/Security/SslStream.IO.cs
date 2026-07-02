@@ -617,10 +617,11 @@ namespace System.Net.Security
             }
 #endif
 
+            sslPolicyErrors = SslPolicyErrors.None;
 #pragma warning disable CS0162 // unreachable code on some platforms
             if (!SslStreamPal.CertValidationInCallback)
             {
-                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out chainStatus))
                 {
                     _handshakeCompleted = false;
                     return false;
@@ -634,7 +635,7 @@ namespace System.Net.Security
                 // 2. The peer didn't provide a certificate at all.
                 // In both cases, run VerifyRemoteCertificate to invoke the user's callback
                 // and perform full validation.
-                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out chainStatus))
                 {
                     _handshakeCompleted = false;
                     return false;
@@ -642,7 +643,6 @@ namespace System.Net.Security
             }
             else
             {
-                sslPolicyErrors = SslPolicyErrors.None;
                 chainStatus = X509ChainStatusFlags.NoError;
             }
 #pragma warning restore CS0162 // unreachable code on some platforms
