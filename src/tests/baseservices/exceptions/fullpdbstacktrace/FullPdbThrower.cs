@@ -24,14 +24,7 @@ public static class FullPdbThrower
         {
             string stackTrace = ex.ToString();
             Assert.Contains(nameof(Throw), stackTrace);
-
-            // Mapping the IL offset back to the source file goes through diasymreader (the no-op
-            // importer path). Native AOT resolves stack frames without DIA, so only assert the
-            // source file when running on a runtime that uses the classic-PDB reader.
-            if (!TestLibrary.Utilities.IsNativeAot)
-            {
-                Assert.Contains("FullPdbThrower.cs", stackTrace);
-            }
+            Assert.Contains("FullPdbThrower.cs", stackTrace);
         }
     }
 
