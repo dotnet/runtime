@@ -6701,18 +6701,18 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
     NewArrayHolder<bool> pSlotFlags;
     bool nonAllocatedBitvector[16];
     unsigned nVirtuals = pMT->GetNumVirtuals();
-    unsigned unprocesssedNonOverridenSlots = 0;
+    unsigned unprocessedNonOverriddenSlots = 0;
 
     bool* pBitVector = NULL;
 
     if (pMT == m_pDeclMT)
     {
-        // We have a concept of Method's which have never been overridden by a subclass or called, and in that case we don't actually
+        // We have a concept of methods which have never been overridden by a subclass or called, and in that case we don't actually
         // need to fill in the MethodTable's vtable entry with a stub. We can detect that here on the Canonical methodtable,
-        // and setup the Decl/Impl MethodDescs's for a slot even if there are MethodImpls in the inheritance chain, since the 
+        // and setup the Decl/Impl MethodDescs for a slot even if there are MethodImpls in the inheritance chain, since the
         // vtable entry will only be NULL if the method could not have been involved with a MethodImpl. This optimization
         // is only really important for the scenario where we have these NULL entries, since the MethodImpl fallback
-        // case will end up using MehtodTable::GetMethodDescForSlot_NoThrow to get the MethodDesc for the slot, and that is O(N)
+        // case will end up using MethodTable::GetMethodDescForSlot_NoThrow to get the MethodDesc for the slot, and that is O(N)
         // for the number of Method defined in the type hierarchy, and the usage of MethodDataObject tends to be O(V) for the number
         // of virtual method slots on the type, so we get O(V*N) processing time when the not MethodImpl optimization case
         // fails, which needs addressing.
@@ -6726,12 +6726,12 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
             containsMethodImplInHierarchy = pMTWalk->GetClass()->ContainsMethodImpls();
             pMTWalk = pMTWalk->GetParentMethodTable();
         }
-        
+
         if (containsMethodImplInHierarchy)
         {
             MethodTable *pCanonMT = pMT->GetCanonicalMethodTable();
 
-            if (nVirtuals <= sizeof(nonAllocatedBitvector))
+            if (nVirtuals <= ARRAY_SIZE(nonAllocatedBitvector))
             {
                 pBitVector = nonAllocatedBitvector;
                 memset(pBitVector, 0, sizeof(nonAllocatedBitvector));
@@ -6750,11 +6750,11 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
                 if (pCode == (PCODE)NULL)
                 {
                     pBitVector[slot] = true;
-                    unprocesssedNonOverridenSlots += 1;
+                    unprocessedNonOverriddenSlots += 1;
                 }
             }
 
-            if (unprocesssedNonOverridenSlots == 0)
+            if (unprocessedNonOverriddenSlots == 0)
             {
                 pBitVector = NULL;
             }
@@ -6785,8 +6785,8 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
                 }
                 else
                 {
-                    _ASSERTE(unprocesssedNonOverridenSlots > 0);
-                    unprocesssedNonOverridenSlots -= 1;
+                    _ASSERTE(unprocessedNonOverriddenSlots > 0);
+                    unprocessedNonOverriddenSlots -= 1;
                 }
             }
 
@@ -6815,13 +6815,13 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         }
     }
 
-    while (unprocesssedNonOverridenSlots > 0)
+    while (unprocessedNonOverriddenSlots > 0)
     {
-        pMT = pMT->GetParentMethodTable();
-        nVirtuals = pMT->GetNumVirtuals();
-        _ASSERTE(pMT != NULL);
         _ASSERTE(pBitVector != NULL);
-        _ASSERTE(unprocesssedNonOverridenSlots > 0);
+        _ASSERTE(unprocessedNonOverriddenSlots > 0);
+        pMT = pMT->GetParentMethodTable();
+        _ASSERTE(pMT != NULL);
+        nVirtuals = pMT->GetNumVirtuals();
         MethodTable::IntroducedMethodIterator it(pMT, FALSE);
         for (; it.IsValid(); it.Next())
         {
@@ -6840,8 +6840,8 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
             }
             else
             {
-                _ASSERTE(unprocesssedNonOverridenSlots > 0);
-                unprocesssedNonOverridenSlots -= 1;
+                _ASSERTE(unprocessedNonOverriddenSlots > 0);
+                unprocessedNonOverriddenSlots -= 1;
             }
 
             MethodDataObjectEntry * pEntry = GetEntry(slot);
