@@ -54,7 +54,8 @@ steps:
     run: |
       set -euo pipefail
 
-      # gh (Go) trusts the gh-aw DIFC proxy CA via SSL_CERT_FILE, not NODE_EXTRA_CA_CERTS.
+      # Find closed issues still referenced in *.cs, ranked by reference count, into issue-candidates.json.
+
       if [ -n "${NODE_EXTRA_CA_CERTS:-}" ] && [ -z "${SSL_CERT_FILE:-}" ]; then
         export SSL_CERT_FILE="$NODE_EXTRA_CA_CERTS"
       fi
@@ -77,7 +78,6 @@ steps:
       cut -f1 "$refs" | sort -un > "$nums_file"
       echo "scan: $(wc -l < "$nums_file" | tr -d ' ') unique referenced issue numbers under ${DIRS}"
 
-      # Resolve each referenced issue's state, aliased and chunked to stay within GraphQL limits.
       states="$(mktemp)"
       emit_query() {
         local parts="$1"
