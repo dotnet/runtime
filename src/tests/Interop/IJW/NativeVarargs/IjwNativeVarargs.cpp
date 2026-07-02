@@ -260,7 +260,7 @@ private:
             values[39],
             values[40]
         );
-        bool result = AreClose(expected, actual);
+        bool result = expected == actual;
         if (!result)
         {
             std::cout << "RunDoublesTest Failed:" << "Expected:" << expected << '\t' << "Actual:" << actual << std::endl;
@@ -487,7 +487,7 @@ private:
             floatValues[18], doubleValues[19],
             floatValues[19], doubleValues[20]
         );
-        bool result = AreClose(expected, actual);
+        bool result = expected == actual;
         if (!result)
         {
             std::cout << "RunWidenedFloatsTest Failed:" << "Expected:" << expected << '\t' << "Actual:" << actual << std::endl;
