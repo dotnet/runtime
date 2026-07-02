@@ -9470,13 +9470,25 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     // Has the debugger requested a remap?
     if (resumeIL != (SIZE_T) -1)
     {
-        // This will jit the function, update the context, and resume execution at the new location.
-        g_pEEInterface->ResumeInUpdatedFunction(pModule,
-                                                pMD,
-                                                (void*)pJitInfo,
-                                                resumeIL,
-                                                pContext);
-        _ASSERTE(!"Returned from ResumeInUpdatedFunction!");
+#ifdef FEATURE_INTERPRETER
+        // TODO: The interpreter does not support EnC remap. If we're in interpreted code,
+        // skip the remap and let execution continue in the old version.
+        EECodeInfo codeInfo(GetIP(pContext));
+        if (codeInfo.IsInterpretedCode())
+        {
+            LOG((LF_ENC, LL_ALWAYS, "DEnCBP::TP: method is interpreted, EnC remap not supported - skipping\n"));
+        }
+        else
+#endif // FEATURE_INTERPRETER
+        {
+            // This will jit the function, update the context, and resume execution at the new location.
+            g_pEEInterface->ResumeInUpdatedFunction(pModule,
+                                                    pMD,
+                                                    (void*)pJitInfo,
+                                                    resumeIL,
+                                                    pContext);
+            _ASSERTE(!"Returned from ResumeInUpdatedFunction!");
+        }
     }
 
     LOG((LF_CORDB, LL_ALWAYS, "DEnCB::TP: We've returned from ResumeInUpdatedFunction"
