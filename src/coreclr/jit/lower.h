@@ -361,7 +361,7 @@ private:
         GenTree*     index            = nullptr;
         GenTree*     value            = nullptr;
         uint32_t     scale            = 1;
-        int          offset           = 0;
+        ssize_t      offset           = 0;
         unsigned     accessSize       = 0;
         unsigned     lclNum           = BAD_VAR_NUM;
         GenTreeFlags storeFlags       = GTF_EMPTY;
