@@ -999,13 +999,18 @@ int LinearScan::BuildNode(GenTree* tree)
         	 	 BuildDef(tree);
      		 }
 		  break;
-	      default:
-	      {
-	      printf("LSRA BuildNode: Unhandled operation: %s (oper=%d)\n", 
-                     GenTree::OpName(tree->OperGet()), tree->OperGet());
-            	     
-	      _ASSERTE(!"NYI");
-	      }
+
+		      case GT_RETFILT:
+		          assert(dstCount == 0);
+		          break;
+
+		     default:
+		     {
+		     printf("LSRA BuildNode: Unhandled operation: %s (oper=%d)\n",
+		                   GenTree::OpName(tree->OperGet()), tree->OperGet());
+		          	     
+		     _ASSERTE(!"NYI");
+		     }
     }
 
     // We need to be sure that we've set srcCount and dstCount appropriately
