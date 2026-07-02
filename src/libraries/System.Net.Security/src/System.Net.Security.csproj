@@ -6,6 +6,7 @@
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <NoWarn>$(NoWarn);SYSLIB5007</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -28,6 +29,8 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+             Link="Common\System\Experimentals.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
@@ -64,6 +67,22 @@
     <Compile Include="System\Net\Security\SslStream.cs" />
     <Compile Include="System\Net\Security\SslStream.IO.cs" />
     <Compile Include="System\Net\Security\SslStream.Protocol.cs" />
+    <Compile Include="System\Net\Security\SslStream.TlsSessionWedge.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="System\Net\Security\SslStream.NotUnix.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'linux' and '$(TargetPlatformIdentifier)' != 'freebsd' and '$(TargetPlatformIdentifier)' != 'windows'" />
+    <Compile Include="System\Net\Security\TlsContext.cs" />
+    <Compile Include="System\Net\Security\TlsContext.OpenSsl.cs"
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+    <Compile Include="System\Net\Security\SslAuthenticationOptions.OpenSsl.cs"
+             Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
+    <Compile Include="System\Net\Security\TlsOperationStatus.cs" />
+    <Compile Include="System\Net\Security\TlsSession.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows' or '$(UseAppleCrypto)' == 'true'" />
+    <Compile Include="System\Net\Security\TlsSession.OpenSsl.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd'" />
+    <Compile Include="System\Net\Security\TlsSession.Stub.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'linux' and '$(TargetPlatformIdentifier)' != 'freebsd' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAppleCrypto)' != 'true'" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />

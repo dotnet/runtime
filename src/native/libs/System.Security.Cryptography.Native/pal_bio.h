@@ -92,3 +92,17 @@ shifting the rest down. Returns the number of bytes drained.
 */
 PALEXPORT int32_t CryptoNative_BioDrainSpill(BIO* bio, void* dst, int32_t dstLen);
 
+/*
+Creates a new BIO that first replays the provided prefix bytes to any
+BIO_read caller, then delegates BIO_read/BIO_write to recv/send on the
+supplied socket file descriptor.
+
+Used by the OpenSSL deferred-server flow: the managed TlsSession first
+peeks the ClientHello off the socket to run a ServerOptionsSelectionCallback
+(so SNI is available), then installs an SSL* whose input BIO replays the
+already-consumed ClientHello bytes before touching the wire again. The
+prefix bytes are copied into the BIO; the fd is borrowed (the BIO does
+not take ownership of it or close it in Destroy).
+*/
+PALEXPORT BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t prefixLen);
+
