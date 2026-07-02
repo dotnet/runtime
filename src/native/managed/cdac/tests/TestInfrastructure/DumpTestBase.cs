@@ -159,9 +159,9 @@ public abstract class DumpTestBase : IDisposable
     /// </summary>
     private void EvaluateSkipAttributes(TestConfiguration config, string callerName, string? dumpType = null)
     {
-        if (config.RuntimeVersion is "net10.0" && (dumpType ?? DumpType) == "heap")
+        if (config.RuntimeVersion is "net10.0" && ((dumpType ?? DumpType) is "heap" or "mini"))
         {
-            throw new SkipTestException($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
+            throw new SkipTestException($"[net10.0] Skipping {dumpType ?? DumpType} dump tests due to outdated dump generation.");
         }
 
         MethodInfo? method = GetType().GetMethod(callerName, BindingFlags.Public | BindingFlags.Instance);

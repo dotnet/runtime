@@ -28,6 +28,23 @@ public sealed unsafe class ContractDescriptorTarget : Target
 {
     private const int StackAllocByteThreshold = 1024;
 
+    // Opt-in diagnostic: when DOTNET_CDAC_LogReadFailures=1, log the failing address and the
+    // managed stack trace to stderr whenever a virtual read fails. Useful for discovering which
+    // memory regions a memory-selective dump (e.g. cdac-lite) is missing.
+    private static readonly bool s_logReadFailures =
+        Environment.GetEnvironmentVariable("DOTNET_CDAC_LogReadFailures") == "1";
+
+    [DoesNotReturn]
+    private static VirtualReadException ThrowReadFailure(string message)
+    {
+        if (s_logReadFailures)
+        {
+            Console.Error.WriteLine($"[cdac] VirtualReadException: {message}");
+            Console.Error.WriteLine(new StackTrace(fNeedFileInfo: true).ToString());
+        }
+        throw new VirtualReadException(message);
+    }
+
     private readonly struct Configuration
     {
         public bool IsLittleEndian { get; init; }
@@ -437,7 +454,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override T Read<T>(ulong address)
     {
         if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T value))
-            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+            throw ThrowReadFailure($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
@@ -451,7 +468,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override T ReadLittleEndian<T>(ulong address)
     {
         if (!TryRead(address, true, _dataTargetDelegates, out T value))
-            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+            throw ThrowReadFailure($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
@@ -544,7 +561,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (!TryReadBuffer(address, buffer))
-            throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+            throw ThrowReadFailure($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
 
     private bool TryReadBuffer(ulong address, Span<byte> buffer)
@@ -588,7 +605,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override TargetPointer ReadPointer(ulong address)
     {
         if (!TryReadPointer(address, _config, _dataTargetDelegates, out TargetPointer pointer))
-            throw new VirtualReadException($"Failed to read pointer at 0x{address:x8}.");
+            throw ThrowReadFailure($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
@@ -619,7 +636,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         {
             return new TargetCodePointer(Read<ulong>(address));
         }
-        throw new VirtualReadException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
+        throw ThrowReadFailure($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
     }
 
     public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
@@ -720,7 +737,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override TargetNUInt ReadNUInt(ulong address)
     {
         if (!TryReadNUInt(address, _config, _dataTargetDelegates, out ulong value))
-            throw new VirtualReadException($"Failed to read nuint at 0x{address:x8}.");
+            throw ThrowReadFailure($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
     }
@@ -728,7 +745,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override TargetNInt ReadNInt(ulong address)
     {
         if (!TryReadNInt(address, _config, _dataTargetDelegates, out long value))
-            throw new VirtualReadException($"Failed to read nint at 0x{address:x8}.");
+            throw ThrowReadFailure($"Failed to read nint at 0x{address:x8}.");
 
         return new TargetNInt(value);
     }

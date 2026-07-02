@@ -55,12 +55,13 @@ internal static class DumpHelpers
                 (uint threadId, uint contextFlags, Span<byte> buffer) =>
                     dt.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1,
                 (uint threadId, ReadOnlySpan<byte> context) => -1,
+                (ulong size, out ulong allocatedAddress) => { allocatedAddress = 0; return -1; },
                 [CoreCLRContracts.Register],
                 out ContractDescriptorTarget? target))
         {
             throw new InvalidOperationException("Failed to create cDAC target.");
         }
 
-        return target;
+        return target!;
     }
 }

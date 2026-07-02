@@ -29,7 +29,7 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | BasicThreads | Thread management, thread store | Heap |
 | GCRoots | GC object graphs, pinned handles | Heap |
 | ServerGC | Server GC mode heap structures | Heap |
-| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Heap |
+| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Heap, Mini |
 | MultiModule | Multi-assembly metadata resolution | Heap |
 | TypeHierarchy | Type inheritance, method tables | Heap |
 | PInvokeStub | P/Invoke with SetLastError ILStub | Full |
@@ -44,8 +44,19 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | AsyncContinuation | Reading async continuation method tables | Heap |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
-`.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
+`.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Supported values are
+`Mini` (normal minidump, type 1), `Heap` (type 2), and `Full` (type 4); a debuggee can
+request several at once by separating them with `;` (e.g. `Heap;Mini`). Debuggees that
 need full memory content (e.g., metadata-heavy scenarios) override this to `Full`.
+
+A `Mini` dump contains only the memory the runtime reports while walking each thread's
+stack — it does NOT include the GC heap. Mini-tier tests therefore validate only the
+scenarios documented to work against a normal/triage dump: stack traces (`clrstack`),
+managed thread enumeration (`clrthreads`), current-exception viewing (`!pe`), and partial
+module info. Heap-dependent scenarios (`!dumpheap`, `!dumpobj`, `!gcroot`, locals) are NOT
+expected to work. This scope mirrors the runtime's own Normal-tier enumeration
+(`EnumMemoryRegionsWorkerSkinny` in `enummem.cpp`), which captures thread stacks, the module
+list, CLR statics, AppDomain info, and any memory implicitly reached from those roots.
 
 ### Test Classes
 
@@ -59,6 +70,8 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | WorkstationGCDumpTests | GC (Workstation) | GCRoots |
 | ServerGCDumpTests | GC (Server) | ServerGC |
 | StackWalkDumpTests | StackWalk | StackWalk |
+| MiniDumpStackWalkTests | StackWalk (mini/normal dump — `clrstack`) | StackWalk |
+| MiniDumpThreadTests | Thread (mini/normal dump — `clrthreads`) | StackWalk |
 | RuntimeTypeSystemDumpTests | RuntimeTypeSystem | TypeHierarchy |
 | LoaderDumpTests | Loader | MultiModule |
 | EcmaMetadataDumpTests | EcmaMetadata | MultiModule |
@@ -130,6 +143,11 @@ For example:
 artifacts/dumps/cdac/
   local/
     dump-info.json
+    mini/
+      r2r/
+        StackWalk/StackWalk.dmp
+      jit/
+        StackWalk/StackWalk.dmp
     heap/
       r2r/
         BasicThreads/BasicThreads.dmp
@@ -279,14 +297,15 @@ The pipeline has three stages:
    `Environment.FailFast("message")` to trigger a crash dump.
 3. The `.csproj` inherits defaults from `Debuggees/Directory.Build.props`
    (output path, target frameworks, `DumpTypes=Heap`).
-4. Override `<DumpTypes>Full</DumpTypes>` if your test needs full memory dumps.
+4. Override `<DumpTypes>` (e.g. `Full`, `Mini`, or `Heap;Mini`) to change which dump
+   tiers are generated.
 5. The debuggee is auto-discovered by `DumpTests.targets` — no list to update.
 
 ## Adding a New Test
 
 1. Create a new test class inheriting from `DumpTestBase`.
 2. Override `DebuggeeName` to match the debuggee directory name.
-3. Override `DumpType` if the debuggee uses full dumps (`"full"`).
+3. Override `DumpType` if the debuggee uses non-heap dumps (`"full"` or `"mini"`).
 4. Write tests as `[ConditionalTheory]` with `[MemberData(nameof(TestConfigurations))]`.
 5. Call `InitializeDumpTest(config)` as the first line of every test method.
 6. Use `[SkipOnVersion("net10.0", "reason")]` for version-specific skipping.

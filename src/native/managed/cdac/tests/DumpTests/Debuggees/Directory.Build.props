@@ -11,7 +11,7 @@
     <!-- Debuggees intentionally use unsealed types for type hierarchy testing -->
     <NoWarn>$(NoWarn);CA1852</NoWarn>
     <!-- Default dump type for dump generation. Override per-debuggee csproj as needed.
-         Supported values: "Heap", "Full", or "Heap;Full" for both. -->
+         Supported values: "Mini", "Heap", "Full", or any combination separated by ';'. -->
     <DumpTypes Condition="'$(DumpTypes)' == ''">Heap</DumpTypes>
     <!-- Default R2R mode for dump generation. Override per-debuggee csproj as needed.
          Supported values: "R2R", "Jit", or "R2R;Jit" for both.

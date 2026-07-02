@@ -76,7 +76,7 @@ internal sealed class StacksCommand : Command
                 break;
             }
 
-            Console.WriteLine($"Thread {idx} (OS ID: 0x{td.OSId:x}):");
+            Console.WriteLine($"Thread {idx} (OS ID: 0x{td.OSId.Value:x}):");
 
             try
             {
