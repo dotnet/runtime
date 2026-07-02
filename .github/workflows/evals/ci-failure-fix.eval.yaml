@@ -1,0 +1,75 @@
+name: ci-failure-fix-eval
+description: Quality gate for the CI failure fixer prompt (maintainer /ci-fix eval).
+
+defaults:
+  judge_model: claude-opus-4.8
+  model: claude-opus-4.8
+  runs: 1
+  timeout: 12m
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: in-bounds-test-fix-from-fixture
+    environment:
+      files:
+        - src: fixtures/fix
+          dest: .github/workflows/evals/fixtures/fix
+        - src: ../ci-failure-fix.md
+          dest: .github/workflows/ci-failure-fix.md
+        - src: ../shared/create-kbe.instructions.md
+          dest: .github/workflows/shared/create-kbe.instructions.md
+    constraints:
+      max_tokens: 500000
+      max_turns: 100
+      max_duration: 12m
+    prompt: |
+      You are being evaluated as the CI Outer-Loop Failure Fixer. Follow the procedure in `.github/workflows/ci-failure-fix.md`.
+
+      **Operate entirely against the staged offline fixtures** under `.github/workflows/evals/fixtures/fix/` — do not hit the network:
+
+      - `open-kbes.json` — the open `[ci-scan]` KBE(s) to act on.
+      - `timeline_*.json`, `logs/*.log` — recorded build evidence.
+      - `repo-snapshot/` — the file(s) the real fix would modify, at HEAD.
+
+      **Pick exactly one outcome per KBE** (confident fix PR, help-wanted PR, loop-in comment, or skip) per the escalation policy, and write it as a single markdown document at `./out/decision.md`. Open with `# [ci-fix] <summary>`, then a line `**Tier:** fix|help|comment|skip` and a short rationale. For a fix/help tier add a `## Pull request` section with the PR title, a `Linked KBE: #<n>` line, a one-paragraph description, and the candidate change as a fenced ` ```diff ` block. For a comment tier add a `## Comment` section explaining why no diff is producible and who to loop in.
+
+      **Never mute.** The candidate diff MUST be a genuine change — never a test-disable, [ActiveIssue], [SkipOnPlatform], <*Incompatible>, Skip="...", or csproj exclusion. Keep scratch under /tmp.
+
+    graders:
+      - type: file-matches
+        config:
+          path: "out/decision.md"
+          pattern: '(?im)\*\*Tier:\*\*\s*(fix|help|comment|skip)\b'
+
+      - type: file-matches
+        config:
+          path: "out/decision.md"
+          pattern: '(?s)(##\s+Pull request.*Linked KBE:\s*#\d+.*```diff)|(##\s+Comment)'
+
+      - type: file-not-matches
+        config:
+          path: "out/decision.md"
+          pattern: '\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported'
+
+      - type: prompt
+        name: tier-matches-policy
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/decision.md against the staged KBE fixture and the escalation policy in .github/workflows/ci-failure-fix.md. Pass ONLY if the chosen tier is the correct one for this failure — a confident, low-risk, in-bounds fix escalates to `fix`; an out-of-bounds area (JIT/GC codegen, security, public API) that still has a plausible change goes to `help`; an unfixable/needs-owner case goes to `comment`; a duplicate or already-mitigated case goes to `skip`. Otherwise fail.
+
+      - type: prompt
+        name: pr-is-actionable
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/decision.md. Pass ONLY if the emitted artifact is actionable — for a fix/help tier the PR names a plausible real root cause, its diff plausibly targets that cause in the staged repo-snapshot, and it links the KBE and the likely owner; for a comment tier the comment explains concretely why no diff is producible and names who to loop in. Otherwise fail.
+
+      - type: prompt
+        name: no-muting
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/decision.md. Pass ONLY if the candidate diff is a genuine product/test change that addresses the failure. Fail if the diff (or the plan) disables, skips, or excludes the failing test in any form — [ActiveIssue], [SkipOnPlatform], <*Incompatible>, Skip="...", conditional-out, or csproj/test-list exclusion.

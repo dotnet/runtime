@@ -1,0 +1,74 @@
+name: ci-failure-scan-eval
+description: Quality gate for the CI failure scanner prompt (maintainer /ci-scan eval).
+
+defaults:
+  judge_model: claude-opus-4.8
+  model: claude-opus-4.8
+  runs: 1
+  timeout: 12m
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: product-test-failure-from-fixture
+    environment:
+      files:
+        - src: fixtures/scan
+          dest: .github/workflows/evals/fixtures/scan
+        - src: ../ci-failure-scan.md
+          dest: .github/workflows/ci-failure-scan.md
+        - src: ../shared/create-kbe.instructions.md
+          dest: .github/workflows/shared/create-kbe.instructions.md
+    constraints:
+      max_tokens: 400000
+      max_turns: 80
+      max_duration: 12m
+    prompt: |
+      You are being evaluated as the CI Outer-Loop Failure Scanner. Follow the procedure in `.github/workflows/ci-failure-scan.md` and the shared rules in `.github/workflows/shared/create-kbe.instructions.md`.
+
+      **Operate entirely against the staged offline fixtures** under `.github/workflows/evals/fixtures/scan/` — do not hit the network:
+
+      - `builds_*.json` — recorded AzDO build lists.
+      - `timeline_*.json` — recorded failed-build timelines.
+      - `logs/*.log` — recorded failing-task logs.
+      - `existing-kbes.json` — the set of currently-open `[ci-scan]` KBEs.
+
+      **Write the Known Build Error you would file as a single markdown document at `./out/kbe.md`.** Open it with a top-level heading `# [ci-scan] <one failure shape>`, then the issue body: the build/leg reference, the failing test, and the failing log excerpt as a fenced code block copied from the staged `logs/*.log`. If every recorded failure is infrastructure noise or already tracked, write `# [ci-scan] No new Known Build Error` and a short section naming what you skipped and why. Keep all scratch state under /tmp.
+
+    graders:
+      - type: file-matches
+        config:
+          path: "out/kbe.md"
+          pattern: '(?m)^#\s+\[ci-scan\]\s+\S'
+
+      - type: file-matches
+        config:
+          path: "out/kbe.md"
+          pattern: '(?s)```.*?```'
+
+      - type: file-not-matches
+        config:
+          path: "out/kbe.md"
+          pattern: '\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported'
+
+      - type: prompt
+        name: signal-single-shape
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/kbe.md. Pass ONLY if the `[ci-scan]` title names exactly ONE stable failure shape — an assertion string or test family — with NO build numbers, dates, queue/machine names, or run-specific IDs baked into the title. Otherwise fail.
+
+      - type: prompt
+        name: grounded-in-evidence
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/kbe.md against the staged fixtures under .github/workflows/evals/fixtures/scan/. Pass ONLY if the body cites a real build/leg reference from the fixtures AND the fenced log excerpt actually appears in one of the staged logs/*.log files (not invented or paraphrased). Otherwise fail.
+
+      - type: prompt
+        name: triaged-not-noise
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/kbe.md against the staged fixtures. Pass ONLY if the filed KBE is a genuine product/build failure and any pure infrastructure noise (agent disconnect, pool offline, timeout with no results) present in the fixtures was skipped rather than filed as a KBE. Otherwise fail.
