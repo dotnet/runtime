@@ -818,6 +818,23 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     }
 }
 
+static GenTree* getImmOp(GenTreeHWIntrinsic* node)
+{
+    int imm1Pos = -1;
+    int imm2Pos = -1;
+    HWIntrinsicInfo::GetImmOpsPositions(node->GetHWIntrinsicId(), &imm1Pos, &imm2Pos);
+
+    // We only expect one immediate operand for Wasm SIMD
+    assert(imm1Pos >= 0 && imm2Pos < 0);
+    int operandCount = HWIntrinsicInfo::lookupNumArgs(node->GetHWIntrinsicId());
+    assert(node->GetOperandCount() == operandCount);
+
+    // imm1Pos is an offset in operand stack order
+    int      immOpPos = operandCount - imm1Pos;
+    assert(immOpPos > 0);
+    return node->Op(immOpPos);
+}
+
 // --------------------------------------------------------
 // LowerHWIntrinsic: Lower a hardware intrinsic node.
 //
@@ -848,13 +865,18 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         }
         case HWIntrinsicCategory::HW_Category_IMM:
         {
-            ContainCheckHWIntrinsic(node);
+            GenTree* immOp = getImmOp(node);
+            if (!immOp->IsCnsIntOrI())
+            {
+                SetMultiplyUsed(immOp DEBUGARG("LowerHWIntrinsic non-const imm op"));
+            }
             break;
         }
         default:
             NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
     }
 
+    ContainCheckHWIntrinsic(node);
     return node->gtNext;
 }
 
@@ -903,6 +925,7 @@ GenTree* Lowering::LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node)
     node->Op(2) = xorB;
     node->SetSimdBaseType(TYP_LONG);
 
+    // no containment possible for operands
     return node->gtNext;
 }
 
@@ -914,32 +937,16 @@ GenTree* Lowering::LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-#if DEBUG
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->GetHWIntrinsicId());
-    assert(category == HWIntrinsicCategory::HW_Category_IMM);
-#endif
-
-    int imm1Pos = -1;
-    int imm2Pos = -1;
-    HWIntrinsicInfo::GetImmOpsPositions(node->GetHWIntrinsicId(), &imm1Pos, &imm2Pos);
-
-    // We only expect one immediate operand for Wasm SIMD
-    assert(imm1Pos >= 0 && imm2Pos < 0);
-
     switch (category)
     {
         case HWIntrinsicCategory::HW_Category_IMM:
         {
-            int operandCount = HWIntrinsicInfo::lookupNumArgs(node->GetHWIntrinsicId());
-            assert(node->GetOperandCount() == operandCount);
-
-            // imm1Pos is an offset in operand stack order
-            int      immOpPos = operandCount - imm1Pos;
-            assert(immOpPos > 0);
-            GenTree* immOp = node->Op(immOpPos);
-            assert(immOp->IsCnsIntOrI());
-
-            MakeSrcContained(node, immOp);
+            GenTree* immOp = getImmOp(node);
+            if (immOp->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, immOp);
+            }
             break;
         }
         default:
