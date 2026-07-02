@@ -1253,12 +1253,14 @@ namespace System
         public static char ToLower(char c) { throw null; }
         public static char ToLower(char c, System.Globalization.CultureInfo culture) { throw null; }
         public static char ToLowerInvariant(char c) { throw null; }
+        public static char ToLowerOrdinal(char c) { throw null; }
         public override string ToString() { throw null; }
         public static string ToString(char c) { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public static char ToUpper(char c) { throw null; }
         public static char ToUpper(char c, System.Globalization.CultureInfo culture) { throw null; }
         public static char ToUpperInvariant(char c) { throw null; }
+        public static char ToUpperOrdinal(char c) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out char result) { throw null; }
     }
     public sealed partial class CharEnumerator : System.Collections.Generic.IEnumerator<char>, System.Collections.IEnumerator, System.ICloneable, System.IDisposable
@@ -5852,11 +5854,13 @@ namespace System
         public string ToLower() { throw null; }
         public string ToLower(System.Globalization.CultureInfo? culture) { throw null; }
         public string ToLowerInvariant() { throw null; }
+        public string ToLowerOrdinal() { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToUpper() { throw null; }
         public string ToUpper(System.Globalization.CultureInfo? culture) { throw null; }
         public string ToUpperInvariant() { throw null; }
+        public string ToUpperOrdinal() { throw null; }
         public string Trim() { throw null; }
         public string Trim(char trimChar) { throw null; }
         public string Trim(System.Text.Rune trimRune) { throw null; }
@@ -16174,9 +16178,11 @@ namespace System.Text
         static bool System.IUtf8SpanParsable<System.Text.Rune>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Text.Rune result) { throw null; }
         public static System.Text.Rune ToLower(System.Text.Rune value, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Text.Rune ToLowerInvariant(System.Text.Rune value) { throw null; }
+        public static System.Text.Rune ToLowerOrdinal(System.Text.Rune value) { throw null; }
         public override string ToString() { throw null; }
         public static System.Text.Rune ToUpper(System.Text.Rune value, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Text.Rune ToUpperInvariant(System.Text.Rune value) { throw null; }
+        public static System.Text.Rune ToUpperOrdinal(System.Text.Rune value) { throw null; }
         public static bool TryCreate(char highSurrogate, char lowSurrogate, out System.Text.Rune result) { throw null; }
         public static bool TryCreate(char ch, out System.Text.Rune result) { throw null; }
         public static bool TryCreate(int value, out System.Text.Rune result) { throw null; }

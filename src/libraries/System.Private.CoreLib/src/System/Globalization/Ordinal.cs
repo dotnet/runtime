@@ -707,5 +707,30 @@ namespace System.Globalization
             OrdinalCasing.ToUpperOrdinal(source, destination);
             return source.Length;
         }
+
+        internal static int ToLowerOrdinal(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (source.Overlaps(destination))
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToLower(source, destination);
+                return source.Length;
+            }
+
+            if (GlobalizationMode.UseNls)
+            {
+                TextInfo.Invariant.ChangeCaseToLower(source, destination); // this is the best so far for NLS.
+                return source.Length;
+            }
+
+            OrdinalCasing.ToLowerOrdinal(source, destination);
+            return source.Length;
+        }
     }
 }

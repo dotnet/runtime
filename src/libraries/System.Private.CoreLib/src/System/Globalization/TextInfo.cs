@@ -205,6 +205,24 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToLowerOrdinal(char c)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
+            }
+
+            if (GlobalizationMode.UseNls)
+            {
+                return char.IsAscii(c)
+                    ? ToLowerAsciiInvariant(c)
+                    : Invariant.ChangeCase(c, toUpper: false);
+            }
+
+            return OrdinalCasing.ToLower(c);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ChangeCaseToLower(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);

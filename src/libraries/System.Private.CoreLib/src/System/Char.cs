@@ -529,6 +529,14 @@ namespace System
         // Converts a character to upper-case for invariant culture.
         public static char ToUpperInvariant(char c) => TextInfo.ToUpperInvariant(c);
 
+        /// <summary>
+        /// Converts a character to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The uppercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToUpperOrdinal(char c) => TextInfo.ToUpperOrdinal(c);
+
         /*===================================ToLower====================================
         **
         ==============================================================================*/
@@ -557,6 +565,13 @@ namespace System
 
         // Converts a character to lower-case for invariant culture.
         public static char ToLowerInvariant(char c) => TextInfo.ToLowerInvariant(c);
+
+        /// <summary>
+        /// Converts a character to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="c">The character to convert.</param>
+        /// <returns>The lowercase equivalent of <paramref name="c"/>.</returns>
+        public static char ToLowerOrdinal(char c) => TextInfo.ToLowerOrdinal(c);
 
         //
         // IConvertible implementation

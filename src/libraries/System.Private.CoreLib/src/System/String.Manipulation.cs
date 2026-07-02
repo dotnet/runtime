@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System
 {
@@ -2383,6 +2384,117 @@ namespace System
         public string ToUpperInvariant()
         {
             return TextInfo.ToUpperInvariant(this);
+        }
+
+        /// <summary>
+        /// Returns a copy of this string converted to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <returns>The uppercase equivalent of the current string.</returns>
+        /// <remarks>
+        /// The conversion uses a simple, one-to-one mapping that preserves the length of the string.
+        /// Two strings are equal under <see cref="StringComparison.OrdinalIgnoreCase"/> if and only if
+        /// their <see cref="ToUpperOrdinal"/> results are ordinally equal.
+        /// </remarks>
+        public string ToUpperOrdinal()
+        {
+            if (Length == 0)
+            {
+                return Empty;
+            }
+
+            return ChangeCaseOrdinal(toUpper: true);
+        }
+
+        /// <summary>
+        /// Returns a copy of this string converted to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <returns>The lowercase equivalent of the current string.</returns>
+        /// <remarks>
+        /// The conversion uses a simple, one-to-one mapping that preserves the length of the string.
+        /// </remarks>
+        public string ToLowerOrdinal()
+        {
+            if (Length == 0)
+            {
+                return Empty;
+            }
+
+            return ChangeCaseOrdinal(toUpper: false);
+        }
+
+        private unsafe string ChangeCaseOrdinal(bool toUpper)
+        {
+            Debug.Assert(Length > 0);
+
+            int consumed;
+
+            // Fast path: scan the leading run of ASCII characters that is already in the
+            // requested case. If the entire string is ASCII and needs no change, return the
+            // same instance to avoid an allocation. This mirrors the behavior of
+            // TextInfo.ChangeCaseCommon used by ToUpper(Invariant)/ToLower.
+            fixed (char* pSource = this)
+            {
+                nuint currIdx = 0; // in chars
+
+                if (Length >= 2)
+                {
+                    nuint lastIndexWhereCanReadTwoChars = (uint)Length - 2;
+                    do
+                    {
+                        // Read 2 chars (one 32-bit integer) at a time.
+                        uint tempValue = Unsafe.ReadUnaligned<uint>(pSource + currIdx);
+                        if (!Utf16Utility.AllCharsInUInt32AreAscii(tempValue) ||
+                            (toUpper
+                                ? Utf16Utility.UInt32ContainsAnyLowercaseAsciiChar(tempValue)
+                                : Utf16Utility.UInt32ContainsAnyUppercaseAsciiChar(tempValue)))
+                        {
+                            goto MustChange;
+                        }
+
+                        currIdx += 2;
+                    } while (currIdx <= lastIndexWhereCanReadTwoChars);
+                }
+
+                // If there's a single character left, check it now.
+                if ((Length & 1) != 0)
+                {
+                    uint tempValue = pSource[currIdx];
+                    if (tempValue > 0x7Fu ||
+                        (toUpper
+                            ? ((tempValue - 'a') <= (uint)('z' - 'a'))
+                            : ((tempValue - 'A') <= (uint)('Z' - 'A'))))
+                    {
+                        goto MustChange;
+                    }
+                }
+
+                // The whole string is ASCII and already in the requested case.
+                return this;
+
+            MustChange:
+                consumed = (int)currIdx;
+            }
+
+            // The leading [0, consumed) chars are ASCII already in the requested case, so copy
+            // them verbatim and run the ordinal casing over the remainder.
+            string result = FastAllocateString(Length);
+            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), Length);
+            if (consumed > 0)
+            {
+                this.AsSpan(0, consumed).CopyTo(resultSpan);
+            }
+
+            if (toUpper)
+            {
+                Globalization.Ordinal.ToUpperOrdinal(this.AsSpan(consumed), resultSpan.Slice(consumed));
+            }
+            else
+            {
+                Globalization.Ordinal.ToLowerOrdinal(this.AsSpan(consumed), resultSpan.Slice(consumed));
+            }
+
+            return result;
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by

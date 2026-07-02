@@ -499,8 +499,10 @@ namespace System
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, T value, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
         public static int ToLower(this System.ReadOnlySpan<char> source, System.Span<char> destination, System.Globalization.CultureInfo? culture) { throw null; }
         public static int ToLowerInvariant(this System.ReadOnlySpan<char> source, System.Span<char> destination) { throw null; }
+        public static int ToLowerOrdinal(this System.ReadOnlySpan<char> source, System.Span<char> destination) { throw null; }
         public static int ToUpper(this System.ReadOnlySpan<char> source, System.Span<char> destination, System.Globalization.CultureInfo? culture) { throw null; }
         public static int ToUpperInvariant(this System.ReadOnlySpan<char> source, System.Span<char> destination) { throw null; }
+        public static int ToUpperOrdinal(this System.ReadOnlySpan<char> source, System.Span<char> destination) { throw null; }
         public static System.Memory<char> Trim(this System.Memory<char> memory) { throw null; }
         public static System.ReadOnlyMemory<char> Trim(this System.ReadOnlyMemory<char> memory) { throw null; }
         public static System.ReadOnlySpan<char> Trim(this System.ReadOnlySpan<char> span) { throw null; }
