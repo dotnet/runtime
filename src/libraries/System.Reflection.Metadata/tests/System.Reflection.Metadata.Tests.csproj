@@ -152,6 +152,13 @@
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <ProjectReference Include="..\src\System.Reflection.Metadata.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- On Apple mobile with aggressive trimming, CustomAttributeDecoderTests resolves nested enum types by name
+         via Type.GetType; root the containing type so those names survive trimming. See https://github.com/dotnet/runtime/issues/128450. -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'"
+                           Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->

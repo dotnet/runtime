@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Reflection.Metadata.Tests">
+    <!-- CustomAttributeDecoderTests.CustomAttributeTypeProvider.GetUnderlyingEnumType resolves the nested
+         enum types (SByteEnum, Int16Enum, MyEnum, ...) by name via Type.GetType. Preserve the containing
+         type and its nested types so those names survive aggressive trimming on Apple mobile. -->
+    <type fullname="System.Reflection.Metadata.Decoding.Tests.CustomAttributeDecoderTests" preserve="all" />
+  </assembly>
+</linker>
