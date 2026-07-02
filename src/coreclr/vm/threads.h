@@ -576,7 +576,7 @@ public:
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
-        // unused                       = 0x00000001,
+        TSNC_DebuggerThreadStartSent    = 0x00000001, // The debugger thread-start event has been sent for this thread.
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
