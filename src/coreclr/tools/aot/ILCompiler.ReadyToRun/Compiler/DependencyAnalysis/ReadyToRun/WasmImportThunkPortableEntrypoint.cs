@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 MethodDesc method = ((MethodFixupSignature)(_import.Signature)).Method;
                 MethodSignature signature = method.Signature;
 
-                if (method.IsConstructor && method.IsInternalCall && method.OwningType.IsWellKnownType(WellKnownType.String))
+                if (method.IsInternalCall && method.OwningType.IsWellKnownType(WellKnownType.String) && method.IsConstructor)
                 {
                     // Special case for string ctors, which are internal calls but have a managed signature.
                     signature = WasmLowering.GetStringCtorActualSignature(signature);
