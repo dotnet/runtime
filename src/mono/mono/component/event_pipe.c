@@ -101,7 +101,7 @@ static MonoComponentEventPipe fn_table = {
 	&ep_disable,
 	&event_pipe_get_next_event,
 	&ep_get_wait_handle,
-	&ep_start_streaming,
+	&ep_start_session,
 	&ep_write_event_2,
 	&event_pipe_add_rundown_execution_checkpoint,
 	&event_pipe_add_rundown_execution_checkpoint_2,

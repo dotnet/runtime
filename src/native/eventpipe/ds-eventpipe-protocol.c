@@ -158,6 +158,12 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 
 static
 uint8_t *
+eventpipe_collect_tracing6_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len);
+	
+static
+uint8_t *
 eventpipe_protocol_helper_stop_tracing_try_parse_payload (
 	uint8_t *buffer,
 	uint16_t buffer_len);
@@ -593,7 +599,12 @@ ep_on_error:
 EventPipeCollectTracingCommandPayload *
 ds_eventpipe_collect_tracing_command_payload_alloc (void)
 {
-	return ep_rt_object_alloc (EventPipeCollectTracingCommandPayload);
+	EventPipeCollectTracingCommandPayload *instance = ep_rt_object_alloc (EventPipeCollectTracingCommandPayload);
+
+	if (instance != NULL)
+		instance->buffering_mode = EP_BUFFERING_MODE_DROP;
+
+	return instance;
 }
 
 static
@@ -819,6 +830,76 @@ ep_on_error:
 }
 
 /*
+ *  eventpipe_collect_tracing6_command_try_parse_payload
+ *
+ *  Implements the CollectTracing6 IPC Protocol deserialization.
+ *
+ *  Identical to CollectTracing5, plus a trailing uint32 buffering mode after the provider configs for
+ *  streaming sessions. user_events sessions don't use the buffer manager, so they omit the field.
+ *
+ *  Ownership of the EventPipeCollectTracingCommandPayload is transferred to the caller.
+ */
+static
+uint8_t *
+eventpipe_collect_tracing6_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+
+	uint8_t * buffer_cursor = buffer;
+	uint32_t buffer_cursor_len = buffer_len;
+
+	EventPipeProviderOptionalFieldFlags optional_field_flags = EP_PROVIDER_OPTFIELD_EVENT_FILTER;
+
+	EventPipeCollectTracingCommandPayload *instance = ds_eventpipe_collect_tracing_command_payload_alloc ();
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->incoming_buffer = buffer;
+
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_session_type (&buffer_cursor, &buffer_cursor_len, &instance->session_type));
+
+	if (instance->session_type == EP_SESSION_TYPE_IPCSTREAM) {
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb));
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format));
+	} else if (instance->session_type == EP_SESSION_TYPE_USEREVENTS) {
+		instance->circular_buffer_size_in_mb = 0;
+		instance->serialization_format = EP_SERIALIZATION_FORMAT_NETTRACE_V4; // Serialization format isn't used for user_events sessions, default for check_options_valid.
+	}
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (&buffer_cursor, &buffer_cursor_len, &instance->rundown_keyword));
+
+	if (instance->session_type == EP_SESSION_TYPE_IPCSTREAM) {
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested));
+	} else if (instance->session_type == EP_SESSION_TYPE_USEREVENTS) {
+		instance->stackwalk_requested = false;
+	}
+
+	if (instance->session_type == EP_SESSION_TYPE_USEREVENTS)
+		optional_field_flags = (EventPipeProviderOptionalFieldFlags)(optional_field_flags | EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG);
+
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_provider_configs (&buffer_cursor, &buffer_cursor_len, optional_field_flags, &instance->provider_configs));
+
+	if (instance->session_type == EP_SESSION_TYPE_IPCSTREAM) {
+		uint32_t buffering_mode = 0;
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &buffering_mode));
+		// Only the exact value EP_BUFFERING_MODE_BLOCK opts into Block; any other value (including unknown
+		// future ones) falls back to the safe lossy Drop default.
+		instance->buffering_mode = (buffering_mode == EP_BUFFERING_MODE_BLOCK) ? EP_BUFFERING_MODE_BLOCK : EP_BUFFERING_MODE_DROP;
+	}
+
+	instance->rundown_requested = instance->rundown_keyword != 0;
+
+ep_on_exit:
+	return (uint8_t *)instance;
+
+ep_on_error:
+	ds_eventpipe_collect_tracing_command_payload_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+/*
 * EventPipeProtocolHelper
 */
 
@@ -953,7 +1034,8 @@ eventpipe_protocol_helper_collect_tracing (
 		ds_ipc_stream_get_stream_ref (stream),
 		NULL,
 		NULL,
-		user_events_data_fd);
+		user_events_data_fd,
+		payload->buffering_mode);
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
@@ -964,7 +1046,7 @@ eventpipe_protocol_helper_collect_tracing (
 		ep_raise_error ();
 	} else {
 		eventpipe_protocol_helper_send_start_tracing_success (stream, session_id);
-		ep_start_streaming (session_id);
+		ep_start_session (session_id);
 	}
 
 	result = true;
@@ -1028,6 +1110,10 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 		break;
 	case EP_COMMANDID_COLLECT_TRACING_5:
 		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing5_command_try_parse_payload);
+		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
+		break;
+	case EP_COMMANDID_COLLECT_TRACING_6:
+		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing6_command_try_parse_payload);
 		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
 		break;
 	case EP_COMMANDID_STOP_TRACING:

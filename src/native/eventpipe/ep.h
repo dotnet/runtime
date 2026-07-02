@@ -128,6 +128,8 @@ typedef struct EventPipeSessionOptions {
 	uint64_t rundown_keyword;
 	bool stackwalk_requested;
 	int user_events_data_fd;
+	// Buffering mode for the session: DROP (lossy, the default) or BLOCK (non-lossy).
+	EventPipeBufferingMode buffering_mode;
 } EventPipeSessionOptions;
 
 void
@@ -144,7 +146,8 @@ ep_session_options_init (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd);
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode);
 
 void
 ep_session_options_fini (EventPipeSessionOptions* options);
@@ -187,7 +190,8 @@ ep_enable_2 (
 	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	void *callback_additional_data,
+	EventPipeBufferingMode buffering_mode);
 
 EventPipeSessionID
 ep_enable_3 (
@@ -204,7 +208,7 @@ bool
 ep_is_session_enabled (EventPipeSessionID session_id);
 
 void
-ep_start_streaming (EventPipeSessionID session_id);
+ep_start_session (EventPipeSessionID session_id);
 
 bool
 ep_enabled (void);

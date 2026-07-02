@@ -594,6 +594,15 @@ ep_rt_config_value_get_circular_mb (void)
 
 static
 inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+	/* Unsupported */
+	return 0;
+}
+
+static
+inline
 bool
 ep_rt_config_value_get_output_streaming (void)
 {

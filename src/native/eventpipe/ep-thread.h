@@ -12,6 +12,14 @@
 #endif
 #include "ep-getter-setter.h"
 
+// OR'd into EventPipeThread.session_use_in_progress alongside the session index to mean "actively
+// writing into the buffer". The reader steals a buffer only while the bit is clear; the index alone
+// (bit clear) means the session is still pinned but the buffer is idle - the state a Block-mode
+// producer parked for capacity holds, letting the reader drain its full buffer while teardown
+// (which masks the bit) waits the producer out. Session indices are <= 63 and the cleared sentinel
+// is UINT32_MAX, so the top bit never collides.
+#define EP_SESSION_USE_WRITE_BUFFER_IN_USE ((uint32_t)0x80000000)
+
 /*
  * EventPipeThread.
  */
@@ -67,6 +75,16 @@ struct _EventPipeThread_Internal {
 	// This is a convenience marker to prevent us from having to search the global list.
 	// defaults to false.
 	volatile uint32_t unregistered;
+	// Block mode only: state for parking on a buffer manager's strict-FIFO wait queue when buffer budget is
+	// exhausted. A thread parks on at most one buffer manager at a time, so a single enqueued flag and a
+	// single per-thread auto-reset event suffice; the queue itself (a dn_queue of EventPipeThread*) lives on
+	// the buffer manager. Both are touched only under that buffer manager's rt_lock (the event is also
+	// lazily allocated by this thread).
+	// Non-zero while this thread is queued on a buffer manager waiting for budget.
+	uint32_t buffer_wait_enqueued;
+	// Auto-reset event signaled to wake this specific parked producer. Lazily allocated on first park
+	// (block-mode only) and freed with the thread, so threads that never park pay no OS handle.
+	ep_rt_wait_event_handle_t buffer_wait_event;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_THREAD_GETTER_SETTER)
@@ -92,6 +110,9 @@ EP_DEFINE_SETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session)
 EP_DEFINE_GETTER(EventPipeThread *, thread, uint64_t, os_thread_id);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, int32_t *, ref_count);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, volatile uint32_t *, unregistered);
+EP_DEFINE_GETTER(EventPipeThread *, thread, uint32_t, buffer_wait_enqueued);
+EP_DEFINE_SETTER(EventPipeThread *, thread, uint32_t, buffer_wait_enqueued);
+EP_DEFINE_GETTER_REF(EventPipeThread *, thread, ep_rt_wait_event_handle_t *, buffer_wait_event);
 
 EventPipeThread *
 ep_thread_alloc (void);

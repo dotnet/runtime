@@ -205,6 +205,11 @@ inline
 uint32_t
 ep_rt_config_value_get_sampling_rate (void);
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void);
+
 /*
  * EventPipeSampleProfiler.
  */
