@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
         {
-            if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null)
+            if (state.Current.ObjectState == StackFrameObjectState.None && reader.TokenType == JsonTokenType.Null)
             {
                 value = null;
                 return true;
