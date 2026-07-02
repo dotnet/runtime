@@ -203,6 +203,21 @@ pal_char_t* pal_get_default_installation_dir(void);
 // on Windows, file path on Unix). Caller should free() the returned pointer.
 pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 
+// Handle to a loaded dynamic library.
+#if defined(_WIN32)
+typedef HMODULE pal_dll_t;
+#else
+typedef void* pal_dll_t;
+#endif
+
+// Find a library named library_name that is already loaded into the current
+// process (without loading it if it is not). symbol_name is used to obtain an
+// address inside the library so that its on-disk path can be resolved. On
+// success returns true, sets *dll to the library handle, and sets *out_path to
+// a heap-allocated path (caller must free()). Returns false if the library is
+// not already loaded.
+bool pal_get_loaded_library(const pal_char_t* library_name, const char* symbol_name, /*out*/ pal_dll_t* dll, /*out*/ pal_char_t** out_path);
+
 #ifdef __cplusplus
 }
 #endif

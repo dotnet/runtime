@@ -93,12 +93,17 @@ namespace System.Runtime.CompilerServices
             return dispatcher;
         }
 
-        internal static unsafe void UnwindAsyncFrame()
+        internal static unsafe void UnwindAsyncFrame(object completingBox, AsyncInstrumentation.Flags flags)
         {
             AsyncStateMachineDispatcherInfo* info = t_current;
-            if (info != null)
+            if (info != null && ReferenceEquals(info->AsyncProfilerInfo.CurrentContinuation, completingBox))
             {
-                AsyncProfiler.AsyncMethodException.UnwindFrames(ref *info, 1);
+                info->AsyncProfilerInfo.CurrentContinuationCompleted = true;
+
+                if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(flags))
+                {
+                    AsyncProfiler.AsyncMethodException.UnwindFrames(ref *info, 1);
+                }
             }
         }
 
@@ -113,6 +118,7 @@ namespace System.Runtime.CompilerServices
             }
 
             info->AsyncProfilerInfo.CurrentContinuation = box;
+            info->AsyncProfilerInfo.CurrentContinuationCompleted = false;
 
             AsyncProfiler.SyncPoint.Check(ref info->AsyncProfilerInfo);
 
@@ -142,12 +148,17 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void CompleteAsyncMethod()
+        internal static unsafe void CompleteAsyncMethod(object completingBox, AsyncInstrumentation.Flags flags)
         {
             AsyncStateMachineDispatcherInfo* info = t_current;
-            if (info != null)
+            if (info != null && ReferenceEquals(info->AsyncProfilerInfo.CurrentContinuation, completingBox))
             {
-                AsyncProfiler.CompleteAsyncMethod.Complete(ref *info);
+                info->AsyncProfilerInfo.CurrentContinuationCompleted = true;
+
+                if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(flags))
+                {
+                    AsyncProfiler.CompleteAsyncMethod.Complete(ref *info);
+                }
             }
         }
     }
@@ -157,11 +168,25 @@ namespace System.Runtime.CompilerServices
         private IAsyncStateMachineBox? _inner;
         private Action? _moveNextAction;
 
-        internal Task? LastContinuation;
+        internal IAsyncStateMachineBox? LastContinuation;
 
         internal bool ReachedLastContinuation;
 
-        internal bool ContinuationChainChanged => LastContinuation?.ContinuationForDiagnostics != null;
+        internal object? NextContinuationForDiagnostics
+        {
+            get
+            {
+                IAsyncStateMachineBox? last = LastContinuation;
+                if (last is Task task)
+                {
+                    return task.ContinuationForDiagnostics;
+                }
+
+                return last is not null && last.GetDiagnosticData(out _, out _, out object? next) ? next : null;
+            }
+        }
+
+        internal bool ContinuationChainChanged => NextContinuationForDiagnostics != null;
 
         internal AsyncStateMachineDispatcher(IAsyncStateMachineBox inner) : base()
         {
@@ -245,21 +270,14 @@ namespace System.Runtime.CompilerServices
             }
             finally
             {
-                if (info.AsyncProfilerInfo.CurrentContinuation is Task curContinuation)
-                {
-                    bool isCompleted = curContinuation.IsCompleted;
-                    if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags) && isCompleted)
-                    {
-                        AsyncProfiler.CompleteAsyncContext.Complete(this, ref info.AsyncProfilerInfo);
-                    }
-                    else if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags) && !isCompleted)
-                    {
-                        AsyncProfiler.SuspendAsyncContext.Suspend(this, ref info.AsyncProfilerInfo);
-                    }
-                }
-                else if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
+                bool isCompleted = info.AsyncProfilerInfo.CurrentContinuationCompleted;
+                if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags) && isCompleted)
                 {
                     AsyncProfiler.CompleteAsyncContext.Complete(this, ref info.AsyncProfilerInfo);
+                }
+                else if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags) && !isCompleted)
+                {
+                    AsyncProfiler.SuspendAsyncContext.Suspend(this, ref info.AsyncProfilerInfo);
                 }
             }
         }

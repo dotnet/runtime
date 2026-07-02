@@ -22,6 +22,11 @@
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
     <RunNativeAotTestApps Condition="'$(RunNativeAotTestApps)' == ''">false</RunNativeAotTestApps>
 
+    <!-- Apple-mobile NativeAOT sets TestNativeAot per-project in tests.ioslike.targets, which is
+         too late for the static <ItemGroup> exclusions in this file. Surface it here so the
+         existing TestNativeAot-gated exclusions apply. Not propagated to child projects. -->
+    <TestNativeAot Condition="'$(TestNativeAot)' == '' and '$(UseNativeAOTRuntime)' == 'true' and '$(TargetsAppleMobile)' == 'true'">true</TestNativeAot>
+
     <RunHighAOTResourceRequiringTestsOnly Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == ''">false</RunHighAOTResourceRequiringTestsOnly>
 
     <!-- Long-running browser/CoreCLR suites are skipped by default because they exceed the
@@ -389,6 +394,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/129832 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/FunctionalTests/Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
+
     <!-- https://github.com/dotnet/runtime/issues/119380 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
                       Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'" />
@@ -509,6 +517,14 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
   </ItemGroup>
 
+  <!-- https://github.com/dotnet/runtime/issues/126697 -->
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetsAppleMobile)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution\tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectExclusions Condition="'$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(RunAOTCompilation)' == 'true'"
                        Include="@(HighAOTResourceRequiringProject)" />
@@ -520,7 +536,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true' or '$(TargetsAppleMobile)' == 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <!-- browser smoke tests Mono -->
@@ -569,7 +585,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" Condition="'$(OS)' != 'Windows_NT'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetOS)' != 'android'">
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetOS)' != 'android' and '$(TargetsAppleMobile)' != 'true'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
@@ -651,6 +667,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
+
+    <!-- https://github.com/dotnet/runtime/issues/129832 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/FunctionalTests/Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -669,6 +688,7 @@
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'"
                       BuildInParallel="$(BuildTestInParallel)" />
+
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
 
