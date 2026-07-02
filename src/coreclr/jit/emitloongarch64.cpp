@@ -1557,17 +1557,33 @@ void emitter::emitIns_R_R_R(
         code |= (reg2 /*& 0x1f*/) << 5;  // rj
         code |= (reg3 /*& 0x1f*/) << 10; // rk
     }
-    else if ((INS_amswap_w <= ins) && (ins <= INS_ammin_db_du))
+    else if ((INS_amcas_b <= ins) && (ins <= INS_ammin_db_du))
     {
 #ifdef DEBUG
         switch (ins)
         {
+            case INS_amcas_b:
+            case INS_amcas_h:
+            case INS_amcas_w:
+            case INS_amcas_d:
+            case INS_amcas_db_b:
+            case INS_amcas_db_h:
+            case INS_amcas_db_w:
+            case INS_amcas_db_d:
+            case INS_amswap_b:
+            case INS_amswap_h:
             case INS_amswap_w:
             case INS_amswap_d:
+            case INS_amswap_db_b:
+            case INS_amswap_db_h:
             case INS_amswap_db_w:
             case INS_amswap_db_d:
+            case INS_amadd_b:
+            case INS_amadd_h:
             case INS_amadd_w:
             case INS_amadd_d:
+            case INS_amadd_db_b:
+            case INS_amadd_db_h:
             case INS_amadd_db_w:
             case INS_amadd_db_d:
             case INS_amand_w:
@@ -4237,6 +4253,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             if (ins == INS_preldx)
             {
                 printf("0x%x, %s, %s\n", regd, RegNames[regj], RegNames[(code >> 10) & 0x1f]);
+                return;
+            }
+            if ((INS_amcas_b <= ins) && (ins <= INS_ammin_db_du))
+            {
+                printf("%s, %s, %s\n", RegNames[regd], RegNames[(code >> 10) & 0x1f], RegNames[regj]);
                 return;
             }
             printf("%s, %s, %s\n", RegNames[regd], RegNames[regj], RegNames[(code >> 10) & 0x1f]);

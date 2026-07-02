@@ -154,6 +154,8 @@ namespace Internal.JitInterface
         X86_SHA_X64 = InstructionSet_X86.SHA_X64,
         X86_WAITPKG_X64 = InstructionSet_X86.WAITPKG_X64,
         X86_X86Serialize_X64 = InstructionSet_X86.X86Serialize_X64,
+        LOONGARCH64_LAM_BH = InstructionSet_LOONGARCH64.LAM_BH,
+        LOONGARCH64_LAM_CAS = InstructionSet_LOONGARCH64.LAM_CAS,
     }
     public enum InstructionSet_ARM64
     {
@@ -322,6 +324,14 @@ namespace Internal.JitInterface
         X86Serialize_X64 = 46,
     }
 
+    public enum InstructionSet_LOONGARCH64
+    {
+        ILLEGAL = InstructionSet.ILLEGAL,
+        NONE = InstructionSet.NONE,
+        LAM_BH = 1,
+        LAM_CAS = 2,
+    }
+
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
     {
         private const int FlagsFieldCount = 2;
@@ -336,6 +346,8 @@ namespace Internal.JitInterface
         public IEnumerable<InstructionSet_X64> X64Flags => this.Select((x) => (InstructionSet_X64)x);
 
         public IEnumerable<InstructionSet_X86> X86Flags => this.Select((x) => (InstructionSet_X86)x);
+
+        public IEnumerable<InstructionSet_LOONGARCH64> LOONGARCH64Flags => this.Select((x) => (InstructionSet_LOONGARCH64)x);
 
         public InstructionSetFlags() { }
 
@@ -1310,6 +1322,11 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avxvnniint_v512", "AvxVnniInt8_V512", InstructionSet.X86_AVXVNNIINT_V512, true);
                     yield return new InstructionSetInfo("avxvnniint", "AvxVnniInt16", InstructionSet.X86_AVXVNNIINT, true);
                     yield return new InstructionSetInfo("avxvnniint_v512", "AvxVnniInt16_V512", InstructionSet.X86_AVXVNNIINT_V512, true);
+                    break;
+
+                case TargetArchitecture.LoongArch64:
+                    yield return new InstructionSetInfo("lam_bh", "LAM_BH", InstructionSet.LOONGARCH64_LAM_BH, true);
+                    yield return new InstructionSetInfo("lam_cas", "LAM_CAS", InstructionSet.LOONGARCH64_LAM_CAS, true);
                     break;
             }
         }

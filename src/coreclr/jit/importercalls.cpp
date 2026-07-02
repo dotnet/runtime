@@ -3636,6 +3636,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 mustExpand |= sig->sigInst.methInstCount == 1;
                 break;
 
+#if defined(TARGET_LOONGARCH64)
+            case NI_System_Threading_Interlocked_CompareExchange:
+            case NI_System_Threading_Interlocked_Exchange:
+                betterToExpand = true;
+                break;
+#endif
             default:
                 break;
         }
@@ -4357,7 +4363,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
@@ -4386,9 +4392,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
                 break;
             }
-#endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
             case NI_System_Threading_Interlocked_CompareExchange:
             {
@@ -4399,10 +4405,29 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     break;
                 }
 #if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if defined(TARGET_LOONGARCH64)
+                if (!compOpportunisticallyDependsOn(InstructionSet_LAM_CAS))
+                {
+                    if (!opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS) && varTypeIsSmall(retType))
+                    {
+                        if (mustExpand)
+                            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                                                                mustExpand);
+                        break;
+                    }
+                    else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
+                    {
+                        if (!mustExpand)
+                            break;
+                    }
+
+                }
+#else
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
+#endif // defined(TARGET_LOONGARCH64)
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
                 if ((retType == TYP_REF) &&
@@ -4443,9 +4468,28 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
                 else if (genTypeSize(retType) < 4)
                 {
+#if defined(TARGET_LOONGARCH64)
+                    if (!compOpportunisticallyDependsOn(InstructionSet_LAM_BH))
+                    {
+                        if (!opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
+                        {
+                            if (mustExpand)
+                                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                                                                    mustExpand);
+                            break;
+                        }
+                        else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
+                        {
+                            if (!mustExpand)
+                                break;
+                        }
+
+                    }
+#else
                     break;
+#endif
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -4475,7 +4519,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                           callType, op1, op2);
                 break;
             }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
             {
@@ -11625,6 +11669,32 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                     result = NI_IsSupported_Type;
                                 }
+#if defined(TARGET_LOONGARCH64)
+                                else if ((strncmp(className, "BH", 2) == 0) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
+                                {
+                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(InstructionSet_LAM_BH))
+                                    {
+                                        result = NI_IsSupported_True;
+                                    }
+                                    else
+                                    {
+                                        assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+                                        result = NI_IsSupported_Dynamic;
+                                    }
+                                }
+                                else if ((strncmp(className, "CAS", 3) == 0) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
+                                {
+                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(InstructionSet_LAM_CAS))
+                                    {
+                                        result = NI_IsSupported_True;
+                                    }
+                                    else
+                                    {
+                                        assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+                                        result = NI_IsSupported_Dynamic;
+                                    }
+                                }
+#endif
                                 else
                                 {
                                     result = NI_IsSupported_False;
@@ -11642,6 +11712,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                 result = NI_Vector_GetCount;
                             }
+#if defined(TARGET_LOONGARCH64)
+                            else if (strcmp(methodName, "CompareExchange") == 0)
+                            {
+                                result = NI_System_Threading_Interlocked_CompareExchange;
+                            }
+                            else if (strcmp(methodName, "Exchange") == 0)
+                            {
+                                result = NI_System_Threading_Interlocked_Exchange;
+                            }
+#endif
                             else if (gtIsRecursiveCall(method, false))
                             {
                                 // For the framework itself, any recursive intrinsics will either be

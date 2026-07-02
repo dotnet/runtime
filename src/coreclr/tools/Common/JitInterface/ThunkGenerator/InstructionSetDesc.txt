@@ -287,6 +287,12 @@ implication        ,RiscV64 ,Zbb                 ,RiscV64Base
 implication        ,RiscV64 ,Zba                 ,RiscV64Base
 implication        ,RiscV64 ,Zbs                 ,RiscV64Base
 
+; Definition of LoongArch64 instruction sets
+definearch         ,LOONGARCH64 ,64Bit     ,LoongArch64 ,LoongArch64,
+
+instructionset     ,LONGARCH64  , ,LAM_BH       ,93 ,LAM_BH  ,lam_bh
+instructionset     ,LONGARCH64  , ,LAM_CAS      ,94 ,LAM_CAS ,lam_cas
+
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
 instructionsetgroup  ,x86-64-v2                  ,X64 X86  ,base
 instructionsetgroup  ,x86-64-v3                  ,X64 X86  ,x86-64-v2 avx2

@@ -29,6 +29,7 @@ namespace ILCompiler
                 return method.Context.Target.Architecture switch
                 {
                     TargetArchitecture.ARM64 => ns == "System.Runtime.Intrinsics.Arm",
+                    TargetArchitecture.LoongArch64 => ns == "System.Runtime.Intrinsics.LoongArch",
                     TargetArchitecture.Wasm32 => ns == "System.Runtime.Intrinsics.Wasm",
                     TargetArchitecture.X64 or TargetArchitecture.X86 => ns == "System.Runtime.Intrinsics.X86",
                     _ => false,
@@ -51,6 +52,9 @@ namespace ILCompiler
                     break;
                 case TargetArchitecture.RiscV64:
                     RiscV64IntrinsicConstants.AddToBuilder(builder, flags);
+                    break;
+                case TargetArchitecture.LoongArch64:
+                    LoongArch64IntrinsicConstants.AddToBuilder(builder, flags);
                     break;
                 default:
                     Debug.Fail("Probably unimplemented");
@@ -349,6 +353,30 @@ namespace ILCompiler
                     InstructionSet.RiscV64_Zbs => Zbs,
 
                     _ => throw new NotSupportedException(((InstructionSet_RiscV64)instructionSet).ToString())
+                };
+            }
+        }
+
+        private static class LoongArch64IntrinsicConstants
+        {
+            public const int LAM_BH = (1 << 0);
+            public const int LAM_CAS = (1 << 1);
+
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
+            {
+                if ((flags & LAM_BH) != 0)
+                    builder.AddSupportedInstructionSet("lam_bh");
+                if ((flags & LAM_CAS) != 0)
+                    builder.AddSupportedInstructionSet("lam_cas");
+            }
+
+            public static int FromInstructionSet(InstructionSet instructionSet)
+            {
+                return instructionSet switch
+                {
+                    InstructionSet.LOONGARCH64_LAM_BH => LAM_BH,
+                    InstructionSet.LOONGARCH64_LAM_CAS => LAM_CAS,
+                    _ => throw new NotSupportedException(((InstructionSet_LOONGARCH64)instructionSet).ToString())
                 };
             }
         }
