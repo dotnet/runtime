@@ -227,8 +227,7 @@ namespace System.Net.NameResolution.Tests
             return rdata;
         }
 
-        // A single character-string (length-prefixed) TXT value.
-        internal static byte[] BuildTxtRdata(params string[] values)
+        // TXT RDATA containing one or more character-strings (each length-prefixed).
         {
             List<byte> rdata = new();
             foreach (string value in values)

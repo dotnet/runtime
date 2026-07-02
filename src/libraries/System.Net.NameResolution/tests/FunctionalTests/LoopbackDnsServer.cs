@@ -46,9 +46,9 @@ namespace System.Net.NameResolution.Tests
 
         public static LoopbackDnsServer Start(int port = 0)
         {
-            // start with TCP socket to get a free port. then bind UDP to the same port. This order is
+            // Start with TCP socket to get a free port, then bind UDP to the same port. This order is
             // more likely to succeed than the reverse, since UDP is connectionless and the socket does
-            // not have WAIT_CLOSE state.
+            // not have a TIME_WAIT state.
 
             Socket tcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
