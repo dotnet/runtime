@@ -156,13 +156,11 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     CONTRACTL_END;
 
     DWORD dwHash = m_StringToEntryHashTable->GetHash(pStringData);
-
     // Retrieve the string literal from the global string literal map.
     CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
 
     // Don't use FOH for collectible modules to avoid potential memory leaks
     const bool preferFrozenObjectHeap = !bIsCollectible;
-
     StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
 
     _ASSERTE(pEntry || !bAddIfNotFound);
