@@ -74,13 +74,7 @@ CONTEXT_CaptureContext(LPCONTEXT lpContext)
 
 extern "C" void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex)
 {
-#if defined(TARGET_BROWSER)
     _ASSERT(!"ThrowExceptionFromContextInternal not implemented on wasm");
-#else
-    // WASI uses native wasm exceptions; the interpreter throws C++ directly.
-    // This entrypoint exists for the WIN-style signature only.
-    _ASSERT(!"ThrowExceptionFromContextInternal not implemented on wasi");
-#endif
 }
 
 /* unwind */
