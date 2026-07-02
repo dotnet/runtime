@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -120,6 +121,7 @@ namespace System.Tests
             yield return new object[] { "0e-2", "0.00" };
             yield return new object[] { "0e-6176", "0." + new string('0', 6176) };
             yield return new object[] { "0e-10000", "0." + new string('0', 6176) };
+            yield return new object[] { "0.123e-10000", "0." + new string('0', 6176) };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -311,6 +313,8 @@ namespace System.Tests
             yield return new object[] { Decimal128.Parse(new string('9', 33) + "e6111"), Decimal128.Parse(new string('9', 33) + "0e6110"), 0 };
             yield return new object[] { Decimal128.Parse(new string('9', 33) + new string('0', 6111)), Decimal128.Parse(new string('9', 32) + "8e6110"), 1 };
             yield return new object[] { Decimal128.Parse(new string('9', 25) + new string('0', 6111)), Decimal128.Parse(new string('9', 24) + "8e6110"), 1 };
+            yield return new object[] { Decimal128.Parse("999e10"), Decimal128.Parse("997e170"), -1 };
+            yield return new object[] { Decimal128.Parse("997e170"), Decimal128.Parse("999e10"), 1 };
             yield return new object[] { Decimal128.Parse("1e1"), Decimal128.Parse("-1e0"), 1 };
             yield return new object[] { Decimal128.Parse("1e1"), Decimal128.Parse("-1e1"), 1 };
             yield return new object[] { Decimal128.Parse("1e1"), Decimal128.NaN, 1 };
@@ -330,6 +334,7 @@ namespace System.Tests
             yield return new object[] { Decimal128.Parse("4e-6177"), Decimal128.Zero, 0 };
             yield return new object[] { Decimal128.Parse("5e-6177"), Decimal128.Zero, 0 };
             yield return new object[] { Decimal128.Parse("5.00001e-6177"), Decimal128.Epsilon, 0 };
+            yield return new object[] { Decimal128.Parse("0.5" + new string('0', 300) + "1e-101"), Decimal128.Epsilon, 0 };
             yield return new object[] { Decimal128.Parse("5." + new string('0', 300) + "1e-6177"), Decimal128.Epsilon, 0 };
             yield return new object[] { Decimal128.Parse("6e-6177"), Decimal128.Parse("1e-6176"), 0 };
             yield return new object[] { Decimal128.Parse("1" + new string('0', 43) + "1e-6220"), Decimal128.Epsilon, 0 };
@@ -443,6 +448,53 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Theory]
+        [MemberData(nameof(PositiveInfinity_NonCanonicalEncodings128_TestData))]
+        [MemberData(nameof(NegativeInfinity_NonCanonicalEncodings128_TestData))]
+        [MemberData(nameof(NaN_NonCanonicalEncodings128_TestData))]
+        public static void NaN_Infinity_NonCanonicalEncodings128_Compare(Decimal128 d, UInt128 encoding)
+        {
+            Decimal128 d2 = Unsafe.BitCast<UInt128, Decimal128>(encoding);
+            Assert.Equal(0, d.CompareTo(d2));
+            Assert.Equal(d.GetHashCode(), d2.GetHashCode());
+        }
+
+        public static IEnumerable<object[]> PositiveInfinity_NonCanonicalEncodings128_TestData()
+        {
+            UInt128 canonical = (UInt128)0x7800_0000_0000_0000UL << 64;
+
+            yield return new object[] { Decimal128.PositiveInfinity, canonical };
+            yield return new object[] { Decimal128.PositiveInfinity, canonical | (UInt128)1 };
+            yield return new object[] { Decimal128.PositiveInfinity, canonical | ((UInt128)1 << 80) };
+            yield return new object[] { Decimal128.PositiveInfinity, canonical | (UInt128)0x1234 };
+            yield return new object[] { Decimal128.PositiveInfinity, canonical | (UInt128)0xFFFFF };
+            yield return new object[] { Decimal128.PositiveInfinity, canonical | (((UInt128)1 << 110) - 1) };
+        }
+
+        public static IEnumerable<object[]> NegativeInfinity_NonCanonicalEncodings128_TestData()
+        {
+            UInt128 canonical = (UInt128)0xF800_0000_0000_0000UL << 64;
+
+            yield return new object[] { Decimal128.NegativeInfinity, canonical };
+            yield return new object[] { Decimal128.NegativeInfinity, canonical | (UInt128)1 };
+            yield return new object[] { Decimal128.NegativeInfinity, canonical | ((UInt128)1 << 80) };
+            yield return new object[] { Decimal128.NegativeInfinity, canonical | (UInt128)0x1234 };
+            yield return new object[] { Decimal128.NegativeInfinity, canonical | (UInt128)0xFFFFF };
+            yield return new object[] { Decimal128.NegativeInfinity, canonical | (((UInt128)1 << 110) - 1) };
+        }
+
+        public static IEnumerable<object[]> NaN_NonCanonicalEncodings128_TestData()
+        {
+            UInt128 canonical = (UInt128)0xFC00_0000_0000_0000UL << 64;
+
+            yield return new object[] { Decimal128.NaN, canonical };
+            yield return new object[] { Decimal128.NaN, canonical | (UInt128)1 };
+            yield return new object[] { Decimal128.NaN, canonical | ((UInt128)1 << 80) };
+            yield return new object[] { Decimal128.NaN, canonical | (UInt128)0x1234 };
+            yield return new object[] { Decimal128.NaN, canonical | (UInt128)0xFFFFF };
+            yield return new object[] { Decimal128.NaN, canonical | (((UInt128)1 << 110) - 1) };
         }
     }
 }

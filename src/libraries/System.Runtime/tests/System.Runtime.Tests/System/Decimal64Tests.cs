@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -121,6 +122,7 @@ namespace System.Tests
             yield return new object[] { "0e-2", "0.00" };
             yield return new object[] { "0e-398", "0." + new string('0', 398) };
             yield return new object[] { "0e-10000", "0." + new string('0', 398) };
+            yield return new object[] { "0.123e-10000", "0." + new string('0', 398) };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -314,6 +316,8 @@ namespace System.Tests
             yield return new object[] { Decimal64.Parse("3"), Decimal64.Parse("2"), 1 };
             yield return new object[] { Decimal64.Parse("1e384"), Decimal64.Parse("1e384"), 0 };
             yield return new object[] { Decimal64.Parse("9.999999999999999e369"), Decimal64.Parse("9.999999999999999e369"), 0 };
+            yield return new object[] { Decimal64.Parse("999e10"), Decimal64.Parse("997e70"), -1 };
+            yield return new object[] { Decimal64.Parse("997e70"), Decimal64.Parse("999e10"), 1 };
             yield return new object[] { Decimal64.Parse("1"), Decimal64.Parse("-1"), 1 };
             yield return new object[] { Decimal64.Parse("10"), Decimal64.Parse("-1"), 1 };
             yield return new object[] { Decimal64.Parse("10"), Decimal64.NaN, 1 };
@@ -333,6 +337,7 @@ namespace System.Tests
             yield return new object[] { Decimal64.Parse("4e-399"), Decimal64.Zero, 0 };
             yield return new object[] { Decimal64.Parse("5e-399"), Decimal64.Zero, 0 };
             yield return new object[] { Decimal64.Parse("5.00001e-399"), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-101"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("5." + new string('0', 300) + "1e-399"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("6e-399"), Decimal64.Parse("1e-398"), 0 };
             yield return new object[] { Decimal64.Parse("1" + new string('0', 21) + "1e-420"), Decimal64.Epsilon, 0 };
@@ -446,6 +451,53 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Theory]
+        [MemberData(nameof(PositiveInfinity_NonCanonicalEncodings64_TestData))]
+        [MemberData(nameof(NegativeInfinity_NonCanonicalEncodings64_TestData))]
+        [MemberData(nameof(NaN_NonCanonicalEncodings64_TestData))]
+        public static void NaN_Infinity_NonCanonicalEncodings64_Compare(Decimal64 d, ulong encoding)
+        {
+            Decimal64 d2 = Unsafe.BitCast<ulong, Decimal64>(encoding);
+            Assert.Equal(0, d.CompareTo(d2));
+            Assert.Equal(d.GetHashCode(), d2.GetHashCode());
+        }
+
+        public static IEnumerable<object[]> PositiveInfinity_NonCanonicalEncodings64_TestData()
+        {
+            const ulong canonical = 0x7800_0000_0000_0000UL;
+
+            yield return new object[] { Decimal64.PositiveInfinity, canonical };
+            yield return new object[] { Decimal64.PositiveInfinity, canonical | 0x0000_0000_0000_0001UL };
+            yield return new object[] { Decimal64.PositiveInfinity, canonical | 0x0200_0000_0000_0000UL };
+            yield return new object[] { Decimal64.PositiveInfinity, canonical | 0x0000_0000_0000_1234UL };
+            yield return new object[] { Decimal64.PositiveInfinity, canonical | 0x0000_0000_000F_FFFFUL };
+            yield return new object[] { Decimal64.PositiveInfinity, canonical | 0x03FF_FFFF_FFFF_FFFFUL };
+        }
+
+        public static IEnumerable<object[]> NegativeInfinity_NonCanonicalEncodings64_TestData()
+        {
+            const ulong canonical = 0xF800_0000_0000_0000UL;
+
+            yield return new object[] { Decimal64.NegativeInfinity, canonical };
+            yield return new object[] { Decimal64.NegativeInfinity, canonical | 0x0000_0000_0000_0001UL };
+            yield return new object[] { Decimal64.NegativeInfinity, canonical | 0x0200_0000_0000_0000UL };
+            yield return new object[] { Decimal64.NegativeInfinity, canonical | 0x0000_0000_0000_1234UL };
+            yield return new object[] { Decimal64.NegativeInfinity, canonical | 0x0000_0000_000F_FFFFUL };
+            yield return new object[] { Decimal64.NegativeInfinity, canonical | 0x03FF_FFFF_FFFF_FFFFUL };
+        }
+
+        public static IEnumerable<object[]> NaN_NonCanonicalEncodings64_TestData()
+        {
+            const ulong canonical = 0xFC00_0000_0000_0000UL;
+
+            yield return new object[] { Decimal64.NaN, canonical };
+            yield return new object[] { Decimal64.NaN, canonical | 0x0000_0000_0000_0001UL };
+            yield return new object[] { Decimal64.NaN, canonical | 0x0200_0000_0000_0000UL };
+            yield return new object[] { Decimal64.NaN, canonical | 0x0000_0000_0000_1234UL };
+            yield return new object[] { Decimal64.NaN, canonical | 0x0000_0000_000F_FFFFUL };
+            yield return new object[] { Decimal64.NaN, canonical | 0x03FF_FFFF_FFFF_FFFFUL };
         }
     }
 }

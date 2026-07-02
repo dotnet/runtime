@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -120,6 +121,7 @@ namespace System.Tests
             yield return new object[] { "0e-2", "0.00" };
             yield return new object[] { "0e-101", "0." + new string('0', 101) };
             yield return new object[] { "0e-1000", "0." + new string('0', 101) };
+            yield return new object[] { "0.123e-1000", "0." + new string('0', 101) };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -308,6 +310,8 @@ namespace System.Tests
             yield return new object[] { Decimal32.Parse("3"), Decimal32.Parse("2"), 1 };
             yield return new object[] { Decimal32.Parse("1e90"), Decimal32.Parse("1e90"), 0 };
             yield return new object[] { Decimal32.Parse("9.99999e95"), Decimal32.Parse("9.99999e95"), 0 };
+            yield return new object[] { Decimal32.Parse("999e10"), Decimal32.Parse("997e70"), -1 };
+            yield return new object[] { Decimal32.Parse("997e70"), Decimal32.Parse("999e10"), 1 };
             yield return new object[] { Decimal32.Parse("1"), Decimal32.Parse("-1"), 1 };
             yield return new object[] { Decimal32.Parse("10"), Decimal32.Parse("-1"), 1 };
             yield return new object[] { Decimal32.Parse("10"), Decimal32.NaN, 1 };
@@ -327,6 +331,7 @@ namespace System.Tests
             yield return new object[] { Decimal32.Parse("4e-102"), Decimal32.Zero, 0 };
             yield return new object[] { Decimal32.Parse("5e-102"), Decimal32.Zero, 0 };
             yield return new object[] { Decimal32.Parse("5.00001e-102"), Decimal32.Epsilon, 0 };
+            yield return new object[] { Decimal32.Parse("0.5" + new string('0', 100) + "1e-101"), Decimal32.Epsilon, 0 };
             yield return new object[] { Decimal32.Parse("5." + new string('0', 300) + "1e-102"), Decimal32.Epsilon, 0 };
             yield return new object[] { Decimal32.Parse("6e-102"), Decimal32.Parse("1e-101"), 0 };
             yield return new object[] { Decimal32.Parse("1000000001e-110"), Decimal32.Epsilon, 0 };
@@ -358,6 +363,7 @@ namespace System.Tests
             Assert.Equal(zero, Decimal32.Zero);
             Assert.Equal(zero, Decimal32.NegativeZero);
             Assert.Equal(Decimal32.Zero, Decimal32.NegativeZero);
+            Assert.Equal(Decimal32.Zero, Unsafe.BitCast<uint, Decimal32>(0x0000_0001));
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
@@ -440,6 +446,53 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Theory]
+        [MemberData(nameof(PositiveInfinity_NonCanonicalEncodings_TestData))]
+        [MemberData(nameof(NegativeInfinity_NonCanonicalEncodings_TestData))]
+        [MemberData(nameof(NaN_NonCanonicalEncodings_TestData))]
+        public static void NaN_Infinity_NonCanonicalEncodings_Compare(Decimal32 d, uint encoding)
+        {
+            Decimal32 d2 = Unsafe.BitCast<uint, Decimal32>(encoding);
+            Assert.Equal(0, d.CompareTo(d2));
+            Assert.Equal(d.GetHashCode(), d2.GetHashCode());
+        }
+
+        public static IEnumerable<object[]> PositiveInfinity_NonCanonicalEncodings_TestData()
+        {
+            const uint canonical = 0x7800_0000;
+
+            yield return new object[] { Decimal32.PositiveInfinity, canonical };
+            yield return new object[] { Decimal32.PositiveInfinity, canonical | 0x0000_0001U };
+            yield return new object[] { Decimal32.PositiveInfinity, canonical | 0x0200_0000U };
+            yield return new object[] { Decimal32.PositiveInfinity, canonical | 0x0000_1234U };
+            yield return new object[] { Decimal32.PositiveInfinity, canonical | 0x000F_FFFFU };
+            yield return new object[] { Decimal32.PositiveInfinity, canonical | 0x03FF_FFFFU };
+        }
+
+        public static IEnumerable<object[]> NegativeInfinity_NonCanonicalEncodings_TestData()
+        {
+            const uint canonical = 0xF800_0000;
+
+            yield return new object[] { Decimal32.NegativeInfinity, canonical };
+            yield return new object[] { Decimal32.NegativeInfinity, canonical | 0x0000_0001U };
+            yield return new object[] { Decimal32.NegativeInfinity, canonical | 0x0200_0000U };
+            yield return new object[] { Decimal32.NegativeInfinity, canonical | 0x0000_1234U };
+            yield return new object[] { Decimal32.NegativeInfinity, canonical | 0x000F_FFFFU };
+            yield return new object[] { Decimal32.NegativeInfinity, canonical | 0x03FF_FFFFU };
+        }
+
+        public static IEnumerable<object[]> NaN_NonCanonicalEncodings_TestData()
+        {
+            const uint canonical = 0xFC00_0000;
+
+            yield return new object[] { Decimal32.NaN, canonical };
+            yield return new object[] { Decimal32.NaN, canonical | 0x0000_0001U };
+            yield return new object[] { Decimal32.NaN, canonical | 0x0200_0000U };
+            yield return new object[] { Decimal32.NaN, canonical | 0x0000_1234U };
+            yield return new object[] { Decimal32.NaN, canonical | 0x000F_FFFFU };
+            yield return new object[] { Decimal32.NaN, canonical | 0x03FF_FFFFU };
         }
     }
 }
