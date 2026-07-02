@@ -384,7 +384,6 @@ namespace System.IO
         private const UnixFileMode PermissionsMask_AllUsers_ReadWriteExecute = PermissionsMask_AllUsers_ReadWrite | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
         private const UnixFileMode PermissionsMask_Sticky = UnixFileMode.StickyBit;
 
-        private const string SharedMemoryUniqueTempNameTemplate = ".dotnet.XXXXXX";
         private const int TransientRetryCount = 10;
 
         // See https://developer.apple.com/documentation/Foundation/FileManager/containerURL(forSecurityApplicationGroupIdentifier:)#App-Groups-in-macOS for details on this path.
@@ -548,8 +547,8 @@ namespace System.IO
                     // permissions umask, so mkdir() may not set all of the requested permissions. We need to use chmod() to set the proper
                     // permissions. That creates a race when there is no global lock acquired when creating the directory. Another user's
                     // process may create the directory and this user's process may try to use it before the other process sets the full
-                    // permissions. In that case, create a temporary directory first, set the permissions, and rename it to the actual
-                    // directory name.
+                    // permissions. The validation below tolerates that transient state while using mkdir() on the final path avoids
+                    // rename() replacing an existing empty directory that another process may already be locking.
 
                     if (isGlobalLockAcquired)
                     {
@@ -570,40 +569,27 @@ namespace System.IO
                         return true;
                     }
 
-                    string tempPath = Path.Combine(SharedFilesPath, SharedMemoryUniqueTempNameTemplate);
-
-                    unsafe
+                    if (Interop.Sys.MkDir(directoryPath, (int)permissionsMask) == 0)
                     {
-                        byte* tempPathPtr = Utf8StringMarshaller.ConvertToUnmanaged(tempPath);
-                        if (Interop.Sys.MkdTemp(tempPathPtr) == null)
+                        try
                         {
-                            Utf8StringMarshaller.Free(tempPathPtr);
-                            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                            throw Interop.GetExceptionForIoErrno(error, tempPath);
+                            FileSystem.SetUnixFileMode(directoryPath, permissionsMask);
                         }
-                        // Convert the path back to get the substituted path.
-                        tempPath = Utf8StringMarshaller.ConvertToManaged(tempPathPtr)!;
-                        Utf8StringMarshaller.Free(tempPathPtr);
-                    }
+                        catch (Exception)
+                        {
+                            Directory.Delete(directoryPath);
+                            throw;
+                        }
 
-                    try
-                    {
-                        FileSystem.SetUnixFileMode(tempPath, permissionsMask);
-                    }
-                    catch (Exception)
-                    {
-                        Directory.Delete(tempPath);
-                        throw;
-                    }
-
-                    if (Interop.Sys.Rename(tempPath, directoryPath) == 0)
-                    {
                         return true;
                     }
 
-                    // Another process may have beaten us to it. Delete the temp directory and continue to check the requested directory to
-                    // see if it meets our needs.
-                    Directory.Delete(tempPath);
+                    Interop.ErrorInfo mkdirError = Interop.Sys.GetLastErrorInfo();
+                    if (mkdirError.Error != Interop.Error.EEXIST)
+                    {
+                        throw Interop.GetExceptionForIoErrno(mkdirError, directoryPath);
+                    }
+
                     statResult = Interop.Sys.Stat(directoryPath, out fileStatus);
                 }
 
