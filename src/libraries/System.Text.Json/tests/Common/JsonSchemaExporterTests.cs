@@ -219,7 +219,7 @@ namespace System.Text.Json.Schema.Tests
             Assert.Same(JsonSchemaExporterOptions.Default, JsonSchemaExporterOptions.Default);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(JsonSerializer), nameof(JsonSerializer.IsReflectionEnabledByDefault))]
         [RequiresUnreferencedCode("Uses private reflection to access System.Text.Json converter internals.")]
         [RequiresDynamicCode("Uses private reflection to access System.Text.Json converter internals.")]
         public void LegacySchemaExporter_CanAccessReflectedMembers()
