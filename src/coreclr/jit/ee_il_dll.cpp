@@ -930,11 +930,12 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
         {
 #ifdef TARGET_AMD64
             auto toJitRegNum = [](ICorDebugInfo::RegNum reg) -> regNumber {
-                if (static_cast<unsigned>(reg) >= static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST))
+                unsigned val     = static_cast<unsigned>(reg);
+                unsigned fpFirst = static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST);
+                if (val >= fpFirst)
                 {
-                    return static_cast<regNumber>(REG_FP_FIRST + static_cast<unsigned>(reg) - static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST));
+                    return static_cast<regNumber>(REG_FP_FIRST + val - fpFirst);
                 }
-
                 return static_cast<regNumber>(reg);
             };
 

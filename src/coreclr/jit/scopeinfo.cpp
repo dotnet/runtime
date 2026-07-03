@@ -187,19 +187,35 @@ ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumb
 //
 void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumber otherReg)
 {
+#ifdef TARGET_AMD64
     assert(genIsValidIntReg(reg) || genIsValidFloatReg(reg));
     assert((otherReg == REG_NA) || genIsValidIntReg(otherReg) || genIsValidFloatReg(otherReg));
+#else
+    assert(genIsValidIntReg(reg));
+    assert((otherReg == REG_NA) || genIsValidIntReg(otherReg));
+#endif
 
     if (otherReg == REG_NA)
     {
+#ifdef TARGET_AMD64
         vlType       = genIsValidFloatReg(reg) ? VLT_REG_FP : VLT_REG;
         vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
+#else
+        vlType       = VLT_REG;
+        vlReg.vlrReg = reg;
+#endif
     }
     else
     {
+#ifdef TARGET_AMD64
         vlType            = VLT_REG_REG;
         vlRegReg.vlrrReg1 = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
         vlRegReg.vlrrReg2 = static_cast<regNumber>(mapRegNumToDebugRegNum(otherReg));
+#else
+        vlType            = VLT_REG_REG;
+        vlRegReg.vlrrReg1 = reg;
+        vlRegReg.vlrrReg2 = otherReg;
+#endif
     }
 }
 
@@ -468,7 +484,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
         {
-            this->vlType = VLT_REG_FP;
+            this->vlType       = VLT_REG_FP;
             this->vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(varDsc->GetRegNum()));
             break;
         }
@@ -556,9 +572,8 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
 
         case VLT_REG_FP:
 #ifdef TARGET_AMD64
-            printf("%s",
-                   getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg -
-                                                    ICorDebugInfo::REGNUM_FP_FIRST)));
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg -
+                                                           ICorDebugInfo::REGNUM_FP_FIRST)));
 #else
             printf("%s", getRegName(varLoc->vlReg.vlrReg));
 #endif
@@ -582,33 +597,26 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
 
         case VLT_REG_REG:
 #ifdef TARGET_AMD64
-            if (varLoc->vlRegReg.vlrrReg1 >= ICorDebugInfo::REGNUM_FP_FIRST)
-            {
-                printf("%s",
-                       getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlRegReg.vlrrReg1 -
-                                                        ICorDebugInfo::REGNUM_FP_FIRST)));
-            }
-            else
-            {
-                printf("%s", getRegName(varLoc->vlRegReg.vlrrReg1));
-            }
+        {
+            // Map RegNum values (which may include FP register indices) back to
+            // JIT regNumber for display purposes.
+            auto toJitReg = [](regNumber r) -> regNumber {
+                unsigned val     = static_cast<unsigned>(r);
+                unsigned fpFirst = static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST);
+                if (val >= fpFirst)
+                {
+                    return static_cast<regNumber>(REG_FP_FIRST + val - fpFirst);
+                }
+                return r;
+            };
 
-            printf("-");
-
-            if (varLoc->vlRegReg.vlrrReg2 >= ICorDebugInfo::REGNUM_FP_FIRST)
-            {
-                printf("%s",
-                       getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlRegReg.vlrrReg2 -
-                                                        ICorDebugInfo::REGNUM_FP_FIRST)));
-            }
-            else
-            {
-                printf("%s", getRegName(varLoc->vlRegReg.vlrrReg2));
-            }
+            printf("%s-%s", getRegName(toJitReg(varLoc->vlRegReg.vlrrReg1)),
+                   getRegName(toJitReg(varLoc->vlRegReg.vlrrReg2)));
+        }
 #else
             printf("%s-%s", getRegName(varLoc->vlRegReg.vlrrReg1), getRegName(varLoc->vlRegReg.vlrrReg2));
 #endif
-            break;
+        break;
 
 #ifndef TARGET_AMD64
         case VLT_REG_STK:
@@ -1793,7 +1801,24 @@ void CodeGen::psiBegProlog()
 
         if (reg1 != REG_NA)
         {
-            varLocation.storeVariableInRegisters(reg1, reg2);
+#ifdef TARGET_AMD64
+            // On AMD64, storeVariableInRegisters handles both int and FP
+            // registers via the unified RegNum encoding.
+            if (genIsValidIntReg(reg1) || genIsValidFloatReg(reg1))
+            {
+                varLocation.storeVariableInRegisters(reg1, reg2);
+            }
+#else
+            // On non-AMD64, only int registers are supported in RegNum.
+            if (genIsValidIntReg(reg1))
+            {
+                varLocation.storeVariableInRegisters(reg1, reg2);
+            }
+#endif
+            else
+            {
+                varLocation.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(lclVarDsc));
+            }
         }
         else
         {

@@ -268,15 +268,22 @@ void RegRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // for full header comment)
 void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
 {
-    _ASSERTE(newValue.Size() == 8);
+    // A two-register value occupies more than one register's worth of space
+    // and at most two registers' worth. On x86 this is 8 bytes (2*4), on
+    // x64 this is up to 16 bytes (2*8).
+    _ASSERTE((newValue.Size() > sizeof(void*)) && (newValue.Size() <= 2 * sizeof(void*)));
     _ASSERTE(REG_SIZE == sizeof(void*));
 
     // Split the new value into high and low parts.
-    SIZE_T highPart;
-    SIZE_T lowPart;
+    SIZE_T highPart = 0;
+    SIZE_T lowPart = 0;
 
     memcpy(&lowPart, newValue.StartAddress(), REG_SIZE);
-    memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, REG_SIZE);
+    // Only read the high part if the value is large enough to span two registers.
+    if (newValue.Size() > REG_SIZE)
+    {
+        memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, newValue.Size() - REG_SIZE);
+    }
 
     // Update the proper registers.
     SetContextRegister(pContext, m_reg1Info.m_kRegNumber, highPart); // throws
