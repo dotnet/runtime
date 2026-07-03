@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -78,6 +79,37 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified decompression options.</summary>
+        /// <param name="decompressionOptions">The options to use for Zstandard decompression.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="decompressionOptions"/> is null.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
+        public ZstandardDecoder(ZstandardDecompressionOptions decompressionOptions)
+        {
+            ArgumentNullException.ThrowIfNull(decompressionOptions);
+
+            _disposed = false;
+
+            InitializeDecoder();
+
+            try
+            {
+                if (decompressionOptions.MaxWindowLog != 0)
+                {
+                    SetWindowLog(decompressionOptions.MaxWindowLog);
+                }
+
+                if (decompressionOptions.Dictionary is not null)
+                {
+                    SetDictionary(decompressionOptions.Dictionary);
+                }
+            }
+            catch
+            {
+                _context.Dispose();
+                throw;
+            }
+        }
+
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified dictionary and maximum window size.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
@@ -124,6 +156,14 @@ namespace System.IO.Compression
         /// <param name="bytesConsumed">When this method returns, contains the number of bytes consumed from the source.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
+        /// <remarks>
+        /// The method returns <see cref="OperationStatus.Done"/> after all
+        /// contents of a single Zstandard frame are decoded and returned. However,
+        /// Zstandard data streams may consist of multiple concatenated frames
+        /// (some of which may even be empty). To allow processing further
+        /// frames on the same <see cref="ZstandardDecoder" /> instance, call
+        /// <see cref="Reset" /> before calling <see cref="Decompress" /> on the rest of the data.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">An error occurred during decompression.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
@@ -312,7 +352,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Resets the decoder session, allowing reuse for the next decompression operation.</summary>
+        /// <summary>Resets the decoder session, allowing reuse for decompressing the next Zstandard frame.</summary>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the decoder session.</exception>
         public void Reset()

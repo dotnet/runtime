@@ -897,17 +897,13 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             }
 
 #if defined(FEATURE_HW_INTRINSICS)
+            case VNF_HWI_Vector_ExtractMostSignificantBits:
 #if defined(TARGET_XARCH)
-            case VNF_HWI_Vector256_ExtractMostSignificantBits:
-            case VNF_HWI_Vector512_ExtractMostSignificantBits:
             case VNF_HWI_X86Base_MoveMask:
             case VNF_HWI_AVX_MoveMask:
             case VNF_HWI_AVX2_MoveMask:
             case VNF_HWI_AVX512_MoveMask:
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_Vector64_ExtractMostSignificantBits:
 #endif
-            case VNF_HWI_Vector128_ExtractMostSignificantBits:
             {
                 // We have 1 bit per element, remaining upper bits are 0
 

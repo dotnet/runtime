@@ -1729,12 +1729,27 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     assert(varTypeIsStruct(varDsc));
     assert(!varDsc->lvPromoted); // Don't ask again :)
 
-    // If this lclVar is used in a SIMD intrinsic, then we don't want to struct promote it.
-    // Note, however, that SIMD lclVars that are NOT used in a SIMD intrinsic may be
-    // profitably promoted.
-    if (varDsc->lvIsUsedInSIMDIntrinsic())
+    if (varTypeIsSIMDOrMask(varDsc->lvType))
     {
-        JITDUMP("  struct promotion of V%02u is disabled because lvIsUsedInSIMDIntrinsic()\n", lclNum);
+        // TYP_SIMD and TYP_MASK locals should never be promoted because they either don't have accessible fields
+        // or they have specialized IR support that transforms those field accesses into appropriate codegen. While
+        // could potentially be a little smarter here if the user is only touching the fields, this is not a recommended
+        // pattern in the first place and so its not something we want to spend effort optimizing. Rather, developers
+        // should treat it as a proper SIMD primitive type and do the "right" thing.
+
+        JITDUMP("  struct promotion of V%02u is disabled because it is a SIMD or MASK type\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->IsBitcastToSimd())
+    {
+        // The local is effectively bitcast to one of the recognized TYP_SIMD structs and so we use this as a hint that
+        // it is likely a user-defined vector wrapper and they want it to be optimized accordingly. This may pessimize
+        // some rare edge cases where devs are mixing SIMD and non-SIMD patterns, but as with the comment above we want
+        // to discourage doing that and for them to pick one pattern, because it otherwise ends up non-optimal no matter
+        // what we do.
+
+        JITDUMP("  struct promotion of V%02u is disabled because IsBitcastToSimd()\n", lclNum);
         return false;
     }
 
@@ -1824,16 +1839,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
                 {
                     canPromote = false;
                 }
-#if defined(FEATURE_SIMD)
-                // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
-                // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
-                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
-                         (structPromotionInfo.fields[i].fldSIMDTypeHnd != NO_CLASS_HANDLE) &&
-                         !m_compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldSIMDTypeHnd))
-                {
-                    canPromote = false;
-                }
-#endif // FEATURE_SIMD
             }
         }
 #elif defined(UNIX_AMD64_ABI)
@@ -5748,7 +5753,9 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     noway_assert(lclNum != BAD_VAR_NUM);
 
     LclVarDsc* lcl = lvaGetDesc(lclNum);
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+    // Align >=8 byte locals to 8 bytes.
+    //
     // Before final frame layout, assume the worst case, that every >=8 byte local will need
     // maximum padding to be aligned. This is because we generate code based on the stack offset
     // computed during tentative frame layout. These offsets cannot get bigger during final
@@ -5820,7 +5827,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         }
 #endif
     }
-#endif // TARGET_64BIT
+#endif // TARGET_64BIT || TARGET_WASM
 
     /* Reserve space on the stack by bumping the frame size */
 
@@ -6041,8 +6048,35 @@ void Compiler::lvaAlignFrame()
         }
     }
 #elif defined(TARGET_WASM)
-    // TODO-WASM: decide what the stack alignment strategy should be. In the native ABI, the alignment is 16, but that
-    // may be suboptimal for the managed ABI, since it may imply zeroing the padding slots.
+    // Keep the stack aligned to STACK_ALIGN.
+    unsigned pad = 0;
+    if ((compLclFrameSize % STACK_ALIGN) != 0)
+    {
+        pad = STACK_ALIGN - (compLclFrameSize % STACK_ALIGN);
+    }
+    else if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+    {
+        // Reserve a full STACK_ALIGN so the offsets computed now are upper bounds.
+        pad = STACK_ALIGN;
+    }
+
+    if (pad != 0)
+    {
+        lvaIncrementFrameSize(pad);
+
+        // The Wasm EH slots are read at fixed offsets and must stay at the frame bottom,
+        // so shift them down past the padding.
+        unsigned const ehSlots[] = {lvaWasmFunctionIndex, lvaWasmVirtualIP, lvaWasmResumeIP};
+        for (unsigned ehSlot : ehSlots)
+        {
+            if (ehSlot != BAD_VAR_NUM)
+            {
+                LclVarDsc* const ehSlotDsc = lvaGetDesc(ehSlot);
+                ehSlotDsc->SetStackOffset(ehSlotDsc->GetStackOffset() - (int)pad);
+            }
+        }
+    }
+    assert((compLclFrameSize % STACK_ALIGN) == 0);
 #else
     NYI("TARGET specific lvaAlignFrame");
 #endif

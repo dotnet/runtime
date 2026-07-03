@@ -237,7 +237,6 @@
     <PlatformManifestFileEntry Include="dotnet.diagnostics.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.diagnostics.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.native.worker.mjs" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.wasm" IsNative="true" />

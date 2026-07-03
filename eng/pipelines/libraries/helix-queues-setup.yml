@@ -40,12 +40,12 @@ jobs:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.Edge.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64@sha256:86fa38299b22ef8bb62ae4425bc248e716ce0e01a59166b0e8d9749a537b3404
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.323.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-amd64@sha256:daedc4ed84012104bed0fbcfe8dc92191253bcc5d38490ce5e999427f98853a0
+        - (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:a31c5d53a8c241bf7ad42e2dea0980e538ce1acee6968c11a61b9c23869460ed
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8@sha256:33d25e02f1ffcdbb2a9912ca04feea1f7248686326b4d123d80f09e38650a2fe
+        - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:9c20e0a9728be8eebfc8aa5e096488229ffed20c6cd99c20b90637ac29284df2
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
@@ -187,5 +187,9 @@ jobs:
       # Additional Windows version on non-PR builds or when all platforms are requested
       - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly@sha256:8e4f47735cd1ace47f522d4c317426c4fe567f88340f93d63940660c3edcef77
+
+    # Browser WebAssembly macOS
+    - ${{ if eq(parameters.platform, 'browser_wasm_mac') }}:
+      - $(helix_macos_arm64)
 
     ${{ insert }}: ${{ parameters.jobParameters }}
