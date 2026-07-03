@@ -72,6 +72,7 @@ jobs:
         github.event.comment.body == '/ci-eval' || startsWith(github.event.comment.body, '/ci-eval ')
       )
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       COPILOT_GITHUB_TOKEN: >-
         ${{
@@ -168,6 +169,10 @@ jobs:
       - name: Run the eval(s)
         if: steps.guard.outputs.run == 'true'
         id: run
+        env:
+          # The eval agent discovers live failures itself: anonymous AzDO REST for
+          # builds and `gh` for issues/PRs. GH_TOKEN authenticates the agent's `gh`.
+          GH_TOKEN: ${{ github.token }}
         run: |
           workdir="$RUNNER_TEMP/vally"
           mkdir -p "$workdir"
