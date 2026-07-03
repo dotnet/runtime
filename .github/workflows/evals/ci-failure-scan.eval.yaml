@@ -1,5 +1,5 @@
 name: ci-failure-scan-eval
-description: Dynamic gate for the CI failure scanner's safe-output (maintainer /ci-scan eval). Runs the scanner against a LIVE outer-loop failure it discovers itself, then checks the emitted Known Build Error against the static KBE format and that it actually grounded the KBE in a real failing build.
+description: Dynamic gate for the CI failure scanner's safe-output (maintainer /ci-scan eval). Runs the scanner against a live outer-loop failure it discovers itself, then checks the emitted Known Build Error against the static KBE format and that it actually grounded the KBE in a real failing build.
 
 defaults:
   judge_model: claude-opus-4.8
@@ -26,9 +26,9 @@ stimuli:
     prompt: |
       You are being evaluated as the CI Outer-Loop Failure Scanner. Follow the KBE format and rules in `.github/workflows/ci-failure-scan.md` and `.github/workflows/shared/create-kbe.instructions.md`.
 
-      This is a LIVE run — discover a REAL, currently-failing outer-loop build yourself. Do NOT invent a failure.
+      This is a live run — discover a real, currently-failing outer-loop build yourself. Do not invent a failure.
 
-      1. Find a recent FAILED build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API (anonymous, no auth — stay on `_apis/build/...`). Start with `runtime-extra-platforms` (definition 154), and fall back to other outer-loop defs if needed:
+      1. Find a recent failed build on `main` of an outer-loop pipeline via the dnceng-public AzDO REST API (anonymous, no auth — stay on `_apis/build/...`). Start with `runtime-extra-platforms` (definition 154), and fall back to other outer-loop defs if needed:
          `curl -fsSL "https://dev.azure.com/dnceng-public/public/_apis/build/builds?definitions=154&branchName=refs/heads/main&statusFilter=completed&resultFilter=failed&\$top=5&api-version=7.1"`
       2. Open that build's timeline (`/_apis/build/builds/{id}/timeline?api-version=7.1`), pick a failed leg, and read its log (`/_apis/build/builds/{id}/logs/{logId}?api-version=7.1`) to extract a concrete error/assertion signature. Save the leg log you extract from as `failure.log` under /tmp and grep it for your signature to get the hit count.
       3. Before filing, check whether an equivalent KBE already exists so you would not duplicate it: `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open` and by your signature text. Assume you would file only if none matches.
@@ -92,4 +92,4 @@ stimuli:
         config:
           scoring: binary
           prompt: |
-            Read ./out/kbe.md. Pass ONLY if it conforms to the static Known Build Error format: a `[ci-scan] ` title naming exactly one failure shape (no run-specific IDs), the `Known Build Error` label plus exactly one of `blocking-clean-ci`/`blocking-clean-ci-optional`, the three body sections, and exactly ONE fenced json block with all four keys where exactly one of ErrorMessage/ErrorPattern is a non-empty specific substring (not a bare identifier) and the other is `""`, and the Build Information section cites a concrete real build id. Otherwise fail.
+            Read ./out/kbe.md. Pass only if it conforms to the static Known Build Error format: a `[ci-scan] ` title naming exactly one failure shape (no run-specific IDs), the `Known Build Error` label plus exactly one of `blocking-clean-ci`/`blocking-clean-ci-optional`, the three body sections, and exactly one fenced json block with all four keys where exactly one of ErrorMessage/ErrorPattern is a non-empty specific substring (not a bare identifier) and the other is `""`, and the Build Information section cites a concrete real build id. Otherwise fail.
