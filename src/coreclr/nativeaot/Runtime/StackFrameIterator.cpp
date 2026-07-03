@@ -646,15 +646,14 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
     // This codepath is used by the hijack stackwalk. The IP must be in managed code
     // or in a conservatively reported assembly thunk.
-    TADDR controlPC = ReturnAddressToCanonicalPC(pCtx->GetIp());
-    ASSERT(IsValidReturnAddress(dac_cast<PTR_VOID>(controlPC)));
+    ASSERT(IsValidReturnAddress((void*)pCtx->GetIp()));
 
     //
     // control state
     //
-    SetControlPC(dac_cast<PTR_VOID>(controlPC));
+    SetControlPC(dac_cast<PTR_VOID>(pCtx->GetIp()));
     m_RegDisplay.SP   = pCtx->GetSp();
-    m_RegDisplay.IP   = controlPC;
+    m_RegDisplay.IP   = pCtx->GetIp();
 
 #ifdef TARGET_UNIX
 #define PTR_TO_REG(ptr, reg) (&((ptr)->reg()))
