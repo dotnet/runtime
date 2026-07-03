@@ -358,7 +358,7 @@ namespace System
 
         internal object GetTargetForSingleCastInstanceDelegate()
         {
-            Debug.Assert(Target == _target && _target != null);
+            Debug.Assert(HasSingleTarget && Target == _target && _target != null);
             return _target;
         }
 

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 
 namespace System.Runtime.CompilerServices
 {
@@ -19,7 +18,10 @@ namespace System.Runtime.CompilerServices
             public void UnsafeOnCompleted(Action continuation)
             {
                 object continuationTarget = continuation.GetTargetForSingleCastInstanceDelegate();
-                Debug.Assert(continuationTarget != null && continuationTarget.GetType().GetGenericTypeDefinition() == typeof(RuntimeAsyncTask<>));
+                Debug.Assert(
+                    continuationTarget != null &&
+                    continuationTarget.GetType().IsGenericType &&
+                    continuationTarget.GetType().GetGenericTypeDefinition() == typeof(RuntimeAsyncTask<>));
 
                 Task raTask = (Task)continuationTarget;
 
