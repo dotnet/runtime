@@ -866,9 +866,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case HWIntrinsicCategory::HW_Category_IMM:
         {
             GenTree* immOp = getImmOp(node);
-            if (!immOp->IsCnsIntOrI())
+            if (!immOp->IsCnsIntOrI()) // this instruction will need a jump table fallback
             {
-                SetMultiplyUsed(immOp DEBUGARG("LowerHWIntrinsic non-const imm op"));
+                for (int i = 0; i < node->GetOperandCount(); i++)
+                {
+                    GenTree* op = node->Op(i);
+                    SetMultiplyUsed(op DEBUGARG("Non-constant imm op needs jump table fallback"));
+                }
             }
             break;
         }

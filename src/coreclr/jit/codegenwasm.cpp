@@ -2246,9 +2246,10 @@ void CodeGen::genEmitNullCheck(regNumber reg)
 void CodeGen::genRangeCheck(GenTree* tree)
 {
     assert(tree->OperIs(GT_BOUNDS_CHECK));
-    genConsumeOperands(tree->AsOp());
+    GenTreeBoundsChk* boundsCheck = tree->AsBoundsChk();
+    genConsumeOperands(boundsCheck->AsOp());
     GetEmitter()->emitIns(INS_I_ge_u);
-    genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
+    genJumpToThrowHlpBlk(boundsCheck->gtThrowKind);
 }
 
 //------------------------------------------------------------------------
@@ -3756,6 +3757,38 @@ void CodeGen::genEmitIf(WasmValueType blockType)
 //   Removes the added stack depth from genEmitIf.
 //
 void CodeGen::genEmitEndIf()
+{
+    assert(wasmExtraControlFlowDepth > 0);
+    wasmExtraControlFlowDepth--;
+    GetEmitter()->emitIns(INS_end);
+}
+
+// ------------------------------------------------------------------------
+// genEmitBeginBlock: Emit a 'block' instruction.
+//
+// Notes:
+//   The block is not modeled as part of wasmControlFlowStack.
+//   This is used for jump tables which don't have corresponding BasicBlock's
+//   and which will be emitted within a single block with known offsets for each case.
+void CodeGen::genEmitBeginBlock(WasmValueType blockType)
+{
+    wasmExtraControlFlowDepth++;
+    if (blockType != WasmValueType::Invalid)
+    {
+        GetEmitter()->emitIns_BlockTy(INS_block, blockType);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_block);
+    }
+}
+
+// -----------------------------------------------------------------------
+// genEmitEndBlock: Emit an 'end' instruction closing a 'block'.
+//
+// Notes:
+//   Removes the added stack depth from genEmitBeginBlock.
+void CodeGen::genEmitEndBlock()
 {
     assert(wasmExtraControlFlowDepth > 0);
     wasmExtraControlFlowDepth--;

@@ -106,7 +106,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //   ins         - instruction to emit
 //   attr        - emit attributes
 //   imm         - immediate value (depth in control flow stack)
-//   targetBlock - block at that depth
+//   targetBlock - block at that depth (may be null, in the case of jump table which doesn't target a real block)
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
@@ -116,7 +116,7 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
     id->idIns(ins);
     id->idInsFmt(fmt);
 
-    if (m_debugInfoSize > 0)
+    if (m_debugInfoSize > 0 && targetBlock != nullptr)
     {
         id->idDebugOnlyInfo()->idTargetBlock = targetBlock;
     }

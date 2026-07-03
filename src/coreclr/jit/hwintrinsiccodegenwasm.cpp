@@ -45,7 +45,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             case HW_Category_IMM:
             {
-                GetEmitter()->emitIns_Lane(ins, info.GetImmediateLaneOperand());
+                if (info.needsJumpTableFallback())
+                {
+                    genHWIntrinsicJumpTableFallback(node, info);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_Lane(ins, info.GetImmediateLaneOperand());
+                }
                 break;
             }
             default:
@@ -60,6 +67,109 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     WasmProduceReg(node);
+}
+
+/* The jump table here looks like the following:
+    (block $outer
+      (block $inner
+         (block $N-1 
+            ...
+            (block $1
+                (block $0
+                    (br_table $0 $1 ... $N-1 $inner)
+                )
+                <case imm=0>
+                br $outer
+            )
+              ...
+         )
+         <case imm=N-1>
+         br $outer
+      )
+      unreachable
+    )
+*/
+void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info)
+{
+    assert(info.category == HW_Category_IMM || info.category == HW_Category_MemoryLoad ||
+        info.category == HW_Category_MemoryStore);
+
+    int simdSize = node->GetSimdSize();
+    instruction const ins = HWIntrinsicInfo::lookupIns(info.id, info.baseType, m_compiler);
+    int               immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(info.id, simdSize, info.baseType);
+    WasmValueType     resultType = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
+
+    GenTree*  immOp  = info.getImmOp();
+    regNumber immReg = GetMultiUseOperandReg(immOp);
+
+    // Drop all incoming operands to actually consume them, they
+    // will be unusable in the jump table
+    for (int i = 0; i < node->GetOperandCount(); i++)
+    {
+        GetEmitter()->emitIns(INS_drop);
+    }
+
+    auto teeNonImmediateOperands = [=]() {
+        for (int i = 1; i <= node->GetOperandCount(); i++)
+        {
+            GenTree* op = node->Op(i);
+            if (op != immOp)
+            {
+                regNumber reg = GetMultiUseOperandReg(op);
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(op), reg);
+            }
+        }
+    };
+
+    genEmitBeginBlock(resultType); // emit $outer block
+    genEmitBeginBlock(); // emit unreachable $inner block
+    {
+        for (int i = 0; i <= immUpperBound; i++)
+        {
+            // emit a block for each case
+            genEmitBeginBlock();
+        }
+
+        // Load the immediate value to branch to the appropriate case block
+        GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(immOp), immReg);
+
+        // cases are 0 ... immUpperBound, default, where the last case is the default which branches to the unreachable inner block.
+        int caseCount = immUpperBound + 1;
+        GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
+        for (int caseNum = 0; caseNum <= immUpperBound; caseNum++)
+        {
+            GetEmitter()->emitIns_J(INS_label, EA_4BYTE, caseNum, nullptr);
+        }
+        // emit default case
+        GetEmitter()->emitIns_J(INS_label, EA_4BYTE, immUpperBound + 1, nullptr);
+
+        assert(FitsIn<uint8_t>(immUpperBound));
+        for (int i = 0; i <= immUpperBound; i++)
+        {
+            genEmitEndBlock(); // end block for case i, the handling of case i follows
+
+            teeNonImmediateOperands();
+            switch (info.category)
+            {
+                case HW_Category_IMM:
+                {
+                    GetEmitter()->emitIns_Lane(ins, static_cast<uint8_t>(i));
+                    break;
+                }
+                default:
+                {
+                    NYI_WASM_SIMD(
+                        "CodeGen::genHWIntrinsicJumpTableFallback: Unsupported category for jump table intrinsic");
+                }
+            }
+            // proper branch depth is immUpperBound + 1 - i; The $inner block accounts for the + 1.
+            GetEmitter()->emitIns_J(INS_br, EA_4BYTE, static_cast<cnsval_ssize_t>(immUpperBound + 1 - i),
+                                    nullptr); // br $outer
+        }
+    }
+    genEmitEndBlock(); // end $inner block
+    GetEmitter()->emitIns(INS_unreachable);
+    genEmitEndBlock(); // end $outer block
 }
 
 #endif // FEATURE_HW_INTRINSICS

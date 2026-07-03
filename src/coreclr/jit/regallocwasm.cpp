@@ -696,6 +696,10 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
     }
 }
 
+void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
+{
+}
+
 //------------------------------------------------------------------------
 // RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
 //

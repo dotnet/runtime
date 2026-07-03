@@ -1409,7 +1409,7 @@ struct HWIntrinsicInfo
                 unreached();
             }
         }
-}
+    }
 #endif // TARGET_ARM64
 };
 
@@ -1544,20 +1544,36 @@ struct HWIntrinsic final
         return isTableDrivenCategory && isTableDrivenFlag;
     }
 
+    inline bool needsJumpTableFallback() const
+    {
+        GenTree* immOp = getImmOp();
+        assert(immOp != nullptr);
+        return !immOp->IsCnsIntOrI();
+    }
+
+    GenTree* getImmOp(NamedIntrinsic id) const
+    {
+        int imm1Pos = -1;
+        int imm2Pos = -1;
+        HWIntrinsicInfo::GetImmOpsPositions(id, &imm1Pos, &imm2Pos);
+        // We only expect one immediate operand for Wasm SIMD
+        assert(imm1Pos >= 0 && imm2Pos < 0);
+
+        GenTree* ops[] = {op1, op2, op3};
+
+        int      opIdx = (int)numOperands - 1 - imm1Pos;
+        assert(opIdx >= 0);
+
+        GenTree* immOp = ops[opIdx];
+        return immOp;
+    }
+
     uint8_t GetImmediateLaneOperand() const
     {
         assert(category == HW_Category_IMM || category == HW_Category_MemoryLoad || \
             category == HW_Category_MemoryStore);
 
-        GenTree* ops[] = {op1, op2, op3};
-
-        int imm1Pos = -1;
-        int imm2Pos = -1;
-        HWIntrinsicInfo::GetImmOpsPositions(id, &imm1Pos, &imm2Pos);
-        int      opIdx = (int)numOperands - 1 - imm1Pos;
-        assert(opIdx >= 0);
-        GenTree* immOp = ops[opIdx];
-
+        GenTree* immOp = getImmOp();
         assert(immOp->IsCnsIntOrI());
         ssize_t lane = immOp->AsIntCon()->IconValue();
         assert(FitsIn<uint8_t>(lane));
