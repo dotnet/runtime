@@ -186,7 +186,7 @@ network:
 
 You review how closed issues are used to disable or guard code. A deterministic step has scanned the source and build files under `src` for issue-URL links that sit in a test-disabling or guarding construct — an `[ActiveIssue(...)]` attribute, a `Skip = ...`, or a project-exclusion comment — and written `issue-candidates.json` to the workspace root. Every entry is a closed issue still used this way. There are two problems to catch, and which one applies depends on the construct. An `[ActiveIssue(...)]` must only ever reference an *active* (open) issue, so an `ActiveIssue` pointing at a closed issue is always wrong — the issue should be reopened or the attribute removed and the test re-enabled, and no comment changes that. A `Skip` or a project exclusion may legitimately reference a closed issue, but the code should state, in the code itself, why the test is disabled; leaning on the issue link instead of a stated reason is the problem there. The reason belongs in the code so it is self-describing; an issue link is not a substitute for it, and is warranted only in the rare case a comment cannot capture.
 
-You only suggest; you never act. The one write you can make is an `add-comment` through `safe-outputs`. Do not change issue state or edit files.
+You only suggest; you never act. The one write you can make is an `add_comment` through `safe-outputs`. Do not change issue state or edit files.
 
 ## Guardrails
 
@@ -200,7 +200,7 @@ You only suggest; you never act. The one write you can make is an `add-comment` 
 
 **2 — Judge each reference by its construct.** For an `ActiveIssue` reference, the finding is automatic: the attribute points at a closed issue, which is wrong no matter what surrounds it, so keep it. For a `Skip` or a `build-exclusion`, open the file and read the few lines around `location`, then ask whether the code states, on its own, why the test is disabled or guarded, or whether the issue link is the only explanation. An exclusion or `Skip` annotated only with the issue link is not self-describing; a nearby comment that states the actual failure or condition is — drop those. Drop an issue only when every one of its references is either such a self-describing `Skip`/`build-exclusion` or is unrelated or stale, with a short `-> skipped: <reason>`. A false advisory is worse than a missed one.
 
-**3 — Comment.** For each issue that still has at least one flagged reference — any `ActiveIssue`, or a link-only `Skip`/`build-exclusion` — post one `add-comment` in this shape, listing those references and their `kind`:
+**3 — Comment.** For each issue that still has at least one flagged reference — any `ActiveIssue`, or a link-only `Skip`/`build-exclusion` — post one `add_comment` in this shape, listing those references and their `kind`:
 
 ```markdown
 <!-- closed-issue-reference-check:advice -->
