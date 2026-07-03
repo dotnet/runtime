@@ -5544,10 +5544,17 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
                         UpdateContextFromRegDisp(&tmpRd, &tmpContext);
                         CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
                         pContextBuffer->ContextFlags = DT_CONTEXT_CONTROL
-    #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(FEATURE_INTERPRETER)
+    #if defined(TARGET_AMD64) || defined(TARGET_ARM)
                                                     | DT_CONTEXT_INTEGER
     #endif
                         ;
+#ifdef FEATURE_INTERPRETER
+                        EECodeInfo codeInfo(GetIP(&tmpContext));
+                        if (codeInfo.IsInterpretedCode())
+                        {
+                            pContextBuffer->ContextFlags |= DT_CONTEXT_INTEGER;
+                        }
+#endif // FEATURE_INTERPRETER
                         return S_OK;
                     }
                     frame = frame->Next();
