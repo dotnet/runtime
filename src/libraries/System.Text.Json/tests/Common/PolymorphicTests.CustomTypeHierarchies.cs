@@ -209,21 +209,12 @@ namespace System.Text.Json.Serialization.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization))]
         public Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization(PolymorphicClass.TestData testData)
-        {
-            // Nearest-ancestor fallback for class hierarchies resolves derived types via reflection;
-            // skip in source-gen contexts where reflection is disabled.
-            if (!JsonSerializer.IsReflectionEnabledByDefault)
-            {
-                return Task.CompletedTask;
-            }
-
-            return TestMultiContextSerialization(
+            => TestMultiContextSerialization(
                 testData.Value,
                 testData.ExpectedJson,
                 testData.ExpectedSerializationException,
                 options: PolymorphicClass.CustomConfigWithNearestAncestorFallback,
                 contexts: ~SerializedValueContext.BoxedValue);
-        }
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithNearestAncestorFallback().Select(entry => new object[] { entry });
@@ -231,21 +222,12 @@ namespace System.Text.Json.Serialization.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization))]
         public Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization(PolymorphicClass.TestData testData)
-        {
-            // Nearest-ancestor fallback for class hierarchies resolves derived types via reflection;
-            // skip in source-gen contexts where reflection is disabled.
-            if (!JsonSerializer.IsReflectionEnabledByDefault)
-            {
-                return Task.CompletedTask;
-            }
-
-            return TestMultiContextDeserialization<PolymorphicClass>(
+            => TestMultiContextDeserialization<PolymorphicClass>(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
                 equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
-        }
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithNearestAncestorFallback()
@@ -255,13 +237,6 @@ namespace System.Text.Json.Serialization.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestDataArray_Serialization()
         {
-            // Nearest-ancestor fallback for class hierarchies resolves derived types via reflection;
-            // skip in source-gen contexts where reflection is disabled.
-            if (!JsonSerializer.IsReflectionEnabledByDefault)
-            {
-                return;
-            }
-
             IEnumerable<(PolymorphicClass Value, string ExpectedJson)> inputs =
                 PolymorphicClass.GetSerializeTestData_CustomConfigWithNearestAncestorFallback()
                     .Where(entry => entry.ExpectedSerializationException is null)
@@ -273,13 +248,6 @@ namespace System.Text.Json.Serialization.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestDataArray_Deserialization()
         {
-            // Nearest-ancestor fallback for class hierarchies resolves derived types via reflection;
-            // skip in source-gen contexts where reflection is disabled.
-            if (!JsonSerializer.IsReflectionEnabledByDefault)
-            {
-                return;
-            }
-
             IEnumerable<(string ExpectedJson, PolymorphicClass ExpectedRoundtripValue)> inputs =
                 PolymorphicClass.GetSerializeTestData_CustomConfigWithNearestAncestorFallback()
                 .Where(entry => entry.ExpectedRoundtripValue is not null)
@@ -1970,13 +1938,6 @@ namespace System.Text.Json.Serialization.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicDictionaryInterface_Serialization()
         {
-            // Polymorphic dictionary-interface resolution uses the reflection-based metadata fallback;
-            // skip in source-gen contexts where reflection is disabled.
-            if (!JsonSerializer.IsReflectionEnabledByDefault)
-            {
-                return;
-            }
-
             var values = new IEnumerable<KeyValuePair<int, object>>[]
             {
                 new List<KeyValuePair<int, object>> { new KeyValuePair<int, object>(0, 0) },
@@ -2001,13 +1962,6 @@ namespace System.Text.Json.Serialization.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicDictionaryInterface_Deserialization()
         {
-            // Polymorphic dictionary-interface resolution uses the reflection-based metadata fallback;
-            // skip in source-gen contexts where reflection is disabled.
-            if (!JsonSerializer.IsReflectionEnabledByDefault)
-            {
-                return;
-            }
-
             string json =
                 """
                         [ [ { "Key":0, "Value":0 } ],
