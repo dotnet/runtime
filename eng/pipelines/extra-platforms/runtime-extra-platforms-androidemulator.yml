@@ -10,53 +10,15 @@ parameters:
 
 jobs:
 
-# Build the whole product using Mono for Android and run runtime tests with Android emulator
+#
+# Build the whole product using NativeAOT and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: Release
-    runtimeFlavor: mono
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
-    platforms:
-    - android_x64
-    variables:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: pr/dotnet/runtime/$(Build.SourceBranch)
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: ci/dotnet/runtime/$(Build.SourceBranch)
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RuntimeTests
-      runtimeVariant: minijit
-      buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-
-#
-# Build the whole product using Mono for Android and run runtime tests with interpreter
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
+    runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
     platforms:
@@ -74,50 +36,18 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RuntimeTests_Interp
-      runtimeVariant: monointerpreter
-      buildArgs: -s mono+libs -c $(_BuildConfig)
+      nameSuffix: AllSubsets_NativeAOT_RuntimeTests
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            testBuildArgs: nativeaot tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-
-#
-# Android emulators
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - android_x86
-    - android_x64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
-      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
-      timeoutInMinutes: 240
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # Android emulators
@@ -174,8 +104,8 @@ jobs:
       testGroup: innerloop
       nameSuffix: NativeAOT
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=coreclr /p:TestNativeAOT=true
-      timeoutInMinutes: 120
+      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=coreclr /p:TestNativeAOT=true
+      timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml

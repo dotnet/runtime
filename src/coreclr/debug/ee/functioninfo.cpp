@@ -1,12 +1,10 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
-//
 // File: DebuggerModule.cpp
 //
 // Stuff for tracking DebuggerModules.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -122,7 +120,6 @@ static void _dumpVarNativeInfo(ICorDebugInfo::NativeVarInfo* vni)
 }
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
 void DebuggerJitInfo::InitFuncletAddress()
 {
     CONTRACTL
@@ -229,21 +226,15 @@ int DebuggerJitInfo::GetFuncletIndex(CORDB_ADDRESS offsetOrAddr, GetFuncletIndex
     UNREACHABLE();
 }
 
-#endif // FEATURE_EH_FUNCLETS
-
 // It is entirely possible that we have multiple sequence points for the
 // same IL offset (because of funclets, optimization, etc.).  Just to be
 // uniform in all cases, let's return the sequence point with the smallest
 // native offset if fWantFirst is TRUE.
-#if defined(FEATURE_EH_FUNCLETS)
 #define ADJUST_MAP_ENTRY(_map, _wantFirst)                                                        \
     if ((_wantFirst))                                                                             \
         for ( ; (_map) > m_sequenceMap && (((_map)-1)->ilOffset == (_map)->ilOffset); (_map)--);  \
     else                                                                                          \
         for ( ; (_map) < m_sequenceMap + (m_sequenceMapCount-1) && (((_map)+1)->ilOffset == (_map)->ilOffset); (_map)++);
-#else
-#define ADJUST_MAP_ENTRY(_map, _wantFirst)
-#endif // FEATURE_EH_FUNCLETS
 
 DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion nativeCodeVersion) :
     m_nativeCodeVersion(nativeCodeVersion),
@@ -258,15 +249,11 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     m_lastIL(0),
     m_sequenceMap(NULL),
     m_sequenceMapCount(0),
-    m_callsiteMap(NULL),
-    m_callsiteMapCount(0),
     m_sequenceMapSorted(false),
     m_varNativeInfo(NULL), m_varNativeInfoCount(0),
     m_fAttemptInit(false)
-#if defined(FEATURE_EH_FUNCLETS)
     ,m_rgFunclet(NULL)
     , m_funcletCount(0)
-#endif // defined(FEATURE_EH_FUNCLETS)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -377,18 +364,14 @@ DebuggerJitInfo::NativeOffset DebuggerJitInfo::MapILOffsetToNative(DebuggerJitIn
 
     DebuggerILToNativeMap *map = MapILOffsetToMapEntry(ilOffset.m_ilOffset, &(resultOffset.m_fExact));
 
-#if defined(FEATURE_EH_FUNCLETS)
     // See if we want the map entry for the parent.
     if (ilOffset.m_funcletIndex <= PARENT_METHOD_INDEX)
     {
-#endif // FEATURE_EH_FUNCLETS
         _ASSERTE( map != NULL );
         LOG((LF_CORDB, LL_INFO10000, "DJI::MILOTN: ilOffset 0x%zx to nat 0x%x exact:%s (Entry IL Off:0x%x)\n",
              ilOffset.m_ilOffset, map->nativeStartOffset, (resultOffset.m_fExact ? "true" : "false"), map->ilOffset));
 
         resultOffset.m_nativeOffset = map->nativeStartOffset;
-
-#if defined(FEATURE_EH_FUNCLETS)
     }
     else
     {
@@ -436,7 +419,6 @@ DebuggerJitInfo::NativeOffset DebuggerJitInfo::MapILOffsetToNative(DebuggerJitIn
             }
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     return resultOffset;
 }
@@ -448,9 +430,7 @@ DebuggerJitInfo::ILToNativeOffsetIterator::ILToNativeOffsetIterator()
 
     m_dji = NULL;
     m_currentILOffset.m_ilOffset = INVALID_IL_OFFSET;
-#ifdef FEATURE_EH_FUNCLETS
     m_currentILOffset.m_funcletIndex = PARENT_METHOD_INDEX;
-#endif
 }
 
 void DebuggerJitInfo::ILToNativeOffsetIterator::Init(DebuggerJitInfo* dji, SIZE_T ilOffset)
@@ -459,9 +439,7 @@ void DebuggerJitInfo::ILToNativeOffsetIterator::Init(DebuggerJitInfo* dji, SIZE_
 
     m_dji = dji;
     m_currentILOffset.m_ilOffset = ilOffset;
-#ifdef FEATURE_EH_FUNCLETS
     m_currentILOffset.m_funcletIndex = PARENT_METHOD_INDEX;
-#endif
 
     m_currentNativeOffset = m_dji->MapILOffsetToNative(m_currentILOffset);
 }
@@ -498,7 +476,6 @@ SIZE_T DebuggerJitInfo::ILToNativeOffsetIterator::CurrentAssertOnlyOne(BOOL* pfE
 
 void DebuggerJitInfo::ILToNativeOffsetIterator::Next()
 {
-#if defined(FEATURE_EH_FUNCLETS)
     NativeOffset tmpNativeOffset;
 
     for (m_currentILOffset.m_funcletIndex += 1;
@@ -518,12 +495,7 @@ void DebuggerJitInfo::ILToNativeOffsetIterator::Next()
     {
         m_currentILOffset.m_ilOffset = INVALID_IL_OFFSET;
     }
-#else  // !FEATURE_EH_FUNCLETS
-    m_currentILOffset.m_ilOffset = INVALID_IL_OFFSET;
-#endif // !FEATURE_EH_FUNCLETS
 }
-
-
 
 // SIZE_T DebuggerJitInfo::MapSpecialToNative():  Maps something like
 //      a prolog to a native offset.
@@ -588,7 +560,6 @@ SIZE_T DebuggerJitInfo::MapSpecialToNative(CorDebugMappingResult mapping,
     return 0;
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
 //
 // DebuggerJitInfo::MapILOffsetToNativeForSetIP()
 //
@@ -648,7 +619,6 @@ SIZE_T DebuggerJitInfo::MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcl
 
     return offsetNatTo;
 }
-#endif // FEATURE_EH_FUNCLETS
 
 // void DebuggerJitInfo::MapILRangeToMapEntryRange():   MIRTMER
 // calls MapILOffsetToNative for the startOffset (putting the
@@ -859,14 +829,11 @@ DebuggerJitInfo::~DebuggerJitInfo()
         DeleteInteropSafe(m_varNativeInfo);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (m_rgFunclet)
     {
         DeleteInteropSafe(m_rgFunclet);
         m_rgFunclet = NULL;
     }
-#endif // FEATURE_EH_FUNCLETS
-
 
 #ifdef _DEBUG
     // Trash pointers to garbage.
@@ -1191,18 +1158,11 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     m_sequenceMapSorted = true;
 
-    m_callsiteMapCount = m_sequenceMapCount;
-    while (m_sequenceMapCount > 0 && (m_sequenceMap[m_sequenceMapCount-1].source & call_inst) == call_inst)
-      m_sequenceMapCount--;
-
-    m_callsiteMap = m_sequenceMap + m_sequenceMapCount;
-    m_callsiteMapCount -= m_sequenceMapCount;
-
-    LOG((LF_CORDB, LL_INFO100000, "DJI::sB: this=%p boundary count is %u (%u callsites)\n",
-         this, m_sequenceMapCount, m_callsiteMapCount));
+    LOG((LF_CORDB, LL_INFO100000, "DJI::sB: this=%p boundary count is %u\n",
+         this, m_sequenceMapCount));
 
 #ifdef LOGGING
-    for (unsigned count = 0; count < m_sequenceMapCount + m_callsiteMapCount; count++)
+    for (unsigned count = 0; count < m_sequenceMapCount; count++)
     {
         const DebuggerILToNativeMap& entry = m_sequenceMap[count];
         switch (entry.ilOffset)
@@ -1258,9 +1218,7 @@ void DebuggerJitInfo::Init(TADDR newAddress)
 
     this->m_encVersion = this->m_methodInfo->GetCurrentEnCVersion();
 
-#if defined(FEATURE_EH_FUNCLETS)
     this->InitFuncletAddress();
-#endif // FEATURE_EH_FUNCLETS
 
     LOG((LF_CORDB,LL_INFO10000,"De::JITCo:Got DJI %p (encVersion: %zx),"
          "Hot section from %p to %p "
@@ -1903,7 +1861,7 @@ bool DebuggerMethodInfo::HasMoreRecentEnCVersion()
 /******************************************************************************
  * Updated the instrumented-IL map
  ******************************************************************************/
-void DebuggerMethodInfo::SetInstrumentedILMap(COR_IL_MAP * pMap, SIZE_T cEntries)
+void DebuggerMethodInfo::SetInstrumentedILMap(COR_IL_MAP * pMap, UINT cEntries)
 {
     InstrumentedILOffsetMapping mapping;
     mapping.SetMappingInfo(cEntries, pMap);
@@ -2093,7 +2051,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
         {
             // Some versions may not be compiled yet - skip those for now
             // if they compile later the JitCompiled callback will add a DJI to our cache at that time
-            PCODE codeAddr = itr->GetNativeCode();
+            PCODE codeAddr = GetInterpreterCodeFromEntryPointIfPresent(itr->GetNativeCode());
             LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, codeAddr));
             if (codeAddr)
             {
@@ -2468,16 +2426,6 @@ DebuggerMethodInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     SUPPORTS_DAC;
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        // Modules are enumerated already for minidumps, save the empty calls.
-        if (m_module.IsValid())
-        {
-            m_module->EnumMemoryRegions(flags, true);
-        }
-
-    }
-
     PTR_DebuggerJitInfo jitInfo = m_latestJitInfo;
     while (jitInfo.IsValid())
     {
@@ -2497,19 +2445,6 @@ DebuggerJitInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_methodInfo->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        if (m_nativeCodeVersion.GetMethodDesc().IsValid())
-        {
-            m_nativeCodeVersion.GetMethodDesc()->EnumMemoryRegions(flags);
-        }
-
-        DacEnumMemoryRegion(PTR_TO_TADDR(GetSequenceMap()),
-                            GetSequenceMapCount() * sizeof(DebuggerILToNativeMap));
-        DacEnumMemoryRegion(PTR_TO_TADDR(GetVarNativeInfo()),
-                            GetVarNativeInfoCount() *
-                            sizeof(ICorDebugInfo::NativeVarInfo));
-    }
 }
 
 

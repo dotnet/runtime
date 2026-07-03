@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     public sealed partial class MethodForRuntimeDeterminedType : MethodDesc
@@ -36,9 +38,10 @@ namespace Internal.TypeSystem
         public override bool IsAbstract => _typicalMethodDef.IsAbstract;
         public override bool IsFinal => _typicalMethodDef.IsFinal;
         public override bool IsDefaultConstructor => _typicalMethodDef.IsDefaultConstructor;
-        public override ReadOnlySpan<byte> Name => _typicalMethodDef.Name;
+        public override Utf8Span Name => _typicalMethodDef.Name;
         public override MethodDesc GetTypicalMethodDefinition() => _typicalMethodDef;
         public override Instantiation Instantiation => _typicalMethodDef.Instantiation;
+        public override bool IsAsync => _typicalMethodDef.IsAsync;
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {

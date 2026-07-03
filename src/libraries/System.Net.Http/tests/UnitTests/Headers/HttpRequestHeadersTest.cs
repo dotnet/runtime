@@ -1197,6 +1197,25 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void TransferEncodingChunked_SetToFalse_RemovesAllChunkedValues()
+        {
+            headers.TransferEncoding.Add(new TransferCodingHeaderValue("abc"));
+            headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
+            headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
+            headers.TransferEncoding.Add(new TransferCodingHeaderValue("def"));
+            headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
+            
+            Assert.Equal(5, headers.TransferEncoding.Count);
+            Assert.True(headers.TransferEncodingChunked);
+            
+            // Setting to false should remove all "chunked" values
+            headers.TransferEncodingChunked = false;
+            
+            Assert.False(headers.TransferEncodingChunked);
+            Assert.Equal(2, headers.TransferEncoding.Count);
+        }
+
+        [Fact]
         public void TransferEncoding_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
             headers.TryAddWithoutValidation("Transfer-Encoding", " , custom1, , custom2, custom3, chunked    ,");
@@ -1630,6 +1649,24 @@ namespace System.Net.Http.Tests
             Assert.Throws<InvalidOperationException>(() => { headers.Add("CONTENT-TYPE", "v"); });
             Assert.Throws<InvalidOperationException>(() => { headers.Add("Expires", "v"); });
             Assert.Throws<InvalidOperationException>(() => { headers.Add("Last-Modified", "v"); });
+        }
+
+        [Fact]
+        public void Contains_DisallowedContentHeaderOnRequestHeaders_ReturnsFalse()
+        {
+            HttpRequestHeaders headers = new HttpRequestMessage().Headers;
+            Assert.False(headers.Contains("Content-Type"));
+            Assert.False(headers.Contains("Content-Encoding"));
+            Assert.False(headers.Contains("content-length"));
+        }
+
+        [Fact]
+        public void Remove_DisallowedContentHeaderOnRequestHeaders_ReturnsFalse()
+        {
+            HttpRequestHeaders headers = new HttpRequestMessage().Headers;
+            Assert.False(headers.Remove("Content-Type"));
+            Assert.False(headers.Remove("Content-Encoding"));
+            Assert.False(headers.Remove("content-length"));
         }
     }
 }

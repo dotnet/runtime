@@ -32,7 +32,10 @@ namespace Wasm.Build.Tests
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            // The replacement program does not use JS interop, so the JS interop assembly would be
+            // linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which calls
+            // getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
@@ -40,6 +43,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true)]
+        [TestCategory("native-mono")]
         public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -58,6 +62,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native-mono")]
         public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(Configuration config, bool aot)
         {
             string printFileTypeTarget = @"
@@ -90,6 +95,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native-mono")]
         public void NativeBuildIsRequired(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(

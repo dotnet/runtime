@@ -593,12 +593,12 @@ struct HandleHistogramProfileCandidateInfo
 //
 struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 {
-    CORINFO_CLASS_HANDLE  guardedClassHandle;
-    CORINFO_METHOD_HANDLE guardedMethodHandle;
-    CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
-    CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
-    unsigned              likelihood;
-    bool                  arrayInterface;
+    CORINFO_CLASS_HANDLE   guardedClassHandle;
+    CORINFO_METHOD_HANDLE  guardedMethodHandle;
+    CORINFO_LOOKUP         guardedMethodInstParamLookup;
+    CORINFO_RESOLVED_TOKEN guardedMethodResolvedToken;        // Only used by R2R
+    CORINFO_RESOLVED_TOKEN guardedMethodUnboxedResolvedToken; // hMethod is the unboxed entry; token data is used by R2R
+    unsigned               likelihood;
 
     CORINFO_METHOD_INFO methInfo;
 
@@ -610,11 +610,9 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     //
     CORINFO_CONTEXT_HANDLE exactContextHandle;
 
-    // Method and context handle of the call before any
-    // GDV/Inlining evaluation
+    // Method handle of the call before any GDV/Inlining evaluation.
     //
-    CORINFO_METHOD_HANDLE  originalMethodHandle;
-    CORINFO_CONTEXT_HANDLE originalContextHandle;
+    CORINFO_METHOD_HANDLE originalMethodHandle;
 
     // The GT_RET_EXPR node linking back to the inline candidate.
     GenTreeRetExpr* retExpr;
@@ -624,7 +622,6 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned methAttr;
 
     CorInfoInitClassResult initClassResult;
-    bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
 };
 
@@ -634,8 +631,9 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 //
 struct LateDevirtualizationInfo
 {
+    CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
-    InlineContext*         inlinersContext;
+    ILLocation             ilLocation;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -954,7 +952,7 @@ public:
     // Compiler associated with this strategy
     Compiler* GetCompiler() const
     {
-        return m_Compiler;
+        return m_compiler;
     }
 
     // Root context
@@ -983,6 +981,44 @@ public:
     unsigned GetMaxForceInlineDepth() const
     {
         return m_MaxForceInlineDepth;
+    }
+
+    // Maximum number of over-budget [Intrinsic]-type inlines allowed per root method.
+    enum
+    {
+        MAX_OVER_BUDGET_INTRINSIC_INLINES = 50,
+
+        // When the root method or an already-imported inlinee references a
+        // Vector*/HW-intrinsic IsSupported / IsHardwareAccelerated property,
+        // multiply the initial inline time budget by this factor (one-shot).
+        // Methods with SIMD ISA fallbacks tend to be IL-heavy, and inlining one
+        // such callee can otherwise consume the budget for trivial helpers
+        // (e.g., Span.Slice, property getters) that follow.
+        SIMD_BUDGET_BOOST_MULTIPLIER = 5
+    };
+
+    // Number of over-budget inlines admitted because the callee was on an [Intrinsic] type.
+    unsigned GetOverBudgetIntrinsicInlineCount() const
+    {
+        return m_OverBudgetIntrinsicInlineCount;
+    }
+
+    // Note an over-budget inline that was admitted due to the callee's [Intrinsic] type.
+    void NoteOverBudgetIntrinsicInline()
+    {
+        m_OverBudgetIntrinsicInlineCount++;
+    }
+
+    // Note that the root method or an already-imported inlinee uses a HW
+    // intrinsic IsSupported / IsHardwareAccelerated capability check (e.g.,
+    // Vector128.IsHardwareAccelerated, Vector<T>.IsSupported, Sse41.IsSupported).
+    // On the first such observation per root method this dramatically increases
+    // the inline time budget so that subsequent small inlinees are not starved.
+    void NoteHardwareIntrinsicCheckObserved();
+
+    bool HasObservedHardwareIntrinsicCheck() const
+    {
+        return m_HasHardwareIntrinsicCheck;
     }
 
     // Number of successful inlines into the root
@@ -1121,7 +1157,7 @@ private:
     static CritSecObject s_XmlWriterLock;
 #endif // defined(DEBUG)
 
-    Compiler*         m_Compiler;
+    Compiler*         m_compiler;
     InlineContext*    m_RootContext;
     InlinePolicy*     m_LastSuccessfulPolicy;
     InlineContext*    m_LastContext;
@@ -1138,6 +1174,7 @@ private:
     unsigned          m_MaxInlineSize;
     unsigned          m_MaxInlineDepth;
     unsigned          m_MaxForceInlineDepth;
+    unsigned          m_OverBudgetIntrinsicInlineCount;
     int               m_InitialTimeBudget;
     int               m_InitialTimeEstimate;
     int               m_CurrentTimeBudget;
@@ -1145,6 +1182,7 @@ private:
     int               m_InitialSizeEstimate;
     int               m_CurrentSizeEstimate;
     bool              m_HasForceViaDiscretionary;
+    bool              m_HasHardwareIntrinsicCheck;
 
 #if defined(DEBUG)
     long       m_MethodXmlFilePosition;

@@ -10,6 +10,8 @@
 #define _memory_range_h
 
 #include "daccess.h"
+#include "contract.h"
+#include "cdacdata.h"
 
 // MemoryRange is a descriptor of a memory range. This groups (pointer + size).
 //
@@ -49,8 +51,6 @@ public:
 
     // Note: use compiler-default copy ctor and assignment operator
 
-
-
     // Check whether a pointer is in the memory range represented by this instance.
     BOOL IsInRange(PTR_VOID pAddress) const
     {
@@ -89,9 +89,16 @@ private:
     // This is s SIZE_T so that it can describe any memory range in the process (for example, larger than 4gb on 64-bit machines)
     const SIZE_T        m_cbBytes;
 
+    friend struct ::cdac_data<MemoryRange>;
+};
+
+template<>
+struct cdac_data<MemoryRange>
+{
+    static constexpr size_t StartAddress = offsetof(MemoryRange, m_pStartAddress);
+    static constexpr size_t Size = offsetof(MemoryRange, m_cbBytes);
 };
 
 typedef ArrayDPTR(MemoryRange) ARRAY_PTR_MemoryRange;
 
 #endif // _memory_range_h
-

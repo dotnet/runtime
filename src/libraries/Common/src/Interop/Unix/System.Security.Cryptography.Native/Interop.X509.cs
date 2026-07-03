@@ -343,14 +343,6 @@ internal static partial class Interop
             X509_V_ERR_EMAIL_MISMATCH = 63,
             X509_V_ERR_IP_ADDRESS_MISMATCH = 64,
         }
-        internal enum X509VerifyStatusCode102
-        {
-            X509_V_ERR_INVALID_CA = 24,
-
-            X509_V_ERR_INVALID_CALL = 65,
-            X509_V_ERR_STORE_LOOKUP = 66,
-            X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION = 67,
-        }
 
         internal enum X509VerifyStatusCode111
         {
@@ -421,7 +413,6 @@ internal static partial class Interop
             }
 
             public X509VerifyStatusCodeUniversal UniversalCode => (X509VerifyStatusCodeUniversal)Code;
-            public X509VerifyStatusCode102 Code102 => (X509VerifyStatusCode102)Code;
             public X509VerifyStatusCode111 Code111 => (X509VerifyStatusCode111)Code;
             public X509VerifyStatusCode30 Code30 => (X509VerifyStatusCode30)Code;
 

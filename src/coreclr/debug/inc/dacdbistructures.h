@@ -160,26 +160,10 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
-//===================================================================================
 // Module properties, retrieved by DAC.
-// Describes a VMPTR_DomainAssembly representing a module.
-// In the VM, a raw Module may be domain neutral and shared by many appdomains.
-// Whereas a DomainAssembly is like a { AppDomain, Module} pair. DomainAssembly corresponds
-// much more to ICorDebugModule (which also has appdomain affinity).
-//===================================================================================
-struct MSLAYOUT DomainAssemblyInfo
-{
-    // The appdomain that the DomainAssembly is associated with.
-    // Although VMPTR_Module may be shared across multiple domains, a DomainAssembly has appdomain affinity.
-    VMPTR_AppDomain vmAppDomain;
-
-    // The assembly this module belongs to. All modules live in an assembly.
-    VMPTR_DomainAssembly vmDomainAssembly;
-};
-
 struct MSLAYOUT ModuleInfo
 {
-    // The non-domain specific assembly which this module resides in.
+    // The assembly which this module resides in.
     VMPTR_Assembly vmAssembly;
 
     // The PE Base address and size of the module. These may be 0 if there is no image
@@ -468,6 +452,140 @@ public:
     bool                                   m_fInitialized;
 }; // class SequencePoints
 
+//===================================================================================
+// AsyncLocalData serves as the Dbi equivalent of ICorDebugInfo::AsyncContinuationVarInfo.
+// It maps the offset of an async variable within a continuation to its ILVarNum.
+//===================================================================================
+struct MSLAYOUT AsyncLocalData
+{
+    // offset within a continuation object where the variable is stored
+    ULONG offset;
+    // IL variable number corresponding to the async local
+    ULONG ilVarNum;
+};
+
+
+// struct Debugger_FuncData:   Debugger_FuncData holds data
+// to describe a given function, its
+// class, and a little bit about the code for the function. This is used
+// in the stack trace result data to pass function information back that
+// may be needed. Its also used when getting data about a specific function.
+//
+struct MSLAYOUT Debugger_FuncData
+{
+    mdMethodDef funcMetadataToken;
+    VMPTR_Assembly vmAssembly;
+};
+
+// struct Debugger_JITFuncData:   Debugger_JITFuncData holds
+// a little bit about the JITted code for the function.
+//
+// void* nativeStartAddressPtr: Ptr to CORDB_ADDRESS, which is
+//          the address of the real start address of the native code.
+//          This field will be NULL only if the method hasn't been JITted
+//          yet (and thus no code is available).  Otherwise, it will be
+//          the address of a CORDB_ADDRESS in the remote memory.  This
+//          CORDB_ADDRESS may be NULL, in which case the code is unavailable
+//          or has been pitched (return CORDBG_E_CODE_NOT_AVAILABLE)
+//
+// SIZE_T nativeSize: Size of the native code.
+//
+// SIZE_T nativeOffset: Offset from the beginning of the function,
+//          in bytes.  This may be non-zero even when nativeStartAddressPtr
+//          is NULL
+// void * nativeCodeMethodDescToken: An opaque value to hand back to the left
+//          side when fetching the code.  In addition this token can act as the
+//          unique identity for the native code in the case where there are
+//          multiple blobs of native code per IL method (i.e. if the method is
+//          generic code of some kind)
+// BOOL isInstantiatedGeneric: Indicates if the method is
+//          generic code of some kind.
+// BOOL justAfterILThrow: indicates that code just threw a software exception and
+//          nativeOffset points to an instruction just after [call IL_Throw].
+//          This is being used to figure out a real offset of the exception origin.
+//          By subtracting STACKWALK_CONTROLPC_ADJUST_OFFSET from nativeOffset you can get
+//          an address somewhere inside [call IL_Throw] instruction.
+struct MSLAYOUT Debugger_JITFuncData
+{
+    CORDB_ADDRESS nativeStartAddressPtr;
+    ULONG64 nativeHotSize;
+
+    // If we have a cold region, need its size & the pointer to where starts.
+    CORDB_ADDRESS nativeStartAddressColdPtr;
+    ULONG64 nativeColdSize;
+
+    ULONG64 nativeOffset;
+    VMPTR_MethodDesc vmNativeCodeMethodDescToken;
+
+    BOOL fIsFilterFrame;
+    ULONG64 parentNativeOffset;
+    FramePointer fpParentOrSelf;
+
+    // indicates if the MethodDesc is a generic function or a method inside a generic class (or
+    // both!).
+    BOOL isInstantiatedGeneric;
+
+    BOOL justAfterILThrow;
+};
+
+
+//
+// Debugger_STRData holds data for each stack frame or chain.
+//
+#if defined(_MSC_VER)
+#pragma warning( push )
+#pragma warning( disable:4324 ) // the compiler pads a structure to comply with alignment requirements
+#endif                          // ARM context structures have a 16-byte alignment requirement
+struct MSLAYOUT Debugger_STRData
+{
+    FramePointer            fp;
+    DT_CONTEXT *            ctx;
+    VMPTR_AppDomain         vmCurrentAppDomainToken;
+
+
+    enum EType
+    {
+        cMethodFrame = 0,
+        cStubFrame,
+        cRuntimeNativeFrame
+    } eType;
+
+    union MSLAYOUT
+    {
+        // Data for a Method
+        struct MSLAYOUT
+        {
+            struct Debugger_FuncData funcData;
+            struct Debugger_JITFuncData jitFuncData;
+            CorDebugMappingResult mapping;
+            bool fVarArgs;
+            // Indicates whether the managed method has any metadata.
+            // Some dynamic methods such as IL stubs and LCG methods don't have any metadata.
+            // This is used only by the V3 stackwalker, not the V2 one, because we only
+            // expose dynamic methods as real stack frames in V3.
+            bool fNoMetadata;
+
+            CORDB_ADDRESS taAmbientESP;
+            GENERICS_TYPE_TOKEN exactGenericArgsToken;
+            DWORD dwExactGenericArgsTokenIndex;
+
+        } v;
+
+        // Data for an Stub Frame.
+        struct MSLAYOUT
+        {
+            mdMethodDef funcMetadataToken;
+            VMPTR_Assembly vmAssembly;
+            VMPTR_MethodDesc vmMethodDesc;
+            CorDebugInternalFrameType frameType;
+        } stubFrame;
+
+    };
+};
+#if defined(_MSC_VER)
+#pragma warning( pop )
+#endif
+
 //----------------------------------------------------------------------------------
 // declarations needed for getting native code regions
 //----------------------------------------------------------------------------------
@@ -486,9 +604,9 @@ public:
     // set all fields to default values (NULL, FALSE, or zero as appropriate)
     NativeCodeFunctionData();
 
-    // conversion constructor to convert from an instance of DebuggerIPCE_JITFUncData to an instance of
+    // conversion constructor to convert from an instance of Debugger_JITFuncData to an instance of
     // NativeCodeFunctionData.
-    NativeCodeFunctionData(DebuggerIPCE_JITFuncData * source);
+    NativeCodeFunctionData(Debugger_JITFuncData * source);
 
     // The hot region start address could be NULL in the following circumstances:
     // 1. We haven't yet tried to get the information
@@ -544,19 +662,19 @@ public:
     BOOL OkToGetOrSetStaticAddress();
 
     // If this is an instance field, store its offset
-    void SetInstanceOffset( SIZE_T offset );
+    void SetInstanceOffset( ULONG64 offset );
 
     // If this is a "normal" static, store its absolute address
-    void SetStaticAddress( TADDR addr );
+    void SetStaticAddress( CORDB_ADDRESS addr );
 
     // If this is an instance field, return its offset
     // Note that this offset is always a real offset (possibly larger than 22 bits), which isn't
     // necessarily the same as the overloaded FieldDesc.dwOffset field.
-    SIZE_T  GetInstanceOffset();
+    CORDB_ADDRESS  GetInstanceOffset();
 
     // If this is a "normal" static, get its absolute address
     // TLS and context-specific statics are "special".
-    TADDR GetStaticAddress();
+    CORDB_ADDRESS GetStaticAddress();
 
 //
 // Data members
@@ -576,11 +694,11 @@ public:
 
 private:
     // The m_fldInstanceOffset and m_pFldStaticAddress are mutually exclusive. Only one is ever set at a time.
-    SIZE_T          m_fldInstanceOffset;      // The offset of a field within an object instance
+    ULONG64         m_fldInstanceOffset;      // The offset of a field within an object instance
                                               // For EnC fields, this isn't actually within the object instance,
                                               // but has been cooked to still be relative to the beginning of
                                               // the object.
-    TADDR           m_pFldStaticAddress;      // The absolute target address of a static field
+    CORDB_ADDRESS   m_pFldStaticAddress;      // The absolute target address of a static field
 
     PCCOR_SIGNATURE m_fldSignatureCache;      // This is passed across as null. It is a RS-only cache, and SHOULD
                                               // NEVER BE ACCESSED DIRECTLY!
@@ -619,22 +737,22 @@ class MSLAYOUT EnCHangingFieldInfo
 public:
     // Init will initialize fields, taking into account whether the field is static or not.
     void Init(VMPTR_Object     pObject,
-              SIZE_T           offset,
+              UINT             offset,
               mdFieldDef       fieldToken,
               CorElementType   elementType,
               mdTypeDef        metadataToken,
-              VMPTR_DomainAssembly vmDomainAssembly);
+              VMPTR_Assembly vmAssembly);
 
     DebuggerIPCE_BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
     mdFieldDef GetFieldToken() const { return m_fldToken; };
     VMPTR_Object GetVmObject() const { return m_vmObject; };
-    SIZE_T GetOffsetToVars() const { return m_offsetToVars; };
+    UINT GetOffsetToVars() const { return m_offsetToVars; };
 
 private:
     DebuggerIPCE_BasicTypeData m_objectTypeData; // type data for the EnC field
     VMPTR_Object               m_vmObject;        // object instance to which the field has been added--if the field is
                                                  // static, this will be NULL instead of pointing to an instance
-    SIZE_T                     m_offsetToVars;   // offset to the beginning of variable storage in the object
+    UINT                       m_offsetToVars;   // offset to the beginning of variable storage in the object
     mdFieldDef                 m_fldToken;       // metadata token for the added field
 
 }; // EnCHangingFieldInfo
@@ -652,14 +770,19 @@ private:
 // NoValueTypeBoxing:
 //     TypeHandleToExpandedTypeInfo is also used to report type parameters,
 //      and in this case none of the types are considered boxed (
-enum AreValueTypesBoxed { NoValueTypeBoxing, OnlyPrimitivesUnboxed, AllBoxed };
+enum AreValueTypesBoxed
+{
+    NoValueTypeBoxing = 0,
+    OnlyPrimitivesUnboxed = 1,
+    AllBoxed = 2
+};
 
 // TypeRefData is used for resolving a type reference (see code:CordbModule::ResolveTypeRef and
 // code:DacDbiInterfaceImpl::ResolveTypeReference) to store relevant information about the type
 typedef struct MSLAYOUT
 {
-    // domain file for the type
-    VMPTR_DomainAssembly vmDomainAssembly;
+    // assembly for the type
+    VMPTR_Assembly vmAssembly;
     // metadata token for the type. This may be a typeRef (for requests) or a typeDef (for responses).
     mdToken          typeToken;
 } TypeRefData;
@@ -674,46 +797,6 @@ typedef DacDbiArrayList<DebuggerIPCE_BasicTypeData> ArgInfoList;
 
 // TypeParamsList encapsulate a list of type parameters and the length of the list
 typedef DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> TypeParamsList;
-
-// A struct for passing version information from DBI to DAC.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDacDbiProtocolBreakingChangeCounter = 1;
-
-struct DbiVersion
-{
-    DWORD m_dwFormat;               // the format of this DbiVersion instance
-    DWORD m_dwDbiVersionMS;         // version of the DBI DLL, in the convention used by VS_FIXEDFILEINFO
-    DWORD m_dwDbiVersionLS;
-    DWORD m_dwProtocolBreakingChangeCounter;  // initially this was reserved and always set to 0
-	                                          // Now we use it as a counter to explicitly introduce breaking changes
-	                                          // between DBI and DAC when we have our IPC transport in the middle
-	                                          // If DBI and DAC don't agree on the same value CheckDbiVersion will return CORDBG_E_INCOMPATIBLE_PROTOCOL
-	                                          // Please document every time this value changes
-	                                          // 0 - initial value
-	                                          // 1 - Indicates that the protocol now supports the GetRemoteInterfaceHashAndTimestamp message
-	                                          //     The message must have ID 2, with signature:
-	                                          //     OUT DWORD & hash1, OUT DWORD & hash2, OUT DWORD & hash3, OUT DWORD & hash4, OUT DWORD & timestamp1, OUT DWORD & timestamp2
-	                                          //     The hash can be used as an indicator of many other breaking changes providing
-	                                          //     easier automated enforcement during development. It is NOT recommended to use
-	                                          //     the hash as a release versioning mechanism however.
-    DWORD m_dwReservedMustBeZero1;  // reserved for future use
-};
-
-// The way in which a thread is blocking on an object
-enum DacBlockingReason
-{
-    DacBlockReason_MonitorCriticalSection,
-    DacBlockReason_MonitorEvent
-};
-
-// Information about an object which is blocking a managed thread
-struct DacBlockingObject
-{
-    VMPTR_Object      vmBlockingObject;
-    VMPTR_AppDomain   vmAppDomain;
-    DWORD             dwTimeout;
-    DacBlockingReason blockingReason;
-};
 
 // Opaque user defined data used in callbacks
 typedef void* CALLBACK_DATA;
@@ -745,40 +828,15 @@ struct MSLAYOUT DacGcReference
 struct MSLAYOUT DacExceptionCallStackData
 {
     VMPTR_AppDomain vmAppDomain;
-    VMPTR_DomainAssembly vmDomainAssembly;
+    VMPTR_Assembly vmAssembly;
     CORDB_ADDRESS ip;
     mdMethodDef methodDef;
     BOOL isLastForeignExceptionFrame;
 };
 
-// These represent the various states a SharedReJitInfo can be in.
-enum DacSharedReJitInfoState
-{
-    // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
-    // called back to the profiler to get any info or indicate that the ReJit has
-    // started. (This Info can be 'reused' for a new ReJit if the
-    // profiler calls RequestReJit again before we transition to the next state.)
-    kStateRequested = 0x00000000,
-
-    // We have asked the profiler about this method via ICorProfilerFunctionControl,
-    // and have thus stored the IL and codegen flags the profiler specified. Can only
-    // transition to kStateReverted from this state.
-    kStateActive = 0x00000001,
-
-    // The methoddef has been reverted, but not freed yet. It (or its instantiations
-    // for generics) *MAY* still be active on the stack someplace or have outstanding
-    // memory references.
-    kStateReverted = 0x00000002,
-
-
-    kStateMask = 0x0000000F,
-};
-
 struct MSLAYOUT DacSharedReJitInfo
 {
-    DWORD          m_state;
     CORDB_ADDRESS  m_pbIL;
-    DWORD          m_dwCodegenFlags;
     ULONG          m_cInstrumentedMapEntries;
     CORDB_ADDRESS  m_rgInstrumentedMapEntries;
 };
@@ -788,6 +846,42 @@ struct MSLAYOUT DacThreadAllocInfo
 {
     ULONG64 m_allocBytesSOH;
     ULONG64 m_allocBytesUOH;
+};
+
+// Array layout info returned by IDacDbiInterface::GetArrayData.
+struct DacDbiArrayInfo
+{
+    UINT rank;
+    UINT componentCount;
+    UINT offsetToArrayBase;
+    UINT offsetToUpperBounds;   // 0 for SZArray
+    UINT offsetToLowerBounds;   // 0 for SZArray
+    UINT elementSize;
+};
+
+struct MSLAYOUT DacDbiObjectData
+{
+    CORDB_ADDRESS   objRef;
+    BOOL            objRefBad;
+    UINT            objSize;
+
+    // Offset from the beginning of the object to the beginning of the first field
+    UINT            objOffsetToVars;
+
+    // The type of the object....
+    struct DebuggerIPCE_ExpandedTypeData objTypeData;
+
+    union MSLAYOUT
+    {
+        struct MSLAYOUT
+        {
+            UINT          length;
+            UINT          offsetToStringBase;
+        } stringInfo;
+
+        DacDbiArrayInfo arrayInfo;
+        DebuggerIPCE_BasicTypeData typedByrefType; // the type of the thing contained in a typedByref...
+    };
 };
 
 #include "dacdbistructures.inl"

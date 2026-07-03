@@ -59,5 +59,21 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        public virtual bool AsyncVariant
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public virtual bool ReturnDroppingAsyncThunk
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 }

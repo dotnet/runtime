@@ -11,7 +11,7 @@ struct ReadyToRunHeaderConstants
 {
     static const uint32_t Signature = 0x00525452; // 'RTR'
 
-    static const uint32_t CurrentMajorVersion = 16;
+    static const uint32_t CurrentMajorVersion = 24;
     static const uint32_t CurrentMinorVersion = 0;
 };
 
@@ -57,9 +57,4 @@ enum class ReadyToRunSectionType
     // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
     ReadonlyBlobRegionStart     = 300,
     ReadonlyBlobRegionEnd       = 399,
-};
-
-enum class ModuleInfoFlags
-{
-    HasEndPointer               = 0x1,
 };

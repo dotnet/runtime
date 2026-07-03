@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -117,10 +117,6 @@ namespace System.Threading
             SafeWaitHandle? waitHandle = _waitHandle;
             ObjectDisposedException.ThrowIf(waitHandle is null, this);
 
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
-
             bool success = false;
             try
             {
@@ -143,7 +139,6 @@ namespace System.Threading
 
                 if (!usedSyncContextWait)
                 {
-#if !CORECLR // CoreCLR sends the wait events from the native side
                     bool sendWaitEvents =
                         millisecondsTimeout != 0 &&
                         !useTrivialWaits &&
@@ -158,7 +153,11 @@ namespace System.Threading
                         waitSource != NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait;
                     if (tryNonblockingWaitFirst)
                     {
-                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), 0 /* millisecondsTimeout */, useTrivialWaits);
+                        waitResult = WaitOneCore(
+                            waitHandle.DangerousGetHandle(),
+                            millisecondsTimeout: 0,
+                            useTrivialWaits);
+
                         if (waitResult == WaitTimeout)
                         {
                             // Do a full wait and send the wait events
@@ -178,17 +177,17 @@ namespace System.Threading
 
                     // When tryNonblockingWaitFirst is true, we have a final wait result from the nonblocking wait above
                     if (!tryNonblockingWaitFirst)
-#endif
                     {
-                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits);
+                        waitResult = WaitOneCore(
+                            waitHandle.DangerousGetHandle(),
+                            millisecondsTimeout,
+                            useTrivialWaits);
                     }
 
-#if !CORECLR // CoreCLR sends the wait events from the native side
                     if (sendWaitEvents)
                     {
                         NativeRuntimeEventSource.Log.WaitHandleWaitStop();
                     }
-#endif
                 }
 
                 if (waitResult == WaitAbandoned)
@@ -294,7 +293,7 @@ namespace System.Threading
             return WaitMultiple(new ReadOnlySpan<WaitHandle>(waitHandles), waitAll, millisecondsTimeout);
         }
 
-        private static int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
         {
             if (waitHandles.Length == 0)
             {
@@ -357,7 +356,7 @@ namespace System.Threading
             }
         }
 
-        private static int WaitAnyMultiple(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout)
+        private static unsafe int WaitAnyMultiple(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout)
         {
             // - Callers are expected to manage the lifetimes of the safe wait handles such that they would not expire during
             //   this wait
@@ -400,7 +399,6 @@ namespace System.Threading
         {
             int waitResult = WaitFailed;
 
-#if !CORECLR // CoreCLR sends the wait events from the native side
             bool sendWaitEvents =
                 millisecondsTimeout != 0 &&
                 NativeRuntimeEventSource.Log.IsEnabled(
@@ -432,17 +430,14 @@ namespace System.Threading
 
             // When tryNonblockingWaitFirst is true, we have a final wait result from the nonblocking wait above
             if (!tryNonblockingWaitFirst)
-#endif
             {
                 waitResult = WaitMultipleIgnoringSyncContextCore(handles, waitAll, millisecondsTimeout);
             }
 
-#if !CORECLR // CoreCLR sends the wait events from the native side
             if (sendWaitEvents)
             {
                 NativeRuntimeEventSource.Log.WaitHandleWaitStop();
             }
-#endif
 
             return waitResult;
         }

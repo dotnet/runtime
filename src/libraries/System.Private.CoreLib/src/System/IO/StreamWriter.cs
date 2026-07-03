@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -165,7 +165,7 @@ namespace System.IO
             _stream = Stream.Null;
             _encoding = UTF8NoBOM;
             _encoder = null!;
-            _charBuffer = Array.Empty<char>();
+            _charBuffer = [];
         }
 
         private static FileStream ValidateArgsAndOpenPath(string path, FileStreamOptions options)
@@ -274,7 +274,7 @@ namespace System.IO
             Flush(true, true);
         }
 
-        private void Flush(bool flushStream, bool flushEncoder)
+        private unsafe void Flush(bool flushStream, bool flushEncoder)
         {
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
@@ -501,7 +501,7 @@ namespace System.IO
             }
         }
 
-        private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
+        private unsafe void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
             int estimatedLength = checked((format?.Length ?? 0) + args.Length * 8);
             var vsb = (uint)estimatedLength <= 256 ?
@@ -531,8 +531,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: false);
             }
             else
             {
@@ -544,8 +543,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: false);
             }
             else
             {
@@ -602,8 +600,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: true);
             }
             else
             {
@@ -615,8 +612,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: true);
             }
             else
             {

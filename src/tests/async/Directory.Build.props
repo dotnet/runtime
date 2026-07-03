@@ -5,7 +5,7 @@
 
   <PropertyGroup>
     <RunAnalyzers>true</RunAnalyzers>
-    <NoWarn>$(NoWarn);xUnit1013;CS1998;SYSLIB5007</NoWarn>
+    <NoWarn>$(NoWarn);xUnit1013;CS1998</NoWarn>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>

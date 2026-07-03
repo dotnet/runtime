@@ -15,7 +15,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
 {
-    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish)
+    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish, Version TargetFrameworkVersion)
     {
 #pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
         internal static readonly Regex mergeWithPlaceholderRegex = new Regex(@"/\*!\s*dotnetBootConfig\s*\*/\s*{}");
@@ -154,7 +154,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             ResourcesData resources = (ResourcesData)bootConfig.resources;
 
             string resourceExtension = Path.GetExtension(resourceName);
-            if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
+            if (TargetFrameworkVersion < version110 && resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return resources.jsModuleWorker ??= new();
             else if (resourceName.StartsWith("dotnet.diagnostics", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return resources.jsModuleDiagnostics ??= new();
@@ -224,7 +224,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 var asset = new WasmAsset()
                 {
                     name = a.Key,
-                    integrity = a.Value
+                    hash = a.Value,
+                    cache = GetCacheControl(a.Key, resources)
                 };
 
                 if (bundlerFriendly)
@@ -239,6 +240,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.wasmSymbols = resources.wasmSymbols?.Select(a => new SymbolsAsset()
             {
                 name = a.Key,
+                cache = GetCacheControl(a.Key, resources)
             }).ToList();
 
             assets.icu = MapGeneralAssets(resources.icu);
@@ -284,7 +286,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 {
                     virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
                     name = a.Key,
-                    integrity = a.Value
+                    hash = a.Value,
+                    cache = GetCacheControl(a.Key, resources)
                 };
 
                 if (bundlerFriendly)
@@ -318,17 +321,19 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a =>
             {
+                string assetName = a.Value.Keys.First();
                 var asset = new VfsAsset()
                 {
                     virtualPath = a.Key,
-                    name = a.Value.Keys.First(),
-                    integrity = a.Value.Values.First()
+                    name = $"../{assetName}",
+                    hash = a.Value.Values.First(),
+                    cache = GetCacheControl(assetName, resources)
                 };
 
                 if (bundlerFriendly)
                 {
                     string escaped = EscapeName(string.Concat(asset.name));
-                    imports.Add($"import * as {escaped} from \"./{asset.name}\";");
+                    imports.Add($"import {escaped} from \"./{asset.name}\";");
                     asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
                 }
 
@@ -339,5 +344,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             return string.Join(Environment.NewLine, imports);
         }
+
+        private static readonly Version version110 = new Version(11, 0);
+        private static string? GetCacheControl(string endpoint, ResourcesData resources) => resources.fingerprinting?.ContainsKey(endpoint) ?? false ? "force-cache" : null;
     }
 }

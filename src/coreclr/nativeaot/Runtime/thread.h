@@ -5,7 +5,7 @@
 #define __thread_h__
 
 #include "StackFrameIterator.h"
-#include "slist.h" // DefaultSListTraits
+#include "slist.h" // SListTraits
 #include <minipal/xoshiro128pp.h>
 
 struct gc_alloc_context;
@@ -179,7 +179,7 @@ struct ReversePInvokeFrame
 class Thread : private RuntimeThreadLocals
 {
     friend class AsmOffsets;
-    friend struct DefaultSListTraits<Thread>;
+    friend struct SListTraits<Thread>;
     friend class ThreadStore;
     IN_DAC(friend class ClrDataAccess;)
 
@@ -214,6 +214,9 @@ public:
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
         TSF_Interrupted         = 0x00000200,       // Set to indicate Thread.Interrupt() has been called on this thread
+
+        TSF_SuspensionTrapped   = 0x00000400,       // Set when thread is trapped waiting for suspension to complete
+                                                    // (was in managed code).
     };
 private:
 
@@ -269,7 +272,7 @@ public:
     ee_alloc_context *  GetEEAllocContext();
     gc_alloc_context *  GetAllocContext();
 
-    uint64_t            GetPalThreadIdForLogging();
+    uint64_t            GetOSThreadId();
 
     void                GcScanRoots(ScanFunc* pfnEnumCallback, ScanContext * pvCallbackData);
 
@@ -280,7 +283,7 @@ public:
     void*               GetHijackedReturnAddress();
     static bool         IsHijackTarget(void * address);
 
-    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack);
+    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack, bool doInlineSuspend);
 #else // FEATURE_HIJACK
     void                Unhijack() { }
     bool                IsHijacked() { return false; }
@@ -305,6 +308,8 @@ public:
 
     bool                IsDetached();
     void                SetDetached();
+
+    bool                IsSuspensionTrapped();
 
     PTR_VOID            GetThreadStressLog() const;
 #ifndef DACCESS_COMPILE

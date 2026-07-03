@@ -74,6 +74,8 @@ namespace System.Net.ServerSentEvents
         /// <remarks>This can be different than <see cref="_dataLength"/> != 0 if empty data was appended.</remarks>
         private bool _dataAppended;
 
+        private int _maxBufferSize = 1024 * 1024 * 1024;
+
         /// <summary>The event type for the next event.</summary>
         private string? _eventType;
 
@@ -304,7 +306,17 @@ namespace System.Net.ServerSentEvents
                 }
                 else if (_lineLength == _lineBuffer.Length)
                 {
-                    GrowBuffer(ref _lineBuffer, _lineBuffer.Length * 2);
+                    int newLength;
+                    try
+                    {
+                        newLength = checked(_lineBuffer.Length * 2);
+                    }
+                    catch (OverflowException)
+                    {
+                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                    }
+
+                    GrowBuffer(ref _lineBuffer, newLength);
                 }
             }
         }
@@ -387,10 +399,20 @@ namespace System.Net.ServerSentEvents
                     }
                 }
 
-                // We need to copy the data from the data buffer to the line buffer. Make sure there's enough room.
-                if (_dataBuffer is null || _dataLength + _lineLength + 1 > _dataBuffer.Length)
+                // We need to copy the data from the line buffer to the data buffer. Make sure there's enough room.
+                int newLength;
+                try
                 {
-                    GrowBuffer(ref _dataBuffer, _dataLength + _lineLength + 1);
+                    newLength = checked(_dataLength + _lineLength + 1);
+                }
+                catch (OverflowException)
+                {
+                    throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                }
+
+                if (_dataBuffer is null || newLength > _dataBuffer.Length)
+                {
+                    GrowBuffer(ref _dataBuffer, newLength);
                 }
 
                 // Append a newline if there's already content in the buffer.
@@ -411,7 +433,7 @@ namespace System.Net.ServerSentEvents
             else if (fieldName.SequenceEqual("id"u8))
             {
                 // Spec: "If the field value does not contain U+0000 NULL, then set the last event ID buffer to the field value. Otherwise, ignore the field."
-                if (fieldValue.IndexOf((byte)'\0') < 0)
+                if (!fieldValue.Contains((byte)'\0'))
                 {
                     // Note that fieldValue might be empty, in which case LastEventId will naturally be reset to the empty string. This is per spec.
                     LastEventId = _eventId = Encoding.UTF8.GetString(fieldValue);
@@ -532,8 +554,13 @@ namespace System.Net.ServerSentEvents
         }
 
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
-        private static void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
+        private void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
         {
+            if (minimumLength > _maxBufferSize)
+            {
+                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+            }
+
             byte[]? toReturn = buffer;
             buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, DefaultArrayPoolRentSize));
             if (toReturn is not null)

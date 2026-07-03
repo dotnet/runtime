@@ -49,7 +49,7 @@ namespace ILCompiler
 
         private static void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
         {
-            foreach (MethodDesc method in type.GetAllMethods())
+            foreach (MethodDesc method in type.GetAllMethodsAndAsyncVariants())
             {
                 // Skip methods with no IL and uninstantiated generic methods
                 if (method.IsAbstract || method.HasInstantiation)

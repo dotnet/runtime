@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b178128;
+
 using System;
 using Xunit;
 
@@ -136,6 +139,7 @@ struct Big100000DW
 
 public class Test_hugestruct
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

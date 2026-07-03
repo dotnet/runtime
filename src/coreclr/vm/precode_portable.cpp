@@ -17,7 +17,7 @@ bool PortableEntryPoint::HasNativeEntryPoint(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    return portableEntryPoint->HasNativeCode();
+    return portableEntryPoint->HasNativeCode() && !portableEntryPoint->PrefersInterpreterEntryPoint();
 }
 
 bool PortableEntryPoint::HasInterpreterData(PCODE addr)
@@ -32,7 +32,7 @@ void* PortableEntryPoint::GetActualCode(PCODE addr)
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->HasNativeCode());
+    _ASSERTE_ALL_BUILDS(portableEntryPoint->HasNativeCode());
     return portableEntryPoint->_pActualCode;
 }
 
@@ -41,11 +41,20 @@ void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(actualCode != (PCODE)NULL);
+    _ASSERTE_ALL_BUILDS(actualCode != (PCODE)NULL);
 
-    // This is a lock free write. It can either be NULL or was already set to the same value.
-    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode));
+    // This is a lock free write. The existing value can either be NULL, already set to the same value,
+    // or still be an interpreter-preferred temporary/native placeholder while PrefersInterpreterEntryPoint() is set.
+    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode) || portableEntryPoint->PrefersInterpreterEntryPoint());
+
     portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
+
+    if (portableEntryPoint->PrefersInterpreterEntryPoint())
+    {
+        // We can "upgrade" a portable entrypoint from the interpreter entry point to the actual code. If we do so
+        // we need to clear the PrefersInterpreterEntryPoint flag to allow future callers to use the actual code.
+        portableEntryPoint->ClearPrefersInterpreterEntryPoint();
+    }
 }
 
 MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
@@ -76,14 +85,11 @@ void PortableEntryPoint::SetInterpreterData(PCODE addr, PCODE interpreterData)
     portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
 }
 
-PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(PCODE addr)
+bool PortableEntryPoint::PrefersInterpreterEntryPoint(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(addr != NULL);
-
-    PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)PCODEToPINSTR(addr);
-    _ASSERTE(portableEntryPoint->IsValid());
-    return portableEntryPoint;
+    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
+    return portableEntryPoint->PrefersInterpreterEntryPoint();
 }
 
 #ifdef _DEBUG
@@ -94,6 +100,16 @@ bool PortableEntryPoint::IsValid() const
 }
 #endif // _DEBUG
 
+PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(PCODE addr)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(addr != NULL);
+
+    PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)PCODEToPINSTR(addr);
+    _ASSERTE(portableEntryPoint->IsValid());
+    return portableEntryPoint;
+}
+
 void PortableEntryPoint::Init(MethodDesc* pMD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -101,6 +117,7 @@ void PortableEntryPoint::Init(MethodDesc* pMD)
     _pActualCode = NULL;
     _pMD = pMD;
     _pInterpreterData = NULL;
+    _flags = kPrefersInterpreterEntryPoint;
     INDEBUG(_canary = CANARY_VALUE);
 }
 
@@ -111,7 +128,73 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
     _pActualCode = nativeEntryPoint;
     _pMD = NULL;
     _pInterpreterData = NULL;
+    _flags = kNone;
     INDEBUG(_canary = CANARY_VALUE);
+}
+
+void PortableEntryPoint::Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = pMD;
+    _pInterpreterData = NULL;
+    _flags = kPrefersInterpreterEntryPoint;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
+void PortableEntryPoint::Init_WithNativeCode(void* nativeEntryPoint, MethodDesc* pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = pMD;
+    _pInterpreterData = NULL;
+    _flags = kNone;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
+namespace
+{
+    bool HasFlags(Volatile<int32_t>& flags, int32_t flagMask)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (flags.Load() & flagMask) == flagMask;
+    }
+
+    void SetFlags(Volatile<int32_t>& flags, int32_t flagMask)
+    {
+        LIMITED_METHOD_CONTRACT;
+        ::InterlockedOr(flags.GetPointer(), flagMask);
+    }
+}
+
+// Forward declaration
+void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD);
+
+bool PortableEntryPoint::EnsureCodeForUnmanagedCallersOnly()
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(IsValid());
+
+    if (HasFlags(_flags, kUnmanagedCallersOnly_Checked | kUnmanagedCallersOnly_Has))
+        return true;
+
+    if (HasFlags(_flags, kUnmanagedCallersOnly_Checked))
+        return false;
+
+    // First time check, do the full check
+    if (_pMD == nullptr || !_pMD->HasUnmanagedCallersOnlyAttribute())
+    {
+        SetFlags(_flags, kUnmanagedCallersOnly_Checked);
+        return false;
+    }
+
+    _pActualCode = GetUnmanagedCallersOnlyThunk(_pMD);
+    SetFlags(_flags, kUnmanagedCallersOnly_Checked | kUnmanagedCallersOnly_Has);
+
+    return true;
 }
 
 InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
@@ -167,8 +250,15 @@ void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)
 BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"DoesSlotCallPrestub is not supported with Portable EntryPoints");
+#ifdef TARGET_WASM
+    /* On WASM slots never directly call the prestub. Instead we have the R2R to interpreter thunks
+       which serve as the PreStub, but the characteristics are slightly different, and it appears this
+       isn't necessary. */
     return FALSE;
+#else
+    _ASSERTE(!"DoesSlotCallPrestub is not yet implemented for non-WASM portable entrypoints");
+    return FALSE;
+#endif
 }
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

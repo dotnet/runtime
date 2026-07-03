@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b06464;
+
 using System;
 using Xunit;
 
@@ -27,6 +30,7 @@ public class Test_b06464
         return 1;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b92693;
+
 using System;
 using Xunit;
 
@@ -14,6 +17,7 @@ public struct AA
     {
         return new TestEnum[(long)(m_shStatic1 * 11u - m_shStatic1 * 11u)];
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

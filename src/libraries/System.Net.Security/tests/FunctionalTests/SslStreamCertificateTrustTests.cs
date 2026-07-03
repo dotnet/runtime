@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
         public static bool SupportsSendingCustomCANamesInTls => PlatformDetection.SupportsSendingCustomCANamesInTls;
         public static bool DoesNotSupportSendingCustomCANamesInTls => !PlatformDetection.SupportsSendingCustomCANamesInTls;
 
-        [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
+        [ConditionalFact(typeof(SslStreamCertificateTrustTest), nameof(SupportsSendingCustomCANamesInTls))]
         [SkipOnPlatform(TestPlatforms.Windows, "CertificateCollection-based SslCertificateTrust is not Supported on Windows")]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
@@ -31,7 +31,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(pkiHolder.IssuerChain.Select(c => c.Subject), acceptableIssuers);
         }
 
-        [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
+        [ConditionalFact(typeof(SslStreamCertificateTrustTest), nameof(SupportsSendingCustomCANamesInTls))]
         public async Task SslStream_SendCertificateTrust_CertificateStore()
         {
             using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
@@ -90,7 +90,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
+        [ConditionalFact(typeof(SslStreamCertificateTrustTest), nameof(SupportsSendingCustomCANamesInTls))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SslStream_SendCertificateTrust_CertificateCollection_ThrowsOnWindows()
         {
@@ -99,7 +99,7 @@ namespace System.Net.Security.Tests
             Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(pkiHolder.IssuerChain, sendTrustInHandshake: true));
         }
 
-        [ConditionalFact(nameof(DoesNotSupportSendingCustomCANamesInTls))]
+        [ConditionalFact(typeof(SslStreamCertificateTrustTest), nameof(DoesNotSupportSendingCustomCANamesInTls))]
         [SkipOnPlatform(TestPlatforms.Windows, "Windows tested separately")]
         public void SslStream_SendCertificateTrust_ThrowsOnUnsupportedPlatform()
         {

@@ -29,36 +29,6 @@ namespace CorUnix
 
     /*++
     Function:
-      PROCAddThread
-
-    Abstract
-      Add a thread to the thread list of the current process
-    --*/
-    void PROCAddThread(CPalThread *pCurrentThread, CPalThread *pTargetThread);
-
-    extern CPalThread *pGThreadList;
-
-    /*++
-    Function:
-      PROCRemoveThread
-
-    Abstract
-      Remove a thread form the thread list of the current process
-    --*/
-    void PROCRemoveThread(CPalThread *pCurrentThread, CPalThread *pTargetThread);
-
-    /*++
-    Function:
-      PROCGetNumberOfThreads
-
-    Abstract
-      Return the number of threads in the thread list.
-    --*/
-    INT PROCGetNumberOfThreads(void);
-
-
-    /*++
-    Function:
       TerminateCurrentProcessNoExit
 
     Parameters:

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -187,28 +188,39 @@ namespace System.Linq
         /// <typeparam name="TBase">The type of element contained by the collection.</typeparam>
         public static bool SequenceEqual<TDerived, TBase>(this ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer = null) where TDerived : TBase
         {
-            Requires.NotNull(items, nameof(items));
-
-            comparer ??= EqualityComparer<TBase>.Default;
-
-            int i = 0;
-            int n = immutableArray.Length;
-            foreach (TDerived item in items)
+            if (items is ICollection<TBase> itemsCol)
             {
-                if (i == n)
-                {
-                    return false;
-                }
-
-                if (!comparer.Equals(immutableArray[i], item))
-                {
-                    return false;
-                }
-
-                i++;
+                immutableArray.ThrowNullRefIfNotInitialized();
+                return Enumerable.SequenceEqual(immutableArray.array, itemsCol, comparer);
             }
 
-            return i == n;
+            return Enumerate(immutableArray, items, comparer);
+
+            static bool Enumerate(ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer)
+            {
+                Requires.NotNull(items, nameof(items));
+
+                comparer ??= EqualityComparer<TBase>.Default;
+
+                int i = 0;
+                int n = immutableArray.Length;
+                foreach (TDerived item in items)
+                {
+                    if (i == n)
+                    {
+                        return false;
+                    }
+
+                    if (!comparer.Equals(immutableArray[i], item))
+                    {
+                        return false;
+                    }
+
+                    i++;
+                }
+
+                return i == n;
+            }
         }
 
         /// <summary>
@@ -640,7 +652,7 @@ namespace System.Linq
 
             if (!builder.Any())
             {
-                throw new InvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException();
             }
 
             return builder[0];
@@ -666,7 +678,7 @@ namespace System.Linq
 
             if (!builder.Any())
             {
-                throw new InvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException();
             }
 
             return builder[builder.Count - 1];

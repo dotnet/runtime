@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 using System.Text;
@@ -830,14 +831,13 @@ namespace System
         {
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
-            int upper = (sbyte)lookup[byte.CreateTruncating(ch1)];
-            int lower = (sbyte)lookup[byte.CreateTruncating(ch2)];
-            int result = (upper << 4) | lower;
 
-            uint c1 = TChar.CastToUInt32(ch1);
-            uint c2 = TChar.CastToUInt32(ch2);
-            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
-            result = (c1 | c2) >> 8 == 0 ? result : -1;
+            uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
+            uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
+            int upper = (sbyte)lookup[(int)c1];
+            int lower = (sbyte)lookup[(int)c2];
+
+            int result = (upper << 4) | lower;
             invalidIfNegative |= result;
             return (byte)result;
         }
@@ -901,9 +901,8 @@ namespace System
             {
                 ReadOnlySpan<char> charSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(str);
                 // Find the first whitespace character. If there is none, just return the input.
-                int i;
-                for (i = 0; i < charSpan.Length && !char.IsWhiteSpace(charSpan[i]); i++) ;
-                if (i == charSpan.Length)
+                int i = charSpan.IndexOfAnyWhiteSpace();
+                if (i < 0)
                 {
                     return str;
                 }
@@ -1347,7 +1346,7 @@ namespace System
                 }
                 flags >>= 8;
 
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian)
                 {
                     // Vectorized implementation for D, N, P and B formats:
                     // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
@@ -1515,9 +1514,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
         {
-            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian);
             // Vectorized implementation for D, N, P and B formats:
             // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
 

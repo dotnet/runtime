@@ -16,10 +16,12 @@ namespace System.Reflection
             InvocationFlags invocationFlags = InvocationFlags.Unknown;
 
             Type? declaringType = DeclaringType;
+            Type returnType = ReturnType;
 
             if (ContainsGenericParameters // Method has unbound generics
-                || IsDisallowedByRefType(ReturnType) // Return type is an invalid by-ref (i.e., by-ref-like or void*)
+                || IsDisallowedByRefType(returnType) // Return type is an invalid by-ref (i.e., by-ref-like or void*)
                 || (CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs // Managed varargs
+                || IsDisallowedAsyncHelper
                 )
             {
                 invocationFlags = InvocationFlags.NoInvoke;
@@ -38,7 +40,7 @@ namespace System.Reflection
                     }
                 }
 
-                if (ReturnType.IsByRefLike) // Check for byref-like types for return
+                if (returnType.IsByRefLike) // Check for byref-like types for return
                 {
                     invocationFlags |= InvocationFlags.ContainsStackPointers;
                 }
@@ -60,6 +62,8 @@ namespace System.Reflection
         [DoesNotReturn]
         internal void ThrowNoInvokeException()
         {
+            Type? declaringType = DeclaringType;
+
             // method is on a class that contains stack pointers
             if ((InvocationFlags & InvocationFlags.ContainsStackPointers) != 0)
             {
@@ -71,7 +75,7 @@ namespace System.Reflection
                 throw new NotSupportedException();
             }
             // method is generic or on a generic class
-            else if (DeclaringType!.ContainsGenericParameters || ContainsGenericParameters)
+            else if ((declaringType != null && declaringType.ContainsGenericParameters) || ContainsGenericParameters)
             {
                 throw new InvalidOperationException(SR.Arg_UnboundGenParam);
             }
@@ -87,6 +91,10 @@ namespace System.Reflection
                     throw new NotSupportedException(SR.NotSupported_ByRefToByRefLikeReturn);
                 if (elementType == typeof(void))
                     throw new NotSupportedException(SR.NotSupported_ByRefToVoidReturn);
+            }
+            else if (IsDisallowedAsyncHelper)
+            {
+                throw new NotSupportedException(SR.NotSupported_Async);
             }
 
             throw new TargetException();

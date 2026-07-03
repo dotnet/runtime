@@ -1,16 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestDisableParallelization>true</TestDisableParallelization>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <NoWarn>$(NoWarn);WASM0066</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <!-- this is necessary for libmono-component-diagnostics_tracing-static.a to be linked, which makes the EventPipeEventProvider.EventActivityIdControl to work in Mono -->
     <EnableDiagnostics>true</EnableDiagnostics>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetPlatformIdentifier)' == 'android'">
     <RuntimeComponents Include="diagnostics_tracing" />
     <RuntimeComponents Include="marshal-ilgen" />
   </ItemGroup>
@@ -27,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicEventSourceTest\ActivityTracking.cs" />
+    <Compile Include="BasicEventSourceTest\Harness\EventPipeListener.cs" />
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />
@@ -54,5 +59,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.NetCore.Client" Version="$(MicrosoftDiagnosticsNetCoreClientVersion)" />
   </ItemGroup>
 </Project>

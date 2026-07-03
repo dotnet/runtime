@@ -8,6 +8,9 @@
     <Compile Include="test117393.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

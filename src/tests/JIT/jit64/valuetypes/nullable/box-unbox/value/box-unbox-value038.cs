@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System;
 using Xunit;
 
+namespace box_unbox_value038;
 public class NullableTest
 {
     private static bool BoxUnboxToNQ(ValueType o)
@@ -19,6 +20,7 @@ public class NullableTest
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         ImplementOneInterface? s = Helper.Create(default(ImplementOneInterface));

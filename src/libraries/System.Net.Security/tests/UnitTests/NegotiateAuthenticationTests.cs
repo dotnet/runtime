@@ -15,14 +15,26 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123472", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsLinux))]
     public class NegotiateAuthenticationTests
     {
-        private static bool IsNtlmAvailable => Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
+        // Ubuntu 24 and 26 ship with broekn gss-ntlmssp 1.2
+        // RHEL 8 ships gss-ntlmssp 1.2 built against OpenSSL 1.1 which produces broken NTLM responses
+        private static bool UseManagedNtlm => PlatformDetection.IsUbuntu24 || PlatformDetection.IsUbuntu26 || PlatformDetection.IsOpenSUSE16 || (PlatformDetection.IsRedHatFamily && !PlatformDetection.IsOpenSsl3);
+        private static bool IsNtlmAvailable => UseManagedNtlm || Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
         private static bool IsNtlmUnavailable => !IsNtlmAvailable;
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
         private static readonly byte[] s_Hello = "Hello"u8.ToArray();
+
+        static NegotiateAuthenticationTests()
+        {
+            if (UseManagedNtlm)
+            {
+                AppContext.SetSwitch("System.Net.Security.UseManagedNtlm", true);
+            }
+        }
 
         [Fact]
         public void Constructor_Overloads_Validation()
@@ -39,7 +51,7 @@ namespace System.Net.Security.Tests
             Assert.Throws<InvalidOperationException>(() => negotiateAuthentication.RemoteIdentity);
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void RemoteIdentity_ThrowsOnDisposed()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -74,7 +86,21 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [Theory]
+        [InlineData("!!!!")]
+        [InlineData("AAA")]
+        [InlineData("AAAAA")]
+        [InlineData("AA=A")]
+        public void GetOutgoingBlob_InvalidBase64_ReturnsInvalidToken(string incomingBlob)
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "Negotiate", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            string? outgoingBlob = negotiateAuthentication.GetOutgoingBlob(incomingBlob, out NegotiateAuthenticationStatusCode statusCode);
+            Assert.Null(outgoingBlob);
+            Assert.Equal(NegotiateAuthenticationStatusCode.InvalidToken, statusCode);
+        }
+
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void Package_Supported_NTLM()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -84,8 +110,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
         }
 
-        [ConditionalFact(nameof(IsNtlmUnavailable))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/111639", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu24OrHigher))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmUnavailable))]
         public void Package_Unsupported_NTLM()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -169,7 +194,7 @@ namespace System.Net.Security.Tests
             yield return new object[] { new NetworkCredential("rightusername@rightdomain.com", "rightpassword") };
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         [MemberData(nameof(TestCredentials))]
         public void NtlmCorrectExchangeTest(NetworkCredential credential)
         {
@@ -194,7 +219,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmIncorrectExchangeTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -212,7 +237,7 @@ namespace System.Net.Security.Tests
             Assert.False(fakeNtlmServer.IsAuthenticated);
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmEncryptionTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -248,7 +273,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(FakeNtlmServer.Flags.NegotiateSeal, (fakeNtlmServer.NegotiatedFlags & FakeNtlmServer.Flags.NegotiateSeal));
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmSignatureTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -285,7 +310,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(s_Hello, output.WrittenSpan.ToArray());
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmIntegrityCheckTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -337,7 +362,32 @@ namespace System.Net.Security.Tests
             Assert.Null(empty);
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(UseManagedNtlm))]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void NtlmWithPreExistingTargetInfoEntriesTest(bool sendPreExistingTargetName, bool sendPreExistingChannelBindings)
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight)
+            {
+                SendPreExistingTargetName = sendPreExistingTargetName,
+                SendPreExistingChannelBindings = sendPreExistingChannelBindings,
+            };
+            NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.Sign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+        }
+
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
@@ -385,6 +435,100 @@ namespace System.Net.Security.Tests
                 }
             }
             while (!ntAuth.IsAuthenticated);
+        }
+
+        public static IEnumerable<object[]> MalformedChallengeBlobs()
+        {
+            // Truncated below sizeof(ChallengeMessage). The fixed header is 56 bytes.
+            yield return new object[] { "TooShort", (Func<byte[], byte[]>)(blob => blob.AsSpan(0, 40).ToArray()) };
+
+            // TargetInfo payload offset points past the end of the blob.
+            yield return new object[] { "TargetInfoOffsetOutOfRange", (Func<byte[], byte[]>)(blob =>
+            {
+                byte[] copy = (byte[])blob.Clone();
+                BinaryPrimitives.WriteUInt32LittleEndian(copy.AsSpan(44), (uint)(copy.Length + 100));
+                return copy;
+            }) };
+
+            // TargetInfo length extends past the end of the blob.
+            yield return new object[] { "TargetInfoLengthOutOfRange", (Func<byte[], byte[]>)(blob =>
+            {
+                byte[] copy = (byte[])blob.Clone();
+                BinaryPrimitives.WriteUInt16LittleEndian(copy.AsSpan(40), ushort.MaxValue);
+                BinaryPrimitives.WriteUInt16LittleEndian(copy.AsSpan(42), ushort.MaxValue);
+                return copy;
+            }) };
+
+            // TargetInfo payload offset is negative (would underflow without the offset < 0 guard).
+            yield return new object[] { "TargetInfoOffsetNegative", (Func<byte[], byte[]>)(blob =>
+            {
+                byte[] copy = (byte[])blob.Clone();
+                BinaryPrimitives.WriteInt32LittleEndian(copy.AsSpan(44), -8);
+                return copy;
+            }) };
+
+            // AV pair declares a length longer than the remaining TargetInfo bytes.
+            yield return new object[] { "AvPairOverrun", (Func<byte[], byte[]>)(blob =>
+            {
+                byte[] copy = (byte[])blob.Clone();
+                int targetInfoOffset = (int)BinaryPrimitives.ReadUInt32LittleEndian(copy.AsSpan(44));
+                // Overwrite the first AV pair length so it extends past the end of TargetInfo.
+                BinaryPrimitives.WriteUInt16LittleEndian(copy.AsSpan(targetInfoOffset + 2), ushort.MaxValue);
+                return copy;
+            }) };
+
+            // Timestamp AV pair body is shorter than the required 8 bytes.
+            yield return new object[] { "ShortTimestamp", (Func<byte[], byte[]>)(blob =>
+            {
+                byte[] copy = (byte[])blob.Clone();
+                int targetInfoOffset = (int)BinaryPrimitives.ReadUInt32LittleEndian(copy.AsSpan(44));
+                int targetInfoLength = BinaryPrimitives.ReadUInt16LittleEndian(copy.AsSpan(40));
+                Span<byte> ti = copy.AsSpan(targetInfoOffset, targetInfoLength);
+                // Walk to the Timestamp AV (AvId 7) emitted by FakeNtlmServer and shorten it.
+                int pos = 0;
+                while (pos + 4 <= ti.Length)
+                {
+                    ushort id = BinaryPrimitives.ReadUInt16LittleEndian(ti.Slice(pos));
+                    ushort len = BinaryPrimitives.ReadUInt16LittleEndian(ti.Slice(pos + 2));
+                    if (id == 7 /* Timestamp */)
+                    {
+                        BinaryPrimitives.WriteUInt16LittleEndian(ti.Slice(pos + 2), 4);
+                        break;
+                    }
+                    pos += 4 + len;
+                }
+                return copy;
+            }) };
+        }
+
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(UseManagedNtlm))]
+        [MemberData(nameof(MalformedChallengeBlobs))]
+        public void NtlmMalformedChallenge_ReturnsInvalidToken(string scenario, Func<byte[], byte[]> corruptor)
+        {
+            _ = scenario;
+
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                });
+
+            NegotiateAuthenticationStatusCode statusCode;
+            byte[]? negotiateBlob = ntAuth.GetOutgoingBlob((byte[])null, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            Assert.NotNull(negotiateBlob);
+
+            byte[]? challengeBlob = fakeNtlmServer.GetOutgoingBlob(negotiateBlob);
+            Assert.NotNull(challengeBlob);
+
+            byte[] malformed = corruptor(challengeBlob);
+
+            byte[]? response = ntAuth.GetOutgoingBlob(malformed, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.InvalidToken, statusCode);
+            Assert.Null(response);
         }
     }
 }

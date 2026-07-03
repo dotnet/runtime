@@ -5,12 +5,14 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ModulesSectionNode : ObjectNode, ISymbolDefinitionNode
+    public class ModulesSectionNode : ObjectNode, ISymbolDefinitionNode, IUniqueSymbolNode
     {
         // Each compilation unit produces one module. When all compilation units are linked
         // together in multifile mode, the runtime needs to get list of modules present
         // in the final binary. This list is created via a special .modules section that
         // contains list of pointers to all module headers.
+        //
+        // These intentionally clash with one another, but are merged with linker directives so should not be COMDAT folded
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {

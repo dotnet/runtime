@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     string arch = otherArchs[i];
 
                     // Create a .NET install with Microsoft.NETCoreApp at the registered location
-                    var dotnet = new DotNetBuilder(otherArchArtifact.Location, TestContext.BuiltDotNet.BinPath, arch)
+                    var dotnet = new DotNetBuilder(otherArchArtifact.Location, HostTestContext.BuiltDotNet.BinPath, arch)
                         .AddMicrosoftNETCoreAppFrameworkMockHostPolicy(requestedVersion)
                         .Build();
                     installLocations[i] = (arch, dotnet.BinPath);
@@ -93,7 +93,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 // Error message should list framework found for other architectures
                 foreach ((string arch, string path) in installLocations)
                 {
-                    if (arch == TestContext.BuildArchitecture)
+                    if (arch == HostTestContext.BuildArchitecture)
                         continue;
 
                     string expectedPath = System.Text.RegularExpressions.Regex.Escape(Path.Combine(path, "shared", MicrosoftNETCoreApp));
@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                                   {value} at [{SharedState.InstalledDotNet.SharedFxPath}]
                                     Disabled via {Constants.DisableRuntimeVersions.EnvironmentVariable} environment variable
                                 """);
-                                
+
                         }
                     }
                 }

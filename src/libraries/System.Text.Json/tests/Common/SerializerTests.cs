@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -196,7 +197,8 @@ namespace System.Text.Json.Serialization.Tests
             if (contexts.HasFlag(SerializedValueContext.JsonNode))
             {
                 const string key = "key";
-                var jsonObject = new JsonObject { [key] = JsonValue.Create<TValue>(value) };
+                JsonTypeInfo<TValue> typeInfo = Serializer.GetTypeInfo<TValue>(options);
+                var jsonObject = new JsonObject { [key] = JsonValue.Create(value, typeInfo) };
 
                 if (expectedExceptionType != null)
                 {
@@ -247,7 +249,7 @@ namespace System.Text.Json.Serialization.Tests
             string wrappedJson;
             equalityComparer ??= expectedValue is IEquatable<TValue>
                 ? EqualityComparer<TValue>.Default
-                : new JsonEqualityComparer<TValue>();
+                : new JsonEqualityComparer<TValue>(Serializer.GetTypeInfo<TValue>(options));
 
             if (contexts.HasFlag(SerializedValueContext.RootValue))
             {
@@ -328,13 +330,15 @@ namespace System.Text.Json.Serialization.Tests
                         async () =>
                         {
                             JsonNode jsonNode = await Serializer.DeserializeWrapper<JsonNode>(wrappedJson, options);
-                            JsonSerializer.Deserialize<TValue>(jsonNode[key], options);
+                            JsonTypeInfo<TValue> typeInfo = Serializer.GetTypeInfo<TValue>(options);
+                            JsonSerializer.Deserialize(jsonNode[key], typeInfo);
                         });
                 }
                 else
                 {
                     JsonNode jsonNode = await Serializer.DeserializeWrapper<JsonNode>(wrappedJson, options);
-                    TValue value = JsonSerializer.Deserialize<TValue>(jsonNode[key], options);
+                    JsonTypeInfo<TValue> typeInfo = Serializer.GetTypeInfo<TValue>(options);
+                    TValue value = JsonSerializer.Deserialize(jsonNode[key], typeInfo);
                     Assert.Equal(expectedValue, value, equalityComparer);
                 }
             }
@@ -357,15 +361,44 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextDeserialization<List<TValue>>(json, expectedValues, expectedExceptionType: null, contexts, options, listEqualityComparer);
         }
 
-        private class GenericPoco<T>
+        internal class GenericPoco<T>
         {
             public T Property { get; set; }
         }
 
+        // Creates a trim/AOT-safe equality comparer that compares values by serializing them
+        // using the resolved (polymorphism-aware) JsonTypeInfo and comparing the resulting JSON.
+        // Values of differing runtime types are never considered equal, preserving the behavior of
+        // the reflection-based structural comparer this replaced (so that, for example, a nearest-
+        // ancestor fallback regression cannot slip through when a derived type happens to serialize
+        // identically under its base contract).
+        protected IEqualityComparer<T> CreateJsonEqualityComparer<T>(JsonSerializerOptions? options = null)
+            => new JsonEqualityComparer<T>(Serializer.GetTypeInfo<T>(options), compareRuntimeType: true);
+
         private class JsonEqualityComparer<TValue> : IEqualityComparer<TValue>
         {
-            public bool Equals(TValue? x, TValue? y) => JsonSerializer.Serialize(x) == JsonSerializer.Serialize(y);
-            public int GetHashCode([DisallowNull] TValue obj) => JsonSerializer.Serialize(obj).GetHashCode();
+            private readonly JsonTypeInfo<TValue> _jsonTypeInfo;
+            private readonly bool _compareRuntimeType;
+
+            public JsonEqualityComparer(JsonTypeInfo<TValue> jsonTypeInfo, bool compareRuntimeType = false)
+            {
+                _jsonTypeInfo = jsonTypeInfo;
+                _compareRuntimeType = compareRuntimeType;
+            }
+
+            public bool Equals(TValue? x, TValue? y)
+            {
+                // Object.GetType() is trim/AOT-safe and lets us reject differing runtime types before
+                // falling back to structural (serialized JSON) comparison.
+                if (_compareRuntimeType && x is not null && y is not null && x.GetType() != y.GetType())
+                {
+                    return false;
+                }
+
+                return JsonSerializer.Serialize(x, _jsonTypeInfo) == JsonSerializer.Serialize(y, _jsonTypeInfo);
+            }
+
+            public int GetHashCode([DisallowNull] TValue obj) => JsonSerializer.Serialize(obj, _jsonTypeInfo).GetHashCode();
         }
 
         private class ListAssertionEqualityComparer<TValue> : IEqualityComparer<IList<TValue>>

@@ -696,8 +696,8 @@ public:
 
 #ifdef TARGET_AMD64
         // Handle jump stubs
-        if (isJumpRel64(target)) {
-            target = decodeJump64(target);
+        if (isBackToBackJump(target)) {
+            target = decodeBackToBackJump(target);
             if (target == addr)
                 return TRUE;
         }
@@ -863,5 +863,7 @@ extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
 #endif
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+TADDR GetInterpreterCodeFromEntryPointIfPresent(TADDR entryPoint);
 
 #endif // __PRECODE_H__

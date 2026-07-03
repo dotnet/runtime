@@ -16,9 +16,7 @@
 #include "COMToClrCall.h"
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif // FEATURE_EH_FUNCLETS
 
 // Get a frame pointer from a RegDisplay.
 // This is mostly used for chains and stub frames (i.e. internal frames), where we don't need an exact
@@ -99,19 +97,14 @@ struct DebuggerFrameData
         this->fHitExitFrame = false;
 
         this->info.eStubFrameType = STUBFRAME_NONE;
-        this->info.quickUnwind = false;
 
         this->info.frame     = NULL;
         this->needParentInfo = false;
 
-#ifdef FEATURE_EH_FUNCLETS
         this->fpParent        = LEAF_MOST_FRAME;
         this->info.fIsLeaf    = true;
         this->info.fIsFunclet = false;
         this->info.fIsFilter  = false;
-#endif // FEATURE_EH_FUNCLETS
-
-        this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
 
 #if defined(_DEBUG)
         this->previousFP = LEAF_MOST_FRAME;
@@ -129,10 +122,9 @@ struct DebuggerFrameData
     REGDISPLAY              regDisplay;
 
 
-#ifdef FEATURE_EH_FUNCLETS
     // This is used to skip funclets in a stackwalk.  It marks the frame pointer to which we should skip.
     FramePointer            fpParent;
-#endif // FEATURE_EH_FUNCLETS
+
 #if defined(_DEBUG)
     // For debugging, track the previous FramePointer so we can assert that we're
     // making progress through the stack.
@@ -660,7 +652,6 @@ void FrameInfo::InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc)
     CopyREGDISPLAY(&(this->registers), pRDSrc);
     this->fp = fpRoot;
 
-    this->quickUnwind = false;
     this->internal = false;
     this->managed = false;
 
@@ -697,7 +688,6 @@ void FrameInfo::InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc)
 
 void FrameInfo::InitForScratchFrameInfo()
 {
-#ifdef FEATURE_EH_FUNCLETS
     // The following flags cannot be trashed when we are calling this function on the curret FrameInfo
     // (the one we keep track of across multiple stackwalker callbacks).  Thus, make sure you do not call
     // this function from InitForDynamicMethod().  In all other cases, we can call this method after we
@@ -705,7 +695,6 @@ void FrameInfo::InitForScratchFrameInfo()
     this->fIsLeaf    = false;
     this->fIsFunclet = false;
     this->fIsFilter  = false;
-#endif // FEATURE_EH_FUNCLETS
 }
 
 
@@ -759,7 +748,6 @@ void FrameInfo::InitFromStubHelper(
         this->fp = GetSP(pRDSrc);
     }
 
-    this->quickUnwind = false;
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
@@ -808,45 +796,10 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
 void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 {
     _ASSERTE(pCF != NULL);
-    MethodDesc * pMDHint = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    Frame * pFrame = pCF->GetFrame();
-    _ASSERTE(pFrame != NULL);
-
-
-    // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to
-    // be the next frame.
-    // If we're a COM2CLR call, perhaps we can get the MD for the interface.
-    if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
-    {
-        ComMethodFrame* pCOMFrame = dac_cast<PTR_ComMethodFrame> (pFrame);
-        ComCallMethodDesc* pCMD = reinterpret_cast<ComCallMethodDesc *> (pCOMFrame->ComMethodFrame::GetDatum());
-        pMDHint = pCMD->GetInterfaceMethodDesc();
-
-        // Some COM-interop cases don't have an intermediate interface method desc, so
-        // pMDHint may be null.
-    }
-#endif
-
-    InitFromStubHelper(pCF, pMDHint, STUBFRAME_U2M);
+    InitFromStubHelper(pCF, NULL, STUBFRAME_U2M);
     InitForScratchFrameInfo();
 }
-
-//-----------------------------------------------------------------------------
-// Init for an AD transition
-//-----------------------------------------------------------------------------
-void FrameInfo::InitForADTransition(CrawlFrame * pCF)
-{
-    Frame * pFrame;
-    pFrame = pCF->GetFrame();
-    _ASSERTE(pFrame->GetTransitionType() == Frame::TT_AppDomain);
-    MethodDesc * pMDWrapper = NULL;
-
-    InitFromStubHelper(pCF, pMDWrapper, STUBFRAME_APPDOMAIN_TRANSITION);
-    InitForScratchFrameInfo();
-}
-
 
 //-----------------------------------------------------------------------------
 // Init frame for a dynamic method.
@@ -890,7 +843,6 @@ void FrameInfo::InitForThreadStart(Thread * pThread, REGDISPLAY * pRDSrc)
     this->md = NULL;
     CopyREGDISPLAY(&(this->registers), pRDSrc);
     this->fp    = FramePointer::MakeFramePointer(pThread->GetCachedStackBase());
-    this->quickUnwind = false;
     this->internal = false;
     this->managed     = false;
     this->relOffset   = 0;
@@ -933,7 +885,6 @@ void FrameInfo::InitForEnterManagedChain(FramePointer fpRoot)
     memset((void *)&this->registers, 0, sizeof(this->registers));
     this->fp = fpRoot;
 
-    this->quickUnwind = true;
     this->internal    = false;
     this->managed     = true;
     this->relOffset   = 0;
@@ -999,7 +950,7 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         // Sometimes we may not want to show an UM chain b/c we know it's just
         // code inside of mscorwks. (Eg: Funcevals & AD transitions both fall into this category).
         // These are perfectly valid UM chains and we could give them if we wanted to.
-        if ((t == Frame::TT_AppDomain) || (ft == Frame::TYPE_FUNC_EVAL))
+        if (ft == Frame::TYPE_FUNC_EVAL)
         {
             d->CancelUMChain();
             return SWA_CONTINUE;
@@ -1192,22 +1143,6 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
         f.InitForUMChain(fpRoot, d->GetUMChainStartRD());
 
-#ifdef FEATURE_COMINTEROP
-        if ((frame != NULL) &&
-            (frame->GetFrameIdentifier() == FrameIdentifier::CLRToCOMMethodFrame))
-        {
-            // This condition is part of the fix for 650903. (See
-            // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
-            // for the other parts.) Here, we know that the frame we're looking it may be
-            // a CLRToCOMMethodFrameGeneric (this info is not otherwise plubmed down into
-            // the walker; even though the walker does get to see "f.frame", that may not
-            // be "frame"). Given this, if the walker chooses to ignore these frames
-            // (while doing a Step Out during managed-only debugging), then it can ignore
-            // this frame.
-            f.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = true;
-        }
-#endif // FEATURE_COMINTEROP
-
         if (d->InvokeCallback(&f) == SWA_ABORT)
         {
             // don't need to cancel if they abort.
@@ -1306,8 +1241,6 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
     return fpResult;
 }
 
-
-#ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
 // This function is called to determine if we should start skipping funclets.  If we should, then we return the
@@ -1361,7 +1294,6 @@ inline FramePointer CheckForParentFP(FramePointer fpCurrentParentMarker, CrawlFr
         return fpCurrentParentMarker;
     }
 }
-#endif // FEATURE_EH_FUNCLETS
 
 
 //-----------------------------------------------------------------------------
@@ -1391,7 +1323,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
     if (pCF->IsNativeMarker())
     {
-#ifdef FEATURE_EH_FUNCLETS
         // The tricky part here is that we want to skip all frames between a funclet method frame
         // and the parent method frame UNLESS the funclet is a filter.  Moreover, we should never
         // let a native marker execute the rest of this method, so we just short-circuit it here.
@@ -1399,7 +1330,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
             return SWA_CONTINUE;
         }
-#endif // FEATURE_EH_FUNCLETS
 
         // This REGDISPLAY is for the native method immediately following the managed method for which
         // we have received the previous callback, i.e. the native caller of the last managed method
@@ -1461,14 +1391,11 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
     } // if (d->needParentInfo)
 
-
-#ifdef FEATURE_EH_FUNCLETS
     // The tricky part here is that we want to skip all frames between a funclet method frame
     // and the parent method frame UNLESS the funclet is a filter.  We only have to check for fpParent
     // here (instead of checking d->info.fIsFunclet and d->info.fIsFilter as well, as in the beginning of
     // this method) is because at this point, fpParent is already set by the code above.
     if (d->fpParent == LEAF_MOST_FRAME)
-#endif // FEATURE_EH_FUNCLETS
     {
         // Track the UM chain after we flush any managed goo from the last iteration.
         if (TrackUMChain(pCF, d) == SWA_ABORT)
@@ -1489,7 +1416,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     // register display we passed in - assert it to be sure
     _ASSERTE(pCF->GetRegisterSet() == &d->regDisplay);
 
-#ifdef FEATURE_EH_FUNCLETS
     Frame* pPrevFrame = d->info.frame;
 
     // Here we need to determine if we are in a non-leaf frame, in which case we want to adjust the relative offset.
@@ -1538,8 +1464,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
     }
 
-#endif // FEATURE_EH_FUNCLETS
-
     d->info.frame = frame;
     d->info.ambientSP = (TADDR)NULL;
 
@@ -1550,7 +1474,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     //  Grab all the info from CrawlFrame that we need to
     //  check for "Am I in an exception code blob?" now.
 
-#ifdef FEATURE_EH_FUNCLETS
     // We are still searching for the parent of the last funclet we encounter.
     if (d->fpParent != LEAF_MOST_FRAME)
     {
@@ -1558,7 +1481,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping to parent method frame at 0x%p.\n", d->fpParent.GetSPValue()));
     }
     else
-#endif // FEATURE_EH_FUNCLETS
     // We ignore most IL stubs with no frames in our stackwalking. As exceptions
     // we will always report multicast stubs and the tailcall call target stubs
     // since we treat them specially in the debugger.
@@ -1578,6 +1500,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
             LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless IL stub.\n"));
         }
+    }
+    else
+    // We ignore PInvoke methods with inlined stubs in our stackwalking.
+    // These are similar to IL stubs but use PInvokeMethodDesc instead of DynamicMethodDesc.
+    if ((md != NULL) && md->IsPInvoke() && pCF->IsFrameless())
+    {
+        LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless PInvoke stub.\n"));
     }
     else
     // For frames w/o method data, send them as an internal stub frame.
@@ -1715,6 +1644,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             {
                 use = false;
             }
+#ifdef FEATURE_INTERPRETER
+            // Avoid treating interpreter frame as a managed frame
+            else if (frame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                use = false;
+            }
+#endif // FEATURE_INTERPRETER
             else
             {
                 d->info.managed = true;
@@ -1772,14 +1708,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             f.InitForU2MInternalFrame(pCF);
             fUse = true;
         }
-        else if (t == Frame::TT_AppDomain)
-        {
-            // Internal frame for an Appdomain transition.
-            // We used to ignore frames for ADs which we hadn't sent a Create event for yet.  In V3 we send AppDomain
-            // create events immediately (before any assemblies are loaded), so this should no longer be an issue.
-            f.InitForADTransition(pCF);
-            fUse = true;
-        }
 
         // Frame's setup. Now invoke the callback.
         if (fUse)
@@ -1825,9 +1753,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Setting needParentInfo\n"));
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     d->fpParent = CheckForParentFP(d->fpParent, pCF, d->info.IsNonFilterFuncletFrame());
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // The stackwalker doesn't update the register set for the
@@ -1888,7 +1814,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // - at a managed-only stop, preemptive threads are still live. Thus a thread
     // may not have this state set, run a little, try to enter the GC, and then get
     // this state set. Thus we'll lose the UM chain right out from under our noses.
-    Thread::ThreadState ts = pThread->GetSnapshotState();
+    Thread::ThreadState ts = pThread->GetState();
     if ((ts & Thread::TS_SyncSuspended) != 0)
     {
         // If we've been stopped inside the runtime (eg, at a gc-toggle) but
@@ -2070,13 +1996,6 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
 #endif
             memset((void *)&data, 0, sizeof(data));
 
-#if !defined(FEATURE_EH_FUNCLETS)
-            // @todo - this seems pointless. context->Eip will be 0; and when we copy it over to the DebuggerRD,
-            // the context will be completely null.
-            data.regDisplay.ControlPC = context->Eip;
-            data.regDisplay.PCTAddr = (TADDR)&(context->Eip);
-
-#else
             //
             // @TODO: this should be the code for all platforms now that it uses FillRegDisplay,
             // which encapsulates the platform variances.  This could all be avoided if we used
@@ -2087,7 +2006,6 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
             FillRegDisplay(&data.regDisplay, context);
 
             ::SetSP(data.regDisplay.pCallerContext, 0);
-#endif
     }
 
     data.Init(thread, targetFP, fIgnoreNonmethodFrames, pCallback, pData);

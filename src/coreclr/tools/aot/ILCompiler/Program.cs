@@ -104,11 +104,11 @@ namespace ILCompiler
             // directly encoded as part of the required ISAs.
             bool isVectorTOptimistic = false;
 
-            TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
-            TargetOS targetOS = Get(_command.TargetOS);
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
-                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,
                 isReadyToRun: false);
 
             string systemModuleName = Get(_command.SystemModuleName);
@@ -122,37 +122,13 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetAbi = ILCompilerRootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
                     genericCycleBreadthCutoff: Get(_command.MaxGenericCycleBreadth));
 
-            //
-            // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
-            // some tests contain a mixture of both managed and native binaries.
-            //
-            // See: https://github.com/dotnet/corert/issues/2785
-            //
-            // When we undo this hack, replace the foreach with
-            //  typeSystemContext.InputFilePaths = _command.Result.GetValueForArgument(inputFilePaths);
-            //
-            Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
-            foreach (var inputFile in _command.Result.GetValue(_command.InputFilePaths))
-            {
-                try
-                {
-                    var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                    inputFilePaths.Add(inputFile.Key, inputFile.Value);
-                }
-                catch (TypeSystemException.BadImageFormatException)
-                {
-                    // Keep calm and carry on.
-                }
-            }
-
-            typeSystemContext.InputFilePaths = inputFilePaths;
+            typeSystemContext.InputFilePaths = _command.Result.GetValue(_command.InputFilePaths);
             typeSystemContext.ReferenceFilePaths = Get(_command.ReferenceFiles);
             if (!typeSystemContext.InputFilePaths.ContainsKey(systemModuleName)
                 && !typeSystemContext.ReferenceFilePaths.ContainsKey(systemModuleName))
@@ -202,7 +178,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
                 }
             }
             else
@@ -263,7 +239,24 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    if (SplitExeInitialization)
+
+                    string[] aggregateExeModules = Get(_command.AggregateExeLibrary);
+                    if (aggregateExeModules.Length > 0)
+                    {
+                        foreach (string specifier in aggregateExeModules)
+                        {
+                            int separatorIndex = specifier.IndexOf('=');
+                            if (separatorIndex < 0)
+                                throw new CommandLineException($"Invalid format for --aggregateexe: '{specifier}'. Missing '=' separator between assemblyName and MainEntryPointName. Expected format: assemblyName=MainEntryPointName.");
+
+                            if (separatorIndex == 0 || separatorIndex != specifier.LastIndexOf('=') || separatorIndex == specifier.Length - 1)
+                                throw new CommandLineException($"Invalid format for --aggregateexe: '{specifier}'. Expected format: assemblyName=MainEntryPointName with non-empty assemblyName and MainEntryPointName.");
+
+                            EcmaModule module = typeSystemContext.GetModuleForSimpleName(specifier.Substring(0, separatorIndex));
+                            compilationRoots.Add(new MainMethodRootProvider(module, null, generateLibraryAndModuleInitializers: false, specifier.Substring(separatorIndex + 1)));
+                        }
+                    }
+                    else if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
                     }
@@ -279,6 +272,8 @@ namespace ILCompiler
                         compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     }
                 }
+
+                compilationRoots.Add(new ManagedDataDescriptorProvider());
 
                 string win32resourcesModule = Get(_command.Win32ResourceModuleName);
                 if (typeSystemContext.Target.IsWindows && !string.IsNullOrEmpty(win32resourcesModule))
@@ -314,9 +309,17 @@ namespace ILCompiler
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
 
-                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                // Get TypeMappingEntryAssembly from command-line option if specified
+                string typeMappingEntryAssembly = Get(_command.TypeMapEntryAssembly);
+                if (typeMappingEntryAssembly is not null)
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
+                    var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
+                }
+                else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                {
+                    // Fall back to entryassembly if not specified
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
                 }
             }
 
@@ -412,8 +415,16 @@ namespace ILCompiler
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
-            var stackTracePolicy = Get(_command.EmitStackTraceData) ?
-                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
+            (bool emitStackTraceData, bool stackTraceLineNumbers) = Get(_command.StackTraceData) switch
+            {
+                null or "none" => (false, false),
+                "frames" => (true, false),
+                "lines" => (true, true),
+                _ => throw new CommandLineException($"Unknown stack trace data: {Get(_command.StackTraceData)}"),
+            };
+
+            var stackTracePolicy = emitStackTraceData ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers) : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy;
             ManifestResourceBlockingPolicy resBlockingPolicy;
@@ -638,7 +649,9 @@ namespace ILCompiler
             if (sourceLinkFileName != null)
                 dumpers.Add(new SourceLinkWriter(sourceLinkFileName));
 
-            CompilationResults compilationResults = compilation.Compile(outputFilePath, ObjectDumper.Compose(dumpers));
+            // Write to a temporary file and rename on success to avoid leaving partial files on failure
+            string tempOutputFilePath = outputFilePath + ".tmp";
+            CompilationResults compilationResults = compilation.Compile(tempOutputFilePath, ObjectDumper.Compose(dumpers));
             string exportsFile = Get(_command.ExportsFile);
             if (exportsFile != null)
             {
@@ -649,7 +662,7 @@ namespace ILCompiler
                     foreach (var compilationRoot in compilationRoots)
                     {
                         if (compilationRoot is UnmanagedEntryPointsRootProvider provider && !provider.Hidden)
-                            defFileWriter.AddExportedMethods(provider.ExportedMethods);
+                            defFileWriter.AddExportedMethods(provider.ExportedMethods, compilationResults);
                     }
                 }
 
@@ -712,6 +725,26 @@ namespace ILCompiler
                 ((IDisposable)debugInfoProvider).Dispose();
 
             preinitManager.LogStatistics(logger);
+
+            // If errors were produced (including warnings treated as errors), delete the temporary file
+            // and return error code to avoid misleading build systems into thinking the compilation succeeded.
+            if (logger.HasLoggedErrors)
+            {
+                try
+                {
+                    File.Delete(tempOutputFilePath);
+                }
+                catch
+                {
+                    // If we can't delete the temp file, there's not much we can do.
+                    // The compilation will still fail due to logged errors.
+                }
+
+                return 1;
+            }
+
+            // Rename the temporary file to the final output file
+            File.Move(tempOutputFilePath, outputFilePath, overwrite: true);
 
             return 0;
         }

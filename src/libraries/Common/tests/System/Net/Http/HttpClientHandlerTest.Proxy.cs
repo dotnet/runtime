@@ -27,6 +27,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI HttpHandler does not support proxy")]
         public async Task Dispose_HandlerWithProxy_ProxyNotDisposed()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -56,7 +57,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.False(proxy.Disposed);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(AuthenticationSchemes.Ntlm, true, false)]
@@ -116,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
         public static bool IsSocketsHttpHandlerAndRemoteExecutorSupported => !HttpClientHandlerTestBase.IsWinHttpHandler && RemoteExecutor.IsSupported;
 
         [OuterLoop("Uses external servers")]
-        [ConditionalFact(nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(HttpClientHandler_Proxy_Test), nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
         public async Task Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
             await RemoteExecutor.Invoke(async (useVersionString) =>
@@ -309,7 +309,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(HttpClientHandlerTestBase.IsWinHttpHandler))]
+        [ConditionalFact(typeof(HttpClientHandler_Proxy_Test), nameof(HttpClientHandlerTestBase.IsWinHttpHandler))]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -656,6 +656,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI HttpHandler does not support proxy")]
         public async Task ProxyTunnelRequest_UserAgentHeaderAdded(bool addUserAgentHeader)
         {
             if (IsWinHttpHandler)

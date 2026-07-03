@@ -4,7 +4,7 @@
 #include "ijwhost.h"
 #include <coreclr_delegates.h>
 #include <hostfxr.h>
-#include <fxr_resolver.h>
+#include <load_fxr_and_get_delegate.h>
 #include <pal.h>
 #include <trace.h>
 #include <error_codes.h>

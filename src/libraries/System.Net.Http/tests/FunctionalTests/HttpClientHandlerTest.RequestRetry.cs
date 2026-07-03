@@ -142,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     // Shut down the listen socket so no additional connections can happen
-                    server.ListenSocket.Close();
+                    await server.ListenSocket.CloseAsync();
 
                     // Initial response
                     await connection.ReadRequestHeaderAndSendResponseAsync(content: SimpleContent);

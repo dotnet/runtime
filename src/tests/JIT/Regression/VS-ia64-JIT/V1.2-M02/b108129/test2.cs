@@ -20,6 +20,7 @@ namespace JitTest.HFA
         [DllImport("test2", EntryPoint = "GetDoubleConst")]
         public static extern double GetDoubleConst();
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

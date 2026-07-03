@@ -7,8 +7,8 @@
 #define PERFPID_H
 
 #include "sstring.h"
-#include "fstream.h"
 #include "volatile.h"
+#include <stdio.h>
 
 // Generates a perfmap file.
 
@@ -19,10 +19,59 @@ enum class PerfMapStubType
     Individual
 };
 
+#ifndef FEATURE_PERFMAP
+
+class PerfMap
+{
+public:
+    static bool IsEnabled()
+    {
+#ifdef DEBUG
+        return true;
+#else
+        return false;
+#endif
+    }
+    static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+    }
+
+    static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+    }
+
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
+    {
+        CONTRACTL
+        {
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+    }
+};
+
+#else // FEATURE_PERFMAP
+
 class PerfMap
 {
 private:
     static Volatile<bool> s_enabled;
+
+    // Set to true after all dependencies (AppDomain, ExecutionManager) are initialized.
+    static Volatile<bool> s_dependenciesReady;
 
     // The one and only PerfMap for the process.
     static PerfMap * s_Current;
@@ -33,6 +82,7 @@ private:
     // Indicate current stub granularity rules
     static bool s_GroupStubsOfSameType;
     static bool s_IndividualAllocationStubReporting;
+    static bool s_LogStubs; // If false, do not log stubs at all
 
     // Set to true if an error is encountered when writing to the file.
     static unsigned s_StubsMapped;
@@ -40,7 +90,7 @@ private:
     static CrstStatic s_csPerfMap;
 
     // The file stream to write the map to.
-    CFileStream * m_FileStream;
+    FILE * m_fp;
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
@@ -98,12 +148,21 @@ public:
     // Log a pre-compiled method to the map.
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode);
 
+#ifdef FEATURE_INTERPRETER
+    // Log an interpreter IR bytecode range to the perfmap
+    static void LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize);
+#endif
+
     // Log a set of stub to the map.
     static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType);
 
     // Close the map and flush any remaining data.
     static void Disable();
 
+    // Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+    static void SignalDependenciesReady();
+
     static bool LowGranularityStubs() { return !s_IndividualAllocationStubReporting; }
 };
+#endif // FEATURE_PERFMAP
 #endif // PERFPID_H

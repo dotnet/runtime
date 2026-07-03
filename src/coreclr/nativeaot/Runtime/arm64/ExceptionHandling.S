@@ -253,6 +253,23 @@
     NESTED_END RhpThrowHwEx, _TEXT
 
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  X0:  exception object
+//
+// OUTPUT:
+//
+
+    LEAF_ENTRY RhpThrowExact, _TEXT
+
+        mov         w4, #4                                          // w4 = ExKind.RethrowFlag
+        b           C_FUNC(RhpThrowImpl)
+
+    LEAF_END RhpThrowExact, _TEXT
+
+//
 // RhpThrowEx
 //
 // INPUT:  X0:  exception object
@@ -260,9 +277,17 @@
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+    LEAF_ENTRY RhpThrowEx, _TEXT
+
+        mov         w4, #1                                          // w4 = ExKind.Throw
+        b           C_FUNC(RhpThrowImpl)
+
+    LEAF_END RhpThrowEx, _TEXT
+
+    NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
+        mov         x19, x4                                         // Save ExKind
 
         GetThreadX2
 
@@ -316,8 +341,7 @@ LOCAL_LABEL(NotHijacked):
         strb        w3, [x1, #OFFSETOF__ExInfo__m_passNumber]       // pExInfo->m_passNumber = 1
         mov         w3, #0xFFFFFFFF
         str         w3, [x1, #OFFSETOF__ExInfo__m_idxCurClause]     // pExInfo->m_idxCurClause = MaxTryRegionIdx
-        mov         w3, #1
-        strb        w3, [x1, #OFFSETOF__ExInfo__m_kind]             // pExInfo->m_kind = ExKind.Throw
+        strb        w19, [x1, #OFFSETOF__ExInfo__m_kind]            // pExInfo->m_kind = ExKind
 
         // link the ExInfo into the thread's ExInfo chain
         ldr         x3, [x2, #OFFSETOF__Thread__m_pExInfoStackHead]
@@ -332,12 +356,11 @@ LOCAL_LABEL(NotHijacked):
         // x1: ExInfo*
         bl          C_FUNC(RhThrowEx)
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY RhpThrowImpl2
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowEx, _TEXT
-
+    NESTED_END RhpThrowImpl, _TEXT
 
 //
 // void FASTCALL RhpRethrow()

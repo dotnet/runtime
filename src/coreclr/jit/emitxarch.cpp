@@ -128,6 +128,7 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
         {
             return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
                    (IsAVXVNNIFamilyInstruction(ins)) ||
+                   ((ins >= FIRST_AVX512BMM_INSTRUCTION) && (ins <= LAST_AVX512BMM_INSTRUCTION)) ||
                    ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
         }
     }
@@ -326,7 +327,7 @@ bool emitter::IsVexEncodableInstruction(instruction ins) const
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXVNNI);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVXVNNI);
         }
 
         case INS_vpdpwsud:
@@ -343,13 +344,13 @@ bool emitter::IsVexEncodableInstruction(instruction ins) const
         case INS_vpdpbuuds:
         {
             // Vex versions of AvxVnniInt8 + AvxVnniInt16
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT);
         }
 
         case INS_vpmadd52huq:
         case INS_vpmadd52luq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXIFMA);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVXIFMA);
         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -395,7 +396,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_aesenclast:
         case INS_pclmulqdq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AES_V512);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AES_V512);
         }
 
         case INS_vpdpwsud:
@@ -412,7 +413,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpdpbuuds:
         {
             // Evex versions of AvxVnniInt8 + AvxVnniInt16 will be supported
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
         }
 
         case INS_vpdpbusd:
@@ -420,13 +421,13 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512v3);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVX512v3);
         }
 
         case INS_vpmadd52huq:
         case INS_vpmadd52luq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512v2);
+            return m_compiler->compSupportsHWIntrinsic(InstructionSet_AVX512v2);
         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -666,6 +667,18 @@ bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
 
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
+}
+
+// Returns true if the AVX instruction has op1/op2 being commutative
+bool emitter::IsAvxCommutative(instruction ins) const
+{
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_IsAvxCommutative) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -941,60 +954,139 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
 #endif
 }
 
+inline bool emitter::IsApxConditionalInstruction(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return (IsCCMP(ins) || IsCFCMOV(ins) || IsCTEST(ins));
+#else
+    return false;
+#endif
+}
+
 inline bool emitter::IsCCMP(instruction ins)
 {
+#ifdef TARGET_AMD64
     return (ins >= FIRST_CCMP_INSTRUCTION && ins <= LAST_CCMP_INSTRUCTION);
+#else
+    return false;
+#endif
+}
+
+inline bool emitter::IsCTEST(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return (ins >= FIRST_CTEST_INSTRUCTION && ins <= LAST_CTEST_INSTRUCTION);
+#else
+    return false;
+#endif
+}
+
+inline bool emitter::IsCFCMOV(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return (ins >= FIRST_CFCMOV_INSTRUCTION && ins <= LAST_CFCMOV_INSTRUCTION);
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
-// GetCCFromCCMP: Get a condition code from a ccmp instruction
+// ImmCanUseSByteEncoding: Returns true if `val` fits in a sign-extended byte
+//     AND `ins` supports the imm8s (sign-extended-byte) immediate encoding.
+//
+// Arguments:
+//    ins - The instruction being encoded.
+//    val - The immediate value.
+//
+// Returns:
+//    True when the x86 imm8s short-immediate form is legal: the value can be
+//    sign-extended from one byte and the instruction does not unconditionally
+//    require a full-width immediate.  MOV, TEST, and CTEST never use imm8s
+//    regardless of the value.
+//
+// Notes:
+//    Callers must additionally suppress the result when the immediate carries
+//    a relocation (relocs cannot be placed in a single byte).
+//
+/* static */ bool emitter::ImmCanUseSByteEncoding(instruction ins, ssize_t val)
+{
+    target_ssize_t targetVal = (target_ssize_t)val;
+
+    if (targetVal != val)
+    {
+        return false;
+    }
+    // MOV, TEST, and CTEST do not have SByte encoding form.
+    return ((signed char)targetVal == targetVal) && (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+}
+
+//------------------------------------------------------------------------
+// GetCCFromCCMPOrCTEST: Get a condition code from a conditional instruction
 //
 // Arguments:
 //    ins - The instruction to check.
 //
 // Returns:
-//    `insCC` representing the condition code for a ccmp instruction.
-//    ccmpx instructions share the same instruction encoding unlike
+//    `insCC` representing the condition code for a ccmp / ctest instruction.
+//    ccmpcc / ctestcc instructions share the same instruction encoding unlike
 //    other x86 status bit instructions and instead have a CC coded into
 //    the EVEX prefix.
 //
-inline insCC emitter::GetCCFromCCMP(instruction ins)
+inline insCC emitter::GetCCFromCCMPOrCTEST(instruction ins)
 {
-    assert(IsCCMP(ins));
+    assert(IsCTEST(ins) || IsCCMP(ins));
     switch (ins)
     {
+#ifdef TARGET_AMD64
         case INS_ccmpo:
+        case INS_ctesto:
             return INS_CC_O;
         case INS_ccmpno:
+        case INS_ctestno:
             return INS_CC_NO;
         case INS_ccmpb:
+        case INS_ctestb:
             return INS_CC_B;
         case INS_ccmpae:
+        case INS_ctestae:
             return INS_CC_AE;
         case INS_ccmpe:
+        case INS_cteste:
             return INS_CC_E;
         case INS_ccmpne:
+        case INS_ctestne:
             return INS_CC_NE;
         case INS_ccmpbe:
+        case INS_ctestbe:
             return INS_CC_BE;
         case INS_ccmpa:
+        case INS_ctesta:
             return INS_CC_A;
         case INS_ccmps:
+        case INS_ctests:
             return INS_CC_S;
         case INS_ccmpns:
+        case INS_ctestns:
             return INS_CC_NS;
         case INS_ccmpt:
+        case INS_ctestt:
             return INS_CC_TRUE;
         case INS_ccmpf:
+        case INS_ctestf:
             return INS_CC_FALSE;
         case INS_ccmpl:
+        case INS_ctestl:
             return INS_CC_L;
         case INS_ccmpge:
+        case INS_ctestge:
             return INS_CC_GE;
         case INS_ccmple:
+        case INS_ctestle:
             return INS_CC_LE;
         case INS_ccmpg:
+        case INS_ctestg:
             return INS_CC_G;
+#endif
         default:
             unreached();
     }
@@ -1426,7 +1518,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
 {
     assert(reg != REG_NA);
 
-    if (!emitComp->opts.OptimizationEnabled())
+    if (!m_compiler->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -1494,7 +1586,7 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondi
 {
     assert(reg != REG_NA);
 
-    if (!emitComp->opts.OptimizationEnabled())
+    if (!m_compiler->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -1585,6 +1677,7 @@ bool emitter::Is4ByteSSEInstruction(instruction ins) const
     return !UseVEXEncoding() && EncodedBySSE38orSSE3A(ins);
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
 // isLowSIMDReg: Checks if a register is a register supported by any SIMD encoding
 //
@@ -1601,6 +1694,7 @@ static bool isLowSimdReg(regNumber reg)
     return (reg >= REG_XMM0) && (reg <= REG_XMM7);
 #endif
 }
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // GetEmbRoundingMode: Get the rounding mode for embedded rounding
@@ -1647,9 +1741,9 @@ void emitter::emitHandleGCrefRegs(BYTE* dst, instrDesc* id)
             if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == (int)REG_ARG_0)
             {
                 // We're relocating "this" in the prolog
-                assert(emitComp->lvaIsOriginalThisArg(0));
-                assert(emitComp->lvaTable[0].lvRegister);
-                assert(emitComp->lvaTable[0].GetRegNum() == reg1);
+                assert(m_compiler->lvaIsOriginalThisArg(0));
+                assert(m_compiler->lvaTable[0].lvRegister);
+                assert(m_compiler->lvaTable[0].GetRegNum() == reg1);
 
                 if (emitFullGCinfo)
                 {
@@ -1908,7 +2002,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     }
 
 #if defined(DEBUG)
-    if (emitComp->DoJitStressEvexEncoding())
+    if (m_compiler->DoJitStressEvexEncoding())
     {
         // Requires the EVEX encoding due to STRESS mode
         return true;
@@ -1986,7 +2080,7 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
     }
 
 #if defined(DEBUG)
-    if (emitComp->DoJitStressRex2Encoding())
+    if (m_compiler->DoJitStressRex2Encoding())
     {
         return true;
     }
@@ -2040,9 +2134,10 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     }
 
 #if defined(DEBUG)
-    if (emitComp->DoJitStressPromotedEvexEncoding())
+    if (m_compiler->DoJitStressPromotedEvexEncoding())
     {
-        return true;
+        // EVEX prefixed CMOV has different semantics from non-EVEX CMOV, so we should not promote CMOV in stress mode.
+        return !insIsCMOV(ins);
     }
 #endif // DEBUG
     if (IsApxOnlyInstruction(ins))
@@ -2136,7 +2231,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         if (!IsEvexEncodableInstruction(ins))
         {
-            // Legacy-promoted insutrcions are not labeled with Encoding_EVEX.
+            // Legacy-promoted instructions are not labeled with Encoding_EVEX.
             code |= MAP4_IN_BYTE_EVEX_PREFIX;
         }
 
@@ -2163,24 +2258,30 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= EXTENDED_EVEX_PP_BITS;
         }
 
-        if (instrIsExtendedReg3opImul(ins))
-        {
-            // EVEX.R3
-            code &= 0xFF7FFFFFFFFFFFFFULL;
-        }
 #ifdef TARGET_AMD64
-        if (IsCCMP(ins))
+        if (IsCCMP(ins) || IsCTEST(ins))
         {
+            // CCMP and CTEST have 2 special fields in the EVEX prefix:
+            // 1. Source condition code (SCC): EVEX.P3[3:0] — the instruction executes only when this condition is
+            // satisfied.
+            // 2. Default flags value (DFV): EVEX.P2[6:3] — the value written to EFLAGS when the SCC condition is not
+            // met.
+            //
+            // In the code_t packing (see DEFAULT_BYTE_EVEX_PREFIX), the EVEX prefix occupies bits [63:32],
+            // with P3 at bits [39:32] and P2 at bits [47:40]:
+            //   SCC (EVEX.P3[3:0]) -> code_t bits [35:32] -> shift left by 32
+            //   DFV (EVEX.P2[6:3]) -> code_t bits [46:43] -> shift left by 43
+            // The current mask clears code_t bits [42:32] before repopulating SCC and DFV below.
             code &= 0xFFFF87F0FFFFFFFF;
-            code |= ((size_t)id->idGetEvexDFV()) << 43;
-            code |= ((size_t)GetCCFromCCMP(ins)) << 32;
+            code |= ((size_t)GetCCFromCCMPOrCTEST(ins)) << 32; // SCC: EVEX.P3[3:0] = code_t[35:32]
+            code |= ((size_t)id->idGetEvexDFV()) << 43;        // DFV: EVEX.P2[6:3] = code_t[46:43]
         }
 #endif
 
         return code;
     }
 
-    // No APX-NDD instructions should reach code below.
+    // All APX-promoted-EVEX instructions should be handled above, no APX extended EVEX instruction should reach here.
     assert(!IsApxExtendedEvexInstruction(ins));
 
     if (attr == EA_32BYTE)
@@ -2285,7 +2386,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         default:
         {
 #ifdef TARGET_AMD64
-            if (IsCCMP(id->idIns())) // Special case for conditional ins such as CCMP, CCMOV
+            if (IsCCMP(id->idIns()) || IsCTEST(id->idIns()))
             {
                 break;
             }
@@ -2380,9 +2481,16 @@ emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
 {
     assert(IsRex2EncodableInstruction(ins));
 
+#ifdef TARGET_AMD64
+    if (ins >= INS_imul_08 && ins <= INS_imul_15)
+    {
+        // These instructions have a built-in REX prefix, so it needs to be zeroed out when adding the prefix.
+        code &= 0xFFFFFFFFULL;
+    }
+#endif
+
     // Note that there are cases that some register field might be filled before adding prefix,
     // So we don't check if the code has REX2 prefix already or not.
-
     code |= DEFAULT_2BYTE_REX2_PREFIX;
     if (IsLegacyMap1(code)) // 2-byte opcode on Map-1
     {
@@ -2621,7 +2729,7 @@ regNumber AbsRegNumber(regNumber reg)
 // Since XMM registers overlap with YMM registers, this routine
 // can also be used to know whether a YMM register if the
 // instruction in question is AVX.
-bool IsExtendedReg(regNumber reg)
+bool emitter::IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
     return ((reg >= REG_R8) && (reg <= REG_R31)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
@@ -2653,7 +2761,7 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
 }
 
 // Returns true if using this register, for the given EA_SIZE(attr), will require a REX.* prefix
-bool IsExtendedReg(regNumber reg, emitAttr attr)
+bool emitter::IsExtendedReg(regNumber reg, emitAttr attr)
 {
 #ifdef TARGET_AMD64
     // Not a register, so doesn't need a prefix
@@ -2994,9 +3102,9 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         if (sizePrefix == 0)
         {
             // no simd prefix for EVEX2 - AVX10.2 and above
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
-                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
-                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
+                   m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
+                   m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
         }
         else if (isPrefix(sizePrefix))
         {
@@ -3077,8 +3185,8 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //                          1. An escape byte 0F (For isa before AVX10.2)
         //                          2. A map number from 0 to 7 (For AVX10.2 and above)
         leadingBytes = check;
-        assert((leadingBytes == 0x0F) || ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
-                                           (emitComp->compIsaSupportedDebugOnly(InstructionSet_APX))) &&
+        assert((leadingBytes == 0x0F) || ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
+                                           (m_compiler->compIsaSupportedDebugOnly(InstructionSet_APX))) &&
                                           (leadingBytes >= 0x00) && (leadingBytes <= 0x07)));
 
         // Get rid of both sizePrefix and escape byte
@@ -3104,8 +3212,9 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
         assert(leadingBytes == 0x0F ||
-               (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 &&
-                leadingBytes <= 0x07) ||
+               ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
+                 m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM)) &&
+                leadingBytes >= 0x00 && leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
     }
@@ -3152,22 +3261,28 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x04:
         {
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_APX));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_APX));
             evexPrefix |= (0x04 << 16);
             break;
         }
 
         case 0x05:
         {
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
             evexPrefix |= (0x05 << 16);
+            break;
+        }
+
+        case 0x06:
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM));
+            evexPrefix |= (0x6 << 16);
             break;
         }
 
         case 0x01:
         case 0x02:
         case 0x03:
-        case 0x06:
         case 0x07:
         default:
         {
@@ -3218,8 +3333,8 @@ emitter::code_t emitter::emitExtractVexPrefix(instruction ins, code_t& code) con
         {
             // no simd prefix for Avx-Vnni-Int* ISAs subset of instructions
             // INS_vpdpbuud[,s], INS_vpdpwuud[,s]
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
-                   emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
+                   m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
         }
         else if (isPrefix(sizePrefix))
         {
@@ -5041,7 +5156,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code, int val
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -5158,7 +5273,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
     bool dspInByte;
     bool dspIsZero;
 
-    adr = emitComp->lvaFrameAddress(var, &EBPbased);
+    adr = m_compiler->lvaFrameAddress(var, &EBPbased);
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
 
     dspIsZero = (dsp == 0);
@@ -5255,7 +5370,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     assert(id->idIns() != INS_invalid);
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -5393,7 +5508,9 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                // kmov instructions reach this path with EA_8BYTE size, even on x86
                || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
-               || isPrefetch(ins));
+               || isPrefetch(ins)
+               // cmov instructions reach this path with EA_2BYTE
+               || insIsCMOV(ins));
 
         size = (attrSize == EA_2BYTE) && (ins == INS_cmpxchg) ? 4 : 3;
     }
@@ -5572,7 +5689,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
     assert(id->idIns() != INS_invalid);
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
     // We should never generate BT mem,reg because it has poor performance. BT mem,imm might be useful
     // but it requires special handling of the immediate value (it is always encoded in a byte).
@@ -5636,7 +5753,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
 {
     instruction    ins       = id->idIns();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
-    bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -6014,7 +6131,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
         // Absolute addresses marked as contained should fit within the base of addr mode.
-        assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
+        assert(memBase->AsIntConCommon()->FitsInAddrBase(m_compiler));
 
         // If we reach here, either:
         // - we are not generating relocatable code, (typically the non-AOT JIT case)
@@ -6024,10 +6141,10 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         //   This last case is captured in the FitsInAddrBase method which is used by Lowering to determine that it can
         //   be contained.
         //
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
-               memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
+        assert(!m_compiler->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
+               memBase->AsIntConCommon()->FitsInAddrBase(m_compiler));
 
-        if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
+        if (memBase->AsIntConCommon()->AddrNeedsReloc(m_compiler))
         {
             id->idSetIsDspReloc();
         }
@@ -6075,7 +6192,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     if ((memBase != nullptr) && memBase->IsIconHandle() && memBase->isContained())
     {
         id->idDebugOnlyInfo()->idFlags     = memBase->gtFlags;
-        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->gtTargetHandle;
+        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->GetTargetHandle();
     }
 #endif
 }
@@ -6088,7 +6205,7 @@ void emitter::spillIntArgRegsToShadowSlots()
     instrDesc*     id;
     UNATIVE_OFFSET sz;
 
-    assert(emitComp->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
 
     for (argNum = 0; argNum < MAX_REG_ARG; ++argNum)
     {
@@ -6617,7 +6734,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                 case GT_LCL_VAR:
                 {
                     assert(memOp->IsRegOptional() ||
-                           !emitComp->lvaTable[memOp->AsLclVar()->GetLclNum()].lvIsRegCandidate());
+                           !m_compiler->lvaTable[memOp->AsLclVar()->GetLclNum()].lvIsRegCandidate());
                     varNum = memOp->AsLclVar()->GetLclNum();
                     offset = 0;
                     break;
@@ -7036,7 +7153,7 @@ void emitter::emitIns_R_I(instruction         ins,
     UNATIVE_OFFSET sz;
     instrDesc*     id;
     insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
-    bool           valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+    bool           valInByte = ImmCanUseSByteEncoding(ins, val);
 
     // BT reg,imm might be useful but it requires special handling of the immediate value
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
@@ -7133,7 +7250,7 @@ void emitter::emitIns_R_I(instruction         ins,
             break;
     }
 
-    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         if (EA_IS_CNS_SEC_RELOC(attr))
         {
@@ -7180,6 +7297,19 @@ void emitter::emitIns_R_I(instruction         ins,
     {
         // ACC form is not promoted into EVEX space, need to emit with MI form.
         sz += 1;
+    }
+
+    if (ins == INS_test && reg == REG_EAX && TakesRex2Prefix(id))
+    {
+        // test eax/rax will use ACC form, which is not REX2 compatible.
+        if (size == EA_8BYTE)
+        {
+            sz -= 1;
+        }
+        else
+        {
+            sz -= 2;
+        }
     }
 #endif // TARGET_AMD64
 
@@ -7682,7 +7812,7 @@ bool emitter::IsRedundantMov(
         return true;
     }
 
-    if (!emitComp->opts.OptimizationEnabled())
+    if (!m_compiler->opts.OptimizationEnabled())
     {
         // The remaining move elisions should only happen if optimizations are enabled
         return false;
@@ -8245,8 +8375,8 @@ void emitter::emitIns_R_S_I(
 void emitter::emitIns_R_R_A(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insOpts instOptions)
 {
-    assert(IsSimdInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
     ssize_t    offs = indir->Offset();
     instrDesc* id   = emitNewInstrAmd(attr, offs);
@@ -8257,8 +8387,13 @@ void emitter::emitIns_R_R_A(
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
-    SetEvexBroadcastIfNeeded(id, instOptions);
-    SetEvexEmbMaskIfNeeded(id, instOptions);
+    if (IsSimdInstruction(ins))
+    {
+        SetEvexBroadcastIfNeeded(id, instOptions);
+        SetEvexEmbMaskIfNeeded(id, instOptions);
+    }
+    SetEvexNdIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8267,10 +8402,11 @@ void emitter::emitIns_R_R_A(
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs)
+void emitter::emitIns_R_R_AR(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, insOpts instOptions)
 {
-    assert(IsSimdInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
     instrDesc* id = emitNewInstrAmd(attr, offs);
 
@@ -8281,6 +8417,9 @@ void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_ARD));
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    SetEvexNdIfNeeded(id, instOptions);
+    SetEvexNfIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8958,7 +9097,8 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
  *  Add an instruction with a static member + constant.
  */
 
-void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val)
+void emitter::emitIns_C_I(
+    instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val, insOpts instOptions)
 {
     // Static always need relocs
     if (!jitStaticFldIsGlobAddr(fldHnd))
@@ -9044,7 +9184,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
     //
     // On Amd64, Absolute code addresses should always go through a reloc to
     // to be encoded as RIP rel32 offset.
-    if (emitComp->opts.compReloc)
+    if (m_compiler->opts.compReloc)
 #endif
     {
         id->idSetIsDspReloc();
@@ -9090,7 +9230,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
+    if (m_compiler->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -9100,10 +9240,66 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitTotalIGjmps++;
 #endif
 
-    // Set the relocation flags - these give hint to zap to perform
-    // relocation of the specified 32bit address.
-    //
-    // Note the relocation flags influence the size estimate.
+    // Set reloc flags for AOT purposes. This also affects emitInsSizeAM below.
+    id->idSetRelocFlags(attr);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+//--------------------------------------------------------------------
+// emitIns_R_L: Emit an instruction with a label operand.
+//
+// Arguments:
+//   ins - The instruction
+//   attr - Size of the instruction
+//   dst - Instruction group
+//   reg - Register destination
+//
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(ins == INS_lea);
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idReg1(reg);
+    id->idInsFmt(IF_RWR_LABEL);
+    id->idOpSize(EA_SIZE(attr)); // emitNewInstrJmp() sets the size (incorrectly) to EA_1BYTE
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound();
+
+    /* The label reference is always long */
+
+    id->idjShort    = 0;
+    id->idjKeepLong = 1;
+
+    /* Record the current IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this instruction to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#ifdef DEBUG
+    // Mark the catch return
+    if (m_compiler->compCurBB->KindIs(BBJ_EHCATCHRET))
+    {
+        id->idDebugOnlyInfo()->idCatchRet = true;
+    }
+#endif // DEBUG
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    // Set reloc flags for AOT purposes. This also affects emitInsSizeAM below.
     id->idSetRelocFlags(attr);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
@@ -9170,6 +9366,9 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
     }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
+
+    SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
 
     sz = emitInsSizeAM(id, insCodeMI(ins), val);
     id->idCodeSize(sz);
@@ -9592,6 +9791,9 @@ void emitter::emitIns_ARX_R(instruction    ins,
     id->idIns(ins);
     id->idInsFmt(fmt);
 
+    SetEvexNfIfNeeded(id, instOptions);
+    SetEvexDFVIfNeeded(id, instOptions);
+
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = index;
     id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(scale);
@@ -9834,6 +10036,16 @@ void emitter::emitIns_SIMD_R_R_R(
 {
     if (UseSimdEncoding())
     {
+        if (IsAvxCommutative(ins) && (instOptions == INS_OPTS_NONE))
+        {
+            if (!IsExtendedReg(op1Reg) && IsExtendedReg(op2Reg))
+            {
+                // We have a VEX encoded commutative instruction in which
+                // case we want to try to put the non-extended register as
+                // op2 since this may allow the 2-byte VEX prefix to be used.
+                std::swap(op1Reg, op2Reg);
+            }
+        }
         emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
     }
     else
@@ -10679,7 +10891,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
 {
     assert(IsMovInstruction(ins));
     assert((fmt == IF_SWR_RRD) || (fmt == IF_RWR_SRD));
-    if (!emitComp->opts.OptimizationEnabled())
+    if (!m_compiler->opts.OptimizationEnabled())
     {
         // The remaining move elisions should only happen if optimizations are enabled
         return false;
@@ -10862,14 +11074,9 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 /*****************************************************************************
  *
  *  Add a jmp instruction.
- *  When dst is NULL, instrCount specifies number of instructions
- *       to jump: positive is forward, negative is backward.
  */
 
-void emitter::emitIns_J(instruction ins,
-                        BasicBlock* dst,
-                        int         instrCount /* = 0 */,
-                        bool        isRemovableJmpCandidate /* = false */)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, bool keepShort, bool isRemovableJmpCandidate /* = false */)
 {
 #ifdef TARGET_AMD64
     // Check emitter::emitLastIns before it is updated
@@ -10879,25 +11086,13 @@ void emitter::emitIns_J(instruction ins,
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
 
-    if (dst != nullptr)
-    {
-        assert(dst->HasFlag(BBF_HAS_LABEL));
-        assert(instrCount == 0);
-    }
-    else
-    {
-        /* Only allow non-label jmps in prolog */
-        assert(emitPrologIG);
-        assert(emitPrologIG == emitCurIG);
-        assert(instrCount != 0);
-    }
-
+    assert(dst->HasFlag(BBF_HAS_LABEL));
     id->idIns(ins);
     id->idInsFmt(IF_LABEL);
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_call && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
+    if (ins == INS_call && m_compiler->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -10919,24 +11114,12 @@ void emitter::emitIns_J(instruction ins,
         id->idjIsRemovableJmpCandidate = 0;
     }
 
-    id->idjShort = 0;
-    if (dst != nullptr)
-    {
-        /* Assume the jump will be long */
-        id->idAddr()->iiaBBlabel = dst;
-        id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
-    }
-    else
-    {
-        id->idAddr()->iiaSetInstrCount(instrCount);
-        id->idjKeepLong = false;
-        /* This jump must be short */
-        emitSetShortJump(id);
-        id->idSetIsBound();
-    }
+    /* Assume the jump will be long */
+    id->idjShort             = keepShort;
+    id->idAddr()->iiaBBlabel = dst;
+    id->idjKeepLong          = m_compiler->fgInDifferentRegions(m_compiler->compCurBB, dst);
 
     /* Record the jump's IG and offset within it */
-
     id->idjIG   = emitCurIG;
     id->idjOffs = emitCurIGsize;
 
@@ -10960,7 +11143,7 @@ void emitter::emitIns_J(instruction ins,
         // Pushing the address of a basicBlock will need a reloc
         // as the instruction uses the absolute address,
         // not a relative address
-        if (emitComp->opts.compReloc)
+        if (m_compiler->opts.compReloc)
         {
             id->idSetIsDspReloc();
         }
@@ -11048,7 +11231,7 @@ void emitter::emitIns_J(instruction ins,
     id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    appendToCurIG(id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -11157,7 +11340,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     /* Sanity check the arguments depending on callType */
 
     assert(params.callType < EC_COUNT);
-    if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    if (!m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         assert((params.callType != EC_FUNC_TOKEN && params.callType != EC_FUNC_TOKEN_INDIR) ||
                (params.addr != nullptr && params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 &&
@@ -11179,8 +11362,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
     {
-        printf("\t\t\t\t\t\t\tCall: GCvars=%s ", VarSetOps::ToString(emitComp, params.ptrVars));
-        dumpConvertedVarSet(emitComp, params.ptrVars);
+        printf("\t\t\t\t\t\t\tCall: GCvars=%s ", VarSetOps::ToString(m_compiler, params.ptrVars));
+        dumpConvertedVarSet(m_compiler, params.ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
         emitDispRegSet(gcrefRegs);
@@ -11190,12 +11373,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && params.debugInfo.IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
 
     /*
         We need to allocate the appropriate instruction descriptor based
@@ -11260,7 +11437,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     }
 #endif // UNIX_AMD64_ABI
 
-    VarSetOps::Assign(emitComp, emitThisGCrefVars, params.ptrVars);
+    VarSetOps::Assign(m_compiler, emitThisGCrefVars, params.ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
@@ -11371,7 +11548,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         assert(params.callType == EC_FUNC_TOKEN);
 
-        assert(params.addr != nullptr || emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+        assert(params.addr != nullptr || m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         id->idInsFmt(IF_METHOD);
         sz = 5;
@@ -11721,7 +11898,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
     static char          rb[2][128];
     static unsigned char rbc = 0;
 
-    const char* rn = emitComp->compRegVarName(reg, varName);
+    const char* rn = m_compiler->compRegVarName(reg, varName);
 
     char suffix = '\0';
 
@@ -11959,7 +12136,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     /* Filter out the special case of fs:[offs] */
 
     // Munge any pointers if we want diff-able disassembly
-    if (emitComp->opts.disDiffable)
+    if (m_compiler->opts.disDiffable)
     {
         ssize_t top12bits = (offs >> 20);
         if ((top12bits != 0) && (top12bits != -1))
@@ -12013,7 +12190,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     }
     else
     {
-        printf("classVar[%#p]", (void*)emitComp->dspPtr(fldHnd));
+        printf("classVar[%#p]", (void*)m_compiler->dspPtr(fldHnd));
 
         if (offs)
         {
@@ -12024,10 +12201,10 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     printf("]");
 
 #ifdef DEBUG
-    if (emitComp->opts.varNames && offs < 0)
+    if (m_compiler->opts.varNames && offs < 0)
     {
         char buffer[128];
-        printf("'%s", emitComp->eeGetFieldName(fldHnd, true, buffer, sizeof(buffer)));
+        printf("'%s", m_compiler->eeGetFieldName(fldHnd, true, buffer, sizeof(buffer)));
         if (offs)
         {
             printf("%+Id", offs);
@@ -12049,7 +12226,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     printf("[");
 
-    if (!asmfm || emitComp->lvaDoneFrameLayout == Compiler::NO_FRAME_LAYOUT)
+    if (!asmfm || m_compiler->lvaDoneFrameLayout == Compiler::NO_FRAME_LAYOUT)
     {
         if (varx < 0)
         {
@@ -12070,14 +12247,14 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
         }
     }
 
-    if (emitComp->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
+    if (m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
     {
         if (!asmfm)
         {
             printf(" ");
         }
 
-        addr = emitComp->lvaFrameAddress(varx, &bEBP) + disp;
+        addr = m_compiler->lvaFrameAddress(varx, &bEBP) + disp;
 
         if (bEBP)
         {
@@ -12118,9 +12295,9 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     printf("]");
 #ifdef DEBUG
-    if ((varx >= 0) && emitComp->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
+    if ((varx >= 0) && m_compiler->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
-        const char* varName = emitComp->compLocalVarName(varx, offs);
+        const char* varName = m_compiler->compLocalVarName(varx, offs);
 
         if (varName)
         {
@@ -12163,13 +12340,13 @@ void emitter::emitDispMask(const instrDesc* id, regNumber reg) const
  */
 void emitter::emitDispReloc(ssize_t value) const
 {
-    if (emitComp->opts.disAsm && emitComp->opts.disDiffable)
+    if (m_compiler->opts.disAsm && m_compiler->opts.disDiffable)
     {
         printf("(reloc)");
     }
     else
     {
-        printf("(reloc 0x%zx)", emitComp->dspPtr(value));
+        printf("(reloc 0x%zx)", m_compiler->dspPtr(value));
     }
 }
 
@@ -12226,7 +12403,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
             {
                 printf("reloc ");
             }
-            printf("J_M%03u_DS%02u", emitComp->compMethodID, (unsigned)id->idDebugOnlyInfo()->idMemCookie);
+            printf("J_M%03u_DS%02u", m_compiler->compMethodID, (unsigned)id->idDebugOnlyInfo()->idMemCookie);
 
             disp -= id->idDebugOnlyInfo()->idMemCookie;
         }
@@ -12244,7 +12421,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
         {
             frameRef = true;
         }
-        else if (emitComp->isFramePointerUsed() && id->idAddr()->iiaAddrMode.amBaseReg == REG_EBP)
+        else if (m_compiler->isFramePointerUsed() && id->idAddr()->iiaAddrMode.amBaseReg == REG_EBP)
         {
             frameRef = true;
         }
@@ -12278,7 +12455,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
     {
         // Munge any pointers if we want diff-able disassembly
         // It's assumed to be a pointer when disp is outside of the range (-1M, +1M); top bits are not 0 or -1
-        if (!frameRef && emitComp->opts.disDiffable && (static_cast<size_t>((disp >> 20) + 1) > 1))
+        if (!frameRef && m_compiler->opts.disDiffable && (static_cast<size_t>((disp >> 20) + 1) > 1))
         {
             if (nsep)
             {
@@ -12347,14 +12524,14 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
     if (jdsc && !noDetail)
     {
         unsigned     cnt = (jdsc->dsSize - 1) / TARGET_POINTER_SIZE;
-        BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
+        BasicBlock** bbp = jdsc->Blocks();
 
 #ifdef TARGET_AMD64
 #define SIZE_LETTER "Q"
 #else
 #define SIZE_LETTER "D"
 #endif
-        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", emitComp->compMethodID, jtno);
+        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", m_compiler->compMethodID, jtno);
 
         /* Display the label table (it's stored as "BasicBlock*" values) */
 
@@ -12423,13 +12600,13 @@ void emitter::emitDispShift(instruction ins, int cnt) const
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-    if (!emitComp->opts.disCodeBytes)
+    if (!m_compiler->opts.disCodeBytes)
     {
         return;
     }
 
     // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable)
+    if (!m_compiler->opts.disDiffable)
     {
 #ifdef TARGET_AMD64
         // how many bytes per instruction we format for
@@ -12608,7 +12785,7 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
     ssize_t val = cnsVal.cnsVal;
 
     // Munge any pointers if we want diff-able disassembly
-    if (emitComp->opts.disDiffable)
+    if (m_compiler->opts.disDiffable)
     {
         ssize_t top14bits = (val >> 18);
 
@@ -12660,7 +12837,7 @@ void emitter::emitDispIns(
     instruction ins = id->idIns();
 
 #ifdef DEBUG
-    if (emitComp->verbose)
+    if (m_compiler->verbose)
     {
         unsigned idNum = id->idDebugOnlyInfo()->idNum;
         printf("IN%04x: ", idNum);
@@ -12668,86 +12845,6 @@ void emitter::emitDispIns(
 #endif
 
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
-
-    /* Display a constant value if the instruction references one */
-
-    if (!isNew && id->idHasMemGen())
-    {
-        /* Is this actually a reference to a data section? */
-        int offs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
-
-        if (offs >= 0)
-        {
-            void* addr;
-
-            /* Display a data section reference */
-
-            assert((unsigned)offs < emitConsDsc.dsdOffs);
-            addr = emitConsBlock ? emitConsBlock + offs : nullptr;
-
-#if 0
-            // TODO-XArch-Cleanup: Fix or remove this code.
-            /* Is the operand an integer or floating-point value? */
-
-            bool isFP = false;
-
-            if  (CodeGen::instIsFP(id->idIns()))
-            {
-                switch (id->idIns())
-                {
-                case INS_fild:
-                case INS_fildl:
-                    break;
-
-                default:
-                    isFP = true;
-                    break;
-                }
-            }
-
-            if (offs & 1)
-                printf("@CNS%02u", offs);
-            else
-                printf("@RWD%02u", offs);
-
-            printf("      ");
-
-            if  (addr)
-            {
-                addr = 0;
-                // TODO-XArch-Bug?:
-                //          This was busted by switching the order
-                //          in which we output the code block vs.
-                //          the data blocks -- when we get here,
-                //          the data block has not been filled in
-                //          yet, so we'll display garbage.
-
-                if  (isFP)
-                {
-                    if  (id->idOpSize() == EA_4BYTE)
-                        printf("DF      %f \n", addr ? *(float   *)addr : 0);
-                    else
-                        printf("DQ      %lf\n", addr ? *(double  *)addr : 0);
-                }
-                else
-                {
-                    if  (id->idOpSize() <= EA_4BYTE)
-                        printf("DD      %d \n", addr ? *(int     *)addr : 0);
-                    else
-                        printf("DQ      %D \n", addr ? *(int64_t *)addr : 0);
-                }
-            }
-#endif
-        }
-    }
-
-    // printf("[F=%s] "   , emitIfName(id->idInsFmt()));
-    // printf("INS#%03u: ", id->idDebugOnlyInfo()->idNum);
-    // printf("[S=%02u] " , emitCurStackLvl); if (isNew) printf("[M=%02u] ", emitMaxStackDepth);
-    // printf("[S=%02u] " , emitCurStackLvl/sizeof(INT32));
-    // printf("[A=%08X] " , emitSimpleStkMask);
-    // printf("[A=%08X] " , emitSimpleByrefStkMask);
-    // printf("[L=%02u] " , id->idCodeSize());
 
     if (!isNew && !asmfm)
     {
@@ -12785,7 +12882,7 @@ void emitter::emitDispIns(
     printf(" %-9s", sstr);
 
 #ifdef TARGET_AMD64
-    if (IsCCMP(id->idIns()))
+    if (IsCCMP(id->idIns()) || IsCTEST(id->idIns()))
     {
         // print finite set notation for DFV
         unsigned dfv        = id->idGetEvexDFV();
@@ -12914,7 +13011,7 @@ void emitter::emitDispIns(
 
                 /* This is a virtual call */
 
-                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+                methodName = m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("%s", methodName);
             }
             break;
@@ -13327,137 +13424,233 @@ void emitter::emitDispIns(
         }
 
         case IF_RRD_RRD:
+        {
+            if (ins == INS_bt)
+            {
+                // INS_bt operands are reversed. Display them in the normal order.
+                printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
+                break;
+            }
+
+            FALLTHROUGH;
+        }
+
         case IF_RWR_RRD:
+        {
+            if ((ins == INS_rol) || (ins == INS_ror) || (ins == INS_rcl) || (ins == INS_rcr) || (ins == INS_shl) ||
+                (ins == INS_shr) || (ins == INS_sar))
+            {
+                // This is the APX NDD form of these instructions.
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                emitDispShift(ins, (BYTE)0);
+                break;
+            }
+
+            FALLTHROUGH;
+        }
+
         case IF_RRW_RRD:
         case IF_RRW_RRW:
         {
-            switch (ins)
+            emitAttr tgtAttr = attr;
+            emitAttr srcAttr = attr;
+
+            insTupleType tt = insTupleTypeInfo(ins);
+
+            if (tt == INS_TT_NONE)
             {
-                case INS_pmovmskb:
+                switch (ins)
                 {
-                    assert(!id->idIsEvexAaaContextSet());
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
-                    break;
-                }
-
-                case INS_cvtsi2ss32:
-                case INS_cvtsi2sd32:
-                case INS_cvtsi2ss64:
-                case INS_cvtsi2sd64:
-                {
-                    assert(!id->idIsEvexAaaContextSet());
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
-                    break;
-                }
-
-                case INS_cvttsd2si32:
-                case INS_cvttsd2si64:
-                case INS_cvtsd2si32:
-                case INS_cvtsd2si64:
-                case INS_cvtss2si32:
-                case INS_cvtss2si64:
-                case INS_cvttss2si32:
-                case INS_cvttss2si64:
-                case INS_vcvtsd2usi32:
-                case INS_vcvtsd2usi64:
-                case INS_vcvtss2usi32:
-                case INS_vcvtss2usi64:
-                case INS_vcvttsd2usi32:
-                case INS_vcvttsd2usi64:
-                case INS_vcvttss2usi32:
-                case INS_vcvttss2usi64:
-                case INS_vcvttsd2sis32:
-                case INS_vcvttsd2sis64:
-                case INS_vcvttss2sis32:
-                case INS_vcvttss2sis64:
-                case INS_vcvttsd2usis32:
-                case INS_vcvttsd2usis64:
-                case INS_vcvttss2usis32:
-                case INS_vcvttss2usis64:
-                {
-                    assert(!id->idIsEvexAaaContextSet());
-                    printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
-                    break;
-                }
+                    case INS_pmovmskb:
+                    {
+                        assert(!id->idIsEvexAaaContextSet());
+                        tgtAttr = EA_4BYTE;
+                        break;
+                    }
 
 #ifdef TARGET_AMD64
-                case INS_movsxd:
-                {
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_8BYTE), emitRegName(id->idReg2(), EA_4BYTE));
-                    break;
-                }
+                    case INS_movsxd:
+                    {
+                        tgtAttr = EA_8BYTE;
+                        srcAttr = EA_4BYTE;
+                        break;
+                    }
 #endif // TARGET_AMD64
 
-                case INS_movsx:
-                case INS_movzx:
-                {
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), emitRegName(id->idReg2(), attr));
-                    break;
-                }
-
-                case INS_bt:
-                {
-                    // INS_bt operands are reversed. Display them in the normal order.
-                    printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
-                    break;
-                }
-
-                case INS_crc32:
-                {
-                    if (attr != EA_8BYTE)
+                    case INS_movsx:
+                    case INS_movzx:
                     {
-                        // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
-                        // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
-                        printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+                        tgtAttr = EA_PTRSIZE;
+                        break;
+                    }
+
+                    case INS_crc32:
+                    {
+                        tgtAttr = std::max(EA_4BYTE, EA_SIZE(attr));
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                printf("%s", emitRegName(id->idReg1(), tgtAttr));
+                printf(", %s", emitRegName(id->idReg2(), srcAttr));
+                break;
+            }
+
+            unsigned inputSize = static_cast<unsigned>(GetInputSizeInBytes(id));
+
+            switch (tt)
+            {
+                case INS_TT_HALF:
+                case INS_TT_HALF_MEM:
+                {
+                    unsigned maskElemSize = XMM_REGSIZE_BYTES / CodeGenInterface::instKMaskBaseSize(ins);
+                    emitAttr halfSize     = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 2));
+
+                    if (inputSize < maskElemSize)
+                    {
+                        assert(inputSize == (maskElemSize / 2));
+                        srcAttr = halfSize;
                     }
                     else
                     {
-                        printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
+                        tgtAttr = halfSize;
                     }
                     break;
                 }
 
-                case INS_vpbroadcastb_gpr:
-                case INS_vpbroadcastd_gpr:
-                case INS_vpbroadcastw_gpr:
+                case INS_TT_QUARTER_MEM:
                 {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    emitDispEmbMasking(id);
-                    printf(", %s", emitRegName(id->idReg2(), EA_4BYTE));
+                    unsigned maskElemSize = XMM_REGSIZE_BYTES / CodeGenInterface::instKMaskBaseSize(ins);
+                    emitAttr quarterSize  = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 4));
+
+                    if (inputSize < maskElemSize)
+                    {
+                        assert(inputSize == (maskElemSize / 4));
+                        srcAttr = quarterSize;
+                    }
+                    else
+                    {
+                        tgtAttr = quarterSize;
+                    }
                     break;
                 }
 
-                case INS_vpbroadcastq_gpr:
+                case INS_TT_EIGHTH_MEM:
                 {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    emitDispEmbMasking(id);
-                    printf(", %s", emitRegName(id->idReg2(), EA_8BYTE));
-                    break;
-                }
+                    unsigned maskElemSize = XMM_REGSIZE_BYTES / CodeGenInterface::instKMaskBaseSize(ins);
+                    emitAttr eighthSize   = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 8));
 
-                case INS_rol:
-                case INS_ror:
-                case INS_rcl:
-                case INS_rcr:
-                case INS_shl:
-                case INS_shr:
-                case INS_sar:
-                {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    printf(", %s", emitRegName(id->idReg2(), attr));
-                    emitDispShift(ins, (BYTE)0);
+                    if (inputSize < maskElemSize)
+                    {
+                        assert(inputSize == (maskElemSize / 8));
+                        srcAttr = eighthSize;
+                    }
+                    else
+                    {
+                        tgtAttr = eighthSize;
+                    }
                     break;
                 }
 
                 default:
                 {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    emitDispEmbMasking(id);
-                    printf(", %s", emitRegName(id->idReg2(), attr));
-                    emitDispEmbRounding(id);
+                    switch (ins)
+                    {
+                        case INS_cvtsi2ss32:
+                        case INS_cvtsi2sd32:
+                        case INS_cvtsi2ss64:
+                        case INS_cvtsi2sd64:
+                        {
+                            assert(!id->idIsEvexAaaContextSet());
+                            tgtAttr = EA_16BYTE;
+                            break;
+                        }
+
+                        case INS_cvttsd2si32:
+                        case INS_cvttsd2si64:
+                        case INS_cvtsd2si32:
+                        case INS_cvtsd2si64:
+                        case INS_cvtss2si32:
+                        case INS_cvtss2si64:
+                        case INS_cvttss2si32:
+                        case INS_cvttss2si64:
+                        case INS_vcvtsd2usi32:
+                        case INS_vcvtsd2usi64:
+                        case INS_vcvtss2usi32:
+                        case INS_vcvtss2usi64:
+                        case INS_vcvttsd2usi32:
+                        case INS_vcvttsd2usi64:
+                        case INS_vcvttss2usi32:
+                        case INS_vcvttss2usi64:
+                        case INS_vcvttsd2sis32:
+                        case INS_vcvttsd2sis64:
+                        case INS_vcvttss2sis32:
+                        case INS_vcvttss2sis64:
+                        case INS_vcvttsd2usis32:
+                        case INS_vcvttsd2usis64:
+                        case INS_vcvttss2usis32:
+                        case INS_vcvttss2usis64:
+                        {
+                            assert(!id->idIsEvexAaaContextSet());
+                            srcAttr = EA_16BYTE;
+                            break;
+                        }
+
+                        case INS_vpbroadcastb_gpr:
+                        case INS_vpbroadcastd_gpr:
+                        case INS_vpbroadcastw_gpr:
+                        {
+                            srcAttr = EA_4BYTE;
+                            break;
+                        }
+
+                        case INS_vpbroadcastq_gpr:
+                        {
+                            srcAttr = EA_8BYTE;
+                            break;
+                        }
+
+                        case INS_cvtpd2dq:
+                        case INS_cvtpd2ps:
+                        case INS_cvttpd2dq:
+                        case INS_vcvtdq2ph:
+                        case INS_vcvtneps2bf16:
+                        case INS_vcvtpd2udq:
+                        case INS_vcvtps2phx:
+                        case INS_vcvtqq2ps:
+                        case INS_vcvttpd2dqs:
+                        case INS_vcvttpd2udq:
+                        case INS_vcvttpd2udqs:
+                        case INS_vcvtudq2ph:
+                        case INS_vcvtuqq2ps:
+                        {
+                            tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 2));
+                            break;
+                        }
+
+                        case INS_vcvtpd2ph:
+                        case INS_vcvtqq2ph:
+                        case INS_vcvtuqq2ph:
+                        {
+                            tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 4));
+                            break;
+                        }
+
+                        default:
+                            break;
+                    }
                     break;
                 }
             }
+
+            printf("%s", emitRegName(id->idReg1(), tgtAttr));
+            emitDispEmbMasking(id);
+            printf(", %s", emitRegName(id->idReg2(), srcAttr));
+            emitDispEmbRounding(id);
             break;
         }
 
@@ -13625,6 +13818,12 @@ void emitter::emitDispIns(
                 case INS_pinsrq:
                 {
                     attr = EA_8BYTE;
+                    break;
+                }
+
+                case INS_vcvtps2ph:
+                {
+                    tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 2));
                     break;
                 }
 
@@ -13928,18 +14127,11 @@ void emitter::emitDispIns(
 
             if (id->idIsBound())
             {
-                if (id->idAddr()->iiaHasInstrCount())
-                {
-                    printf("%3d instr", id->idAddr()->iiaGetInstrCount());
-                }
-                else
-                {
-                    emitPrintLabel(id->idAddr()->iiaIGlabel);
-                }
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, m_compiler->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
         }
@@ -13948,7 +14140,7 @@ void emitter::emitDispIns(
         case IF_METHPTR:
         {
             assert(!IsEvexEncodableInstruction(id->idIns()));
-            methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+            methodName = m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
 
             if (id->idInsFmt() == IF_METHPTR)
             {
@@ -13975,7 +14167,7 @@ void emitter::emitDispIns(
                 // targetIG is only set for 1st of the series of align instruction
                 if ((alignInstrId->idaLoopHeadPredIG != nullptr) && (alignInstrId->loopHeadIG() != nullptr))
                 {
-                    printf(" for IG%02u", alignInstrId->loopHeadIG()->igNum);
+                    printf(" for IG%02u", alignInstrId->loopHeadIG()->GetDisplayId());
                 }
                 printf("]");
             }
@@ -13990,7 +14182,7 @@ void emitter::emitDispIns(
     }
 
 #ifdef DEBUG
-    if (sz != 0 && sz != id->idCodeSize() && (!asmfm || emitComp->verbose))
+    if (sz != 0 && sz != id->idCodeSize() && (!asmfm || m_compiler->verbose))
     {
         // Code size in the instrDesc is different from the actual code size we've been given!
         printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
@@ -14188,7 +14380,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
     // For AOT, `dst` is not aligned as requested, but the final assembly will have them aligned.
     // So, just calculate the offset of the current `dst` from the start.
-    size_t offset          = emitComp->IsAot() ? emitCurCodeOffs(dst) : (size_t)dst;
+    size_t offset          = m_compiler->IsAot() ? emitCurCodeOffs(dst) : (size_t)dst;
     bool   validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
@@ -14199,10 +14391,11 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     unsigned paddingToAdd = id->idCodeSize();
 
     // Either things are already aligned or align them here.
-    assert(!validatePadding || (paddingToAdd == 0) || ((offset & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
+    assert(!validatePadding || (paddingToAdd == 0) ||
+           ((offset & (m_compiler->opts.compJitAlignLoopBoundary - 1)) != 0));
 
     // Padding amount should not exceed the alignment boundary
-    assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
+    assert(0 <= paddingToAdd && paddingToAdd < m_compiler->opts.compJitAlignLoopBoundary);
 
 #ifdef DEBUG
     if (validatePadding)
@@ -14211,21 +14404,22 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
             emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, offset, true, 0, 0);
 
         // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
-        if (emitComp->opts.compJitAlignLoopAdaptive)
+        if (m_compiler->opts.compJitAlignLoopAdaptive)
         {
             assert(paddingToAdd == paddingNeeded);
         }
     }
 #endif
 
-    emitComp->Metrics.LoopsAligned++;
+    m_compiler->Metrics.LoopsAligned++;
 
 #ifdef DEBUG
     // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
     // then add "int3" instruction. Since int3 takes 1 byte, we would only add
     // it if paddingToAdd >= 1 byte.
 
-    if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp && paddingToAdd >= 1)
+    if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp &&
+        paddingToAdd >= 1)
     {
         size_t int3Code = insCodeMR(INS_BREAKPOINT);
         // There is no good way to squeeze in "int3" as well as display it
@@ -14234,7 +14428,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
         // to the nop instruction in disasm.
         // e.g. CC                   align    [1 bytes for IG29]
         //
-        // if (emitComp->opts.disAsm)
+        // if (m_compiler->opts.disAsm)
         //{
         //    emitDispInsAddr(dstRW);
 
@@ -14249,6 +14443,12 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
     return emitOutputNOP(dst, paddingToAdd);
 }
+
+#ifdef TARGET_64BIT
+static constexpr CorInfoReloc RELOC_DISP32 = CorInfoReloc::RELATIVE32;
+#else
+static constexpr CorInfoReloc RELOC_DISP32 = CorInfoReloc::DIRECT;
+#endif
 
 /*****************************************************************************
  *
@@ -14332,7 +14532,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Does the constant fit in a byte?
         // SSE/AVX do not need to modify opcode
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             if (id->idInsFmt() != IF_ARW_SHF && !IsSimdInstruction(ins))
             {
@@ -14591,17 +14792,25 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 {
                     dst += emitOutputByte(dst, 0x66);
                 }
+
+                if (IsCFCMOV(ins))
+                {
+                    // The opcode for CFCMOV does not follow the rule of "|= 0x01" to handle 16b/32b/64b operands.
+                    break;
+                }
                 FALLTHROUGH;
             }
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
             case EA_8BYTE:
+                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule.
+                if (ins != INS_movbe_apx)
 #endif
-
-                /* Set the 'w' bit to get the large version */
-
-                code |= 0x1;
+                {
+                    /* Set the 'w' bit to get the large version */
+                    code |= 0x1;
+                }
                 break;
 
 #ifdef TARGET_X86
@@ -14619,9 +14828,11 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
+        if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            // The built-in REX has been zeroed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
+            insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
     }
@@ -14683,7 +14894,7 @@ GOT_DSP:
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, IMAGE_REL_BASED_MOFFSET);
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, CorInfoReloc::DIRECT);
         }
 
 #endif // TARGET_X86
@@ -14752,13 +14963,13 @@ GOT_DSP:
                     if (!IsSimdInstruction(ins) && id->idIsTlsGD())
                     {
                         addlDelta = -4;
-                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
-                                                          addlDelta);
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp,
+                                                          CorInfoReloc::AMD64_LIN_TLSGD, addlDelta);
                     }
                     else
                     {
-                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp,
-                                                          IMAGE_REL_BASED_DISP32, addlDelta);
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32,
+                                                          addlDelta);
                     }
                 }
                 else
@@ -14776,8 +14987,8 @@ GOT_DSP:
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
        // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
-                    noway_assert(!emitComp->opts.compReloc);
-                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != IMAGE_REL_BASED_REL32);
+                    noway_assert(!m_compiler->opts.compReloc);
+                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != CorInfoReloc::RELATIVE32);
                     noway_assert((int)dsp == dsp);
 
                     // This requires, specifying a SIB byte after ModRM byte.
@@ -14814,7 +15025,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                         }
                     }
                 }
@@ -14832,7 +15043,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                     }
                 }
                 break;
@@ -14864,7 +15075,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                         }
                     }
                 }
@@ -14890,7 +15101,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                     }
                 }
                 break;
@@ -14922,7 +15133,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                         }
                     }
                 }
@@ -14951,7 +15162,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                         }
                     }
                 }
@@ -15001,7 +15212,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                         }
                     }
                 }
@@ -15027,7 +15238,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                     }
                 }
             }
@@ -15051,13 +15262,13 @@ GOT_DSP:
                 // Special case: jump through a jump table
                 if (ins == INS_i_jmp)
                 {
-                    dsp += (size_t)emitConsBlock;
+                    dsp = (ssize_t)emitDataOffsetToPtr((UNATIVE_OFFSET)dsp);
                 }
 
                 dst += emitOutputLong(dst, dsp);
                 if (id->idIsDspReloc())
                 {
-                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                 }
             }
         }
@@ -15090,7 +15301,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                     }
                 }
             }
@@ -15116,7 +15327,7 @@ GOT_DSP:
 
                 if (id->idIsDspReloc())
                 {
-                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32);
                 }
             }
         }
@@ -15152,7 +15363,7 @@ GOT_DSP:
 
         if (addc->cnsReloc)
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, RELOC_DISP32);
             assert(opsz == 4);
         }
     }
@@ -15311,7 +15522,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Does the constant fit in a byte?
         // SSE/AVX/AVX512 do not need to modify opcode
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             if ((id->idInsFmt() != IF_SRW_SHF) && (id->idInsFmt() != IF_RRW_SRD_CNS) &&
                 (id->idInsFmt() != IF_RWR_RRD_SRD_CNS) && !IsSimdInstruction(ins))
@@ -15508,11 +15719,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
         }
 #ifdef TARGET_AMD64
-        if (ins == INS_crc32_apx || ins == INS_movbe_apx)
+        if (ins >= INS_imul_08 && ins <= INS_imul_31)
         {
-            // The promoted CRC32 is in 1-byte opcode, unlike other instructions on this path, the register encoding for
-            // CRC32 need to be done here.
-            code |= (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            // The built-in REX has been zero-ed out in AddX86PrefixIfNeededAndNotPresent, need to add the register
+            // addressing bits in the prefix.
+            insEncodeReg345(id, inst3opImulReg(ins), size, &code);
         }
 #endif // TARGET_AMD64
     }
@@ -15523,7 +15734,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Figure out the variable's frame position
     int varNum = id->idAddr()->iiaLclVar.lvaVarNum();
 
-    adr = emitComp->lvaFrameAddress(varNum, &EBPbased);
+    adr = m_compiler->lvaFrameAddress(varNum, &EBPbased);
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
 
     if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
@@ -15684,7 +15895,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (addc->cnsReloc)
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, RELOC_DISP32);
             assert(opsz == 4);
         }
     }
@@ -15861,7 +16072,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
         // Does the constant fit in a byte?
-        if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
+        if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
         {
             // SSE/AVX do not need to modify opcode
             if (id->idInsFmt() != IF_MRW_SHF && !IsSimdInstruction(ins))
@@ -16059,7 +16270,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     doff = Compiler::eeGetJitDataOffs(fldh);
     if (doff >= 0)
     {
-        addr = emitConsBlock + doff;
+        addr = emitDataOffsetToPtr((UNATIVE_OFFSET)doff);
 
 #ifdef DEBUG
         int byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, /*ignoreEmbeddedBroadcast*/ false));
@@ -16070,7 +16281,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (emitChkAlign && (ins != INS_lea))
         {
-            if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+            if (m_compiler->compCodeOpt() == Compiler::SMALL_CODE)
             {
                 assert(IS_ALIGNED(addr, 4));
             }
@@ -16084,15 +16295,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else
     {
         // Special case: mov reg, fs:[ddd] or mov reg, [ddd]
-        if (jitStaticFldIsGlobAddr(fldh))
-        {
-            addr = nullptr;
-        }
-        else
-        {
-            assert(jitStaticFldIsGlobAddr(fldh));
-            addr = nullptr;
-        }
+        assert(jitStaticFldIsGlobAddr(fldh));
+        addr = nullptr;
     }
 
     BYTE* target = (addr + offs);
@@ -16149,7 +16353,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(int)), target, IMAGE_REL_BASED_DISP32, addlDelta);
+            emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(int)), target, RELOC_DISP32, addlDelta);
         }
     }
     else
@@ -16165,7 +16369,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, IMAGE_REL_BASED_MOFFSET);
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, CorInfoReloc::DIRECT);
         }
 
 #endif // TARGET_X86
@@ -16200,7 +16404,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         if (addc->cnsReloc)
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, RELOC_DISP32);
             assert(opsz == 4);
         }
     }
@@ -16772,7 +16976,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
 
-        if (ins != INS_test && !IsShiftInstruction(ins))
+        if (ins != INS_test && !IsShiftInstruction(ins) && !IsCFCMOV(ins) && !IsCTEST(ins))
         {
             code |= 2;
         }
@@ -16797,7 +17001,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     dst += emitOutputByte(dst, 0x66);
                 }
 
-                code |= 0x1;
+                if (!IsCFCMOV(ins))
+                    code |= 0x1;
                 break;
 
             case EA_4BYTE:
@@ -16811,7 +17016,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     assert((code & EXTENDED_EVEX_PP_BITS) == 0);
                 }
 #endif
-                code |= 0x1;
+                if (!IsCFCMOV(ins))
+                    code |= 0x1;
                 break;
 
 #ifdef TARGET_AMD64
@@ -16828,7 +17034,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 }
 
                 // Set the 'w' bit to get the large version
-                code |= 0x1;
+                if (!IsCFCMOV(ins))
+                    code |= 0x1;
                 break;
 
 #endif // TARGET_AMD64
@@ -16869,11 +17076,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         regCode = insEncodeReg012(id, reg2, size, &code);
     }
 
-#ifdef TARGET_AMD64
-    if (TakesSimdPrefix(id) && !IsCCMP(ins))
-#else
-    if (TakesSimdPrefix(id))
-#endif
+    if (TakesSimdPrefix(id) && !IsApxConditionalInstruction(ins))
     {
         // In case of AVX instructions that take 3 operands, we generally want to encode reg1
         // as first source.  In this case, reg1 is both a source and a destination.
@@ -17024,7 +17227,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
-                code = insIsCMOV(ins) ? code : (code | (0x01));
+                code = (insIsCMOV(ins) || IsCFCMOV(ins)) ? code : (code | (0x01));
                 break;
 
 #ifdef TARGET_AMD64
@@ -17034,7 +17237,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
                 code = AddRexWPrefix(id, code); // TODO-APX : Revisit. does xor or other cases need to be handled
                                                 // differently? see emitOutputRR
                 // Set the 'w' bit to get the large version
-                code = insIsCMOV(ins) ? code : (code | (0x01));
+                code = (insIsCMOV(ins) || IsCFCMOV(ins)) ? code : (code | (0x01));
                 break;
 
 #endif // TARGET_AMD64
@@ -17136,7 +17339,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     instruction ins       = id->idIns();
     regNumber   reg       = id->idReg1();
     ssize_t     val       = emitGetInsSC(id);
-    bool        valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+    bool        valInByte = ImmCanUseSByteEncoding(ins, val);
 
     assert(!id->idHasReg2());
 
@@ -17230,15 +17433,15 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
+            if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
             {
-                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
-                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
+                // For section relative, the immediate offset is relocatable and hence needs SECREL relocation
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val,
+                                     CorInfoReloc::AMD64_WIN_SECREL);
             }
             else
             {
-                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val,
-                                     IMAGE_REL_BASED_MOFFSET);
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, CorInfoReloc::DIRECT);
             }
         }
 
@@ -17327,6 +17530,12 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             code = insCodeMI(ins);
             code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeMIreg(id, reg, size, code);
+#ifdef TARGET_AMD64
+            if (ins >= INS_imul_08 && ins <= INS_imul_31)
+            {
+                insEncodeReg345(id, inst3opImulReg(ins), size, &code);
+            }
+#endif // TARGET_AMD64
         }
     }
 
@@ -17411,7 +17620,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, RELOC_DISP32);
             assert(size == EA_4BYTE);
         }
     }
@@ -17585,7 +17794,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
                 dst += emitOutputLong(dst, val);
                 if (id->idIsCnsReloc())
                 {
-                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, RELOC_DISP32);
                 }
             }
             break;
@@ -17665,27 +17874,11 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     srcOffs = emitCurCodeOffs(dst);
     srcAddr = emitOffsetToPtr(srcOffs);
 
-    if (id->idAddr()->iiaHasInstrCount())
+    dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+    dstAddr = emitOffsetToPtr(dstOffs);
+    if (!relAddr)
     {
-        assert(ig != nullptr);
-        int      instrCount = id->idAddr()->iiaGetInstrCount();
-        unsigned insNum     = emitFindInsNum(ig, id);
-        if (instrCount < 0)
-        {
-            // Backward branches using instruction count must be within the same instruction group.
-            assert(insNum + 1 >= (unsigned)(-instrCount));
-        }
-        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
-        dstAddr = emitOffsetToPtr(dstOffs);
-    }
-    else
-    {
-        dstOffs = id->idAddr()->iiaIGlabel->igOffs;
-        dstAddr = emitOffsetToPtr(dstOffs);
-        if (!relAddr)
-        {
-            srcAddr = nullptr;
-        }
+        srcAddr = nullptr;
     }
 
     distVal = (ssize_t)(dstAddr - srcAddr);
@@ -17766,12 +17959,12 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     }
 
 #ifdef DEBUG
-    if (0 && emitComp->verbose)
+    if (0 && m_compiler->verbose)
     {
         size_t sz          = id->idjShort ? ssz : lsz;
         int    distValSize = id->idjShort ? 4 : 8;
         printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               emitComp->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
+               m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
                distVal);
     }
 #endif
@@ -17792,8 +17985,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         {
 #if DEBUG_EMIT || defined(DEBUG)
             int offsShrinkage = id->idCodeSize() - JMP_SIZE_SMALL;
-            if (INDEBUG(emitComp->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
-                                              INTERESTING_JUMP_NUM == 0))
+            if (INDEBUG(m_compiler->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
+                                                INTERESTING_JUMP_NUM == 0))
             {
                 printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }
@@ -17919,7 +18112,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         bool crossJump = emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
         int32_t encodedDisplacement;
-        if (emitComp->opts.compReloc && (!relAddr || crossJump))
+        if (m_compiler->opts.compReloc && (!relAddr || crossJump))
         {
             // Cross jumps may not be encodable in a 32-bit displacement as the
             // hot/cold code buffers may be allocated arbitrarily far away from
@@ -17938,16 +18131,16 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
         dst += emitOutputLong(dst, encodedDisplacement);
 
-        if (emitComp->opts.compReloc)
+        if (m_compiler->opts.compReloc)
         {
             if (!relAddr)
             {
-                emitRecordRelocation((void*)(dst - sizeof(int32_t)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), (void*)distVal, RELOC_DISP32);
             }
             else if (crossJump)
             {
                 assert(id->idjKeepLong);
-                emitRecordRelocation((void*)(dst - sizeof(int32_t)), dst + distVal, IMAGE_REL_BASED_REL32);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), dst + distVal, CorInfoReloc::RELATIVE32);
             }
         }
     }
@@ -18278,7 +18471,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     bool convertedJmpToNop = false;
 
 #ifdef DEBUG
-    bool dspOffs = emitComp->opts.dspGCtbls;
+    bool dspOffs = m_compiler->opts.dspGCtbls;
 #endif // DEBUG
 
     emitAttr size = id->idOpSize();
@@ -18339,6 +18532,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 dst = emitOutputData16(dst);
                 sz  = emitSizeOfInsDsc_NONE(id);
+
+                // This may mark the beginning of a TLS access linker
+                // relaxation sequence. The linker can replace these general
+                // sequences by other instructions that trash rax. We need to
+                // eagerly invalidate GC info in rax before the linker's
+                // instructions would trash it.
+                emitGCregDeadUpd(REG_RAX, dst);
                 break;
             }
 
@@ -18462,7 +18662,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 instrDescCGCA* idCall = (instrDescCGCA*)id;
                 gcrefRegs             = idCall->idcGcrefRegs;
                 byrefRegs             = idCall->idcByrefRegs;
-                VarSetOps::Assign(emitComp, GCvars, idCall->idcGCvars);
+                VarSetOps::Assign(m_compiler, GCvars, idCall->idcGCvars);
                 sz = sizeof(instrDescCGCA);
             }
             else
@@ -18472,7 +18672,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 gcrefRegs = emitDecodeCallGCregs(id);
                 byrefRegs = 0;
-                VarSetOps::AssignNoCopy(emitComp, GCvars, VarSetOps::MakeEmpty(emitComp));
+                VarSetOps::AssignNoCopy(m_compiler, GCvars, VarSetOps::MakeEmpty(m_compiler));
                 sz = sizeof(instrDesc);
             }
 
@@ -18496,7 +18696,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #else
                     dst += emitOutputLong(dst, (int)(ssize_t)addr);
 #endif
-                    emitRecordRelocation((void*)(dst - sizeof(int)), addr, IMAGE_REL_BASED_DISP32);
+
+                    emitRecordRelocation((void*)(dst - sizeof(int)), addr, RELOC_DISP32);
                 }
                 else
                 {
@@ -18506,8 +18707,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
        // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
-                    noway_assert(!emitComp->opts.compReloc);
-                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
+                    noway_assert(!m_compiler->opts.compReloc);
+                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != CorInfoReloc::RELATIVE32);
                     noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (ssize_t)addr);
 
                     // This requires, specifying a SIB byte after ModRM byte.
@@ -18533,7 +18734,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(ins == INS_call);
                 code_t callCode = insCodeMI(ins);
-                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+                if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
                 {
                     callCode = (callCode << 8) | 0x48; // REX.W prefix
                     dst += emitOutputWord(dst, callCode);
@@ -18560,7 +18761,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (id->idIsDspReloc())
             {
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), addr, IMAGE_REL_BASED_REL32);
+                emitRecordRelocation((void*)(dst - sizeof(INT32)), addr, CorInfoReloc::RELATIVE32);
             }
 
         DONE_CALL:
@@ -18589,7 +18790,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 #ifdef DEBUG
             // Output any delta in GC variable info, corresponding to the before-call GC var updates done above.
-            if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+            if (EMIT_GC_VERBOSE || m_compiler->opts.disasmWithGC)
             {
                 emitDispGCVarDelta();
             }
@@ -18838,7 +19039,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code              = insEncodeMIreg(id, mReg, size, code);
                 rReg              = REG_NA;
                 ssize_t val       = emitGetInsSC(id);
-                bool    valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+                bool    valInByte = ImmCanUseSByteEncoding(ins, val);
 
                 switch (size)
                 {
@@ -18897,7 +19098,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     if (id->idIsCnsReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, RELOC_DISP32);
                         assert(size == EA_4BYTE);
                     }
                 }
@@ -19070,7 +19271,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                         gcrefRegs = idCall->idcGcrefRegs;
                         byrefRegs = idCall->idcByrefRegs;
-                        VarSetOps::Assign(emitComp, GCvars, idCall->idcGCvars);
+                        VarSetOps::Assign(m_compiler, GCvars, idCall->idcGCvars);
                         sz = sizeof(instrDescCGCA);
                     }
                     else
@@ -19080,7 +19281,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                         gcrefRegs = emitDecodeCallGCregs(id);
                         byrefRegs = 0;
-                        VarSetOps::AssignNoCopy(emitComp, GCvars, VarSetOps::MakeEmpty(emitComp));
+                        VarSetOps::AssignNoCopy(m_compiler, GCvars, VarSetOps::MakeEmpty(m_compiler));
                         sz = sizeof(instrDesc);
                     }
 
@@ -19658,7 +19859,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert((ins == INS_vextractf32x4) || (ins == INS_vextractf32x8) || (ins == INS_vextractf64x2) ||
                    (ins == INS_vextractf64x4) || (ins == INS_vextracti32x4) || (ins == INS_vextracti32x8) ||
-                   (ins == INS_vextracti64x2) || (ins == INS_vextracti64x4));
+                   (ins == INS_vextracti64x2) || (ins == INS_vextracti64x4) || (ins == INS_vcvtps2ph));
             assert(UseSimdEncoding());
             emitGetInsDcmCns(id, &cnsVal);
             // we do not need VEX.vvvv to encode the register operand
@@ -19951,7 +20152,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(id));
 
 #ifdef DEBUG
-    if ((emitComp->opts.disAsm || emitComp->verbose) && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
+    if ((m_compiler->opts.disAsm || m_compiler->verbose) && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
     {
 #ifdef TARGET_AMD64
         // convertedJmpToNop indicates this instruction is a removable jump that was replaced by a nop.
@@ -19974,7 +20175,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
     }
 #else
-    if (emitComp->opts.disAsm && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
+    if (m_compiler->opts.disAsm && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
     {
 #ifdef TARGET_AMD64
         if (convertedJmpToNop)
@@ -19996,9 +20197,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
 #if FEATURE_LOOP_ALIGN
-    // Only compensate over-estimated instructions if emitCurIG is before
-    // the last IG that needs alignment.
-    if (emitCurIG->igNum <= emitLastAlignedIgNum)
+    // Only compensate over-estimated instructions if emitCurIG is before the last IG that needs alignment.
+    if ((emitLastAlignedIG != nullptr) && emitCurIG->IsBeforeOrEqual(emitLastAlignedIG))
     {
         int diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
         assert(diff >= 0);
@@ -20010,7 +20210,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(id->idIns() != INS_align);
             JITDUMP("Added over-estimation compensation: %d\n", diff);
 
-            if (emitComp->opts.disAsm)
+            if (m_compiler->opts.disAsm)
             {
                 emitDispInsAddr(dst);
                 printf("\t\t  ;; NOP compensation instructions of %d bytes.\n", diff);
@@ -20024,18 +20224,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif
 
 #ifdef DEBUG
-    if (emitComp->compDebugBreak)
+    if (m_compiler->compDebugBreak)
     {
         // set JitEmitPrintRefRegs=1 will print out emitThisGCrefRegs and emitThisByrefRegs
         // at the beginning of this method.
         if (JitConfig.JitEmitPrintRefRegs() != 0)
         {
             printf("Before emitOutputInstr for id->idDebugOnlyInfo()->idNum=0x%02x\n", id->idDebugOnlyInfo()->idNum);
-            printf("  emitThisGCrefRegs(0x%p)=", emitComp->dspPtr(&emitThisGCrefRegs));
+            printf("  emitThisGCrefRegs(0x%p)=", m_compiler->dspPtr(&emitThisGCrefRegs));
             printRegMaskInt(emitThisGCrefRegs);
             emitDispRegSet(emitThisGCrefRegs);
             printf("\n");
-            printf("  emitThisByrefRegs(0x%p)=", emitComp->dspPtr(&emitThisByrefRegs));
+            printf("  emitThisByrefRegs(0x%p)=", m_compiler->dspPtr(&emitThisByrefRegs));
             printRegMaskInt(emitThisByrefRegs);
             emitDispRegSet(emitThisByrefRegs);
             printf("\n");
@@ -20071,7 +20271,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
     // Output any delta in GC info.
-    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    if (EMIT_GC_VERBOSE || m_compiler->opts.disasmWithGC)
     {
         emitDispGCInfoDelta();
     }
@@ -20201,79 +20401,117 @@ const static float insThroughputInfos[] =
 //
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    insExecutionCharacteristics result;
-    instruction                 ins    = id->idIns();
-    insFormat                   insFmt = id->idInsFmt();
-    emitAttr                    opSize = id->idOpSize();
-    insFormat                   memFmt = getMemoryOperation(id);
-    unsigned                    memAccessKind;
+    instruction ins    = id->idIns();
+    insFormat   insFmt = id->idInsFmt();
+    emitAttr    opSize = id->idOpSize();
+    insFormat   memFmt = getMemoryOperation(id);
 
-    result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
-    result.insLatency    = PERFSCORE_LATENCY_ILLEGAL;
+    // Model the memory throughput, latency, kind
 
-    // Model the memory latency
+    float                     memThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+    float                     memLatency    = PERFSCORE_LATENCY_ILLEGAL;
+    PerfScoreMemoryAccessKind memAccessKind = PerfScoreMemoryAccessKind::None;
+
     switch (memFmt)
     {
-        // Model a read from stack location, possible def to use latency from L0 cache
+            // Model a read or write from stack location, possible def to use latency from L0 cache
+
         case IF_SRD:
-            result.insLatency = PERFSCORE_LATENCY_RD_STACK;
-            memAccessKind     = PERFSCORE_MEMORY_READ;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_RD;
+            memLatency    = PERFSCORE_LATENCY_RD_STACK;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
+        }
 
         case IF_SWR:
-            result.insLatency = PERFSCORE_LATENCY_WR_STACK;
-            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_WR;
+            memLatency    = PERFSCORE_LATENCY_WR_STACK;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
+        }
 
         case IF_SRW:
-            result.insLatency = PERFSCORE_LATENCY_RD_WR_STACK;
-            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_RW;
+            memLatency    = PERFSCORE_LATENCY_RD_WR_STACK;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
+        }
 
-        // Model a read from a constant location, possible def to use latency from L0 cache
+            // Model a read or write from a constant location, possible def to use latency from L0 cache
+
         case IF_MRD:
-            result.insLatency = PERFSCORE_LATENCY_RD_CONST_ADDR;
-            memAccessKind     = PERFSCORE_MEMORY_READ;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_RD;
+            memLatency    = PERFSCORE_LATENCY_RD_CONST_ADDR;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
+        }
 
         case IF_MWR:
-            result.insLatency = PERFSCORE_LATENCY_WR_CONST_ADDR;
-            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_WR;
+            memLatency    = PERFSCORE_LATENCY_WR_CONST_ADDR;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
+        }
 
         case IF_MRW:
-            result.insLatency = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
-            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_RW;
+            memLatency    = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
+        }
 
-        // Model a read from memory location, possible def to use latency from L0 or L1 cache
+            // Model a read or write from memory location, possible def to use latency from L0 or L1 cache
+
         case IF_ARD:
-            result.insLatency = PERFSCORE_LATENCY_RD_GENERAL;
-            memAccessKind     = PERFSCORE_MEMORY_READ;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_RD;
+            memLatency    = PERFSCORE_LATENCY_RD_GENERAL;
+            memAccessKind = PerfScoreMemoryAccessKind::Read;
             break;
+        }
 
         case IF_AWR:
-            result.insLatency = PERFSCORE_LATENCY_WR_GENERAL;
-            memAccessKind     = PERFSCORE_MEMORY_WRITE;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_WR;
+            memLatency    = PERFSCORE_LATENCY_WR_GENERAL;
+            memAccessKind = PerfScoreMemoryAccessKind::Write;
             break;
+        }
 
         case IF_ARW:
-            result.insLatency = PERFSCORE_LATENCY_RD_WR_GENERAL;
-            memAccessKind     = PERFSCORE_MEMORY_READ_WRITE;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_RW;
+            memLatency    = PERFSCORE_LATENCY_RD_WR_GENERAL;
+            memAccessKind = PerfScoreMemoryAccessKind::ReadWrite;
             break;
+        }
 
         case IF_NONE:
-            result.insLatency = PERFSCORE_LATENCY_ZERO;
-            memAccessKind     = PERFSCORE_MEMORY_NONE;
+        {
+            memThroughput = PERFSCORE_THROUGHPUT_ZERO;
+            memLatency    = PERFSCORE_LATENCY_ZERO;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
+        }
 
         default:
+        {
             assert(!"Unhandled insFmt for switch (memFmt)");
-            result.insLatency = PERFSCORE_LATENCY_ZERO;
-            memAccessKind     = PERFSCORE_MEMORY_NONE;
+            memThroughput = PERFSCORE_THROUGHPUT_ZERO;
+            memLatency    = PERFSCORE_LATENCY_ZERO;
+            memAccessKind = PerfScoreMemoryAccessKind::None;
             break;
+        }
     }
-    result.insMemoryAccessKind = memAccessKind;
+
+    float insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+    float insLatency    = PERFSCORE_LATENCY_ILLEGAL;
 
     switch (ins)
     {
@@ -20288,208 +20526,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 // instruction is placed immediately after unconditional jmp.
                 // In both cases, don't count for PerfScore.
 
-                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
-                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                insLatency    = PERFSCORE_LATENCY_ZERO;
                 break;
             }
 #endif
 
-            result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-            result.insLatency    = PERFSCORE_LATENCY_ZERO;
-            break;
-        }
-
-        case INS_push:
-        case INS_push_hide:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (insFmt == IF_RRD) // push  reg
-            {
-                // For pushes (stack writes) we assume that the full latency will be covered
-                result.insLatency = PERFSCORE_LATENCY_ZERO;
-            }
-            break;
-        }
-
-        case INS_push2:
-        {
-            // TODO-XArch-APX: to be verified.
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (insFmt == IF_RRD_RRD) // push2  reg1, reg2
-            {
-                result.insLatency = PERFSCORE_LATENCY_ZERO;
-            }
-            break;
-        }
-
-        case INS_pop:
-        case INS_pop_hide:
-        {
-            if (insFmt == IF_RWR) // pop   reg
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                // For pops (stack reads) we assume that the full latency will be covered
-                result.insLatency = PERFSCORE_LATENCY_ZERO;
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            }
-            break;
-        }
-
-        case INS_pop2:
-        {
-            // TODO-XArch-APX: to be verified.
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (insFmt == IF_RRD_RRD) // pop2  reg1, reg2
-            {
-                result.insLatency = PERFSCORE_LATENCY_ZERO;
-            }
-            break;
-        }
-
-        case INS_inc:
-        case INS_dec:
-        case INS_neg:
-        case INS_not:
-        {
-            if (memFmt == IF_NONE)
-            {
-                // ins   reg
-                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-            }
-            else
-            {
-                // ins   mem
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                // no additional R/W latency
-            }
-            break;
-        }
-
-#ifdef TARGET_AMD64
-        case INS_movsxd:
-#endif
-        case INS_mov:
-        case INS_movsx:
-        case INS_movzx:
-        case INS_cwde:
-        case INS_cmp:
-        case INS_test:
-        case INS_cmovo:
-        case INS_cmovno:
-        case INS_cmovb:
-        case INS_cmovae:
-        case INS_cmove:
-        case INS_cmovne:
-        case INS_cmovbe:
-        case INS_cmova:
-        case INS_cmovs:
-        case INS_cmovns:
-        case INS_cmovp:
-        case INS_cmovnp:
-        case INS_cmovl:
-        case INS_cmovge:
-        case INS_cmovle:
-        case INS_cmovg:
-#ifdef TARGET_AMD64
-        // todo-xarch-apx: we need to double check the logic for ccmp
-        case INS_ccmpo:
-        case INS_ccmpno:
-        case INS_ccmpb:
-        case INS_ccmpae:
-        case INS_ccmpe:
-        case INS_ccmpne:
-        case INS_ccmpbe:
-        case INS_ccmpa:
-        case INS_ccmps:
-        case INS_ccmpns:
-        case INS_ccmpt:
-        case INS_ccmpf:
-        case INS_ccmpl:
-        case INS_ccmpge:
-        case INS_ccmple:
-        case INS_ccmpg:
-#endif
-        {
-
-            if (memFmt == IF_NONE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-            }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                if (ins == INS_cmp || ins == INS_test || insIsCMOV(ins))
-                {
-                    result.insLatency += PERFSCORE_LATENCY_1C;
-                }
-                else if (ins == INS_movsx
-#ifdef TARGET_AMD64
-                         || ins == INS_movsxd
-#endif
-                )
-                {
-                    result.insLatency += PERFSCORE_LATENCY_2C;
-                }
-            }
-            else // writes
-            {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                assert(ins == INS_mov);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            }
-            break;
-        }
-
-        case INS_adc:
-        case INS_sbb:
-        {
-            if (memAccessKind != PERFSCORE_MEMORY_READ_WRITE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += PERFSCORE_LATENCY_1C;
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                // no additional R/W latency
-            }
-            break;
-        }
-
-        case INS_add:
-        case INS_sub:
-        case INS_sub_hide:
-        case INS_and:
-        case INS_or:
-        case INS_xor:
-        {
-            if (memFmt == IF_NONE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-            }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                // no additional R/W latency
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += PERFSCORE_LATENCY_1C;
-            }
+            insThroughput = PERFSCORE_THROUGHPUT_4X;
+            insLatency    = PERFSCORE_LATENCY_ZERO;
             break;
         }
 
         case INS_lea:
         {
             // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+            insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
+            insLatency    = PERFSCORE_LATENCY_1C;
 
             if (insFmt == IF_RWR_LABEL)
             {
@@ -20497,7 +20549,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 //
                 // - throughput is only 1 per cycle
                 //
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             else if (insFmt != IF_RWR_SRD)
             {
@@ -20514,14 +20566,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                             //
                             // - throughput is only 1 per cycle
                             //
-                            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                            insThroughput = PERFSCORE_THROUGHPUT_1C;
 
                             if (baseRegisterRequiresDisplacement(baseReg) || id->idIsDspReloc())
                             {
                                 // Increased Latency for these cases
                                 //  - see https://reviews.llvm.org/D32277
                                 //
-                                result.insLatency = PERFSCORE_LATENCY_3C;
+                                insLatency = PERFSCORE_LATENCY_3C;
                             }
                         }
                     }
@@ -20535,14 +20587,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             // The integer divide instructions have long latencies
             if (opSize == EA_8BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_52C;
-                result.insLatency    = PERFSCORE_LATENCY_62C;
+                insThroughput = PERFSCORE_THROUGHPUT_52C;
+                insLatency    = PERFSCORE_LATENCY_62C;
             }
             else
             {
                 assert(opSize == EA_4BYTE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insLatency    = PERFSCORE_LATENCY_26C;
+                insThroughput = PERFSCORE_THROUGHPUT_6C;
+                insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
         }
@@ -20552,119 +20604,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             // The integer divide instructions have long latenies
             if (opSize == EA_8BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_57C;
-                result.insLatency    = PERFSCORE_LATENCY_69C;
+                insThroughput = PERFSCORE_THROUGHPUT_57C;
+                insLatency    = PERFSCORE_LATENCY_69C;
             }
             else
             {
                 assert(opSize == EA_4BYTE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insLatency    = PERFSCORE_LATENCY_26C;
-            }
-            break;
-        }
-
-        case INS_shl:
-        case INS_shr:
-        case INS_sar:
-        case INS_ror:
-        case INS_rol:
-        {
-            switch (insFmt)
-            {
-                case IF_RRW_CNS:
-                    // ins   reg, cns
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency    = PERFSCORE_LATENCY_1C;
-                    break;
-
-                case IF_MRW_CNS:
-                case IF_SRW_CNS:
-                case IF_ARW_CNS:
-                    // ins   [mem], cns
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                    result.insLatency += PERFSCORE_LATENCY_1C;
-                    break;
-
-                case IF_RRW:
-                // TODO-XArch-APX: to be verified if this data is correct for NDD form.
-                case IF_RWR_RRD:
-                    // ins   reg, cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-
-                case IF_MRW:
-                case IF_SRW:
-                case IF_ARW:
-                    // ins   [mem], cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-                    result.insLatency += PERFSCORE_LATENCY_2C;
-                    break;
-
-                default:
-                    // unhandled instruction insFmt combination
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-        }
-
-        case INS_shl_1:
-        case INS_shr_1:
-        case INS_sar_1:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            switch (insFmt)
-            {
-                case IF_RRW:
-                // TODO-XArch-APX: to be verified if this data is correct for NDD form.
-                case IF_RWR_RRD:
-                    // ins   reg, 1
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    break;
-
-                case IF_MRW:
-                case IF_SRW:
-                case IF_ARW:
-                    // ins   [mem], 1
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                    break;
-
-                default:
-                    // unhandled instruction insFmt combination
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-        }
-
-        case INS_shl_N:
-        case INS_shr_N:
-        case INS_sar_N:
-        case INS_ror_N:
-        case INS_rol_N:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            switch (insFmt)
-            {
-                case IF_RRW_SHF:
-                case IF_RWR_RRD_SHF:
-                    // ins   reg, cns
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    break;
-
-                case IF_MRW_SHF:
-                case IF_SRW_SHF:
-                case IF_ARW_SHF:
-                    // ins   [mem], cns
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                    break;
-
-                default:
-                    // unhandled instruction insFmt combination
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
+                insThroughput = PERFSCORE_THROUGHPUT_6C;
+                insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
         }
@@ -20672,77 +20619,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_shld:
         case INS_shrd:
         {
-            result.insLatency += PERFSCORE_LATENCY_3C;
+            insLatency = PERFSCORE_LATENCY_3C;
+
             if (insFmt == IF_RRW_RRD_CNS)
             {
                 // ins   reg, reg, cns
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE); // _SHF form never emitted
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            }
-            break;
-        }
-
-        case INS_bt:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            if ((insFmt == IF_RRD_RRD) || (insFmt == IF_RRD_CNS))
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            }
-            break;
-        }
-
-        case INS_seto:
-        case INS_setno:
-        case INS_setb:
-        case INS_setae:
-        case INS_sete:
-        case INS_setne:
-        case INS_setbe:
-        case INS_seta:
-        case INS_sets:
-        case INS_setns:
-        case INS_setp:
-        case INS_setnp:
-        case INS_setl:
-        case INS_setge:
-        case INS_setle:
-        case INS_setg:
-#ifdef TARGET_AMD64
-        case INS_seto_apx:
-        case INS_setno_apx:
-        case INS_setb_apx:
-        case INS_setae_apx:
-        case INS_sete_apx:
-        case INS_setne_apx:
-        case INS_setbe_apx:
-        case INS_seta_apx:
-        case INS_sets_apx:
-        case INS_setns_apx:
-        case INS_setp_apx:
-        case INS_setnp_apx:
-        case INS_setl_apx:
-        case INS_setge_apx:
-        case INS_setle_apx:
-        case INS_setg_apx:
-#endif
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            if (insFmt == IF_RRD)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                assert(memAccessKind == PerfScoreMemoryAccessKind::Write); // _SHF form never emitted
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
             }
             break;
         }
@@ -20752,14 +20639,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             if (emitInstHasNoCode(id))
             {
                 // a removed jmp to the next instruction
-                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
-                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                insLatency    = PERFSCORE_LATENCY_ZERO;
             }
             else
             {
                 // branch to a constant address
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
             }
             break;
         }
@@ -20767,30 +20654,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_call:
         {
             // uops.info
-            result.insLatency = PERFSCORE_LATENCY_ZERO;
+            insLatency = PERFSCORE_LATENCY_ZERO;
+
             switch (insFmt)
             {
                 case IF_LABEL:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    insThroughput = PERFSCORE_THROUGHPUT_1C;
                     break;
 
                 case IF_METHOD:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    insThroughput = PERFSCORE_THROUGHPUT_1C;
                     break;
 
                 case IF_METHPTR:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    insThroughput = PERFSCORE_THROUGHPUT_3C;
                     break;
 
                 case IF_SRD:
                 case IF_ARD:
                 case IF_MRD:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    insThroughput = PERFSCORE_THROUGHPUT_3C;
                     break;
 
                 default:
-                    // unhandled instruction, insFmt combination
-                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -20798,30 +20684,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_ret:
         {
+            insLatency = PERFSCORE_LATENCY_ZERO;
+
             if (insFmt == IF_CNS)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
             }
             else
             {
                 assert(insFmt == IF_NONE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
         }
 
         case INS_xchg:
         {
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (memFmt == IF_NONE)
-            {
-                result.insLatency = PERFSCORE_LATENCY_1C;
-            }
-            else
-            {
-                result.insLatency = PERFSCORE_LATENCY_23C;
-            }
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (memFmt == IF_NONE) ? PERFSCORE_LATENCY_1C : PERFSCORE_LATENCY_23C;
             break;
         }
 
@@ -20829,11 +20709,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_fld:
         case INS_fstp:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
-            {
-                result.insLatency = PERFSCORE_LATENCY_1C;
-            }
+            insThroughput = PERFSCORE_THROUGHPUT_2X;
+            insLatency    = PERFSCORE_LATENCY_1C;
             break;
         }
 #endif // TARGET_X86
@@ -20841,125 +20718,38 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movd32:
         case INS_movd64:
         case INS_movq:
+        case INS_vmovw:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
-            {
-                if (isFloatReg(id->idReg1()) && isFloatReg(id->idReg2()))
-                {
-                    // movq   xmm, xmm
-                    result.insThroughput = PERFSCORE_THROUGHPUT_3X;
-                    result.insLatency    = PERFSCORE_LATENCY_1C;
-                }
-                else
-                {
-                    // movd   r32/64, xmm   or  xmm, r32/64
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_3C;
-                }
-            }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
-            {
-                // ins   xmm, m32/64
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += PERFSCORE_LATENCY_2C;
-            }
-            else
-            {
-                // ins   m32/64, xmm
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_2C;
-            }
-            break;
-        }
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = PERFSCORE_LATENCY_3C;
 
-        case INS_movdqa32:
-        case INS_vmovdqa64:
-        case INS_movdqu32:
-        case INS_vmovdqu8:
-        case INS_vmovdqu16:
-        case INS_vmovdqu64:
-        case INS_vmovd_simd:
-        case INS_vmovw_simd:
-        case INS_movaps:
-        case INS_movups:
-        case INS_movapd:
-        case INS_movupd:
-        {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
             {
-                // ins   reg, reg
-                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                // The reads have twice the throughput of the register to register variants
+                insThroughput = PERFSCORE_THROUGHPUT_2X;
             }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            else if (isFloatReg(id->idReg1()) && isFloatReg(id->idReg2()))
             {
-                // ins   reg, mem
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+                // movq   xmm, xmm
+                insThroughput = PERFSCORE_THROUGHPUT_3X;
+                insLatency    = PERFSCORE_LATENCY_1C;
             }
-            else
-            {
-                // ins   mem, reg
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_2C;
-            }
-            break;
-        }
-
-        case INS_movhps:
-        case INS_movhpd:
-        case INS_movlps:
-        case INS_movlpd:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
-            {
-                result.insLatency += PERFSCORE_LATENCY_3C;
-            }
-            else
-            {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                result.insLatency += PERFSCORE_LATENCY_2C;
-            }
-            break;
-        }
-
-        case INS_movntdqa:
-        {
-            assert(memAccessKind == PERFSCORE_MEMORY_READ);
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
             break;
         }
 
         case INS_movss:
         case INS_movsd_simd:
         case INS_movddup:
+        case INS_vmovsh:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-            }
-            else if (memAccessKind == PERFSCORE_MEMORY_READ)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_2C;
-            }
-            break;
-        }
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = PERFSCORE_LATENCY_1C;
 
-        case INS_lddqu:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+            if (memAccessKind == PerfScoreMemoryAccessKind::Read)
+            {
+                // The reads have twice the throughput of the register to register variants
+                insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
             break;
         }
 
@@ -20982,8 +20772,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpmovuswb:
         case INS_vpmovwb:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency += (opSize == EA_16BYTE) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
+            insThroughput = PERFSCORE_THROUGHPUT_2C;
+            insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_2C;
             break;
         }
 
@@ -20998,13 +20788,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             if (opSize == EA_64BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                result.insLatency += PERFSCORE_LATENCY_8C;
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_8C;
             }
             else
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_4C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = PERFSCORE_LATENCY_4C;
             }
             break;
         }
@@ -21013,20 +20803,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             if (opSize == EA_16BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insLatency += PERFSCORE_LATENCY_12C;
+                insThroughput = PERFSCORE_THROUGHPUT_6C;
+                insLatency    = PERFSCORE_LATENCY_12C;
             }
             else if (opSize == EA_32BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_10C;
-                result.insLatency += PERFSCORE_LATENCY_16C;
+                insThroughput = PERFSCORE_THROUGHPUT_10C;
+                insLatency    = PERFSCORE_LATENCY_16C;
             }
             else
             {
                 assert(opSize == EA_64BYTE);
 
-                result.insThroughput = PERFSCORE_THROUGHPUT_19C;
-                result.insLatency += PERFSCORE_LATENCY_26C;
+                insThroughput = PERFSCORE_THROUGHPUT_19C;
+                insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
         }
@@ -21035,20 +20825,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             if (opSize == EA_16BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                result.insLatency += PERFSCORE_LATENCY_4C;
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_4C;
             }
             else if (opSize == EA_32BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insLatency += PERFSCORE_LATENCY_12C;
+                insThroughput = PERFSCORE_THROUGHPUT_6C;
+                insLatency    = PERFSCORE_LATENCY_12C;
             }
             else
             {
                 assert(opSize == EA_64BYTE);
 
-                result.insThroughput = PERFSCORE_THROUGHPUT_10C;
-                result.insLatency += PERFSCORE_LATENCY_16C;
+                insThroughput = PERFSCORE_THROUGHPUT_10C;
+                insLatency    = PERFSCORE_LATENCY_16C;
             }
             break;
         }
@@ -21060,56 +20850,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvtss2usi32:
         case INS_vcvtss2usi64:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_7C;
-            break;
-        }
-
-        case INS_paddb:
-        case INS_psubb:
-        case INS_paddw:
-        case INS_psubw:
-        case INS_paddd:
-        case INS_psubd:
-        case INS_paddq:
-        case INS_psubq:
-        case INS_paddsb:
-        case INS_psubsb:
-        case INS_paddsw:
-        case INS_psubsw:
-        case INS_paddusb:
-        case INS_psubusb:
-        case INS_paddusw:
-        case INS_psubusw:
-        case INS_pandd:
-        case INS_vpandq:
-        case INS_pandnd:
-        case INS_vpandnq:
-        case INS_pord:
-        case INS_vporq:
-        case INS_pxord:
-        case INS_vpxorq:
-        case INS_andpd:
-        case INS_andps:
-        case INS_andnpd:
-        case INS_andnps:
-        case INS_orpd:
-        case INS_orps:
-        case INS_xorpd:
-        case INS_xorps:
-        case INS_blendps:
-        case INS_blendpd:
-        case INS_vpblendd:
-        {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_3X;
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            }
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (opSize == EA_8BYTE) ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_7C;
             break;
         }
 
@@ -21125,13 +20867,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         {
             if (insFmt == IF_RWR_CNS)
             {
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                insLatency    = PERFSCORE_LATENCY_1C;
+                insThroughput = PERFSCORE_THROUGHPUT_2X;
             }
             else
             {
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_2C;
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_2C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
         }
@@ -21141,46 +20883,37 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpblendmd:
         case INS_vpblendmq:
         {
-            if (opSize == EA_64BYTE)
+            if (opSize >= EA_64BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                insThroughput = PERFSCORE_THROUGHPUT_2X;
             }
             else
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                insThroughput = PERFSCORE_THROUGHPUT_3X;
             }
-            result.insLatency += PERFSCORE_LATENCY_1C;
+            insLatency = PERFSCORE_LATENCY_1C;
             break;
         }
 
         case INS_vpblendmb:
         case INS_vpblendmw:
         {
-            if (opSize == EA_64BYTE)
+            if (opSize >= EA_64BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                insThroughput = PERFSCORE_THROUGHPUT_2X;
             }
             else
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_3X;
+                insThroughput = PERFSCORE_THROUGHPUT_3X;
             }
-            result.insLatency += PERFSCORE_LATENCY_3C;
+            insLatency = PERFSCORE_LATENCY_3C;
             break;
         }
 
         case INS_bswap:
         {
-            if (opSize == EA_8BYTE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_2C;
-            }
-            else
-            {
-                assert(opSize == EA_4BYTE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-            }
+            insThroughput = PERFSCORE_THROUGHPUT_2X;
+            insLatency    = (opSize == EA_8BYTE) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             break;
         }
 
@@ -21188,14 +20921,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movmskpd:
         case INS_movmskps:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (opSize == EA_32BYTE)
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+
+            if (opSize >= EA_32BYTE)
             {
-                result.insLatency += ins == INS_pmovmskb ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_5C;
+                insLatency = (ins == INS_pmovmskb) ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_5C;
             }
             else
             {
-                result.insLatency += PERFSCORE_LATENCY_3C;
+                insLatency = PERFSCORE_LATENCY_3C;
             }
             break;
         }
@@ -21213,15 +20947,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmovzxwq:
         case INS_pmovzxdq:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
             break;
         }
 
         case INS_ptest:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_4C;
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_4C;
             break;
         }
 
@@ -21232,6 +20966,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cvtpd2ps:
         case INS_cvttpd2dq:
         case INS_vcvtpd2udq:
+        case INS_vcvtph2ps:
+        case INS_vcvtps2ph:
         case INS_vcvtps2qq:
         case INS_vcvtps2uqq:
         case INS_vcvtqq2ps:
@@ -21241,27 +20977,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvtudq2pd:
         case INS_vcvtuqq2ps:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_7C : PERFSCORE_LATENCY_5C;
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_7C : PERFSCORE_LATENCY_5C;
             break;
         }
 
         case INS_vtestps:
         case INS_vtestpd:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_3C;
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_3C;
             break;
         }
 
         case INS_vpbroadcastb:
-        case INS_vpbroadcastb_gpr:
         case INS_vpbroadcastw:
-        case INS_vpbroadcastw_gpr:
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+            break;
+        }
+
         case INS_vpbroadcastd:
-        case INS_vpbroadcastd_gpr:
         case INS_vpbroadcastq:
-        case INS_vpbroadcastq_gpr:
         case INS_vbroadcasti32x4:
         case INS_vbroadcastf32x4:
         case INS_vbroadcastf64x2:
@@ -21275,19 +21013,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vbroadcastss:
         case INS_vbroadcastsd:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            insLatency = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = opSize == EA_16BYTE ? PERFSCORE_LATENCY_1C : PERFSCORE_LATENCY_3C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             else
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
-                if (ins == INS_vpbroadcastb || ins == INS_vpbroadcastw)
-                {
-                    result.insLatency += PERFSCORE_LATENCY_1C;
-                }
+                insThroughput = PERFSCORE_THROUGHPUT_2X;
             }
             break;
         }
@@ -21297,43 +21031,39 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pinsrd:
         case INS_pinsrq:
         {
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            if (memAccessKind == PerfScoreMemoryAccessKind::None)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                result.insLatency    = PERFSCORE_LATENCY_4C;
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_4C;
             }
             else
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_3C;
-            }
-            break;
-        }
-
-        case INS_vmaskmovpd:
-        case INS_vmaskmovps:
-        case INS_vpmaskmovd:
-        case INS_vpmaskmovq:
-        {
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_3C;
-            }
-            else
-            {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += PERFSCORE_LATENCY_12C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = PERFSCORE_LATENCY_3C;
             }
             break;
         }
 
         case INS_vpgatherdd:
         case INS_vgatherdps:
+        case INS_vpgatherdd_msk:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_13C : PERFSCORE_LATENCY_11C;
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_11C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_4C;
+                insLatency    = PERFSCORE_LATENCY_13C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_8C;
+                insLatency    = PERFSCORE_LATENCY_17C;
+            }
             break;
         }
 
@@ -21343,27 +21073,330 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vgatherdpd:
         case INS_vgatherqps:
         case INS_vgatherqpd:
+        case INS_vgatherdpd_msk:
+        case INS_vgatherdps_msk:
+        case INS_vgatherqpd_msk:
+        case INS_vgatherqps_msk:
+        case INS_vpgatherdq_msk:
+        case INS_vpgatherqd_msk:
+        case INS_vpgatherqq_msk:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_11C : PERFSCORE_LATENCY_9C;
-            break;
-        }
-
-        case INS_movbe:
-#ifdef TARGET_AMD64
-        case INS_movbe_apx:
-#endif
-        {
-            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            if (opSize == EA_16BYTE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = PERFSCORE_LATENCY_9C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_11C;
             }
             else
             {
-                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_4C;
+                insLatency    = PERFSCORE_LATENCY_13C;
+            }
+            break;
+        }
+
+        case INS_vpscatterdd_msk:
+        case INS_vscatterdps_msk:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_4C;
+                insLatency    = PERFSCORE_LATENCY_7C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_8C;
+                insLatency    = PERFSCORE_LATENCY_9C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_16C;
+                insLatency    = PERFSCORE_LATENCY_13C;
+            }
+            break;
+        }
+
+        case INS_vpscatterdq_msk:
+        case INS_vpscatterqd_msk:
+        case INS_vpscatterqq_msk:
+        case INS_vscatterdpd_msk:
+        case INS_vscatterqpd_msk:
+        case INS_vscatterqps_msk:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_5C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_4C;
+                insLatency    = PERFSCORE_LATENCY_7C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_8C;
+                insLatency    = PERFSCORE_LATENCY_9C;
+            }
+            break;
+        }
+
+        case INS_vpshldd:
+        case INS_vpshldq:
+        case INS_vpshldvd:
+        case INS_vpshldvq:
+        case INS_vpshldvw:
+        case INS_vpshldw:
+        case INS_vpshrdd:
+        case INS_vpshrdq:
+        case INS_vpshrdvd:
+        case INS_vpshrdvq:
+        case INS_vpshrdvw:
+        case INS_vpshrdw:
+        {
+            insThroughput = (opSize >= EA_64BYTE) ? PERFSCORE_THROUGHPUT_1C : PERFSCORE_THROUGHPUT_2X;
+            insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+        }
+
+        case INS_vcvtdq2ph:
+        case INS_vcvtudq2ph:
+        {
+            if (opSize >= EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_9C;
+            }
+            else
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = PERFSCORE_LATENCY_7C;
+            }
+            break;
+        }
+
+        case INS_vcvtne2ps2bf16:
+        case INS_vcvtneps2bf16:
+        {
+            insThroughput = (opSize >= EA_64BYTE) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_1C;
+            insLatency    = PERFSCORE_LATENCY_8C;
+            break;
+        }
+
+        case INS_vcvtph2psx:
+        case INS_vcvtps2phx:
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+            insLatency    = (opSize >= EA_32BYTE) ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_6C;
+            break;
+        }
+
+        case INS_vcvtph2qq:
+        case INS_vcvtph2uqq:
+        case INS_vcvttph2qq:
+        case INS_vcvttph2uqq:
+        {
+            insThroughput = (opSize >= EA_64BYTE) ? PERFSCORE_THROUGHPUT_2C : PERFSCORE_THROUGHPUT_1C;
+            insLatency    = PERFSCORE_LATENCY_10C;
+            break;
+        }
+
+        case INS_vcvtqq2ph:
+        case INS_vcvtuqq2ph:
+        {
+            if (opSize >= EA_64BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_10C;
+            }
+            else
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = PERFSCORE_LATENCY_8C;
+            }
+            break;
+        }
+
+        case INS_divpd:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_4C;
+                insLatency    = PERFSCORE_LATENCY_13C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_8C;
+                insLatency    = PERFSCORE_LATENCY_13C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_16C;
+                insLatency    = PERFSCORE_LATENCY_23C;
+            }
+            break;
+        }
+
+        case INS_divps:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_3C;
+                insLatency    = PERFSCORE_LATENCY_11C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_5C;
+                insLatency    = PERFSCORE_LATENCY_11C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_10C;
+                insLatency    = PERFSCORE_LATENCY_18C;
+            }
+            break;
+        }
+
+        case INS_vdivph:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_8C;
+                insLatency    = PERFSCORE_LATENCY_31C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_16C;
+                insLatency    = PERFSCORE_LATENCY_31C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_32C;
+                insLatency    = PERFSCORE_LATENCY_41C;
+            }
+            break;
+        }
+
+        case INS_vrcpph:
+        {
+            if (opSize >= EA_64BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_6C;
+            }
+            else
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = PERFSCORE_LATENCY_4C;
+            }
+            break;
+        }
+
+        case INS_vrsqrtph:
+        {
+            if (opSize >= EA_64BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2C;
+                insLatency    = PERFSCORE_LATENCY_7C;
+            }
+            else
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_1C;
+                insLatency    = PERFSCORE_LATENCY_5C;
+            }
+            break;
+        }
+
+        case INS_sqrtpd:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_4C;
+                insLatency    = PERFSCORE_LATENCY_16C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_8C;
+                insLatency    = PERFSCORE_LATENCY_16C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_16C;
+                insLatency    = PERFSCORE_LATENCY_28C;
+            }
+            break;
+        }
+
+        case INS_sqrtps:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_3C;
+                insLatency    = PERFSCORE_LATENCY_12C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_6C;
+                insLatency    = PERFSCORE_LATENCY_12C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_12C;
+                insLatency    = PERFSCORE_LATENCY_20C;
+            }
+            break;
+        }
+
+        case INS_vsqrtph:
+        {
+            if (opSize == EA_16BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_9C;
+                insLatency    = PERFSCORE_LATENCY_33C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_18C;
+                insLatency    = PERFSCORE_LATENCY_33C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insThroughput = PERFSCORE_THROUGHPUT_36C;
+                insLatency    = PERFSCORE_LATENCY_45C;
+            }
+            break;
+        }
+
+        case INS_vp2intersectd:
+        case INS_vp2intersectq:
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_1C;
+
+            if (opSize == EA_16BYTE)
+            {
+                insLatency = PERFSCORE_LATENCY_3C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                insLatency = PERFSCORE_LATENCY_4C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                insLatency = PERFSCORE_LATENCY_6C;
             }
             break;
         }
@@ -21371,22 +21404,60 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         default:
         {
             assert((unsigned)ins < ArrLen(insThroughputInfos));
-            float insThroughput = insThroughputInfos[ins];
-
             assert((unsigned)ins < ArrLen(insLatencyInfos));
-            float insLatency = insLatencyInfos[ins];
 
-            if ((insLatency == PERFSCORE_LATENCY_ILLEGAL) || (insThroughput == PERFSCORE_THROUGHPUT_ILLEGAL))
-            {
-                // unhandled instruction insFmt combination
-                perfScoreUnhandledInstruction(id, &result);
-            }
-
-            result.insLatency += insLatency;
-            result.insThroughput = insThroughput;
+            insThroughput = insThroughputInfos[ins];
+            insLatency    = insLatencyInfos[ins];
             break;
         }
     }
+
+    insExecutionCharacteristics result;
+
+    assert(memThroughput != PERFSCORE_THROUGHPUT_ILLEGAL);
+    assert(memLatency != PERFSCORE_LATENCY_ILLEGAL);
+
+    if ((insLatency == PERFSCORE_LATENCY_ILLEGAL) || (insThroughput == PERFSCORE_THROUGHPUT_ILLEGAL))
+    {
+        // unhandled instruction insFmt combination
+        perfScoreUnhandledInstruction(id, &result);
+        result.insMemoryAccessKind = memAccessKind;
+        return result;
+    }
+    else
+    {
+        if (memAccessKind != PerfScoreMemoryAccessKind::None)
+        {
+            if (IsSimdInstruction(ins))
+            {
+                // SIMD and floating-point indirections are a bit more expensive
+
+                if (opSize >= EA_64BYTE)
+                {
+                    memLatency += PERFSCORE_LATENCY_2C;
+                }
+                else if (opSize >= EA_32BYTE)
+                {
+                    memLatency += PERFSCORE_LATENCY_1C;
+                }
+            }
+            else if (insLatency < memLatency)
+            {
+                // Most general-purpose instructions have their costs amortized by the memory access
+                insLatency = PERFSCORE_LATENCY_ZERO;
+            }
+        }
+
+        // The throughput is a reciprocal, meaning 2X is 0.5 and 2C is 2.0, so we want
+        // to pick the higher value as it is the bigger limiter on the throughput.
+        //
+        // Latencies we just want to add together as we require the time to read/write
+        // the memory and to perform the operation.
+
+        result.insThroughput = std::max(insThroughput, memThroughput);
+        result.insLatency    = insLatency + memLatency;
+    }
+    result.insMemoryAccessKind = memAccessKind;
 
     return result;
 }

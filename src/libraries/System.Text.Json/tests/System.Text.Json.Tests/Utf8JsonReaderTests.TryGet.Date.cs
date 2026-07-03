@@ -152,7 +152,9 @@ namespace System.Text.Json.Tests
         // https://github.com/dotnet/runtime/issues/30095
         public static void TestingDateTimeMinValue_UtcOffsetGreaterThan0()
         {
-            string jsonString = @"""0001-01-01T00:00:00""";
+            string jsonString = """
+                "0001-01-01T00:00:00"
+                """;
             string expectedString = "0001-01-01T00:00:00";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -179,7 +181,9 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestingDateTimeMaxValue()
         {
-            string jsonString = @"""9999-12-31T23:59:59""";
+            string jsonString = """
+                "9999-12-31T23:59:59"
+                """;
             string expectedString = "9999-12-31T23:59:59";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -254,9 +258,79 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(@"""\u001c\u0001""")]
-        [InlineData(@"""\u001c\u0001\u0001""")]
+        [InlineData("""
+            "\u001c\u0001"
+            """)]
+        [InlineData("""
+            "\u001c\u0001\u0001"
+            """)]
         public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testString)
+        {
+            var dataUtf8 = Encoding.UTF8.GetBytes(testString);
+            var json = new Utf8JsonReader(dataUtf8);
+            Assert.True(json.Read());
+
+            Assert.False(json.TryGetDateTime(out var dateTime));
+            Assert.Equal(default, dateTime);
+            JsonTestHelper.AssertThrows<FormatException>(ref json, (ref Utf8JsonReader json) => json.GetDateTime());
+
+            Assert.False(json.TryGetDateTimeOffset(out var dateTimeOffset));
+            Assert.Equal(default, dateTimeOffset);
+            JsonTestHelper.AssertThrows<FormatException>(ref json, (ref Utf8JsonReader json) => json.GetDateTimeOffset());
+        }
+
+        [Theory]
+        [InlineData("\"2007-04-05T24:00:00\"", "2007-04-06T00:00:00")]
+        [InlineData("\"2007-04-05T24:00:00.0000000\"", "2007-04-06T00:00:00")]
+        [InlineData("\"2020-02-29T24:00:00+00:00\"", "2020-03-01T00:00:00+00:00")]
+        public static void TestingStrings_Hour24_Valid(string jsonString, string expectedString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    DateTime expected = DateTime.Parse(expectedString);
+                    Assert.True(json.TryGetDateTime(out DateTime actual));
+                    Assert.Equal(expected, actual);
+
+                    DateTimeOffset expectedDto = DateTimeOffset.Parse(expectedString);
+                    Assert.True(json.TryGetDateTimeOffset(out DateTimeOffset actualDto));
+                    Assert.Equal(expectedDto, actualDto);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("\"2023-12-31T24:00:00Z\"", "2024-01-01T00:00:00.0000000Z")]
+        public static void TestingStrings_Hour24_ValidUtc(string jsonString, string expectedString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    // DateTime.Parse for strings with Z TZD returns DateTimeKind.Local,
+                    // but the JSON reader returns DateTimeKind.Utc. Use ParseExact with RoundtripKind.
+                    DateTime expected = DateTime.ParseExact(expectedString, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+                    Assert.True(json.TryGetDateTime(out DateTime actual));
+                    Assert.Equal(expected, actual);
+
+                    DateTimeOffset expectedDto = DateTimeOffset.ParseExact(expectedString, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+                    Assert.True(json.TryGetDateTimeOffset(out DateTimeOffset actualDto));
+                    Assert.Equal(expectedDto, actualDto);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("\"2007-04-05T24:00:01\"")]  // Non-zero seconds
+        [InlineData("\"2007-04-05T24:01:00\"")]  // Non-zero minutes
+        [InlineData("\"2007-04-05T24:00:00.0000001\"")]  // Non-zero fraction
+        [InlineData("\"9999-12-31T24:00:00\"")]  // Would overflow
+        public static void TestingStrings_Hour24_Invalid(string testString)
         {
             var dataUtf8 = Encoding.UTF8.GetBytes(testString);
             var json = new Utf8JsonReader(dataUtf8);

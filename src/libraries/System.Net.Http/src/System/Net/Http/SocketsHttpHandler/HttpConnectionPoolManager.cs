@@ -44,7 +44,7 @@ namespace System.Net.Http
         private readonly IWebProxy? _proxy;
         private readonly ICredentials? _proxyCredentials;
 
-#if !ILLUMOS && !SOLARIS
+#if !ILLUMOS && !SOLARIS && !HAIKU
         private NetworkChangeCleanup? _networkChangeCleanup;
 #endif
 
@@ -139,7 +139,7 @@ namespace System.Net.Http
             }
         }
 
-#if !ILLUMOS && !SOLARIS
+#if !ILLUMOS && !SOLARIS && !HAIKU
         /// <summary>
         /// Starts monitoring for network changes. Upon a change, <see cref="HttpConnectionPool.OnNetworkChanged"/> will be
         /// called for every <see cref="HttpConnectionPool"/> in the <see cref="HttpConnectionPoolManager"/>.
@@ -272,9 +272,13 @@ namespace System.Net.Http
                 }
                 else if (sslHostName == null)
                 {
-                    if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
+                    // Both non-secure WebSockets (WS) and cleartext HTTP/2 (h2c) need a CONNECT tunnel to the destination,
+                    // because they can't be expressed using the absolute-form request line an HTTP proxy expects.
+                    // h2c is only tunneled when HTTP/2 is required or preferred; requests that allow downgrading to
+                    // HTTP/1.1 (RequestVersionOrLower) keep using the shared HTTP/1.1 proxy pool below.
+                    if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme) ||
+                        (request.Version.Major == 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower))
                     {
-                        // Non-secure websocket connection through proxy to the destination.
                         return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity);
                     }
                     else
@@ -457,7 +461,7 @@ namespace System.Net.Http
                 pool.Value.Dispose();
             }
 
-#if !ILLUMOS && !SOLARIS
+#if !ILLUMOS && !SOLARIS && !HAIKU
             _networkChangeCleanup?.Dispose();
 #endif
         }

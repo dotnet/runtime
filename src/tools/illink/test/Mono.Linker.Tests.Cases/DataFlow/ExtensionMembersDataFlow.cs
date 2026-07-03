@@ -272,8 +272,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 return ExtensionMembersDataFlow.GetWithFields();
             }
 
-            [ExpectedWarning("IL2067", "left", nameof(DataFlowTypeExtensions.RequiresPublicMethods))] 
-            [ExpectedWarning("IL2067", "right", nameof(DataFlowTypeExtensions.RequiresPublicMethods))] 
+            [ExpectedWarning("IL2067", "left", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            [ExpectedWarning("IL2067", "right", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
             [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithMethods))]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             public static Type operator -(

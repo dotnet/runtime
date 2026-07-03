@@ -19,6 +19,9 @@
     <Compile Include="RFLogging.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="..\testmix_gc.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

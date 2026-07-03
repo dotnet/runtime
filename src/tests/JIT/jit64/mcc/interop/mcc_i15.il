@@ -5,12 +5,10 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
-.assembly 'mcc_i15' {}
-
-
-.namespace MCCTest
+.namespace mcc_i15
 {
   .class public MyClass
   {
@@ -20,18 +18,16 @@
 
     .method public static int32 Main()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
-      .entrypoint
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.PlatformSpecificAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+            int32 (1) // TestPlatforms.Windows
+        }
       .maxstack  1
-      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
-      brtrue.s   DoTest
-      ldc.i4     100
-      ret
 
     DoTest:
-      call       int32 MCCTest.MyClass::Test()
+      call       int32 mcc_i15.MyClass::Test()
       ret
     }
 
@@ -55,7 +51,7 @@
       ldc.r4     10
       ldc.r4     11
       ldc.r4     12
-      ldftn      valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float32, float32, float32, float32, float32, float32, float32, float32, float32, float32, float32, float32)
+      ldftn      valuetype MCCTest.VType1 mcc_i15.MyClass::Sum(float32, float32, float32, float32, float32, float32, float32, float32, float32, float32, float32, float32)
       calli      valuetype MCCTest.VType1(float32,
                                             float32,
                                             float32,
@@ -82,4 +78,7 @@
 
   } // end of class MyClass
 
-} // end of namespace MCCTest
+} // end of namespace mcc_i15
+
+
+

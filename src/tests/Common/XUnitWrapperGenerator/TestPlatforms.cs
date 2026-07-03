@@ -8,21 +8,25 @@ namespace Xunit
     [Flags]
     public enum TestPlatforms
     {
-        Windows = 1,
-        Linux = 2,
-        OSX = 4,
-        FreeBSD = 8,
-        NetBSD = 16,
-        illumos= 32,
-        Solaris = 64,
-        iOS = 128,
-        tvOS = 256,
-        Android = 512,
-        Browser = 1024,
-        MacCatalyst = 2048,
-        LinuxBionic = 4096,
-        Wasi = 8192,
-        AnyUnix = FreeBSD | Linux | NetBSD | OSX | illumos | Solaris | iOS | tvOS | MacCatalyst | Android | Browser | LinuxBionic | Wasi,
+        Windows = 1 << 0,
+        Linux = 1 << 1,
+        OSX = 1 << 2,
+        FreeBSD = 1 << 3,
+        NetBSD = 1 << 4,
+        illumos = 1 << 5,
+        Solaris = 1 << 6,
+        iOS = 1 << 7,
+        tvOS = 1 << 8,
+        Android = 1 << 9,
+        Browser = 1 << 10,
+        MacCatalyst = 1 << 11,
+        LinuxBionic = 1 << 12,
+        Wasi = 1 << 13,
+        Haiku = 1 << 14,
+        OpenBSD = 1 << 15,
+
+        AnyApple = OSX | iOS | tvOS | MacCatalyst,
+        AnyUnix = AnyApple | Linux | FreeBSD | NetBSD | OpenBSD | illumos | Solaris | Android | Browser | LinuxBionic | Wasi | Haiku,
         Any = ~0
     }
 }

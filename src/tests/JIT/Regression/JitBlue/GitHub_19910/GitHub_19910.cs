@@ -18,22 +18,19 @@ namespace GitHub_19910
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [Fact]
+        [ConditionalFact(typeof(Sse2), nameof(Sse2.IsSupported))]
         public static int TestEntryPoint()
         {
-            if (Sse2.IsSupported)
+            Vector128<uint> a = Sse2.ConvertScalarToVector128UInt32(0xA);
+            Vector128<uint> b = Sse2.ConvertScalarToVector128UInt32(0xB);
+
+            Vector128<uint> tmp = a; a = b; b = tmp;    // in-place version
+            SwapNonGeneric(ref a, ref b);               // inlined version
+
+            if ((Sse2.ConvertToUInt32(a) != 0xA) || (Sse2.ConvertToUInt32(b) != 0xB))
             {
-                Vector128<uint> a = Sse2.ConvertScalarToVector128UInt32(0xA);
-                Vector128<uint> b = Sse2.ConvertScalarToVector128UInt32(0xB);
-
-                Vector128<uint> tmp = a; a = b; b = tmp;    // in-place version
-                SwapNonGeneric(ref a, ref b);               // inlined version
-
-                if ((Sse2.ConvertToUInt32(a) != 0xA) || (Sse2.ConvertToUInt32(b) != 0xB))
-                {
-                    Console.WriteLine("A={0}, B={1}", Sse2.ConvertToUInt32(a), Sse2.ConvertToUInt32(b));
-                    return -1;
-                }
+                Console.WriteLine("A={0}, B={1}", Sse2.ConvertToUInt32(a), Sse2.ConvertToUInt32(b));
+                return -1;
             }
             return 100;
         }

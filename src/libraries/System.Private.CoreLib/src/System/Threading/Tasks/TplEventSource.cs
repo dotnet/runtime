@@ -12,7 +12,6 @@ namespace System.Threading.Tasks
         Name = "System.Threading.Tasks.TplEventSource",
         Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5"
         )]
-    [EventSourceAutoGenerate]
     internal sealed partial class TplEventSource : EventSource
     {
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
@@ -41,10 +40,6 @@ namespace System.Threading.Tasks
         /// Defines the singleton instance for the TPL ETW provider.
         /// </summary>
         public static readonly TplEventSource Log = new TplEventSource();
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private TplEventSource(int _) { }
 
         /// <summary>Configured behavior of a task wait operation.</summary>
         public enum TaskWaitBehavior : int
@@ -133,6 +128,11 @@ namespace System.Threading.Tasks
             /// Relatively Verbose logging meant for debugging the Task library itself.  Will probably be removed in the future
             /// </summary>
             public const EventKeywords DebugActivityId = (EventKeywords)0x40000;
+            /// <summary>
+            /// Enable async instrumentation to track async operations across await/async method boundaries.
+            /// Mainly used by debugger to track task and continuation chain execution.
+            /// </summary>
+            public const EventKeywords AsyncInstrumentation = (EventKeywords)0x80000;
         }
 
         //-----------------------------------------------------------------------------------

@@ -58,6 +58,14 @@ namespace System.Globalization
                     return null;
                 }
 
+                if (dt.Year == s_calendarMinValue.Year)
+                {
+                    // adjust the start date to the minimum supported date time
+                    // date 1868/9/8 is actually Meiji 1/1/1 but the actual Gregorian date is 1868/10/23. The 1868/9/8 is used before as a Gregorian era start date
+                    // for JapaneseCalendar but now we are ensuring using the correct 1868/10/23 stored in s_calendarMinValue.
+                    dt = s_calendarMinValue;
+                }
+
                 if (dt < s_calendarMinValue)
                 {
                     // only populate the Eras that are valid JapaneseCalendar date times

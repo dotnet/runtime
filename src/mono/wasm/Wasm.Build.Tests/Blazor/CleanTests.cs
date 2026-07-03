@@ -13,6 +13,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests.Blazor;
 
+[TestCategory("native-mono")]
 public class CleanTests : BlazorWasmTestBase
 {
     public CleanTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

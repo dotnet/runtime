@@ -346,22 +346,28 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     }
     else
     {
-        return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
+        PTR_MethodDesc pMethodDesc = GetMethodDesc();
+        OptimizationTier tier = pMethodDesc->GetMethodDescOptimizationTier();
+        if (tier == OptimizationTier::OptimizationTierUnknown)
+        {
+            tier = TieredCompilationManager::GetInitialOptimizationTier(pMethodDesc);
+        }
+        return tier;
     }
 }
 
 #ifndef DACCESS_COMPILE
 void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 {
-    WRAPPER_NO_CONTRACT;
+    STANDARD_VM_CONTRACT;
+
     if (m_storageKind == StorageKind::Explicit)
     {
         AsNode()->SetOptimizationTier(tier);
     }
     else
     {
-        // State changes should have been made previously such that the initial tier is the new tier
-        _ASSERTE(TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc()) == tier);
+        GetMethodDesc()->SetMethodDescOptimizationTier(tier);
     }
 }
 #endif
@@ -679,7 +685,7 @@ void ILCodeVersionNode::SetJitFlags(DWORD flags)
     m_jitFlags.Store(flags);
 }
 
-void ILCodeVersionNode::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
+void ILCodeVersionNode::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
@@ -1022,7 +1028,7 @@ void ILCodeVersion::SetJitFlags(DWORD flags)
     AsNode()->SetJitFlags(flags);
 }
 
-void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
+void ILCodeVersion::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     AsNode()->SetInstrumentedILMap(cMap, rgMap);
@@ -1980,7 +1986,14 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
                 pMethod,
                 nativeCodeVersion.GetVersionId()));
 
-        #ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_INTERPRETER
+            // When we hit the Precode that should fixup any issues with an unset interpreter code pointer. This is notably most important in ReJIT scenarios
+            pMethod->ClearInterpreterCodePointer();
+#endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            pMethod->ResetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_TIERED_COMPILATION
             bool wasSet = CallCountingManager::SetCodeEntryPoint(nativeCodeVersion, pCode, false, nullptr);
             _ASSERTE(wasSet);
         #else

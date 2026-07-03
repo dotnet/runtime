@@ -230,6 +230,7 @@
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
+    <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Buffer.cs" />
     <Compile Include="System\SpanHelpers.cs" />

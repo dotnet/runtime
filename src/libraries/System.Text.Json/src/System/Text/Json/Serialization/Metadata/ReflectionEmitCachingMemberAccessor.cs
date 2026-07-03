@@ -63,15 +63,31 @@ namespace System.Text.Json.Serialization.Metadata
                 key: (nameof(CreateParameterizedConstructor), typeof(T), constructor),
                 valueFactory: key => _sourceAccessor.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>((ConstructorInfo)key.member!));
 
+        public override Func<object?, T> CreateSingleParameterConstructor<T>(ConstructorInfo constructor) =>
+            _cache.GetOrAdd(
+                key: (nameof(CreateSingleParameterConstructor), typeof(T), constructor),
+                valueFactory: key => _sourceAccessor.CreateSingleParameterConstructor<T>((ConstructorInfo)key.member!));
+
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
             _cache.GetOrAdd(
                 key: (nameof(CreatePropertyGetter), typeof(TProperty), propertyInfo),
                 valueFactory: key => _sourceAccessor.CreatePropertyGetter<TProperty>((PropertyInfo)key.member!));
 
+        public override Func<TDeclaringType, TProperty> CreatePropertyGetter<TDeclaringType, TProperty>(PropertyInfo propertyInfo) =>
+            _cache.GetOrAdd(
+                key: ("CreatePropertyGetter`2", typeof((TDeclaringType, TProperty)), propertyInfo),
+                valueFactory: key => _sourceAccessor.CreatePropertyGetter<TDeclaringType, TProperty>((PropertyInfo)key.member!));
+
         public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
             _cache.GetOrAdd(
                 key: (nameof(CreatePropertySetter), typeof(TProperty), propertyInfo),
                 valueFactory: key => _sourceAccessor.CreatePropertySetter<TProperty>((PropertyInfo)key.member!));
+
+        public override UnionTryGetValueAccessor<TUnion> CreateUnionTryGetValueAccessor<TUnion>(IReadOnlyList<KeyValuePair<Type, MethodInfo>> entries) =>
+            // The chained accessor is built once per JsonTypeInfo<TUnion> during metadata
+            // population, so an additional cache layer would not pay for itself; forward
+            // directly to the underlying emit-backed accessor.
+            _sourceAccessor.CreateUnionTryGetValueAccessor<TUnion>(entries);
     }
 }
 #endif

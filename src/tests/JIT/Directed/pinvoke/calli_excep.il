@@ -9,13 +9,16 @@
 .assembly extern xunit.core {}
 
 .assembly extern mscorlib { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+
 .assembly calli_excep { }
 .namespace JitTest
 {
   .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static pinvokeimpl("kernel32" winapi) 
+    .method private hidebysig static pinvokeimpl("kernel32" winapi)
             void  RaiseException(unsigned int32 code,
                                  unsigned int32 ,
                                  unsigned int32 argNum,
@@ -27,9 +30,20 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+          string('https://github.com/dotnet/runtime/issues/118965')
+          type([TestLibrary]TestLibrary.Utilities)
+          string[1] ('IsCoreClrInterpreter')
+      }
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TargetFrameworkMonikers, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+          string('Mono doesn\'t support SEH exceptions in Mono Windows runtime exception handler (AddVectoredExceptionHandler)')
+          int32 (1) // TestPlatforms.Windows
+          int32 (-1) // TargetFrameworkMonikers.Any
+          int32(2) // Mono
+      }
       .entrypoint
-      .custom instance void [mscorlib]System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute::.ctor() = ( 01 00 00 00 ) 
-      .custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = ( 01 00 00 00 ) 
+      .custom instance void [mscorlib]System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute::.ctor() = ( 01 00 00 00 )
+      .custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = ( 01 00 00 00 )
       .maxstack  8
       .locals (class [mscorlib]System.NullReferenceException V_0,
                int32 V_1)
@@ -46,7 +60,7 @@
 			calli   void (unsigned int32, unsigned int32, unsigned int32, native uint)
 			leave.s    IL_001d
       }  // end .try
-      catch [mscorlib]System.OutOfMemoryException 
+      catch [mscorlib]System.OutOfMemoryException
       {
         IL_000f:  stloc.0
         IL_0010:  ldloc.0
@@ -71,7 +85,7 @@
       IL_003c:  ret
     } // end of method Test::Main
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       .maxstack  8
