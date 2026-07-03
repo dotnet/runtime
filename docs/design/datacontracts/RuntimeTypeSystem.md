@@ -1168,11 +1168,7 @@ Contracts used:
         if (corElementType != CorElementType.FnPtr && typeHandle.Address == TargetPointer.Null)
             return new TypeHandle(TargetPointer.Null);
         ILoader loaderContract = _target.Contracts.Loader;
-        // Function pointer types may not be owned by the loader module of any single type argument,
-        // so they need their own loader-module selection.
-        TargetPointer loaderModule = corElementType == CorElementType.FnPtr
-            ? FindFnPtrLoaderModule(typeArguments)
-            : GetLoaderModule(typeHandle);
+        TargetPointer loaderModule = // see [link](https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78)
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         TypeHandle potentialMatch = new TypeHandle(TargetPointer.Null);
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
@@ -1198,15 +1194,6 @@ Contracts used:
             }
         }
         return new TypeHandle(TargetPointer.Null);
-    }
-
-    // Mirrors `ClassLoader::ComputeLoaderModuleForFunctionPointer`.
-    private TargetPointer FindFnPtrLoaderModule(ImmutableArray<TypeHandle> retAndArgTypes)
-    {
-        // The loader module of a
-        // function pointer type is the loader module of the collectible ret/arg type with the
-        // largest `LoaderAllocator::CreationNumber`, or CoreLib's loader module if none of the
-        // ret/arg types are collectible.
     }
 
     public TypeHandle GetPrimitiveType(CorElementType typeCode)
