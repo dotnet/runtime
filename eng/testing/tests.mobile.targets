@@ -116,8 +116,14 @@
     </ItemGroup>
 
     <ItemGroup>
+      <_ResolvedStreamConformanceTests
+          Include="@(ResolvedFileToPublish)"
+          Condition="'%(ResolvedFileToPublish.FileName)' == 'StreamConformanceTests'" />
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
+      <TrimmerRootDescriptor
+          Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.StreamConformanceTests.xml"
+          Condition="'$(SkipTestUtilitiesReference)' != 'true' and '$(TargetsAppleMobile)' == 'true' and '@(_ResolvedStreamConformanceTests)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -126,7 +132,7 @@
           Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'android'" />
-      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'" />
+      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="('$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator') and '$(TestNativeAot)' != 'true'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'wasi'" />
 
       <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->

@@ -64,6 +64,16 @@ The .NET Foundation licenses this file to you under the MIT license.
       <Output TaskParameter="ExitCode" PropertyName="_IsAlpineExitCode" />
     </Exec>
 
+    <!-- tizen's gcc toolchain needs extra linker args -->
+    <Exec Command="test -f &quot;$(SysRoot)/etc/os-release&quot; &amp;&amp; grep -q ID=tizen &quot;$(SysRoot)/etc/os-release&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' != ''">
+      <Output TaskParameter="ExitCode" PropertyName="_IsTizenExitCode" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(_IsTizenExitCode)' == '0'">
+      <_TizenToolchainLibDir>lib</_TizenToolchainLibDir>
+      <_TizenToolchainLibDir Condition="'$(_targetArchitecture)' == 'arm64' or '$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'riscv64'">lib64</_TizenToolchainLibDir>
+    </PropertyGroup>
+
     <PropertyGroup>
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' != '0'">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
@@ -300,6 +310,9 @@ The .NET Foundation licenses this file to you under the MIT license.
            This is required only for 64-bit binaries.
       -->
       <LinkerArg Include="-Wl,-z,max-page-size=16384" Condition=" '$(_linuxLibcFlavor)' == 'bionic' and '$(NativeLib)' == 'Shared' and ('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')" />
+
+      <!-- Tizen requires additional linker args -->
+      <LinkerArg Include="-L&quot;$(SysRoot)/$(_TizenToolchainLibDir)&quot;" Condition="'$(_IsTizenExitCode)' == '0'" />
     </ItemGroup>
 
     <Exec Command="xcodebuild -version" Condition="'$(_IsApplePlatform)' == 'true' and '$(UseLdClassicXCodeLinker)' == ''" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">

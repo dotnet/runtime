@@ -291,6 +291,7 @@ static const Entry s_QCall[] =
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
+    DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)

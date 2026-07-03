@@ -281,6 +281,7 @@ DEFINE_CLASS(RUNE,                  Text,                   Rune)
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
+DEFINE_METHOD(ENVIRONMENT,       CURRENT_MANAGED_THREAD_ID, get_CurrentManagedThreadId, NoSig)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING, GetResourceString, SM_PtrChar_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommandLineArgs, SM_PtrChar_Int_PtrPtrChar_PtrArrStr_PtrException_RetVoid)
 DEFINE_METHOD(ENVIRONMENT,       CALL_ENTRY_POINT, CallEntryPoint, SM_IntPtr_PtrArrStr_PtrInt_Bool_PtrException_RetVoid)
