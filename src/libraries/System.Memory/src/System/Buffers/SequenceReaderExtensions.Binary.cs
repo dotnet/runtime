@@ -146,7 +146,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="long"/> as big endian without advancing the reader.
+        /// Reads an <see cref="long"/> as big endian.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="long"/>.</returns>
         public static bool TryReadBigEndian(ref this SequenceReader<byte> reader, out long value)
