@@ -408,7 +408,6 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
     // True if this block is a try entry or a try side-entry.
     //
     auto isGeneralizedTryEntry = [comp](BasicBlock* block) -> bool {
-
         EHblkDsc* const ehDsc = comp->ehGetBlockTryDsc(block);
 
         if (ehDsc == nullptr)
