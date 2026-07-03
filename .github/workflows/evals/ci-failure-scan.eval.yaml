@@ -71,7 +71,7 @@ stimuli:
       - type: file-not-matches
         config:
           path: "out/kbe.md"
-          pattern: '(?i)\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|\bmut(e|ed|es|ing)\b'
+          pattern: '(?i)\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|ExcludeList'
 
       - type: tool-calls
         name: fetched-real-failing-build

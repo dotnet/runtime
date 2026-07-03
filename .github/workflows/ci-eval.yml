@@ -18,7 +18,7 @@ jobs:
     if: >-
       github.repository == 'dotnet/runtime' &&
       github.event.issue.pull_request &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
       (
         github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
         github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
@@ -64,7 +64,7 @@ jobs:
     if: >-
       github.repository == 'dotnet/runtime' &&
       github.event.issue.pull_request &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      contains(fromJSON('["OWNER","MEMBER"]'), github.event.comment.author_association) &&
       (
         github.event.comment.body == '/ci-scan eval' || startsWith(github.event.comment.body, '/ci-scan eval ') ||
         github.event.comment.body == '/ci-fix eval' || startsWith(github.event.comment.body, '/ci-fix eval ') ||
@@ -142,8 +142,6 @@ jobs:
 
       - uses: actions/checkout@v4
         if: steps.guard.outputs.run == 'true'
-        with:
-          fetch-depth: 0
 
       - name: Check out the PR head
         if: steps.guard.outputs.run == 'true'
