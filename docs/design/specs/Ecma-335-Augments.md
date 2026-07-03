@@ -152,14 +152,13 @@ In II.23.2.7, it is noted that CMOD_OPT or CMOD_REQD is followed
 by a TypeRef or TypeDef metadata token. TypeSpec tokens in this
 position should be treated as invalid metadata.
 
-Allowing TypeSpec custom modifier types also creates a path for
-recursive TypeSpec encodings, which has caused problems in runtimes
-and tools. Such metadata should be rejected rather than cycle-detected.
-
+Allowing TypeSpec custom modifier types creates a path for
+recursive TypeSpec encodings that are complicated to detect. Such metadata should be rejected rather than cycle-detected.
 Related issues:
 
 * https://github.com/dotnet/roslyn/issues/7971
 * https://github.com/dotnet/runtime/issues/4945
+* https://github.com/dotnet/runtime/pull/123819#discussion_r2810397721
 
 #### Proposed specification change
 
@@ -173,7 +172,8 @@ with
 
 > The CMOD_OPT or CMOD_REQD is followed by a metadata token that indexes a row in the TypeDef
 table or TypeRef table. However, these tokens are encoded and compressed –
-see §II.23.2.8 for details.
+see §II.23.2.8 for details. TypeSpec tokens are not valid in this position; this
+restriction prevents custom modifiers from forming recursive TypeSpec encodings.
 
 ### 3. Custom modifiers can go in more places than specified
 
