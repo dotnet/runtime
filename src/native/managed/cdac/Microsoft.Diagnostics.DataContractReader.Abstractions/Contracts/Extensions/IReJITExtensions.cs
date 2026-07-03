@@ -15,7 +15,7 @@ public static class IReJITExtensions
 
         foreach (ILCodeVersionHandle ilCodeVersionHandle in ilCodeVersions)
         {
-            if (rejit.GetRejitState(ilCodeVersionHandle) == RejitState.Active)
+            if (cv.IsReJIT(ilCodeVersionHandle) && rejit.GetRejitState(ilCodeVersionHandle) == RejitState.Active)
             {
                 yield return rejit.GetRejitId(ilCodeVersionHandle);
             }

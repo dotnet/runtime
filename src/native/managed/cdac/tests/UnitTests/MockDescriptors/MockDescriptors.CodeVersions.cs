@@ -153,6 +153,8 @@ internal sealed class MockILCodeVersionNode : TypedView
     private const string RejitStateFieldName = "RejitState";
     private const string ILAddressFieldName = "ILAddress";
     private const string DeoptimizedFieldName = "Deoptimized";
+    private const string SourceFieldName = "Source";
+    private const string EnCVersionFieldName = "EnCVersion";
 
     public static Layout<MockILCodeVersionNode> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ILCodeVersionNode", architecture)
@@ -161,6 +163,8 @@ internal sealed class MockILCodeVersionNode : TypedView
             .AddUInt32Field(RejitStateFieldName)
             .AddPointerField(ILAddressFieldName)
             .AddUInt32Field(DeoptimizedFieldName)
+            .AddUInt32Field(SourceFieldName)
+            .AddNUIntField(EnCVersionFieldName)
             .Build<MockILCodeVersionNode>();
 
     public ulong VersionId
@@ -185,6 +189,18 @@ internal sealed class MockILCodeVersionNode : TypedView
     {
         get => ReadUInt32Field(DeoptimizedFieldName);
         set => WriteUInt32Field(DeoptimizedFieldName, value);
+    }
+
+    public uint Source
+    {
+        get => ReadUInt32Field(SourceFieldName);
+        set => WriteUInt32Field(SourceFieldName, value);
+    }
+
+    public ulong EnCVersion
+    {
+        get => ReadPointerField(EnCVersionFieldName);
+        set => WritePointerField(EnCVersionFieldName, value);
     }
 }
 
@@ -314,13 +330,15 @@ internal sealed class MockCodeVersionsBuilder
         => ILCodeVersioningStateLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
 
-    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false)
+    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false, uint source = 1 /* CodeVersionSource.ReJIT */, ulong encVersion = 0)
     {
         MockILCodeVersionNode node = ILCodeVersionNodeLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));
         node.VersionId = versionId;
         node.RejitState = rejitFlags;
         node.Deoptimized = deoptimized ? 1u : 0u;
+        node.Source = source;
+        node.EnCVersion = encVersion;
         node.Next = 0;
 
         return node;

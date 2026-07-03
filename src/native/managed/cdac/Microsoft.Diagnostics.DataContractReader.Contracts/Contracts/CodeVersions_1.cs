@@ -153,14 +153,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             return false;
         if (rts.IsCollectibleMethod(md))
             return false;
-        TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle mt = rts.GetTypeHandle(mtAddr);
-        TargetPointer modAddr = rts.GetModule(mt);
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
-        ModuleFlags modFlags = loader.GetFlags(mod);
-        if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
-            return false;
         return true;
     }
 
@@ -414,6 +406,14 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
     bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle iLCodeVersionHandle)
     {
         return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+    }
+
+    bool ICodeVersions.IsReJIT(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        // The synthetic (default) version has no backing node and is never a ReJIT version.
+        if (!ilCodeVersionHandle.IsExplicit)
+            return false;
+        return (CodeVersionSource)AsNode(ilCodeVersionHandle).Source == CodeVersionSource.ReJIT;
     }
 
     OptimizationTier ICodeVersions.GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)

@@ -6,6 +6,13 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+public enum CodeVersionSource : uint
+{
+    Unknown = 0,
+    ReJIT = 1,
+    EnC = 2,
+}
+
 public interface ICodeVersions : IContract
 {
     static string IContract.Name { get; } = nameof(CodeVersions);
@@ -31,6 +38,7 @@ public interface ICodeVersions : IContract
     public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
     public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
     public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+    public virtual bool IsReJIT(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
 }
 
 public readonly struct ILCodeVersionHandle

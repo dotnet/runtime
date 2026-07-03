@@ -603,6 +603,75 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IsReJIT_ExcludesEnCAndDefault(MockTarget.Architecture arch)
+    {
+        uint methodRowId = 0x25; // arbitrary
+        var builder = new MockCodeVersions(arch);
+        var methodDescAddress = new TargetPointer(0x00aa_aa00);
+        var moduleAddress = new TargetPointer(0x00ca_ca00);
+
+        // Active explicit version is an EnC edit (CodeVersionSource.EnC == 2), apply-count 3.
+        TargetNUInt ilVersionId = new TargetNUInt(2);
+        MockILCodeVersionNode ilVersionNode = builder.AddILCodeVersionNode(
+            ilVersionId.Value,
+            /* kStateActive */ 0x00000002,
+            deoptimized: false,
+            source: (uint)CodeVersionSource.EnC,
+            encVersion: 3);
+        MockILCodeVersioningState versioningState = builder.AddILCodeVersioningState();
+        versioningState.ActiveVersionKind = 1;
+        versioningState.ActiveVersionNode = ilVersionNode.Address;
+        versioningState.ActiveVersionModule = 0;
+        versioningState.ActiveVersionMethodDef = 0;
+        versioningState.FirstVersionNode = ilVersionNode.Address;
+        var module = new CodeVersionsMockModule()
+        {
+            Address = moduleAddress,
+            MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
+            MethodDefToILCodeVersioningStateTable = new Dictionary<uint, TargetPointer>() {
+                { methodRowId, new TargetPointer(versioningState.Address)}
+            },
+        };
+        var methodTable = new CodeVersionsMockMethodTable()
+        {
+            Address = new TargetPointer(0x00ba_ba00),
+            Module = module,
+        };
+
+        var oneMethod = CodeVersionsMockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: TargetPointer.Null);
+        oneMethod.MethodTable = methodTable;
+        oneMethod.RowId = methodRowId;
+
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(arch, builder, mockLoader: mockLoader, mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+        var codeVersions = target.Contracts.CodeVersions;
+        Assert.NotNull(codeVersions);
+
+        // The active explicit version is an EnC edit, so it is not a ReJIT version.
+        ILCodeVersionHandle active = codeVersions.GetActiveILCodeVersion(methodDescAddress);
+        Assert.True(active.IsExplicit);
+        Assert.False(codeVersions.IsReJIT(active));
+
+        // The synthetic (default) version has no backing node -> never a ReJIT version.
+        List<ILCodeVersionHandle> all = codeVersions.GetILCodeVersions(methodDescAddress).ToList();
+        ILCodeVersionHandle synthetic = all.Find(v => !v.Equals(active));
+        Assert.True(synthetic.IsValid);
+        Assert.False(synthetic.IsExplicit);
+        Assert.False(codeVersions.IsReJIT(synthetic));
+
+        // EnC versions are excluded from the ReJIT id enumeration.
+        IReJIT rejit = target.Contracts.ReJIT;
+        List<TargetNUInt> rejitIds = rejit.GetRejitIds(target, methodDescAddress).ToList();
+        Assert.Empty(rejitIds);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void IlToNativeToIlCodeVersion_SyntheticAndExplicit(MockTarget.Architecture arch)
     {
         uint methodRowId = 0x25; // arbitrary

@@ -1767,7 +1767,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             else if (methodDef.RelativeVirtualAddress == 0)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
 
-            TargetPointer headerPtr = loader.GetILHeader(moduleHandle, functionToken);
+            TargetPointer headerPtr = TargetPointer.Null;
+            if (methodDescPtr != TargetPointer.Null)
+            {
+                ICodeVersions cv = _target.Contracts.CodeVersions;
+                ILCodeVersionHandle activeVersion = cv.GetActiveILCodeVersion(methodDescPtr);
+                if (activeVersion.IsValid && activeVersion.IsExplicit && !cv.IsReJIT(activeVersion))
+                    headerPtr = cv.GetIL(activeVersion);
+            }
+
+            if (headerPtr == TargetPointer.Null)
+                headerPtr = loader.GetILHeader(moduleHandle, functionToken);
+
             if (headerPtr != TargetPointer.Null)
             {
                 int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, headerPtr);
@@ -4256,7 +4267,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 ILCodeVersionHandle ilCodeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
                 if (ilCodeVersion.IsValid
                     && ilCodeVersion.IsExplicit
-                    && rejit.GetRejitState(ilCodeVersion) == RejitState.Active)
+                    && rejit.GetRejitState(ilCodeVersion) == RejitState.Active
+                    && codeVersions.IsReJIT(ilCodeVersion))
                 {
                     *pVmILCodeVersionNode = ilCodeVersion.ILCodeVersionNode.Value;
                 }
@@ -4332,7 +4344,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             ICodeVersions codeVersions = _target.Contracts.CodeVersions;
             NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateExplicit(new TargetPointer(vmNativeCodeVersionNode));
             ILCodeVersionHandle ilCodeVersion = codeVersions.GetILCodeVersion(nativeCodeVersion);
-            if (ilCodeVersion.IsValid && ilCodeVersion.IsExplicit)
+            if (ilCodeVersion.IsValid && ilCodeVersion.IsExplicit && codeVersions.IsReJIT(ilCodeVersion))
             {
                 *pVmILCodeVersionNode = ilCodeVersion.ILCodeVersionNode.Value;
             }

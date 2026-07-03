@@ -1042,6 +1042,8 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, Next, cdac_data<ILCodeVersionNode>
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Source, cdac_data<ILCodeVersionNode>::Source)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, EnCVersion, cdac_data<ILCodeVersionNode>::EnCVersion)
 CDAC_TYPE_END(ILCodeVersionNode)
 #endif // FEATURE_CODE_VERSIONING
 

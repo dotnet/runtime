@@ -23,6 +23,15 @@ internal struct NativeCodeVersionHandle
 ```
 
 ```csharp
+internal enum CodeVersionSource : uint
+{
+    Unknown,
+    ReJIT,
+    EnC,
+}
+```
+
+```csharp
 // Return a handle to the active version of the IL code for a given method descriptor
 public virtual ILCodeVersionHandle GetActiveILCodeVersion(TargetPointer methodDesc);
 // Return a handle to the IL code version representing the given native code version
@@ -54,6 +63,9 @@ public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle);
 
 // Gets the optimization tier for a native code version
 public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
+
+// Determines whether an IL code version was produced by ReJIT (as opposed to EnC or the default)
+public virtual bool IsReJIT(ILCodeVersionHandle ilCodeVersionHandle);
 ```
 
 ### Extension Methods
@@ -87,6 +99,7 @@ Data descriptors used:
 | ILCodeVersionNode | Next | Pointer to the next `ILCodeVersionNode`|
 | ILCodeVersionNode | RejitState | ReJIT state of the node |
 | ILCodeVersionNode | ILAddress | Address of IL corresponding to `ILCodeVersionNode`|
+| ILCodeVersionNode | Source | a `CodeVersionSource` value indicating what produced this version (ReJIT, EnC, or unknown) |
 | GCCoverageInfo | SavedCode | Pointer to the GCCover saved code copy, if supported |
 
 The flag indicates that the default version of the code for a method desc is active:
@@ -343,14 +356,6 @@ bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddr
         return false;
     if (rts.IsCollectibleMethod(md))
         return false;
-    TargetPointer mtAddr = rts.GetMethodTable(md);
-    TypeHandle mt = rts.GetTypeHandle(mtAddr);
-    TargetPointer modAddr = rts.GetModule(mt);
-    ILoader loader = _target.Contracts.Loader;
-    ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
-    ModuleFlags modFlags = loader.GetFlags(mod);
-    if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
-        return false;
     return true;
 }
 ```
@@ -394,5 +399,16 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
 bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle)
 {
     return ilCodeVersionHandle.IsExplicit ? AsNode(ilCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+}
+```
+
+### Determining whether an IL code version was produced by ReJIT
+
+```csharp
+bool ICodeVersions.IsReJIT(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsExplicit)
+        return false;
+    return // node Source is ReJIT
 }
 ```
