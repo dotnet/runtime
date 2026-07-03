@@ -140,22 +140,31 @@ steps:
       ' "$states" > "$ranked"
 
       # Drop issues that already carry the advisory marker; keep up to MAX candidates.
+      # marker_present reads comments newest page first and stops as soon as the marker
+      # is found; it returns 2 on a REST failure so the run aborts rather than treating
+      # the error as "no marker" and re-advising the issue.
       marker="<!-- closed-issue-reference-check:advice -->"
+      marker_present() {
+        local num="$1" resp last page body
+        resp="$(gh api "repos/${REPO}/issues/${num}/comments?per_page=100" -i 2>/dev/null)" || return 2
+        last="$(printf '%s' "$resp" | sed -n 's/.*[?&]page=\([0-9]*\)>; rel="last".*/\1/p' | head -1)"
+        for (( page=${last:-1}; page>=2; page-- )); do
+          body="$(gh api "repos/${REPO}/issues/${num}/comments?per_page=100&page=${page}" -q '.[].body' 2>/dev/null)" || return 2
+          printf '%s' "$body" | grep -qF "$marker" && return 0
+        done
+        printf '%s' "$resp" | grep -qF "$marker" && return 0
+        return 1
+      }
       keptnums="$(mktemp)"; keptn=0
       while read -r num; do
         [ -z "$num" ] && continue
         [ "$keptn" -ge "$MAX" ] && break
-        cbody="$(mktemp)"
-        if ! gh api "repos/${REPO}/issues/${num}/comments" --paginate -q '.[].body' > "$cbody" 2>/dev/null; then
-          echo "scan: failed to read comments for #${num} (auth/rate-limit/transient); aborting to avoid duplicate advisories" >&2
-          rm -f "$cbody"; exit 1
+        if marker_present "$num"; then
+          echo "scan: #${num} already advised -> filtered"; continue
+        else
+          rc=$?
+          [ "$rc" -eq 1 ] || { echo "scan: failed to read comments for #${num} (auth/rate-limit/transient); aborting to avoid duplicate advisories" >&2; exit 1; }
         fi
-        if grep -qF "$marker" "$cbody"; then
-          rm -f "$cbody"
-          echo "scan: #${num} already advised -> filtered"
-          continue
-        fi
-        rm -f "$cbody"
         echo "$num" >> "$keptnums"; keptn=$((keptn+1))
       done < <(jq -r '.[].number' "$ranked")
 
