@@ -553,37 +553,131 @@ namespace System.Text.Json.Schema
 
                 foreach (string segment in path)
                 {
-                    ReadOnlySpan<char> span = segment.AsSpan();
                     sb.Append('/');
-
-                    do
-                    {
-                        // Per RFC 6901 the characters '~' and '/' must be escaped.
-                        int pos = span.IndexOfAny('~', '/');
-                        if (pos < 0)
-                        {
-                            sb.Append(span);
-                            break;
-                        }
-
-                        sb.Append(span.Slice(0, pos));
-
-                        if (span[pos] == '~')
-                        {
-                            sb.Append("~0");
-                        }
-                        else
-                        {
-                            Debug.Assert(span[pos] == '/');
-                            sb.Append("~1");
-                        }
-
-                        span = span.Slice(pos + 1);
-                    }
-                    while (!span.IsEmpty);
+                    AppendEscapedReferenceToken(ref sb, segment);
                 }
 
                 return sb.ToString();
+            }
+
+            private static void AppendEscapedReferenceToken(ref ValueStringBuilder sb, string segment)
+            {
+                for (int i = 0; i < segment.Length; i++)
+                {
+                    char c = segment[i];
+                    switch (c)
+                    {
+                        // Per RFC 6901 the characters '~' and '/' are escaped as '~0' and '~1'.
+                        case '~':
+                            sb.Append("~0");
+                            break;
+                        case '/':
+                            sb.Append("~1");
+                            break;
+                        default:
+                            if (IsUnescapedFragmentChar(c))
+                            {
+                                sb.Append(c);
+                            }
+                            else
+                            {
+                                // Per RFC 6901 section 6 the JSON Pointer is embedded in a URI fragment,
+                                // so any characters outside the RFC 3986 'fragment' production are
+                                // percent-encoded using their UTF-8 octets.
+                                int codePoint = c;
+                                if (char.IsHighSurrogate(c) && i + 1 < segment.Length && char.IsLowSurrogate(segment[i + 1]))
+                                {
+                                    codePoint = char.ConvertToUtf32(c, segment[i + 1]);
+                                    i++;
+                                }
+
+                                AppendPercentEncoded(ref sb, codePoint);
+                            }
+
+                            break;
+                    }
+                }
+            }
+
+            private static void AppendPercentEncoded(ref ValueStringBuilder sb, int codePoint)
+            {
+                Span<byte> utf8Bytes = stackalloc byte[4];
+                int byteCount;
+
+                if (codePoint <= 0x7F)
+                {
+                    utf8Bytes[0] = (byte)codePoint;
+                    byteCount = 1;
+                }
+                else if (codePoint <= 0x7FF)
+                {
+                    utf8Bytes[0] = (byte)(0xC0 | (codePoint >> 6));
+                    utf8Bytes[1] = (byte)(0x80 | (codePoint & 0x3F));
+                    byteCount = 2;
+                }
+                else if (codePoint <= 0xFFFF)
+                {
+                    utf8Bytes[0] = (byte)(0xE0 | (codePoint >> 12));
+                    utf8Bytes[1] = (byte)(0x80 | ((codePoint >> 6) & 0x3F));
+                    utf8Bytes[2] = (byte)(0x80 | (codePoint & 0x3F));
+                    byteCount = 3;
+                }
+                else
+                {
+                    utf8Bytes[0] = (byte)(0xF0 | (codePoint >> 18));
+                    utf8Bytes[1] = (byte)(0x80 | ((codePoint >> 12) & 0x3F));
+                    utf8Bytes[2] = (byte)(0x80 | ((codePoint >> 6) & 0x3F));
+                    utf8Bytes[3] = (byte)(0x80 | (codePoint & 0x3F));
+                    byteCount = 4;
+                }
+
+                const string HexDigits = "0123456789ABCDEF";
+                for (int i = 0; i < byteCount; i++)
+                {
+                    byte b = utf8Bytes[i];
+                    sb.Append('%');
+                    sb.Append(HexDigits[b >> 4]);
+                    sb.Append(HexDigits[b & 0xF]);
+                }
+            }
+
+            private static bool IsUnescapedFragmentChar(char c)
+            {
+                // Characters permitted unescaped by the RFC 3986 'fragment' production:
+                //   fragment    = *( pchar / "/" / "?" )
+                //   pchar       = unreserved / sub-delims / ":" / "@"
+                //   unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
+                //   sub-delims  = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+                // '/' is handled separately as the '~1' escape, so it is intentionally excluded here.
+                if ((uint)(c - 'A') <= 'Z' - 'A' || (uint)(c - 'a') <= 'z' - 'a' || (uint)(c - '0') <= '9' - '0')
+                {
+                    return true;
+                }
+
+                switch (c)
+                {
+                    case '-':
+                    case '.':
+                    case '_':
+                    case '~':
+                    case '!':
+                    case '$':
+                    case '&':
+                    case '\'':
+                    case '(':
+                    case ')':
+                    case '*':
+                    case '+':
+                    case ',':
+                    case ';':
+                    case '=':
+                    case ':':
+                    case '@':
+                    case '?':
+                        return true;
+                    default:
+                        return false;
+                }
             }
         }
     }
