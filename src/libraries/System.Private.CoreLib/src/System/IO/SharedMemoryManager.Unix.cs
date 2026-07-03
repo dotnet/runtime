@@ -560,11 +560,11 @@ namespace System.IO
                         {
                             FileSystem.SetUnixFileMode(directoryPath, permissionsMask);
                         }
-catch (Exception)
-{
-    try { Directory.Delete(directoryPath); } catch { }
-    throw;
-}
+                        catch (Exception)
+                        {
+                            try { Directory.Delete(directoryPath); } catch { }
+                            throw;
+                        }
 
                         return true;
                     }
@@ -575,11 +575,11 @@ catch (Exception)
                         {
                             FileSystem.SetUnixFileMode(directoryPath, permissionsMask);
                         }
-catch (Exception)
-{
-    try { Directory.Delete(directoryPath); } catch { }
-    throw;
-}
+                        catch (Exception)
+                        {
+                            try { Directory.Delete(directoryPath); } catch { }
+                            throw;
+                        }
 
                         return true;
                     }
