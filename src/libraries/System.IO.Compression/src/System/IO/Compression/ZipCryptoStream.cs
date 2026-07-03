@@ -209,18 +209,19 @@ namespace System.IO.Compression
             uint key2 = keys.Key2;
 
             byte[] hdr = new byte[12];
-            int bytesRead;
 
-            if (isAsync)
+            try
             {
-                bytesRead = await baseStream.ReadAtLeastAsync(hdr, hdr.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (isAsync)
+                {
+                    await baseStream.ReadExactlyAsync(hdr, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    baseStream.ReadExactly(hdr);
+                }
             }
-            else
-            {
-                bytesRead = baseStream.ReadAtLeast(hdr, hdr.Length, throwOnEndOfStream: false);
-            }
-
-            if (bytesRead < hdr.Length)
+            catch (EndOfStreamException)
             {
                 throw new InvalidDataException(SR.TruncatedZipCryptoHeader);
             }
@@ -404,7 +405,9 @@ namespace System.IO.Compression
             Span<byte> span = buffer.Span;
 
             for (int i = 0; i < n; i++)
+            {
                 span[i] = DecryptAndUpdateKeys(span[i]);
+            }
 
             return n;
         }

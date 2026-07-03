@@ -848,7 +848,6 @@ namespace System.IO.Compression
         }
     }
 
-
     internal sealed partial class ZipCentralDirectoryFileHeader
     {
         // The Zip File Format Specification references 0x02014B50, this is a big endian representation.

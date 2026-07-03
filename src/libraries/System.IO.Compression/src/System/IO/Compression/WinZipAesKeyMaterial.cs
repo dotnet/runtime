@@ -13,7 +13,6 @@ namespace System.IO.Compression
     /// Represents the parsed components of WinZip AES key material.
     /// The key material layout is: [salt][encryption key][HMAC key][password verifier (2 bytes)].
     /// </summary>
-    [UnsupportedOSPlatform("browser")]
     internal readonly struct WinZipAesKeyMaterial
     {
         public byte[] Salt { get; }
@@ -25,6 +24,10 @@ namespace System.IO.Compression
 
         private WinZipAesKeyMaterial(byte[] salt, byte[] encryptionKey, byte[] hmacKey, byte[] passwordVerifier, int keySizeBits)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
             Salt = salt;
             EncryptionKey = encryptionKey;
             HmacKey = hmacKey;
@@ -38,6 +41,10 @@ namespace System.IO.Compression
         /// </summary>
         internal static unsafe WinZipAesKeyMaterial Create(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
             int saltSize = GetSaltSize(keySizeBits);
             int keySizeBytes = keySizeBits / 8;
             int totalKeySize = checked(keySizeBytes + keySizeBytes + 2);

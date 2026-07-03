@@ -91,7 +91,6 @@ namespace System.IO.Compression
         public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName, ReadOnlySpan<char> password, ZipEncryptionMethod encryption) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, null, password, encryption);
 
-
         /// <summary>
         /// <p>Adds a file from the file system to the archive under the specified entry name with encryption.
         /// The new entry in the archive will contain the contents of the file.

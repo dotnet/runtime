@@ -514,7 +514,7 @@ namespace System.IO.Compression
             return OpenCore(access, password);
         }
 
-        private FileAccess InferAccessFromMode()=> _archive.Mode switch
+        private FileAccess InferAccessFromMode() => _archive.Mode switch
         {
             ZipArchiveMode.Read => FileAccess.Read,
             ZipArchiveMode.Create => FileAccess.Write,
@@ -1038,12 +1038,14 @@ namespace System.IO.Compression
 
         private static int GetAesKeySizeBits(ZipEncryptionMethod encryption)
         {
+            // Get number of bits for AES key size based on the encryption method
+            // Only possible values are: AES-128 = 128 bits, AES-192 = 192 bits, AES-256 as per the specs
             return encryption switch
             {
                 ZipEncryptionMethod.Aes128 => 128,
                 ZipEncryptionMethod.Aes192 => 192,
                 ZipEncryptionMethod.Aes256 => 256,
-                _ => 256 // Default to AES-256
+                _ => throw new InvalidDataException(SR.InvalidAesStrength)
             };
         }
 
@@ -1065,11 +1067,6 @@ namespace System.IO.Compression
 
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
-                {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
-                }
-
                 if (_aesSalt is null)
                 {
                     throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
@@ -1165,6 +1162,7 @@ namespace System.IO.Compression
 
             return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
         }
+
         private WrappedStream OpenInWriteMode()
         {
             if (_everOpenedForWrite)
@@ -1208,11 +1206,6 @@ namespace System.IO.Compression
             }
             else if (encryptionMethod is ZipEncryptionMethod.Aes256 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes128)
             {
-                if (OperatingSystem.IsBrowser())
-                {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
-                }
-
                 WinZipAesKeyMaterial keyMaterial = _derivedAesKeyMaterial
                     ?? throw new InvalidOperationException(SR.EmptyPassword);
 
@@ -1324,10 +1317,6 @@ namespace System.IO.Compression
             }
             else if (UseAesEncryption)
             {
-                if (OperatingSystem.IsBrowser())
-                {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
-                }
                 // Generate new salt and derive key material for AES
                 // This ensures each write uses a fresh random salt for security
                 int keySizeBits = GetAesKeySizeBits(Encryption);
@@ -1347,26 +1336,22 @@ namespace System.IO.Compression
                 throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
 
-            if (encryptionMethod is ZipEncryptionMethod.None or ZipEncryptionMethod.Unknown)
-            {
-                throw new ArgumentOutOfRangeException(nameof(encryptionMethod), SR.EncryptionNotSpecified);
-            }
-
-            Encryption = encryptionMethod;
-
             if (encryptionMethod == ZipEncryptionMethod.ZipCrypto)
             {
+                Encryption = encryptionMethod;
                 _derivedZipCryptoKeyMaterial = ZipCryptoStream.CreateKey(password);
             }
             else if (encryptionMethod is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
             {
-                if (OperatingSystem.IsBrowser())
-                {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
-                }
 
+                Encryption = encryptionMethod;
                 int keySizeBits = GetAesKeySizeBits(encryptionMethod);
                 _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password, salt: null, keySizeBits);
+            }
+            else
+            {
+                // Covers ZipEncryptionMethod.None, ZipEncryptionMethod.Unknown, and any undefined/out-of-range value.
+                throw new ArgumentOutOfRangeException(nameof(encryptionMethod), encryptionMethod, SR.EncryptionNotSpecified);
             }
         }
 
@@ -1383,7 +1368,7 @@ namespace System.IO.Compression
                     ZipEncryptionMethod.Aes128 => (byte)1,
                     ZipEncryptionMethod.Aes192 => (byte)2,
                     ZipEncryptionMethod.Aes256 => (byte)3,
-                    _ => (byte)3 // Default to AES-256
+                    _ => throw new InvalidDataException(SR.InvalidAesStrength)
                 },
                 CompressionMethod = _compressionLevel == CompressionLevel.NoCompression
                     ? (ushort)ZipCompressionMethod.Stored
@@ -1782,7 +1767,7 @@ namespace System.IO.Compression
 
                         ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                        using (var encryptionStream = ZipCryptoStream.Create(
+                        using (ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keys: _derivedZipCryptoKeyMaterial.Value,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -1790,7 +1775,7 @@ namespace System.IO.Compression
                             crc32: null,
                             leaveOpen: true))
                         {
-                            using (var crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
+                            using (CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
                             {
                                 _storedUncompressedData.Seek(0, SeekOrigin.Begin);
                                 _storedUncompressedData.CopyTo(crcStream);
@@ -1806,10 +1791,6 @@ namespace System.IO.Compression
                     }
                     else if (UseAesEncryption && _derivedAesKeyMaterial is not null)
                     {
-                        if (OperatingSystem.IsBrowser())
-                        {
-                            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
-                        }
 
                         bool usedZip64InLH = WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
 
@@ -1817,7 +1798,7 @@ namespace System.IO.Compression
 
                         bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                        using (var encryptionStream = WinZipAesStream.Create(
+                        using (WinZipAesStream encryptionStream = WinZipAesStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keyMaterial: _derivedAesKeyMaterial.Value,
                             totalStreamSize: -1,
@@ -1831,7 +1812,7 @@ namespace System.IO.Compression
 
                                 try
                                 {
-                                    using (var crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
+                                    using (CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
                                     {
                                         _storedUncompressedData.Seek(0, SeekOrigin.Begin);
                                         _storedUncompressedData.CopyTo(crcStream);
@@ -1859,9 +1840,7 @@ namespace System.IO.Compression
                     else
                     {
                         // Non-encrypted: use standard path
-                        using (DirectToArchiveWriterStream entryWriter = new(
-                                                        GetDataCompressor(_archive.ArchiveStream, true, null, null),
-                                                        this))
+                        using (DirectToArchiveWriterStream entryWriter = new(GetDataCompressor(_archive.ArchiveStream, true, null, null), this))
                         {
                             _storedUncompressedData.Seek(0, SeekOrigin.Begin);
                             _storedUncompressedData.CopyTo(entryWriter);

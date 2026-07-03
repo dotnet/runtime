@@ -16,10 +16,10 @@ namespace System.IO.Compression.Tests
     [ConditionalClass(typeof(ZipCryptoStreamWrappedConformanceTests), nameof(IsSupported))]
     public class ZipCryptoStreamWrappedConformanceTests : WrappingConnectedStreamConformanceTests
     {
-        // Reflection emit (DynamicMethod) is unsupported under NativeAOT, and the connected-stream
-        // conformance tests exercise concurrent blocking read/write, which requires multithreading
-        // (not available on single-threaded wasm or wasi).
-        public static bool IsSupported => PlatformDetection.IsNotNativeAot && PlatformDetection.IsMultithreadingSupported;
+        // Reflection emit (DynamicMethod) is unsupported on platforms without dynamic code generation
+        // (e.g. NativeAOT and Mono AOT), and the connected-stream conformance tests exercise concurrent
+        // blocking read/write, which requires multithreading (not available on single-threaded wasm or wasi).
+        public static bool IsSupported => PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsMultithreadingSupported;
 
         private const string TestPassword = "PLACEHOLDER";
         private const ushort PasswordVerifier = 0x1234;

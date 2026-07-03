@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    [UnsupportedOSPlatform("browser")]
     internal sealed class WinZipAesStream : Stream
     {
         private const int BlockSize = 16; // AES block size in bytes
@@ -40,19 +39,36 @@ namespace System.IO.Compression
         // Reusable work buffer for write operations, lazily allocated on first write
         private byte[]? _writeWorkBuffer;
 
-        internal static int GetSaltSize(int keySizeBits) => WinZipAesKeyMaterial.GetSaltSize(keySizeBits);
+        internal static int GetSaltSize(int keySizeBits)
+        {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
+            return WinZipAesKeyMaterial.GetSaltSize(keySizeBits);
+        }
 
         /// <summary>
         /// Derives key material from a password and optional salt.
         /// </summary>
         internal static WinZipAesKeyMaterial CreateKey(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits)
-            => WinZipAesKeyMaterial.Create(password, salt, keySizeBits);
+        {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
+            return WinZipAesKeyMaterial.Create(password, salt, keySizeBits);
+        }
 
         /// <summary>
         /// Creates a WinZipAesStream synchronously. Reads and validates the header for decryption.
         /// </summary>
         internal static WinZipAesStream Create(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
             ArgumentNullException.ThrowIfNull(baseStream);
 
             if (!encrypting)
@@ -68,6 +84,11 @@ namespace System.IO.Compression
         /// </summary>
         internal static async Task<WinZipAesStream> CreateAsync(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false, CancellationToken cancellationToken = default)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
+
             ArgumentNullException.ThrowIfNull(baseStream);
 
             if (!encrypting)
@@ -83,6 +104,10 @@ namespace System.IO.Compression
         /// </summary>
         private static async Task ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, WinZipAesKeyMaterial keyMaterial, CancellationToken cancellationToken)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
             int saltSize = keyMaterial.SaltSize;
 
             // Read salt from stream
@@ -128,6 +153,11 @@ namespace System.IO.Compression
         /// </summary>
         private WinZipAesStream(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
+
             _baseStream = baseStream;
 
             Debug.Assert((totalStreamSize >= 0) == !encrypting, "Total stream size must be known when decrypting");
@@ -137,8 +167,6 @@ namespace System.IO.Compression
             _leaveOpen = leaveOpen;
 
             _aes = Aes.Create();
-            _aes.Mode = CipherMode.ECB;
-            _aes.Padding = PaddingMode.None;
 
             _salt = keyMaterial.Salt;
             _passwordVerifier = keyMaterial.PasswordVerifier;
@@ -166,6 +194,8 @@ namespace System.IO.Compression
             _aes.SetKey(keyMaterial.EncryptionKey);
         }
 
+        // Compute and check the HMAC for the entire stream. This is called at the end of the stream, after all data has been read/written,
+        // similarly to how CRC is computed for non-encrypted ZIP entries. The HMAC is stored in the last 10 bytes of the stream.
         private unsafe void FinalizeAndCompareHMAC(byte[] storedAuth)
         {
 
@@ -178,8 +208,9 @@ namespace System.IO.Compression
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
 
-            // Compare the first 10 bytes of the expected hash
-            if (!CryptographicOperations.FixedTimeEquals(storedAuth, expectedAuth.Slice(0, 10)))
+            // Compare the 10 bytes of the expected hash
+            Debug.Assert(storedAuth.Length == 10);
+            if (!CryptographicOperations.FixedTimeEquals(storedAuth, expectedAuth.Slice(0, storedAuth.Length)))
             {
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
@@ -309,21 +340,23 @@ namespace System.IO.Compression
                 return;
             }
 
+            // WinZip AES spec requires only the first 10 bytes of the HMAC
+            const int MacSizeInBytes = 10;
+
             byte[] authCode = new byte[SHA1.HashSizeInBytes];
-            if (!_hmac.TryGetHashAndReset(authCode, out int bytesWritten) || bytesWritten < 10)
+
+            if (!_hmac.TryGetHashAndReset(authCode, out int bytesWritten) || bytesWritten < MacSizeInBytes)
             {
                 throw new CryptographicException();
             }
-
-            // WinZip AES spec requires only the first 10 bytes of the HMAC
             if (isAsync)
             {
                 // WriteAsync requires Memory<byte>, so we must copy to a heap buffer for the async path
-                await _baseStream.WriteAsync(authCode.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
+                await _baseStream.WriteAsync(authCode.AsMemory(0, MacSizeInBytes), cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                _baseStream.Write(authCode.AsSpan(0, 10));
+                _baseStream.Write(authCode.AsSpan(0, MacSizeInBytes));
             }
 
             _authCodeFinalized = true;

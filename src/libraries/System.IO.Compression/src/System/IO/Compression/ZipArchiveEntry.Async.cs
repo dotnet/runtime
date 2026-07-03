@@ -728,7 +728,7 @@ public partial class ZipArchiveEntry
 
                     ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                    var encryptionStream = ZipCryptoStream.Create(
+                    ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keys: _derivedZipCryptoKeyMaterial.Value,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -738,7 +738,7 @@ public partial class ZipArchiveEntry
                     await using (encryptionStream.ConfigureAwait(false))
                     {
                         // Use GetDataCompressor which handles CRC calculation and compression
-                        var crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
+                        CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
                         await using (crcStream.ConfigureAwait(false))
                         {
                             _storedUncompressedData.Seek(0, SeekOrigin.Begin);
@@ -782,13 +782,12 @@ public partial class ZipArchiveEntry
                     // The AES extra field stores the real compression method
                     bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                    var encryptionStream = WinZipAesStream.Create(
+                    WinZipAesStream encryptionStream = WinZipAesStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keyMaterial: _derivedAesKeyMaterial.Value,
                         totalStreamSize: -1,
                         encrypting: true,
                         leaveOpen: true);
-
 
                     await using (encryptionStream.ConfigureAwait(false))
                     {
@@ -801,7 +800,7 @@ public partial class ZipArchiveEntry
 
                             try
                             {
-                                var crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
+                                CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
                                 await using (crcStream.ConfigureAwait(false))
                                 {
                                     _storedUncompressedData.Seek(0, SeekOrigin.Begin);
