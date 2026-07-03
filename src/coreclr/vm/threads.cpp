@@ -3018,7 +3018,6 @@ OBJECTREF Thread::GetExposedObject()
         // Allocate the exposed thread object.
         THREADBASEREF attempt = (THREADBASEREF) AllocateObject(g_pThreadClass);
 
-        // Track whether this call is the one that created the exposed object.
         BOOL fCreatedExposedObject = FALSE;
 
         GCPROTECT_BEGIN(attempt);
@@ -3074,13 +3073,6 @@ OBJECTREF Thread::GetExposedObject()
         GCPROTECT_END();
 
 #ifdef DEBUGGING_SUPPORTED
-        // The managed Thread object is created lazily, only the first time managed code on the
-        // thread reads Thread.CurrentThread. The debugger's CreateThread announcement, however,
-        // fires as soon as the native thread first reaches managed code, so for native-origin
-        // threads (such as the main thread or natively attached threads) the exposed object is
-        // still NULL when the debugger processes CreateThread and the thread shows up with no name.
-        // Now that this thread has created its own exposed object, notify an attached debugger so
-        // it re-queries the thread, reusing the same NameChangeEvent path that Thread.Name uses.
         if (fCreatedExposedObject && pCurThread == this && CORDebuggerAttached())
         {
             _ASSERTE(g_pDebugInterface != NULL);
