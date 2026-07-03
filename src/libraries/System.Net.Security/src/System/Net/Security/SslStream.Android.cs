@@ -105,6 +105,9 @@ namespace System.Net.Security
                 }
                 catch (Exception exception)
                 {
+                    if (NetEventSource.Log.IsEnabled())
+                        NetEventSource.Error(proxy._sslStream, exception);
+
                     proxy.ValidationException = exception;
                     return false;
                 }
