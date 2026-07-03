@@ -118,11 +118,16 @@ it from the build metadata, not the queue time) against the issue's `closed_at`:
   predecessor `#<n>` in the body so the regression is explicit, mirroring the
   merged-fix-PR recurrence rule below.
 
-**Recurring signature.** If the searches above surface **two or more** closed
-`[ci-scan]` predecessors sharing the same test-name stem, treat it as a recurring
+**Recurring signature.** Evaluate this check *before* acting on the post-close
+recurrence case above; when it applies, it takes precedence. First re-run the
+closed-candidate searches for the test-name stem with the look-back widened from
+`closed:>=<30-days-ago>` to `closed:>=<90-days-ago>` — the wider window is what
+lets a recurring signature surface at all. If that widened scan returns **two or
+more** closed `[ci-scan]` predecessors sharing the stem, treat it as a recurring
 signature, not a fresh regression: do **not** file — record `existing-kbe #<n>`
-against the most recently closed predecessor. For such stems, widen the
-predecessor look-back from `closed:>=<30-days-ago>` to `closed:>=<90-days-ago>`.
+against the most recently closed predecessor, even if the current build finished
+after that predecessor's `closed_at`. Fewer than two hits is not a recurring
+signature; fall back to the post-close recurrence rule above.
 
 <a id="search-area-team-tracker"></a>
 
