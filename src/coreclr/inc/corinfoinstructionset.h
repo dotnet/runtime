@@ -14,6 +14,7 @@
 enum CORINFO_InstructionSet
 {
     InstructionSet_ILLEGAL = 0,
+    InstructionSet_Vector = 126,
     InstructionSet_NONE = 127,
 #ifdef TARGET_ARM64
     InstructionSet_ArmBase=1,
