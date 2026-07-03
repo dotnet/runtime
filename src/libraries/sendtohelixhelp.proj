@@ -209,7 +209,10 @@
       <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) &amp;&amp; </HelixCommand>
       <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) &amp; </HelixCommand>
 
-      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' != 'true'">$(HelixCommand) dotnet dev-certs https &amp;&amp; </HelixCommand>
+      <!-- On macOS Helix machines run dev-certs verbosely so that, if the keychain import fails, the
+           underlying `security` tool error (swallowed by default) is surfaced in the console log. -->
+      <_DevCertsArgs Condition="'$(BrowserHost)' == 'osx'"> --verbose</_DevCertsArgs>
+      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' != 'true'">$(HelixCommand) dotnet dev-certs https$(_DevCertsArgs) &amp;&amp; </HelixCommand>
 
       <!-- on windows `dotnet dev-certs https -trust` shows a dialog, so instead install the certificate with powershell -->
       <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommand) powershell -command &quot;dotnet dev-certs https --export-path devcerts.pfx --password PLACEHOLDER %3B $pw = ConvertTo-SecureString PLACEHOLDER -AsPlainText -Force %3B Import-PfxCertificate -FilePath devcerts.pfx -Password $pw -CertStoreLocation Cert:\LocalMachine\Root &quot; &amp;&amp; </HelixCommand>

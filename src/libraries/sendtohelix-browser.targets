@@ -130,11 +130,13 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(BrowserHost)' == 'osx' and '$(IsRunningLibraryTests)' == 'true'">
-    <HelixPreCommand Include="$(EnvVarCommand) DEVCERTS_KEYCHAIN=$HELIX_WORKITEM_ROOT/dotnet-devcerts.keychain-db" />
-    <HelixPreCommand Include="security create-keychain -p &quot;&quot; &quot;$DEVCERTS_KEYCHAIN&quot; || true" />
-    <HelixPreCommand Include="security set-keychain-settings &quot;$DEVCERTS_KEYCHAIN&quot;" />
-    <HelixPreCommand Include="security unlock-keychain -p &quot;&quot; &quot;$DEVCERTS_KEYCHAIN&quot;" />
-    <HelixPreCommand Include="security default-keychain -s &quot;$DEVCERTS_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="$(EnvVarCommand) LOGIN_KEYCHAIN=$HOME/Library/Keychains/login.keychain-db" />
+    <HelixPreCommand Include="security delete-keychain &quot;$LOGIN_KEYCHAIN&quot; || true" />
+    <HelixPreCommand Include="security create-keychain -p &quot;&quot; &quot;$LOGIN_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="security default-keychain -s &quot;$LOGIN_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="security list-keychains -d user -s &quot;$LOGIN_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="security unlock-keychain -p &quot;&quot; &quot;$LOGIN_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="security set-keychain-settings &quot;$LOGIN_KEYCHAIN&quot;" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
