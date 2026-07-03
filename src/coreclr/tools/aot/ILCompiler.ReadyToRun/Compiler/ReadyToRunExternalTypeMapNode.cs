@@ -53,7 +53,7 @@ namespace ILCompiler.ReadyToRun
 
             Section typeMapEntriesSection = writer.NewSection();
 
-            foreach ((string key, (TypeDesc type, List<TypeDesc> _)) in map.TypeMap)
+            foreach ((string key, (TypeDesc type, _)) in map.TypeMap)
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
                 Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
