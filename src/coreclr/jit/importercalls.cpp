@@ -3896,7 +3896,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 CORINFO_METHOD_HANDLE ctor = NO_METHOD_HANDLE;
                 if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObject)
                 {
-                    if (isNullable)
+                    uint32_t attribs = info.compCompHnd->getClassAttribs(type);
+                    if (isNullable ||
+                        (attribs & (CORINFO_FLG_ARRAY | CORINFO_FLG_INTERFACE | CORINFO_FLG_VAROBJSIZE |
+                                    CORINFO_FLG_BYREF_LIKE | CORINFO_FLG_SHAREDINST | CORINFO_FLG_DELEGATE |
+                                    CORINFO_FLG_ABSTRACT | CORINFO_FLG_GENERIC_TYPE_VARIABLE)) != 0)
                     {
                         return nullptr;
                     }
@@ -4004,6 +4008,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 if (ctor != NO_METHOD_HANDLE)
                 {
                     CORINFO_CALL_INFO callInfo;
+                    callInfo.kind        = CORINFO_CALL;
                     callInfo.hMethod     = ctor;
                     callInfo.methodFlags = info.compCompHnd->getMethodAttribs(ctor);
 
@@ -4014,6 +4019,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     impConvertToUserCallAndMarkForInlining(invoke);
 
                     impAppendTree(invoke, CHECK_SPILL_ALL, impCurStmtDI, false);
+                }
+                else if (info.compCompHnd->initClass(nullptr, nullptr, MAKE_CLASSCONTEXT(type)) !=
+                         CORINFO_INITCLASS_INITIALIZED)
+                {
+                    impAppendTree(fgGetSharedCCtor(type), CHECK_SPILL_ALL, impCurStmtDI, false);
                 }
 
                 return gtNewLclvNode(lclNum, JITtype2varType(sig->retType));
