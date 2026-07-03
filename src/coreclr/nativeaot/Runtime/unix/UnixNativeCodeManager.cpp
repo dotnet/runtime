@@ -1412,6 +1412,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                                                        PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                        uintptr_t *     pSpForArm64PacSign) // out
 {
+    *pSpForArm64PacSign = 0;
+
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
     PTR_uint8_t p = pNativeMethodInfo->pLSDA;
@@ -1458,7 +1460,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     if (epilogueInstructions > 0)
     {
-        *pSpForArm64PacSign = 0;
         *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
         return true;
     }
@@ -1482,8 +1483,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
 #if defined(TARGET_AMD64)
-    *pSpForArm64PacSign = 0;
-
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
@@ -1493,8 +1492,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     return true;
 
 #elif defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    *pSpForArm64PacSign = 0;
-
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
 
