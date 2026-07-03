@@ -69,7 +69,7 @@ name: "CI Outer-Loop Failure Scanner"
   # - maintainer # Roles processed as role check in pre-activation job
   # - write # Roles processed as role check in pre-activation job
   schedule:
-  - cron: "31 */12 * * *"
+  - cron: "34 */12 * * *"
     # Friendly format: every 12h (scattered)
   workflow_dispatch:
     inputs:
@@ -1161,9 +1161,27 @@ jobs:
             await main();
 
   detection:
+    # ###############################################################
+    # MANUAL PATCH: `detection` needs `pat_pool`
+    # ---------------------------------------------------------------
+    # `gh aw compile` only infers PAT-pool dependency for the `agent`
+    # job. Without `pat_pool` listed here, every secret/case() lookup
+    # in this job that consults `needs.pat_pool.outputs.pat_number`
+    # collapses to '', the `COPILOT_GITHUB_TOKEN` case() expression
+    # falls through to an empty/stale token, the api-proxy returns
+    # HTTP 400, the threat-detection parser fails, and gh-aw stamps a
+    # "Security scanning requires review" CAUTION banner on every
+    # issue/PR the agent produces.
+    #
+    # Re-add `- pat_pool` (and this comment) after every recompile.
+    # Tracked upstream by gh-aw issue #30232 — engine.env-based needs
+    # inference was fixed for the `agent` job in v0.71.5 but the fix
+    # has not been generalised to `detection`.
+    # ###############################################################
     needs:
       - activation
       - agent
+      - pat_pool
     if: >
       always() && needs.agent.result != 'skipped' && (needs.agent.outputs.output_types != '' || needs.agent.outputs.has_patch == 'true')
     runs-on: ubuntu-latest
