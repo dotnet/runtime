@@ -3017,6 +3017,10 @@ OBJECTREF Thread::GetExposedObject()
     {
         // Allocate the exposed thread object.
         THREADBASEREF attempt = (THREADBASEREF) AllocateObject(g_pThreadClass);
+
+        // Track whether this call is the one that created the exposed object.
+        BOOL fCreatedExposedObject = FALSE;
+
         GCPROTECT_BEGIN(attempt);
 
         // The exposed object keeps us alive until it is GC'ed.  This
@@ -3027,9 +3031,6 @@ OBJECTREF Thread::GetExposedObject()
         BOOL fNeedThreadStore = (! ThreadStore::HoldingThreadStore(pCurThread));
         // Take a lock to make sure that only one thread creates the object.
         ThreadStoreLockHolder tsHolder(fNeedThreadStore);
-
-        // Track whether this call is the one that created the exposed object.
-        BOOL fCreatedExposedObject = FALSE;
 
         // Check to see if another thread has not already created the exposed object.
         if (ObjectFromHandle(m_ExposedObject) == NULL)
