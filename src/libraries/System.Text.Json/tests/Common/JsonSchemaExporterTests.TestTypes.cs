@@ -1152,7 +1152,7 @@ namespace System.Text.Json.Schema.Tests
                     {
                         "type": ["object","null"],
                         "properties": {
-                            "~/path/to/value%20^": {
+                            "~/path/to/value ^": {
                                 "type": "object",
                                 "properties": {
                                     "Value" : {"type":"integer"},
@@ -1160,7 +1160,7 @@ namespace System.Text.Json.Schema.Tests
                                         "type": ["object","null"],
                                         "properties": {
                                             "Value" : {"type":"integer"},
-                                            "Next": {"$ref":"#/properties/~0~1path~1to~1value%2520%5E/properties/Next"}
+                                            "Next": {"$ref":"#/properties/~0~1path~1to~1value%20%5E/properties/Next"}
                                         }
                                     }
                                 }
@@ -1610,7 +1610,7 @@ namespace System.Text.Json.Schema.Tests
 
         public class ClassWithJsonPointerEscapablePropertyNames
         {
-            [JsonPropertyName("~/path/to/value%20^")]
+            [JsonPropertyName("~/path/to/value ^")]
             public PocoWithRecursiveMembers Value { get; set; }
         }
 
