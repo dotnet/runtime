@@ -209,8 +209,6 @@ You only suggest; you never act. The one write you can make is an `add_comment` 
 **Referenced at:**
 - `path/to/File.cs:123` — ActiveIssue
 - `path/to/tests.proj:370` — build-exclusion
-
-_Automated suggestion; a maintainer makes the call._
 ```
 
 ## Nothing to do
