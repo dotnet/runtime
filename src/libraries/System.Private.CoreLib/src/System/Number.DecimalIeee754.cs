@@ -153,9 +153,13 @@ namespace System
             // without considering sign.
             static int InternalUnsignedCompare(DecodedDecimalIeee754<TValue> current, DecodedDecimalIeee754<TValue> other)
             {
-                if (current.Significand == TValue.Zero && other.Significand == TValue.Zero)
+                if (current.Significand == TValue.Zero)
                 {
-                    return 0;
+                    return other.Significand == TValue.Zero ? 0 : -1;
+                }
+                else if (other.Significand == TValue.Zero)
+                {
+                    return 1;
                 }
 
                 if (current.UnbiasedExponent == other.UnbiasedExponent && current.Significand == other.Significand)
