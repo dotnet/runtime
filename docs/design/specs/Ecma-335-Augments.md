@@ -153,7 +153,9 @@ by a TypeRef or TypeDef metadata token. TypeSpec tokens in this
 position should be treated as invalid metadata.
 
 Allowing TypeSpec custom modifier types creates a path for
-recursive TypeSpec encodings that are complicated to detect. Such metadata should be rejected rather than cycle-detected.
+recursive TypeSpec encodings that are complicated to detect. 
+Such metadata should be rejected rather than cycle-detected.
+
 Related issues:
 
 * https://github.com/dotnet/roslyn/issues/7971
