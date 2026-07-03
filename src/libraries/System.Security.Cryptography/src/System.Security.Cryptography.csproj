@@ -428,10 +428,6 @@
              Link="Common\System\Security\Cryptography\MLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemPkcs8.cs"
             Link="Common\System\Security\Cryptography\MLKemPkcs8.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellman.cs"
-             Link="Common\System\Security\Cryptography\X25519DiffieHellman.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanCng.cs"
-             Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
@@ -470,6 +466,10 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellman.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellman.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanCng.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9AttributeObject.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs9AttributeObject.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9ContentType.cs"
@@ -1946,10 +1946,10 @@
              Link="Common\System\Security\Cryptography\RSACng.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\X25519WindowsHelpers.cs"
-             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\X25519WindowsHelpers.cs"
+             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
