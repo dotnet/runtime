@@ -3927,6 +3927,17 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 impPopStack(sig->numArgs);
 
+                if (ctor == NO_METHOD_HANDLE &&
+                    info.compCompHnd->initClass(nullptr, nullptr, MAKE_CLASSCONTEXT(type)) !=
+                        CORINFO_INITCLASS_INITIALIZED)
+                {
+                    GenTreeCall* cctorCall = fgGetSharedCCtor(type);
+                    if (cctorCall != nullptr)
+                    {
+                        impAppendTree(cctorCall, CHECK_SPILL_ALL, impCurStmtDI, false);
+                    }
+                }
+
                 GenTree* instance;
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("NewObj constructor temp"));
                 if (structFastpath)
@@ -4019,11 +4030,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     impConvertToUserCallAndMarkForInlining(invoke);
 
                     impAppendTree(invoke, CHECK_SPILL_ALL, impCurStmtDI, false);
-                }
-                else if (info.compCompHnd->initClass(nullptr, nullptr, MAKE_CLASSCONTEXT(type)) !=
-                         CORINFO_INITCLASS_INITIALIZED)
-                {
-                    impAppendTree(fgGetSharedCCtor(type), CHECK_SPILL_ALL, impCurStmtDI, false);
                 }
 
                 return gtNewLclvNode(lclNum, JITtype2varType(sig->retType));
