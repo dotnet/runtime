@@ -4807,9 +4807,8 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
     // we could do this on x86. We currently disable if-conversion for TYP_LONG
     // on 32-bit architectures because of this.
-    GenTreeOpCC* newSelect = nullptr;
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     GenCondition selectCond;
+    GenTreeOpCC* newSelect = nullptr;
     if (((select->gtFlags & GTF_SET_FLAGS) == 0) && TryLowerConditionToFlagsNode(select, cond, &selectCond))
     {
         select->SetOper(GT_SELECTCC);
@@ -4821,7 +4820,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         JITDUMP("\n");
     }
     else
-#endif
     {
         ContainCheckSelect(select);
     }
@@ -4858,6 +4856,11 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
+        // We should never get here on architectures without a status register.
+        return false;
+#endif
+
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
     JITDUMP("\n");
@@ -4885,21 +4888,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
             IsInvariantInRange(relopOp2, relop))
         {
             *cond = GenCondition(GenCondition::P);
-        }
-#endif
-
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
-        // TODO-Cleanup: this ifdef look suspect, we should never get here on architectures without a status register,
-        // i. e. the right thing is to ifdef the whole function.
-        // TODO-Cleanup: introduce a "has CPU flags" target define.
-        if (!allowMultipleFlagsChecks)
-        {
-            const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
-
-            if (desc.oper != GT_NONE)
-            {
-                return false;
-            }
         }
 #endif
 
