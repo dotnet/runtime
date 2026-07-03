@@ -146,7 +146,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="long"/> as big endian.
+        /// Reads an <see cref="long"/> as big endian without advancing the reader.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="long"/>.</returns>
         public static bool TryReadBigEndian(ref this SequenceReader<byte> reader, out long value)
@@ -212,7 +212,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="short"/> as little endian.
+        /// Try peek at an <see cref="short"/> as little endian without advancing the reader.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="short"/>.</returns>
         public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out short value)
@@ -226,7 +226,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="short"/> as big endian.
+        /// Try peek at an <see cref="short"/> as big endian without advancing the reader.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="short"/>.</returns>
         public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out short value)
@@ -251,7 +251,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="int"/> as little endian.
+        /// Try peek at an <see cref="int"/> as little endian without advancing the reader.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="int"/>.</returns>
         public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out int value)
@@ -265,7 +265,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="int"/> as big endian.
+        /// Try peek at an <see cref="int"/> as big endian without advancing the reader.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="int"/>.</returns>
         public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out int value)
@@ -290,7 +290,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="long"/> as little endian.
+        /// Try peek at an <see cref="long"/> as little endian without advancing the reader.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="long"/>.</returns>
         public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out long value)
@@ -304,7 +304,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Reads an <see cref="long"/> as big endian.
+        /// Try peek at an <see cref="long"/> as big endian without advancing the reader.
         /// </summary>
         /// <returns>False if there wasn't enough data for an <see cref="long"/>.</returns>
         public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out long value)
