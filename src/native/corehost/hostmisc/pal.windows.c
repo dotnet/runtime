@@ -513,6 +513,8 @@ bool pal_is_path_fully_qualified(const pal_char_t* path)
 
 bool pal_load_library(const pal_char_t* path, void** dll)
 {
+    *dll = NULL;
+
     pal_char_t* full = NULL;
     const pal_char_t* load_path = path;
 
@@ -546,6 +548,7 @@ bool pal_load_library(const pal_char_t* path, void** dll)
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, load_path, &pinned))
     {
         trace_error(_X("Failed to pin library [%s] in [pal_load_library]"), load_path);
+        FreeLibrary(library);
         free(full);
         return false;
     }

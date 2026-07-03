@@ -74,7 +74,7 @@ static bool is_exe_enabled_for_execution(pal_char_t* app_dll, size_t app_dll_len
 
     size_t binding_len = strlen(&embed[0]);
 
-    if (binding_len >= app_dll_len)
+    if (binding_len == 0 || binding_len >= app_dll_len)
     {
         trace_error(_X("The managed DLL bound to this executable could not be retrieved from the executable image."));
         return false;
