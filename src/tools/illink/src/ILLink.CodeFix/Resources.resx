@@ -135,4 +135,10 @@
   <data name="DynamicallyAccessedMembersCodeFixTitle" xml:space="preserve">
     <value>Add DynamicallyAccessedMembers attribute to source of warning</value>
   </data>
+  <data name="RemoveUnnecessaryUnsafeCodeFixTitle" xml:space="preserve">
+    <value>Remove unnecessary 'unsafe' modifier</value>
+  </data>
+  <data name="AddUnsafeContextCodeFixTitle" xml:space="preserve">
+    <value>Add 'unsafe' context</value>
+  </data>
 </root>

@@ -1269,4 +1269,16 @@
   <data name="DataflowAnalysisDidNotConvergeMessage" xml:space="preserve">
     <value>Trim dataflow analysis of member '{0}' took too long to complete. Trim safety cannot be guaranteed.</value>
   </data>
+  <data name="UnnecessaryUnsafeModifierTitle" xml:space="preserve">
+    <value>The 'unsafe' modifier is unnecessary under the updated memory-safety rules</value>
+  </data>
+  <data name="UnnecessaryUnsafeModifierMessage" xml:space="preserve">
+    <value>The 'unsafe' modifier on '{0}' has no effect under the updated memory-safety rules and can be removed</value>
+  </data>
+  <data name="OperationRequiresUnsafeContextTitle" xml:space="preserve">
+    <value>Operation requires an unsafe context</value>
+  </data>
+  <data name="OperationRequiresUnsafeContextMessage" xml:space="preserve">
+    <value>This operation requires an unsafe context under the updated memory-safety rules; wrap it in an 'unsafe' block or 'unsafe(...)' expression</value>
+  </data>
 </root>

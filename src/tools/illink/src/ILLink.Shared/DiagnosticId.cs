@@ -219,6 +219,12 @@ namespace ILLink.Shared
         // Feature guard diagnostic ids.
         ReturnValueDoesNotMatchFeatureGuards = 4000,
         InvalidFeatureGuard = 4001,
+
+#if DEBUG
+        // Unsafe evolution migration diagnostics are in the 5000 range.
+        UnnecessaryUnsafeModifier = 5005,
+        OperationRequiresUnsafeContext = 5006,
+#endif
     }
 
     public static class DiagnosticIdExtensions

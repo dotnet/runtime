@@ -55,4 +55,19 @@
     </ItemGroup>
   </Target>
 
+  <!-- Unsafe-evolution migration only (opt-in via the UnsafeMigration property, typically an env var).
+       'dotnet format' loads the runtime's inbox libraries (and CoreLib) as live workspace ProjectReferences,
+       which produce no usable metadata references and leave the compilation without core types, so the
+       IL5005/IL5006 analyzers cannot run. For the migration we compile against the prebuilt reference pack and
+       CoreLib assembly instead. This is inert in normal builds. -->
+  <ItemGroup Condition="'$(UnsafeMigrationRefSwap)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '@(ProjectReference)' != ''">
+    <ProjectReference Remove="$(LibrariesProjectRoot)*\src\*.csproj" />
+    <ProjectReference Remove="$(LibrariesProjectRoot)*\ref\*.csproj" />
+    <ProjectReference Remove="$(CoreLibProject)" />
+    <Reference Include="$(MicrosoftNetCoreAppRefPackRefDir)*.dll"
+               Exclude="$(MicrosoftNetCoreAppRefPackRefDir)$(MSBuildProjectName).dll"
+               Private="false" />
+    <Reference Include="$(ArtifactsBinDir)System.Private.CoreLib\ref\$(Configuration)\$(NetCoreAppCurrent)\System.Private.CoreLib.dll" Private="false" />
+  </ItemGroup>
+
 </Project>
