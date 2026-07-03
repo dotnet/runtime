@@ -2147,10 +2147,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 #if defined(TARGET_POWERPC64)
-            if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment())
+            if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment() && !arg.NewAbiInfo.HasAnyStackSegment())
             {
                 // Struct passed according to hardware floating-point calling convention (HFA)
-                assert(!arg.NewAbiInfo.HasAnyStackSegment());
+                // Only handle pure register cases here; split cases are handled by normal struct logic
                 assert(howToPassStruct == Compiler::SPK_ByValue || howToPassStruct == Compiler::SPK_PrimitiveType);
                 if (arg.NewAbiInfo.NumSegments > 1)
                 {
