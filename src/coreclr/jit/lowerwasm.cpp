@@ -830,6 +830,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsic)
     {
+        case NI_Vector_ConditionalSelect:
+        {
+            return LowerHWIntrinsicCndSel(node);
+        }
+
         case NI_Vector_Create:
         case NI_Vector_CreateScalar:
         {
@@ -846,46 +851,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(category == HW_Category_Helper);
             return LowerHWIntrinsicCmpOp(node, GT_NE);
-        }
-
-        case NI_PackedSimd_CompareGreaterThan:
-        case NI_PackedSimd_CompareGreaterThanOrEqual:
-        case NI_PackedSimd_CompareLessThan:
-        case NI_PackedSimd_CompareLessThanOrEqual:
-        {
-            assert(category == HW_Category_SIMD);
-
-            if (node->GetSimdBaseType() == TYP_ULONG)
-            {
-                var_types simdType = node->TypeGet();
-                unsigned  simdSize = node->GetSimdSize();
-
-                GenTree* op1 = node->Op(1);
-                GenTree* op2 = node->Op(2);
-
-                GenTreeVecCon* vecCon1 = m_compiler->gtNewVconNode(simdType);
-                vecCon1->EvaluateBroadcastInPlace<int64_t>(INT64_MIN);
-                BlockRange().InsertAfter(op1, vecCon1);
-                LowerNode(vecCon1);
-
-                op1 = m_compiler->gtNewSimdBinOpNode(GT_SUB, simdType, op1, vecCon1, TYP_ULONG, simdSize);
-                BlockRange().InsertAfter(vecCon1, op1);
-                LowerNode(op1);
-
-                GenTreeVecCon* vecCon2 = m_compiler->gtNewVconNode(simdType);
-                vecCon2->EvaluateBroadcastInPlace<int64_t>(INT64_MIN);
-                BlockRange().InsertAfter(op2, vecCon2);
-                LowerNode(vecCon2);
-
-                op2 = m_compiler->gtNewSimdBinOpNode(GT_SUB, simdType, op2, vecCon2, TYP_ULONG, simdSize);
-                BlockRange().InsertAfter(vecCon2, op2);
-                LowerNode(op2);
-
-                node->SetSimdBaseType(TYP_LONG);
-                node->Op(1) = op1;
-                node->Op(2) = op2;
-            }
-            break;
         }
 
         default:
@@ -953,6 +918,51 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
     LowerNode(node);
     return node->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCndSel: Lowers a Vector128 ConditionalSelect call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
+{
+    var_types simdType     = node->gtType;
+    var_types simdBaseType = node->GetSimdBaseType();
+    unsigned  simdSize     = node->GetSimdSize();
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(simdSize != 0);
+
+    // Get the three arguments to ConditionalSelect we stored in node
+    // op1: the condition vector
+    // op2: the left vector
+    // op3: the right vector
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+    GenTree* op3 = node->Op(3);
+
+    if (op3->IsVectorZero())
+    {
+        // The operation is (op2 & op1) | (zero & ~op1), so we can drop the second half
+        BlockRange().Remove(op3);
+        node->ResetHWIntrinsicId(NI_PackedSimd_And, m_compiler, op1, op2);
+    }
+    else if (op2->IsVectorZero())
+    {
+        // The operation is (zero & op1) | (op3 & ~op1), so we can drop the first half
+        BlockRange().Remove(op2);
+        node->ResetHWIntrinsicId(NI_PackedSimd_AndNot, m_compiler, op3, op1);
+    }
+    else
+    {
+        // PackedSimd.BitwiseSelect is (left, right, condition)
+        node->ResetHWIntrinsicId(NI_PackedSimd_BitwiseSelect, m_compiler, op2, op3, op1);
+    }
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------

@@ -3109,7 +3109,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_AsUInt32:
         case NI_Vector_AsUInt64:
         case NI_Vector_AsVector4:
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
         case NI_Vector_AsVector:
 #endif
         {
@@ -3795,6 +3795,15 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_CreateScalar:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_WASM)
+            if (!impStackTop(0).val->OperIsConst())
+            {
+                // TODO-WASM-SIMD: Implement NI_Vector_CreateScalar
+                break;
+            }
+#endif
+
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -3803,6 +3812,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_WASM)
+            if (!impStackTop(0).val->OperIsConst())
+            {
+                // TODO-WASM-SIMD: Implement NI_Vector_CreateScalarUnsafe
+                break;
+            }
+#endif
 
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarUnsafeNode(retType, op1, simdBaseType, simdSize);
@@ -4446,10 +4463,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+                // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
@@ -4472,10 +4489,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+                // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
@@ -4964,6 +4981,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_ShiftLeft
+            return nullptr;
+#endif
+
 #if defined(TARGET_XARCH)
             if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
@@ -5097,10 +5119,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
@@ -5128,10 +5150,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
