@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace System.Net.Security
 {
@@ -897,6 +898,13 @@ namespace System.Net.Security
                                        _sslAuthenticationOptions);
                         }
                     }
+
+#if TARGET_APPLE
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationNeeded)
+                    {
+                        token = VerifyRemoteCertificateAndGenerateNextToken(token);
+                    }
+#endif
                 } while (cachedCreds && _credentialsHandle == null);
             }
             finally
@@ -932,6 +940,28 @@ namespace System.Net.Security
 
             return token;
         }
+
+#if TARGET_APPLE
+        private ProtocolToken VerifyRemoteCertificateAndGenerateNextToken(ProtocolToken token)
+        {
+            // SecureTransport pauses the handshake (errSSL{Server,Client}AuthCompleted) before
+            // any bytes are produced for the next handshake flight, so the pending-writes buffer
+            // drained into token should be empty here. Assert to catch any future regression
+            // that would silently drop handshake bytes.
+            Debug.Assert(token.Size == 0, "Expected empty payload at CertValidationNeeded pause; dropping non-empty payload would lose handshake bytes.");
+            token.ReleasePayload();
+
+            ProtocolToken alertToken = default;
+
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            {
+                alertToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.CertValidationFailed, CreateCertificateValidationException(_sslAuthenticationOptions, sslPolicyErrors, chainStatus));
+                return alertToken;
+            }
+
+            return GenerateToken(ReadOnlySpan<byte>.Empty, out _);
+        }
+#endif
 
         internal ProtocolToken Renegotiate()
         {
@@ -970,30 +1000,100 @@ namespace System.Net.Security
 #endif
         }
 
-        internal ProtocolToken Encrypt(ReadOnlyMemory<byte> buffer)
+        private ProtocolToken EncryptData(ReadOnlyMemory<byte> buffer)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
+            ThrowIfExceptionalOrNotAuthenticated();
 
-            ProtocolToken token = SslStreamPal.EncryptMessage(
-                _securityContext!,
-                buffer,
-                _headerSize,
-                _trailerSize);
-
-            if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            lock (_handshakeLock)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {token.Status}");
-            }
+                if (_handshakeWaiter != null)
+                {
+                    ProtocolToken waitToken = default;
+                    // avoid waiting under lock.
+                    waitToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                    return waitToken;
+                }
 
-            return token;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer.Span);
+
+                ProtocolToken token = SslStreamPal.EncryptMessage(
+                    _securityContext!,
+                    buffer,
+                    _headerSize,
+                    _trailerSize);
+
+                if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"ERROR {token.Status}");
+                }
+
+                return token;
+            }
         }
 
-        internal SecurityStatusPal Decrypt(Span<byte> buffer, out int outputOffset, out int outputCount)
+        // On some platforms, the platform APIs decrypt in-place via single
+        // call (Schannel), while others have separate write-ciphertext +
+        // read-plaintext primitives. To allow the most efficient thing (copying
+        // plaintext straight to the `destination` buffer provided by the
+        // SslStream caller) on platforms that support it, the contract of this
+        // method is as follows:
+        //  - After the call, first `bytesWritten` bytes of `destination` contain decrypted plaintext
+        //  - Rest of the decrypted plaintext, if any, is stored in `_buffer.DecryptedSpan`.
+        private SecurityStatusPal DecryptData(int frameSize, Span<byte> destination, out int bytesWritten)
         {
-            SecurityStatusPal status = SslStreamPal.DecryptMessage(_securityContext!, buffer, out outputOffset, out outputCount);
-            if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
+            SecurityStatusPal status;
+
+            lock (_handshakeLock)
             {
-                NetEventSource.DumpBuffer(this, buffer.Slice(outputOffset, outputCount));
+                ThrowIfExceptionalOrNotAuthenticated();
+
+                status = SslStreamPal.DecryptMessage(
+                    _securityContext!,
+                    _buffer.EncryptedSpanSliced(frameSize),
+                    destination,
+                    out bytesWritten,
+                    out int leftoverOffset,
+                    out int leftoverLength);
+
+                _buffer.OnDecrypted(leftoverOffset, leftoverLength, frameSize);
+
+                if (NetEventSource.Log.IsEnabled() && status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                {
+                    if (bytesWritten > 0)
+                    {
+                        NetEventSource.DumpBuffer(this, destination.Slice(0, bytesWritten));
+                    }
+
+                    if (_buffer.DecryptedSpan.Length > 0)
+                    {
+                        NetEventSource.DumpBuffer(this, _buffer.DecryptedSpan);
+                    }
+                }
+
+                if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
+                {
+                    // The status indicates that the peer or TLS implementation requires additional
+                    // handshake/session processing. In practice, there can be other reasons too,
+                    // like TLS1.3 session creation or alert handling. We need to pass the data to
+                    // the underlying security provider and it is not safe to do parallel write any
+                    // more as that can change TLS state and the EncryptData() can fail in strange ways.
+
+                    // To handle this we call DecryptData() under lock and we create TCS waiter.
+                    // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
+                    // Instead it will wait synchronously or asynchronously and it will try again after the wait.
+                    // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
+                    // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
+                    // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
+
+                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
+                    {
+                        // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
+                        // Tls1.3 does not have renegotiation. However on Windows this error code is used
+                        // for session management e.g. anything lsass needs to see.
+                        // We also allow it when explicitly requested using RenegotiateAsync().
+                        _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                }
             }
 
             return status;
@@ -1172,7 +1272,7 @@ namespace System.Net.Security
             if (!success)
             {
 #pragma warning disable CS0162 // unreachable code detected (compile time const)
-                if (SslStreamPal.CanGenerateCustomAlerts && !SslStreamPal.CertValidationInCallback)
+                if (SslStreamPal.CanGenerateCustomAlertsForContext(_securityContext) && !SslStreamPal.CertValidationInCallback)
                 {
                     CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
                 }
@@ -1226,6 +1326,17 @@ namespace System.Net.Security
                 }
             }
 
+#if TARGET_APPLE
+            if (_securityContext is not null && !SslStreamPal.IsAsyncSecurityContext(_securityContext))
+            {
+                byte[] alertFrame = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, (TlsAlertDescription)alertMessage);
+                if (alertFrame.Length != 0)
+                {
+                    alertToken.SetPayload(alertFrame);
+                    return;
+                }
+            }
+#endif
             alertToken = GenerateAlertToken();
         }
 

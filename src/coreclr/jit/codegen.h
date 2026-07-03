@@ -226,6 +226,7 @@ protected:
     void                       ensureCurrentFuncIsUnwindable();
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
+    void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -341,11 +342,8 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void genEstablishFramePointer(int delta, bool reportUnwindData);
-    void genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
-#ifdef TARGET_WASM
-    void genHomeRegisterParamsOutsideProlog();
-#endif
+    void      genEstablishFramePointer(int delta, bool reportUnwindData);
+    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
@@ -783,6 +781,8 @@ protected:
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
 #if defined(FEATURE_SIMD)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
+#if defined(FEATURE_SIMD) && defined(FEATURE_MASKED_HW_INTRINSICS)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val);
 #endif
     void genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum);
@@ -793,6 +793,9 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+#if defined(FEATURE_SIMD)
+    void genCodeForVectorConstant(GenTree* treeNode);
+#endif
     void genCatchArg(GenTree* treeNode);
 #endif
 
@@ -824,6 +827,7 @@ protected:
 
 #if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
+    void genCodeForDivModOverflowCheck(GenTreeOp* tree);
 #endif // TARGET_ARMARCH
 
 #if !defined(TARGET_64BIT)
@@ -1015,6 +1019,12 @@ protected:
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
+    void genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg);
+
+#ifdef DEBUG
+    void checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg);
+#endif
+
     class HWIntrinsicImmOpHelper final
     {
     public:
@@ -1175,10 +1185,11 @@ protected:
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
-    void genCodeForCpObj(GenTreeBlk* cpObjNode);
-    void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
+#ifdef TARGET_WASM
+    void genCodeForFrameSize(GenTree* tree);
+#endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
 #endif // SWIFT_SUPPORT
@@ -1253,7 +1264,6 @@ protected:
 
     void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
     void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void                 genJumpTable(GenTree* tree);
@@ -1289,6 +1299,7 @@ protected:
     void genCompareImmAndJump(
         GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target);
     void genCodeForBfiz(GenTreeOp* tree);
+    void genCodeForBfx(GenTreeBfm* tree);
 #endif // TARGET_ARM64
 
     void genEHCatchRet(BasicBlock* block);
@@ -1592,6 +1603,16 @@ public:
     };
 
     OperandDesc genOperandDesc(instruction ins, GenTree* op);
+
+#if defined(TARGET_XARCH)
+    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node,
+                             instruction         ins,
+                             emitAttr            attr,
+                             regNumber           reg,
+                             OperandDesc&        rmOpDesc,
+                             GenTree*            rmOp,
+                             insOpts             instOptions);
+#endif // TARGET_XARCH
 
     void inst_TT(instruction ins, emitAttr size, GenTree* op1);
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);

@@ -916,9 +916,6 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             return RBM_CALLEE_TRASH_WRITEBARRIER;
 
-        case CORINFO_HELP_ASSIGN_BYREF:
-            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
-
         case CORINFO_HELP_PROF_FCN_ENTER:
             return RBM_PROFILER_ENTER_TRASH;
 
@@ -1761,6 +1758,111 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     params.gcrefRegs = gcInfo.gcRegGCrefSetCur;
     params.byrefRegs = gcInfo.gcRegByrefSetCur;
     GetEmitter()->emitIns_Call(params);
+
+    // Emit an entry for managed return value reporting, if needed.
+    GenTreeCall* call = params.returnValueCall;
+    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || !m_compiler->opts.compScopeInfo ||
+        (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
+    {
+        return;
+    }
+
+    if (call->gtReturnType == TYP_VOID)
+    {
+        return;
+    }
+
+    DebugInfo di;
+    if (!m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di))
+    {
+        return;
+    }
+
+    emitLocation retLoc;
+    retLoc.CaptureLocation(GetEmitter());
+
+    CodeGenInterface::EmittedCallReturnInfo info;
+    info.callILOffset   = di.GetRoot().GetLocation().GetOffset();
+    info.returnLocation = retLoc;
+
+    CallArg* retBuf = call->gtArgs.GetRetBufferArg();
+    if (retBuf != nullptr)
+    {
+        GenTree* node = retBuf->GetNode();
+
+#if HAS_FIXED_REGISTER_SET
+        assert(node->OperIsPutArg());
+        node = node->gtGetOp1()->gtSkipReloadOrCopy();
+#endif
+
+        if (!node->OperIs(GT_LCL_ADDR))
+        {
+            return;
+        }
+
+        unsigned lclNum         = node->AsLclVarCommon()->GetLclNum();
+        int      lclOffs        = node->AsLclVarCommon()->GetLclOffs();
+        int      stackLevelBias = 0;
+#ifdef TARGET_X86
+        stackLevelBias = getCurrentStackLevel();
+        if (params.argSize > 0)
+        {
+            // Call popped these but stack level hasn't been adjusted yet, account for it here
+            stackLevelBias -= (int)params.argSize;
+        }
+#endif
+
+        info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
+    }
+    else if (call->HasMultiRegRetVal())
+    {
+        const ReturnTypeDesc* retDesc = call->GetReturnTypeDesc();
+        unsigned              numRegs = retDesc->GetReturnRegCount();
+        if (numRegs > 2)
+        {
+            // Cannot encode more than 2 registers.
+            return;
+        }
+
+        assert(numRegs == 2);
+        regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
+        regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
+
+        // VLT_REG_REG can only encode integer registers. On platforms where structs
+        // can be returned in a mix of int and float registers (SysV x64, RISC-V),
+        // skip recording if any register is not an int register.
+        // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
+        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+        {
+            return;
+        }
+
+        info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
+    }
+    else if (varTypeIsFloating(call))
+    {
+#ifdef TARGET_X86
+        info.returnValueLoc.vlType         = VLT_FPSTK;
+        info.returnValueLoc.vlFPstk.vlfReg = 0;
+#else
+        // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
+        // platform-specific XMM0/V0 base when converting to CorDebugRegister.
+        info.returnValueLoc.vlType       = VLT_REG_FP;
+        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
+#endif
+    }
+    else if (varTypeUsesFloatReg(call))
+    {
+        // VLT_REG_FP uses a 0-based FP register index.
+        info.returnValueLoc.vlType       = VLT_REG_FP;
+        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
+    }
+    else
+    {
+        info.returnValueLoc.storeVariableInRegisters(REG_INTRET, REG_NA);
+    }
+
+    emittedCallReturnInfo->push_back(info);
 }
 
 /*****************************************************************************
@@ -3580,7 +3682,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
     //
     assert(!m_compiler->opts.IsOSR());
 
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     unsigned varNum = 0;
 
@@ -3688,7 +3790,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
  */
 void CodeGen::genCheckUseBlockInit()
 {
-    assert(!m_compiler->compGeneratingProlog);
+    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     unsigned initStkLclCnt = 0; // The number of int-sized stack local variables that need to be initialized (variables
                                 // larger than int count for more than 1).
@@ -3802,6 +3904,14 @@ void CodeGen::genCheckUseBlockInit()
                     JITDUMP("must init a tracked V%02u because it a struct with a GC ref\n", varNum);
                     mustInitThisVar = true;
                 }
+#ifdef TARGET_WASM
+                else if (hasGCPtr)
+                {
+                    // On wasm all GC vars are reported as untracked, so the slot must be zero-inited.
+                    JITDUMP("must init V%02u because wasm reports tracked GC vars as untracked\n", varNum);
+                    mustInitThisVar = true;
+                }
+#endif
                 else
                 {
                     // We are done with tracked or GC vars, now look at untracked vars without GC refs.
@@ -3861,7 +3971,12 @@ void CodeGen::genCheckUseBlockInit()
     // If this logic changes, Compiler::fgVarNeedsExplicitZeroInit needs
     // to be modified.
 
-#ifdef TARGET_64BIT
+#ifdef TARGET_WASM
+
+    // On WASM we always use a single memory.fill for prolog zeroing.
+    genUseBlockInit = (genInitStkLclCnt > 0);
+
+#elif defined(TARGET_64BIT)
 #if defined(TARGET_AMD64)
 
     // We can clear using aligned SIMD so the threshold is lower,
@@ -3912,7 +4027,7 @@ void CodeGen::genCheckUseBlockInit()
  */
 void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     // The first float/double reg that is initialized to 0. So they can be used to
     // initialize the remaining registers.
@@ -4039,7 +4154,7 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (genUseBlockInit)
     {
@@ -4482,7 +4597,7 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
 
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     const bool reportArg = m_compiler->lvaReportParamTypeArg();
 
@@ -5024,7 +5139,6 @@ void CodeGen::genFinalizeFrame()
  */
 void CodeGen::genFnProlog()
 {
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
 
     m_compiler->funSetCurrentFunc(0);
 
@@ -5110,7 +5224,52 @@ void CodeGen::genFnProlog()
     regMaskTP initFltRegs = RBM_NONE; // FP registers which must be init'ed.
     regMaskTP initDblRegs = RBM_NONE;
 
-#ifndef TARGET_WASM
+#ifdef TARGET_WASM
+    // For Wasm we only need to zero locals on the shadow stack; wasm locals are
+    // automatically zeroed.
+    for (unsigned varNum = 0; varNum < m_compiler->lvaCount; ++varNum)
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
+
+        if (varDsc->lvIsParam && !varDsc->lvIsRegArg)
+        {
+            continue;
+        }
+        if (!varDsc->lvOnFrame || !varDsc->lvMustInit)
+        {
+            continue;
+        }
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
+        // Defensively skip the wasm frame-header locals so we never overwrite the
+        // funclet info written by genAllocLclFrame at fp[0].
+        if ((varNum == m_compiler->lvaWasmFunctionIndex) || (varNum == m_compiler->lvaWasmVirtualIP) ||
+            (varNum == m_compiler->lvaWasmResumeIP))
+        {
+            continue;
+        }
+
+        signed int loOffs = varDsc->GetStackOffset();
+        signed int hiOffs = loOffs + m_compiler->lvaLclStackHomeSize(varNum);
+
+        hasUntrLcl = true;
+
+        if (loOffs < untrLclLo)
+        {
+            untrLclLo = loOffs;
+        }
+        if (hiOffs > untrLclHi)
+        {
+            untrLclHi = hiOffs;
+        }
+    }
+
+    // GC spill temps are not produced on wasm today.
+    assert(regSet.tmpAllFree());
+    assert(regSet.tmpListBeg() == nullptr);
+#else // !TARGET_WASM
     unsigned   varNum;
     LclVarDsc* varDsc;
 
@@ -5269,6 +5428,7 @@ void CodeGen::genFnProlog()
             untrLclHi = hiOffs;
         }
     }
+#endif // !TARGET_WASM
 
     // TODO-Cleanup: Add suitable assert for the OSR case.
     assert(m_compiler->opts.IsOSR() || ((genInitStkLclCnt > 0) == hasUntrLcl));
@@ -5284,6 +5444,7 @@ void CodeGen::genFnProlog()
     }
 #endif
 
+#ifndef TARGET_WASM
 #ifdef TARGET_ARM
     // On the ARM we will spill any incoming struct args in the first instruction in the prolog
     // Ditto for all enregistered user arguments in a varargs method.
@@ -5572,14 +5733,16 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
-#ifndef TARGET_WASM // TODO-WASM: temporary; un-undefine as needed.
     //
     // Zero out the frame as needed
     //
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
+    // Save the generic context arg in the prolog so GetParamTypeArg can report it.
     genReportGenericContextArg(initReg, &initRegZeroed);
+
+#ifndef TARGET_WASM // TODO-WASM: enable as needed.
 
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.

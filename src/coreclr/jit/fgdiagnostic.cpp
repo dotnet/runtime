@@ -341,7 +341,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsIntOrI())
     {
-        fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+        fprintf(fgxFile, "%d", tree->AsIntCon()->IconValue());
     }
     else if (tree->IsCnsFltOrDbl())
     {
@@ -3478,6 +3478,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
         {
             GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
             NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            unsigned            simdSize    = hwintrinsic->GetSimdSize();
 
             if (hwintrinsic->OperIsMemoryLoad())
             {
@@ -3516,9 +3517,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                         break;
                     }
 
-                    case NI_Vector128_op_Division:
-                    case NI_Vector256_op_Division:
+                    case NI_Vector_op_Division:
                     {
+                        assert((simdSize == 16) || (simdSize == 32));
                         break;
                     }
 #endif // TARGET_XARCH

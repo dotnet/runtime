@@ -589,11 +589,13 @@ namespace System.Text.Json.Serialization.Converters
                 name = namingPolicy.ConvertName(name);
             }
 
-            if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.Contains(',')))
+            if (name is null ||
+                (name.Length > 0 && (char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]))) ||
+                (s_isFlagsEnum && (name.Length == 0 || name.Contains(','))))
             {
-                // Reject null or empty strings or strings with leading or trailing whitespace.
-                // In the case of flags additionally reject strings containing commas.
+                // Reject null strings or strings with leading or trailing whitespace.
+                // In the case of flags additionally reject empty strings or strings containing commas,
+                // both of which would introduce ambiguity in flag value parsing and formatting.
                 ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
             }
 

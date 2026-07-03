@@ -1054,7 +1054,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
-    INDEBUG(ig->igDataSize = gs;)
+    INDEBUG(ig->igDataSize = sz;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -2012,16 +2012,10 @@ void emitter::emitCheckIGList()
 
 void emitter::emitBegProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
-
 #if EMIT_TRACK_STACK_DEPTH
-
     /* Don't measure stack depth inside the prolog, it's misleading */
-
     emitCntStackDepth = 0;
-
     assert(emitCurStackLvl == 0);
-
 #endif
 
     emitNoGCRequestCount = 1;
@@ -2045,12 +2039,13 @@ void emitter::emitBegProlog()
 /*****************************************************************************
  *
  *  Mark the code offset of the current location as the end of the prolog,
- *  so it can be used later to compute the actual size of the prolog.
+ *  so it can be used later to compute the actual size of the prolog for
+ *  GCInfo purposes. We may still generate more code into "prolog" IGs.
  */
 
 void emitter::emitMarkPrologEnd()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
     emitPrologEndPos.CaptureLocation(this);
 }
 
@@ -2061,7 +2056,7 @@ void emitter::emitMarkPrologEnd()
 
 void emitter::emitEndProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
 
     emitNoGCRequestCount = 0;
     emitNoGCIG           = false;
@@ -2366,6 +2361,16 @@ void emitter::emitFinishPrologEpilogGeneration()
     emitCurIG = nullptr;
 }
 
+bool emitter::emitGeneratingPrologOrFuncletProlog() const
+{
+    return emitIGisInProlog(emitCurIG) || emitIGisInFuncletProlog(emitCurIG);
+}
+
+bool emitter::emitGeneratingEpilogOrFuncletEpilog() const
+{
+    return emitIGisInEpilog(emitCurIG) || emitIGisInFuncletEpilog(emitCurIG);
+}
+
 /*****************************************************************************
  *
  *  Common code for prolog / epilog beginning. Convert the placeholder group to actual code IG,
@@ -2612,7 +2617,7 @@ bool emitter::emitHasEpilogEnd()
 
 void emitter::emitStartExitSeq()
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(emitGeneratingEpilogOrFuncletEpilog());
 
     emitExitSeqBegLoc.CaptureLocation(this);
 }
@@ -2631,7 +2636,7 @@ void emitter::emitStartExitSeq()
 
 void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
     assert(offsHi > offsLo);
 
 #ifdef DEBUG
@@ -9924,6 +9929,7 @@ void emitter::emitInitIG(insGroup* ig)
        sure we act the same in non-DEBUG builds.
     */
 
+    ig->igData   = nullptr;
     ig->igSize   = 0;
     ig->igGCregs = RBM_NONE;
     ig->igInsCnt = 0;
@@ -9941,8 +9947,6 @@ void emitter::emitInitIG(insGroup* ig)
     // Explicitly call init, since IGs don't actually have a constructor.
     ig->igBlocks.jitstd::list<BasicBlock*>::init(m_compiler->getAllocator(CMK_DebugOnly));
 #endif
-
-    ig->igData = nullptr;
 }
 
 /*****************************************************************************
@@ -10728,10 +10732,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // emitGetGCRegsKilledByNoGCCall: Gets a register mask that represents the set of registers that no longer
 // contain GC or byref pointers, for "NO GC" helper calls. This is used by the emitter when determining
 // what registers to remove from the current live GC/byref sets (and thus what to report as dead in the
-// GC info). Note that for the CORINFO_HELP_ASSIGN_BYREF helper, in particular, the kill set reported by
-// compHelperCallKillSet() doesn't match this kill set. compHelperCallKillSet() reports the dst/src
-// address registers as killed for liveness purposes, since their values change. However, they still are
-// valid byref pointers after the call, so the dst/src address registers are NOT reported as killed here.
+// GC info).
 //
 // Note: This list may not be complete and defaults to the default RBM_CALLEE_TRASH_NOGC registers.
 //
@@ -10750,10 +10751,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
-            break;
-
-        case CORINFO_HELP_ASSIGN_BYREF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)

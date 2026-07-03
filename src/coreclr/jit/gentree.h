@@ -1222,7 +1222,7 @@ public:
 
     bool IsNotGcDef() const
     {
-        if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR))
+        if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR, GT_LCLHEAP))
         {
             return true;
         }
@@ -3414,6 +3414,10 @@ struct GenTreePhysReg : public GenTree
 /* gtIntCon -- integer constant (GT_CNS_INT) */
 struct GenTreeIntCon : public GenTreeIntConCommon
 {
+    // Allow the base type to access the encapsulated value fields directly (e.g. IconValue/SetIconValue).
+    friend struct GenTreeIntConCommon;
+
+private:
     /*
      * This is the GT_CNS_INT struct definition.
      * It's used to hold for both int constants and pointer handle constants.
@@ -3443,6 +3447,39 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 #ifdef DEBUG
     // If the value represents target address (for a field or call), holds the handle of the field (or call).
     size_t gtTargetHandle = 0;
+#endif
+
+public:
+    // Accessors for the compile time handle. See "gtCompileTimeHandle" above.
+    ssize_t GetCompileTimeHandle() const
+    {
+        return gtCompileTimeHandle;
+    }
+    void SetCompileTimeHandle(ssize_t compileTimeHandle)
+    {
+        gtCompileTimeHandle = compileTimeHandle;
+    }
+
+    // Accessors for the field sequence. See "gtFieldSeq" above.
+    FieldSeq* GetFieldSeq() const
+    {
+        return gtFieldSeq;
+    }
+    void SetFieldSeq(FieldSeq* fieldSeq)
+    {
+        gtFieldSeq = fieldSeq;
+    }
+
+#ifdef DEBUG
+    // Accessors for the debug-only target handle. See "gtTargetHandle" above.
+    size_t GetTargetHandle() const
+    {
+        return gtTargetHandle;
+    }
+    void SetTargetHandle(size_t targetHandle)
+    {
+        gtTargetHandle = targetHandle;
+    }
 #endif
 
     GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
@@ -4391,7 +4428,7 @@ enum GenTreeCallFlags : unsigned int
                                                      // know when these flags are set.
 
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00002000, // call does not return
-    GTF_CALL_M_WRAPPER_DELEGATE_INV    = 0x00004000, // call is in wrapper delegate
+    GTF_CALL_M_STACK_ARRAY             = 0x00004000, // this call is a new array helper for a stack allocated array.
     GTF_CALL_M_FAT_POINTER_CHECK       = 0x00008000, // NativeAOT managed calli needs transformation, that checks
                                                      // special bit in calli address. If it is set, then it is necessary
                                                      // to restore real function address and load hidden argument
@@ -4410,7 +4447,6 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x02000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x04000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
-    GTF_CALL_M_STACK_ARRAY             = 0x08000000, // this call is a new array helper for a stack allocated array.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4497,7 +4533,7 @@ struct AsyncCallInfo
     // Behavior where we continue for each call depends on how it was
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
-    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+    ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
@@ -4765,7 +4801,6 @@ enum class WellKnownArg : unsigned
     AsyncContinuation,
     RetBuffer,
     PInvokeFrame,
-    WrapperDelegateCell,
     ShiftLow,
     ShiftHigh,
     VirtualStubCell,
@@ -6118,6 +6153,43 @@ struct GenTreeQmark : public GenTreeOp
 #endif
 };
 
+#ifdef TARGET_ARM64
+struct GenTreeBfm : public GenTreeOp
+{
+    unsigned gtOffset;
+    unsigned gtWidth;
+
+    GenTreeBfm(genTreeOps oper, var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
+        : GenTreeOp(oper, type, base, src)
+        , gtOffset(offset)
+        , gtWidth(width)
+    {
+        assert(oper == GT_BFX);
+        assert(src == nullptr);
+    }
+
+    unsigned GetOffset() const
+    {
+        return gtOffset;
+    }
+    unsigned GetWidth() const
+    {
+        return gtWidth;
+    }
+    unsigned GetMask() const
+    {
+        return ((~0ULL >> (64 - gtWidth)) << gtOffset);
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeBfm()
+        : GenTreeOp()
+    {
+    }
+#endif
+};
+#endif
+
 /* gtIntrinsic   -- intrinsic   (possibly-binary op [NULL op2 is allowed] with an additional field) */
 
 struct GenTreeIntrinsic : public GenTreeOp
@@ -6884,21 +6956,9 @@ struct GenTreeVecCon : public GenTree
 
         switch (intrinsic)
         {
-            case NI_Vector128_Create:
-            case NI_Vector128_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector512_Create:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_Create:
-            case NI_Vector64_CreateScalar:
-            case NI_Vector64_CreateScalarUnsafe:
-#endif
+            case NI_Vector_Create:
+            case NI_Vector_CreateScalar:
+            case NI_Vector_CreateScalarUnsafe:
             {
                 // Zero out the simdVal
                 simdVal = {};
@@ -6908,12 +6968,7 @@ struct GenTreeVecCon : public GenTree
                 {
                     // CreateScalar leaves the upper bits as zero
 
-#if defined(TARGET_XARCH)
-                    if ((intrinsic != NI_Vector128_CreateScalar) && (intrinsic != NI_Vector256_CreateScalar) &&
-                        (intrinsic != NI_Vector512_CreateScalar))
-#elif defined(TARGET_ARM64)
-                    if ((intrinsic != NI_Vector64_CreateScalar) && (intrinsic != NI_Vector128_CreateScalar))
-#endif
+                    if (intrinsic != NI_Vector_CreateScalar)
                     {
                         // Now assign the rest of the arguments.
                         for (unsigned i = 1; i < ElementCount(simdSize, simdBaseType); i++)
@@ -6967,7 +7022,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -6983,7 +7038,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -6999,7 +7054,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -7024,9 +7079,9 @@ struct GenTreeVecCon : public GenTree
                     // 32-bit targets may decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
-                    INT64 gtLconVal = arg->gtGetOp2()->AsIntCon()->gtIconVal;
+                    INT64 gtLconVal = arg->gtGetOp2()->AsIntCon()->IconValue();
                     gtLconVal <<= 32;
-                    gtLconVal |= static_cast<uint32_t>(arg->gtGetOp1()->AsIntCon()->gtIconVal);
+                    gtLconVal |= static_cast<uint32_t>(arg->gtGetOp1()->AsIntCon()->IconValue());
 
                     simdVal.i64[argIdx] = gtLconVal;
                     return true;
@@ -8022,8 +8077,8 @@ struct GenTreeIndir : public GenTreeOp
     unsigned Scale();
     ssize_t  Offset();
 
-    unsigned  Size() const;
-    ValueSize ValueSize() const;
+    unsigned    Size() const;
+    ::ValueSize ValueSize() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data)
         : GenTreeOp(oper, type, addr, data)
@@ -8112,13 +8167,6 @@ public:
     enum
     {
         BlkOpKindInvalid,
-        BlkOpKindCpObjUnroll,
-#ifdef TARGET_XARCH
-        BlkOpKindCpObjRepInstr,
-#endif
-#ifdef TARGET_XARCH
-        BlkOpKindRepInstr,
-#endif
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
@@ -9731,20 +9779,7 @@ inline bool GenTree::IsVectorCreate() const
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
-        switch (AsHWIntrinsic()->GetHWIntrinsicId())
-        {
-            case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector512_Create:
-#elif defined(TARGET_ARMARCH)
-            case NI_Vector64_Create:
-#endif
-                return true;
-
-            default:
-                return false;
-        }
+        return AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector_Create;
     }
 #endif // FEATURE_HW_INTRINSICS
 

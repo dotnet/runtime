@@ -158,6 +158,17 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmDependenciesNode.GetOrAdd(canonMethod);
         }
 
+        private NodeCache<MethodDesc, VirtualMethodUseNode> _virtualMethodUseNodes;
+
+        public VirtualMethodUseNode VirtualMethodUse(MethodDesc method)
+        {
+            Debug.Assert(method.IsVirtual);
+            Debug.Assert(!method.HasInstantiation);
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            canonMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod);
+            return _virtualMethodUseNodes.GetOrAdd(canonMethod);
+        }
+
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
 
         public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
@@ -208,7 +219,7 @@ namespace ILCompiler.DependencyAnalysis
                 Module = module;
             }
 
-            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && ((Module == null && other.Module == null) || Module.Equals(other.Module));
+            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && Module == other.Module;
             public override bool Equals(object obj) => obj is ModuleAndIntValueKey && Equals((ModuleAndIntValueKey)obj);
             public override int GetHashCode()
             {
@@ -288,6 +299,11 @@ namespace ILCompiler.DependencyAnalysis
             _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
             {
                 return new GVMDependenciesNode(method);
+            });
+
+            _virtualMethodUseNodes = new NodeCache<MethodDesc, VirtualMethodUseNode>(method =>
+            {
+                return new VirtualMethodUseNode(method);
             });
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
@@ -897,9 +913,12 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
-            graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            if (!Target.IsWasm)
+            {
+                DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
+                graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            }
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode);
@@ -1272,6 +1291,15 @@ namespace ILCompiler.DependencyAnalysis
         public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
         {
             _genericCycleDetector?.DetectCycle(caller, callee);
+        }
+
+        public bool CanBeInGenericCycle(MethodDesc method)
+        {
+            if (_genericCycleDetector is null)
+                return false;
+
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+            return _genericCycleDetector.CanBeInCycle(methodDefinition);
         }
 
         public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)

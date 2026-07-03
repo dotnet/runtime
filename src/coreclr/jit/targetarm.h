@@ -24,6 +24,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register (including HFA support)
 #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register (including passing HFAs)
 #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register (including HFA returns)
+#define FEATURE_HAS_ZERO_REG          0  // Target does not have a hardware "zero register" usable as a containable source
 #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (Max is an HFA of 4 doubles)
 #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 4 doubles)
@@ -146,28 +147,12 @@
 //       r0: trashed
 //       r3: trashed
 //      r12: trashed
-// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
-//     On entry:
-//       r0: the destination address (object reference written here)
-//       r1: the source address (points to object reference to write)
-//     On exit:
-//       r0: incremented by 4
-//       r1: incremented by 4
-//       r2: trashed
-//       r3: trashed
-//      r12: trashed
 
 #define REG_WRITE_BARRIER_DST          REG_ARG_0
 #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
 
 #define REG_WRITE_BARRIER_SRC          REG_ARG_1
 #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
-
-#define REG_WRITE_BARRIER_DST_BYREF    REG_ARG_0
-#define RBM_WRITE_BARRIER_DST_BYREF    RBM_ARG_0
-
-#define REG_WRITE_BARRIER_SRC_BYREF    REG_ARG_1
-#define RBM_WRITE_BARRIER_SRC_BYREF    RBM_ARG_1
 
 #define RBM_CALLEE_TRASH_NOGC          (RBM_R2|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
 
@@ -176,13 +161,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_WRITEBARRIER
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-// Note that r0 and r1 are still valid byref pointers after this helper call, despite their value being changed.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
 // GenericPInvokeCalliHelper VASigCookie Parameter
 #define REG_PINVOKE_COOKIE_PARAM          REG_R4
@@ -197,8 +175,8 @@
 #define RBM_SECRET_STUB_PARAM     RBM_R12
 
 // R2R indirect call. Use the same registers as VSD
-#define REG_R2R_INDIRECT_PARAM          REG_R4
-#define RBM_R2R_INDIRECT_PARAM          RBM_R4
+#define REG_R2R_INDIRECT_PARAM          REG_R12
+#define RBM_R2R_INDIRECT_PARAM          RBM_R12
 
 // JMP Indirect call register
 #define REG_INDIRECT_CALL_TARGET_REG REG_R12
