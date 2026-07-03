@@ -67,7 +67,7 @@ stimuli:
         config:
           scoring: binary
           prompt: |
-            Read ./out/feedback.md. Pass only if the feedback is constructive. It must be grounded in the real scanner and fixer signals with at least one quantified observation, it must identify a concrete miss, and it must turn that into a specific, actionable next step. That next step is either a single prompt edit that quotes the triggering maintainer comment or close reason and targets one of the allowed workflow or instruction files, or an explicit, justified statement that no edit is warranted. Fail if it is vague, ungrounded, invents a signal not present in the data it gathered, proposes an edit to a file outside the allowed set, or is a generic status recap with no actionable conclusion. Otherwise fail.
+            Read ./out/feedback.md. Pass only if the feedback is constructive. It must be grounded in the real scanner and fixer signals with at least one quantified observation, it must identify a concrete miss, and it must turn that into a specific, actionable next step. That next step is either a single prompt edit that quotes the triggering maintainer comment or close reason and targets one of the allowed workflow or instruction files, or an explicit, justified statement that no edit is warranted. Fail if it is vague, ungrounded, invents a signal not present in the data it gathered, proposes an edit to a file outside the allowed set, or is a generic status recap with no actionable conclusion.
 
       - type: prompt
         name: edit-is-grounded
