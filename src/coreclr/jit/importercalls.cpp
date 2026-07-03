@@ -9341,7 +9341,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     if (helperCall->IsHelperCall(CORINFO_HELP_RUNTIMEHANDLE_METHOD) ||
                         helperCall->IsHelperCall(CORINFO_HELP_RUNTIMEHANDLE_CLASS))
                     {
-                        runtimeLookupContext = gtCloneExpr(helperCall->gtArgs.GetArgByIndex(0)->GetNode());
+                        runtimeLookupContext = helperCall->gtArgs.GetArgByIndex(0)->GetNode();
                     }
                 }
             }
