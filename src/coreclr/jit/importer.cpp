@@ -4602,7 +4602,8 @@ bool Compiler::impIsImplicitTailCallCandidate(
 #endif // !FEATURE_TAILCALL_OPT_SHARED_RETURN
 
     // must be call+ret or call+pop+ret
-    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive))
+    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive) &&
+        ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0))
     {
         return false;
     }
@@ -9052,7 +9053,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (compIsAsyncVersion())
                     {
-                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET))
+                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET) &&
+                            ((info.compFlags & CORINFO_FLG_SYNCH) == 0))
                         {
                             JITDUMP("\nRecognized tail-call in async version\n");
                             awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
@@ -9091,7 +9093,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (isAwait)
                     {
                         _impResolveToken(CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod == nullptr)
+                        if ((resolvedToken.hMethod == NO_METHOD_HANDLE) || !impCheckOptimizeAwait(awaitOffset))
                         {
                             // This can happen in cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
@@ -9119,28 +9121,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
                                   &callInfo);
-
-                    // TODO: crossgen2 cannot handle us removing this
-                    if (isAwait && IsReadyToRun() && (callInfo.kind == CORINFO_CALL))
-                    {
-                        assert(callInfo.sig.isAsyncCall());
-                        bool isSyncCallThunk;
-                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
-                        if (!isSyncCallThunk)
-                        {
-                            // The async variant that we got is a thunk. Switch
-                            // back to the non-async task-returning call. There
-                            // is no reason to go through the thunk.
-                            _impResolveToken(CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
-                                             PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
-                            isAwait = false;
-
-                            eeGetCallInfo(&resolvedToken,
-                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                          flags, &callInfo);
-                        }
-                    }
 
                     if (isAwait)
                     {
@@ -9331,6 +9311,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
+                    prefixFlags &= ~PREFIX_TAILCALL;
                     goto RET;
                 }
 
@@ -11156,6 +11137,37 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// impCheckOptimizeAwait:
+//   Check if an await at a specified offset should be optimized.
+//
+// Arguments:
+//   awaitOffset - The offset of the await
+//
+// Returns:
+//     True if we should use the async variant.
+//
+bool Compiler::impCheckOptimizeAwait(IL_OFFSET awaitOffset)
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_jitOptimizeAwaitRange;
+    s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange());
+
+    unsigned hash = impInlineRoot()->info.compMethodHash();
+    hash          = ((hash << 5) + hash) ^ (compIsForInlining() ? compInlineContext->GetOrdinal() : 0);
+    hash          = ((hash << 5) + hash) ^ awaitOffset;
+
+    if ((JitConfig.JitAwaitHashBreak() != -1) && (hash == (unsigned)JitConfig.JitAwaitHashBreak()))
+    {
+        assert(!"JitAwaitHashBreak reached");
+    }
+
+    return s_jitOptimizeAwaitRange.Contains(hash);
+#else
+    return true;
+#endif
+}
+
+//------------------------------------------------------------------------
 // impCreateLocal: create a GT_LCL_VAR node to access a local that might need to be normalized on load
 //
 // Arguments:
@@ -11337,11 +11349,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         if (!impWrapTopOfStackInAwait())
         {
             return false;
-        }
-
-        if (info.compRetType == TYP_VOID)
-        {
-            impAppendTree(impPopStack().val, CHECK_SPILL_ALL, impCurStmtDI);
         }
     }
 
@@ -11711,6 +11718,28 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //
 bool Compiler::impWrapTopOfStackInAwait()
 {
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    {
+        assert(!compIsForInlining());
+
+        if (lvaMonAcquired == BAD_VAR_NUM)
+        {
+            lvaMonAcquired = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+            lvaGetDesc(lvaMonAcquired)->lvType = TYP_I_IMPL;
+        }
+
+        GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
+        GenTree* lockObject =
+            info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(info.compThisArg, TYP_REF);
+        GenTree* exitMon = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, lockObject, varAddrNode);
+        impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+
+    if (impFoldAwaitedTopOfStack())
+    {
+        return true;
+    }
+
     CORINFO_LOOKUP        instArgLookup;
     CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
 
@@ -11719,8 +11748,15 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     assert(awaitSig.isAsyncCall());
 
-    var_types            callRetType = JITtype2varType(awaitSig.retType);
-    GenTreeCall*         awaitCall   = gtNewCallNode(CT_USER_FUNC, awaitMethod, callRetType);
+    var_types    callRetType = JITtype2varType(awaitSig.retType);
+    GenTreeCall* awaitCall   = gtNewCallNode(CT_USER_FUNC, awaitMethod, callRetType);
+
+    // The await-return call is synthesized here and never goes through impImportCall, so give it its
+    // Ready-to-Run entrypoint explicitly (as the other synthesized async calls do). Without this the call is
+    // not marked R2R-relative-indirect, so on arm64 fgMorphCall omits the indirection-cell (x11) argument the
+    // ReadyToRun DelayLoad helpers require, tripping a GetDataRva assert at runtime.
+    SetCallEntrypointForR2R(awaitCall, this, awaitMethod);
+
     CORINFO_CLASS_HANDLE taskTypeHnd;
     CorInfoType          taskType = strip(info.compCompHnd->getArgType(&awaitSig, awaitSig.args, &taskTypeHnd));
 
@@ -11784,6 +11820,16 @@ bool Compiler::impWrapTopOfStackInAwait()
     if (impInlineRoot()->compIsAsyncVersion())
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
+
+#if FEATURE_TAILCALL_OPT
+        // We intentionally do not consult with the EE and canTailCall because
+        // this is us introducing a call as an implementation detail and not a
+        // user-introduced call.
+        if (asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
+        {
+            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+        }
+#endif
     }
     else
     {
@@ -11800,8 +11846,140 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     awaitCall->SetIsAsync(asyncInfo);
 
-    impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
+    if (info.compRetType == TYP_VOID)
+    {
+        impAppendTree(toPush, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+    else
+    {
+        impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
+    }
     return true;
+}
+
+//------------------------------------------------------------------------
+// impFoldAwaitedTopOfStack:
+//   Fold a few patterns where introducing a call to
+//   AsyncHelpers.TransparentAwaitWithResult is unnecessary.
+//
+// Returns:
+//   True if the top of stack was folded and the importer stack was updated
+//   appropriately.
+//
+// Remarks:
+//   In async versions this folds these cases:
+//
+//   - return new ValueTask() (like ValueTask.CompletedTask)
+//   - return default (ValueTask.CompletedTask)
+//   - return new ValueTask<T>(value) (like ValueTask.FromResult)
+//
+//   We cannot represent these values as async variants, so we cannot fold them
+//   in the simple intrinsic path where other cases like Task.FromResult and
+//   ValueTask.FromResult are folded.
+//
+bool Compiler::impFoldAwaitedTopOfStack()
+{
+    if (!opts.Tier0OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* value = impStackTop().val;
+    if (!value->OperIsScalarLocal())
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* valueLcl = value->AsLclVarCommon();
+
+    Statement* lastStmt = impLastStmt;
+    if (lastStmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* lastTree = lastStmt->GetRootNode();
+    // Look for a valueTask = 0 init, for "new ValueTask()" and "default" cases.
+    if (lastTree->OperIs(GT_STORE_LCL_VAR))
+    {
+        GenTreeLclVarCommon* storeLcl = lastTree->AsLclVarCommon();
+        if (storeLcl->GetLclNum() != valueLcl->GetLclNum())
+        {
+            return false;
+        }
+
+        if (!storeLcl->Data()->IsIntegralConst(0))
+        {
+            return false;
+        }
+
+        impPopStack();
+        if (info.compRetType == TYP_VOID)
+        {
+            lastTree->gtBashToNOP();
+        }
+        else if (info.compRetType != TYP_STRUCT)
+        {
+            impPushOnStack(gtNewZeroConNode(info.compRetType), typeInfo(info.compRetType));
+            lastTree->gtBashToNOP();
+        }
+        else
+        {
+            unsigned returnLcl = lvaGrabTemp(true DEBUGARG("Return temp"));
+            lvaSetStruct(returnLcl, info.compMethodInfo->args.retTypeClass, false);
+            // Reuse the ValueTask zeroing
+            lastTree->AsLclVar()->SetLclNum(returnLcl);
+            impPushOnStack(gtNewLclVarNode(returnLcl),
+                           makeTypeInfo(info.compMethodInfo->args.retType, info.compMethodInfo->args.retTypeClass));
+        }
+
+        JITDUMP("Optimized \"return new ValueTask()\" to return default\n");
+        return true;
+    }
+    else if (lastTree->IsCall() &&
+             lastTree->AsCall()->IsSpecialIntrinsic(this, NI_System_Threading_Tasks_ValueTask_1__ctor))
+    {
+        CallArg* thisArg = lastTree->AsCall()->gtArgs.GetThisArg();
+        if (!thisArg->GetNode()->OperIs(GT_LCL_ADDR) ||
+            (thisArg->GetNode()->AsLclVarCommon()->GetLclNum() != valueLcl->GetLclNum()))
+        {
+            return false;
+        }
+
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(lastTree->AsCall()->gtCallMethHnd, &sig);
+
+        if (sig.numArgs != 1)
+        {
+            return false;
+        }
+
+        assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
+        CORINFO_CLASS_HANDLE paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+        if (paramClass != sig.sigInst.classInst[0])
+        {
+            return false;
+        }
+
+        CallArg* valueArg = lastTree->AsCall()->gtArgs.GetUserArgByIndex(1);
+        GenTree* value    = valueArg->GetNode();
+
+        if (varTypeIsSmall(valueArg->GetSignatureType()) && fgCastNeeded(value, valueArg->GetSignatureType()))
+        {
+            value = gtNewCastNode(TYP_INT, value, false, valueArg->GetSignatureType());
+        }
+
+        StackEntry se = impPopStack();
+        impPushOnStack(value, se.seTypeInfo);
+        JITDUMP("Optimized \"return new ValueTask(value)\" to return value directly:\n");
+        DISPTREE(value);
+
+        // Finally remove the old constructor call, which is unneeded.
+        lastTree->gtBashToNOP();
+        return true;
+    }
+
+    return false;
 }
 
 #ifdef DEBUG

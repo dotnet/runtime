@@ -2993,8 +2993,7 @@ public:
     IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
-    IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   CordbModule * pModule);
+    IMDInternalImport * LookupMetaDataFromDebugger(CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
                                                                 LPCWSTR pwszImagePath,
@@ -6081,7 +6080,7 @@ public:
     // Converts the values in the floating point register area of the context to real number values.
     void Get32bitFPRegisters(CONTEXT * pContext);
 
-#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     // Converts the values in the floating point register area of the context to real number values.
     void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
 
@@ -6847,7 +6846,6 @@ public:
                      FramePointer         fp,
                      CordbNativeCode *    pNativeCode,
                      SIZE_T               ip,
-                     DebuggerREGDISPLAY * pDRD,
                      TADDR                addrAmbientESP,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
@@ -7025,8 +7023,6 @@ public:
     //-----------------------------------------------------------
 
 public:
-    // the register set
-    DebuggerREGDISPLAY m_rd;
 
     // each CordbNativeFrame corresponds to exactly one CordbJITILFrame and one CordbNativeCode
     RSSmartPtr<CordbJITILFrame> m_JITILFrame;
@@ -7040,8 +7036,6 @@ private:
     // (most likely in a frameless method)
     TADDR    m_taAmbientESP;
 
-    // @dbgtodo  inspection - When we DACize the various Cordb*Value classes, we should consider getting rid of the
-    // DebuggerREGDISPLAY and just use the CONTEXT.  A lot of simplification can be done here.
     DT_CONTEXT  m_context;
 };
 
@@ -7064,11 +7058,10 @@ private:
 class CordbRegisterSet : public CordbBase, public ICorDebugRegisterSet, public ICorDebugRegisterSet2
 {
 public:
-    CordbRegisterSet(DebuggerREGDISPLAY * pRegDisplay,
-                     CordbThread *        pThread,
+    CordbRegisterSet(CordbThread *        pThread,
+                     DT_CONTEXT *         pContext,
                      bool fActive,
-                     bool fQuickUnwind,
-                     bool fTakeOwnershipOfDRD = false);
+                     bool fQuickUnwind);
 
 
     ~CordbRegisterSet();
@@ -7164,23 +7157,15 @@ public:
     }
 
 protected:
-    // Platform specific helper for GetThreadContext.
-    void InternalCopyRDToContext(DT_CONTEXT * pContext);
 
     // Adapters to impl v2.0 interfaces on top of v1.0 interfaces.
     HRESULT GetRegistersAvailableAdapter(ULONG32 regCount, BYTE pAvailable[]);
     HRESULT GetRegistersAdapter(ULONG32 maskCount, BYTE mask[], ULONG32 regCount, CORDB_REGISTER regBuffer[]);
 
-
-    // This CordbRegisterSet is responsible to free this memory if m_fTakeOwnershipOfDRD is true.  Otherwise,
-    // this memory is freed by the CordbNativeFrame or CordbThread which creates this CordbRegisterSet.
-    DebuggerREGDISPLAY  *m_rd;
+    DT_CONTEXT          m_context;
     CordbThread         *m_thread;
     bool                m_active; // true if we're the leafmost register set.
     bool                m_quickUnwind;
-
-    // true if the CordbRegisterSet owns the DebuggerREGDISPLAY pointer and needs to free the memory
-    bool                m_fTakeOwnershipOfDRD;
 } ;
 
 
@@ -10613,7 +10598,7 @@ public:
 
 private:
     RefWalkHandle mRefHandle;
-    BOOL mEnumStacksFQ;
+    BOOL mEnumStacks;
     UINT32 mHandleMask;
 };
 

@@ -1719,6 +1719,7 @@ typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 #else
 typedef TADDR HandlerFn;
 TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp);
 
 DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
 DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
@@ -1752,6 +1753,33 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
 
 #ifdef TARGET_WASM
     TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
+    // A handler that is lexically nested inside a funclet (e.g. a catch inside a finally) must
+    // run with the enclosing METHOD frame as its establishing frame.
+    if (pExInfo->m_frameIter.m_crawl.IsFunclet())
+    {
+        T_CONTEXT walkCtx = *(pRD->pCurrentContext);
+        for (;;)
+        {
+            UnwindStackFrame(&walkCtx);
+            EECodeInfo ci(dac_cast<PCODE>(GetIP(&walkCtx)));
+            if (!ci.IsValid())
+            {
+                // The funclet was invoked by the VM through CallFuncletWith[out]Throwable, so native
+                // unwinding terminates at that synthetic frame before reaching the method's own frame.
+                // Recover the establishing (method) frame pointer the helper stored next to the
+                // TERMINATE_R2R_STACK_WALK marker.
+                wasmFramePointer = GetWasmEstablishingFramePointerFromTerminator(GetSP(&walkCtx));
+                break;
+            }
+            if (!ci.IsFunclet())
+            {
+                // The funclet executes within the method's own native frame, which we reached directly
+                // by unwinding (no intervening CallFunclet helper frame).
+                wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(&walkCtx));
+                break;
+            }
+        }
+    }
     TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
     if (throwable != NULL)
     {
