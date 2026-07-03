@@ -78,7 +78,7 @@ stimuli:
         config:
           required:
             - name: 'bash'
-              command: 'curl.*dev\.azure\.com/dnceng-public/public/_apis/build'
+              command: 'dev\.azure\.com/dnceng-public/public/_apis/build/builds'
 
       - type: tool-calls
         name: searched-existing-kbe
