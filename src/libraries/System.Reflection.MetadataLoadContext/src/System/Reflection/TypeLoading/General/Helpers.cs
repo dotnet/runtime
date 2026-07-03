@@ -265,7 +265,7 @@ namespace System.Reflection.TypeLoading
             ArgumentNullException.ThrowIfNull(other);
 
             // Ensure that "other" is one of our MemberInfo objects. Do this check before calling any methods on it!
-            if (!(other is M))
+            if (other is not M)
                 return false;
 
             if (thisMember.MetadataToken != other.MetadataToken)

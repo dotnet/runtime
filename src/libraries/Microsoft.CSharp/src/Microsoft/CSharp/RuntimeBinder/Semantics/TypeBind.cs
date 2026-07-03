@@ -165,7 +165,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool CheckSingleConstraint(Symbol symErr, TypeParameterType var, CType arg, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
         {
-            Debug.Assert(!(arg is PointerType));
+            Debug.Assert(arg is not PointerType);
             Debug.Assert(!arg.IsStaticClass);
 
             bool fReportErrors = 0 == (flags & CheckConstraintsFlags.NoErrors);

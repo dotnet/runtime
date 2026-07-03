@@ -708,7 +708,7 @@ namespace System.Net.Security
 
         private void SetFailed(Exception e)
         {
-            if (_exception == null || !(_exception.SourceException is ObjectDisposedException))
+            if (_exception == null || _exception.SourceException is not ObjectDisposedException)
             {
                 _exception = ExceptionDispatchInfo.Capture(e);
             }

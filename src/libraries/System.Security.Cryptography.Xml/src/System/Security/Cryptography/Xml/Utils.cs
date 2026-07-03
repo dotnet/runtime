@@ -261,7 +261,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     foreach (XmlNode node1 in childNodes)
                     {
-                        if (includeComments || (!(node1 is XmlComment)))
+                        if (includeComments || (node1 is not XmlComment))
                         {
                             elementList.Add(node1);
                         }

@@ -520,7 +520,7 @@ namespace System.IO.Packaging
         private static string GetStringForPartUriFromAnyUri(Uri partUri)
         {
             Debug.Assert(partUri != null, "Null reference check for this uri parameter should have been made earlier");
-            Debug.Assert(!(partUri is ValidatedPartUri), "This method should only be called when we have not already validated the part uri");
+            Debug.Assert(partUri is not ValidatedPartUri, "This method should only be called when we have not already validated the part uri");
 
             Uri safeUnescapedUri;
 

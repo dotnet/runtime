@@ -1620,7 +1620,7 @@ namespace System.Data
 
         internal static bool IsValueCustomTypeInstance(object value) =>
             // if instance is not a storage supported type (built in or SQL types)
-            (DataStorage.IsTypeCustomType(value.GetType()) && !(value is Type));
+            (DataStorage.IsTypeCustomType(value.GetType()) && value is not Type);
 
         internal bool ImplementsIXMLSerializable => _implementsIXMLSerializable;
 
@@ -1953,7 +1953,7 @@ namespace System.Data
 
         internal override void SetCurrentAndIncrement(object value)
         {
-            Debug.Assert(null != value && DataColumn.IsAutoIncrementType(value.GetType()) && !(value is BigInteger), "unexpected value for autoincrement");
+            Debug.Assert(null != value && DataColumn.IsAutoIncrementType(value.GetType()) && value is not BigInteger, "unexpected value for autoincrement");
             long v = (long)SqlConvert.ChangeType2(value, StorageType.Int64, typeof(long), CultureInfo.InvariantCulture);
             if (BoundaryCheck(v))
             {

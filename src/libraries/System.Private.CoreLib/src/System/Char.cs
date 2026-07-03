@@ -116,11 +116,11 @@ namespace System
         //
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is char))
+            if (obj is not char ch)
             {
                 return false;
             }
-            return m_value == ((char)obj).m_value;
+            return m_value == ch.m_value;
         }
 
         [NonVersionable]
@@ -160,12 +160,12 @@ namespace System
             {
                 return 1;
             }
-            if (!(value is char))
+            if (value is not char ch)
             {
                 throw new ArgumentException(SR.Arg_MustBeChar);
             }
 
-            return m_value - ((char)value).m_value;
+            return m_value - ch.m_value;
         }
 
         public int CompareTo(char value)

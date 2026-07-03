@@ -149,7 +149,7 @@ namespace System.Net.Mail
                 if (!_serverSupportsStartTls)
                 {
                     // Either TLS is already established or server does not support TLS
-                    if (!(_stream is SslStream))
+                    if (_stream is not SslStream)
                     {
                         throw new SmtpException(SR.MailServerDoesNotSupportStartTls);
                     }

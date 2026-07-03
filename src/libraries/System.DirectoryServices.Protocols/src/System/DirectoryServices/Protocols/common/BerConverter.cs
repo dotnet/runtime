@@ -59,7 +59,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    if (!(value[valueCount] is int))
+                    if (value[valueCount] is not int)
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be int\n");
@@ -81,7 +81,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    if (!(value[valueCount] is bool))
+                    if (value[valueCount] is not bool)
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be boolean\n");
@@ -103,7 +103,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    if (value[valueCount] != null && !(value[valueCount] is string))
+                    if (value[valueCount] != null && value[valueCount] is not string)
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be string, but receiving value has type of ");
@@ -132,7 +132,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    if (value[valueCount] != null && !(value[valueCount] is byte[]))
+                    if (value[valueCount] != null && value[valueCount] is not byte[])
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be byte[], but receiving value has type of ");
@@ -155,7 +155,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    if (value[valueCount] != null && !(value[valueCount] is string[]))
+                    if (value[valueCount] != null && value[valueCount] is not string[])
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be string[], but receiving value has type of ");
@@ -196,7 +196,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    if (value[valueCount] != null && !(value[valueCount] is byte[][]))
+                    if (value[valueCount] != null && value[valueCount] is not byte[][])
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be byte[][], but receiving value has type of ");
@@ -219,7 +219,7 @@ namespace System.DirectoryServices.Protocols
                         throw new ArgumentException(SR.BerConverterNotMatch);
                     }
 
-                    if (!(value[valueCount] is int))
+                    if (value[valueCount] is not int)
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be int\n");

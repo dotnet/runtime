@@ -445,7 +445,7 @@ namespace System.DirectoryServices
             get
             {
                 // only LDAP provider supports IADsObjectOptions, so make the check here
-                if (!(AdsObject is UnsafeNativeMethods.IAdsObjectOptions))
+                if (AdsObject is not UnsafeNativeMethods.IAdsObjectOptions)
                     return null;
 
                 return _options;
@@ -454,7 +454,7 @@ namespace System.DirectoryServices
 
         internal void InitADsObjectOptions()
         {
-            if (_adsObject is UnsafeNativeMethods.IAdsObjectOptions2)
+            if (_adsObject is UnsafeNativeMethods.IAdsObjectOptions2 adsObjectOptions2)
             {
                 //--------------------------------------------
                 // Check if ACCUMULATE_MODIFICATION is available
@@ -464,7 +464,7 @@ namespace System.DirectoryServices
                 // check whether the new option is available
 
                 // 8 is ADS_OPTION_ACCUMULATIVE_MODIFICATION
-                unmanagedResult = ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).GetOption(8, out o);
+                unmanagedResult = adsObjectOptions2.GetOption(8, out o);
                 if (unmanagedResult != 0)
                 {
                     // rootdse does not support this option and invalid parameter due to without accumulative change fix in ADSI
@@ -480,7 +480,7 @@ namespace System.DirectoryServices
 
                 // the new option is available, set it so we get the new PutEx behavior that will allow multiple changes
                 ComVariant value = ComVariant.Create(true);
-                ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).SetOption(8, value);
+                adsObjectOptions2.SetOption(8, value);
 
                 allowMultipleChange = true;
             }
@@ -678,10 +678,10 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void DeleteTree()
         {
-            if (!(AdsObject is UnsafeNativeMethods.IAdsDeleteOps))
+            if (AdsObject is not UnsafeNativeMethods.IAdsDeleteOps adsDeleteOps)
                 throw new InvalidOperationException(SR.DSCannotDelete);
 
-            UnsafeNativeMethods.IAdsDeleteOps entry = (UnsafeNativeMethods.IAdsDeleteOps)AdsObject;
+            UnsafeNativeMethods.IAdsDeleteOps entry = adsDeleteOps;
             try
             {
                 entry.DeleteObject(0);
@@ -869,7 +869,7 @@ namespace System.DirectoryServices
         public void MoveTo(DirectoryEntry newParent, string? newName)
         {
             object? newEntry = null;
-            if (!(newParent.AdsObject is UnsafeNativeMethods.IAdsContainer))
+            if (newParent.AdsObject is not UnsafeNativeMethods.IAdsContainer)
                 throw new InvalidOperationException(SR.Format(SR.DSNotAContainer, newParent.Path));
             try
             {
@@ -1079,10 +1079,10 @@ namespace System.DirectoryServices
                     // Get the IAdsPropertyList interface
                     // (Check that the IAdsPropertyList interface is supported)
                     //
-                    if (!(NativeObject is UnsafeNativeMethods.IAdsPropertyList))
+                    if (NativeObject is not UnsafeNativeMethods.IAdsPropertyList adsPropertyList)
                         throw new NotSupportedException(SR.DSPropertyListUnsupported);
 
-                    UnsafeNativeMethods.IAdsPropertyList list = (UnsafeNativeMethods.IAdsPropertyList)NativeObject;
+                    UnsafeNativeMethods.IAdsPropertyList list = adsPropertyList;
 
                     UnsafeNativeMethods.IAdsPropertyEntry propertyEntry = (UnsafeNativeMethods.IAdsPropertyEntry)list.GetPropertyItem(SecurityDescriptorProperty, (int)AdsType.ADSTYPE_OCTET_STRING);
                     GC.KeepAlive(this);

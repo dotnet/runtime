@@ -173,7 +173,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
-            Debug.Assert(!(pSource is TypeParameterType));
+            Debug.Assert(pSource is not TypeParameterType);
 
             // The implicit reference conversions are:
             // * From any reference type to Object.
@@ -418,7 +418,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
-            Debug.Assert(!(pSource is TypeParameterType));
+            Debug.Assert(pSource is not TypeParameterType);
 
             // The rest of the boxing conversions only operate when going from a value type
             // to a reference type.

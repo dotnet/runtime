@@ -291,7 +291,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     qyInput = new FilterQuery(qyInput, cond, /*noPosition:*/false);
                     Query parent = _firstInput.qyInput;
-                    if (!(parent is ContextQuery))
+                    if (parent is not ContextQuery)
                     { // we don't need to wrap filter with MergeFilterQuery when cardinality is parent <: ?
                         _firstInput.qyInput = new ContextQuery();
                         _firstInput = null;

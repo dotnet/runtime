@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is DataReference) && !(value is KeyReference))
+            if (value is not DataReference && value is not KeyReference)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _references.Add(value);
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is DataReference) && !(value is KeyReference))
+            if (value is not DataReference && value is not KeyReference)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             _references.Insert(index, value);
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Xml
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                if (!(value is DataReference) && !(value is KeyReference))
+                if (value is not DataReference && value is not KeyReference)
                     throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
                 _references[index] = value;

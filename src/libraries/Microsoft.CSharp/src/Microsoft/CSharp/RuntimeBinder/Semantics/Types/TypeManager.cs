@@ -154,7 +154,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static NullableType GetNullable(CType pUnderlyingType)
         {
-            Debug.Assert(!(pUnderlyingType is NullableType), "Attempt to make nullable of nullable");
+            Debug.Assert(pUnderlyingType is not NullableType, "Attempt to make nullable of nullable");
 
             NullableType pNullableType = TypeTable.LookupNullable(pUnderlyingType);
             if (pNullableType == null)
@@ -619,8 +619,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // The new type is returned in an out parameter. The result will be true (and the out param
             // non-null) only when the algorithm could find a suitable accessible type.
             Debug.Assert(typeSrc != null);
-            Debug.Assert(!(typeSrc is ParameterModifierType));
-            Debug.Assert(!(typeSrc is PointerType));
+            Debug.Assert(typeSrc is not ParameterModifierType);
+            Debug.Assert(typeSrc is not PointerType);
 
             if (CSemanticChecker.CheckTypeAccess(typeSrc, context))
             {
@@ -629,7 +629,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // These guys have no accessibility concerns.
-            Debug.Assert(!(typeSrc is VoidType) && !(typeSrc is TypeParameterType));
+            Debug.Assert(typeSrc is not VoidType && typeSrc is not TypeParameterType);
 
             if (typeSrc is AggregateType aggSrc)
             {

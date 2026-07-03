@@ -1064,12 +1064,12 @@ namespace System
         public int CompareTo(object? value)
         {
             if (value == null) return 1;
-            if (!(value is DateTime))
+            if (value is not DateTime dateTime)
             {
                 throw new ArgumentException(SR.Arg_MustBeDateTime);
             }
 
-            return Compare(this, (DateTime)value);
+            return Compare(this, dateTime);
         }
 
         public int CompareTo(DateTime value)

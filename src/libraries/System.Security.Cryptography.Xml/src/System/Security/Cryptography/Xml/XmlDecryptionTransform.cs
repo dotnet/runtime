@@ -134,13 +134,13 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInput(object obj)
         {
-            if (obj is Stream)
+            if (obj is Stream stream)
             {
-                LoadStreamInput((Stream)obj);
+                LoadStreamInput(stream);
             }
-            else if (obj is XmlDocument)
+            else if (obj is XmlDocument xmlDocument)
             {
-                LoadXmlDocumentInput((XmlDocument)obj);
+                LoadXmlDocumentInput(xmlDocument);
             }
         }
 

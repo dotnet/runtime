@@ -84,9 +84,9 @@ namespace System.Data
                     {
                         v = (string)SqlConvert.ChangeTypeForXML(entry.Value, typeof(string));
                     }
-                    else if (entry.Value is System.Numerics.BigInteger)
+                    else if (entry.Value is System.Numerics.BigInteger bigInteger)
                     {
-                        v = (string)BigIntegerStorage.ConvertFromBigInteger((System.Numerics.BigInteger)entry.Value, typeof(string), CultureInfo.InvariantCulture);
+                        v = (string)BigIntegerStorage.ConvertFromBigInteger(bigInteger, typeof(string), CultureInfo.InvariantCulture);
                     }
                     else
                     {
@@ -137,9 +137,9 @@ namespace System.Data
             bool bIsSqlType = false;
             bool bImplementsInullable = false;
 
-            if (instance is DataColumn)
+            if (instance is DataColumn dataColumn)
             {
-                col = (DataColumn)instance;
+                col = dataColumn;
                 bisDataColumn = true;
                 bIsSqlType = col.IsSqlType;
                 bImplementsInullable = col.ImplementsINullable;
@@ -287,9 +287,9 @@ namespace System.Data
             {
                 if (fromTable)
                 {
-                    if (constr is ForeignKeyConstraint)
+                    if (constr is ForeignKeyConstraint foreignKeyConstraint)
                     { // if parent table does not exist , no need to create FKConst
-                        if (!_tables.Contains(((ForeignKeyConstraint)constr).RelatedTable))
+                        if (!_tables.Contains(foreignKeyConstraint.RelatedTable))
                         {
                             continue;
                         }
@@ -862,9 +862,9 @@ namespace System.Data
                     {
                         if (genSecondary)
                         {
-                            if (xw is XmlTextWriter)
+                            if (xw is XmlTextWriter xmlTextWriter)
                             {
-                                ((XmlTextWriter)xw).Formatting = Formatting.Indented;
+                                xmlTextWriter.Formatting = Formatting.Indented;
                             }
                             xw.WriteStartDocument(true);
                         }
@@ -1578,10 +1578,10 @@ namespace System.Data
 
             for (XmlNode? n = node.FirstChild; n != null; n = n.NextSibling)
             {
-                if (!(n is XmlElement))
+                if (n is not XmlElement xmlElement)
                     continue;
 
-                XmlElement child = (XmlElement)n;
+                XmlElement child = xmlElement;
 
                 if (XSDSchema.FEqualIdentity(child, Keywords.XSD_ELEMENT, Keywords.XSDNS) ||
                     XSDSchema.FEqualIdentity(child, Keywords.XSD_ATTRIBUTE, Keywords.XSDNS) ||
@@ -3321,7 +3321,7 @@ namespace System.Data
 
         internal static XmlReader CreateReader(XmlReader xr)
         {
-            Debug.Assert(!(xr is DataTextReader), "XmlReader is DataTextReader");
+            Debug.Assert(xr is not DataTextReader, "XmlReader is DataTextReader");
             return new DataTextReader(xr);
         }
 

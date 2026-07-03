@@ -388,7 +388,7 @@ namespace System.Net.Http
                 return 0;
             }
 
-            if (uri == null && !(credentials is NetworkCredential))
+            if (uri == null && credentials is not NetworkCredential)
             {
                 // https://github.com/dotnet/runtime/issues/16737.
                 // If the credentials are a NetworkCredential, the uri isn't used when calling .GetCredential() since

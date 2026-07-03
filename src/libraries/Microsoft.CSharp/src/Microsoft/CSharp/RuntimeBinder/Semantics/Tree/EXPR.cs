@@ -31,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             get
             {
-                Debug.Assert(!(this is ExprList));
+                Debug.Assert(this is not ExprList);
                 Debug.Assert(_type != null);
                 return _type;
             }

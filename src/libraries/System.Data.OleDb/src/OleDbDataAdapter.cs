@@ -187,8 +187,8 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null != data, "FillFromADODB: null data object");
             Debug.Assert(null != adodb, "FillFromADODB: null ADODB");
-            Debug.Assert(!(adodb is DataTable), "call Fill( (DataTable) value)");
-            Debug.Assert(!(adodb is DataSet), "call Fill( (DataSet) value)");
+            Debug.Assert(adodb is not DataTable, "call Fill( (DataTable) value)");
+            Debug.Assert(adodb is not DataSet, "call Fill( (DataSet) value)");
 
             /*
             IntPtr adodbptr = ADP.PtrZero;
@@ -346,9 +346,9 @@ namespace System.Data.OleDb
                     incrementResultCount = (0 < dataReader.FieldCount);
                     if (incrementResultCount)
                     {
-                        if (data is DataTable)
+                        if (data is DataTable dataTable)
                         {
-                            return base.Fill((DataTable)data, dataReader);
+                            return base.Fill(dataTable, dataReader);
                         }
                         else
                         {
@@ -394,9 +394,9 @@ namespace System.Data.OleDb
                     dataReader.InitializeIRow(result, ADP.RecordsUnaffected);
                     dataReader.BuildMetaInfo();
 
-                    if (data is DataTable)
+                    if (data is DataTable dataTable)
                     {
-                        return base.Fill((DataTable)data, dataReader);
+                        return base.Fill(dataTable, dataReader);
                     }
                     else
                     {

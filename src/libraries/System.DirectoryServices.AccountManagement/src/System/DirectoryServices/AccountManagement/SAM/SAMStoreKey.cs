@@ -33,10 +33,10 @@ namespace System.DirectoryServices.AccountManagement
 
         public override bool Equals(object o)
         {
-            if (!(o is SAMStoreKey))
+            if (o is not SAMStoreKey sAMStoreKey)
                 return false;
 
-            SAMStoreKey that = (SAMStoreKey)o;
+            SAMStoreKey that = sAMStoreKey;
 
             if (!string.Equals(_machineName, that._machineName, StringComparison.OrdinalIgnoreCase))
                 return false;

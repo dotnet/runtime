@@ -83,22 +83,22 @@ namespace System.Security.Cryptography.Xml
         {
             _inputStream?.Close();
             _inputStream = new MemoryStream();
-            if (obj is Stream)
+            if (obj is Stream stream)
             {
-                _inputStream = (Stream)obj;
+                _inputStream = stream;
             }
-            else if (obj is XmlNodeList)
+            else if (obj is XmlNodeList xmlNodeList)
             {
-                CanonicalXml xmlDoc = new CanonicalXml((XmlNodeList)obj, null!, _includeComments);
+                CanonicalXml xmlDoc = new CanonicalXml(xmlNodeList, null!, _includeComments);
                 byte[] buffer = xmlDoc.GetBytes();
                 if (buffer == null) return;
                 _inputStream.Write(buffer, 0, buffer.Length);
                 _inputStream.Flush();
                 _inputStream.Position = 0;
             }
-            else if (obj is XmlDocument)
+            else if (obj is XmlDocument xmlDocument)
             {
-                CanonicalXml xmlDoc = new CanonicalXml((XmlDocument)obj, null!, _includeComments);
+                CanonicalXml xmlDoc = new CanonicalXml(xmlDocument, null!, _includeComments);
                 byte[] buffer = xmlDoc.GetBytes();
                 if (buffer == null) return;
                 _inputStream.Write(buffer, 0, buffer.Length);

@@ -17,7 +17,7 @@ namespace System.Net.Http
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that may have triggered the exception.</param>
         /// <returns>true if the exception should be wrapped; otherwise, false.</returns>
         internal static bool ShouldWrapInOperationCanceledException(Exception exception, CancellationToken cancellationToken) =>
-            !(exception is OperationCanceledException) && cancellationToken.IsCancellationRequested;
+            exception is not OperationCanceledException && cancellationToken.IsCancellationRequested;
 
         /// <summary>Creates a cancellation exception.</summary>
         /// <param name="innerException">The inner exception to wrap. May be null.</param>

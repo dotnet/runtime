@@ -35,14 +35,14 @@ namespace System.Configuration
             get
             {
                 object section = GetSection("appSettings");
-                if (!(section is NameValueCollection))
+                if (section is not NameValueCollection nameValueCollection)
                 {
                     // If config is null or not the type we expect, the declaration was changed.
                     // Treat it as a configuration error.
                     throw new ConfigurationErrorsException(SR.Config_appsettings_declaration_invalid);
                 }
 
-                return (NameValueCollection)section;
+                return nameValueCollection;
             }
         }
 

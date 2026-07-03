@@ -50,13 +50,13 @@ namespace System.Xml.Serialization
             if (!GeneratedMethods.Add(mapping))
                 return;
 
-            if (mapping is StructMapping)
+            if (mapping is StructMapping structMapping)
             {
-                WriteStructMethod((StructMapping)mapping);
+                WriteStructMethod(structMapping);
             }
-            else if (mapping is EnumMapping)
+            else if (mapping is EnumMapping enumMapping)
             {
-                WriteEnumMethod((EnumMapping)mapping);
+                WriteEnumMethod(enumMapping);
             }
         }
 
@@ -75,10 +75,10 @@ namespace System.Xml.Serialization
                 return null;
             if (!xmlMapping.GenerateSerializer)
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
-            if (xmlMapping is XmlTypeMapping)
-                return GenerateTypeElement((XmlTypeMapping)xmlMapping);
-            else if (xmlMapping is XmlMembersMapping)
-                return GenerateMembersElement((XmlMembersMapping)xmlMapping);
+            if (xmlMapping is XmlTypeMapping xmlTypeMapping)
+                return GenerateTypeElement(xmlTypeMapping);
+            else if (xmlMapping is XmlMembersMapping xmlMembersMapping)
+                return GenerateMembersElement(xmlMembersMapping);
             else
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
@@ -194,7 +194,7 @@ namespace System.Xml.Serialization
             bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc!.HasDefaultSupport;
             if (hasDefault)
             {
-                if (mapping is EnumMapping)
+                if (mapping is EnumMapping enumMapping)
                 {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
@@ -203,7 +203,7 @@ namespace System.Xml.Serialization
 
                     source.Load(mapping.TypeDesc!.Type!);
                     string? enumDefaultValue = null;
-                    if (((EnumMapping)mapping).IsFlags)
+                    if (enumMapping.IsFlags)
                     {
                         string[] values = ((string)defaultValue!).Split(null);
                         for (int i = 0; i < values.Length; i++)
@@ -238,9 +238,9 @@ namespace System.Xml.Serialization
             }
             Type argType;
 
-            if (mapping is EnumMapping)
+            if (mapping is EnumMapping enumMapping2)
             {
-                WriteEnumValue((EnumMapping)mapping, source, out argType);
+                WriteEnumValue(enumMapping2, source, out argType);
                 argTypes.Add(argType);
             }
             else
@@ -784,9 +784,9 @@ namespace System.Xml.Serialization
             {
                 foreach (Mapping m in scope.TypeMappings)
                 {
-                    if (m is EnumMapping)
+                    if (m is EnumMapping enumMapping)
                     {
-                        EnumMapping mapping = (EnumMapping)m;
+                        EnumMapping mapping = enumMapping;
                         ilg.InitElseIf();
                         WriteTypeCompare("t", mapping.TypeDesc!.Type!);
                         // WriteXXXTypeCompare leave bool on the stack
@@ -1260,8 +1260,8 @@ namespace System.Xml.Serialization
                         methodName = "Append";
                         methodType = typeof(StringBuilder);
                     }
-                    if (attribute.Mapping is EnumMapping)
-                        WriteEnumValue((EnumMapping)attribute.Mapping, new SourceInfo(aiVar, aiVar, null, arrayElementTypeDesc.Type, ilg), out argType);
+                    if (attribute.Mapping is EnumMapping enumMapping)
+                        WriteEnumValue(enumMapping, new SourceInfo(aiVar, aiVar, null, arrayElementTypeDesc.Type, ilg), out argType);
                     else
                         WritePrimitiveValue(arrayElementTypeDesc, new SourceInfo(aiVar, aiVar, null, arrayElementTypeDesc.Type, ilg), out argType);
                     MethodInfo method = methodType.GetMethod(
@@ -1852,9 +1852,9 @@ namespace System.Xml.Serialization
             {
                 Type argType;
                 ilg.Ldarg(0);
-                if (text.Mapping is EnumMapping)
+                if (text.Mapping is EnumMapping enumMapping)
                 {
-                    WriteEnumValue((EnumMapping)text.Mapping, source, out argType);
+                    WriteEnumValue(enumMapping, source, out argType);
                 }
                 else
                 {
@@ -1897,7 +1897,7 @@ namespace System.Xml.Serialization
         {
             string name = writeAccessor ? element.Name : element.Mapping!.TypeName!;
             string? ns = element.Any && element.Name.Length == 0 ? null : (element.Form == XmlSchemaForm.Qualified ? (writeAccessor ? element.Namespace : element.Mapping!.Namespace) : "");
-            if (element.Mapping is NullableMapping)
+            if (element.Mapping is NullableMapping nullableMapping)
             {
                 if (source.Type == element.Mapping.TypeDesc!.Type)
                 {
@@ -1918,7 +1918,7 @@ namespace System.Xml.Serialization
                 ilg.If();
                 SourceInfo castedSource = source.CastTo(element.Mapping.TypeDesc.BaseTypeDesc!);
                 ElementAccessor e = element.Clone();
-                e.Mapping = ((NullableMapping)element.Mapping).BaseMapping;
+                e.Mapping = nullableMapping.BaseMapping;
                 WriteElement(e.Any ? source : castedSource, e, arrayName, writeAccessor);
                 if (element.IsNullable)
                 {

@@ -13,7 +13,7 @@ namespace System.Runtime.Serialization
             while (exception != null)
             {
                 // NetFx checked for FatalException and FatalInternalException as well, which were ServiceModel constructs.
-                if ((exception is OutOfMemoryException && !(exception is InsufficientMemoryException)) ||
+                if ((exception is OutOfMemoryException && exception is not InsufficientMemoryException) ||
                     exception is ThreadAbortException)
                 {
                     return true;
@@ -27,12 +27,12 @@ namespace System.Runtime.Serialization
                 {
                     exception = exception.InnerException!;
                 }
-                else if (exception is AggregateException)
+                else if (exception is AggregateException aggregateException)
                 {
                     // AggregateExceptions have a collection of inner exceptions, which may themselves be other
                     // wrapping exceptions (including nested AggregateExceptions).  Recursively walk this
                     // hierarchy.  The (singular) InnerException is included in the collection.
-                    var innerExceptions = ((AggregateException)exception).InnerExceptions;
+                    var innerExceptions = aggregateException.InnerExceptions;
                     foreach (Exception innerException in innerExceptions)
                     {
                         if (IsFatal(innerException))

@@ -105,13 +105,13 @@ namespace System.DirectoryServices.AccountManagement
 
                         object o = credTable[userName];
 
-                        if (o is Placeholder)
+                        if (o is Placeholder placeholder)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSCache", "GetContext: credHolder for " + contextName + " has a Placeholder");
 
                             // A PrincipalContext is currently being constructed by another thread.
                             // Wait for it.
-                            contextReadyEvent = ((Placeholder)o).contextReadyEvent;
+                            contextReadyEvent = placeholder.contextReadyEvent;
                             continue;
                         }
 

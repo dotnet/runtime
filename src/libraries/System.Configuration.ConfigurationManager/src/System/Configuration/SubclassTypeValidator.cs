@@ -26,7 +26,7 @@ namespace System.Configuration
             if (value == null) return;
 
             // Make a check here since value.GetType() returns RuntimeType rather then Type
-            if (!(value is Type)) ValidatorUtils.HelperParamValidation(value, typeof(Type));
+            if (value is not Type) ValidatorUtils.HelperParamValidation(value, typeof(Type));
 
             if (!_base.IsAssignableFrom((Type)value))
             {

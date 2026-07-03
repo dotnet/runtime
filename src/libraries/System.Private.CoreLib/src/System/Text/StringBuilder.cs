@@ -3032,7 +3032,7 @@ namespace System.Text
                     return;
                 }
 
-                if (value is IFormattable)
+                if (value is IFormattable formattable)
                 {
                     // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                     // requires the former.  For value types, it won't matter as the type checks devolve into
@@ -3053,10 +3053,10 @@ namespace System.Text
                             AppendFormattedWithTempSpace(value, 0, format: null);
                         }
                     }
-                    else if (value is ISpanFormattable)
+                    else if (value is ISpanFormattable spanFormattable)
                     {
                         Span<char> destination = _stringBuilder.RemainingCurrentChunk;
-                        if (((ISpanFormattable)value).TryFormat(destination, out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                        if (spanFormattable.TryFormat(destination, out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
                         {
                             if ((uint)charsWritten > (uint)destination.Length)
                             {
@@ -3076,7 +3076,7 @@ namespace System.Text
                     }
                     else
                     {
-                        _stringBuilder.Append(((IFormattable)value).ToString(format: null, _provider)); // constrained call avoiding boxing for value types
+                        _stringBuilder.Append(formattable.ToString(format: null, _provider)); // constrained call avoiding boxing for value types
                     }
                 }
                 else
@@ -3103,7 +3103,7 @@ namespace System.Text
                     return;
                 }
 
-                if (value is IFormattable)
+                if (value is IFormattable formattable)
                 {
                     // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                     // requires the former.  For value types, it won't matter as the type checks devolve into
@@ -3124,10 +3124,10 @@ namespace System.Text
                             AppendFormattedWithTempSpace(value, 0, format);
                         }
                     }
-                    else if (value is ISpanFormattable)
+                    else if (value is ISpanFormattable spanFormattable)
                     {
                         Span<char> destination = _stringBuilder.RemainingCurrentChunk;
-                        if (((ISpanFormattable)value).TryFormat(destination, out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                        if (spanFormattable.TryFormat(destination, out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types
                         {
                             if ((uint)charsWritten > (uint)destination.Length)
                             {
@@ -3147,7 +3147,7 @@ namespace System.Text
                     }
                     else
                     {
-                        _stringBuilder.Append(((IFormattable)value).ToString(format, _provider)); // constrained call avoiding boxing for value types
+                        _stringBuilder.Append(formattable.ToString(format, _provider)); // constrained call avoiding boxing for value types
                     }
                 }
                 else

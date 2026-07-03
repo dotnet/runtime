@@ -51,12 +51,12 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (!(_entry.AdsObject is UnsafeNativeMethods.IAdsPropertyList))
+                if (_entry.AdsObject is not UnsafeNativeMethods.IAdsPropertyList adsPropertyList)
                     throw new NotSupportedException(SR.DSCannotCount);
 
                 _entry.FillCache("");
 
-                UnsafeNativeMethods.IAdsPropertyList propList = (UnsafeNativeMethods.IAdsPropertyList)_entry.AdsObject;
+                UnsafeNativeMethods.IAdsPropertyList propList = adsPropertyList;
 
                 return propList.PropertyCount;
             }
@@ -99,7 +99,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public IDictionaryEnumerator GetEnumerator()
         {
-            if (!(_entry.AdsObject is UnsafeNativeMethods.IAdsPropertyList))
+            if (_entry.AdsObject is not UnsafeNativeMethods.IAdsPropertyList)
                 throw new NotSupportedException(SR.DSCannotEmunerate);
 
             // Once an object has been used for an enumerator once, it can't be used again, because it only

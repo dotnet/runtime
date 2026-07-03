@@ -48,9 +48,9 @@ namespace System.Xml.Xsl.Runtime
             _argList = argList;
             _wsRules = wsRules;
 
-            if (defaultDataSource is XmlReader)
+            if (defaultDataSource is XmlReader xmlReader)
             {
-                _readerSettings = new QueryReaderSettings((XmlReader)defaultDataSource);
+                _readerSettings = new QueryReaderSettings(xmlReader);
             }
             else
             {

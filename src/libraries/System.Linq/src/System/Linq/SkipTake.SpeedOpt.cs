@@ -229,7 +229,7 @@ namespace System.Linq
             internal IEnumerableSkipTakeIterator(IEnumerable<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
                 Debug.Assert(source is not null);
-                Debug.Assert(!(source is IList<TSource>), $"The caller needs to check for {nameof(IList<TSource>)}.");
+                Debug.Assert(source is not IList<TSource>, $"The caller needs to check for {nameof(IList<TSource>)}.");
                 Debug.Assert(minIndexInclusive >= 0);
                 Debug.Assert(maxIndexInclusive >= -1);
                 // Note that although maxIndexInclusive can't grow, it can still be int.MaxValue.

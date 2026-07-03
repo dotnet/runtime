@@ -679,9 +679,9 @@ namespace System.Runtime.Serialization
                                 InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
                             }
                         }
-                        else if (dataContract is EnumDataContract)
+                        else if (dataContract is EnumDataContract enumDataContract)
                         {
-                            dataNode = new DataNode<object>(((EnumDataContract)dataContract).ReadEnumValue(xmlReader));
+                            dataNode = new DataNode<object>(enumDataContract.ReadEnumValue(xmlReader));
                             InitializeExtensionDataNode(dataNode, dataContractName, dataContractNamespace);
                         }
                         else if (dataContract is ClassDataContract)

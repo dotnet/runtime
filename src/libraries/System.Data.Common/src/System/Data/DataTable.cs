@@ -5768,9 +5768,9 @@ namespace System.Data
                         EnforceConstraints = false;
                     }
 
-                    if (reader is XmlTextReader)
+                    if (reader is XmlTextReader xmlTextReader)
                     {
-                        ((XmlTextReader)reader).WhitespaceHandling = WhitespaceHandling.Significant;
+                        xmlTextReader.WhitespaceHandling = WhitespaceHandling.Significant;
                     }
 
                     XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
@@ -6008,8 +6008,8 @@ namespace System.Data
                     EnforceConstraints = false;
                 }
 
-                if (reader is XmlTextReader)
-                    ((XmlTextReader)reader).WhitespaceHandling = WhitespaceHandling.Significant;
+                if (reader is XmlTextReader xmlTextReader)
+                    xmlTextReader.WhitespaceHandling = WhitespaceHandling.Significant;
 
                 XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
 

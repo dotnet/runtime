@@ -648,19 +648,19 @@ namespace System.Management
         {
             try
             {
-                if (e is ManagementException)
+                if (e is ManagementException managementException)
                 {
-                    errorCode = ((ManagementException)e).ErrorCode;
+                    errorCode = managementException.ErrorCode;
 
                     // May/may not have extended error info.
                     //
                     if (errorObject != null)
-                        errorObject = (ManagementBaseObject)((ManagementException)e).errorObject.Clone();
+                        errorObject = (ManagementBaseObject)managementException.errorObject.Clone();
                     else
                         errorObject = null;
                 }
-                else if (e is COMException)
-                    errorCode = (ManagementStatus)((COMException)e).ErrorCode;
+                else if (e is COMException cOMException)
+                    errorCode = (ManagementStatus)cOMException.ErrorCode;
                 else
                     errorCode = (ManagementStatus)this.HResult;
             }
@@ -709,7 +709,7 @@ namespace System.Management
         public ManagementException(string message, Exception innerException) : this(innerException, message, null)
         {
             // if the exception passed is not a ManagementException, then initialize the ErrorCode to Failed
-            if (!(innerException is ManagementException))
+            if (innerException is not ManagementException)
                 errorCode = ManagementStatus.Failed;
         }
 
@@ -737,11 +737,11 @@ namespace System.Management
         {
             string msg = null;
 
-            if (e is COMException)
+            if (e is COMException cOMException)
             {
                 // Try and get WMI error message. If not use the one in
                 // the exception
-                msg = GetMessage((ManagementStatus)((COMException)e).ErrorCode);
+                msg = GetMessage((ManagementStatus)cOMException.ErrorCode);
             }
 
             if (null == msg)

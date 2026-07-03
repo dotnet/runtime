@@ -65,9 +65,9 @@ namespace MS.Internal.Xml.XPath
         {
             object value = _cond.Evaluate(qyInput);
             if (value is XPathNodeIterator) return _cond.Advance() != null;
-            if (value is string) return ((string)value).Length != 0;
-            if (value is double) return (((double)value) == qyInput.CurrentPosition);
-            if (value is bool) return (bool)value;
+            if (value is string str) return str.Length != 0;
+            if (value is double d) return (d == qyInput.CurrentPosition);
+            if (value is bool b) return b;
             Debug.Assert(value is XPathNavigator, "Unknown value type");
             return true;
         }

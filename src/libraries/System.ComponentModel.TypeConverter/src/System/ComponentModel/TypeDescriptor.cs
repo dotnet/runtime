@@ -2339,7 +2339,7 @@ namespace System.ComponentModel
                         if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
                         {
                             TypeDescriptionNode? node = (TypeDescriptionNode?)kvp.Value;
-                            while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
+                            while (node != null && node.Provider is not ReflectTypeDescriptionProvider)
                             {
                                 found = true;
                                 node = node.Next;
@@ -2419,7 +2419,7 @@ namespace System.ComponentModel
                     if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
                     {
                         TypeDescriptionNode? node = (TypeDescriptionNode?)kvp.Value;
-                        while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
+                        while (node != null && node.Provider is not ReflectTypeDescriptionProvider)
                         {
                             found = true;
                             node = node.Next;
@@ -2477,7 +2477,7 @@ namespace System.ComponentModel
                     if (nodeType != null && nodeType.Module.Equals(module) || nodeType == typeof(object))
                     {
                         TypeDescriptionNode? node = (TypeDescriptionNode?)kvp.Value;
-                        while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
+                        while (node != null && node.Provider is not ReflectTypeDescriptionProvider)
                         {
                             refreshedTypes ??= new Hashtable();
                             refreshedTypes[nodeType] = nodeType;
@@ -2596,7 +2596,7 @@ namespace System.ComponentModel
             set
             {
                 TypeDescriptionNode? typeDescriptionNode = NodeFor(ComObjectType);
-                while (typeDescriptionNode != null && !(typeDescriptionNode.Provider is ComNativeDescriptionProvider))
+                while (typeDescriptionNode != null && typeDescriptionNode.Provider is not ComNativeDescriptionProvider)
                 {
                     typeDescriptionNode = typeDescriptionNode.Next;
                 }

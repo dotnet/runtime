@@ -229,11 +229,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is ActiveDirectorySite))
+            if (value is not ActiveDirectorySite activeDirectorySite)
                 throw new ArgumentException(null, nameof(value));
 
-            if (!((ActiveDirectorySite)value).existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, ((ActiveDirectorySite)value).Name));
+            if (!activeDirectorySite.existing)
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, activeDirectorySite.Name));
         }
     }
 }

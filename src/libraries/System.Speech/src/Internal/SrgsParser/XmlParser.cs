@@ -1317,7 +1317,7 @@ namespace System.Speech.Internal.SrgsParser
                                 switch (reader.LocalName)
                                 {
                                     case "example":
-                                        if (!(parent is IRule) || !fFirstElement)
+                                        if (parent is not IRule || !fFirstElement)
                                         {
                                             ThrowSrgsException(SRID.InvalidExampleOrdering);
                                         }

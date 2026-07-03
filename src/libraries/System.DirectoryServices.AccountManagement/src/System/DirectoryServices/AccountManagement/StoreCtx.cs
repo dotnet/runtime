@@ -404,33 +404,33 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             ((FilterBase)filter).Value = null;
                         }
-                        else if (value is bool)
+                        else if (value is bool b)
                         {
-                            ((FilterBase)filter).Value = (bool)value;
+                            ((FilterBase)filter).Value = b;
                         }
-                        else if (value is string)
+                        else if (value is string str)
                         {
-                            ((FilterBase)filter).Value = (string)value;
+                            ((FilterBase)filter).Value = str;
                         }
-                        else if (value is GroupScope)
+                        else if (value is GroupScope groupScope)
                         {
-                            ((FilterBase)filter).Value = (GroupScope)value;
+                            ((FilterBase)filter).Value = groupScope;
                         }
-                        else if (value is byte[])
+                        else if (value is byte[] bytes)
                         {
-                            ((FilterBase)filter).Value = (byte[])value;
+                            ((FilterBase)filter).Value = bytes;
                         }
                         else if (value is Nullable<DateTime>)
                         {
                             ((FilterBase)filter).Value = (Nullable<DateTime>)value;
                         }
-                        else if (value is ExtensionCache)
+                        else if (value is ExtensionCache extensionCache)
                         {
-                            ((FilterBase)filter).Value = (ExtensionCache)value;
+                            ((FilterBase)filter).Value = extensionCache;
                         }
-                        else if (value is QbeMatchType)
+                        else if (value is QbeMatchType qbeMatchType)
                         {
-                            ((FilterBase)filter).Value = (QbeMatchType)value;
+                            ((FilterBase)filter).Value = qbeMatchType;
                         }
                         else
                         {

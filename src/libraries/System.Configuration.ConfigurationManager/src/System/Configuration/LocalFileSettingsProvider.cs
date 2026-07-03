@@ -496,7 +496,7 @@ namespace System.Configuration
                 SettingsPropertyCollection upgradeProperties = new SettingsPropertyCollection();
                 foreach (SettingsProperty sp in properties)
                 {
-                    if (!(sp.Attributes[typeof(NoSettingsVersionUpgradeAttribute)] is NoSettingsVersionUpgradeAttribute))
+                    if (sp.Attributes[typeof(NoSettingsVersionUpgradeAttribute)] is not NoSettingsVersionUpgradeAttribute)
                     {
                         upgradeProperties.Add(sp);
                     }

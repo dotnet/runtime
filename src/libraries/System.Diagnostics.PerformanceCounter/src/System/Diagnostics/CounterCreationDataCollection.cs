@@ -89,7 +89,7 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is CounterCreationData))
+            if (value is not CounterCreationData)
                 throw new ArgumentException(SR.MustAddCounterCreationData);
         }
 

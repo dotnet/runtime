@@ -119,12 +119,12 @@ namespace System
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             // If it's not a boolean, we're definitely not equal
-            if (!(obj is bool))
+            if (obj is not bool b)
             {
                 return false;
             }
 
-            return m_value == ((bool)obj).m_value;
+            return m_value == b.m_value;
         }
 
         [NonVersionable]
@@ -146,12 +146,12 @@ namespace System
             {
                 return 1;
             }
-            if (!(obj is bool))
+            if (obj is not bool b)
             {
                 throw new ArgumentException(SR.Arg_MustBeBoolean);
             }
 
-            if (m_value == ((bool)obj).m_value)
+            if (m_value == b.m_value)
             {
                 return 0;
             }

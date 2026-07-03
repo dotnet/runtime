@@ -238,7 +238,7 @@ namespace System.DirectoryServices.Protocols
             get => _directoryFilter;
             set
             {
-                if (value != null && !(value is string))
+                if (value != null && value is not string)
                 {
                     throw new ArgumentException(SR.ValidFilterType, nameof(value));
                 }

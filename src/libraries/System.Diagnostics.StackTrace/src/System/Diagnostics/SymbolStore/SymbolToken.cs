@@ -20,8 +20,8 @@ namespace System.Diagnostics.SymbolStore
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj is SymbolToken)
-                return Equals((SymbolToken)obj);
+            if (obj is SymbolToken symbolToken)
+                return Equals(symbolToken);
             else
                 return false;
         }

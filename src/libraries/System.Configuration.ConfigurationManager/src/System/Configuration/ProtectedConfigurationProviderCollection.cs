@@ -13,7 +13,7 @@ namespace System.Configuration
         {
             ArgumentNullException.ThrowIfNull(provider);
 
-            if (!(provider is ProtectedConfigurationProvider))
+            if (provider is not ProtectedConfigurationProvider)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Config_provider_must_implement_type,

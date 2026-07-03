@@ -424,9 +424,9 @@ namespace System.ComponentModel
 
         bool IDictionary.Contains(object key)
         {
-            if (key is string)
+            if (key is string str)
             {
-                return this[(string)key] != null;
+                return this[str] != null;
             }
             return false;
         }
@@ -441,9 +441,9 @@ namespace System.ComponentModel
         {
             get
             {
-                if (key is string)
+                if (key is string str)
                 {
-                    return this[(string)key];
+                    return this[str];
                 }
                 return null;
             }
@@ -455,27 +455,27 @@ namespace System.ComponentModel
                     throw new NotSupportedException();
                 }
 
-                if (value != null && !(value is PropertyDescriptor))
+                if (value != null && value is not PropertyDescriptor)
                 {
                     throw new ArgumentException(nameof(value));
                 }
 
                 int index = -1;
 
-                if (key is int)
+                if (key is int num)
                 {
-                    index = (int)key;
+                    index = num;
 
                     if (index < 0 || index >= Count)
                     {
                         throw new IndexOutOfRangeException();
                     }
                 }
-                else if (key is string)
+                else if (key is string str)
                 {
                     for (int i = 0; i < Count; i++)
                     {
-                        if (_properties[i]!.Name.Equals((string)key))
+                        if (_properties[i]!.Name.Equals(str))
                         {
                             index = i;
                             break;
@@ -536,9 +536,9 @@ namespace System.ComponentModel
 
         void IDictionary.Remove(object key)
         {
-            if (key is string)
+            if (key is string str)
             {
-                PropertyDescriptor? pd = this[(string)key];
+                PropertyDescriptor? pd = this[str];
                 if (pd != null)
                 {
                     ((IList)this).Remove(pd);
@@ -576,7 +576,7 @@ namespace System.ComponentModel
                 }
 
 
-                if (value != null && !(value is PropertyDescriptor))
+                if (value != null && value is not PropertyDescriptor)
                 {
                     throw new ArgumentException(nameof(value));
                 }

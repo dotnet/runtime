@@ -157,9 +157,9 @@ namespace System.Collections
         {
             get
             {
-                if (_keycomparer is CompatibleComparer)
+                if (_keycomparer is CompatibleComparer compatibleComparer)
                 {
-                    return ((CompatibleComparer)_keycomparer).HashCodeProvider;
+                    return compatibleComparer.HashCodeProvider;
                 }
                 else if (_keycomparer == null)
                 {
@@ -192,9 +192,9 @@ namespace System.Collections
         {
             get
             {
-                if (_keycomparer is CompatibleComparer)
+                if (_keycomparer is CompatibleComparer compatibleComparer)
                 {
-                    return ((CompatibleComparer)_keycomparer).Comparer;
+                    return compatibleComparer.Comparer;
                 }
                 else if (_keycomparer == null)
                 {

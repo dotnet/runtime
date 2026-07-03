@@ -107,8 +107,8 @@ namespace System.Security.Cryptography.Xml
 
         private static void MarkNodeAsIncluded(XmlNode node)
         {
-            if (node is ICanonicalizableNode)
-                ((ICanonicalizableNode)node).IsInNodeSet = true;
+            if (node is ICanonicalizableNode canonicalizableNode)
+                canonicalizableNode.IsInNodeSet = true;
         }
     }
 }

@@ -434,7 +434,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Positional.
                     if (index < pArguments.carg &&
-                        !(pArguments.prgexpr[index] is ExprNamedArgumentSpecification) &&
+                        pArguments.prgexpr[index] is not ExprNamedArgumentSpecification &&
                         !(pArguments.prgexpr[index] is ExprArrayInit arrayInitPos && arrayInitPos.GeneratedForParamArray))
                     {
                         pExprArguments[index] = pArguments.prgexpr[index++];
@@ -1222,7 +1222,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (0 != (_pGroup.Flags & EXPRFLAG.EXF_CTOR))
                 {
-                    Debug.Assert(!(_pGroup.ParentType is TypeParameterType));
+                    Debug.Assert(_pGroup.ParentType is not TypeParameterType);
                     return ErrorHandling.Error(ErrorCode.ERR_BadCtorArgCount, _pGroup.ParentType, _pArguments.carg);
                 }
 

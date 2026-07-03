@@ -89,7 +89,7 @@ namespace System.Collections.Generic
             // These are explicit type checks in the mold of HashSet. It would have worked better with
             // something like an ISorted<T> interface. (We could make this work for SortedList.Keys, etc.)
             SortedSet<T>? sortedSet = collection as SortedSet<T>;
-            if (sortedSet != null && !(sortedSet is TreeSubSet) && HasEqualComparer(sortedSet))
+            if (sortedSet != null && sortedSet is not TreeSubSet && HasEqualComparer(sortedSet))
             {
                 if (sortedSet.Count > 0)
                 {

@@ -109,9 +109,9 @@ namespace System.Net.Security
 
             if (status == 0 && refHandle != null)
             {
-                if (refHandle is SafeFreeContextBuffer)
+                if (refHandle is SafeFreeContextBuffer safeFreeContextBuffer)
                 {
-                    ((SafeFreeContextBuffer)refHandle).Set(*(IntPtr*)buffer);
+                    safeFreeContextBuffer.Set(*(IntPtr*)buffer);
                 }
                 else
                 {

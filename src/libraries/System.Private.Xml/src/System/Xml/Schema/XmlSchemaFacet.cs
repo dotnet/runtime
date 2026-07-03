@@ -42,7 +42,7 @@ namespace System.Xml.Schema
             get { return _isFixed; }
             set
             {
-                if (!(this is XmlSchemaEnumerationFacet) && !(this is XmlSchemaPatternFacet))
+                if (this is not XmlSchemaEnumerationFacet && this is not XmlSchemaPatternFacet)
                 {
                     _isFixed = value;
                 }

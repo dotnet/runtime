@@ -425,9 +425,9 @@ namespace System.Collections.Immutable
         /// <returns>An immutable array containing the specified items.</returns>
         public static ImmutableArray<TSource> ToImmutableArray<TSource>(this IEnumerable<TSource> items)
         {
-            if (items is ImmutableArray<TSource>)
+            if (items is ImmutableArray<TSource> immutableArray)
             {
-                return (ImmutableArray<TSource>)items;
+                return immutableArray;
             }
 
             return CreateRange(items);

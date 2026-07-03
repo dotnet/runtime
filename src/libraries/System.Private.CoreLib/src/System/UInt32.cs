@@ -86,11 +86,11 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is uint))
+            if (obj is not uint num)
             {
                 return false;
             }
-            return m_value == ((uint)obj).m_value;
+            return m_value == num.m_value;
         }
 
         [NonVersionable]

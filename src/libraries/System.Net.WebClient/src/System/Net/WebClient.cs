@@ -305,7 +305,7 @@ namespace System.Net
                 tmpRequest = _webRequest = GetWebRequest(GetUri(address));
                 result = DownloadBits(tmpRequest, new ChunkedMemoryStream())!;
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 AbortRequest(tmpRequest);
                 if (e is WebException || e is SecurityException) throw;
@@ -335,7 +335,7 @@ namespace System.Net
                 DownloadBits(request, fs);
                 succeeded = true;
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 AbortRequest(request);
                 if (e is WebException || e is SecurityException) throw;
@@ -370,7 +370,7 @@ namespace System.Net
                 WebResponse response = _webResponse = GetWebResponse(request);
                 return response.GetResponseStream();
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 AbortRequest(request);
                 if (e is WebException || e is SecurityException) throw;
@@ -408,7 +408,7 @@ namespace System.Net
                     request,
                     this);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 AbortRequest(request);
                 if (e is WebException || e is SecurityException) throw;
@@ -460,7 +460,7 @@ namespace System.Net
                 tmpRequest = _webRequest = GetWebRequest(GetUri(address));
                 result = UploadBits(tmpRequest, null, data, 0, null, null);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 AbortRequest(tmpRequest);
                 if (e is WebException || e is SecurityException) throw;
@@ -640,7 +640,7 @@ namespace System.Net
                 request = _webRequest = GetWebRequest(GetUri(address));
                 return UploadBits(request, null, buffer, 0, null, null);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 AbortRequest(request);
                 if (e is WebException || e is SecurityException) throw;
@@ -705,7 +705,7 @@ namespace System.Net
         private static void AbortRequest(WebRequest? request)
         {
             try { request?.Abort(); }
-            catch (Exception exception) when (!(exception is OutOfMemoryException)) { }
+            catch (Exception exception) when (exception is not OutOfMemoryException) { }
         }
 
         private void CopyHeadersTo(WebRequest request)
@@ -855,7 +855,7 @@ namespace System.Net
 
                 return (writeStream as ChunkedMemoryStream)?.ToArray();
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 writeStream?.Close();
                 AbortRequest(request);
@@ -925,7 +925,7 @@ namespace System.Net
 
                 completionDelegate((writeStream as ChunkedMemoryStream)?.ToArray(), null, asyncOp);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 exception = GetExceptionToPropagate(e);
                 AbortRequest(request);
@@ -993,7 +993,7 @@ namespace System.Net
 
                 return DownloadBits(request, new ChunkedMemoryStream())!;
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 AbortRequest(request);
                 if (e is WebException || e is SecurityException) throw;
@@ -1068,7 +1068,7 @@ namespace System.Net
 
                 DownloadBitsAsync(request, new ChunkedMemoryStream(), asyncOp, completionDelegate);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 exception = GetExceptionToPropagate(e);
                 AbortRequest(request);
@@ -1207,7 +1207,7 @@ namespace System.Net
                         WebResponse response = _webResponse = GetWebResponse(request, iar);
                         stream = response.GetResponseStream();
                     }
-                    catch (Exception e) when (!(e is OutOfMemoryException))
+                    catch (Exception e) when (e is not OutOfMemoryException)
                     {
                         exception = GetExceptionToPropagate(e);
                     }
@@ -1215,7 +1215,7 @@ namespace System.Net
                     InvokeOperationCompleted(asyncOp, _openReadOperationCompleted!, new OpenReadCompletedEventArgs(stream, exception, _canceled, asyncOp.UserSuppliedState));
                 }, null);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 InvokeOperationCompleted(asyncOp, _openReadOperationCompleted!,
                     new OpenReadCompletedEventArgs(null, GetExceptionToPropagate(e), _canceled, asyncOp.UserSuppliedState));
@@ -1248,7 +1248,7 @@ namespace System.Net
                     {
                         stream = new WebClientWriteStream(request.EndGetRequestStream(iar), request, this);
                     }
-                    catch (Exception e) when (!(e is OutOfMemoryException))
+                    catch (Exception e) when (e is not OutOfMemoryException)
                     {
                         exception = GetExceptionToPropagate(e);
                     }
@@ -1256,7 +1256,7 @@ namespace System.Net
                     InvokeOperationCompleted(asyncOp, _openWriteOperationCompleted!, new OpenWriteCompletedEventArgs(stream, exception, _canceled, asyncOp.UserSuppliedState));
                 }, null);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 var eventArgs = new OpenWriteCompletedEventArgs(null, GetExceptionToPropagate(e), _canceled, asyncOp.UserSuppliedState);
                 InvokeOperationCompleted(asyncOp, _openWriteOperationCompleted!, eventArgs);
@@ -1274,7 +1274,7 @@ namespace System.Net
                     stringData = GetStringUsingEncoding(_webRequest!, returnBytes);
                 }
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 exception = GetExceptionToPropagate(e);
             }
@@ -1297,7 +1297,7 @@ namespace System.Net
                 WebRequest request = _webRequest = GetWebRequest(GetUri(address));
                 DownloadBitsAsync(request, new ChunkedMemoryStream(), asyncOp, DownloadStringAsyncCallback);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 DownloadStringAsyncCallback(null, GetExceptionToPropagate(e), asyncOp);
             }
@@ -1323,7 +1323,7 @@ namespace System.Net
                 WebRequest request = _webRequest = GetWebRequest(GetUri(address));
                 DownloadBitsAsync(request, new ChunkedMemoryStream(), asyncOp, DownloadDataAsyncCallback);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 DownloadDataAsyncCallback(null, GetExceptionToPropagate(e), asyncOp);
             }
@@ -1352,7 +1352,7 @@ namespace System.Net
                 WebRequest request = _webRequest = GetWebRequest(GetUri(address));
                 DownloadBitsAsync(request, fs, asyncOp, DownloadFileAsyncCallback);
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 fs?.Close();
                 DownloadFileAsyncCallback(null, GetExceptionToPropagate(e), asyncOp);
@@ -1391,7 +1391,7 @@ namespace System.Net
                             {
                                 stringResult = GetStringUsingEncoding(_webRequest, bytesResult);
                             }
-                            catch (Exception e) when (!(e is OutOfMemoryException))
+                            catch (Exception e) when (e is not OutOfMemoryException)
                             {
                                 error = GetExceptionToPropagate(e);
                             }
@@ -1401,7 +1401,7 @@ namespace System.Net
                             new UploadStringCompletedEventArgs(stringResult, error, _canceled, uploadAsyncOp.UserSuppliedState));
                     });
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 var eventArgs = new UploadStringCompletedEventArgs(null, GetExceptionToPropagate(e), _canceled, asyncOp.UserSuppliedState);
                 InvokeOperationCompleted(asyncOp, _uploadStringOperationCompleted!, eventArgs);
@@ -1440,7 +1440,7 @@ namespace System.Net
                     (result, error, uploadAsyncOp) =>
                         InvokeOperationCompleted(asyncOp, _uploadDataOperationCompleted!, new UploadDataCompletedEventArgs(result, error, _canceled, uploadAsyncOp.UserSuppliedState)));
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 var eventArgs = new UploadDataCompletedEventArgs(null, GetExceptionToPropagate(e), _canceled, asyncOp.UserSuppliedState);
                 InvokeOperationCompleted(asyncOp, _uploadDataOperationCompleted!, eventArgs);
@@ -1476,7 +1476,7 @@ namespace System.Net
                     (result, error, uploadAsyncOp) =>
                         InvokeOperationCompleted(asyncOp, _uploadFileOperationCompleted!, new UploadFileCompletedEventArgs(result, error, _canceled, uploadAsyncOp.UserSuppliedState)));
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 fs?.Close();
                 var eventArgs = new UploadFileCompletedEventArgs(null, GetExceptionToPropagate(e), _canceled, asyncOp.UserSuppliedState);
@@ -1516,7 +1516,7 @@ namespace System.Net
                     (result, error, uploadAsyncOp) =>
                         InvokeOperationCompleted(asyncOp, _uploadValuesOperationCompleted!, new UploadValuesCompletedEventArgs(result, error, _canceled, uploadAsyncOp.UserSuppliedState)));
             }
-            catch (Exception e) when (!(e is OutOfMemoryException))
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 var eventArgs = new UploadValuesCompletedEventArgs(null, GetExceptionToPropagate(e), _canceled, asyncOp.UserSuppliedState!);
                 InvokeOperationCompleted(asyncOp, _uploadValuesOperationCompleted!, eventArgs);

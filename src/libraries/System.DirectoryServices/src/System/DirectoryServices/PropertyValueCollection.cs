@@ -97,18 +97,18 @@ namespace System.DirectoryServices
                 // we could not do Clear and Add, we have to bypass the existing collection cache
                 _changeList.Clear();
 
-                if (value is Array)
+                if (value is Array array)
                 {
                     // byte[] is a special case, we will follow what ADSI is doing, it must be an octet string. So treat it as a single valued attribute
                     if (value is byte[])
                         _changeList.Add(value);
-                    else if (value is object[])
-                        _changeList.AddRange((object[])value);
+                    else if (value is object[] objects)
+                        _changeList.AddRange(objects);
                     else
                     {
                         //Need to box value type array elements.
-                        object[] objArray = new object[((Array)value).Length];
-                        ((Array)value).CopyTo(objArray, 0);
+                        object[] objArray = new object[array.Length];
+                        array.CopyTo(objArray, 0);
                         _changeList.AddRange((object[])objArray);
                     }
                 }
@@ -191,8 +191,8 @@ namespace System.DirectoryServices
                     throw COMExceptionHelper.CreateFormattedComException(unmanagedResult);
                 }
             }
-            if (var is ICollection)
-                InnerList.AddRange((ICollection)var);
+            if (var is ICollection collection)
+                InnerList.AddRange(collection);
             else
                 InnerList.Add(var);
         }

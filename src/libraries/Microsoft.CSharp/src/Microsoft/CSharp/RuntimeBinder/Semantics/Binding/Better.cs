@@ -213,7 +213,7 @@ LAgain:
             // If we've no args we can skip. If the last argument isn't named then either we
             // have no named arguments, and we can skip, or we have non-trailing named arguments
             // and we MUST skip!
-            if (args.carg == 0 || !(args.prgexpr[args.carg - 1] is ExprNamedArgumentSpecification))
+            if (args.carg == 0 || args.prgexpr[args.carg - 1] is not ExprNamedArgumentSpecification)
             {
                 return pta;
             }

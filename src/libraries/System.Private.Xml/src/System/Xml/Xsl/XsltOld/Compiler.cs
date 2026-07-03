@@ -581,18 +581,18 @@ namespace System.Xml.Xsl.XsltOld
             object? input = _xmlResolver.GetEntity(absoluteUri, null, null);
             string resolved = absoluteUri.ToString();
 
-            if (input is Stream)
+            if (input is Stream stream)
             {
-                XmlTextReaderImpl tr = new XmlTextReaderImpl(resolved, (Stream)input);
+                XmlTextReaderImpl tr = new XmlTextReaderImpl(resolved, stream);
                 {
                     tr.XmlResolver = _xmlResolver;
                 }
                 // reader is closed by Compiler.LoadDocument()
                 return new NavigatorInput(Compiler.LoadDocument(tr).CreateNavigator(), resolved, _rootScope);
             }
-            else if (input is XPathNavigator)
+            else if (input is XPathNavigator xPathNavigator)
             {
-                return new NavigatorInput((XPathNavigator)input, resolved, _rootScope);
+                return new NavigatorInput(xPathNavigator, resolved, _rootScope);
             }
             else
             {

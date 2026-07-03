@@ -185,7 +185,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CType typeArr = arrayDest.ElementType;
                     CType typeLst = aggtypeSrc.TypeArgsAll[0];
 
-                    Debug.Assert(!(typeArr is MethodGroupType));
+                    Debug.Assert(typeArr is not MethodGroupType);
                     return typeArr == typeLst || FExpRefConv(typeArr, typeLst);
                 }
                 if (HasGenericDelegateExplicitReferenceConversion(typeSrc, typeDst))

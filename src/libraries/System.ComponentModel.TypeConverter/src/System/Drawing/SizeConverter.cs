@@ -92,7 +92,7 @@ namespace System.Drawing
             object? width = propertyValues["Width"];
             object? height = propertyValues["Height"];
 
-            if (width == null || height == null || !(width is int) || !(height is int))
+            if (width == null || height == null || width is not int || height is not int)
             {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }

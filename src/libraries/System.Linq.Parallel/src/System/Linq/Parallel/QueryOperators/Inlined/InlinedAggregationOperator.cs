@@ -57,7 +57,7 @@ namespace System.Linq.Parallel
             catch (Exception ex)
             {
                 // If the exception is not an aggregate, we must wrap it up and throw that instead.
-                if (!(ex is AggregateException))
+                if (ex is not AggregateException)
                 {
                     //
                     // Special case: if the query has been canceled, we do not want to wrap the

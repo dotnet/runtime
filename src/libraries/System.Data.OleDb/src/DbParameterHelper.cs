@@ -221,18 +221,18 @@ namespace System.Data.OleDb
 
         private static byte ValuePrecisionCore(object? value)
         { // V1.2.3300
-            if (value is decimal)
+            if (value is decimal d)
             {
-                return ((System.Data.SqlTypes.SqlDecimal)(decimal)value).Precision;
+                return ((System.Data.SqlTypes.SqlDecimal)d).Precision;
             }
             return 0;
         }
 
         private static byte ValueScaleCore(object? value)
         { // V1.2.3300
-            if (value is decimal)
+            if (value is decimal d)
             {
-                return (byte)((decimal.GetBits((decimal)value)[3] & 0x00ff0000) >> 0x10);
+                return (byte)((decimal.GetBits(d)[3] & 0x00ff0000) >> 0x10);
             }
             return 0;
         }

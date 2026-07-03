@@ -856,11 +856,11 @@ namespace System.Data
         /// </summary>
         public override bool Equals([NotNullWhen(true)] object? key)
         {
-            if (!(key is ForeignKeyConstraint))
+            if (key is not ForeignKeyConstraint foreignKeyConstraint)
             {
                 return false;
             }
-            ForeignKeyConstraint key2 = (ForeignKeyConstraint)key;
+            ForeignKeyConstraint key2 = foreignKeyConstraint;
 
             // The ParentKey and ChildKey completely identify the ForeignKeyConstraint
             return ParentKey.ColumnsEqual(key2.ParentKey) && ChildKey.ColumnsEqual(key2.ChildKey);

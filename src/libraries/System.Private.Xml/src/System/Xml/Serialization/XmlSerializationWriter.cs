@@ -1381,7 +1381,7 @@ namespace System.Xml.Serialization
                 return;
             }
             Type t = o.GetType();
-            if (Type.GetTypeCode(t) == TypeCode.Object && !(o is Guid) && (t != typeof(XmlQualifiedName)) && !(o is XmlNode[]) && (t != typeof(byte[])))
+            if (Type.GetTypeCode(t) == TypeCode.Object && o is not Guid && (t != typeof(XmlQualifiedName)) && o is not XmlNode[] && (t != typeof(byte[])))
             {
                 if ((suppressReference || _soap12) && !IsIdDefined(o))
                 {
@@ -2323,10 +2323,10 @@ namespace System.Xml.Serialization
                     if (!mapping.IsSoap)
                         continue;
 
-                    if (mapping is StructMapping)
-                        WriteStructMethod((StructMapping)mapping);
-                    else if (mapping is EnumMapping)
-                        WriteEnumMethod((EnumMapping)mapping);
+                    if (mapping is StructMapping structMapping)
+                        WriteStructMethod(structMapping);
+                    else if (mapping is EnumMapping enumMapping)
+                        WriteEnumMethod(enumMapping);
                 }
             }
         }
@@ -2338,13 +2338,13 @@ namespace System.Xml.Serialization
                 return;
 
             GeneratedMethods[mapping] = mapping;
-            if (mapping is StructMapping)
+            if (mapping is StructMapping structMapping)
             {
-                WriteStructMethod((StructMapping)mapping);
+                WriteStructMethod(structMapping);
             }
-            else if (mapping is EnumMapping)
+            else if (mapping is EnumMapping enumMapping)
             {
-                WriteEnumMethod((EnumMapping)mapping);
+                WriteEnumMethod(enumMapping);
             }
         }
 
@@ -2364,10 +2364,10 @@ namespace System.Xml.Serialization
                 return null;
             if (!xmlMapping.GenerateSerializer)
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
-            if (xmlMapping is XmlTypeMapping)
-                return GenerateTypeElement((XmlTypeMapping)xmlMapping);
-            else if (xmlMapping is XmlMembersMapping)
-                return GenerateMembersElement((XmlMembersMapping)xmlMapping);
+            if (xmlMapping is XmlTypeMapping xmlTypeMapping)
+                return GenerateTypeElement(xmlTypeMapping);
+            else if (xmlMapping is XmlMembersMapping xmlMembersMapping)
+                return GenerateMembersElement(xmlMembersMapping);
             else
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
@@ -2496,7 +2496,7 @@ namespace System.Xml.Serialization
             bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc!.HasDefaultSupport;
             if (hasDefault)
             {
-                if (mapping is EnumMapping)
+                if (mapping is EnumMapping enumMapping)
                 {
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
@@ -2509,7 +2509,7 @@ namespace System.Xml.Serialization
                     else
                         Writer.Write(source);
                     Writer.Write(" != ");
-                    if (((EnumMapping)mapping).IsFlags)
+                    if (enumMapping.IsFlags)
                     {
                         Writer.Write("(");
                         string[] values = ((string)defaultValue!).Split(null);
@@ -2519,13 +2519,13 @@ namespace System.Xml.Serialization
                                 continue;
                             if (i > 0)
                                 Writer.WriteLine(" | ");
-                            Writer.Write(RaCodeGen.GetStringForEnumCompare((EnumMapping)mapping, values[i], mapping.TypeDesc.UseReflection));
+                            Writer.Write(RaCodeGen.GetStringForEnumCompare(enumMapping, values[i], mapping.TypeDesc.UseReflection));
                         }
                         Writer.Write(")");
                     }
                     else
                     {
-                        Writer.Write(RaCodeGen.GetStringForEnumCompare((EnumMapping)mapping, (string)defaultValue!, mapping.TypeDesc.UseReflection));
+                        Writer.Write(RaCodeGen.GetStringForEnumCompare(enumMapping, (string)defaultValue!, mapping.TypeDesc.UseReflection));
                     }
                     Writer.Write(")");
                 }
@@ -2548,9 +2548,9 @@ namespace System.Xml.Serialization
 
             Writer.Write(", ");
 
-            if (mapping is EnumMapping)
+            if (mapping is EnumMapping enumMapping2)
             {
-                WriteEnumValue((EnumMapping)mapping, source);
+                WriteEnumValue(enumMapping2, source);
             }
             else
             {
@@ -3450,8 +3450,8 @@ namespace System.Xml.Serialization
                         Writer.WriteLine("if (i != 0) sb.Append(\" \");");
                         Writer.Write("sb.Append(");
                     }
-                    if (attribute.Mapping is EnumMapping)
-                        WriteEnumValue((EnumMapping)attribute.Mapping, "ai");
+                    if (attribute.Mapping is EnumMapping enumMapping)
+                        WriteEnumValue(enumMapping, "ai");
                     else
                         WritePrimitiveValue(arrayElementTypeDesc, "ai");
                     Writer.WriteLine(");");
@@ -3958,7 +3958,7 @@ namespace System.Xml.Serialization
         {
             string name = writeAccessor ? element.Name : element.Mapping!.TypeName!;
             string? ns = element.Any && element.Name.Length == 0 ? null : (element.Form == XmlSchemaForm.Qualified ? (writeAccessor ? element.Namespace : element.Mapping!.Namespace) : "");
-            if (element.Mapping is NullableMapping)
+            if (element.Mapping is NullableMapping nullableMapping)
             {
                 Writer.Write("if (");
                 Writer.Write(source);
@@ -3969,7 +3969,7 @@ namespace System.Xml.Serialization
                 if (!element.Mapping.TypeDesc.BaseTypeDesc.UseReflection)
                     castedSource = $"(({fullTypeName}){source})";
                 ElementAccessor e = element.Clone();
-                e.Mapping = ((NullableMapping)element.Mapping).BaseMapping;
+                e.Mapping = nullableMapping.BaseMapping;
                 WriteElement(e.Any ? source : castedSource, e, arrayName, writeAccessor);
                 Writer.Indent--;
                 Writer.WriteLine("}");

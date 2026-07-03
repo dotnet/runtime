@@ -449,12 +449,12 @@ namespace System.Xml.Serialization
                     }
                 }
             }
-            else if (element.Mapping is EnumMapping)
+            else if (element.Mapping is EnumMapping enumMapping)
             {
                 if (element.Mapping.IsSoap)
                 {
                     Writer.WriteStartElement(name, ns);
-                    WriteEnumMethod((EnumMapping)element.Mapping, o!);
+                    WriteEnumMethod(enumMapping, o!);
                     WriteEndElement();
                 }
                 else
@@ -880,9 +880,9 @@ namespace System.Xml.Serialization
                                         Writer.WriteString(" ");
                                     }
 
-                                    if (ai is byte[])
+                                    if (ai is byte[] bytes)
                                     {
-                                        WriteValue((byte[])ai);
+                                        WriteValue(bytes);
                                     }
                                     else
                                     {
@@ -1000,9 +1000,9 @@ namespace System.Xml.Serialization
             bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc!.HasDefaultSupport;
             if (hasDefault)
             {
-                if (mapping is EnumMapping)
+                if (mapping is EnumMapping enumMapping2)
                 {
-                    if (((EnumMapping)mapping).IsFlags)
+                    if (enumMapping2.IsFlags)
                     {
                         IEnumerable<string> defaultEnumFlagValues = defaultValue!.ToString()!.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
                         string defaultEnumFlagString = string.Join(", ", defaultEnumFlagValues);
@@ -1152,21 +1152,21 @@ namespace System.Xml.Serialization
                     stringValue = FromByteArrayHex((byte[])o);
                     return true;
                 }
-                else if (o is DateTime)
+                else if (o is DateTime dateTime)
                 {
                     if (typeDesc.FormatterName == "DateTime")
                     {
-                        stringValue = FromDateTime((DateTime)o);
+                        stringValue = FromDateTime(dateTime);
                         return true;
                     }
                     else if (typeDesc.FormatterName == "Date")
                     {
-                        stringValue = FromDate((DateTime)o);
+                        stringValue = FromDate(dateTime);
                         return true;
                     }
                     else if (typeDesc.FormatterName == "Time")
                     {
-                        stringValue = FromTime((DateTime)o);
+                        stringValue = FromTime(dateTime);
                         return true;
                     }
                     else
@@ -1174,14 +1174,14 @@ namespace System.Xml.Serialization
                         throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid DateTime"));
                     }
                 }
-                else if (o is DateOnly)
+                else if (o is DateOnly dateOnly)
                 {
-                    stringValue = FromDateOnly((DateOnly)o);
+                    stringValue = FromDateOnly(dateOnly);
                     return true;
                 }
-                else if (o is TimeOnly)
+                else if (o is TimeOnly timeOnly)
                 {
-                    stringValue = FromTimeOnly((TimeOnly)o);
+                    stringValue = FromTimeOnly(timeOnly);
                     return true;
                 }
                 else if (typeDesc == ReflectionXmlSerializationReader.QnameTypeDesc)
@@ -1189,21 +1189,21 @@ namespace System.Xml.Serialization
                     stringValue = FromXmlQualifiedName((XmlQualifiedName?)o);
                     return true;
                 }
-                else if (o is string)
+                else if (o is string str)
                 {
                     switch (typeDesc.FormatterName)
                     {
                         case "XmlName":
-                            stringValue = FromXmlName((string)o);
+                            stringValue = FromXmlName(str);
                             break;
                         case "XmlNCName":
-                            stringValue = FromXmlNCName((string)o);
+                            stringValue = FromXmlNCName(str);
                             break;
                         case "XmlNmToken":
-                            stringValue = FromXmlNmToken((string)o);
+                            stringValue = FromXmlNmToken(str);
                             break;
                         case "XmlNmTokens":
-                            stringValue = FromXmlNmTokens((string)o);
+                            stringValue = FromXmlNmTokens(str);
                             break;
                         default:
                             stringValue = null;

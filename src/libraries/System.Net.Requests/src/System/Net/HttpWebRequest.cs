@@ -1166,7 +1166,7 @@ namespace System.Net
         {
             CheckAbort();
 
-            if (asyncResult == null || !(asyncResult is Task<Stream>))
+            if (asyncResult == null || asyncResult is not Task<Stream>)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -1439,7 +1439,7 @@ namespace System.Net
         {
             CheckAbort();
 
-            if (asyncResult == null || !(asyncResult is Task<WebResponse>))
+            if (asyncResult == null || asyncResult is not Task<WebResponse>)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }

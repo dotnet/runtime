@@ -285,7 +285,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     // If we're not enumerating recursively, return the principal.
                     // If we are enumerating recursively, and it's a group, save it off for later.
-                    if (!_recursive || !(foreignPrincipal is GroupPrincipal))
+                    if (!_recursive || foreignPrincipal is not GroupPrincipal)
                     {
                         // Return the principal.
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "MoveNextForeign: setting currentForeign to {0}", foreignDE.Path);

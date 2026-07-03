@@ -78,9 +78,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 // GetNext will return either an object or a WriteObjectInfo.
                 // A WriteObjectInfo is returned if this object was member of another object
-                if (obj is WriteObjectInfo)
+                if (obj is WriteObjectInfo writeObjectInfo)
                 {
-                    objectInfo = (WriteObjectInfo)obj;
+                    objectInfo = writeObjectInfo;
                 }
                 else
                 {

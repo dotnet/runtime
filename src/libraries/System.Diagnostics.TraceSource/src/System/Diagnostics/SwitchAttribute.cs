@@ -74,7 +74,7 @@ namespace System.Diagnostics
             foreach (MemberInfo member in members)
             {
                 // ignore Types here.  They will get covered by the top level assembly.GetTypes
-                if (!(member is Type))
+                if (member is not Type)
                     GetAllRecursive(member, switchAttribs);
             }
         }

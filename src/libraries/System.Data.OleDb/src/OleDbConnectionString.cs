@@ -179,9 +179,9 @@ namespace System.Data.OleDb
             if (!_hasSqlSupport)
             {
                 object? value = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_SQLSUPPORT);
-                if (value is int)
+                if (value is int num)
                 { // not OleDbPropertyStatus
-                    sqlSupport = (int)value;
+                    sqlSupport = num;
                 }
                 _sqlSupport = sqlSupport;
                 _hasSqlSupport = true;
@@ -197,7 +197,7 @@ namespace System.Data.OleDb
                 object? value = command.GetPropertyValue(OleDbPropertySetGuid.Rowset, ODB.DBPROP_IRow);
 
                 // SQLOLEDB always returns VARIANT_FALSE for DBPROP_IROW, so base the answer on existence
-                supportIRow = !(value is OleDbPropertyStatus);
+                supportIRow = value is not OleDbPropertyStatus;
                 _supportIRow = supportIRow;
                 _hasSupportIRow = true;
             }
@@ -210,9 +210,9 @@ namespace System.Data.OleDb
             if (!_hasSupportMultipleResults)
             {
                 object? value = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_MULTIPLERESULTS);
-                if (value is int)
+                if (value is int num)
                 {// not OleDbPropertyStatus
-                    supportMultipleResults = (ODB.DBPROPVAL_MR_NOTSUPPORTED != (int)value);
+                    supportMultipleResults = (ODB.DBPROPVAL_MR_NOTSUPPORTED != num);
                 }
                 _supportMultipleResults = supportMultipleResults;
                 _hasSupportMultipleResults = true;
@@ -229,9 +229,9 @@ namespace System.Data.OleDb
                 if (!UDL._PoolSizeInit)
                 {
                     object? value = ADP.LocalMachineRegistryValue(UDL.Location, UDL.Pooling);
-                    if (value is int)
+                    if (value is int num)
                     {
-                        poolsize = (int)value;
+                        poolsize = num;
                         poolsize = ((0 < poolsize) ? poolsize : 0);
                         UDL._PoolSize = poolsize;
                     }

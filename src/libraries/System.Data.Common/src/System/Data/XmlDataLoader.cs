@@ -240,8 +240,8 @@ namespace System.Data
             XmlNode? ownerNode;
             if (!_fIsXdr)
                 return false;
-            if (node is XmlAttribute)
-                ownerNode = ((XmlAttribute)node).OwnerElement!;
+            if (node is XmlAttribute xmlAttribute)
+                ownerNode = xmlAttribute.OwnerElement!;
             else
                 ownerNode = node;
             if (ownerNode.NamespaceURI.StartsWith("x-schema:#", StringComparison.Ordinal))

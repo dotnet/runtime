@@ -202,9 +202,9 @@ namespace System.Speech.Internal.SapiInterop
         {
             SAPIErrorCodes errorCode;
 
-            if (value is int)
+            if (value is int num)
             {
-                errorCode = (SAPIErrorCodes)sapiRecognizer.SetPropertyNum(name, (int)value);
+                errorCode = (SAPIErrorCodes)sapiRecognizer.SetPropertyNum(name, num);
             }
             else
             {

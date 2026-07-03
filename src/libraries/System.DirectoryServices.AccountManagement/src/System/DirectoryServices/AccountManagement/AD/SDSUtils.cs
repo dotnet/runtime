@@ -208,10 +208,10 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(storeCtx is ADStoreCtx || storeCtx is SAMStoreCtx);
             Debug.Assert(p != null);
 
-            if ((!(p is UserPrincipal)) &&
-                 (!(p is GroupPrincipal)) &&
-                 (!(p is AuthenticablePrincipal)) &&
-                 (!(p is ComputerPrincipal)))
+            if ((p is not UserPrincipal) &&
+                 (p is not GroupPrincipal) &&
+                 (p is not AuthenticablePrincipal) &&
+                 (p is not ComputerPrincipal))
             {
                 // It's not a type of Principal that we support
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SDSUtils", "InsertPrincipal: Bad principal type:" + p.GetType().ToString());
@@ -317,17 +317,17 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "SDSUtils", "SetPassword: caught TargetInvocationException with message " + e.Message);
 
-                if (e.InnerException is System.Runtime.InteropServices.COMException)
+                if (e.InnerException is System.Runtime.InteropServices.COMException cOMException)
                 {
-                    if (((System.Runtime.InteropServices.COMException)e.InnerException).ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION))
+                    if (cOMException.ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION))
                     {
                         // We have a special case of constraint violation here.  We know this is a password failure to convert to this
                         // specialized type instead of the generic InvalidOperationException
-                        throw (new PasswordException(((System.Runtime.InteropServices.COMException)e.InnerException).Message, (System.Runtime.InteropServices.COMException)e.InnerException));
+                        throw (new PasswordException(cOMException.Message, cOMException));
                     }
                     else
                     {
-                        throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                        throw (ExceptionHelper.GetExceptionFromCOMException(cOMException));
                     }
                 }
 
@@ -351,17 +351,17 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "SDSUtils", "ChangePassword: caught TargetInvocationException with message " + e.Message);
 
-                if (e.InnerException is System.Runtime.InteropServices.COMException)
+                if (e.InnerException is System.Runtime.InteropServices.COMException cOMException)
                 {
-                    if (((System.Runtime.InteropServices.COMException)e.InnerException).ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION))
+                    if (cOMException.ErrorCode == unchecked((int)ExceptionHelper.ERROR_HRESULT_CONSTRAINT_VIOLATION))
                     {
                         // We have a special case of constraint violation here.  We know this is a password failure to convert to this
                         // specialized type instead of the generic InvalidOperationException
-                        throw (new PasswordException(((System.Runtime.InteropServices.COMException)e.InnerException).Message, (System.Runtime.InteropServices.COMException)e.InnerException));
+                        throw (new PasswordException(cOMException.Message, cOMException));
                     }
                     else
                     {
-                        throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                        throw (ExceptionHelper.GetExceptionFromCOMException(cOMException));
                     }
                 }
 

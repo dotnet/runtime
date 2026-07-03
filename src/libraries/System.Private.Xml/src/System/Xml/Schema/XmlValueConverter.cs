@@ -234,7 +234,7 @@ namespace System.Xml.Schema
             XmlSchemaDatatype? datatype = schemaType.Datatype;
             Debug.Assert(schemaType != null && datatype != null, "schemaType or schemaType.Datatype may not be null");
 
-            while (schemaType != null && !(schemaType is XmlSchemaSimpleType))
+            while (schemaType != null && schemaType is not XmlSchemaSimpleType)
             {
                 schemaType = schemaType.BaseXmlSchemaType!;
             }
@@ -2877,7 +2877,7 @@ namespace System.Xml.Schema
             ArgumentNullException.ThrowIfNull(destinationType);
 
             // If source value does not implement IEnumerable, or it is a string or byte[],
-            if (!(value is IEnumerable) || value.GetType() == StringType || value.GetType() == ByteArrayType)
+            if (value is not IEnumerable || value.GetType() == StringType || value.GetType() == ByteArrayType)
             {
                 // Then create a list from it
                 value = new object[] { value };
@@ -2916,7 +2916,7 @@ namespace System.Xml.Schema
             if (atomicConverter == XmlAnyConverter.AnyAtomic)
                 return XmlAnyListConverter.AnyAtomicList;
 
-            Debug.Assert(!(atomicConverter is XmlListConverter) || ((XmlListConverter)atomicConverter).atomicConverter == null,
+            Debug.Assert(atomicConverter is not XmlListConverter || ((XmlListConverter)atomicConverter).atomicConverter == null,
                          "List converters should not be nested within one another.");
 
             return new XmlListConverter((XmlBaseConverter)atomicConverter);
@@ -2947,7 +2947,7 @@ namespace System.Xml.Schema
             if (destinationType == ObjectType) destinationType = DefaultClrType!;
 
             // Input value must support IEnumerable and destination type should be IEnumerable, ICollection, IList, Type[], or String
-            if (!(value is IEnumerable) || !IsListType(destinationType))
+            if (value is not IEnumerable || !IsListType(destinationType))
                 throw CreateInvalidClrMappingException(sourceType, destinationType);
 
             // Handle case where destination type is a string

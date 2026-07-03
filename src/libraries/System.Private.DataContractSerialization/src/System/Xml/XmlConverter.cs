@@ -401,28 +401,28 @@ namespace System.Xml
 
         private static string ToString(object value)
         {
-            if (value is int)
-                return ToString((int)value);
-            else if (value is long)
-                return ToString((long)value);
-            else if (value is float)
-                return ToString((float)value);
-            else if (value is double)
-                return ToString((double)value);
-            else if (value is decimal)
-                return ToString((decimal)value);
-            else if (value is TimeSpan)
-                return ToString((TimeSpan)value);
-            else if (value is UniqueId)
-                return ToString((UniqueId)value);
-            else if (value is Guid)
-                return ToString((Guid)value);
-            else if (value is ulong)
-                return ToString((ulong)value);
-            else if (value is DateTime)
-                return ToString((DateTime)value);
-            else if (value is bool)
-                return ToString((bool)value);
+            if (value is int num3)
+                return ToString(num3);
+            else if (value is long num2)
+                return ToString(num2);
+            else if (value is float f)
+                return ToString(f);
+            else if (value is double d2)
+                return ToString(d2);
+            else if (value is decimal d)
+                return ToString(d);
+            else if (value is TimeSpan timeSpan)
+                return ToString(timeSpan);
+            else if (value is UniqueId uniqueId)
+                return ToString(uniqueId);
+            else if (value is Guid guid)
+                return ToString(guid);
+            else if (value is ulong num)
+                return ToString(num);
+            else if (value is DateTime dateTime)
+                return ToString(dateTime);
+            else if (value is bool b)
+                return ToString(b);
             else
                 return value.ToString()!; // value can only be an object created by ToList()
         }

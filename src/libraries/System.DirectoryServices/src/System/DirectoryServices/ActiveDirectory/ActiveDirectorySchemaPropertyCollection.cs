@@ -341,11 +341,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is ActiveDirectorySchemaProperty))
+            if (value is not ActiveDirectorySchemaProperty activeDirectorySchemaProperty)
                 throw new ArgumentException(null, nameof(value));
 
-            if (!((ActiveDirectorySchemaProperty)value).isBound)
-                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, ((ActiveDirectorySchemaProperty)value).Name));
+            if (!activeDirectorySchemaProperty.isBound)
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, activeDirectorySchemaProperty.Name));
         }
 
         internal string[] GetMultiValuedProperty()

@@ -11,7 +11,7 @@ namespace System.Configuration
         {
             ArgumentNullException.ThrowIfNull(provider);
 
-            if (!(provider is SettingsProvider))
+            if (provider is not SettingsProvider)
             {
                 throw new ArgumentException(SR.Format(SR.Config_provider_must_implement_type, typeof(SettingsProvider)), nameof(provider));
             }

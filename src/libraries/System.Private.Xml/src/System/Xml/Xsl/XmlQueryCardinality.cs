@@ -122,9 +122,9 @@ namespace System.Xml.Xsl
         /// </summary>
         public override bool Equals([NotNullWhen(true)] object? other)
         {
-            if (other is XmlQueryCardinality)
+            if (other is XmlQueryCardinality xmlQueryCardinality)
             {
-                return Equals((XmlQueryCardinality)other);
+                return Equals(xmlQueryCardinality);
             }
 
             return false;

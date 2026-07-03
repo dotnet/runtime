@@ -29,7 +29,7 @@ namespace System.Data.OleDb
         public OleDbParameter(string? name, object? value) : this()
         {
             Debug.Assert(!(value is OleDbType), "use OleDbParameter(string, OleDbType)");
-            Debug.Assert(!(value is SqlDbType), "use OleDbParameter(string, OleDbType)");
+            Debug.Assert(value is not SqlDbType, "use OleDbParameter(string, OleDbType)");
 
             ParameterName = name;
             Value = value;

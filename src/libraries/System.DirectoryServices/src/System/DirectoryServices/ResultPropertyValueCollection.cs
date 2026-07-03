@@ -20,8 +20,8 @@ namespace System.DirectoryServices
             get
             {
                 object returnValue = InnerList[index]!;
-                if (returnValue is Exception)
-                    throw (Exception)returnValue;
+                if (returnValue is Exception exception)
+                    throw exception;
                 else
                     return returnValue;
             }

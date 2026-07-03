@@ -174,18 +174,18 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             object? input = _resolver.GetEntity(ruri, null, null);
-            if (input is Stream)
+            if (input is Stream stream)
             {
-                XmlTextReaderImpl tr = new XmlTextReaderImpl(ruri.ToString(), (Stream)input);
+                XmlTextReaderImpl tr = new XmlTextReaderImpl(ruri.ToString(), stream);
                 {
                     tr.XmlResolver = _resolver;
                 }
                 // reader is closed by Compiler.LoadDocument()
                 result = ((IXPathNavigable)Compiler.LoadDocument(tr)).CreateNavigator();
             }
-            else if (input is XPathNavigator)
+            else if (input is XPathNavigator xPathNavigator)
             {
-                result = (XPathNavigator)input;
+                result = xPathNavigator;
             }
             else
             {

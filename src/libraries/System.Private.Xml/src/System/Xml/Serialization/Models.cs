@@ -80,7 +80,7 @@ namespace System.Xml.Serialization
             if (!_arrayModels.TryGetValue(type, out model))
             {
                 model = GetTypeModel(type);
-                if (!(model is ArrayModel))
+                if (model is not ArrayModel)
                 {
                     TypeDesc typeDesc = _typeScope.GetArrayTypeDesc(type);
                     model = new ArrayModel(type, typeDesc, this);
@@ -168,7 +168,7 @@ namespace System.Xml.Serialization
             // first copy all non-property members over
             for (int i = 0; i < members.Length; i++)
             {
-                if (!(members[i] is PropertyInfo))
+                if (members[i] is not PropertyInfo)
                 {
                     fieldsAndProps[cMember++] = members[i];
                 }
@@ -188,10 +188,10 @@ namespace System.Xml.Serialization
         internal FieldModel? GetFieldModel(MemberInfo memberInfo)
         {
             FieldModel? model = null;
-            if (memberInfo is FieldInfo)
-                model = GetFieldModel((FieldInfo)memberInfo);
-            else if (memberInfo is PropertyInfo)
-                model = GetPropertyModel((PropertyInfo)memberInfo);
+            if (memberInfo is FieldInfo fieldInfo)
+                model = GetFieldModel(fieldInfo);
+            else if (memberInfo is PropertyInfo propertyInfo)
+                model = GetPropertyModel(propertyInfo);
             if (model != null)
             {
                 if (model.ReadOnly && model.FieldTypeDesc.Kind != TypeKind.Collection && model.FieldTypeDesc.Kind != TypeKind.Enumerable)
@@ -326,14 +326,14 @@ namespace System.Xml.Serialization
                     }
                 }
             }
-            if (memberInfo is PropertyInfo)
+            if (memberInfo is PropertyInfo propertyInfo)
             {
-                _readOnly = !((PropertyInfo)memberInfo).CanWrite;
+                _readOnly = !propertyInfo.CanWrite;
                 _isProperty = true;
             }
-            else if (memberInfo is FieldInfo)
+            else if (memberInfo is FieldInfo fieldInfo)
             {
-                _readOnly = ((FieldInfo)memberInfo).IsInitOnly;
+                _readOnly = fieldInfo.IsInitOnly;
             }
         }
 

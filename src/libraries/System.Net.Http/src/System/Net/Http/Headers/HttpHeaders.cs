@@ -1014,7 +1014,7 @@ namespace System.Net.Http.Headers
 
         private static void AddParsedValue(HeaderStoreItemInfo info, object value)
         {
-            Debug.Assert(!(value is List<object>),
+            Debug.Assert(value is not List<object>,
                 "Header value types must not derive from List<object> since this type is used internally to store " +
                 "lists of values. So we would not be able to distinguish between a single value and a list of values.");
 

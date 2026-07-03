@@ -1671,9 +1671,9 @@ namespace System.Management
         {
             try
             {
-                if (sender is WmiEventSink)
+                if (sender is WmiEventSink wmiEventSink)
                 {
-                    ((WmiEventSink)sender).InternalObjectPut -= new InternalObjectPutEventHandler(this.HandleObjectPut);
+                    wmiEventSink.InternalObjectPut -= new InternalObjectPutEventHandler(this.HandleObjectPut);
                     putButNotGot = true;
                     path.SetRelativePath(e.Path.RelativePath);
                 }

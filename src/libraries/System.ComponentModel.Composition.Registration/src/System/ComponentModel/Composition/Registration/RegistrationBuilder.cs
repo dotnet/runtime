@@ -143,15 +143,15 @@ namespace System.ComponentModel.Composition.Registration
                                 attributeList = element.Item2;
                                 if (attributeList != null)
                                 {
-                                    if (element.Item1 is MemberInfo)
+                                    if (element.Item1 is MemberInfo memberInfo)
                                     {
                                         List<Attribute> memberAttributes;
-                                        switch (((MemberInfo)element.Item1).MemberType)
+                                        switch (memberInfo.MemberType)
                                         {
                                             case MemberTypes.Constructor:
-                                                if (!_memberInfos.TryGetValue((MemberInfo)element.Item1, out memberAttributes))
+                                                if (!_memberInfos.TryGetValue(memberInfo, out memberAttributes))
                                                 {
-                                                    _memberInfos.Add((MemberInfo)element.Item1, element.Item2);
+                                                    _memberInfos.Add(memberInfo, element.Item2);
                                                 }
                                                 else
                                                 {
@@ -161,9 +161,9 @@ namespace System.ComponentModel.Composition.Registration
                                             case MemberTypes.TypeInfo:
                                             case MemberTypes.NestedType:
                                             case MemberTypes.Property:
-                                                if (!_memberInfos.TryGetValue((MemberInfo)element.Item1, out memberAttributes))
+                                                if (!_memberInfos.TryGetValue(memberInfo, out memberAttributes))
                                                 {
-                                                    _memberInfos.Add((MemberInfo)element.Item1, element.Item2);
+                                                    _memberInfos.Add(memberInfo, element.Item2);
                                                 }
                                                 else
                                                 {
@@ -176,12 +176,12 @@ namespace System.ComponentModel.Composition.Registration
                                     }
                                     else
                                     {
-                                        if (!(element.Item1 is ParameterInfo))
+                                        if (element.Item1 is not ParameterInfo parameterInfo)
                                             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                                         // Item contains as Constructor parameter to configure
-                                        if (!_parameters.TryGetValue((ParameterInfo)element.Item1, out List<Attribute> parameterAttributes))
+                                        if (!_parameters.TryGetValue(parameterInfo, out List<Attribute> parameterAttributes))
                                         {
-                                            _parameters.Add((ParameterInfo)element.Item1, element.Item2);
+                                            _parameters.Add(parameterInfo, element.Item2);
                                         }
                                         else
                                         {

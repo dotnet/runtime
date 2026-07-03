@@ -92,7 +92,7 @@ namespace System.Drawing
             object? x = propertyValues["X"];
             object? y = propertyValues["Y"];
 
-            if (x == null || y == null || !(x is int) || !(y is int))
+            if (x == null || y == null || x is not int || y is not int)
             {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }

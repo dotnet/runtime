@@ -2176,9 +2176,9 @@ namespace System.Xml.Schema
 
         private static void BuildIdentityConstraint_Refer(XsdBuilder builder, string value)
         {
-            if (builder._identityConstraint is XmlSchemaKeyref)
+            if (builder._identityConstraint is XmlSchemaKeyref xmlSchemaKeyref)
             {
-                ((XmlSchemaKeyref)builder._identityConstraint).Refer = builder.ParseQName(value, "refer");
+                xmlSchemaKeyref.Refer = builder.ParseQName(value, "refer");
             }
             else
             {

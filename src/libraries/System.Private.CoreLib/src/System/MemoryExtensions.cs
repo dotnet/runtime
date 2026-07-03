@@ -6156,7 +6156,7 @@ namespace System
                 // if it only implements IFormattable, we come out even: only if it implements both do we
                 // end up paying for an extra interface check.
                 string? s;
-                if (value is IFormattable)
+                if (value is IFormattable formattable)
                 {
                     // If the value can format itself directly into our buffer, do so.
 
@@ -6171,9 +6171,9 @@ namespace System
                         return Fail();
                     }
 
-                    if (value is ISpanFormattable)
+                    if (value is ISpanFormattable spanFormattable)
                     {
-                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                        if (spanFormattable.TryFormat(_destination.Slice(_pos), out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
                         {
                             _pos += charsWritten;
                             return true;
@@ -6182,7 +6182,7 @@ namespace System
                         return Fail();
                     }
 
-                    s = ((IFormattable)value).ToString(format: null, _provider); // constrained call avoiding boxing for value types
+                    s = formattable.ToString(format: null, _provider); // constrained call avoiding boxing for value types
                 }
                 else
                 {
@@ -6217,7 +6217,7 @@ namespace System
                 // if it only implements IFormattable, we come out even: only if it implements both do we
                 // end up paying for an extra interface check.
                 string? s;
-                if (value is IFormattable)
+                if (value is IFormattable formattable)
                 {
                     // If the value can format itself directly into our buffer, do so.
 
@@ -6232,9 +6232,9 @@ namespace System
                         return Fail();
                     }
 
-                    if (value is ISpanFormattable)
+                    if (value is ISpanFormattable spanFormattable)
                     {
-                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                        if (spanFormattable.TryFormat(_destination.Slice(_pos), out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types
                         {
                             _pos += charsWritten;
                             return true;
@@ -6243,7 +6243,7 @@ namespace System
                         return Fail();
                     }
 
-                    s = ((IFormattable)value).ToString(format, _provider); // constrained call avoiding boxing for value types
+                    s = formattable.ToString(format, _provider); // constrained call avoiding boxing for value types
                 }
                 else
                 {

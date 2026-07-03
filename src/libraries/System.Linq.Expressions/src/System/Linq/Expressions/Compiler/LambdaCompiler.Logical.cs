@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 return false;
             }
-            return NotEmpty(node) && !(node is DebugInfoExpression);
+            return NotEmpty(node) && node is not DebugInfoExpression;
         }
 
         #endregion

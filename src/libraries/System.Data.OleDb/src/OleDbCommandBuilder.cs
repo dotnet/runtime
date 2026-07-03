@@ -274,9 +274,9 @@ namespace System.Data.OleDb
                             case OleDbType.VarChar:
                             case OleDbType.VarWChar:
                                 value = dataRow[backendtype!, DataRowVersion.Default];
-                                if (value is string)
+                                if (value is string str)
                                 {
-                                    string backendtypename = ((string)value).ToLowerInvariant();
+                                    string backendtypename = str.ToLowerInvariant();
                                     switch (backendtypename)
                                     {
                                         case "binary":

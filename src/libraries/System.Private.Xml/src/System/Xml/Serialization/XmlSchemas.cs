@@ -185,9 +185,9 @@ namespace System.Xml.Serialization
             string? ns = schema.TargetNamespace;
             foreach (XmlSchemaExternal external in schema.Includes)
             {
-                if (external is XmlSchemaImport)
+                if (external is XmlSchemaImport xmlSchemaImport)
                 {
-                    if (ns == ((XmlSchemaImport)external).Namespace)
+                    if (ns == xmlSchemaImport.Namespace)
                     {
                         removes.Add(external);
                     }
@@ -371,7 +371,7 @@ namespace System.Xml.Serialization
 
             foreach (XmlSchemaExternal external in schema.Includes)
             {
-                if (external is XmlSchemaImport)
+                if (external is XmlSchemaImport xmlSchemaImport)
                 {
                     external.SchemaLocation = null;
                     if (external.Schema != null)
@@ -380,7 +380,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        AddImport(originals, ((XmlSchemaImport)external).Namespace);
+                        AddImport(originals, xmlSchemaImport.Namespace);
                     }
                 }
                 else
@@ -435,29 +435,29 @@ namespace System.Xml.Serialization
 
         private static string? ItemName(XmlSchemaObject o)
         {
-            if (o is XmlSchemaNotation)
+            if (o is XmlSchemaNotation xmlSchemaNotation)
             {
-                return ((XmlSchemaNotation)o).Name;
+                return xmlSchemaNotation.Name;
             }
-            else if (o is XmlSchemaGroup)
+            else if (o is XmlSchemaGroup xmlSchemaGroup)
             {
-                return ((XmlSchemaGroup)o).Name;
+                return xmlSchemaGroup.Name;
             }
-            else if (o is XmlSchemaElement)
+            else if (o is XmlSchemaElement xmlSchemaElement)
             {
-                return ((XmlSchemaElement)o).Name;
+                return xmlSchemaElement.Name;
             }
-            else if (o is XmlSchemaType)
+            else if (o is XmlSchemaType xmlSchemaType)
             {
-                return ((XmlSchemaType)o).Name;
+                return xmlSchemaType.Name;
             }
-            else if (o is XmlSchemaAttributeGroup)
+            else if (o is XmlSchemaAttributeGroup xmlSchemaAttributeGroup)
             {
-                return ((XmlSchemaAttributeGroup)o).Name;
+                return xmlSchemaAttributeGroup.Name;
             }
-            else if (o is XmlSchemaAttribute)
+            else if (o is XmlSchemaAttribute xmlSchemaAttribute)
             {
-                return ((XmlSchemaAttribute)o).Name;
+                return xmlSchemaAttribute.Name;
             }
             return null;
         }
@@ -496,19 +496,19 @@ namespace System.Xml.Serialization
                 {
                     tmp = tmp.Parent;
                 }
-                if (tmp is XmlSchema)
+                if (tmp is XmlSchema xmlSchema)
                 {
-                    ns = ((XmlSchema)tmp).TargetNamespace;
+                    ns = xmlSchema.TargetNamespace;
                 }
             }
             string? item;
-            if (o is XmlSchemaNotation)
+            if (o is XmlSchemaNotation xmlSchemaNotation)
             {
-                item = SR.Format(SR.XmlSchemaNamedItem, ns, "notation", ((XmlSchemaNotation)o).Name, details);
+                item = SR.Format(SR.XmlSchemaNamedItem, ns, "notation", xmlSchemaNotation.Name, details);
             }
-            else if (o is XmlSchemaGroup)
+            else if (o is XmlSchemaGroup xmlSchemaGroup)
             {
-                item = SR.Format(SR.XmlSchemaNamedItem, ns, "group", ((XmlSchemaGroup)o).Name, details);
+                item = SR.Format(SR.XmlSchemaNamedItem, ns, "group", xmlSchemaGroup.Name, details);
             }
             else if (o is XmlSchemaElement e)
             {
@@ -523,13 +523,13 @@ namespace System.Xml.Serialization
                     item = SR.Format(SR.XmlSchemaNamedItem, ns, "element", e.Name, details);
                 }
             }
-            else if (o is XmlSchemaType)
+            else if (o is XmlSchemaType xmlSchemaType)
             {
-                item = SR.Format(SR.XmlSchemaNamedItem, ns, o.GetType() == typeof(XmlSchemaSimpleType) ? "simpleType" : "complexType", ((XmlSchemaType)o).Name, null);
+                item = SR.Format(SR.XmlSchemaNamedItem, ns, o.GetType() == typeof(XmlSchemaSimpleType) ? "simpleType" : "complexType", xmlSchemaType.Name, null);
             }
-            else if (o is XmlSchemaAttributeGroup)
+            else if (o is XmlSchemaAttributeGroup xmlSchemaAttributeGroup)
             {
-                item = SR.Format(SR.XmlSchemaNamedItem, ns, "attributeGroup", ((XmlSchemaAttributeGroup)o).Name, details);
+                item = SR.Format(SR.XmlSchemaNamedItem, ns, "attributeGroup", xmlSchemaAttributeGroup.Name, details);
             }
             else if (o is XmlSchemaAttribute a)
             {
@@ -702,9 +702,9 @@ namespace System.Xml.Serialization
                     {
                         source = source.Parent;
                     }
-                    if (source is XmlSchema)
+                    if (source is XmlSchema xmlSchema)
                     {
-                        ns = ((XmlSchema)source).TargetNamespace;
+                        ns = xmlSchema.TargetNamespace;
                     }
                 }
                 throw new InvalidOperationException(SR.Format(SR.XmlSchemaSyntaxErrorDetails, ns, message, exception.LineNumber, exception.LinePosition), exception);

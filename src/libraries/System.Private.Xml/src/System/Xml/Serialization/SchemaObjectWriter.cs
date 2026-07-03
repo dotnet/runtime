@@ -63,37 +63,37 @@ namespace System.Xml.Serialization
 
         internal static XmlQualifiedName NameOf(XmlSchemaObject? o)
         {
-            if (o is XmlSchemaAttribute)
+            if (o is XmlSchemaAttribute xmlSchemaAttribute)
             {
-                return ((XmlSchemaAttribute)o).QualifiedName;
+                return xmlSchemaAttribute.QualifiedName;
             }
-            else if (o is XmlSchemaAttributeGroup)
+            else if (o is XmlSchemaAttributeGroup xmlSchemaAttributeGroup)
             {
-                return ((XmlSchemaAttributeGroup)o).QualifiedName;
+                return xmlSchemaAttributeGroup.QualifiedName;
             }
-            else if (o is XmlSchemaComplexType)
+            else if (o is XmlSchemaComplexType xmlSchemaComplexType)
             {
-                return ((XmlSchemaComplexType)o).QualifiedName;
+                return xmlSchemaComplexType.QualifiedName;
             }
-            else if (o is XmlSchemaSimpleType)
+            else if (o is XmlSchemaSimpleType xmlSchemaSimpleType)
             {
-                return ((XmlSchemaSimpleType)o).QualifiedName;
+                return xmlSchemaSimpleType.QualifiedName;
             }
-            else if (o is XmlSchemaElement)
+            else if (o is XmlSchemaElement xmlSchemaElement)
             {
-                return ((XmlSchemaElement)o).QualifiedName;
+                return xmlSchemaElement.QualifiedName;
             }
-            else if (o is XmlSchemaGroup)
+            else if (o is XmlSchemaGroup xmlSchemaGroup)
             {
-                return ((XmlSchemaGroup)o).QualifiedName;
+                return xmlSchemaGroup.QualifiedName;
             }
-            else if (o is XmlSchemaGroupRef)
+            else if (o is XmlSchemaGroupRef xmlSchemaGroupRef)
             {
-                return ((XmlSchemaGroupRef)o).RefName;
+                return xmlSchemaGroupRef.RefName;
             }
-            else if (o is XmlSchemaNotation)
+            else if (o is XmlSchemaNotation xmlSchemaNotation)
             {
-                return ((XmlSchemaNotation)o).QualifiedName;
+                return xmlSchemaNotation.QualifiedName;
             }
             else if (o is XmlSchemaSequence s)
             {
@@ -113,13 +113,13 @@ namespace System.Xml.Serialization
                     return new XmlQualifiedName(".choice", Namespace(o));
                 return NameOf(c.Items);
             }
-            else if (o is XmlSchemaAny)
+            else if (o is XmlSchemaAny xmlSchemaAny)
             {
-                return new XmlQualifiedName("*", SchemaObjectWriter.ToString(((XmlSchemaAny)o).NamespaceList));
+                return new XmlQualifiedName("*", SchemaObjectWriter.ToString(xmlSchemaAny.NamespaceList));
             }
-            else if (o is XmlSchemaIdentityConstraint)
+            else if (o is XmlSchemaIdentityConstraint xmlSchemaIdentityConstraint)
             {
-                return ((XmlSchemaIdentityConstraint)o).QualifiedName;
+                return xmlSchemaIdentityConstraint.QualifiedName;
             }
             return new XmlQualifiedName("?", Namespace(o));
         }
@@ -138,7 +138,7 @@ namespace System.Xml.Serialization
 
         internal static string? Namespace(XmlSchemaObject? o)
         {
-            while (o != null && !(o is XmlSchema))
+            while (o != null && o is not XmlSchema)
             {
                 o = o.Parent;
             }
@@ -302,7 +302,7 @@ namespace System.Xml.Serialization
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             WriteAttribute(@"default", @"", ((string?)o.@DefaultValue));
             WriteAttribute(@"fixed", @"", ((string?)o.@FixedValue));
-            if (o.Parent != null && !(o.Parent is XmlSchema))
+            if (o.Parent != null && o.Parent is not XmlSchema)
             {
                 if (o.QualifiedName != null && !o.QualifiedName.IsEmpty && !string.IsNullOrEmpty(o.QualifiedName.Namespace))
                 {
@@ -500,13 +500,13 @@ namespace System.Xml.Serialization
                 for (int ia = 0; ia < a.Count; ia++)
                 {
                     XmlSchemaObject ai = (XmlSchemaObject)a[ia];
-                    if (ai is XmlSchemaAppInfo)
+                    if (ai is XmlSchemaAppInfo xmlSchemaAppInfo)
                     {
-                        Write7_XmlSchemaAppInfo((XmlSchemaAppInfo)ai);
+                        Write7_XmlSchemaAppInfo(xmlSchemaAppInfo);
                     }
-                    else if (ai is XmlSchemaDocumentation)
+                    else if (ai is XmlSchemaDocumentation xmlSchemaDocumentation)
                     {
-                        Write6_XmlSchemaDocumentation((XmlSchemaDocumentation)ai);
+                        Write6_XmlSchemaDocumentation(xmlSchemaDocumentation);
                     }
                 }
             }
@@ -562,17 +562,17 @@ namespace System.Xml.Serialization
             WriteAttribute(@"name", @"", ((string?)o.@Name));
             WriteAttribute(@"final", @"", Write11_XmlSchemaDerivationMethod(o.FinalResolved));
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            if (o.@Content is XmlSchemaSimpleTypeUnion)
+            if (o.@Content is XmlSchemaSimpleTypeUnion xmlSchemaSimpleTypeUnion)
             {
-                Write12_XmlSchemaSimpleTypeUnion((XmlSchemaSimpleTypeUnion)o.@Content);
+                Write12_XmlSchemaSimpleTypeUnion(xmlSchemaSimpleTypeUnion);
             }
-            else if (o.@Content is XmlSchemaSimpleTypeRestriction)
+            else if (o.@Content is XmlSchemaSimpleTypeRestriction xmlSchemaSimpleTypeRestriction)
             {
-                Write15_XmlSchemaSimpleTypeRestriction((XmlSchemaSimpleTypeRestriction)o.@Content);
+                Write15_XmlSchemaSimpleTypeRestriction(xmlSchemaSimpleTypeRestriction);
             }
-            else if (o.@Content is XmlSchemaSimpleTypeList)
+            else if (o.@Content is XmlSchemaSimpleTypeList xmlSchemaSimpleTypeList)
             {
-                Write14_XmlSchemaSimpleTypeList((XmlSchemaSimpleTypeList)o.@Content);
+                Write14_XmlSchemaSimpleTypeList(xmlSchemaSimpleTypeList);
             }
             WriteEndElement();
         }
@@ -815,29 +815,29 @@ namespace System.Xml.Serialization
             }
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            if (o.@ContentModel is XmlSchemaComplexContent)
+            if (o.@ContentModel is XmlSchemaComplexContent xmlSchemaComplexContent)
             {
-                Write41_XmlSchemaComplexContent((XmlSchemaComplexContent)o.@ContentModel);
+                Write41_XmlSchemaComplexContent(xmlSchemaComplexContent);
             }
-            else if (o.@ContentModel is XmlSchemaSimpleContent)
+            else if (o.@ContentModel is XmlSchemaSimpleContent xmlSchemaSimpleContent)
             {
-                Write36_XmlSchemaSimpleContent((XmlSchemaSimpleContent)o.@ContentModel);
+                Write36_XmlSchemaSimpleContent(xmlSchemaSimpleContent);
             }
-            if (o.@Particle is XmlSchemaSequence)
+            if (o.@Particle is XmlSchemaSequence xmlSchemaSequence)
             {
-                Write54_XmlSchemaSequence((XmlSchemaSequence)o.@Particle);
+                Write54_XmlSchemaSequence(xmlSchemaSequence);
             }
-            else if (o.@Particle is XmlSchemaGroupRef)
+            else if (o.@Particle is XmlSchemaGroupRef xmlSchemaGroupRef)
             {
-                Write55_XmlSchemaGroupRef((XmlSchemaGroupRef)o.@Particle);
+                Write55_XmlSchemaGroupRef(xmlSchemaGroupRef);
             }
-            else if (o.@Particle is XmlSchemaChoice)
+            else if (o.@Particle is XmlSchemaChoice xmlSchemaChoice)
             {
-                Write52_XmlSchemaChoice((XmlSchemaChoice)o.@Particle);
+                Write52_XmlSchemaChoice(xmlSchemaChoice);
             }
-            else if (o.@Particle is XmlSchemaAll)
+            else if (o.@Particle is XmlSchemaAll xmlSchemaAll)
             {
-                Write43_XmlSchemaAll((XmlSchemaAll)o.@Particle);
+                Write43_XmlSchemaAll(xmlSchemaAll);
             }
             WriteSortedItems(o.Attributes);
             Write33_XmlSchemaAnyAttribute((XmlSchemaAnyAttribute?)o.@AnyAttribute);
@@ -852,13 +852,13 @@ namespace System.Xml.Serialization
             WriteAttribute(@"id", @"", ((string?)o.@Id));
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            if (o.@Content is XmlSchemaSimpleContentRestriction)
+            if (o.@Content is XmlSchemaSimpleContentRestriction xmlSchemaSimpleContentRestriction)
             {
-                Write40_XmlSchemaSimpleContentRestriction((XmlSchemaSimpleContentRestriction)o.@Content);
+                Write40_XmlSchemaSimpleContentRestriction(xmlSchemaSimpleContentRestriction);
             }
-            else if (o.@Content is XmlSchemaSimpleContentExtension)
+            else if (o.@Content is XmlSchemaSimpleContentExtension xmlSchemaSimpleContentExtension)
             {
-                Write38_XmlSchemaSimpleContentExtension((XmlSchemaSimpleContentExtension)o.@Content);
+                Write38_XmlSchemaSimpleContentExtension(xmlSchemaSimpleContentExtension);
             }
             WriteEndElement();
         }
@@ -907,13 +907,13 @@ namespace System.Xml.Serialization
             WriteAttribute(@"mixed", @"", XmlConvert.ToString((bool)((bool)o.@IsMixed)));
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            if (o.@Content is XmlSchemaComplexContentRestriction)
+            if (o.@Content is XmlSchemaComplexContentRestriction xmlSchemaComplexContentRestriction)
             {
-                Write56_XmlSchemaComplexContentRestriction((XmlSchemaComplexContentRestriction)o.@Content);
+                Write56_XmlSchemaComplexContentRestriction(xmlSchemaComplexContentRestriction);
             }
-            else if (o.@Content is XmlSchemaComplexContentExtension)
+            else if (o.@Content is XmlSchemaComplexContentExtension xmlSchemaComplexContentExtension)
             {
-                Write42_XmlSchemaComplexContentExtension((XmlSchemaComplexContentExtension)o.@Content);
+                Write42_XmlSchemaComplexContentExtension(xmlSchemaComplexContentExtension);
             }
             WriteEndElement();
         }
@@ -930,21 +930,21 @@ namespace System.Xml.Serialization
                 WriteAttribute(@"base", @"", o.@BaseTypeName);
             }
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            if (o.@Particle is XmlSchemaSequence)
+            if (o.@Particle is XmlSchemaSequence xmlSchemaSequence)
             {
-                Write54_XmlSchemaSequence((XmlSchemaSequence)o.@Particle);
+                Write54_XmlSchemaSequence(xmlSchemaSequence);
             }
-            else if (o.@Particle is XmlSchemaGroupRef)
+            else if (o.@Particle is XmlSchemaGroupRef xmlSchemaGroupRef)
             {
-                Write55_XmlSchemaGroupRef((XmlSchemaGroupRef)o.@Particle);
+                Write55_XmlSchemaGroupRef(xmlSchemaGroupRef);
             }
-            else if (o.@Particle is XmlSchemaChoice)
+            else if (o.@Particle is XmlSchemaChoice xmlSchemaChoice)
             {
-                Write52_XmlSchemaChoice((XmlSchemaChoice)o.@Particle);
+                Write52_XmlSchemaChoice(xmlSchemaChoice);
             }
-            else if (o.@Particle is XmlSchemaAll)
+            else if (o.@Particle is XmlSchemaAll xmlSchemaAll)
             {
-                Write43_XmlSchemaAll((XmlSchemaAll)o.@Particle);
+                Write43_XmlSchemaAll(xmlSchemaAll);
             }
             WriteSortedItems(o.Attributes);
             Write33_XmlSchemaAnyAttribute((XmlSchemaAnyAttribute?)o.@AnyAttribute);
@@ -980,7 +980,7 @@ namespace System.Xml.Serialization
             WriteAttribute(@"default", @"", o.DefaultValue);
             WriteAttribute(@"final", @"", Write11_XmlSchemaDerivationMethod(o.FinalResolved));
             WriteAttribute(@"fixed", @"", o.FixedValue);
-            if (o.Parent != null && !(o.Parent is XmlSchema))
+            if (o.Parent != null && o.Parent is not XmlSchema)
             {
                 if (o.QualifiedName != null && !o.QualifiedName.IsEmpty && !string.IsNullOrEmpty(o.QualifiedName.Namespace))
                 {
@@ -1014,13 +1014,13 @@ namespace System.Xml.Serialization
 
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation(o.Annotation);
-            if (o.SchemaType is XmlSchemaComplexType)
+            if (o.SchemaType is XmlSchemaComplexType xmlSchemaComplexType)
             {
-                Write35_XmlSchemaComplexType((XmlSchemaComplexType)o.SchemaType);
+                Write35_XmlSchemaComplexType(xmlSchemaComplexType);
             }
-            else if (o.SchemaType is XmlSchemaSimpleType)
+            else if (o.SchemaType is XmlSchemaSimpleType xmlSchemaSimpleType)
             {
-                Write9_XmlSchemaSimpleType((XmlSchemaSimpleType)o.SchemaType);
+                Write9_XmlSchemaSimpleType(xmlSchemaSimpleType);
             }
             WriteSortedItems(o.Constraints);
             WriteEndElement();
@@ -1172,25 +1172,25 @@ namespace System.Xml.Serialization
                 for (int ia = 0; ia < a.Count; ia++)
                 {
                     XmlSchemaObject ai = (XmlSchemaObject)a[ia];
-                    if (ai is XmlSchemaAny)
+                    if (ai is XmlSchemaAny xmlSchemaAny)
                     {
-                        Write53_XmlSchemaAny((XmlSchemaAny)ai);
+                        Write53_XmlSchemaAny(xmlSchemaAny);
                     }
-                    else if (ai is XmlSchemaSequence)
+                    else if (ai is XmlSchemaSequence xmlSchemaSequence)
                     {
-                        Write54_XmlSchemaSequence((XmlSchemaSequence)ai);
+                        Write54_XmlSchemaSequence(xmlSchemaSequence);
                     }
-                    else if (ai is XmlSchemaChoice)
+                    else if (ai is XmlSchemaChoice xmlSchemaChoice)
                     {
-                        Write52_XmlSchemaChoice((XmlSchemaChoice)ai);
+                        Write52_XmlSchemaChoice(xmlSchemaChoice);
                     }
-                    else if (ai is XmlSchemaElement)
+                    else if (ai is XmlSchemaElement xmlSchemaElement)
                     {
-                        Write46_XmlSchemaElement((XmlSchemaElement)ai);
+                        Write46_XmlSchemaElement(xmlSchemaElement);
                     }
-                    else if (ai is XmlSchemaGroupRef)
+                    else if (ai is XmlSchemaGroupRef xmlSchemaGroupRef)
                     {
-                        Write55_XmlSchemaGroupRef((XmlSchemaGroupRef)ai);
+                        Write55_XmlSchemaGroupRef(xmlSchemaGroupRef);
                     }
                 }
             }
@@ -1229,21 +1229,21 @@ namespace System.Xml.Serialization
             }
 
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            if (o.@Particle is XmlSchemaSequence)
+            if (o.@Particle is XmlSchemaSequence xmlSchemaSequence)
             {
-                Write54_XmlSchemaSequence((XmlSchemaSequence)o.@Particle);
+                Write54_XmlSchemaSequence(xmlSchemaSequence);
             }
-            else if (o.@Particle is XmlSchemaGroupRef)
+            else if (o.@Particle is XmlSchemaGroupRef xmlSchemaGroupRef)
             {
-                Write55_XmlSchemaGroupRef((XmlSchemaGroupRef)o.@Particle);
+                Write55_XmlSchemaGroupRef(xmlSchemaGroupRef);
             }
-            else if (o.@Particle is XmlSchemaChoice)
+            else if (o.@Particle is XmlSchemaChoice xmlSchemaChoice)
             {
-                Write52_XmlSchemaChoice((XmlSchemaChoice)o.@Particle);
+                Write52_XmlSchemaChoice(xmlSchemaChoice);
             }
-            else if (o.@Particle is XmlSchemaAll)
+            else if (o.@Particle is XmlSchemaAll xmlSchemaAll)
             {
-                Write43_XmlSchemaAll((XmlSchemaAll)o.@Particle);
+                Write43_XmlSchemaAll(xmlSchemaAll);
             }
             WriteSortedItems(o.Attributes);
             Write33_XmlSchemaAnyAttribute((XmlSchemaAnyAttribute?)o.@AnyAttribute);
@@ -1259,17 +1259,17 @@ namespace System.Xml.Serialization
             WriteAttribute(@"name", @"", ((string?)o.@Name));
             WriteAttributes((XmlAttribute[]?)o.@UnhandledAttributes);
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation?)o.@Annotation);
-            if (o.@Particle is XmlSchemaSequence)
+            if (o.@Particle is XmlSchemaSequence xmlSchemaSequence)
             {
-                Write54_XmlSchemaSequence((XmlSchemaSequence)o.@Particle);
+                Write54_XmlSchemaSequence(xmlSchemaSequence);
             }
-            else if (o.@Particle is XmlSchemaChoice)
+            else if (o.@Particle is XmlSchemaChoice xmlSchemaChoice)
             {
-                Write52_XmlSchemaChoice((XmlSchemaChoice)o.@Particle);
+                Write52_XmlSchemaChoice(xmlSchemaChoice);
             }
-            else if (o.@Particle is XmlSchemaAll)
+            else if (o.@Particle is XmlSchemaAll xmlSchemaAll)
             {
-                Write43_XmlSchemaAll((XmlSchemaAll)o.@Particle);
+                Write43_XmlSchemaAll(xmlSchemaAll);
             }
             WriteEndElement();
         }

@@ -300,9 +300,9 @@ namespace System.Data.OleDb
 
             int quotedIdentifierCase;
             object? value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_QUOTEDIDENTIFIERCASE);
-            if (value is int)
+            if (value is int num)
             {// not OleDbPropertyStatus
-                quotedIdentifierCase = (int)value;
+                quotedIdentifierCase = num;
             }
             else
             {

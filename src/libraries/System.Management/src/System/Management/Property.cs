@@ -565,9 +565,9 @@ namespace System.Management
                             break;
 
                         case CimType.Object:
-                            if (val is ManagementBaseObject)
+                            if (val is ManagementBaseObject managementBaseObject)
                             {
-                                wmiValue = Marshal.GetObjectForIUnknown(((ManagementBaseObject)val).wbemObject);
+                                wmiValue = Marshal.GetObjectForIUnknown(managementBaseObject.wbemObject);
                             }
                             else
                             {
@@ -799,10 +799,10 @@ namespace System.Management
                     else
                     {
                         // Check for an embedded object
-                        if (val is ManagementBaseObject)
+                        if (val is ManagementBaseObject managementBaseObject)
                         {
                             type = CimType.Object;
-                            wmiValue = Marshal.GetObjectForIUnknown(((ManagementBaseObject)val).wbemObject);
+                            wmiValue = Marshal.GetObjectForIUnknown(managementBaseObject.wbemObject);
                         }
                     }
                 }

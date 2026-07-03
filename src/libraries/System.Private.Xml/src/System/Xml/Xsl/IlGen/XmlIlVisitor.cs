@@ -298,7 +298,7 @@ namespace System.Xml.Xsl.IlGen
                 return null!;
 
             // DebugInfo: Sequence point just before generating code for this expression
-            if (_qil.IsDebug && nd.SourceLine != null && !(nd is QilIterator))
+            if (_qil.IsDebug && nd.SourceLine != null && nd is not QilIterator)
                 _helper.DebugSequencePoint(nd.SourceLine);
 
             // Expressions are constructed using one of several possible methods

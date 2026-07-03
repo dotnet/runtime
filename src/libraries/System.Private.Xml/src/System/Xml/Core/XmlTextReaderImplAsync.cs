@@ -1237,7 +1237,7 @@ namespace System.Xml
                                 // check for invalid encoding switches to default encoding
                                 string encodingName = _ps.encoding!.WebName;
                                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
-                                     encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
+                                     encodingName != "utf-16BE" && _ps.encoding is not Ucs4Encoding)
                                 {
                                     Throw(SR.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
                                 }
@@ -1450,7 +1450,7 @@ namespace System.Xml
                 // check for invalid encoding switches to default encoding
                 string encodingName = _ps.encoding!.WebName;
                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
-                    encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
+                    encodingName != "utf-16BE" && _ps.encoding is not Ucs4Encoding)
                 {
                     Throw(SR.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
                 }

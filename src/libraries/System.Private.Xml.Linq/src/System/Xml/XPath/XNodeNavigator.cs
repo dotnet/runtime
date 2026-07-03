@@ -872,8 +872,8 @@ namespace System.Xml.XPath
             {
                 return EvaluateIterator<T>(iterator);
             }
-            if (!(result is T)) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedEvaluation, result.GetType()));
-            return (T)result;
+            if (result is not T t) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedEvaluation, result.GetType()));
+            return t;
         }
 
         private static IEnumerable<T> EvaluateIterator<T>(XPathNodeIterator result)
@@ -882,8 +882,8 @@ namespace System.Xml.XPath
             {
                 Debug.Assert(navigator.UnderlyingObject != null);
                 object r = navigator.UnderlyingObject;
-                if (!(r is T)) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedEvaluation, r.GetType()));
-                yield return (T)r;
+                if (r is not T t2) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedEvaluation, r.GetType()));
+                yield return t2;
                 XText? t = r as XText;
                 if (t != null && t.GetParent() != null)
                 {

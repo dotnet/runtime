@@ -44,9 +44,9 @@ namespace System.ServiceModel.Syndication
         [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public void Add(object extension)
         {
-            if (extension is SyndicationElementExtension)
+            if (extension is SyndicationElementExtension syndicationElementExtension)
             {
-                base.Add((SyndicationElementExtension)extension);
+                base.Add(syndicationElementExtension);
             }
             else
             {

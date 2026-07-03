@@ -19,8 +19,8 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 object returnValue = InnerList[index]!;
 
-                if (returnValue is Exception)
-                    throw (Exception)returnValue;
+                if (returnValue is Exception exception)
+                    throw exception;
                 else
                     return (string)returnValue;
             }

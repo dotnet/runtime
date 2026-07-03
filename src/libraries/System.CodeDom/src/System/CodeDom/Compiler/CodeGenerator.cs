@@ -26,13 +26,13 @@ namespace System.CodeDom.Compiler
 
         protected string CurrentMemberName => _currentMember != null ? _currentMember.Name : "<% unknown %>";
 
-        protected bool IsCurrentInterface => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
+        protected bool IsCurrentInterface => _currentClass != null && _currentClass is not CodeTypeDelegate ? _currentClass.IsInterface : false;
 
-        protected bool IsCurrentClass => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsClass : false;
+        protected bool IsCurrentClass => _currentClass != null && _currentClass is not CodeTypeDelegate ? _currentClass.IsClass : false;
 
-        protected bool IsCurrentStruct => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsStruct : false;
+        protected bool IsCurrentStruct => _currentClass != null && _currentClass is not CodeTypeDelegate ? _currentClass.IsStruct : false;
 
-        protected bool IsCurrentEnum => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsEnum : false;
+        protected bool IsCurrentEnum => _currentClass != null && _currentClass is not CodeTypeDelegate ? _currentClass.IsEnum : false;
 
         protected bool IsCurrentDelegate => _currentClass != null && _currentClass is CodeTypeDelegate;
 
@@ -111,9 +111,9 @@ namespace System.CodeDom.Compiler
                 Output.WriteLine();
             }
 
-            if (member is CodeTypeDeclaration)
+            if (member is CodeTypeDeclaration codeTypeDeclaration)
             {
-                ((ICodeGenerator)this).GenerateCodeFromType((CodeTypeDeclaration)member, _output.InnerWriter, _options);
+                ((ICodeGenerator)this).GenerateCodeFromType(codeTypeDeclaration, _output.InnerWriter, _options);
 
                 // Nested types clobber the current class, so reset it.
                 _currentClass = declaredType;
@@ -134,38 +134,38 @@ namespace System.CodeDom.Compiler
                 GenerateLinePragmaStart(member.LinePragma);
             }
 
-            if (member is CodeMemberField)
+            if (member is CodeMemberField codeMemberField)
             {
-                GenerateField((CodeMemberField)member);
+                GenerateField(codeMemberField);
             }
-            else if (member is CodeMemberProperty)
+            else if (member is CodeMemberProperty codeMemberProperty)
             {
-                GenerateProperty((CodeMemberProperty)member, declaredType);
+                GenerateProperty(codeMemberProperty, declaredType);
             }
-            else if (member is CodeMemberMethod)
+            else if (member is CodeMemberMethod codeMemberMethod)
             {
-                if (member is CodeConstructor)
+                if (member is CodeConstructor codeConstructor)
                 {
-                    GenerateConstructor((CodeConstructor)member, declaredType);
+                    GenerateConstructor(codeConstructor, declaredType);
                 }
-                else if (member is CodeTypeConstructor)
+                else if (member is CodeTypeConstructor codeTypeConstructor)
                 {
-                    GenerateTypeConstructor((CodeTypeConstructor)member);
+                    GenerateTypeConstructor(codeTypeConstructor);
                 }
-                else if (member is CodeEntryPointMethod)
+                else if (member is CodeEntryPointMethod codeEntryPointMethod)
                 {
-                    GenerateEntryPointMethod((CodeEntryPointMethod)member, declaredType);
+                    GenerateEntryPointMethod(codeEntryPointMethod, declaredType);
                 }
                 else
                 {
-                    GenerateMethod((CodeMemberMethod)member, declaredType);
+                    GenerateMethod(codeMemberMethod, declaredType);
                 }
             }
-            else if (member is CodeMemberEvent)
+            else if (member is CodeMemberEvent codeMemberEvent)
             {
-                GenerateEvent((CodeMemberEvent)member, declaredType);
+                GenerateEvent(codeMemberEvent, declaredType);
             }
-            else if (member is CodeSnippetTypeMember)
+            else if (member is CodeSnippetTypeMember codeSnippetTypeMember)
             {
                 // Don't indent snippets, in order to preserve the column
                 // information from the original code.  This improves the debugging
@@ -173,7 +173,7 @@ namespace System.CodeDom.Compiler
                 int savedIndent = Indent;
                 Indent = 0;
 
-                GenerateSnippetMember((CodeSnippetTypeMember)member);
+                GenerateSnippetMember(codeSnippetTypeMember);
 
                 // Restore the indent
                 Indent = savedIndent;
@@ -199,7 +199,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeTypeConstructor)
+                if (current is CodeTypeConstructor codeTypeConstructor)
                 {
                     _currentMember = current;
 
@@ -212,7 +212,7 @@ namespace System.CodeDom.Compiler
                         GenerateDirectives(_currentMember.StartDirectives);
                     }
                     GenerateCommentStatements(_currentMember.Comments);
-                    CodeTypeConstructor imp = (CodeTypeConstructor)current;
+                    CodeTypeConstructor imp = codeTypeConstructor;
                     if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
                     GenerateTypeConstructor(imp);
                     if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
@@ -320,9 +320,9 @@ namespace System.CodeDom.Compiler
 
             try
             {
-                if (e is CodeSnippetCompileUnit)
+                if (e is CodeSnippetCompileUnit codeSnippetCompileUnit)
                 {
-                    GenerateSnippetCompileUnit((CodeSnippetCompileUnit)e);
+                    GenerateSnippetCompileUnit(codeSnippetCompileUnit);
                 }
                 else
                 {
@@ -434,7 +434,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeConstructor)
+                if (current is CodeConstructor codeConstructor)
                 {
                     _currentMember = current;
 
@@ -447,7 +447,7 @@ namespace System.CodeDom.Compiler
                         GenerateDirectives(_currentMember.StartDirectives);
                     }
                     GenerateCommentStatements(_currentMember.Comments);
-                    CodeConstructor imp = (CodeConstructor)current;
+                    CodeConstructor imp = codeConstructor;
                     if (imp.LinePragma != null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
@@ -469,7 +469,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeMemberEvent)
+                if (current is CodeMemberEvent codeMemberEvent)
                 {
                     _currentMember = current;
 
@@ -482,7 +482,7 @@ namespace System.CodeDom.Compiler
                         GenerateDirectives(_currentMember.StartDirectives);
                     }
                     GenerateCommentStatements(_currentMember.Comments);
-                    CodeMemberEvent imp = (CodeMemberEvent)current;
+                    CodeMemberEvent imp = codeMemberEvent;
                     if (imp.LinePragma != null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
@@ -502,105 +502,105 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateExpression(CodeExpression e)
         {
-            if (e is CodeArrayCreateExpression)
+            if (e is CodeArrayCreateExpression codeArrayCreateExpression)
             {
-                GenerateArrayCreateExpression((CodeArrayCreateExpression)e);
+                GenerateArrayCreateExpression(codeArrayCreateExpression);
             }
-            else if (e is CodeBaseReferenceExpression)
+            else if (e is CodeBaseReferenceExpression codeBaseReferenceExpression)
             {
-                GenerateBaseReferenceExpression((CodeBaseReferenceExpression)e);
+                GenerateBaseReferenceExpression(codeBaseReferenceExpression);
             }
-            else if (e is CodeBinaryOperatorExpression)
+            else if (e is CodeBinaryOperatorExpression codeBinaryOperatorExpression)
             {
-                GenerateBinaryOperatorExpression((CodeBinaryOperatorExpression)e);
+                GenerateBinaryOperatorExpression(codeBinaryOperatorExpression);
             }
-            else if (e is CodeCastExpression)
+            else if (e is CodeCastExpression codeCastExpression)
             {
-                GenerateCastExpression((CodeCastExpression)e);
+                GenerateCastExpression(codeCastExpression);
             }
-            else if (e is CodeDelegateCreateExpression)
+            else if (e is CodeDelegateCreateExpression codeDelegateCreateExpression)
             {
-                GenerateDelegateCreateExpression((CodeDelegateCreateExpression)e);
+                GenerateDelegateCreateExpression(codeDelegateCreateExpression);
             }
-            else if (e is CodeFieldReferenceExpression)
+            else if (e is CodeFieldReferenceExpression codeFieldReferenceExpression)
             {
-                GenerateFieldReferenceExpression((CodeFieldReferenceExpression)e);
+                GenerateFieldReferenceExpression(codeFieldReferenceExpression);
             }
-            else if (e is CodeArgumentReferenceExpression)
+            else if (e is CodeArgumentReferenceExpression codeArgumentReferenceExpression)
             {
-                GenerateArgumentReferenceExpression((CodeArgumentReferenceExpression)e);
+                GenerateArgumentReferenceExpression(codeArgumentReferenceExpression);
             }
-            else if (e is CodeVariableReferenceExpression)
+            else if (e is CodeVariableReferenceExpression codeVariableReferenceExpression)
             {
-                GenerateVariableReferenceExpression((CodeVariableReferenceExpression)e);
+                GenerateVariableReferenceExpression(codeVariableReferenceExpression);
             }
-            else if (e is CodeIndexerExpression)
+            else if (e is CodeIndexerExpression codeIndexerExpression)
             {
-                GenerateIndexerExpression((CodeIndexerExpression)e);
+                GenerateIndexerExpression(codeIndexerExpression);
             }
-            else if (e is CodeArrayIndexerExpression)
+            else if (e is CodeArrayIndexerExpression codeArrayIndexerExpression)
             {
-                GenerateArrayIndexerExpression((CodeArrayIndexerExpression)e);
+                GenerateArrayIndexerExpression(codeArrayIndexerExpression);
             }
-            else if (e is CodeSnippetExpression)
+            else if (e is CodeSnippetExpression codeSnippetExpression)
             {
-                GenerateSnippetExpression((CodeSnippetExpression)e);
+                GenerateSnippetExpression(codeSnippetExpression);
             }
-            else if (e is CodeMethodInvokeExpression)
+            else if (e is CodeMethodInvokeExpression codeMethodInvokeExpression)
             {
-                GenerateMethodInvokeExpression((CodeMethodInvokeExpression)e);
+                GenerateMethodInvokeExpression(codeMethodInvokeExpression);
             }
-            else if (e is CodeMethodReferenceExpression)
+            else if (e is CodeMethodReferenceExpression codeMethodReferenceExpression)
             {
-                GenerateMethodReferenceExpression((CodeMethodReferenceExpression)e);
+                GenerateMethodReferenceExpression(codeMethodReferenceExpression);
             }
-            else if (e is CodeEventReferenceExpression)
+            else if (e is CodeEventReferenceExpression codeEventReferenceExpression)
             {
-                GenerateEventReferenceExpression((CodeEventReferenceExpression)e);
+                GenerateEventReferenceExpression(codeEventReferenceExpression);
             }
-            else if (e is CodeDelegateInvokeExpression)
+            else if (e is CodeDelegateInvokeExpression codeDelegateInvokeExpression)
             {
-                GenerateDelegateInvokeExpression((CodeDelegateInvokeExpression)e);
+                GenerateDelegateInvokeExpression(codeDelegateInvokeExpression);
             }
-            else if (e is CodeObjectCreateExpression)
+            else if (e is CodeObjectCreateExpression codeObjectCreateExpression)
             {
-                GenerateObjectCreateExpression((CodeObjectCreateExpression)e);
+                GenerateObjectCreateExpression(codeObjectCreateExpression);
             }
-            else if (e is CodeParameterDeclarationExpression)
+            else if (e is CodeParameterDeclarationExpression codeParameterDeclarationExpression)
             {
-                GenerateParameterDeclarationExpression((CodeParameterDeclarationExpression)e);
+                GenerateParameterDeclarationExpression(codeParameterDeclarationExpression);
             }
-            else if (e is CodeDirectionExpression)
+            else if (e is CodeDirectionExpression codeDirectionExpression)
             {
-                GenerateDirectionExpression((CodeDirectionExpression)e);
+                GenerateDirectionExpression(codeDirectionExpression);
             }
-            else if (e is CodePrimitiveExpression)
+            else if (e is CodePrimitiveExpression codePrimitiveExpression)
             {
-                GeneratePrimitiveExpression((CodePrimitiveExpression)e);
+                GeneratePrimitiveExpression(codePrimitiveExpression);
             }
-            else if (e is CodePropertyReferenceExpression)
+            else if (e is CodePropertyReferenceExpression codePropertyReferenceExpression)
             {
-                GeneratePropertyReferenceExpression((CodePropertyReferenceExpression)e);
+                GeneratePropertyReferenceExpression(codePropertyReferenceExpression);
             }
-            else if (e is CodePropertySetValueReferenceExpression)
+            else if (e is CodePropertySetValueReferenceExpression codePropertySetValueReferenceExpression)
             {
-                GeneratePropertySetValueReferenceExpression((CodePropertySetValueReferenceExpression)e);
+                GeneratePropertySetValueReferenceExpression(codePropertySetValueReferenceExpression);
             }
-            else if (e is CodeThisReferenceExpression)
+            else if (e is CodeThisReferenceExpression codeThisReferenceExpression)
             {
-                GenerateThisReferenceExpression((CodeThisReferenceExpression)e);
+                GenerateThisReferenceExpression(codeThisReferenceExpression);
             }
-            else if (e is CodeTypeReferenceExpression)
+            else if (e is CodeTypeReferenceExpression codeTypeReferenceExpression)
             {
-                GenerateTypeReferenceExpression((CodeTypeReferenceExpression)e);
+                GenerateTypeReferenceExpression(codeTypeReferenceExpression);
             }
-            else if (e is CodeTypeOfExpression)
+            else if (e is CodeTypeOfExpression codeTypeOfExpression)
             {
-                GenerateTypeOfExpression((CodeTypeOfExpression)e);
+                GenerateTypeOfExpression(codeTypeOfExpression);
             }
-            else if (e is CodeDefaultValueExpression)
+            else if (e is CodeDefaultValueExpression codeDefaultValueExpression)
             {
-                GenerateDefaultValueExpression((CodeDefaultValueExpression)e);
+                GenerateDefaultValueExpression(codeDefaultValueExpression);
             }
             else
             {
@@ -613,7 +613,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeMemberField)
+                if (current is CodeMemberField codeMemberField)
                 {
                     _currentMember = current;
 
@@ -626,7 +626,7 @@ namespace System.CodeDom.Compiler
                         GenerateDirectives(_currentMember.StartDirectives);
                     }
                     GenerateCommentStatements(_currentMember.Comments);
-                    CodeMemberField imp = (CodeMemberField)current;
+                    CodeMemberField imp = codeMemberField;
                     if (imp.LinePragma != null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
@@ -649,7 +649,7 @@ namespace System.CodeDom.Compiler
             bool hasSnippet = false;
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeSnippetTypeMember)
+                if (current is CodeSnippetTypeMember codeSnippetTypeMember)
                 {
                     hasSnippet = true;
                     _currentMember = current;
@@ -663,7 +663,7 @@ namespace System.CodeDom.Compiler
                         GenerateDirectives(_currentMember.StartDirectives);
                     }
                     GenerateCommentStatements(_currentMember.Comments);
-                    CodeSnippetTypeMember imp = (CodeSnippetTypeMember)current;
+                    CodeSnippetTypeMember imp = codeSnippetTypeMember;
                     if (imp.LinePragma != null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
@@ -725,7 +725,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeMemberMethod && !(current is CodeTypeConstructor) && !(current is CodeConstructor))
+                if (current is CodeMemberMethod && current is not CodeTypeConstructor && current is not CodeConstructor)
                 {
                     _currentMember = current;
 
@@ -743,9 +743,9 @@ namespace System.CodeDom.Compiler
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
                     }
-                    if (current is CodeEntryPointMethod)
+                    if (current is CodeEntryPointMethod codeEntryPointMethod)
                     {
-                        GenerateEntryPointMethod((CodeEntryPointMethod)current, e);
+                        GenerateEntryPointMethod(codeEntryPointMethod, e);
                     }
                     else
                     {
@@ -767,13 +767,13 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeTypeDeclaration)
+                if (current is CodeTypeDeclaration codeTypeDeclaration)
                 {
                     if (_options.BlankLinesBetweenMembers)
                     {
                         Output.WriteLine();
                     }
-                    CodeTypeDeclaration currentClass = (CodeTypeDeclaration)current;
+                    CodeTypeDeclaration currentClass = codeTypeDeclaration;
                     ((ICodeGenerator)this).GenerateCodeFromType(currentClass, _output.InnerWriter, _options);
                 }
             }
@@ -823,7 +823,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeTypeMember current in e.Members)
             {
-                if (current is CodeMemberProperty)
+                if (current is CodeMemberProperty codeMemberProperty)
                 {
                     _currentMember = current;
 
@@ -836,7 +836,7 @@ namespace System.CodeDom.Compiler
                         GenerateDirectives(_currentMember.StartDirectives);
                     }
                     GenerateCommentStatements(_currentMember.Comments);
-                    CodeMemberProperty imp = (CodeMemberProperty)current;
+                    CodeMemberProperty imp = codeMemberProperty;
                     if (imp.LinePragma != null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
@@ -868,39 +868,39 @@ namespace System.CodeDom.Compiler
                 GenerateLinePragmaStart(e.LinePragma);
             }
 
-            if (e is CodeCommentStatement)
+            if (e is CodeCommentStatement codeCommentStatement)
             {
-                GenerateCommentStatement((CodeCommentStatement)e);
+                GenerateCommentStatement(codeCommentStatement);
             }
-            else if (e is CodeMethodReturnStatement)
+            else if (e is CodeMethodReturnStatement codeMethodReturnStatement)
             {
-                GenerateMethodReturnStatement((CodeMethodReturnStatement)e);
+                GenerateMethodReturnStatement(codeMethodReturnStatement);
             }
-            else if (e is CodeConditionStatement)
+            else if (e is CodeConditionStatement codeConditionStatement)
             {
-                GenerateConditionStatement((CodeConditionStatement)e);
+                GenerateConditionStatement(codeConditionStatement);
             }
-            else if (e is CodeTryCatchFinallyStatement)
+            else if (e is CodeTryCatchFinallyStatement codeTryCatchFinallyStatement)
             {
-                GenerateTryCatchFinallyStatement((CodeTryCatchFinallyStatement)e);
+                GenerateTryCatchFinallyStatement(codeTryCatchFinallyStatement);
             }
-            else if (e is CodeAssignStatement)
+            else if (e is CodeAssignStatement codeAssignStatement)
             {
-                GenerateAssignStatement((CodeAssignStatement)e);
+                GenerateAssignStatement(codeAssignStatement);
             }
-            else if (e is CodeExpressionStatement)
+            else if (e is CodeExpressionStatement codeExpressionStatement)
             {
-                GenerateExpressionStatement((CodeExpressionStatement)e);
+                GenerateExpressionStatement(codeExpressionStatement);
             }
-            else if (e is CodeIterationStatement)
+            else if (e is CodeIterationStatement codeIterationStatement)
             {
-                GenerateIterationStatement((CodeIterationStatement)e);
+                GenerateIterationStatement(codeIterationStatement);
             }
-            else if (e is CodeThrowExceptionStatement)
+            else if (e is CodeThrowExceptionStatement codeThrowExceptionStatement)
             {
-                GenerateThrowExceptionStatement((CodeThrowExceptionStatement)e);
+                GenerateThrowExceptionStatement(codeThrowExceptionStatement);
             }
-            else if (e is CodeSnippetStatement)
+            else if (e is CodeSnippetStatement codeSnippetStatement)
             {
                 // Don't indent snippet statements, in order to preserve the column
                 // information from the original code.  This improves the debugging
@@ -908,30 +908,30 @@ namespace System.CodeDom.Compiler
                 int savedIndent = Indent;
                 Indent = 0;
 
-                GenerateSnippetStatement((CodeSnippetStatement)e);
+                GenerateSnippetStatement(codeSnippetStatement);
 
                 // Restore the indent
                 Indent = savedIndent;
             }
-            else if (e is CodeVariableDeclarationStatement)
+            else if (e is CodeVariableDeclarationStatement codeVariableDeclarationStatement)
             {
-                GenerateVariableDeclarationStatement((CodeVariableDeclarationStatement)e);
+                GenerateVariableDeclarationStatement(codeVariableDeclarationStatement);
             }
-            else if (e is CodeAttachEventStatement)
+            else if (e is CodeAttachEventStatement codeAttachEventStatement)
             {
-                GenerateAttachEventStatement((CodeAttachEventStatement)e);
+                GenerateAttachEventStatement(codeAttachEventStatement);
             }
-            else if (e is CodeRemoveEventStatement)
+            else if (e is CodeRemoveEventStatement codeRemoveEventStatement)
             {
-                GenerateRemoveEventStatement((CodeRemoveEventStatement)e);
+                GenerateRemoveEventStatement(codeRemoveEventStatement);
             }
-            else if (e is CodeGotoStatement)
+            else if (e is CodeGotoStatement codeGotoStatement)
             {
-                GenerateGotoStatement((CodeGotoStatement)e);
+                GenerateGotoStatement(codeGotoStatement);
             }
-            else if (e is CodeLabeledStatement)
+            else if (e is CodeLabeledStatement codeLabeledStatement)
             {
-                GenerateLabeledStatement((CodeLabeledStatement)e);
+                GenerateLabeledStatement(codeLabeledStatement);
             }
             else
             {
@@ -1374,45 +1374,45 @@ namespace System.CodeDom.Compiler
             {
                 Output.Write(NullToken);
             }
-            else if (e.Value is string)
+            else if (e.Value is string str)
             {
-                Output.Write(QuoteSnippetString((string)e.Value));
+                Output.Write(QuoteSnippetString(str));
             }
             else if (e.Value is char)
             {
                 Output.Write("'" + e.Value.ToString() + "'");
             }
-            else if (e.Value is byte)
+            else if (e.Value is byte b2)
             {
-                Output.Write(((byte)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(b2.ToString(CultureInfo.InvariantCulture));
             }
-            else if (e.Value is short)
+            else if (e.Value is short num3)
             {
-                Output.Write(((short)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(num3.ToString(CultureInfo.InvariantCulture));
             }
-            else if (e.Value is int)
+            else if (e.Value is int num2)
             {
-                Output.Write(((int)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(num2.ToString(CultureInfo.InvariantCulture));
             }
-            else if (e.Value is long)
+            else if (e.Value is long num)
             {
-                Output.Write(((long)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(num.ToString(CultureInfo.InvariantCulture));
             }
-            else if (e.Value is float)
+            else if (e.Value is float f)
             {
-                GenerateSingleFloatValue((float)e.Value);
+                GenerateSingleFloatValue(f);
             }
-            else if (e.Value is double)
+            else if (e.Value is double d2)
             {
-                GenerateDoubleValue((double)e.Value);
+                GenerateDoubleValue(d2);
             }
-            else if (e.Value is decimal)
+            else if (e.Value is decimal d)
             {
-                GenerateDecimalValue((decimal)e.Value);
+                GenerateDecimalValue(d);
             }
-            else if (e.Value is bool)
+            else if (e.Value is bool b)
             {
-                if ((bool)e.Value)
+                if (b)
                 {
                     Output.Write("true");
                 }

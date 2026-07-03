@@ -1033,13 +1033,13 @@ namespace System.Runtime.Serialization.Json
                 ThrowClosed();
             }
 
-            if (value is Array)
+            if (value is Array array)
             {
-                WriteValue((Array)value);
+                WriteValue(array);
             }
-            else if (value is IStreamProvider)
+            else if (value is IStreamProvider streamProvider)
             {
-                WriteValue((IStreamProvider)value);
+                WriteValue(streamProvider);
             }
             else
             {
@@ -1375,57 +1375,57 @@ namespace System.Runtime.Serialization.Json
                 ThrowClosed();
             }
 
-            if (value is ulong)
+            if (value is ulong num3)
             {
-                WriteValue((ulong)value);
+                WriteValue(num3);
             }
-            else if (value is string)
+            else if (value is string str)
             {
-                WriteValue((string)value);
+                WriteValue(str);
             }
-            else if (value is int)
+            else if (value is int num2)
             {
-                WriteValue((int)value);
+                WriteValue(num2);
             }
-            else if (value is long)
+            else if (value is long num)
             {
-                WriteValue((long)value);
+                WriteValue(num);
             }
-            else if (value is bool)
+            else if (value is bool b)
             {
-                WriteValue((bool)value);
+                WriteValue(b);
             }
-            else if (value is double)
+            else if (value is double d2)
             {
-                WriteValue((double)value);
+                WriteValue(d2);
             }
-            else if (value is DateTime)
+            else if (value is DateTime dateTime)
             {
-                WriteValue((DateTime)value);
+                WriteValue(dateTime);
             }
-            else if (value is float)
+            else if (value is float f)
             {
-                WriteValue((float)value);
+                WriteValue(f);
             }
-            else if (value is decimal)
+            else if (value is decimal d)
             {
-                WriteValue((decimal)value);
+                WriteValue(d);
             }
-            else if (value is XmlDictionaryString)
+            else if (value is XmlDictionaryString xmlDictionaryString)
             {
-                WriteValue((XmlDictionaryString)value);
+                WriteValue(xmlDictionaryString);
             }
-            else if (value is UniqueId)
+            else if (value is UniqueId uniqueId)
             {
-                WriteValue((UniqueId)value);
+                WriteValue(uniqueId);
             }
-            else if (value is Guid)
+            else if (value is Guid guid)
             {
-                WriteValue((Guid)value);
+                WriteValue(guid);
             }
-            else if (value is TimeSpan)
+            else if (value is TimeSpan timeSpan)
             {
-                WriteValue((TimeSpan)value);
+                WriteValue(timeSpan);
             }
             else if (value.GetType().IsArray)
             {

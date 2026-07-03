@@ -56,9 +56,9 @@ namespace System
             {
                 return 1;
             }
-            if (value is ushort)
+            if (value is ushort num)
             {
-                return (int)m_value - (int)(((ushort)value).m_value);
+                return (int)m_value - (int)(num.m_value);
             }
             throw new ArgumentException(SR.Arg_MustBeUInt16);
         }
@@ -70,11 +70,11 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is ushort))
+            if (obj is not ushort num)
             {
                 return false;
             }
-            return m_value == ((ushort)obj).m_value;
+            return m_value == num.m_value;
         }
 
         [NonVersionable]

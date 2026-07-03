@@ -446,9 +446,9 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj is ReadOnlyMemory<T>)
+            if (obj is ReadOnlyMemory<T> readOnlyMemory)
             {
-                return ((ReadOnlyMemory<T>)obj).Equals(this);
+                return readOnlyMemory.Equals(this);
             }
             else if (obj is Memory<T> memory)
             {

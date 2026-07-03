@@ -60,9 +60,9 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static DataContract ProcessDataContract(DataContract contract, ExportContext context, MemberInfo memberNode)
         {
-            if (contract is ClassDataContract)
+            if (contract is ClassDataContract classDataContract)
             {
-                return ProcessClassDataContract((ClassDataContract)contract, context, memberNode);
+                return ProcessClassDataContract(classDataContract, context, memberNode);
             }
             throw XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound);
         }

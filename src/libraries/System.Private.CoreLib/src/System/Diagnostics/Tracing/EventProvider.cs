@@ -283,96 +283,96 @@ namespace System.Diagnostics.Tracing
                 dataBuffer += BasicTypeAllocationBufferSize;
                 dataDescriptor->Size = (uint)blobRet.Length;
             }
-            else if (data is IntPtr)
+            else if (data is IntPtr intPtr)
             {
                 dataDescriptor->Size = (uint)sizeof(IntPtr);
                 IntPtr* intptrPtr = (IntPtr*)dataBuffer;
-                *intptrPtr = (IntPtr)data;
+                *intptrPtr = intPtr;
                 dataDescriptor->Ptr = (ulong)intptrPtr;
             }
-            else if (data is int)
+            else if (data is int num6)
             {
                 dataDescriptor->Size = (uint)sizeof(int);
                 int* intptr = (int*)dataBuffer;
-                *intptr = (int)data;
+                *intptr = num6;
                 dataDescriptor->Ptr = (ulong)intptr;
             }
-            else if (data is long)
+            else if (data is long num5)
             {
                 dataDescriptor->Size = (uint)sizeof(long);
                 long* longptr = (long*)dataBuffer;
-                *longptr = (long)data;
+                *longptr = num5;
                 dataDescriptor->Ptr = (ulong)longptr;
             }
-            else if (data is uint)
+            else if (data is uint num4)
             {
                 dataDescriptor->Size = (uint)sizeof(uint);
                 uint* uintptr = (uint*)dataBuffer;
-                *uintptr = (uint)data;
+                *uintptr = num4;
                 dataDescriptor->Ptr = (ulong)uintptr;
             }
-            else if (data is ulong)
+            else if (data is ulong num3)
             {
                 dataDescriptor->Size = (uint)sizeof(ulong);
                 ulong* ulongptr = (ulong*)dataBuffer;
-                *ulongptr = (ulong)data;
+                *ulongptr = num3;
                 dataDescriptor->Ptr = (ulong)ulongptr;
             }
-            else if (data is char)
+            else if (data is char ch)
             {
                 dataDescriptor->Size = (uint)sizeof(char);
                 char* charptr = (char*)dataBuffer;
-                *charptr = (char)data;
+                *charptr = ch;
                 dataDescriptor->Ptr = (ulong)charptr;
             }
-            else if (data is byte)
+            else if (data is byte b2)
             {
                 dataDescriptor->Size = (uint)sizeof(byte);
                 byte* byteptr = (byte*)dataBuffer;
-                *byteptr = (byte)data;
+                *byteptr = b2;
                 dataDescriptor->Ptr = (ulong)byteptr;
             }
-            else if (data is short)
+            else if (data is short num2)
             {
                 dataDescriptor->Size = (uint)sizeof(short);
                 short* shortptr = (short*)dataBuffer;
-                *shortptr = (short)data;
+                *shortptr = num2;
                 dataDescriptor->Ptr = (ulong)shortptr;
             }
-            else if (data is sbyte)
+            else if (data is sbyte sb)
             {
                 dataDescriptor->Size = (uint)sizeof(sbyte);
                 sbyte* sbyteptr = (sbyte*)dataBuffer;
-                *sbyteptr = (sbyte)data;
+                *sbyteptr = sb;
                 dataDescriptor->Ptr = (ulong)sbyteptr;
             }
-            else if (data is ushort)
+            else if (data is ushort num)
             {
                 dataDescriptor->Size = (uint)sizeof(ushort);
                 ushort* ushortptr = (ushort*)dataBuffer;
-                *ushortptr = (ushort)data;
+                *ushortptr = num;
                 dataDescriptor->Ptr = (ulong)ushortptr;
             }
-            else if (data is float)
+            else if (data is float f)
             {
                 dataDescriptor->Size = (uint)sizeof(float);
                 float* floatptr = (float*)dataBuffer;
-                *floatptr = (float)data;
+                *floatptr = f;
                 dataDescriptor->Ptr = (ulong)floatptr;
             }
-            else if (data is double)
+            else if (data is double d2)
             {
                 dataDescriptor->Size = (uint)sizeof(double);
                 double* doubleptr = (double*)dataBuffer;
-                *doubleptr = (double)data;
+                *doubleptr = d2;
                 dataDescriptor->Ptr = (ulong)doubleptr;
             }
-            else if (data is bool)
+            else if (data is bool b)
             {
                 // WIN32 Bool is 4 bytes
                 dataDescriptor->Size = 4;
                 int* intptr = (int*)dataBuffer;
-                if ((bool)data)
+                if (b)
                 {
                     *intptr = 1;
                 }
@@ -382,28 +382,28 @@ namespace System.Diagnostics.Tracing
                 }
                 dataDescriptor->Ptr = (ulong)intptr;
             }
-            else if (data is Guid)
+            else if (data is Guid guid)
             {
                 dataDescriptor->Size = (uint)sizeof(Guid);
                 Guid* guidptr = (Guid*)dataBuffer;
-                *guidptr = (Guid)data;
+                *guidptr = guid;
                 dataDescriptor->Ptr = (ulong)guidptr;
             }
-            else if (data is decimal)
+            else if (data is decimal d)
             {
                 dataDescriptor->Size = (uint)sizeof(decimal);
                 decimal* decimalptr = (decimal*)dataBuffer;
-                *decimalptr = (decimal)data;
+                *decimalptr = d;
                 dataDescriptor->Ptr = (ulong)decimalptr;
             }
-            else if (data is DateTime)
+            else if (data is DateTime dateTime)
             {
                 const long UTCMinTicks = 504911232000000000;
                 long dateTimeTicks = 0;
                 // We cannot translate dates sooner than 1/1/1601 in UTC.
                 // To avoid getting an ArgumentOutOfRangeException we compare with 1/1/1601 DateTime ticks
-                if (((DateTime)data).Ticks > UTCMinTicks)
-                    dateTimeTicks = ((DateTime)data).ToFileTimeUtc();
+                if (dateTime.Ticks > UTCMinTicks)
+                    dateTimeTicks = dateTime.ToFileTimeUtc();
                 dataDescriptor->Size = (uint)sizeof(long);
                 long* longptr = (long*)dataBuffer;
                 *longptr = dateTimeTicks;

@@ -135,8 +135,8 @@ namespace System.DirectoryServices.AccountManagement
                 if (this.current != null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "CurrentAsPrincipal: using current");
-                    if (this.current is DirectoryEntry)
-                        return ADUtils.DirectoryEntryAsPrincipal((DirectoryEntry)this.current, _storeCtx);
+                    if (this.current is DirectoryEntry directoryEntry)
+                        return ADUtils.DirectoryEntryAsPrincipal(directoryEntry, _storeCtx);
                     else
                     {
                         return ADUtils.SearchResultAsPrincipal((SearchResult)this.current, _storeCtx, null);
@@ -744,7 +744,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                if (foreignPrincipal is GroupPrincipal)
+                if (foreignPrincipal is GroupPrincipal groupPrincipal)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextForeign: foreign member is a group");
 
@@ -763,7 +763,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         if (!_groupsVisited.Contains(groupDN) && !_groupsToVisit.Contains(groupDN))
                         {
-                            _foreignGroups.Add((GroupPrincipal)foreignPrincipal);
+                            _foreignGroups.Add(groupPrincipal);
                         }
                         else
                         {

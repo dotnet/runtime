@@ -33,15 +33,15 @@ namespace System.Xml
                     }
                     return new XmlAsyncCheckReaderWithLineInfoNS(reader);
                 }
-                Debug.Assert(!(reader is IXmlSchemaInfo));
+                Debug.Assert(reader is not IXmlSchemaInfo);
                 return new XmlAsyncCheckReaderWithLineInfo(reader);
             }
             else if (reader is IXmlNamespaceResolver)
             {
-                Debug.Assert(!(reader is IXmlSchemaInfo));
+                Debug.Assert(reader is not IXmlSchemaInfo);
                 return new XmlAsyncCheckReaderWithNS(reader);
             }
-            Debug.Assert(!(reader is IXmlSchemaInfo));
+            Debug.Assert(reader is not IXmlSchemaInfo);
             return new XmlAsyncCheckReader(reader);
         }
 

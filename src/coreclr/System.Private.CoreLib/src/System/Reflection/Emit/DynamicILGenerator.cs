@@ -793,21 +793,21 @@ namespace System.Reflection.Emit
             fieldHandle = default;
 
             object handle = m_scope[token] ?? throw new InvalidProgramException();
-            if (handle is RuntimeTypeHandle)
+            if (handle is RuntimeTypeHandle runtimeTypeHandle)
             {
-                typeHandle = ((RuntimeTypeHandle)handle).Value;
+                typeHandle = runtimeTypeHandle.Value;
                 return;
             }
 
-            if (handle is RuntimeMethodHandle)
+            if (handle is RuntimeMethodHandle runtimeMethodHandle)
             {
-                methodHandle = ((RuntimeMethodHandle)handle).Value;
+                methodHandle = runtimeMethodHandle.Value;
                 return;
             }
 
-            if (handle is RuntimeFieldHandle)
+            if (handle is RuntimeFieldHandle runtimeFieldHandle)
             {
-                fieldHandle = ((RuntimeFieldHandle)handle).Value;
+                fieldHandle = runtimeFieldHandle.Value;
                 return;
             }
 

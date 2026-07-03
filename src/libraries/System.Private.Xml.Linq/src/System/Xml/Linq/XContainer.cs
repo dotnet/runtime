@@ -570,7 +570,7 @@ namespace System.Xml.Linq
             {
                 ConvertTextToNode();
                 XText? tn = content as XText;
-                if (tn != null && !(tn is XCData))
+                if (tn != null && tn is not XCData)
                 {
                     tn.Value += s;
                 }
@@ -598,7 +598,7 @@ namespace System.Xml.Linq
                 else
                 {
                     XText? tn = content as XText;
-                    if (tn != null && !(tn is XCData))
+                    if (tn != null && tn is not XCData)
                     {
                         tn.text += s;
                     }
@@ -1369,7 +1369,7 @@ namespace System.Xml.Linq
         [return: NotNullIfNotNull(nameof(content))]
         internal static object? GetContentSnapshot(object? content)
         {
-            if (content is string || !(content is IEnumerable)) return content;
+            if (content is string || content is not IEnumerable) return content;
             List<object?> list = new List<object?>();
             AddContentToList(list, content);
             return list;

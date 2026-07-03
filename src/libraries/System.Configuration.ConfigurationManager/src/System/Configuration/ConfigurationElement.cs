@@ -155,7 +155,7 @@ namespace System.Configuration
                 }
 
                 // If its an invalid value - throw the error now
-                if (o is InvalidPropValue) throw ((InvalidPropValue)o).Error;
+                if (o is InvalidPropValue invalidPropValue) throw invalidPropValue.Error;
 
                 return o;
             }
@@ -1089,7 +1089,7 @@ namespace System.Configuration
                     string xmlValue;
 
                     // If this was an invalid string value and was cached - write it out as is
-                    if (value is InvalidPropValue) xmlValue = ((InvalidPropValue)value).Value;
+                    if (value is InvalidPropValue invalidPropValue) xmlValue = invalidPropValue.Value;
                     else
                     {
                         prop.Validate(value);
@@ -1135,7 +1135,7 @@ namespace System.Configuration
                     ConfigurationProperty prop = props[key];
 
                     // if we are writing a remove and the sub element is not part of the key don't write it.
-                    if ((serializeCollectionKey && !prop.IsKey) || !(value is ConfigurationElement))
+                    if ((serializeCollectionKey && !prop.IsKey) || value is not ConfigurationElement)
                         continue;
 
                     if (((_lockedElementsList != null) && _lockedElementsList.DefinedInParent(key)) ||
@@ -1788,9 +1788,9 @@ namespace System.Configuration
                 // At deserializtion time the per-element validator for collection items will get executed as part of their deserialization logic
                 // However we dont perform validation in the serialization logic ( because at that time the object is unmerged and not all data is present )
                 // so we have to do that validation here.
-                if (elem is ConfigurationElementCollection)
+                if (elem is ConfigurationElementCollection configurationElementCollection)
                 {
-                    IEnumerator it = ((ConfigurationElementCollection)elem).GetElementsEnumerator();
+                    IEnumerator it = configurationElementCollection.GetElementsEnumerator();
                     while (it.MoveNext()) ValidateElement((ConfigurationElement)it.Current, null, true);
                 }
 

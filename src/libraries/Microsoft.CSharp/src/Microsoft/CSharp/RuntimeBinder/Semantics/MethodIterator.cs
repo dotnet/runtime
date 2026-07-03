@@ -65,7 +65,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (_mask == symbmask_t.MASK_MethodSymbol && (
                             0 == (_flags & EXPRFLAG.EXF_CTOR) != !((MethodSymbol)CurrentSymbol).IsConstructor() ||
                             0 == (_flags & EXPRFLAG.EXF_OPERATOR) != !((MethodSymbol)CurrentSymbol).isOperator) ||
-                        _mask == symbmask_t.MASK_PropertySymbol && !(CurrentSymbol is IndexerSymbol))
+                        _mask == symbmask_t.MASK_PropertySymbol && CurrentSymbol is not IndexerSymbol)
                     {
                         // Get the next symbol.
                         return false;

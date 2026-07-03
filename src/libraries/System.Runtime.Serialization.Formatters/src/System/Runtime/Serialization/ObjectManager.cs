@@ -340,7 +340,7 @@ namespace System.Runtime.Serialization
             //If the outermost container isn't an array, we need to grab it.  Otherwise, we just need to hang onto
             //the boxed object that we already grabbed.  We'll assign the boxed object back into the array as the
             //last step.
-            if (!(holder.ObjectValue is Array) && holder.ObjectValue != null)
+            if (holder.ObjectValue is not Array && holder.ObjectValue != null)
             {
                 fixupObj = holder.ObjectValue;
                 Debug.Assert(fixupObj != null, "[ObjectManager.DoValueTypeFixup]FixupObj!=null");
@@ -510,7 +510,7 @@ namespace System.Runtime.Serialization
                                 Debug.Assert(fixupInfo is MemberInfo);
                                 //Fixup the member directly.
                                 MemberInfo tempMember = (MemberInfo)fixupInfo;
-                                if (tempMember is FieldInfo)
+                                if (tempMember is FieldInfo fieldInfo)
                                 {
                                     // If we have a valuetype that's been boxed to an object and requires a fixup,
                                     // there are two possible states:
@@ -523,7 +523,7 @@ namespace System.Runtime.Serialization
                                     // to true when we do this.
                                     if (holder.RequiresValueTypeFixup && holder.ValueTypeFixupPerformed)
                                     {
-                                        if (!DoValueTypeFixup((FieldInfo)tempMember, holder, tempObjectHolder.ObjectValue))
+                                        if (!DoValueTypeFixup(fieldInfo, holder, tempObjectHolder.ObjectValue))
                                         {
                                             throw new SerializationException(SR.Serialization_PartialValueTypeFixup);
                                         }
@@ -667,7 +667,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
             }
-            if (member != null && !(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
+            if (member != null && member is not FieldInfo) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Serialization_UnknownMemberInfo);
             }
@@ -687,9 +687,9 @@ namespace System.Runtime.Serialization
             }
 
             //The object is interested in DeserializationEvents so lets register it.
-            if (obj is IDeserializationCallback)
+            if (obj is IDeserializationCallback deserializationCallback)
             {
-                DeserializationEventHandler d = new DeserializationEventHandler(((IDeserializationCallback)obj).OnDeserialization);
+                DeserializationEventHandler d = new DeserializationEventHandler(deserializationCallback.OnDeserialization);
                 AddOnDeserialization(d);
             }
 
@@ -774,7 +774,7 @@ namespace System.Runtime.Serialization
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            if (!(obj is ISerializable))
+            if (obj is not ISerializable)
             {
                 throw new ArgumentException(SR.Serialization_NotISer);
             }
@@ -861,9 +861,9 @@ namespace System.Runtime.Serialization
             //If our count is 0, we're done and should just return
             if (_fixupCount == 0)
             {
-                if (TopObject is TypeLoadExceptionHolder)
+                if (TopObject is TypeLoadExceptionHolder typeLoadExceptionHolder)
                 {
-                    throw new SerializationException(SR.Format(SR.Serialization_TypeLoadFailure, ((TypeLoadExceptionHolder)TopObject).TypeName));
+                    throw new SerializationException(SR.Format(SR.Serialization_TypeLoadFailure, typeLoadExceptionHolder.TypeName));
                 }
                 return;
             }
@@ -929,7 +929,7 @@ namespace System.Runtime.Serialization
                 throw new ArgumentOutOfRangeException(objectToBeFixed <= 0 ? nameof(objectToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
             }
             ArgumentNullException.ThrowIfNull(member);
-            if (!(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
+            if (member is not FieldInfo) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, member.GetType()));
             }
@@ -1056,9 +1056,9 @@ namespace System.Runtime.Serialization
             _surrogate = surrogate;
             _markForFixupWhenAvailable = false;
 
-            if (obj is TypeLoadExceptionHolder)
+            if (obj is TypeLoadExceptionHolder typeLoadExceptionHolder)
             {
-                _typeLoad = (TypeLoadExceptionHolder)obj;
+                _typeLoad = typeLoadExceptionHolder;
             }
 
             if (idOfContainingObj != 0 && ((field != null && field.FieldType.IsValueType) || arrayIndex != null))
@@ -1327,9 +1327,9 @@ namespace System.Runtime.Serialization
             {
                 _reachable = true;
             }
-            if (obj is TypeLoadExceptionHolder)
+            if (obj is TypeLoadExceptionHolder typeLoadExceptionHolder)
             {
-                _typeLoad = (TypeLoadExceptionHolder)obj;
+                _typeLoad = typeLoadExceptionHolder;
             }
 
             if (_markForFixupWhenAvailable)

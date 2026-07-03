@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.XsltOld
             UnionExpr? union;
             while ((union = query as UnionExpr) != null)
             {
-                Debug.Assert(!(union.qy2 is UnionExpr), "only qy1 can be union");
+                Debug.Assert(union.qy2 is not UnionExpr, "only qy1 can be union");
                 TemplateAction copy = this.CloneWithoutName();
                 compiler.QueryStore.Add(new TheQuery(
                     new CompiledXpathExpr(union.qy2, expr.Expression, false),

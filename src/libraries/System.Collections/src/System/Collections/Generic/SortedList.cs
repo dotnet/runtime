@@ -269,13 +269,13 @@ namespace System.Collections.Generic
             if (default(TValue) != null)    // null is an invalid value for Value types
                 ArgumentNullException.ThrowIfNull(value);
 
-            if (!(key is TKey))
+            if (key is not TKey tKey)
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
 
-            if (!(value is TValue) && value != null)            // null is a valid value for Reference Types
+            if (value is not TValue && value != null)            // null is a valid value for Reference Types
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), nameof(value));
 
-            Add((TKey)key, (TValue)value!);
+            Add(tKey, (TValue)value!);
         }
 
         // Returns the number of entries in this sorted list.

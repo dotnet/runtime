@@ -420,10 +420,10 @@ namespace System
         {
             if (value == null)
                 return 1;
-            if (!(value is decimal))
+            if (value is not decimal d)
                 throw new ArgumentException(SR.Arg_MustBeDecimal);
 
-            decimal other = (decimal)value;
+            decimal other = d;
             return DecCalc.VarDecCmp(in this, in other);
         }
 

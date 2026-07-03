@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization
         internal void SetDeserializedValue(object? obj)
         {
             IDataNode? deserializedDataNode = (_deserializedDataNodes == null || _deserializedDataNodes.Count == 0) ? null : _deserializedDataNodes.Dequeue();
-            if (deserializedDataNode != null && !(obj is IDataNode))
+            if (deserializedDataNode != null && obj is not IDataNode)
             {
                 deserializedDataNode.Value = obj;
                 deserializedDataNode.IsFinalValue = true;

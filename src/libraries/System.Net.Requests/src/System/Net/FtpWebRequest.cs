@@ -1101,10 +1101,10 @@ namespace System.Net
             FtpControlStream? connection = _connection;
             if (_exception == null)
             {
-                if (exception is WebException)
+                if (exception is WebException webException)
                 {
                     EnsureFtpWebResponse();
-                    _exception = new WebException(exception.Message, null, ((WebException)exception).Status, _ftpWebResponse);
+                    _exception = new WebException(exception.Message, null, webException.Status, _ftpWebResponse);
                 }
                 else if (exception is AuthenticationException || exception is SecurityException)
                 {

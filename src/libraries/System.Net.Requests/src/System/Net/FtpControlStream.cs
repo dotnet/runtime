@@ -390,7 +390,7 @@ namespace System.Net
                 // If NetworkStream is a SslStream, then this must be in the async callback
                 // from completing the SSL handshake.
                 // So just let the pipeline continue.
-                if (!(Stream is SslStream))
+                if (Stream is not SslStream)
                 {
                     FtpWebRequest request = (FtpWebRequest)_request!;
 #pragma warning disable SYSLIB0014 // ServicePointManager is obsolete

@@ -103,14 +103,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 InitSiWrite();
             }
-            else if (obj is ISerializable)
+            else if (obj is ISerializable serializable)
             {
                 if (!_objectType.IsSerializable)
                 {
                     throw new SerializationException(SR.Format(SR.Serialization_NonSerType, _objectType.FullName, _objectType.Assembly.FullName));
                 }
                 _si = new SerializationInfo(_objectType, converter);
-                ((ISerializable)obj).GetObjectData(_si, context);
+                serializable.GetObjectData(_si, context);
                 InitSiWrite();
                 CheckTypeForwardedFrom(_cache, _objectType, _binderAssemblyString);
             }
@@ -724,9 +724,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Retrieves the member type from the MemberInfo
         internal Type GetMemberType(MemberInfo objMember)
         {
-            if (objMember is FieldInfo)
+            if (objMember is FieldInfo fieldInfo)
             {
-                return ((FieldInfo)objMember).FieldType;
+                return fieldInfo.FieldType;
             }
 
             throw new SerializationException(SR.Format(SR.Serialization_SerMemberInfo, objMember.GetType()));

@@ -158,9 +158,9 @@ namespace System.Runtime.Serialization
 
             foreach (object item in schema.Includes)
             {
-                if (item is XmlSchemaImport)
+                if (item is XmlSchemaImport xmlSchemaImport)
                 {
-                    if (SchemaHelper.NamespacesEqual(ns, ((XmlSchemaImport)item).Namespace))
+                    if (SchemaHelper.NamespacesEqual(ns, xmlSchemaImport.Namespace))
                         return;
                 }
             }

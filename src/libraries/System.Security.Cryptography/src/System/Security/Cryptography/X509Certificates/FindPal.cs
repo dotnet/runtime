@@ -183,14 +183,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static X509KeyUsageFlags ConfirmedX509KeyUsage(object findValue)
         {
-            if (findValue is X509KeyUsageFlags)
-                return (X509KeyUsageFlags)findValue;
+            if (findValue is X509KeyUsageFlags x509KeyUsageFlags)
+                return x509KeyUsageFlags;
 
-            if (findValue is int)
-                return (X509KeyUsageFlags)(int)findValue;
+            if (findValue is int num)
+                return (X509KeyUsageFlags)num;
 
-            if (findValue is uint)
-                return (X509KeyUsageFlags)(uint)findValue;
+            if (findValue is uint num2)
+                return (X509KeyUsageFlags)num2;
 
             if (findValue is string findValueString)
             {

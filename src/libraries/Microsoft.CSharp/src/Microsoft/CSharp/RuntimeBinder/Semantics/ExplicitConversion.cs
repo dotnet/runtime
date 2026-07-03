@@ -297,7 +297,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CType typeArr = arrayDest.ElementType;
                 CType typeLst = aggSrc.TypeArgsAll[0];
 
-                Debug.Assert(!(typeArr is MethodGroupType));
+                Debug.Assert(typeArr is not MethodGroupType);
                 if (typeArr != typeLst && !CConversions.FExpRefConv(typeArr, typeLst))
                 {
                     return false;
@@ -723,7 +723,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //
                 // * From any pointer-type to sbyte, byte, short, ushort, int, uint, long, or ulong.
 
-                if (!(_typeSrc is PointerType) || aggTypeDest.FundamentalType > FUNDTYPE.FT_LASTINTEGRAL || !aggTypeDest.IsNumericType)
+                if (_typeSrc is not PointerType || aggTypeDest.FundamentalType > FUNDTYPE.FT_LASTINTEGRAL || !aggTypeDest.IsNumericType)
                 {
                     return AggCastResult.Failure;
                 }

@@ -91,10 +91,10 @@ namespace System.Configuration
         {
             if (value != null)
             {
-                if (value is ConfigurationElement)
+                if (value is ConfigurationElement configurationElement)
                 {
                     _containsElement = true;
-                    ((ConfigurationElement)value).AssociateContext(_configRecord);
+                    configurationElement.AssociateContext(_configRecord);
                 }
                 else
                 {

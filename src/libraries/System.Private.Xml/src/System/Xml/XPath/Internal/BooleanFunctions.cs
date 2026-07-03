@@ -60,8 +60,8 @@ namespace MS.Internal.Xml.XPath
             if (str != null)
                 return toBoolean(str);
 
-            if (result is double) return toBoolean((double)result);
-            if (result is bool) return (bool)result;
+            if (result is double d) return toBoolean(d);
+            if (result is bool b) return b;
             Debug.Assert(result is XPathNavigator, "Unknown value type");
             return true;
         }

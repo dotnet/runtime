@@ -48,19 +48,19 @@ namespace System.Security.Cryptography.Xml
         public override void LoadInput(object obj)
         {
             XmlResolver resolver = ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver();
-            if (obj is Stream)
+            if (obj is Stream stream)
             {
-                _cXml = new CanonicalXml((Stream)obj, _includeComments, resolver, BaseURI!);
+                _cXml = new CanonicalXml(stream, _includeComments, resolver, BaseURI!);
                 return;
             }
-            if (obj is XmlDocument)
+            if (obj is XmlDocument xmlDocument)
             {
-                _cXml = new CanonicalXml((XmlDocument)obj, resolver, _includeComments);
+                _cXml = new CanonicalXml(xmlDocument, resolver, _includeComments);
                 return;
             }
-            if (obj is XmlNodeList)
+            if (obj is XmlNodeList xmlNodeList)
             {
-                _cXml = new CanonicalXml((XmlNodeList)obj, resolver, _includeComments);
+                _cXml = new CanonicalXml(xmlNodeList, resolver, _includeComments);
             }
             else
             {

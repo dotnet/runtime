@@ -249,7 +249,7 @@ namespace System.Net.Http
             // For security reasons, we drop the server credential if it is a
             // NetworkCredential.  But we allow credentials in a CredentialCache
             // since they are specifically tied to URI's.
-            if (!(state.ServerCredentials is CredentialCache))
+            if (state.ServerCredentials is not CredentialCache)
             {
                 state.ServerCredentials = null;
             }

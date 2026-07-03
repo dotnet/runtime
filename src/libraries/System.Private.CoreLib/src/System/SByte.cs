@@ -62,11 +62,11 @@ namespace System
             {
                 return 1;
             }
-            if (!(obj is sbyte))
+            if (obj is not sbyte sb)
             {
                 throw new ArgumentException(SR.Arg_MustBeSByte);
             }
-            return m_value - ((sbyte)obj).m_value;
+            return m_value - sb.m_value;
         }
 
         public int CompareTo(sbyte value)
@@ -77,11 +77,11 @@ namespace System
         // Determines whether two Byte objects are equal.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is sbyte))
+            if (obj is not sbyte sb)
             {
                 return false;
             }
-            return m_value == ((sbyte)obj).m_value;
+            return m_value == sb.m_value;
         }
 
         [NonVersionable]

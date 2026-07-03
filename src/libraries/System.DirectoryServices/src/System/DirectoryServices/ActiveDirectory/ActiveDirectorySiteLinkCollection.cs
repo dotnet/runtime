@@ -230,11 +230,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            if (!(value is ActiveDirectorySiteLink))
+            if (value is not ActiveDirectorySiteLink activeDirectorySiteLink)
                 throw new ArgumentException(null, nameof(value));
 
-            if (!((ActiveDirectorySiteLink)value).existing)
-                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, ((ActiveDirectorySiteLink)value).Name));
+            if (!activeDirectorySiteLink.existing)
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, activeDirectorySiteLink.Name));
         }
     }
 }

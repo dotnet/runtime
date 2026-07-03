@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.Runtime
         protected int CompareToEmpty(object? obj)
         {
             XmlEmptySortKey? that = obj as XmlEmptySortKey;
-            Debug.Assert(that != null && !(this is XmlEmptySortKey));
+            Debug.Assert(that != null && this is not XmlEmptySortKey);
             return that.IsEmptyGreatest ? -1 : 1;
         }
 

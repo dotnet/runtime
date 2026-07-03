@@ -274,7 +274,7 @@ namespace System.DirectoryServices.Protocols
                 throw new InvalidEnumArgumentException(nameof(partialMode), (int)partialMode, typeof(PartialResultProcessing));
             }
 
-            if (partialMode != PartialResultProcessing.NoPartialResultSupport && !(request is SearchRequest))
+            if (partialMode != PartialResultProcessing.NoPartialResultSupport && request is not SearchRequest)
             {
                 throw new NotSupportedException(SR.PartialResultsNotSupported);
             }
@@ -386,14 +386,14 @@ namespace System.DirectoryServices.Protocols
 
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            if (!(asyncResult is LdapAsyncResult))
+            if (asyncResult is not LdapAsyncResult ldapAsyncResult)
             {
                 throw new ArgumentException(SR.Format(SR.NotReturnedAsyncResult, nameof(asyncResult)));
             }
 
             int messageId;
 
-            LdapAsyncResult result = (LdapAsyncResult)asyncResult;
+            LdapAsyncResult result = ldapAsyncResult;
             if (!result._partialResults)
             {
                 if (!s_asyncResultTable.Contains(asyncResult))
@@ -428,17 +428,17 @@ namespace System.DirectoryServices.Protocols
 
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            if (!(asyncResult is LdapAsyncResult))
+            if (asyncResult is not LdapAsyncResult)
             {
                 throw new ArgumentException(SR.Format(SR.NotReturnedAsyncResult, nameof(asyncResult)));
             }
 
-            if (!(asyncResult is LdapPartialAsyncResult))
+            if (asyncResult is not LdapPartialAsyncResult ldapPartialAsyncResult)
             {
                 throw new InvalidOperationException(SR.NoPartialResults);
             }
 
-            return s_partialResultsProcessor.GetPartialResults((LdapPartialAsyncResult)asyncResult);
+            return s_partialResultsProcessor.GetPartialResults(ldapPartialAsyncResult);
         }
 
         public DirectoryResponse EndSendRequest(IAsyncResult asyncResult)
@@ -450,12 +450,12 @@ namespace System.DirectoryServices.Protocols
 
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            if (!(asyncResult is LdapAsyncResult))
+            if (asyncResult is not LdapAsyncResult ldapAsyncResult)
             {
                 throw new ArgumentException(SR.Format(SR.NotReturnedAsyncResult, nameof(asyncResult)));
             }
 
-            LdapAsyncResult result = (LdapAsyncResult)asyncResult;
+            LdapAsyncResult result = ldapAsyncResult;
 
             if (!result._partialResults)
             {
@@ -555,20 +555,20 @@ namespace System.DirectoryServices.Protocols
                     pClientControlArray[managedClientControls.Length] = null;
                 }
 
-                if (request is DeleteRequest)
+                if (request is DeleteRequest deleteRequest)
                 {
                     // It is an delete operation.
-                    error = LdapPal.DeleteDirectoryEntry(_ldapHandle, ((DeleteRequest)request).DistinguishedName, serverControlArray, clientControlArray, ref messageID);
+                    error = LdapPal.DeleteDirectoryEntry(_ldapHandle, deleteRequest.DistinguishedName, serverControlArray, clientControlArray, ref messageID);
                 }
-                else if (request is ModifyDNRequest)
+                else if (request is ModifyDNRequest modifyDNRequest)
                 {
                     // It is a modify dn operation
                     error = LdapPal.RenameDirectoryEntry(
                         _ldapHandle,
-                        ((ModifyDNRequest)request).DistinguishedName,
-                        ((ModifyDNRequest)request).NewName,
-                        ((ModifyDNRequest)request).NewParentDistinguishedName,
-                        ((ModifyDNRequest)request).DeleteOldRdn ? 1 : 0,
+                        modifyDNRequest.DistinguishedName,
+                        modifyDNRequest.NewName,
+                        modifyDNRequest.NewParentDistinguishedName,
+                        modifyDNRequest.DeleteOldRdn ? 1 : 0,
                         serverControlArray, clientControlArray, ref messageID);
                 }
                 else if (request is CompareRequest compareRequest)
@@ -625,9 +625,9 @@ namespace System.DirectoryServices.Protocols
                 else if (request is AddRequest || request is ModifyRequest)
                 {
                     // Build the attributes.
-                    if (request is AddRequest)
+                    if (request is AddRequest addRequest)
                     {
-                        modifications = BuildAttributes(((AddRequest)request).Attributes, ptrToFree);
+                        modifications = BuildAttributes(addRequest.Attributes, ptrToFree);
                     }
                     else
                     {
@@ -647,11 +647,11 @@ namespace System.DirectoryServices.Protocols
                     }
                     pModArray[i] = null;
 
-                    if (request is AddRequest)
+                    if (request is AddRequest addRequest2)
                     {
                         error = LdapPal.AddDirectoryEntry(
                             _ldapHandle,
-                            ((AddRequest)request).DistinguishedName,
+                            addRequest2.DistinguishedName,
                             modArray,
                             serverControlArray, clientControlArray, ref messageID);
                     }
@@ -1243,9 +1243,9 @@ namespace System.DirectoryServices.Protocols
                 DirectoryAttributeModificationCollection modificationCollection = null;
                 DirectoryAttributeCollection attributeCollection = null;
 
-                if (directoryAttributes is DirectoryAttributeModificationCollection)
+                if (directoryAttributes is DirectoryAttributeModificationCollection directoryAttributeModificationCollection)
                 {
-                    modificationCollection = (DirectoryAttributeModificationCollection)directoryAttributes;
+                    modificationCollection = directoryAttributeModificationCollection;
                 }
                 else
                 {
@@ -1269,9 +1269,9 @@ namespace System.DirectoryServices.Protocols
                     attributes[i] = new LdapMod();
 
                     // Write the operation type.
-                    if (modAttribute is DirectoryAttributeModification)
+                    if (modAttribute is DirectoryAttributeModification directoryAttributeModification)
                     {
-                        attributes[i].type = (int)((DirectoryAttributeModification)modAttribute).Operation;
+                        attributes[i].type = (int)directoryAttributeModification.Operation;
                     }
                     else
                     {

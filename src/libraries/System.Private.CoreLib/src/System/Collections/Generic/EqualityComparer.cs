@@ -63,7 +63,7 @@ namespace System.Collections.Generic
         int IEqualityComparer.GetHashCode(object? obj)
         {
             if (obj == null) return 0;
-            if (obj is T) return GetHashCode((T)obj);
+            if (obj is T t) return GetHashCode(t);
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArgumentForComparison);
             return 0;
         }

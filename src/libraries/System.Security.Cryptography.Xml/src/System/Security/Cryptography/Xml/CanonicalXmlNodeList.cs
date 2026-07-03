@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Xml
         // IList methods
         public int Add(object? value)
         {
-            if (!(value is XmlNode))
+            if (value is not XmlNode)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, "node");
             return _nodeArray.Add(value);
         }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
 
         public void Insert(int index, object? value)
         {
-            if (!(value is XmlNode))
+            if (value is not XmlNode)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
             _nodeArray.Insert(index, value);
         }
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Xml
             get { return _nodeArray[index]; }
             set
             {
-                if (!(value is XmlNode))
+                if (value is not XmlNode)
                     throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
                 _nodeArray[index] = value;
             }

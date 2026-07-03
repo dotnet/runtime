@@ -34,7 +34,7 @@ namespace System.Reflection.Context.Projection
             if (NeedsProjection(value))
             {
                 // NeedsProjection should guarantee this.
-                Debug.Assert(!(value is IProjectable) || ((IProjectable)value).Projector != this);
+                Debug.Assert(value is not IProjectable || ((IProjectable)value).Projector != this);
 
                 return project(value);
             }

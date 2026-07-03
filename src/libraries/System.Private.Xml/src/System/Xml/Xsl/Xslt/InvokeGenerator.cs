@@ -142,7 +142,7 @@ namespace System.Xml.Xsl.Xslt
                     }
 
                     // If prevArg is not an iterator, cache it in an iterator, and return it
-                    if (!(_invokeArgs[prevArg] is QilIterator))
+                    if (_invokeArgs[prevArg] is not QilIterator)
                     {
                         QilIterator var = _fac.BaseFactory.Let(_invokeArgs[prevArg]);
                         _iterStack.Push(var);

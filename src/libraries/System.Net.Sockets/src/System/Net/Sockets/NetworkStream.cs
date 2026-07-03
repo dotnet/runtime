@@ -239,7 +239,7 @@ namespace System.Net.Sockets
             {
                 return _streamSocket.Receive(buffer, offset, count, 0);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_readfailure, exception);
             }
@@ -264,7 +264,7 @@ namespace System.Net.Sockets
             {
                 return _streamSocket.Receive(buffer, SocketFlags.None);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_readfailure, exception);
             }
@@ -311,7 +311,7 @@ namespace System.Net.Sockets
                 // after ALL the requested number of bytes was transferred.
                 _streamSocket.Send(buffer, offset, count, SocketFlags.None);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_writefailure, exception);
             }
@@ -337,7 +337,7 @@ namespace System.Net.Sockets
             {
                 _streamSocket.Send(buffer, SocketFlags.None);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_writefailure, exception);
             }
@@ -451,7 +451,7 @@ namespace System.Net.Sockets
                         callback,
                         state);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_readfailure, exception);
             }
@@ -476,7 +476,7 @@ namespace System.Net.Sockets
             {
                 return _streamSocket.EndReceive(asyncResult);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_readfailure, exception);
             }
@@ -518,7 +518,7 @@ namespace System.Net.Sockets
                         callback,
                         state);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_writefailure, exception);
             }
@@ -539,7 +539,7 @@ namespace System.Net.Sockets
             {
                 _streamSocket.EndSend(asyncResult);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_writefailure, exception);
             }
@@ -577,7 +577,7 @@ namespace System.Net.Sockets
                     fromNetworkStream: true,
                     cancellationToken).AsTask();
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_readfailure, exception);
             }
@@ -600,7 +600,7 @@ namespace System.Net.Sockets
                     fromNetworkStream: true,
                     cancellationToken: cancellationToken);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_readfailure, exception);
             }
@@ -637,7 +637,7 @@ namespace System.Net.Sockets
                     SocketFlags.None,
                     cancellationToken).AsTask();
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_writefailure, exception);
             }
@@ -659,7 +659,7 @@ namespace System.Net.Sockets
                     SocketFlags.None,
                     cancellationToken);
             }
-            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            catch (Exception exception) when (exception is not OutOfMemoryException)
             {
                 throw WrapException(SR.net_io_writefailure, exception);
             }

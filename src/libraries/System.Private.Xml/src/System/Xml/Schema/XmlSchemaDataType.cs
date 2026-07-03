@@ -181,9 +181,9 @@ namespace System.Xml.Schema
                 {
                     bldr.Append('{');
                     object cur = enumerator.Current!;
-                    if (cur is IFormattable)
+                    if (cur is IFormattable formattable)
                     {
-                        bldr.Append(((IFormattable)cur).ToString("", CultureInfo.InvariantCulture));
+                        bldr.Append(formattable.ToString("", CultureInfo.InvariantCulture));
                     }
                     else
                     {
@@ -193,9 +193,9 @@ namespace System.Xml.Schema
                     {
                         bldr.Append(" , ");
                         cur = enumerator.Current!;
-                        if (cur is IFormattable)
+                        if (cur is IFormattable formattable2)
                         {
-                            bldr.Append(((IFormattable)cur).ToString("", CultureInfo.InvariantCulture));
+                            bldr.Append(formattable2.ToString("", CultureInfo.InvariantCulture));
                         }
                         else
                         {
@@ -206,9 +206,9 @@ namespace System.Xml.Schema
                     stringValue = bldr.ToString();
                 }
             }
-            else if (value is IFormattable)
+            else if (value is IFormattable formattable3)
             {
-                stringValue = ((IFormattable)value).ToString("", CultureInfo.InvariantCulture);
+                stringValue = formattable3.ToString("", CultureInfo.InvariantCulture);
             }
             else
             {

@@ -136,15 +136,15 @@ namespace System.Security.Cryptography.Xml
             {
                 return inputStream;
             }
-            if (currentInput is XmlNodeList)
+            if (currentInput is XmlNodeList xmlNodeList)
             {
-                CanonicalXml c14n = new CanonicalXml((XmlNodeList)currentInput, resolver, false);
+                CanonicalXml c14n = new CanonicalXml(xmlNodeList, resolver, false);
                 MemoryStream? ms = new MemoryStream(c14n.GetBytes());
                 return ms;
             }
-            if (currentInput is XmlDocument)
+            if (currentInput is XmlDocument xmlDocument)
             {
-                CanonicalXml c14n = new CanonicalXml((XmlDocument)currentInput, resolver);
+                CanonicalXml c14n = new CanonicalXml(xmlDocument, resolver);
                 MemoryStream? ms = new MemoryStream(c14n.GetBytes());
                 return ms;
             }

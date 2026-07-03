@@ -151,10 +151,10 @@ namespace System.Composition.Hosting.Core
             if (!_metadataConstraints.TryGetValue(constraintName, out object value))
                 return false;
 
-            if (!(value is T))
+            if (value is not T t)
                 return false;
 
-            constraintValue = (T)value;
+            constraintValue = t;
             if (_metadataConstraints.Count == 1)
             {
                 remainingContract = new CompositionContract(_contractType, _contractName);
@@ -195,7 +195,7 @@ namespace System.Composition.Hosting.Core
                 }
                 else
                 {
-                    if (firstItem.Value is IEnumerable firstEnumerable && !(firstEnumerable is string))
+                    if (firstItem.Value is IEnumerable firstEnumerable && firstEnumerable is not string)
                     {
                         var secondEnumerable = secondValue as IEnumerable;
                         if (secondEnumerable == null || !Enumerable.SequenceEqual(firstEnumerable.Cast<object>(), secondEnumerable.Cast<object>()))

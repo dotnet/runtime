@@ -93,7 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     case TypeKind.TK_NullType:
                         // Can only convert to the null type if src is null.
-                        if (!(_typeSrc is NullType))
+                        if (_typeSrc is not NullType)
                         {
                             return false;
                         }
@@ -581,7 +581,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // *   From any delegate-type to System.Delegate.
                 // *   From any delegate-type to System.ICloneable.
 
-                if (!(_typeDest is AggregateType) || !SymbolLoader.HasBaseConversion(pSource, _typeDest))
+                if (_typeDest is not AggregateType || !SymbolLoader.HasBaseConversion(pSource, _typeDest))
                 {
                     return false;
                 }

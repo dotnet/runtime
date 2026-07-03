@@ -22,8 +22,8 @@ namespace System.Xml.Serialization
 
         public override bool Equals([NotNullWhen(true)] object? other)
         {
-            if (!(other is NameKey)) return false;
-            NameKey key = (NameKey)other;
+            if (other is not NameKey nameKey) return false;
+            NameKey key = nameKey;
             return _name == key._name && _ns == key._ns;
         }
 

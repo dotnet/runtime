@@ -1238,7 +1238,7 @@ namespace System.Xml.Serialization
                 return;
 
             // only check duplicate definitions for top-level element
-            if (element.Parent == null || !(element.Parent is XmlSchema))
+            if (element.Parent == null || element.Parent is not XmlSchema)
                 return;
 
             XmlSchemaObjectTable? elements;

@@ -91,7 +91,7 @@ namespace System.Net.WebSockets
         {
             if (user != null)
             {
-                if (!(user is WindowsPrincipal))
+                if (user is not WindowsPrincipal)
                 {
                     // AuthenticationSchemes.Basic.
                     if (user.Identity is HttpListenerBasicIdentity basicIdentity)

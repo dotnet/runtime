@@ -263,7 +263,7 @@ namespace System.Security.Cryptography.Xml
                         // let the transform read the children of the transformElement for data
                         transform.LoadInnerXml(transformElement.ChildNodes);
                         // Hack! this is done to get around the lack of here() function support in XPath
-                        if (transform is XmlDsigEnvelopedSignatureTransform)
+                        if (transform is XmlDsigEnvelopedSignatureTransform xmlDsigEnvelopedSignatureTransform)
                         {
                             // Walk back to the Signature tag. Find the nearest signature ancestor
                             // Signature-->SignedInfo-->Reference-->Transforms-->Transform
@@ -298,7 +298,7 @@ namespace System.Security.Cryptography.Xml
                                     position++;
                                     if (node == signatureTag)
                                     {
-                                        ((XmlDsigEnvelopedSignatureTransform)transform).SignaturePosition = position;
+                                        xmlDsigEnvelopedSignatureTransform.SignaturePosition = position;
                                         break;
                                     }
                                 }

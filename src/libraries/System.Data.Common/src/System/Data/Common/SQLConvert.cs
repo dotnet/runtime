@@ -352,9 +352,9 @@ namespace System.Data.Common
                 if ((DBNull.Value == value) || (null == value)) { return DBNull.Value; }
                 return BigIntegerStorage.ConvertToBigInteger(value, formatProvider);
             }
-            else if (value is System.Numerics.BigInteger)
+            else if (value is System.Numerics.BigInteger bigInteger)
             {
-                return BigIntegerStorage.ConvertFromBigInteger((System.Numerics.BigInteger)value, type, formatProvider);
+                return BigIntegerStorage.ConvertFromBigInteger(bigInteger, type, formatProvider);
             }
 
             return ChangeType2(value, DataStorage.GetStorageType(type), type, formatProvider);

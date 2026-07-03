@@ -94,13 +94,13 @@ namespace System.Management
 
             if (null != qualVal)
             {
-                if (qualVal is Array)
+                if (qualVal is Array array)
                 {
                     if ((qualVal is int[]) || (qualVal is double[]) || (qualVal is string[]) || (qualVal is bool[]))
                         wmiValue = qualVal;
                     else
                     {
-                        Array valArray = (Array)qualVal;
+                        Array valArray = array;
                         int length = valArray.Length;
                         Type elementType = (length > 0 ? valArray.GetValue(0).GetType() : null);
 

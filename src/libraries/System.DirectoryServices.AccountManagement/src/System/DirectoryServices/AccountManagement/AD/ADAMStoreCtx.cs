@@ -197,9 +197,9 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "SetupPasswordModification: caught TargetInvocationException with message " + e.Message);
 
-                    if (e.InnerException is System.Runtime.InteropServices.COMException)
+                    if (e.InnerException is System.Runtime.InteropServices.COMException cOMException)
                     {
-                        throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                        throw (ExceptionHelper.GetExceptionFromCOMException(cOMException));
                     }
 
                     // Unknown exception.  We don't want to suppress it.

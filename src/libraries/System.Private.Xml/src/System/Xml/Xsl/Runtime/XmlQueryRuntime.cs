@@ -210,9 +210,9 @@ namespace System.Xml.Xsl.Runtime
                 {
                     return item.TypedValue;
                 }
-                else if (item is RtfNavigator)
+                else if (item is RtfNavigator rtfNavigator)
                 {
-                    return ((RtfNavigator)item).ToNavigator();
+                    return rtfNavigator.ToNavigator();
                 }
             }
 

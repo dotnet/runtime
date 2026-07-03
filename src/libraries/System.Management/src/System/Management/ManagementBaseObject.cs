@@ -652,9 +652,9 @@ namespace System.Management
 
             try
             {
-                if (obj is ManagementBaseObject)
+                if (obj is ManagementBaseObject managementBaseObject)
                 {
-                    result = CompareTo((ManagementBaseObject)obj, ComparisonSettings.IncludeAll);
+                    result = CompareTo(managementBaseObject, ComparisonSettings.IncludeAll);
                 }
                 else
                 {

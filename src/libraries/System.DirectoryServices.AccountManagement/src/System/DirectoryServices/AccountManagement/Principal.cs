@@ -431,8 +431,8 @@ namespace System.DirectoryServices.AccountManagement
                         GlobalDebug.WriteLineIf(GlobalDebug.Error, "Principal", "Save(context):,  Move back Failed {0} ", deleteFail.Message);
                     }
 
-                    if (e is System.Runtime.InteropServices.COMException)
-                        throw ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e);
+                    if (e is System.Runtime.InteropServices.COMException cOMException)
+                        throw ExceptionHelper.GetExceptionFromCOMException(cOMException);
                     else
                         throw;
                 }
@@ -656,20 +656,20 @@ namespace System.DirectoryServices.AccountManagement
 
         private void ValidateExtensionObject(object value)
         {
-            if (value is object[])
+            if (value is object[] objects)
             {
-                if (((object[])value).Length == 0)
+                if (objects.Length == 0)
                     throw new ArgumentException(SR.InvalidExtensionCollectionType);
 
-                foreach (object o in (object[])value)
+                foreach (object o in objects)
                 {
                     if (o is ICollection)
                         throw new ArgumentException(SR.InvalidExtensionCollectionType);
                 }
             }
-            if (value is byte[])
+            if (value is byte[] bytes)
             {
-                if (((byte[])value).Length == 0)
+                if (bytes.Length == 0)
                 {
                     throw new ArgumentException(SR.InvalidExtensionCollectionType);
                 }
@@ -697,8 +697,8 @@ namespace System.DirectoryServices.AccountManagement
 
             ValidateExtensionObject(value);
 
-            if (value is object[])
-                _extensionCache.properties[attribute] = new ExtensionCacheValue((object[])value);
+            if (value is object[] objects)
+                _extensionCache.properties[attribute] = new ExtensionCacheValue(objects);
             else
                 _extensionCache.properties[attribute] = new ExtensionCacheValue(new object[] { value });
 
@@ -712,8 +712,8 @@ namespace System.DirectoryServices.AccountManagement
 
             ValidateExtensionObject(value);
 
-            if (value is object[])
-                _extensionCache.properties[attribute] = new ExtensionCacheValue((object[])value, objectType, mt);
+            if (value is object[] objects)
+                _extensionCache.properties[attribute] = new ExtensionCacheValue(objects, objectType, mt);
             else
                 _extensionCache.properties[attribute] = new ExtensionCacheValue(new object[] { value }, objectType, mt);
 

@@ -138,7 +138,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // i.e if the inputs are (T, int, C<T>, C<int>) then this will return true.
         private static bool IsGenericallyEquivalentTo(this Type t1, Type t2, MemberInfo member1, MemberInfo member2)
         {
-            Debug.Assert(!(member1 is MethodBase) ||
+            Debug.Assert(member1 is not MethodBase ||
                          !((MethodBase)member1).IsGenericMethod ||
                          (((MethodBase)member1).IsGenericMethodDefinition && ((MethodBase)member2).IsGenericMethodDefinition));
 
@@ -226,12 +226,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 // The type param is from a generic method. Since only methods can be generic, anything else
                 // here means they are not equivalent.
-                if (!(member is MethodBase))
+                if (member is not MethodBase methodBase)
                 {
                     return false;
                 }
 
-                MethodBase method = (MethodBase)member;
+                MethodBase method = methodBase;
                 int position = typeParam.GenericParameterPosition;
                 Type[] args = method.IsGenericMethod ? method.GetGenericArguments() : null;
 

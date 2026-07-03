@@ -92,11 +92,11 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is int))
+            if (obj is not int num)
             {
                 return false;
             }
-            return m_value == ((int)obj).m_value;
+            return m_value == num.m_value;
         }
 
         [NonVersionable]

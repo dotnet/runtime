@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (TargetInvocationException tie)
             {
-                if (!(tie.InnerException is NotSupportedException))
+                if (tie.InnerException is not NotSupportedException)
                 {
                     throw;
                 }

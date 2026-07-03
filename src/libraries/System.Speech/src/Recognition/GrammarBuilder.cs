@@ -505,7 +505,7 @@ namespace System.Speech.Recognition
                 // Create an item which represents the grammar
                 foreach (GrammarBuilderBase item in Items)
                 {
-                    if (!(item is RuleElement))
+                    if (item is not RuleElement)
                     {
                         IElement? element = item.CreateElement(elementFactory, root, root, ruleIds);
 

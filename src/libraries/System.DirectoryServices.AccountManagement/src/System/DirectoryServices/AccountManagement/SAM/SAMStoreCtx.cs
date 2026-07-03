@@ -396,9 +396,9 @@ namespace System.DirectoryServices.AccountManagement
             }
             catch (System.Reflection.TargetInvocationException e)
             {
-                if (e.InnerException is System.Runtime.InteropServices.COMException)
+                if (e.InnerException is System.Runtime.InteropServices.COMException cOMException)
                 {
-                    throw (ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e.InnerException));
+                    throw (ExceptionHelper.GetExceptionFromCOMException(cOMException));
                 }
                 throw;
             }
@@ -615,7 +615,7 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf: is real principal");
 
                 // No nested groups or computers as members of groups in SAM
-                if (!(p is UserPrincipal))
+                if (p is not UserPrincipal)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "GetGroupsMemberOf: not a user, returning empty set");
                     return new EmptySet();

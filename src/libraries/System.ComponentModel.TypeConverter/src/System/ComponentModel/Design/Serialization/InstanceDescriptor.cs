@@ -125,21 +125,21 @@ namespace System.ComponentModel.Design.Serialization
                 }
             }
 
-            if (MemberInfo is ConstructorInfo)
+            if (MemberInfo is ConstructorInfo constructorInfo)
             {
-                return ((ConstructorInfo)MemberInfo).Invoke(translatedArguments);
+                return constructorInfo.Invoke(translatedArguments);
             }
-            else if (MemberInfo is MethodInfo)
+            else if (MemberInfo is MethodInfo methodInfo)
             {
-                return ((MethodInfo)MemberInfo).Invoke(null, translatedArguments);
+                return methodInfo.Invoke(null, translatedArguments);
             }
-            else if (MemberInfo is PropertyInfo)
+            else if (MemberInfo is PropertyInfo propertyInfo)
             {
-                return ((PropertyInfo)MemberInfo).GetValue(null, translatedArguments);
+                return propertyInfo.GetValue(null, translatedArguments);
             }
-            else if (MemberInfo is FieldInfo)
+            else if (MemberInfo is FieldInfo fieldInfo)
             {
-                return ((FieldInfo)MemberInfo).GetValue(null);
+                return fieldInfo.GetValue(null);
             }
 
             return null;

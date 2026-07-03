@@ -58,19 +58,19 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInput(object obj)
         {
-            if (obj is Stream)
+            if (obj is Stream stream)
             {
-                LoadStreamInput((Stream)obj);
+                LoadStreamInput(stream);
                 return;
             }
-            if (obj is XmlNodeList)
+            if (obj is XmlNodeList xmlNodeList)
             {
-                LoadXmlNodeListInput((XmlNodeList)obj);
+                LoadXmlNodeListInput(xmlNodeList);
                 return;
             }
-            if (obj is XmlDocument)
+            if (obj is XmlDocument xmlDocument)
             {
-                LoadXmlDocumentInput((XmlDocument)obj);
+                LoadXmlDocumentInput(xmlDocument);
                 return;
             }
         }

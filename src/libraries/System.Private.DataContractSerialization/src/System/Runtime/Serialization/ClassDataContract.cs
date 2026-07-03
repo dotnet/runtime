@@ -849,7 +849,7 @@ namespace System.Runtime.Serialization.DataContracts
                                 if (getMethod.GetParameters().Length > 0)
                                     ThrowInvalidDataContractException(SR.Format(SR.IndexedPropertyCannotBeSerialized, property.DeclaringType, property.Name));
                             }
-                            else if (!(member is FieldInfo))
+                            else if (member is not FieldInfo)
                                 ThrowInvalidDataContractException(SR.Format(SR.InvalidMember, DataContract.GetClrTypeFullName(type), member.Name));
 
                             DataMemberAttribute memberAttribute = (DataMemberAttribute)memberAttributes[0];

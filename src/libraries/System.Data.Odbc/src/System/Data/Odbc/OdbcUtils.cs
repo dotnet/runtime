@@ -167,16 +167,16 @@ namespace System.Data.Odbc
                         int length;
                         Debug.Assert(value is string || value is char[], "Only string or char[] can be marshaled to WCHAR");
 
-                        if (value is string)
+                        if (value is string str)
                         {
-                            length = Math.Max(0, ((string)value).Length - valueOffset);
+                            length = Math.Max(0, str.Length - valueOffset);
 
                             if ((sizeorprecision > 0) && (sizeorprecision < length))
                             {
                                 length = sizeorprecision;
                             }
 
-                            rgChars = ((string)value).ToCharArray(valueOffset, length);
+                            rgChars = str.ToCharArray(valueOffset, length);
                             Debug.Assert(rgChars.Length < (base.Length - valueOffset), "attempting to extend parameter buffer!");
 
                             WriteCharArray(offset, rgChars, 0, rgChars.Length);

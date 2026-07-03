@@ -652,7 +652,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     ? GetEnumBinOpType(ek, nonLiftedArg1.Type, nonLiftedArg2.Type, out _)
                     : pArgument1.Type;
 
-                if (!(resultType is NullableType))
+                if (resultType is not NullableType)
                 {
                     resultType = TypeManager.GetNullable(resultType);
                 }
@@ -753,7 +753,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             ptypeSig1 = null;
             ptypeSig2 = null;
-            Debug.Assert(!(typeDst is NullableType));
+            Debug.Assert(typeDst is not NullableType);
 
             if (canConvert(info.arg1, typeDst))
                 pgrflt = LiftFlags.None;
@@ -787,7 +787,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool CanConvertArg2(BinOpArgInfo info, CType typeDst, out LiftFlags pgrflt,
                                       out CType ptypeSig1, out CType ptypeSig2)
         {
-            Debug.Assert(!(typeDst is NullableType));
+            Debug.Assert(typeDst is not NullableType);
             ptypeSig1 = null;
             ptypeSig2 = null;
 
@@ -1368,7 +1368,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else if (unaryOpKind == UnaOpKind.IncDec)
                 {
-                    Debug.Assert(!(pArgumentType is PointerType));
+                    Debug.Assert(pArgumentType is not PointerType);
 
                     // Check for user defined inc/dec
                     ExprMultiGet exprGet = ExprFactory.CreateMultiGet(0, pArgumentType, null);
@@ -1448,7 +1448,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         continue;
 
                     case ConvKind.Explicit:
-                        if (!(pArgument is ExprConstant))
+                        if (pArgument is not ExprConstant)
                         {
                             continue;
                         }
@@ -1745,7 +1745,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprMultiGet exprGet = ExprFactory.CreateMultiGet(EXPRFLAG.EXF_ASSGOP, arg.Type, null);
             Expr exprVal = exprGet;
             CType type = uofs.GetType();
-            Debug.Assert(!(type is NullableType));
+            Debug.Assert(type is not NullableType);
 
             // These used to be converts, but we're making them casts now - this is because
             // we need to remove the ability to call inc(sbyte) etc for all types smaller than int.
@@ -1923,7 +1923,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr nonLiftedArg2 = StripNullableConstructor(expr2);
                 Expr nonLiftedResult = null;
 
-                if (!(nonLiftedArg1.Type is NullableType) && !(nonLiftedArg2.Type is NullableType))
+                if (nonLiftedArg1.Type is not NullableType && nonLiftedArg2.Type is not NullableType)
                 {
                     nonLiftedResult = BindBoolBinOp(this, ek, flags, nonLiftedArg1, nonLiftedArg2);
                 }

@@ -147,10 +147,10 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected override QilNode VisitChildren(QilNode node)
         {
-            if (node is QilLiteral)
+            if (node is QilLiteral qilLiteral)
             {
                 // If literal is not handled elsewhere, print its string value
-                this.writer.WriteValue(Convert.ToString(((QilLiteral)node).Value, CultureInfo.InvariantCulture));
+                this.writer.WriteValue(Convert.ToString(qilLiteral.Value, CultureInfo.InvariantCulture));
                 return node;
             }
             else if (node is QilReference reference)

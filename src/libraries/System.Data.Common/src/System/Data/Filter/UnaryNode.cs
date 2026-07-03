@@ -125,13 +125,13 @@ namespace System.Data
                     throw ExprException.TypeMismatch(ToString()!);
 
                 case Operators.Not:
-                    if (vl is SqlBoolean)
+                    if (vl is SqlBoolean sqlBoolean)
                     {
-                        if (((SqlBoolean)vl).IsFalse)
+                        if (sqlBoolean.IsFalse)
                         {
                             return SqlBoolean.True;
                         }
-                        else if (((SqlBoolean)vl).IsTrue)
+                        else if (sqlBoolean.IsTrue)
                         {
                             return SqlBoolean.False;
                         }

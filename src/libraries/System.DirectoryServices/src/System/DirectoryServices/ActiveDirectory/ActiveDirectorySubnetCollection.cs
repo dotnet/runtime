@@ -267,11 +267,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            if (!(value is ActiveDirectorySubnet))
+            if (value is not ActiveDirectorySubnet activeDirectorySubnet)
                 throw new ArgumentException(null, nameof(value));
 
-            if (!((ActiveDirectorySubnet)value).existing)
-                throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted, ((ActiveDirectorySubnet)value).Name));
+            if (!activeDirectorySubnet.existing)
+                throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted, activeDirectorySubnet.Name));
         }
 
         private string MakePath(string subnetDN)

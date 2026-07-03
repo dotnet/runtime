@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             ArgumentNullException.ThrowIfNull(asnEncodedData);
 
-            if (!(asnEncodedData is Pkcs9AttributeObject))
+            if (asnEncodedData is not Pkcs9AttributeObject)
                 throw new ArgumentException(SR.Cryptography_Pkcs9_AttributeMismatch);
 
             base.CopyFrom(asnEncodedData);

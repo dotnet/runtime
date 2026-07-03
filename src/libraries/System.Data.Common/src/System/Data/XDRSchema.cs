@@ -49,10 +49,10 @@ namespace System.Data
             // Walk all the top level Element tags.
             for (XmlNode? n = schemaRoot.FirstChild; n != null; n = n.NextSibling)
             {
-                if (!(n is XmlElement))
+                if (n is not XmlElement xmlElement)
                     continue;
 
-                XmlElement child = (XmlElement)n;
+                XmlElement child = xmlElement;
 
                 if (FEqualIdentity(child, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS))
                 {
@@ -524,12 +524,12 @@ namespace System.Data
 
             for (XmlNode? n = typeNode.FirstChild; n != null; n = n.NextSibling)
             {
-                if (!(n is XmlElement))
+                if (n is not XmlElement xmlElement)
                     continue;
 
                 if (FEqualIdentity(n, Keywords.XDR_ELEMENT, Keywords.XDRNS))
                 {
-                    tableChild = HandleTable((XmlElement)n);
+                    tableChild = HandleTable(xmlElement);
                     if (tableChild != null)
                     {
                         tableChildren.Add(tableChild);
@@ -540,7 +540,7 @@ namespace System.Data
                 if (FEqualIdentity(n, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS) ||
                     FEqualIdentity(n, Keywords.XDR_ELEMENT, Keywords.XDRNS))
                 {
-                    HandleColumn((XmlElement)n, table);
+                    HandleColumn(xmlElement, table);
                     continue;
                 }
             }

@@ -127,9 +127,9 @@ namespace System.ComponentModel
             }
 
             bool componentReflect = false;
-            if (value is IComponent)
+            if (value is IComponent component)
             {
-                ISite? site = ((IComponent)value).Site;
+                ISite? site = component.Site;
                 if (site != null && site.DesignMode)
                 {
                     componentReflect = true;

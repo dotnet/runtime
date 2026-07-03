@@ -89,11 +89,11 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is long))
+            if (obj is not long num)
             {
                 return false;
             }
-            return m_value == ((long)obj).m_value;
+            return m_value == num.m_value;
         }
 
         [NonVersionable]

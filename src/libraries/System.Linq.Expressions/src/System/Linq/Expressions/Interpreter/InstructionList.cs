@@ -351,9 +351,9 @@ namespace System.Linq.Expressions.Interpreter
 
             if (type == null || type.IsValueType)
             {
-                if (value is bool)
+                if (value is bool b)
                 {
-                    EmitLoad((bool)value);
+                    EmitLoad(b);
                     return;
                 }
 

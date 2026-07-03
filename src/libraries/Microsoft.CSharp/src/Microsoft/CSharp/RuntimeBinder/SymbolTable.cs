@@ -620,7 +620,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         CType ctype = ProcessSpecialTypeInChain(current, t);
                         if (ctype != null)
                         {
-                            Debug.Assert(!(ctype is AggregateType));
+                            Debug.Assert(ctype is not AggregateType);
                             return ctype;
                         }
 
@@ -1800,7 +1800,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // there are any conversions.
             CType t = GetCTypeFromType(type);
 
-            if (!(t is AggregateType))
+            if (t is not AggregateType)
             {
                 CType endT;
                 while ((endT = t.BaseOrParameterOrElementType) != null)

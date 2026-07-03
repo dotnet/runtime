@@ -88,7 +88,7 @@ namespace System.Reflection.Metadata
 
             utf8Decoder ??= MetadataStringDecoder.DefaultUTF8;
 
-            if (!(utf8Decoder.Encoding is UTF8Encoding))
+            if (utf8Decoder.Encoding is not UTF8Encoding)
             {
                 Throw.InvalidArgument(SR.MetadataStringDecoderEncodingMustBeUtf8, nameof(utf8Decoder));
             }

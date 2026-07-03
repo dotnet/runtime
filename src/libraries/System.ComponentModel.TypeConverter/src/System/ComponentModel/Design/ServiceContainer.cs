@@ -80,7 +80,7 @@ namespace System.ComponentModel.Design
             //
             ArgumentNullException.ThrowIfNull(serviceType);
             ArgumentNullException.ThrowIfNull(serviceInstance);
-            if (!(serviceInstance is ServiceCreatorCallback) && !serviceInstance.GetType().IsCOMObject && !serviceType.IsInstanceOfType(serviceInstance))
+            if (serviceInstance is not ServiceCreatorCallback && !serviceInstance.GetType().IsCOMObject && !serviceType.IsInstanceOfType(serviceInstance))
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidServiceInstance, serviceType.FullName));
             }
@@ -153,9 +153,9 @@ namespace System.ComponentModel.Design
                 {
                     foreach (object? o in serviceCollection.Values)
                     {
-                        if (o is IDisposable)
+                        if (o is IDisposable disposable)
                         {
-                            ((IDisposable)o).Dispose();
+                            disposable.Dispose();
                         }
                     }
                 }

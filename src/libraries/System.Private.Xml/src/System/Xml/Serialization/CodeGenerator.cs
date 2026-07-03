@@ -160,10 +160,10 @@ namespace System.Xml.Serialization
 
         internal static Type GetVariableType(object var)
         {
-            if (var is ArgBuilder)
-                return ((ArgBuilder)var).ArgType;
-            else if (var is LocalBuilder)
-                return ((LocalBuilder)var).LocalType;
+            if (var is ArgBuilder argBuilder)
+                return argBuilder.ArgType;
+            else if (var is LocalBuilder localBuilder)
+                return localBuilder.LocalType;
             else
                 return var.GetType();
         }
@@ -633,20 +633,20 @@ namespace System.Xml.Serialization
         {
             if (obj == null)
                 _ilGen!.Emit(OpCodes.Ldnull);
-            else if (obj is ArgBuilder)
-                Ldarg((ArgBuilder)obj);
-            else if (obj is LocalBuilder)
-                Ldloc((LocalBuilder)obj);
+            else if (obj is ArgBuilder argBuilder)
+                Ldarg(argBuilder);
+            else if (obj is LocalBuilder localBuilder)
+                Ldloc(localBuilder);
             else
                 Ldc(obj);
         }
 
         internal void LoadAddress(object obj)
         {
-            if (obj is ArgBuilder)
-                LdargAddress((ArgBuilder)obj);
-            else if (obj is LocalBuilder)
-                LdlocAddress((LocalBuilder)obj);
+            if (obj is ArgBuilder argBuilder)
+                LdargAddress(argBuilder);
+            else if (obj is LocalBuilder localBuilder)
+                LdlocAddress(localBuilder);
             else
                 Load(obj);
         }
@@ -768,9 +768,9 @@ namespace System.Xml.Serialization
         internal void Ldc(object o)
         {
             Type valueType = o.GetType();
-            if (o is Type)
+            if (o is Type type)
             {
-                Ldtoken((Type)o);
+                Ldtoken(type);
                 Call(typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(RuntimeTypeHandle) })!);
             }
             else if (valueType.IsEnum)

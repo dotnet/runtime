@@ -53,10 +53,10 @@ namespace System.DirectoryServices.AccountManagement
 
         public override bool Equals(object o)
         {
-            if (!(o is ADStoreKey))
+            if (o is not ADStoreKey aDStoreKey)
                 return false;
 
-            ADStoreKey that = (ADStoreKey)o;
+            ADStoreKey that = aDStoreKey;
 
             if (_wellKnownSid != that._wellKnownSid)
                 return false;

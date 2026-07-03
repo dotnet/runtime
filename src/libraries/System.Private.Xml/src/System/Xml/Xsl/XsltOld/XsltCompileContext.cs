@@ -919,7 +919,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 Debug.Assert(resultCollection.Count != 0);
                 Debug.Assert(newList.Count != 0);
-                if (!(resultCollection[0] is ArrayList))
+                if (resultCollection[0] is not ArrayList)
                 {
                     // Transform resultCollection from ArrayList(XPathNavigator) to ArrayList(ArrayList(XPathNavigator))
                     Debug.Assert(resultCollection[0] is XPathNavigator);

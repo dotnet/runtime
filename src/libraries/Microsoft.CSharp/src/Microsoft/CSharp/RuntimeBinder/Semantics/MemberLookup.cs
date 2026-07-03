@@ -115,7 +115,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                  symCur != null;
                  symCur = symCur.LookupNext(symbmask_t.MASK_Member))
             {
-                Debug.Assert(!(symCur is AggregateSymbol));
+                Debug.Assert(symCur is not AggregateSymbol);
                 // Check for arity.
                 // For non-zero arity, only methods of the correct arity are considered.
                 // For zero arity, don't filter out any methods since we do type argument
@@ -176,7 +176,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Make sure that whether we're seeing a ctor, operator, or indexer is consistent with the flags.
                 if (((_flags & MemLookFlags.Ctor) == 0) != (meth == null || !meth.IsConstructor()) ||
                     ((_flags & MemLookFlags.Operator) == 0) != (meth == null || !meth.isOperator) ||
-                    ((_flags & MemLookFlags.Indexer) == 0) != !(prop is IndexerSymbol))
+                    ((_flags & MemLookFlags.Indexer) == 0) != (prop is not IndexerSymbol))
                 {
                     if (!_swtBad)
                     {
@@ -188,7 +188,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // We can't call CheckBogus on methods or indexers because if the method has the wrong
                 // number of parameters people don't think they should have to /r the assemblies containing
                 // the parameter types and they complain about the resulting CS0012 errors.
-                if (!(symCur is MethodSymbol) && (_flags & MemLookFlags.Indexer) == 0 && CSemanticChecker.CheckBogus(symCur))
+                if (symCur is not MethodSymbol && (_flags & MemLookFlags.Indexer) == 0 && CSemanticChecker.CheckBogus(symCur))
                 {
                     // A bogus member - we can't use these, so only record them for error reporting.
                     if (!_swtBogus)
@@ -267,7 +267,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     else if (!_fMulti)
                     {
                         // Give method groups priority.
-                        if (!(symCur is MethodSymbol))
+                        if (symCur is not MethodSymbol)
                             goto LAmbig;
                         // Erase previous results so we'll record this method as the first.
                         _prgtype = new List<AggregateType>();
@@ -280,7 +280,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (!typeCur.DiffHidden)
                         {
                             // Give method groups priority.
-                            if (!(_swtFirst.Sym is MethodSymbol))
+                            if (_swtFirst.Sym is not MethodSymbol)
                                 goto LAmbig;
                         }
                         // This one is hidden by another. This one also hides any more in base types.
@@ -644,7 +644,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (_swtBadArity)
             {
                 Debug.Assert(_arity != 0);
-                Debug.Assert(!(_swtBadArity.Sym is AggregateSymbol));
+                Debug.Assert(_swtBadArity.Sym is not AggregateSymbol);
                 if (_swtBadArity.Sym is MethodSymbol badMeth)
                 {
                     int cvar = badMeth.typeVars.Count;

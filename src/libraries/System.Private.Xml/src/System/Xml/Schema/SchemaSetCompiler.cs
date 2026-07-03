@@ -809,9 +809,9 @@ namespace System.Xml.Schema
                     if (complexType.ContentModel is XmlSchemaSimpleContent simpleContent)
                     {
                         complexType.SetContentType(XmlSchemaContentType.TextOnly);
-                        if (simpleContent.Content is XmlSchemaSimpleContentExtension)
+                        if (simpleContent.Content is XmlSchemaSimpleContentExtension xmlSchemaSimpleContentExtension)
                         {
-                            CompileSimpleContentExtension(complexType, (XmlSchemaSimpleContentExtension)simpleContent.Content);
+                            CompileSimpleContentExtension(complexType, xmlSchemaSimpleContentExtension);
                         }
                         else
                         { //simpleContent.Content is XmlSchemaSimpleContentRestriction
@@ -821,9 +821,9 @@ namespace System.Xml.Schema
                     else
                     { // complexType.ContentModel is XmlSchemaComplexContent
                         XmlSchemaComplexContent complexContent = (XmlSchemaComplexContent)complexType.ContentModel;
-                        if (complexContent.Content is XmlSchemaComplexContentExtension)
+                        if (complexContent.Content is XmlSchemaComplexContentExtension xmlSchemaComplexContentExtension)
                         {
-                            CompileComplexContentExtension(complexType, complexContent, (XmlSchemaComplexContentExtension)complexContent.Content);
+                            CompileComplexContentExtension(complexType, complexContent, xmlSchemaComplexContentExtension);
                         }
                         else
                         { // complexContent.Content is XmlSchemaComplexContentRestriction
@@ -1206,21 +1206,21 @@ namespace System.Xml.Schema
                 //return CanonicalizeElement((XmlSchemaElement)particle, substitution);
                 return particle;
             }
-            else if (particle is XmlSchemaGroupRef)
+            else if (particle is XmlSchemaGroupRef xmlSchemaGroupRef)
             {
-                return CanonicalizeGroupRef((XmlSchemaGroupRef)particle, root);
+                return CanonicalizeGroupRef(xmlSchemaGroupRef, root);
             }
-            else if (particle is XmlSchemaAll)
+            else if (particle is XmlSchemaAll xmlSchemaAll)
             {
-                return CanonicalizeAll((XmlSchemaAll)particle, root);
+                return CanonicalizeAll(xmlSchemaAll, root);
             }
-            else if (particle is XmlSchemaChoice)
+            else if (particle is XmlSchemaChoice xmlSchemaChoice)
             {
-                return CanonicalizeChoice((XmlSchemaChoice)particle, root);
+                return CanonicalizeChoice(xmlSchemaChoice, root);
             }
-            else if (particle is XmlSchemaSequence)
+            else if (particle is XmlSchemaSequence xmlSchemaSequence)
             {
-                return CanonicalizeSequence((XmlSchemaSequence)particle, root);
+                return CanonicalizeSequence(xmlSchemaSequence, root);
             }
             else
             {
@@ -1536,9 +1536,9 @@ namespace System.Xml.Schema
                 { //Base Element is subs grp head.
                     return IsValidRestriction(derivedParticle, newBaseParticle);
                 }
-                else if (derivedParticle is XmlSchemaElement)
+                else if (derivedParticle is XmlSchemaElement xmlSchemaElement)
                 {
-                    return IsElementFromElement((XmlSchemaElement)derivedParticle, baseElem);
+                    return IsElementFromElement(xmlSchemaElement, baseElem);
                 }
                 else
                 {
@@ -1546,26 +1546,26 @@ namespace System.Xml.Schema
                     return false;
                 }
             }
-            else if (baseParticle is XmlSchemaAny)
+            else if (baseParticle is XmlSchemaAny xmlSchemaAny2)
             {
-                if (derivedParticle is XmlSchemaElement)
+                if (derivedParticle is XmlSchemaElement xmlSchemaElement2)
                 {
-                    return IsElementFromAny((XmlSchemaElement)derivedParticle, (XmlSchemaAny)baseParticle);
+                    return IsElementFromAny(xmlSchemaElement2, xmlSchemaAny2);
                 }
-                else if (derivedParticle is XmlSchemaAny)
+                else if (derivedParticle is XmlSchemaAny xmlSchemaAny)
                 {
-                    return IsAnyFromAny((XmlSchemaAny)derivedParticle, (XmlSchemaAny)baseParticle);
+                    return IsAnyFromAny(xmlSchemaAny, xmlSchemaAny2);
                 }
                 else
                 {
-                    return IsGroupBaseFromAny((XmlSchemaGroupBase)derivedParticle, (XmlSchemaAny)baseParticle);
+                    return IsGroupBaseFromAny((XmlSchemaGroupBase)derivedParticle, xmlSchemaAny2);
                 }
             }
-            else if (baseParticle is XmlSchemaAll)
+            else if (baseParticle is XmlSchemaAll xmlSchemaAll)
             {
-                if (derivedParticle is XmlSchemaElement)
+                if (derivedParticle is XmlSchemaElement xmlSchemaElement3)
                 {
-                    return IsElementFromGroupBase((XmlSchemaElement)derivedParticle, (XmlSchemaGroupBase)baseParticle);
+                    return IsElementFromGroupBase(xmlSchemaElement3, (XmlSchemaGroupBase)baseParticle);
                 }
                 else if (derivedParticle is XmlSchemaAll)
                 {
@@ -1574,9 +1574,9 @@ namespace System.Xml.Schema
                         return true;
                     }
                 }
-                else if (derivedParticle is XmlSchemaSequence)
+                else if (derivedParticle is XmlSchemaSequence xmlSchemaSequence)
                 {
-                    if (IsSequenceFromAll((XmlSchemaSequence)derivedParticle, (XmlSchemaAll)baseParticle))
+                    if (IsSequenceFromAll(xmlSchemaSequence, xmlSchemaAll))
                     {
                         return true;
                     }
@@ -1588,11 +1588,11 @@ namespace System.Xml.Schema
                 }
                 return false;
             }
-            else if (baseParticle is XmlSchemaChoice)
+            else if (baseParticle is XmlSchemaChoice xmlSchemaChoice)
             {
-                if (derivedParticle is XmlSchemaElement)
+                if (derivedParticle is XmlSchemaElement xmlSchemaElement4)
                 {
-                    return IsElementFromGroupBase((XmlSchemaElement)derivedParticle, (XmlSchemaGroupBase)baseParticle);
+                    return IsElementFromGroupBase(xmlSchemaElement4, (XmlSchemaGroupBase)baseParticle);
                 }
                 else if (derivedParticle is XmlSchemaChoice)
                 {
@@ -1608,9 +1608,9 @@ namespace System.Xml.Schema
                         return true;
                     }
                 }
-                else if (derivedParticle is XmlSchemaSequence)
+                else if (derivedParticle is XmlSchemaSequence xmlSchemaSequence2)
                 {
-                    if (IsSequenceFromChoice((XmlSchemaSequence)derivedParticle, (XmlSchemaChoice)baseParticle))
+                    if (IsSequenceFromChoice(xmlSchemaSequence2, xmlSchemaChoice))
                     {
                         return true;
                     }
@@ -1624,9 +1624,9 @@ namespace System.Xml.Schema
             }
             else if (baseParticle is XmlSchemaSequence)
             {
-                if (derivedParticle is XmlSchemaElement)
+                if (derivedParticle is XmlSchemaElement xmlSchemaElement5)
                 {
-                    return IsElementFromGroupBase((XmlSchemaElement)derivedParticle, (XmlSchemaGroupBase)baseParticle);
+                    return IsElementFromGroupBase(xmlSchemaElement5, (XmlSchemaGroupBase)baseParticle);
                 }
                 else if (derivedParticle is XmlSchemaSequence || (derivedParticle is XmlSchemaAll && ((XmlSchemaGroupBase)derivedParticle).Items.Count == 1))
                 {
@@ -2589,18 +2589,18 @@ namespace System.Xml.Schema
             {
                 SchemaNamespaceManager xnmgr = new SchemaNamespaceManager(xi);
                 compic = new CompiledIdentityConstraint(xi, xnmgr);
-                if (xi is XmlSchemaKeyref)
+                if (xi is XmlSchemaKeyref xmlSchemaKeyref)
                 {
-                    XmlSchemaIdentityConstraint? ic = (XmlSchemaIdentityConstraint?)_identityConstraints[((XmlSchemaKeyref)xi).Refer];
+                    XmlSchemaIdentityConstraint? ic = (XmlSchemaIdentityConstraint?)_identityConstraints[xmlSchemaKeyref.Refer];
                     if (ic == null)
                     {
-                        throw new XmlSchemaException(SR.Sch_UndeclaredIdentityConstraint, ((XmlSchemaKeyref)xi).Refer.ToString(), xi);
+                        throw new XmlSchemaException(SR.Sch_UndeclaredIdentityConstraint, xmlSchemaKeyref.Refer.ToString(), xi);
                     }
 
                     CompileIdentityConstraint(ic);
                     if (ic.CompiledConstraint == null)
                     {
-                        throw new XmlSchemaException(SR.Sch_RefInvalidIdentityConstraint, ((XmlSchemaKeyref)xi).Refer.ToString(), xi);
+                        throw new XmlSchemaException(SR.Sch_RefInvalidIdentityConstraint, xmlSchemaKeyref.Refer.ToString(), xi);
                     }
 
                     // keyref has the different cardinality with the key it referred
@@ -2856,22 +2856,22 @@ namespace System.Xml.Schema
                 }
                 catch (UpaException e)
                 {
-                    if (e.Particle1 is XmlSchemaElement)
+                    if (e.Particle1 is XmlSchemaElement xmlSchemaElement3)
                     {
-                        if (e.Particle2 is XmlSchemaElement)
+                        if (e.Particle2 is XmlSchemaElement xmlSchemaElement)
                         {
-                            SendValidationEvent(SR.Sch_NonDeterministic, ((XmlSchemaElement)e.Particle1).QualifiedName.ToString(), (XmlSchemaElement)e.Particle2);
+                            SendValidationEvent(SR.Sch_NonDeterministic, xmlSchemaElement3.QualifiedName.ToString(), xmlSchemaElement);
                         }
                         else
                         {
-                            SendValidationEvent(SR.Sch_NonDeterministicAnyEx, ((XmlSchemaAny)e.Particle2!).ResolvedNamespace, ((XmlSchemaElement)e.Particle1).QualifiedName.ToString(), (XmlSchemaAny)e.Particle2);
+                            SendValidationEvent(SR.Sch_NonDeterministicAnyEx, ((XmlSchemaAny)e.Particle2!).ResolvedNamespace, xmlSchemaElement3.QualifiedName.ToString(), (XmlSchemaAny)e.Particle2);
                         }
                     }
                     else
                     {
-                        if (e.Particle2 is XmlSchemaElement)
+                        if (e.Particle2 is XmlSchemaElement xmlSchemaElement2)
                         {
-                            SendValidationEvent(SR.Sch_NonDeterministicAnyEx, ((XmlSchemaAny)e.Particle1!).ResolvedNamespace, ((XmlSchemaElement)e.Particle2).QualifiedName.ToString(), (XmlSchemaElement)e.Particle2);
+                            SendValidationEvent(SR.Sch_NonDeterministicAnyEx, ((XmlSchemaAny)e.Particle1!).ResolvedNamespace, xmlSchemaElement2.QualifiedName.ToString(), xmlSchemaElement2);
                         }
                         else
                         {
@@ -2895,15 +2895,15 @@ namespace System.Xml.Schema
             {
                 contentValidator.AddName(element.QualifiedName, element);
             }
-            else if (particle is XmlSchemaAny)
+            else if (particle is XmlSchemaAny xmlSchemaAny)
             {
                 hasWildCard = true;
-                XmlSchemaAny any = (XmlSchemaAny)particle;
+                XmlSchemaAny any = xmlSchemaAny;
                 contentValidator.AddNamespaceList(any.NamespaceList!, any);
             }
-            else if (particle is XmlSchemaGroupBase)
+            else if (particle is XmlSchemaGroupBase xmlSchemaGroupBase)
             {
-                XmlSchemaObjectCollection particles = ((XmlSchemaGroupBase)particle).Items;
+                XmlSchemaObjectCollection particles = xmlSchemaGroupBase.Items;
                 bool isChoice = particle is XmlSchemaChoice;
                 contentValidator.OpenGroup();
                 bool first = true;
@@ -2971,9 +2971,9 @@ namespace System.Xml.Schema
                     }
                 }
             }
-            else if (particle is XmlSchemaGroupBase)
+            else if (particle is XmlSchemaGroupBase xmlSchemaGroupBase)
             {
-                XmlSchemaObjectCollection particles = ((XmlSchemaGroupBase)particle).Items;
+                XmlSchemaObjectCollection particles = xmlSchemaGroupBase.Items;
                 for (int i = 0; i < particles.Count; ++i)
                 {
                     CompileParticleElements(complexType, (XmlSchemaParticle)particles[i]);
@@ -2987,9 +2987,9 @@ namespace System.Xml.Schema
             {
                 CompileElement(localElement);
             }
-            else if (particle is XmlSchemaGroupBase)
+            else if (particle is XmlSchemaGroupBase xmlSchemaGroupBase)
             {
-                XmlSchemaObjectCollection particles = ((XmlSchemaGroupBase)particle).Items;
+                XmlSchemaObjectCollection particles = xmlSchemaGroupBase.Items;
                 for (int i = 0; i < particles.Count; ++i)
                 {
                     CompileParticleElements((XmlSchemaParticle)particles[i]);
@@ -3048,9 +3048,9 @@ namespace System.Xml.Schema
             XmlSchemaType? type = (XmlSchemaType?)_schemaTypes[name];
             if (type != null)
             {
-                if (type is XmlSchemaComplexType)
+                if (type is XmlSchemaComplexType xmlSchemaComplexType)
                 {
-                    CompileComplexType((XmlSchemaComplexType)type);
+                    CompileComplexType(xmlSchemaComplexType);
                 }
                 else
                 {

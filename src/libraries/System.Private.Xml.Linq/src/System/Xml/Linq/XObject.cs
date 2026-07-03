@@ -309,7 +309,7 @@ namespace System.Xml.Linq
                     {
                         object? obj = a[i];
                         if (obj == null) break;
-                        if (!(obj is T)) a[j++] = obj;
+                        if (obj is not T) a[j++] = obj;
                         i++;
                     }
                     if (j == 0)

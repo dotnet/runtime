@@ -391,10 +391,10 @@ namespace System.Data
         /// </summary>
         public override bool Equals([NotNullWhen(true)] object? key2)
         {
-            if (!(key2 is UniqueConstraint))
+            if (key2 is not UniqueConstraint uniqueConstraint)
                 return false;
 
-            return Key.ColumnsEqual(((UniqueConstraint)key2).Key);
+            return Key.ColumnsEqual(uniqueConstraint.Key);
         }
 
         public override int GetHashCode()

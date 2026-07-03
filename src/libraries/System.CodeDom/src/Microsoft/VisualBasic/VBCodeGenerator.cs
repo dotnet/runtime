@@ -813,25 +813,25 @@ namespace Microsoft.VisualBasic
             {
                 Output.Write("Global.Microsoft.VisualBasic.ChrW(" + ((IConvertible)e.Value).ToInt32(CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture) + ")");
             }
-            else if (e.Value is sbyte)
+            else if (e.Value is sbyte sb)
             {
                 Output.Write("CSByte(");
-                Output.Write(((sbyte)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(sb.ToString(CultureInfo.InvariantCulture));
                 Output.Write(')');
             }
-            else if (e.Value is ushort)
+            else if (e.Value is ushort num3)
             {
-                Output.Write(((ushort)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(num3.ToString(CultureInfo.InvariantCulture));
                 Output.Write("US");
             }
-            else if (e.Value is uint)
+            else if (e.Value is uint num2)
             {
-                Output.Write(((uint)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(num2.ToString(CultureInfo.InvariantCulture));
                 Output.Write("UI");
             }
-            else if (e.Value is ulong)
+            else if (e.Value is ulong num)
             {
-                Output.Write(((ulong)e.Value).ToString(CultureInfo.InvariantCulture));
+                Output.Write(num.ToString(CultureInfo.InvariantCulture));
                 Output.Write("UL");
             }
             else
@@ -1124,7 +1124,7 @@ namespace Microsoft.VisualBasic
             if (e.TargetObject != null)
             {
                 // Visual Basic Compiler does not like the me reference like this.
-                if (!(e.TargetObject is CodeThisReferenceExpression))
+                if (e.TargetObject is not CodeThisReferenceExpression)
                 {
                     GenerateExpression(e.TargetObject);
                     Output.Write('.');
@@ -1137,10 +1137,10 @@ namespace Microsoft.VisualBasic
         {
             if (e.TargetObject != null)
             {
-                if (e.TargetObject is CodeEventReferenceExpression)
+                if (e.TargetObject is CodeEventReferenceExpression codeEventReferenceExpression)
                 {
                     Output.Write("RaiseEvent ");
-                    GenerateFormalEventReferenceExpression((CodeEventReferenceExpression)e.TargetObject);
+                    GenerateFormalEventReferenceExpression(codeEventReferenceExpression);
                 }
                 else
                 {
@@ -1548,11 +1548,11 @@ namespace Microsoft.VisualBasic
             }
             foreach (var current in c.Members)
             {
-                if (!(current is CodeMemberMethod))
+                if (current is not CodeMemberMethod codeMemberMethod)
                     continue;
-                CodeMemberMethod meth = (CodeMemberMethod)current;
+                CodeMemberMethod meth = codeMemberMethod;
 
-                if (!(current is CodeTypeConstructor) && !(current is CodeConstructor)
+                if (current is not CodeTypeConstructor && current is not CodeConstructor
                     && meth != e
                     && meth.Name.Equals(e.Name, StringComparison.OrdinalIgnoreCase)
                     && meth.PrivateImplementationType == null)
@@ -1710,9 +1710,9 @@ namespace Microsoft.VisualBasic
             }
             foreach (var current in c.Members)
             {
-                if (!(current is CodeMemberProperty))
+                if (current is not CodeMemberProperty codeMemberProperty)
                     continue;
-                CodeMemberProperty prop = (CodeMemberProperty)current;
+                CodeMemberProperty prop = codeMemberProperty;
                 if (prop != e
                     && prop.Name.Equals(e.Name, StringComparison.OrdinalIgnoreCase)
                     && prop.PrivateImplementationType == null)
@@ -2265,13 +2265,13 @@ namespace Microsoft.VisualBasic
             for (int i = 0; i < directives.Count; i++)
             {
                 CodeDirective directive = directives[i];
-                if (directive is CodeChecksumPragma)
+                if (directive is CodeChecksumPragma codeChecksumPragma)
                 {
-                    GenerateChecksumPragma((CodeChecksumPragma)directive);
+                    GenerateChecksumPragma(codeChecksumPragma);
                 }
-                else if (directive is CodeRegionDirective)
+                else if (directive is CodeRegionDirective codeRegionDirective)
                 {
-                    GenerateCodeRegionDirective((CodeRegionDirective)directive);
+                    GenerateCodeRegionDirective(codeRegionDirective);
                 }
             }
         }

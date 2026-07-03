@@ -491,9 +491,9 @@ namespace System.Data.OleDb
                         Value_DECIMAL((decimal)value);
                         break;
                     case NativeDBType.I1:
-                        if (value is short)
+                        if (value is short num)
                         {
-                            Value_I1(Convert.ToSByte((short)value, CultureInfo.InvariantCulture));
+                            Value_I1(Convert.ToSByte(num, CultureInfo.InvariantCulture));
                         }
                         else
                         {
@@ -504,9 +504,9 @@ namespace System.Data.OleDb
                         Value_UI1((byte)value);
                         break;
                     case NativeDBType.UI2:
-                        if (value is int)
+                        if (value is int num2)
                         {
-                            Value_UI2(Convert.ToUInt16((int)value, CultureInfo.InvariantCulture));
+                            Value_UI2(Convert.ToUInt16(num2, CultureInfo.InvariantCulture));
                         }
                         else
                         {
@@ -514,9 +514,9 @@ namespace System.Data.OleDb
                         }
                         break;
                     case NativeDBType.UI4:
-                        if (value is long)
+                        if (value is long num3)
                         {
-                            Value_UI4(Convert.ToUInt32((long)value, CultureInfo.InvariantCulture));
+                            Value_UI4(Convert.ToUInt32(num3, CultureInfo.InvariantCulture));
                         }
                         else
                         {
@@ -527,9 +527,9 @@ namespace System.Data.OleDb
                         Value_I8((long)value);
                         break;
                     case NativeDBType.UI8:
-                        if (value is decimal)
+                        if (value is decimal d)
                         {
-                            Value_UI8(Convert.ToUInt64((decimal)value, CultureInfo.InvariantCulture));
+                            Value_UI8(Convert.ToUInt64(d, CultureInfo.InvariantCulture));
                         }
                         else
                         {
@@ -546,9 +546,9 @@ namespace System.Data.OleDb
                         Value_BYTES((byte[])value);
                         break;
                     case NativeDBType.WSTR:
-                        if (value is string)
+                        if (value is string str)
                         {
-                            Value_WSTR((string)value);
+                            Value_WSTR(str);
                         }
                         else
                         {
@@ -574,9 +574,9 @@ namespace System.Data.OleDb
                         Value_ByRefBYTES((byte[])value);
                         break;
                     case (NativeDBType.BYREF | NativeDBType.WSTR):
-                        if (value is string)
+                        if (value is string str2)
                         {
-                            Value_ByRefWSTR((string)value);
+                            Value_ByRefWSTR(str2);
                         }
                         else
                         {
@@ -1463,9 +1463,9 @@ namespace System.Data.OleDb
                             break;
                         case NativeDBType.VARIANT:
                             object variant = ValueVariant();
-                            if (variant is sbyte)
+                            if (variant is sbyte sb)
                             {
-                                value = (short)(sbyte)variant;
+                                value = (short)sb;
                             }
                             else
                             {
@@ -1498,9 +1498,9 @@ namespace System.Data.OleDb
                             break;
                         case NativeDBType.VARIANT:
                             object variant = ValueVariant();
-                            if (variant is ushort)
+                            if (variant is ushort num)
                             {
-                                value = (int)(ushort)variant;
+                                value = (int)num;
                             }
                             else
                             {
@@ -1533,9 +1533,9 @@ namespace System.Data.OleDb
                             break;
                         case NativeDBType.VARIANT:
                             object variant = ValueVariant();
-                            if (variant is uint)
+                            if (variant is uint num)
                             {
-                                value = (long)(uint)variant;
+                                value = (long)num;
                             }
                             else
                             {

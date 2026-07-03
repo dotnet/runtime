@@ -60,9 +60,9 @@ namespace System
                 return 1;
             }
 
-            if (value is short)
+            if (value is short num)
             {
-                return m_value - ((short)value).m_value;
+                return m_value - num.m_value;
             }
 
             throw new ArgumentException(SR.Arg_MustBeInt16);
@@ -75,11 +75,11 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is short))
+            if (obj is not short num)
             {
                 return false;
             }
-            return m_value == ((short)obj).m_value;
+            return m_value == num.m_value;
         }
 
         [NonVersionable]

@@ -82,7 +82,7 @@ namespace System.Xml.Serialization
                     else if (member.Elements == null || member.Elements.Length == 0)
                         continue;
 
-                    if (member.TypeDesc!.IsArrayLike && !(member.Elements[0].Mapping is ArrayMapping))
+                    if (member.TypeDesc!.IsArrayLike && member.Elements[0].Mapping is not ArrayMapping)
                         throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayElement, member.Elements[0].Name));
 
                     if (exportEnclosingType)
@@ -346,28 +346,28 @@ namespace System.Xml.Serialization
 
         private void ExportMapping(Mapping mapping, string? ns, bool isAny)
         {
-            if (mapping is ArrayMapping)
-                ExportArrayMapping((ArrayMapping)mapping, ns, null);
-            else if (mapping is PrimitiveMapping)
+            if (mapping is ArrayMapping arrayMapping)
+                ExportArrayMapping(arrayMapping, ns, null);
+            else if (mapping is PrimitiveMapping primitiveMapping)
             {
-                ExportPrimitiveMapping((PrimitiveMapping)mapping, ns);
+                ExportPrimitiveMapping(primitiveMapping, ns);
             }
-            else if (mapping is StructMapping)
-                ExportStructMapping((StructMapping)mapping, ns, null);
-            else if (mapping is MembersMapping)
-                ExportMembersMapping((MembersMapping)mapping, ns);
-            else if (mapping is SpecialMapping)
-                ExportSpecialMapping((SpecialMapping)mapping, ns, isAny, null);
-            else if (mapping is NullableMapping)
-                ExportMapping(((NullableMapping)mapping).BaseMapping!, ns, isAny);
+            else if (mapping is StructMapping structMapping)
+                ExportStructMapping(structMapping, ns, null);
+            else if (mapping is MembersMapping membersMapping)
+                ExportMembersMapping(membersMapping, ns);
+            else if (mapping is SpecialMapping specialMapping)
+                ExportSpecialMapping(specialMapping, ns, isAny, null);
+            else if (mapping is NullableMapping nullableMapping)
+                ExportMapping(nullableMapping.BaseMapping!, ns, isAny);
             else
                 throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
 
         private void ExportElementMapping(XmlSchemaElement element, Mapping mapping, string? ns, bool isAny)
         {
-            if (mapping is ArrayMapping)
-                ExportArrayMapping((ArrayMapping)mapping, ns, element);
+            if (mapping is ArrayMapping arrayMapping)
+                ExportArrayMapping(arrayMapping, ns, element);
             else if (mapping is PrimitiveMapping pm)
             {
                 if (pm.IsAnonymousType)
@@ -379,17 +379,17 @@ namespace System.Xml.Serialization
                     element.SchemaTypeName = ExportPrimitiveMapping(pm, ns);
                 }
             }
-            else if (mapping is StructMapping)
+            else if (mapping is StructMapping structMapping)
             {
-                ExportStructMapping((StructMapping)mapping, ns, element);
+                ExportStructMapping(structMapping, ns, element);
             }
-            else if (mapping is MembersMapping)
-                element.SchemaType = ExportMembersMapping((MembersMapping)mapping, ns);
-            else if (mapping is SpecialMapping)
-                ExportSpecialMapping((SpecialMapping)mapping, ns, isAny, element);
-            else if (mapping is NullableMapping)
+            else if (mapping is MembersMapping membersMapping)
+                element.SchemaType = ExportMembersMapping(membersMapping, ns);
+            else if (mapping is SpecialMapping specialMapping)
+                ExportSpecialMapping(specialMapping, ns, isAny, element);
+            else if (mapping is NullableMapping nullableMapping)
             {
-                ExportElementMapping(element, ((NullableMapping)mapping).BaseMapping!, ns, isAny);
+                ExportElementMapping(element, nullableMapping.BaseMapping!, ns, isAny);
             }
             else
                 throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
@@ -549,9 +549,9 @@ namespace System.Xml.Serialization
 
         private XmlSchemaSimpleType ExportAnonymousPrimitiveMapping(PrimitiveMapping mapping)
         {
-            if (mapping is EnumMapping)
+            if (mapping is EnumMapping enumMapping)
             {
-                return ExportEnumMapping((EnumMapping)mapping, null);
+                return ExportEnumMapping(enumMapping, null);
             }
             else
             {
@@ -562,9 +562,9 @@ namespace System.Xml.Serialization
         private XmlQualifiedName ExportPrimitiveMapping(PrimitiveMapping mapping, string? ns)
         {
             XmlQualifiedName qname;
-            if (mapping is EnumMapping)
+            if (mapping is EnumMapping enumMapping)
             {
-                XmlSchemaType type = ExportEnumMapping((EnumMapping)mapping, ns);
+                XmlSchemaType type = ExportEnumMapping(enumMapping, ns);
                 qname = new XmlQualifiedName(type.Name, mapping.Namespace);
             }
             else
@@ -667,12 +667,12 @@ namespace System.Xml.Serialization
 
             if (type.ContentModel != null)
             {
-                if (type.ContentModel.Content is XmlSchemaComplexContentRestriction)
-                    attributes = ((XmlSchemaComplexContentRestriction)type.ContentModel.Content).Attributes;
-                else if (type.ContentModel.Content is XmlSchemaComplexContentExtension)
-                    attributes = ((XmlSchemaComplexContentExtension)type.ContentModel.Content).Attributes;
-                else if (type.ContentModel.Content is XmlSchemaSimpleContentExtension)
-                    attributes = ((XmlSchemaSimpleContentExtension)type.ContentModel.Content).Attributes;
+                if (type.ContentModel.Content is XmlSchemaComplexContentRestriction xmlSchemaComplexContentRestriction)
+                    attributes = xmlSchemaComplexContentRestriction.Attributes;
+                else if (type.ContentModel.Content is XmlSchemaComplexContentExtension xmlSchemaComplexContentExtension)
+                    attributes = xmlSchemaComplexContentExtension.Attributes;
+                else if (type.ContentModel.Content is XmlSchemaSimpleContentExtension xmlSchemaSimpleContentExtension)
+                    attributes = xmlSchemaSimpleContentExtension.Attributes;
                 else
                     throw new InvalidOperationException(SR.Format(SR.XmlInvalidContent, type.ContentModel.Content!.GetType().Name));
             }
@@ -701,9 +701,9 @@ namespace System.Xml.Serialization
                 else
                 {
                     XmlSchemaContent? content = type.ContentModel.Content;
-                    if (content is XmlSchemaComplexContentExtension)
+                    if (content is XmlSchemaComplexContentExtension xmlSchemaComplexContentExtension2)
                     {
-                        XmlSchemaComplexContentExtension extension = (XmlSchemaComplexContentExtension)content;
+                        XmlSchemaComplexContentExtension extension = xmlSchemaComplexContentExtension2;
                         extension.AnyAttribute = new XmlSchemaAnyAttribute();
                     }
                     else if (content is XmlSchemaComplexContentRestriction restriction)
@@ -784,7 +784,7 @@ namespace System.Xml.Serialization
                         }
                     }
                 }
-                else if (!(accessor.Mapping is SpecialMapping))
+                else if (accessor.Mapping is not SpecialMapping)
                     throw new InvalidOperationException(SR.XmlInternalError);
 
                 if (accessor.HasDefault)
@@ -858,7 +858,7 @@ namespace System.Xml.Serialization
 
         internal static string? ExportDefaultValue(TypeMapping mapping, object? value)
         {
-            if (!(mapping is PrimitiveMapping))
+            if (mapping is not PrimitiveMapping primitiveMapping)
                 // should throw, but it will be a breaking change;
                 return null;
 
@@ -901,7 +901,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            PrimitiveMapping pm = (PrimitiveMapping)mapping;
+            PrimitiveMapping pm = primitiveMapping;
 
             if (!pm.TypeDesc!.HasCustomFormatter)
             {
@@ -941,13 +941,13 @@ namespace System.Xml.Serialization
                 {
                     ExportDerivedMappings((StructMapping)mapping);
                 }
-                else if (mapping is ArrayMapping)
+                else if (mapping is ArrayMapping arrayMapping)
                 {
-                    ExportArrayMapping((ArrayMapping)mapping, mapping.Namespace, null);
+                    ExportArrayMapping(arrayMapping, mapping.Namespace, null);
                 }
-                else if (mapping is SerializableMapping)
+                else if (mapping is SerializableMapping serializableMapping)
                 {
-                    ExportSpecialMapping((SerializableMapping)mapping, mapping.Namespace, false, null);
+                    ExportSpecialMapping(serializableMapping, mapping.Namespace, false, null);
                 }
             }
         }
@@ -1061,10 +1061,10 @@ namespace System.Xml.Serialization
             {
                 if (type.ContentModel != null)
                 {
-                    if (type.ContentModel.Content is XmlSchemaComplexContentRestriction)
-                        ((XmlSchemaComplexContentRestriction)type.ContentModel.Content).Particle = seq;
-                    else if (type.ContentModel.Content is XmlSchemaComplexContentExtension)
-                        ((XmlSchemaComplexContentExtension)type.ContentModel.Content).Particle = seq;
+                    if (type.ContentModel.Content is XmlSchemaComplexContentRestriction xmlSchemaComplexContentRestriction)
+                        xmlSchemaComplexContentRestriction.Particle = seq;
+                    else if (type.ContentModel.Content is XmlSchemaComplexContentExtension xmlSchemaComplexContentExtension)
+                        xmlSchemaComplexContentExtension.Particle = seq;
                     else
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidContent, type.ContentModel.Content!.GetType().Name));
                 }

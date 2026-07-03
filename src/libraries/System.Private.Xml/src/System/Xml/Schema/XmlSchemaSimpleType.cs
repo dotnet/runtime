@@ -33,9 +33,9 @@ namespace System.Xml.Schema
                     // type derived from anyType
                     return XmlQualifiedName.Empty;
                 }
-                if (_content is XmlSchemaSimpleTypeRestriction)
+                if (_content is XmlSchemaSimpleTypeRestriction xmlSchemaSimpleTypeRestriction)
                 {
-                    return ((XmlSchemaSimpleTypeRestriction)_content).BaseTypeName;
+                    return xmlSchemaSimpleTypeRestriction.BaseTypeName;
                 }
                 return XmlQualifiedName.Empty;
             }

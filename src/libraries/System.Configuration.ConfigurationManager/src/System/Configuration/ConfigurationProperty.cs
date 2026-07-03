@@ -82,15 +82,15 @@ namespace System.Configuration
             // Look for relevant attributes
             foreach (Attribute attribute in Attribute.GetCustomAttributes(info))
             {
-                if (attribute is TypeConverterAttribute)
+                if (attribute is TypeConverterAttribute typeConverterAttribute)
                 {
-                    typeConverter = TypeUtil.CreateInstance<TypeConverter>(((TypeConverterAttribute)attribute).ConverterTypeName);
+                    typeConverter = TypeUtil.CreateInstance<TypeConverter>(typeConverterAttribute.ConverterTypeName);
                 }
-                else if (attribute is ConfigurationPropertyAttribute)
+                else if (attribute is ConfigurationPropertyAttribute configurationPropertyAttribute)
                 {
-                    propertyAttribute = (ConfigurationPropertyAttribute)attribute;
+                    propertyAttribute = configurationPropertyAttribute;
                 }
-                else if (attribute is ConfigurationValidatorAttribute)
+                else if (attribute is ConfigurationValidatorAttribute configurationValidatorAttribute)
                 {
                     if (validator != null)
                     {
@@ -103,17 +103,17 @@ namespace System.Configuration
                             SR.Format(SR.Validator_multiple_validator_attributes, info.Name));
                     }
 
-                    ConfigurationValidatorAttribute validatorAttribute = (ConfigurationValidatorAttribute)attribute;
+                    ConfigurationValidatorAttribute validatorAttribute = configurationValidatorAttribute;
                     validatorAttribute.SetDeclaringType(info.DeclaringType);
                     validator = validatorAttribute.ValidatorInstance;
                 }
-                else if (attribute is DescriptionAttribute)
+                else if (attribute is DescriptionAttribute descriptionAttribute2)
                 {
-                    descriptionAttribute = (DescriptionAttribute)attribute;
+                    descriptionAttribute = descriptionAttribute2;
                 }
-                else if (attribute is DefaultValueAttribute)
+                else if (attribute is DefaultValueAttribute defaultValueAttribute2)
                 {
-                    defaultValueAttribute = (DefaultValueAttribute)attribute;
+                    defaultValueAttribute = defaultValueAttribute2;
                 }
             }
 

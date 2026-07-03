@@ -142,7 +142,7 @@ namespace System.DirectoryServices.Protocols
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
-                if (!(value is string) && !(value is byte[]) && !(value is Uri))
+                if (value is not string && value is not byte[] && value is not Uri)
                 {
                     throw new ArgumentException(SR.ValidValueType, nameof(value));
                 }
@@ -161,7 +161,7 @@ namespace System.DirectoryServices.Protocols
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is string) && !(value is byte[]) && !(value is Uri))
+            if (value is not string && value is not byte[] && value is not Uri)
             {
                 throw new ArgumentException(SR.ValidValueType, nameof(value));
             }
@@ -173,7 +173,7 @@ namespace System.DirectoryServices.Protocols
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            if (!(values is string[]) && !(values is byte[][]) && !(values is Uri[]))
+            if (values is not string[] && values is not byte[][] && values is not Uri[])
             {
                 throw new ArgumentException(SR.ValidValuesType, nameof(values));
             }
@@ -214,7 +214,7 @@ namespace System.DirectoryServices.Protocols
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is string) && !(value is byte[]) && !(value is Uri))
+            if (value is not string && value is not byte[] && value is not Uri)
             {
                 throw new ArgumentException(SR.ValidValueType, nameof(value));
             }
@@ -351,7 +351,7 @@ namespace System.DirectoryServices.Protocols
             {
                 throw new ArgumentException(SR.NullDirectoryAttributeCollection);
             }
-            if (!(value is DirectoryAttribute))
+            if (value is not DirectoryAttribute)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidValueType, nameof(DirectoryAttribute)), nameof(value));
             }
@@ -430,7 +430,7 @@ namespace System.DirectoryServices.Protocols
             {
                 throw new ArgumentException(SR.NullDirectoryAttributeCollection);
             }
-            if (!(value is DirectoryAttributeModification))
+            if (value is not DirectoryAttributeModification)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidValueType, nameof(DirectoryAttributeModification)), nameof(value));
             }

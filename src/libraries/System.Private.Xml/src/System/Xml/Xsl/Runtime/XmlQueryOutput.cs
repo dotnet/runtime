@@ -110,8 +110,8 @@ namespace System.Xml.Xsl.Runtime
         private void SetWrappedWriter(XmlRawWriter writer)
         {
             // Reuse XmlAttributeCache so that it doesn't have to be recreated every time
-            if (Writer is XmlAttributeCache)
-                _attrCache = (XmlAttributeCache)Writer;
+            if (Writer is XmlAttributeCache xmlAttributeCache)
+                _attrCache = xmlAttributeCache;
 
             Writer = writer;
         }

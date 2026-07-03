@@ -136,9 +136,9 @@ namespace System.Xml.Serialization
             for (int i = 0; i < list.Count; i++)
             {
                 object? cachedHash = Hash[list[i]!];
-                if (cachedHash is int)
+                if (cachedHash is int num)
                 {
-                    tmp += (int)cachedHash / list.Count;
+                    tmp += num / list.Count;
                 }
             }
             return (int)tmp;
@@ -264,10 +264,10 @@ namespace System.Xml.Serialization
                     if (ct.ContentModel != null)
                     {
                         XmlSchemaContent? content = ct.ContentModel.Content;
-                        if (content is XmlSchemaComplexContentRestriction)
+                        if (content is XmlSchemaComplexContentRestriction xmlSchemaComplexContentRestriction)
                         {
-                            baseName = ((XmlSchemaComplexContentRestriction)content).BaseTypeName;
-                            attributes = ((XmlSchemaComplexContentRestriction)content).Attributes;
+                            baseName = xmlSchemaComplexContentRestriction.BaseTypeName;
+                            attributes = xmlSchemaComplexContentRestriction.Attributes;
                         }
                         else if (content is XmlSchemaSimpleContentRestriction restriction)
                         {
@@ -306,10 +306,10 @@ namespace System.Xml.Serialization
                 else if (item is XmlSchemaSimpleType simpleType)
                 {
                     XmlSchemaSimpleTypeContent? content = simpleType.Content;
-                    if (content is XmlSchemaSimpleTypeRestriction)
+                    if (content is XmlSchemaSimpleTypeRestriction xmlSchemaSimpleTypeRestriction)
                     {
-                        baseType = ((XmlSchemaSimpleTypeRestriction)content).BaseType;
-                        baseName = ((XmlSchemaSimpleTypeRestriction)content).BaseTypeName;
+                        baseType = xmlSchemaSimpleTypeRestriction.BaseType;
+                        baseName = xmlSchemaSimpleTypeRestriction.BaseTypeName;
                     }
                     else if (content is XmlSchemaSimpleTypeList list)
                     {

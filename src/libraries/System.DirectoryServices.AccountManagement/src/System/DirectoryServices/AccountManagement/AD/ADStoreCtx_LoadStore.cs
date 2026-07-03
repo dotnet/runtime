@@ -239,9 +239,9 @@ namespace System.DirectoryServices.AccountManagement
             string path;
             string distinguishedName;
 
-            if (storeObject is DirectoryEntry)
+            if (storeObject is DirectoryEntry directoryEntry)
             {
-                de = (DirectoryEntry)storeObject;
+                de = directoryEntry;
                 path = de.Path;
                 distinguishedName = (string)de.Properties["distinguishedName"].Value;
             }
@@ -1343,7 +1343,7 @@ namespace System.DirectoryServices.AccountManagement
                         ICollection valueCollection;
 
                         // byte[] gets special treatment (following S.DS and ADSI) - we don't treat it as ICollection but rather as a whole
-                        if (kvp.Value.Value.Length == 1 && kvp.Value.Value[0] is ICollection && !(kvp.Value.Value[0] is byte[]))
+                        if (kvp.Value.Value.Length == 1 && kvp.Value.Value[0] is ICollection && kvp.Value.Value[0] is not byte[])
                         {
                             valueCollection = (ICollection)kvp.Value.Value[0];
                         }
@@ -1362,7 +1362,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             if (null != oVal)
                             {
-                                if ((oVal is ICollection || oVal is IList) && !(oVal is byte[]))
+                                if ((oVal is ICollection || oVal is IList) && oVal is not byte[])
                                     throw new ArgumentException(SR.InvalidExtensionCollectionType);
 
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheToLdapConverter - Element Value Type " + oVal.GetType().ToString());

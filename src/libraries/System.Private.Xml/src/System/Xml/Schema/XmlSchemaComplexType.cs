@@ -274,14 +274,14 @@ namespace System.Xml.Schema
                     // type derived from anyType
                     return XmlQualifiedName.Empty;
                 }
-                if (_contentModel.Content is XmlSchemaComplexContentRestriction)
-                    return ((XmlSchemaComplexContentRestriction)_contentModel.Content).BaseTypeName;
-                else if (_contentModel.Content is XmlSchemaComplexContentExtension)
-                    return ((XmlSchemaComplexContentExtension)_contentModel.Content).BaseTypeName;
-                else if (_contentModel.Content is XmlSchemaSimpleContentRestriction)
-                    return ((XmlSchemaSimpleContentRestriction)_contentModel.Content).BaseTypeName;
-                else if (_contentModel.Content is XmlSchemaSimpleContentExtension)
-                    return ((XmlSchemaSimpleContentExtension)_contentModel.Content).BaseTypeName;
+                if (_contentModel.Content is XmlSchemaComplexContentRestriction xmlSchemaComplexContentRestriction)
+                    return xmlSchemaComplexContentRestriction.BaseTypeName;
+                else if (_contentModel.Content is XmlSchemaComplexContentExtension xmlSchemaComplexContentExtension)
+                    return xmlSchemaComplexContentExtension.BaseTypeName;
+                else if (_contentModel.Content is XmlSchemaSimpleContentRestriction xmlSchemaSimpleContentRestriction)
+                    return xmlSchemaSimpleContentRestriction.BaseTypeName;
+                else if (_contentModel.Content is XmlSchemaSimpleContentExtension xmlSchemaSimpleContentExtension)
+                    return xmlSchemaSimpleContentExtension.BaseTypeName;
                 else
                     return XmlQualifiedName.Empty;
             }

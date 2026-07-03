@@ -613,8 +613,8 @@ namespace System.Xml
 
         private void Foliate(XmlElement element)
         {
-            if (element is XmlBoundElement)
-                ((XmlBoundElement)element).Foliate(ElementState.WeakFoliation);
+            if (element is XmlBoundElement xmlBoundElement)
+                xmlBoundElement.Foliate(ElementState.WeakFoliation);
         }
 
         // Foliate rowElement region if there are DataPointers that points into it
@@ -770,7 +770,7 @@ namespace System.Xml
                     break;
 
                 object? schema = _mapper.GetColumnSchemaForNode(rowElement, node);
-                if (schema == null || !(schema is DataColumn))
+                if (schema == null || schema is not DataColumn)
                     break;
 
                 // insert location must be before any columns logically after this column
@@ -922,9 +922,9 @@ namespace System.Xml
 
         private bool IsFoliated(XmlElement element)
         {
-            if (element is XmlBoundElement)
+            if (element is XmlBoundElement xmlBoundElement)
             {
-                return ((XmlBoundElement)element).IsFoliated;
+                return xmlBoundElement.IsFoliated;
             }
 
             return true;
@@ -2391,7 +2391,7 @@ namespace System.Xml
             {
                 oVal = col.ConvertXmlToObject(xmlText);
                 // This func does not set the field value to null - call SetRowValueToNull in order to do so
-                Debug.Assert(oVal != null && !(oVal is DBNull));
+                Debug.Assert(oVal != null && oVal is not DBNull);
             }
             catch (Exception e) when (Data.Common.ADP.IsCatchableExceptionType(e))
             {

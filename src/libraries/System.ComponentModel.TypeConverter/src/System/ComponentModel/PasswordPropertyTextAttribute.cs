@@ -56,9 +56,9 @@ namespace System.ComponentModel
         /// </summary>
         public override bool Equals([NotNullWhen(true)] object? o)
         {
-            if (o is PasswordPropertyTextAttribute)
+            if (o is PasswordPropertyTextAttribute passwordPropertyTextAttribute)
             {
-                return ((PasswordPropertyTextAttribute)o).Password == Password;
+                return passwordPropertyTextAttribute.Password == Password;
             }
             return false;
         }

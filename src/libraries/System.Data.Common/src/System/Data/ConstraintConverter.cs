@@ -34,9 +34,9 @@ namespace System.Data
 
             if (destinationType == typeof(InstanceDescriptor) && value is Constraint)
             {
-                if (value is UniqueConstraint)
+                if (value is UniqueConstraint uniqueConstraint)
                 {
-                    UniqueConstraint constr = (UniqueConstraint)value;
+                    UniqueConstraint constr = uniqueConstraint;
                     Reflection.ConstructorInfo ctor = typeof(UniqueConstraint).GetConstructor(new Type[] { typeof(string), typeof(string[]), typeof(bool) })!;
                     if (ctor != null)
                     {

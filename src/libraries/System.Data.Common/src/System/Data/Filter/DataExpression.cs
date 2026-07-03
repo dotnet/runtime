@@ -254,18 +254,18 @@ namespace System.Data
         {
             if (IsUnknown(value))
                 return false;
-            if (value is bool)
-                return (bool)value;
-            if (value is SqlBoolean)
+            if (value is bool b)
+                return b;
+            if (value is SqlBoolean sqlBoolean)
             {
-                return (((SqlBoolean)value).IsTrue);
+                return (sqlBoolean.IsTrue);
             }
             //check for SqlString is not added, value for true and false should be given with String, not with SqlString
-            if (value is string)
+            if (value is string str)
             {
                 try
                 {
-                    return bool.Parse((string)value);
+                    return bool.Parse(str);
                 }
                 catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                 {

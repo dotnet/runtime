@@ -1680,14 +1680,14 @@ namespace System.Collections.Concurrent
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (!(key is TKey))
+            if (key is not TKey tKey)
             {
                 throw new ArgumentException(SR.ConcurrentDictionary_TypeOfKeyIncorrect);
             }
 
             ThrowIfInvalidObjectValue(value);
 
-            ((IDictionary<TKey, TValue>)this).Add((TKey)key, (TValue)value!);
+            ((IDictionary<TKey, TValue>)this).Add(tKey, (TValue)value!);
         }
 
         /// <summary>
@@ -1813,14 +1813,14 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
-                if (!(key is TKey))
+                if (key is not TKey tKey)
                 {
                     throw new ArgumentException(SR.ConcurrentDictionary_TypeOfKeyIncorrect);
                 }
 
                 ThrowIfInvalidObjectValue(value);
 
-                ((ConcurrentDictionary<TKey, TValue>)this)[(TKey)key] = (TValue)value!;
+                ((ConcurrentDictionary<TKey, TValue>)this)[tKey] = (TValue)value!;
             }
         }
 
@@ -1829,7 +1829,7 @@ namespace System.Collections.Concurrent
         {
             if (value is not null)
             {
-                if (!(value is TValue))
+                if (value is not TValue)
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect);
                 }

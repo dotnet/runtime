@@ -260,7 +260,7 @@ namespace System.Runtime.CompilerServices
             // if it only implements IFormattable, we come out even: only if it implements both do we
             // end up paying for an extra interface check.
             string? s;
-            if (value is IFormattable)
+            if (value is IFormattable formattable)
             {
                 // If the value can format itself directly into our buffer, do so.
 
@@ -276,10 +276,10 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                if (value is ISpanFormattable)
+                if (value is ISpanFormattable spanFormattable)
                 {
                     int charsWritten;
-                    while (!((ISpanFormattable)value).TryFormat(_chars.Slice(_pos), out charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                    while (!spanFormattable.TryFormat(_chars.Slice(_pos), out charsWritten, default, _provider)) // constrained call avoiding boxing for value types
                     {
                         Grow();
                     }
@@ -288,7 +288,7 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                s = ((IFormattable)value).ToString(format: null, _provider); // constrained call avoiding boxing for value types
+                s = formattable.ToString(format: null, _provider); // constrained call avoiding boxing for value types
             }
             else
             {
@@ -327,7 +327,7 @@ namespace System.Runtime.CompilerServices
             // if it only implements IFormattable, we come out even: only if it implements both do we
             // end up paying for an extra interface check.
             string? s;
-            if (value is IFormattable)
+            if (value is IFormattable formattable)
             {
                 // If the value can format itself directly into our buffer, do so.
 
@@ -343,10 +343,10 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                if (value is ISpanFormattable)
+                if (value is ISpanFormattable spanFormattable)
                 {
                     int charsWritten;
-                    while (!((ISpanFormattable)value).TryFormat(_chars.Slice(_pos), out charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                    while (!spanFormattable.TryFormat(_chars.Slice(_pos), out charsWritten, format, _provider)) // constrained call avoiding boxing for value types
                     {
                         Grow();
                     }
@@ -355,7 +355,7 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                s = ((IFormattable)value).ToString(format, _provider); // constrained call avoiding boxing for value types
+                s = formattable.ToString(format, _provider); // constrained call avoiding boxing for value types
             }
             else
             {

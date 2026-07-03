@@ -89,7 +89,7 @@ namespace System.Xml.Xsl.XPath
         {
             XmlQueryType xt = n.XmlType!;
             // Do not report compile error if n is a VarPar, whose inferred type forbids nodes (SQLBUDT 339398)
-            return xt.IsAtomicValue && !xt.IsEmpty && !(n is QilIterator);
+            return xt.IsAtomicValue && !xt.IsEmpty && n is not QilIterator;
         }
 
         public QilNode SafeDocOrderDistinct(QilNode n)

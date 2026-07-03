@@ -297,8 +297,8 @@ namespace System.Xml.Serialization
         {
             if (mapping is MembersMapping)
                 return "(method)";
-            else if (mapping is TypeMapping)
-                return ((TypeMapping)mapping).TypeDesc!.FullName;
+            else if (mapping is TypeMapping typeMapping)
+                return typeMapping.TypeDesc!.FullName;
             else
                 throw new ArgumentException(SR.XmlInternalError, nameof(mapping));
         }
@@ -325,7 +325,7 @@ namespace System.Xml.Serialization
             if (existing.Mapping == accessor.Mapping)
                 return existing;
 
-            if (!(accessor.Mapping is MembersMapping) && !(existing.Mapping is MembersMapping))
+            if (accessor.Mapping is not MembersMapping && existing.Mapping is not MembersMapping)
             {
                 if (accessor.Mapping!.TypeDesc == existing.Mapping!.TypeDesc
                     || (existing.Mapping is NullableMapping && accessor.Mapping.TypeDesc == ((NullableMapping)existing.Mapping).BaseMapping!.TypeDesc)
@@ -345,13 +345,13 @@ namespace System.Xml.Serialization
             if (accessor.Mapping is MembersMapping || existing.Mapping is MembersMapping)
                 throw new InvalidOperationException(SR.Format(SR.XmlMethodTypeNameConflict, accessor.Name, accessor.Namespace));
 
-            if (accessor.Mapping is ArrayMapping)
+            if (accessor.Mapping is ArrayMapping arrayMapping)
             {
-                if (!(existing.Mapping is ArrayMapping))
+                if (existing.Mapping is not ArrayMapping)
                 {
                     throw new InvalidOperationException(SR.Format(SR.XmlCannotReconcileAccessor, accessor.Name, accessor.Namespace, GetMappingName(existing.Mapping!), GetMappingName(accessor.Mapping)));
                 }
-                ArrayMapping mapping = (ArrayMapping)accessor.Mapping;
+                ArrayMapping mapping = arrayMapping;
                 ArrayMapping? existingMapping = mapping.IsAnonymousType ? null : (ArrayMapping?)_types[existing.Mapping.TypeName!, existing.Mapping.Namespace];
                 ArrayMapping? first = existingMapping;
                 while (existingMapping != null)
@@ -660,9 +660,9 @@ namespace System.Xml.Serialization
             NullableMapping mapping;
             if (existingMapping != null)
             {
-                if (existingMapping is NullableMapping)
+                if (existingMapping is NullableMapping nullableMapping)
                 {
-                    mapping = (NullableMapping)existingMapping;
+                    mapping = nullableMapping;
                     if (mapping.BaseMapping is PrimitiveMapping && baseMapping is PrimitiveMapping)
                         return mapping;
                     else if (mapping.BaseMapping == baseMapping)
@@ -799,12 +799,12 @@ namespace System.Xml.Serialization
             if (model.TypeDesc.BaseTypeDesc != null)
             {
                 TypeModel baseModel = _modelScope.GetTypeModel(model.Type.BaseType!, false);
-                if (!(baseModel is StructModel))
+                if (baseModel is not StructModel structModel)
                 {
                     //XmlUnsupportedInheritance=Using '{0}' as a base type for a class is not supported by XmlSerializer.
                     throw new NotSupportedException(SR.Format(SR.XmlUnsupportedInheritance, model.Type.BaseType!.FullName));
                 }
-                StructMapping baseMapping = ImportStructLikeMapping((StructModel)baseModel, mapping.Namespace, openModel, null, limiter);
+                StructMapping baseMapping = ImportStructLikeMapping(structModel, mapping.Namespace, openModel, null, limiter);
                 // check to see if the import of the baseMapping was deferred
                 int baseIndex = limiter.DeferredWorkItems.IndexOf(baseMapping);
                 if (baseIndex < 0)
@@ -1634,7 +1634,7 @@ namespace System.Xml.Serialization
                         TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
                         text.Name = accessorName; // unused except to make more helpful error messages
                         text.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), ns, ImportContext.Text, a.XmlText.DataType, null, true, false, limiter);
-                        if (!(text.Mapping is SpecialMapping) && targetTypeDesc != _typeScope.GetTypeDesc(typeof(string)))
+                        if (text.Mapping is not SpecialMapping && targetTypeDesc != _typeScope.GetTypeDesc(typeof(string)))
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextAttribute, accessorName));
 
                         accessor.Text = text;
@@ -1979,7 +1979,7 @@ namespace System.Xml.Serialization
 
             if (rpc)
             {
-                if (accessor.TypeDesc.IsArrayLike && accessor.Elements.Length > 0 && !(accessor.Elements[0].Mapping is ArrayMapping))
+                if (accessor.TypeDesc.IsArrayLike && accessor.Elements.Length > 0 && accessor.Elements[0].Mapping is not ArrayMapping)
                     throw new InvalidOperationException(SR.Format(SR.XmlRpcLitArrayElement, accessor.Elements[0].Name));
 
                 if (accessor.Xmlns != null)

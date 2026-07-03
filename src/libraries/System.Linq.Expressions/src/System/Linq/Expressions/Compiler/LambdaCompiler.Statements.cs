@@ -445,9 +445,9 @@ namespace System.Linq.Expressions.Compiler
 
         private static decimal ConvertSwitchValue(object? value)
         {
-            if (value is char)
+            if (value is char ch)
             {
-                return (int)(char)value;
+                return (int)ch;
             }
             return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
         }
@@ -646,7 +646,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 foreach (Expression t in c.TestValues)
                 {
-                    if (!(t is ConstantExpression))
+                    if (t is not ConstantExpression)
                     {
                         return false;
                     }

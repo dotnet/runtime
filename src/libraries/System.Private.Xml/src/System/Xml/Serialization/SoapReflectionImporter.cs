@@ -262,9 +262,9 @@ namespace System.Xml.Serialization
             NullableMapping mapping;
             if (existingMapping != null)
             {
-                if (existingMapping is NullableMapping)
+                if (existingMapping is NullableMapping nullableMapping)
                 {
-                    mapping = (NullableMapping)existingMapping;
+                    mapping = nullableMapping;
                     if (mapping.BaseMapping is PrimitiveMapping && baseMapping is PrimitiveMapping)
                         return mapping;
                     else if (mapping.BaseMapping == baseMapping)
@@ -276,7 +276,7 @@ namespace System.Xml.Serialization
                         throw new InvalidOperationException(SR.Format(SR.XmlTypesDuplicate, typeDesc.FullName, existingMapping.TypeDesc!.FullName, typeDesc.Name, existingMapping.Namespace));
                     }
                 }
-                else if (!(baseMapping is PrimitiveMapping))
+                else if (baseMapping is not PrimitiveMapping)
                 {
                     throw new InvalidOperationException(SR.Format(SR.XmlTypesDuplicate, typeDesc.FullName, existingMapping.TypeDesc!.FullName, typeDesc.Name, existingMapping.Namespace));
                 }
@@ -386,7 +386,7 @@ namespace System.Xml.Serialization
             var members = new List<MemberMapping>();
             foreach (MemberInfo memberInfo in model.GetMemberInfos())
             {
-                if (!(memberInfo is FieldInfo) && !(memberInfo is PropertyInfo))
+                if (memberInfo is not FieldInfo && memberInfo is not PropertyInfo)
                     continue;
                 SoapAttributes memberAttrs = GetAttributes(memberInfo);
                 if (memberAttrs.SoapIgnore) continue;

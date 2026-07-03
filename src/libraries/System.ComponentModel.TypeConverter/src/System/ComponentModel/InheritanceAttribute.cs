@@ -84,12 +84,12 @@ namespace System.ComponentModel
                 return true;
             }
 
-            if (!(value is InheritanceAttribute))
+            if (value is not InheritanceAttribute inheritanceAttribute)
             {
                 return false;
             }
 
-            InheritanceLevel valueLevel = ((InheritanceAttribute)value).InheritanceLevel;
+            InheritanceLevel valueLevel = inheritanceAttribute.InheritanceLevel;
             return (valueLevel == InheritanceLevel);
         }
 

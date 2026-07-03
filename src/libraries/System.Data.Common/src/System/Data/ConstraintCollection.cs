@@ -102,16 +102,16 @@ namespace System.Data
                 }
             }
 
-            if (constraint is UniqueConstraint)
+            if (constraint is UniqueConstraint uniqueConstraint)
             {
-                if (((UniqueConstraint)constraint)._bPrimaryKey)
+                if (uniqueConstraint._bPrimaryKey)
                 {
                     if (Table._primaryKey != null)
                     {
                         throw ExceptionBuilder.AddPrimaryKeyConstraint();
                     }
                 }
-                AddUniqueConstraint((UniqueConstraint)constraint);
+                AddUniqueConstraint(uniqueConstraint);
             }
             else if (constraint is ForeignKeyConstraint fk)
             {
@@ -135,11 +135,11 @@ namespace System.Data
             ArrayAdd(constraint);
             OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Add, constraint));
 
-            if (constraint is UniqueConstraint)
+            if (constraint is UniqueConstraint uniqueConstraint2)
             {
-                if (((UniqueConstraint)constraint)._bPrimaryKey)
+                if (uniqueConstraint2._bPrimaryKey)
                 {
-                    Table.PrimaryKey = ((UniqueConstraint)constraint).ColumnsReference;
+                    Table.PrimaryKey = uniqueConstraint2.ColumnsReference;
                 }
             }
         }
@@ -381,7 +381,7 @@ namespace System.Data
             UnregisterName(constraint.ConstraintName);
             constraint.InCollection = false;
 
-            if (constraint is UniqueConstraint)
+            if (constraint is UniqueConstraint uniqueConstraint)
             {
                 for (int i = 0; i < Table.ChildRelations.Count; i++)
                 {
@@ -389,7 +389,7 @@ namespace System.Data
                     if (rel.ParentKeyConstraint == constraint)
                         rel.SetParentKeyConstraint(null);
                 }
-                ((UniqueConstraint)constraint).ConstraintIndexClear();
+                uniqueConstraint.ConstraintIndexClear();
             }
             else if (constraint is ForeignKeyConstraint)
             {

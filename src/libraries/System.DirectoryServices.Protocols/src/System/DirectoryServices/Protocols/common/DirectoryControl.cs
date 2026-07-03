@@ -1214,7 +1214,7 @@ namespace System.DirectoryServices.Protocols
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is DirectoryControl))
+            if (value is not DirectoryControl)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidValueType, nameof(DirectoryControl)), nameof(value));
             }

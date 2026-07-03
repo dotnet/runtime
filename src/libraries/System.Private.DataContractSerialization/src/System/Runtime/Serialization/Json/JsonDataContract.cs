@@ -299,7 +299,7 @@ namespace System.Runtime.Serialization.Json
                                 _knownDataContracts.TryAdd(itemDataContract.XmlName, itemDataContract);
                             }
 
-                            if (!(itemContract is CollectionDataContract))
+                            if (itemContract is not CollectionDataContract)
                             {
                                 break;
                             }

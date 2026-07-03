@@ -288,7 +288,7 @@ namespace System.Xml
                 return first;
             }
 
-            if (!(newChild is XmlLinkedNode) || !IsValidChildType(newChild.NodeType))
+            if (newChild is not XmlLinkedNode || !IsValidChildType(newChild.NodeType))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_TypeConflict);
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
@@ -403,7 +403,7 @@ namespace System.Xml
                 return first;
             }
 
-            if (!(newChild is XmlLinkedNode) || !IsValidChildType(newChild.NodeType))
+            if (newChild is not XmlLinkedNode || !IsValidChildType(newChild.NodeType))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_TypeConflict);
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
@@ -608,7 +608,7 @@ namespace System.Xml
                 return first;
             }
 
-            if (!(newChild is XmlLinkedNode) || !IsValidChildType(newChild.NodeType))
+            if (newChild is not XmlLinkedNode || !IsValidChildType(newChild.NodeType))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_TypeConflict);
 
 

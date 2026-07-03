@@ -367,7 +367,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr mustConvertCore(Expr expr, CType dest, CONVERTTYPE flags)
         {
-            Debug.Assert(!(expr is ExprMemberGroup));
+            Debug.Assert(expr is not ExprMemberGroup);
 
             if (BindImplicitConversion(expr, expr.Type, dest, out Expr exprResult, flags))
             {
@@ -453,7 +453,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr mustCastCore(Expr expr, CType dest, CONVERTTYPE flags)
         {
-            Debug.Assert(!(expr is ExprMemberGroup));
+            Debug.Assert(expr is not ExprMemberGroup);
             Debug.Assert(dest != null);
 
             CSemanticChecker.CheckForStaticClass(dest);
@@ -1014,7 +1014,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr exprDst;
             Expr pTransformedArgument = exprSrc;
 
-            if (ctypeLiftBest > 0 && !(typeFrom is NullableType) && fDstHasNull)
+            if (ctypeLiftBest > 0 && typeFrom is not NullableType && fDstHasNull)
             {
                 // Create the memgroup.
                 ExprMemberGroup pMemGroup = ExprFactory.CreateMemGroup(null, mwiBest);

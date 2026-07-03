@@ -92,8 +92,8 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         case ConstraintType.ContainerStringMatch:
 
-                            if (this.current is SearchResult)
-                                dn = ((SearchResult)this.current).Properties["distinguishedName"][0].ToString();
+                            if (this.current is SearchResult searchResult)
+                                dn = searchResult.Properties["distinguishedName"][0].ToString();
                             else
                                 dn = ((DirectoryEntry)this.current).Properties["distinguishedName"].Value.ToString();
 
@@ -107,9 +107,9 @@ namespace System.DirectoryServices.AccountManagement
                                 if (resultValidator != null)
                                 {
                                     dSPropertyCollection resultPropCollection = null;
-                                    if (this.current is SearchResult)
+                                    if (this.current is SearchResult searchResult2)
                                     {
-                                        resultPropCollection = new dSPropertyCollection(((SearchResult)this.current).Properties);
+                                        resultPropCollection = new dSPropertyCollection(searchResult2.Properties);
                                     }
                                     else
                                     {

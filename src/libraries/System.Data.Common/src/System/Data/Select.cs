@@ -71,9 +71,9 @@ namespace System.Data
             if (expr._op == Operators.And)
             {
                 bool isLeft = false, isRight = false;
-                if (expr._left is BinaryNode)
+                if (expr._left is BinaryNode binaryNode)
                 {
-                    AnalyzeExpression((BinaryNode)expr._left);
+                    AnalyzeExpression(binaryNode);
                     if (_linearExpression == _expression)
                         return;
                     isLeft = true;
@@ -99,9 +99,9 @@ namespace System.Data
                     }
                 }
 
-                if (expr._right is BinaryNode)
+                if (expr._right is BinaryNode binaryNode2)
                 {
-                    AnalyzeExpression((BinaryNode)expr._right);
+                    AnalyzeExpression(binaryNode2);
                     if (_linearExpression == _expression)
                         return;
                     isRight = true;
@@ -504,9 +504,9 @@ namespace System.Data
             InitCandidateColumns();
             Debug.Assert(_candidateColumns != null);
 
-            if (_expression is BinaryNode)
+            if (_expression is BinaryNode binaryNode)
             {
-                AnalyzeExpression((BinaryNode)_expression);
+                AnalyzeExpression(binaryNode);
                 if (!_candidatesForBinarySearch)
                 {
                     _linearExpression = _expression;

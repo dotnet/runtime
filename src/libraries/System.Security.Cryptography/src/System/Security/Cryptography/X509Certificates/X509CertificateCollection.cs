@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             base.OnValidate(value);
 
-            if (!(value is X509Certificate))
+            if (value is not X509Certificate)
                 throw new ArgumentException(SR.Arg_InvalidType, nameof(value));
         }
     }

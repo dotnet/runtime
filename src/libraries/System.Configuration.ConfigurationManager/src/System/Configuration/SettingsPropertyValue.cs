@@ -38,7 +38,7 @@ namespace System.Configuration
                     Deserialized = true;
                 }
 
-                if (_value != null && !Property.PropertyType.IsPrimitive && !(_value is string) && !(_value is DateTime))
+                if (_value != null && !Property.PropertyType.IsPrimitive && _value is not string && _value is not DateTime)
                 {
                     UsingDefaultValue = false;
                     _changedSinceLastSerialized = true;
@@ -85,9 +85,9 @@ namespace System.Configuration
                 bool throwBinaryFormatterDeprecationException = false;
                 try
                 {
-                    if (SerializedValue is string)
+                    if (SerializedValue is string str)
                     {
-                        value = GetObjectFromString(Property.PropertyType, Property.SerializeAs, (string)SerializedValue);
+                        value = GetObjectFromString(Property.PropertyType, Property.SerializeAs, str);
                     }
                     else if (SerializedValue is byte[] serializedBytes)
                     {
@@ -130,7 +130,7 @@ namespace System.Configuration
                     else
                         return null;
                 }
-                if (!(Property.DefaultValue is string))
+                if (Property.DefaultValue is not string)
                 {
                     value = Property.DefaultValue;
                 }

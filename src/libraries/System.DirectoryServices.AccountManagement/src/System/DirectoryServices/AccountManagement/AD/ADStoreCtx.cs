@@ -424,8 +424,8 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADStoreCtx", "Insert,  Deletion Failed {0} ", deleteFail.Message);
                 }
 
-                if (e is System.Runtime.InteropServices.COMException)
-                    throw ExceptionHelper.GetExceptionFromCOMException((System.Runtime.InteropServices.COMException)e);
+                if (e is System.Runtime.InteropServices.COMException cOMException)
+                    throw ExceptionHelper.GetExceptionFromCOMException(cOMException);
                 else
                     throw;
             }
@@ -1384,7 +1384,7 @@ namespace System.DirectoryServices.AccountManagement
             // An object exists in the domain that contains links to all the groups it is a member of.
             bool rootPrincipalExists = true;
 
-            if ((foreignContext is ADStoreCtx) && !(foreignContext is ADAMStoreCtx))
+            if ((foreignContext is ADStoreCtx) && foreignContext is not ADAMStoreCtx)
             {
                 // We only need to check forest status for AD stores. Forest concept does not apply to ADAM.
                 ADStoreCtx foreignADStore = (ADStoreCtx)foreignContext;

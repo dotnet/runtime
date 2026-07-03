@@ -496,9 +496,9 @@ namespace System.Reflection.Emit
             {
                 CorElementType type = CorElementType.ELEMENT_TYPE_MAX;
 
-                if (clsArgument is RuntimeType)
+                if (clsArgument is RuntimeType runtimeType)
                 {
-                    type = ((RuntimeType)clsArgument).GetCorElementType();
+                    type = runtimeType.GetCorElementType();
 
                     // GetCorElementType returns CorElementType.ELEMENT_TYPE_CLASS for both object and string
                     if (type == CorElementType.ELEMENT_TYPE_CLASS)

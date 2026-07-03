@@ -316,7 +316,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (Exception exception) when (_tryHandler.HasHandler(frame, exception, out ExceptionHandler? exHandler, out object? unwrappedException))
             {
-                Debug.Assert(!(unwrappedException is RethrowException));
+                Debug.Assert(unwrappedException is not RethrowException);
                 frame.InstructionIndex += frame.Goto(exHandler.LabelIndex, unwrappedException, gotoExceptionHandler: true);
 
 #if FEATURE_THREAD_ABORT

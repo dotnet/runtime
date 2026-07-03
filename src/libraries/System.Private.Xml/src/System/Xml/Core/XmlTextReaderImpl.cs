@@ -1990,7 +1990,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (!(_namespaceManager is NoNamespaceManager))
+                    if (_namespaceManager is not NoNamespaceManager)
                     {
                         _namespaceManager = new NoNamespaceManager();
                     }
@@ -3670,7 +3670,7 @@ namespace System.Xml
                                 Debug.Assert(_ps.encoding != null);
                                 string encodingName = _ps.encoding.WebName;
                                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
-                                     encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
+                                     encodingName != "utf-16BE" && _ps.encoding is not Ucs4Encoding)
                                 {
                                     Throw(SR.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
                                 }
@@ -3888,7 +3888,7 @@ namespace System.Xml
                 Debug.Assert(_ps.encoding != null);
                 string encodingName = _ps.encoding.WebName;
                 if (encodingName != "utf-8" && encodingName != "utf-16" &&
-                    encodingName != "utf-16BE" && !(_ps.encoding is Ucs4Encoding))
+                    encodingName != "utf-16BE" && _ps.encoding is not Ucs4Encoding)
                 {
                     Throw(SR.Xml_EncodingSwitchAfterResetState, (_ps.encoding.GetByteCount("A") == 1) ? "UTF-8" : "UTF-16");
                 }

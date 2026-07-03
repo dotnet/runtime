@@ -425,8 +425,8 @@ namespace System.Runtime.Serialization
                     XmlSchemaSimpleTypeContent? content = simpleType.Content;
                     if (content is XmlSchemaSimpleTypeUnion)
                         ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.SimpleTypeUnionNotSupported);
-                    else if (content is XmlSchemaSimpleTypeList)
-                        dataContract = ImportFlagsEnum(typeName, (XmlSchemaSimpleTypeList)content, simpleType.Annotation);
+                    else if (content is XmlSchemaSimpleTypeList xmlSchemaSimpleTypeList)
+                        dataContract = ImportFlagsEnum(typeName, xmlSchemaSimpleTypeList, simpleType.Annotation);
                     else if (content is XmlSchemaSimpleTypeRestriction restriction)
                     {
                         if (CheckIfEnum(restriction))
@@ -853,7 +853,7 @@ namespace System.Runtime.Serialization
                 ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ISerializableContainsMoreThanOneItems);
 
             XmlSchemaObject o = rootSequence.Items[0];
-            if (!(o is XmlSchemaAny))
+            if (o is not XmlSchemaAny)
                 ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ISerializableDoesNotContainAny);
 
             XmlSchemaAny wildcard = (XmlSchemaAny)o;
@@ -874,9 +874,9 @@ namespace System.Runtime.Serialization
                 for (int i = 0; i < attributes.Count; i++)
                 {
                     o = attributes[i];
-                    if (o is XmlSchemaAttribute)
+                    if (o is XmlSchemaAttribute xmlSchemaAttribute)
                     {
-                        if (((XmlSchemaAttribute)o).RefName == factoryTypeAttributeRefName)
+                        if (xmlSchemaAttribute.RefName == factoryTypeAttributeRefName)
                         {
                             containsFactoryTypeAttribute = true;
                             break;

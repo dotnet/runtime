@@ -70,12 +70,12 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if ((!_isADAM))
                 {
-                    if (!(server is DomainController))
+                    if (server is not DomainController domainController)
                         throw new ArgumentException(SR.ServerShouldBeDC, nameof(server));
 
                     // verify that the version >= 5.2
                     // DC should be Win 2003 or higher
-                    if (((DomainController)server).NumericOSVersion < 5.2)
+                    if (domainController.NumericOSVersion < 5.2)
                     {
                         throw new ArgumentException(SR.ServerShouldBeW2K3, nameof(server));
                     }
@@ -171,12 +171,12 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if ((!_isADAM))
                 {
-                    if (!(server is DomainController))
+                    if (server is not DomainController domainController)
                         throw new ArgumentException(SR.ServerShouldBeDC, nameof(server));
 
                     // verify that the version >= 5.2
                     // DC should be Win 2003 or higher
-                    if (((DomainController)server).NumericOSVersion < 5.2)
+                    if (domainController.NumericOSVersion < 5.2)
                     {
                         throw new ArgumentException(SR.ServerShouldBeW2K3, nameof(server));
                     }
@@ -379,19 +379,19 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (_isADAM)
                 {
                     // for adam this should be an ADAMInstance
-                    if (!(value is AdamInstance))
+                    if (value is not AdamInstance)
                         throw new ArgumentException(SR.ServerShouldBeAI, nameof(value));
                 }
                 else
                 {
                     // for AD this should be a DomainController
-                    if (!(value is DomainController))
+                    if (value is not DomainController)
                         throw new ArgumentException(SR.ServerShouldBeDC, nameof(value));
                 }
             }
             else
             {
-                if (!(value is DirectoryServer))
+                if (value is not DirectoryServer)
                     throw new ArgumentException(null, nameof(value));
             }
         }

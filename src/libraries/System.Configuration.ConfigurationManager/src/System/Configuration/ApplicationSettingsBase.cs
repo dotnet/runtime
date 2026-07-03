@@ -453,17 +453,17 @@ namespace System.Configuration
                 if (attribute == null)
                     continue;
 
-                if (attribute is DefaultSettingValueAttribute)
+                if (attribute is DefaultSettingValueAttribute defaultSettingValueAttribute)
                 {
-                    settingsProperty.DefaultValue = ((DefaultSettingValueAttribute)attribute).Value;
+                    settingsProperty.DefaultValue = defaultSettingValueAttribute.Value;
                 }
                 else if (attribute is ReadOnlyAttribute)
                 {
                     settingsProperty.IsReadOnly = true;
                 }
-                else if (attribute is SettingsProviderAttribute)
+                else if (attribute is SettingsProviderAttribute settingsProviderAttribute)
                 {
-                    string providerTypeName = ((SettingsProviderAttribute)attribute).ProviderTypeName;
+                    string providerTypeName = settingsProviderAttribute.ProviderTypeName;
                     Type providerType = Type.GetType(providerTypeName);
                     if (providerType == null)
                     {
@@ -490,9 +490,9 @@ namespace System.Configuration
 
                     settingsProperty.Provider = settingsProvider;
                 }
-                else if (attribute is SettingsSerializeAsAttribute)
+                else if (attribute is SettingsSerializeAsAttribute settingsSerializeAsAttribute)
                 {
-                    settingsProperty.SerializeAs = ((SettingsSerializeAsAttribute)attribute).SerializeAs;
+                    settingsProperty.SerializeAs = settingsSerializeAsAttribute.SerializeAs;
                     explicitSerialize = true;
                 }
                 else
@@ -602,14 +602,14 @@ namespace System.Configuration
                                 {
                                     _init.IsReadOnly = true;
                                 }
-                                else if (attr is SettingsGroupNameAttribute)
+                                else if (attr is SettingsGroupNameAttribute settingsGroupNameAttribute)
                                 {
                                     _context ??= new SettingsContext();
-                                    _context["GroupName"] = ((SettingsGroupNameAttribute)attr).GroupName;
+                                    _context["GroupName"] = settingsGroupNameAttribute.GroupName;
                                 }
-                                else if (attr is SettingsProviderAttribute)
+                                else if (attr is SettingsProviderAttribute settingsProviderAttribute)
                                 {
-                                    string providerTypeName = ((SettingsProviderAttribute)attr).ProviderTypeName;
+                                    string providerTypeName = settingsProviderAttribute.ProviderTypeName;
                                     Type providerType = Type.GetType(providerTypeName);
                                     if (providerType != null)
                                     {
@@ -628,9 +628,9 @@ namespace System.Configuration
                                         throw new ConfigurationErrorsException(SR.Format(SR.ProviderTypeLoadFailed, providerTypeName));
                                     }
                                 }
-                                else if (attr is SettingsSerializeAsAttribute)
+                                else if (attr is SettingsSerializeAsAttribute settingsSerializeAsAttribute)
                                 {
-                                    _init.SerializeAs = ((SettingsSerializeAsAttribute)attr).SerializeAs;
+                                    _init.SerializeAs = settingsSerializeAsAttribute.SerializeAs;
                                     _explicitSerializeOnClass = true;
                                 }
                                 else

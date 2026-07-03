@@ -396,8 +396,8 @@ namespace System.Xml.Serialization
 
         internal static bool IsWildcard(SpecialMapping mapping)
         {
-            if (mapping is SerializableMapping)
-                return ((SerializableMapping)mapping).IsAny;
+            if (mapping is SerializableMapping serializableMapping)
+                return serializableMapping.IsAny;
             return mapping.TypeDesc!.CanBeElementValue;
         }
     }

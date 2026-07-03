@@ -562,7 +562,7 @@ namespace MS.Internal.Xml.XPath
                                 switch (pi.ArgTypes[i])
                                 {
                                     case XPathResultType.NodeSet:
-                                        if (!(arg is Variable) && !(arg is Function && arg.ReturnType == XPathResultType.Any))
+                                        if (arg is not Variable && !(arg is Function && arg.ReturnType == XPathResultType.Any))
                                         {
                                             throw XPathException.Create(SR.Xp_InvalidArgumentType, name, _scanner.SourceText);
                                         }

@@ -90,7 +90,7 @@ namespace System.Drawing
             object? width = propertyValues["Width"];
             object? height = propertyValues["Height"];
 
-            if (width == null || height == null || !(width is float) || !(height is float))
+            if (width == null || height == null || width is not float || height is not float)
             {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }

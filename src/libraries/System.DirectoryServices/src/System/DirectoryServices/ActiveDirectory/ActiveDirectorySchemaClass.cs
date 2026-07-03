@@ -605,9 +605,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                             if (!listEmpty)
                             {
-                                if (value is ICollection)
+                                if (value is ICollection collection)
                                 {
-                                    possibleSuperiorsList.AddRange((ICollection)value);
+                                    possibleSuperiorsList.AddRange(collection);
                                 }
                                 else
                                 {
@@ -704,9 +704,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                             if (!listEmpty)
                             {
-                                if (value is ICollection)
+                                if (value is ICollection collection)
                                 {
-                                    mandatoryPropertiesList.AddRange((ICollection)value);
+                                    mandatoryPropertiesList.AddRange(collection);
                                 }
                                 else
                                 {
@@ -780,9 +780,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                             if (!listEmpty)
                             {
-                                if (value is ICollection)
+                                if (value is ICollection collection)
                                 {
-                                    optionalPropertiesList.AddRange((ICollection)value);
+                                    optionalPropertiesList.AddRange(collection);
                                 }
                                 else
                                 {
@@ -865,9 +865,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                             if (!listEmpty)
                             {
-                                if (value is ICollection)
+                                if (value is ICollection collection)
                                 {
-                                    auxiliaryClassesList.AddRange((ICollection)value);
+                                    auxiliaryClassesList.AddRange(collection);
                                 }
                                 else
                                 {

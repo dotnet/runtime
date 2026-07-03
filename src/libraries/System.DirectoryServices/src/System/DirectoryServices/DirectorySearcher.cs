@@ -611,7 +611,7 @@ namespace System.DirectoryServices
             DirectoryEntry clonedRoot = SearchRoot!.CloneBrowsable();
 
             UnsafeNativeMethods.IAds adsObject = clonedRoot.AdsObject;
-            if (!(adsObject is UnsafeNativeMethods.IDirectorySearch))
+            if (adsObject is not UnsafeNativeMethods.IDirectorySearch directorySearch)
                 throw new NotSupportedException(SR.Format(SR.DSSearchUnsupported, SearchRoot.Path));
 
             // this is a little bit hacky, but we need to perform a bind here, so we make sure the LDAP connection that we hold has more than
@@ -625,7 +625,7 @@ namespace System.DirectoryServices
                 SearchRoot.Bind(true);
             }
 
-            UnsafeNativeMethods.IDirectorySearch adsSearch = (UnsafeNativeMethods.IDirectorySearch)adsObject;
+            UnsafeNativeMethods.IDirectorySearch adsSearch = directorySearch;
             SetSearchPreferences(adsSearch, findMoreThanOne);
 
             string[]? properties = null;

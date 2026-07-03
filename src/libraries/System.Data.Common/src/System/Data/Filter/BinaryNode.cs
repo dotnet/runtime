@@ -92,9 +92,9 @@ namespace System.Data
                     _op = Operators.IsNot;
                     _right = un._right;
                 }
-                if (_right is ZeroOpNode)
+                if (_right is ZeroOpNode zeroOpNode)
                 {
-                    if (((ZeroOpNode)_right)._op != Operators.Null)
+                    if (zeroOpNode._op != Operators.Null)
                     {
                         throw ExprException.InvalidIsSyntax();
                     }
@@ -119,9 +119,9 @@ namespace System.Data
                     return new ZeroOpNode(Operators.Null);
                 }
 
-                if (val is bool)
+                if (val is bool b)
                 {
-                    if ((bool)val)
+                    if (b)
                         return new ZeroOpNode(Operators.True);
                     else
                         return new ZeroOpNode(Operators.False);
@@ -611,9 +611,9 @@ namespace System.Data
                                 }
                             case StorageType.TimeSpan:
                                 {
-                                    if (vLeft is DateTime)
+                                    if (vLeft is DateTime dateTime)
                                     {
-                                        value = (DateTime)vLeft - (DateTime)vRight;
+                                        value = dateTime - (DateTime)vRight;
                                     }
                                     else
                                         value = (TimeSpan)vLeft - (TimeSpan)vRight;
@@ -921,16 +921,16 @@ namespace System.Data
                         if ((vLeft == DBNull.Value) || (left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)))
                             return DBNull.Value;
 
-                        if ((!(vLeft is bool)) && (!(vLeft is SqlBoolean)))
+                        if ((vLeft is not bool) && (vLeft is not SqlBoolean))
                         {
                             vRight = BinaryNode.Eval(right, row, version, recordNos);
                             typeMismatch = true;
                             break;
                         }
 
-                        if (vLeft is bool)
+                        if (vLeft is bool b2)
                         {
-                            if (!(bool)vLeft)
+                            if (!b2)
                             {
                                 value = false;
                                 break;
@@ -948,15 +948,15 @@ namespace System.Data
                         if ((vRight == DBNull.Value) || (right.IsSqlColumn && DataStorage.IsObjectSqlNull(vRight)))
                             return DBNull.Value;
 
-                        if ((!(vRight is bool)) && (!(vRight is SqlBoolean)))
+                        if ((vRight is not bool) && (vRight is not SqlBoolean))
                         {
                             typeMismatch = true;
                             break;
                         }
 
-                        if (vRight is bool)
+                        if (vRight is bool b3)
                         {
-                            value = (bool)vRight;
+                            value = b3;
                             break;
                         }
                         else
@@ -976,7 +976,7 @@ namespace System.Data
 
                         if ((vLeft != DBNull.Value) && (!DataStorage.IsObjectSqlNull(vLeft)))
                         {
-                            if ((!(vLeft is bool)) && (!(vLeft is SqlBoolean)))
+                            if ((vLeft is not bool) && (vLeft is not SqlBoolean))
                             {
                                 vRight = BinaryNode.Eval(right, row, version, recordNos);
                                 typeMismatch = true;
@@ -997,7 +997,7 @@ namespace System.Data
                         if ((vLeft == DBNull.Value) || (DataStorage.IsObjectSqlNull(vLeft)))
                             return vRight;
 
-                        if ((!(vRight is bool)) && (!(vRight is SqlBoolean)))
+                        if ((vRight is not bool) && (vRight is not SqlBoolean))
                         {
                             typeMismatch = true;
                             break;
@@ -1084,7 +1084,7 @@ namespace System.Data
                         */
 
 
-                        if (!(right is FunctionNode))
+                        if (right is not FunctionNode functionNode)
                         {
                             // this is more like an Assert: should never happens, so we do not care about "nice" Exseptions
                             throw ExprException.InWithoutParentheses();
@@ -1099,7 +1099,7 @@ namespace System.Data
 
                         value = false;
 
-                        FunctionNode into = (FunctionNode)right;
+                        FunctionNode into = functionNode;
 
                         for (int i = 0; i < into._argumentCount; i++)
                         {
@@ -1540,7 +1540,7 @@ namespace System.Data
             {
                 object vRight = _right.Eval(row, version);
 
-                if (!(vRight is string) && !(vRight is SqlString))
+                if (vRight is not string && vRight is not SqlString)
                 {
                     SetTypeMismatchError(_op, vLeft.GetType(), vRight.GetType());
                 }
@@ -1563,7 +1563,7 @@ namespace System.Data
                 substring = _pattern;
             }
 
-            if (!(vLeft is string) && !(vLeft is SqlString))
+            if (vLeft is not string && vLeft is not SqlString)
             {
                 SetTypeMismatchError(_op, vLeft.GetType(), typeof(string));
             }

@@ -982,11 +982,11 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter filter type " + type.ToString());
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter match type " + kvp.Value.MatchType.ToString());
 
-                    if (kvp.Value.Value is ICollection)
+                    if (kvp.Value.Value is ICollection collection2)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter encountered collection.");
 
-                        ICollection collection = (ICollection)kvp.Value.Value;
+                        ICollection collection = collection2;
                         foreach (object o in collection)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter collection filter type " + o.GetType().ToString());

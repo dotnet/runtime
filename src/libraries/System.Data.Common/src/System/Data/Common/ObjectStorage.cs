@@ -69,10 +69,10 @@ namespace System.Data.Common
         {
             object valueNo1 = Get(recordNo1);
 
-            if (valueNo1 is IComparable)
+            if (valueNo1 is IComparable comparable)
             {
                 if (value!.GetType() == valueNo1.GetType())
-                    return ((IComparable)valueNo1).CompareTo(value);
+                    return comparable.CompareTo(value);
             }
 
             if (valueNo1 == value)
@@ -108,11 +108,11 @@ namespace System.Data.Common
             if (valueNo2 == _nullValue)
                 return 1;
 
-            if (valueNo1 is IComparable)
+            if (valueNo1 is IComparable comparable)
             {
                 try
                 {
-                    return ((IComparable)valueNo1).CompareTo(valueNo2);
+                    return comparable.CompareTo(valueNo2);
                 }
                 catch (ArgumentException e)
                 {

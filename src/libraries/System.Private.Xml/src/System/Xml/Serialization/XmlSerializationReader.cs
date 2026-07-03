@@ -2300,13 +2300,13 @@ namespace System.Xml.Serialization
                 {
                     if (!mapping.IsSoap)
                         continue;
-                    if (mapping is StructMapping)
-                        WriteStructMethod((StructMapping)mapping);
-                    else if (mapping is EnumMapping)
-                        WriteEnumMethod((EnumMapping)mapping);
-                    else if (mapping is NullableMapping)
+                    if (mapping is StructMapping structMapping)
+                        WriteStructMethod(structMapping);
+                    else if (mapping is EnumMapping enumMapping)
+                        WriteEnumMethod(enumMapping);
+                    else if (mapping is NullableMapping nullableMapping)
                     {
-                        WriteNullableMethod((NullableMapping)mapping);
+                        WriteNullableMethod(nullableMapping);
                     }
                 }
             }
@@ -2319,17 +2319,17 @@ namespace System.Xml.Serialization
                 return;
 
             GeneratedMethods[mapping] = mapping;
-            if (mapping is StructMapping)
+            if (mapping is StructMapping structMapping)
             {
-                WriteStructMethod((StructMapping)mapping);
+                WriteStructMethod(structMapping);
             }
-            else if (mapping is EnumMapping)
+            else if (mapping is EnumMapping enumMapping)
             {
-                WriteEnumMethod((EnumMapping)mapping);
+                WriteEnumMethod(enumMapping);
             }
-            else if (mapping is NullableMapping)
+            else if (mapping is NullableMapping nullableMapping)
             {
-                WriteNullableMethod((NullableMapping)mapping);
+                WriteNullableMethod(nullableMapping);
             }
         }
 
@@ -2377,10 +2377,10 @@ namespace System.Xml.Serialization
                 return null;
             if (!xmlMapping.GenerateSerializer)
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
-            if (xmlMapping is XmlTypeMapping)
-                return GenerateTypeElement((XmlTypeMapping)xmlMapping);
-            else if (xmlMapping is XmlMembersMapping)
-                return GenerateMembersElement((XmlMembersMapping)xmlMapping);
+            if (xmlMapping is XmlTypeMapping xmlTypeMapping)
+                return GenerateTypeElement(xmlTypeMapping);
+            else if (xmlMapping is XmlMembersMapping xmlMembersMapping)
+                return GenerateMembersElement(xmlMembersMapping);
             else
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
@@ -4290,9 +4290,9 @@ namespace System.Xml.Serialization
                     }
                     if (checkType)
                     {
-                        if (e.Mapping is NullableMapping)
+                        if (e.Mapping is NullableMapping nullableMapping)
                         {
-                            TypeDesc td = ((NullableMapping)e.Mapping).BaseMapping!.TypeDesc!;
+                            TypeDesc td = nullableMapping.BaseMapping!.TypeDesc!;
                             Writer.Write(RaCodeGen.GetStringForTypeof(td.CSharpName, td.UseReflection));
                         }
                         else
@@ -4329,10 +4329,10 @@ namespace System.Xml.Serialization
                             Writer.WriteLine(" != null) {");
                             Writer.Indent++;
                         }
-                        if (e.Mapping is NullableMapping)
+                        if (e.Mapping is NullableMapping nullableMapping2)
                         {
                             WriteSourceBegin(member.ArraySource);
-                            TypeDesc td = ((NullableMapping)e.Mapping).BaseMapping!.TypeDesc!;
+                            TypeDesc td = nullableMapping2.BaseMapping!.TypeDesc!;
                             Writer.Write(RaCodeGen.GetStringForCreateInstance(e.Mapping.TypeDesc.CSharpName, e.Mapping.TypeDesc.UseReflection, false, true, $"({td.CSharpName}){checkTypeSource}"));
                         }
                         else
@@ -4670,9 +4670,9 @@ namespace System.Xml.Serialization
                 Writer.WriteLine(" = true;");
             }
 
-            if (element.Mapping is ArrayMapping)
+            if (element.Mapping is ArrayMapping arrayMapping)
             {
-                WriteArray(source, arrayName, (ArrayMapping)element.Mapping, readOnly, element.IsNullable, fixupIndex);
+                WriteArray(source, arrayName, arrayMapping, readOnly, element.IsNullable, fixupIndex);
             }
             else if (element.Mapping is NullableMapping)
             {

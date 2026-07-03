@@ -14,7 +14,7 @@ namespace System.Composition.TypedParts.Util
             if (reflectedType == null) throw new ArgumentNullException(nameof(reflectedType));
             if (member == null) throw new ArgumentNullException(nameof(member));
 
-            if (!(member is TypeInfo) && member.DeclaringType != reflectedType)
+            if (member is not TypeInfo && member.DeclaringType != reflectedType)
                 return Array.Empty<Attribute>();
 
             return Attribute.GetCustomAttributes(member, false);

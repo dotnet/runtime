@@ -324,13 +324,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!(value is ActiveDirectorySchemaClass))
+            if (value is not ActiveDirectorySchemaClass activeDirectorySchemaClass)
             {
                 throw new ArgumentException(null, nameof(value));
             }
 
-            if (!((ActiveDirectorySchemaClass)value).isBound)
-                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, ((ActiveDirectorySchemaClass)value).Name));
+            if (!activeDirectorySchemaClass.isBound)
+                throw new InvalidOperationException(SR.Format(SR.SchemaObjectNotCommitted, activeDirectorySchemaClass.Name));
         }
 
         internal string[] GetMultiValuedProperty()

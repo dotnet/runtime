@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Xml
         /// <internalonly/>
         int IList.Add(object? value)
         {
-            if (!(value is EncryptionProperty))
+            if (value is not EncryptionProperty)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _props.Add(value);
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Xml
         /// <internalonly/>
         bool IList.Contains(object? value)
         {
-            if (!(value is EncryptionProperty))
+            if (value is not EncryptionProperty)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _props.Contains(value);
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Xml
         /// <internalonly/>
         int IList.IndexOf(object? value)
         {
-            if (!(value is EncryptionProperty))
+            if (value is not EncryptionProperty)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _props.IndexOf(value);
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Xml
         /// <internalonly/>
         void IList.Insert(int index, object? value)
         {
-            if (!(value is EncryptionProperty))
+            if (value is not EncryptionProperty)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             _props.Insert(index, value);
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Xml
         /// <internalonly/>
         void IList.Remove(object? value)
         {
-            if (!(value is EncryptionProperty))
+            if (value is not EncryptionProperty)
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             _props.Remove(value);
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Xml
             get { return _props[index]; }
             set
             {
-                if (!(value is EncryptionProperty))
+                if (value is not EncryptionProperty)
                     throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
                 _props[index] = value;

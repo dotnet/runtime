@@ -79,8 +79,8 @@ namespace System.Runtime.Serialization
         {
             if (dataContract.IsBuiltInDataContract)
                 return;
-            else if (dataContract is XmlDataContract)
-                ExportXmlDataContract((XmlDataContract)dataContract);
+            else if (dataContract is XmlDataContract xmlDataContract)
+                ExportXmlDataContract(xmlDataContract);
             else
             {
                 XmlSchema schema = GetSchema(dataContract.XmlName.Namespace);
@@ -92,10 +92,10 @@ namespace System.Runtime.Serialization
                     else
                         ExportClassDataContract(classDataContract, schema);
                 }
-                else if (dataContract is CollectionDataContract)
-                    ExportCollectionDataContract((CollectionDataContract)dataContract, schema);
-                else if (dataContract is EnumDataContract)
-                    ExportEnumDataContract((EnumDataContract)dataContract, schema);
+                else if (dataContract is CollectionDataContract collectionDataContract)
+                    ExportCollectionDataContract(collectionDataContract, schema);
+                else if (dataContract is EnumDataContract enumDataContract)
+                    ExportEnumDataContract(enumDataContract, schema);
                 ExportTopLevelElement(dataContract, schema);
                 Schemas.Reprocess(schema);
             }
@@ -561,15 +561,15 @@ namespace System.Runtime.Serialization
                     XmlSchemaObject item = itemArray[j];
                     Hashtable items;
                     XmlQualifiedName qname;
-                    if (item is XmlSchemaElement)
+                    if (item is XmlSchemaElement xmlSchemaElement)
                     {
                         items = elements;
-                        qname = new XmlQualifiedName(((XmlSchemaElement)item).Name, schema.TargetNamespace);
+                        qname = new XmlQualifiedName(xmlSchemaElement.Name, schema.TargetNamespace);
                     }
-                    else if (item is XmlSchemaType)
+                    else if (item is XmlSchemaType xmlSchemaType)
                     {
                         items = types;
-                        qname = new XmlQualifiedName(((XmlSchemaType)item).Name, schema.TargetNamespace);
+                        qname = new XmlQualifiedName(xmlSchemaType.Name, schema.TargetNamespace);
                     }
                     else
                         continue;

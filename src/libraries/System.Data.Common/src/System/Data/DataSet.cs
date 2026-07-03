@@ -1676,9 +1676,9 @@ namespace System.Data
                     return;
                 }
 
-                if (reader is XmlTextReader)
+                if (reader is XmlTextReader xmlTextReader)
                 {
-                    ((XmlTextReader)reader).WhitespaceHandling = WhitespaceHandling.None;
+                    xmlTextReader.WhitespaceHandling = WhitespaceHandling.None;
                 }
 
                 XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
@@ -2097,9 +2097,9 @@ namespace System.Data
                         isEmptyDataSet = true;
                     }
 
-                    if (reader is XmlTextReader)
+                    if (reader is XmlTextReader xmlTextReader)
                     {
-                        ((XmlTextReader)reader).WhitespaceHandling = WhitespaceHandling.Significant;
+                        xmlTextReader.WhitespaceHandling = WhitespaceHandling.Significant;
                     }
 
                     XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
@@ -2612,9 +2612,9 @@ namespace System.Data
                     // prepare and cleanup rowDiffId hashtable
                     rowDiffIdUsage.Prepare(this);
 
-                    if (reader is XmlTextReader)
+                    if (reader is XmlTextReader xmlTextReader)
                     {
-                        ((XmlTextReader)reader).WhitespaceHandling = WhitespaceHandling.Significant;
+                        xmlTextReader.WhitespaceHandling = WhitespaceHandling.Significant;
                     }
 
                     XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
@@ -3404,16 +3404,16 @@ namespace System.Data
             if (baseTable == null)
             {
                 // the accessor is the table name.  if we don't find it, return null.
-                if (currentProp is DataTablePropertyDescriptor)
+                if (currentProp is DataTablePropertyDescriptor dataTablePropertyDescriptor)
                 {
-                    return FindTable(((DataTablePropertyDescriptor)currentProp).Table, props, propStart + 1);
+                    return FindTable(dataTablePropertyDescriptor.Table, props, propStart + 1);
                 }
                 return null;
             }
 
-            if (currentProp is DataRelationPropertyDescriptor)
+            if (currentProp is DataRelationPropertyDescriptor dataRelationPropertyDescriptor)
             {
-                return FindTable(((DataRelationPropertyDescriptor)currentProp).Relation.ChildTable, props, propStart + 1);
+                return FindTable(dataRelationPropertyDescriptor.Relation.ChildTable, props, propStart + 1);
             }
 
             return null;

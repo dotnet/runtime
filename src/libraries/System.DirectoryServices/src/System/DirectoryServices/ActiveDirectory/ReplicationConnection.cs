@@ -941,7 +941,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ArgumentException(SR.DirectoryContextNeedHost, nameof(context));
                 }
 
-                if (targetIsDC && !(sourceServer is DomainController))
+                if (targetIsDC && sourceServer is not DomainController)
                 {
                     // target and sourceServer are not of the same type
                     throw new ArgumentException(SR.ConnectionSourcServerShouldBeDC, nameof(sourceServer));

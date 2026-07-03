@@ -60,9 +60,9 @@ namespace System.Xml.Xsl.XsltOld
             {
                 double dblVal;
 
-                if (value is int)
+                if (value is int num)
                 {
-                    dblVal = (int)value;
+                    dblVal = num;
                 }
                 else
                 {
@@ -368,7 +368,7 @@ namespace System.Xml.Xsl.XsltOld
             // so we need intermediate string value.
             // If it's already a double we would like to keep it as double.
             // So this function converts to string only if result is nodeset or RTF
-            Debug.Assert(!(value is int));
+            Debug.Assert(value is not int);
             if (Type.GetTypeCode(value.GetType()) == TypeCode.Object)
             {
                 XPathNodeIterator? nodeset = value as XPathNodeIterator;

@@ -446,8 +446,8 @@ internal sealed class ManifestBuilder
                     if (constantValObj != null)
                     {
                         ulong hexValue;
-                        if (constantValObj is ulong)
-                            hexValue = (ulong)constantValObj;    // This is the only integer type that can't be represented by a long.
+                        if (constantValObj is ulong num)
+                            hexValue = num;    // This is the only integer type that can't be represented by a long.
                         else
                             hexValue = (ulong)Convert.ToInt64(constantValObj); // Handles all integer types except ulong.
 

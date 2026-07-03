@@ -25,9 +25,9 @@ namespace System.ComponentModel
         /// </summary>
         public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
         {
-            if (value is string)
+            if (value is string str)
             {
-                return (string)value;
+                return str;
             }
             if (value == null)
             {

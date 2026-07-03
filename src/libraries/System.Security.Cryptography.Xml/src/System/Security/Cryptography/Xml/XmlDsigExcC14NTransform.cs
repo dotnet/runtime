@@ -75,17 +75,17 @@ namespace System.Security.Cryptography.Xml
         public override void LoadInput(object obj)
         {
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
-            if (obj is Stream)
+            if (obj is Stream stream)
             {
-                _excCanonicalXml = new ExcCanonicalXml((Stream)obj, _includeComments, _inclusiveNamespacesPrefixList!, resolver, BaseURI!);
+                _excCanonicalXml = new ExcCanonicalXml(stream, _includeComments, _inclusiveNamespacesPrefixList!, resolver, BaseURI!);
             }
-            else if (obj is XmlDocument)
+            else if (obj is XmlDocument xmlDocument)
             {
-                _excCanonicalXml = new ExcCanonicalXml((XmlDocument)obj, _includeComments, _inclusiveNamespacesPrefixList!, resolver);
+                _excCanonicalXml = new ExcCanonicalXml(xmlDocument, _includeComments, _inclusiveNamespacesPrefixList!, resolver);
             }
-            else if (obj is XmlNodeList)
+            else if (obj is XmlNodeList xmlNodeList)
             {
-                _excCanonicalXml = new ExcCanonicalXml((XmlNodeList)obj, _includeComments, _inclusiveNamespacesPrefixList!, resolver);
+                _excCanonicalXml = new ExcCanonicalXml(xmlNodeList, _includeComments, _inclusiveNamespacesPrefixList!, resolver);
             }
             else
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(obj));

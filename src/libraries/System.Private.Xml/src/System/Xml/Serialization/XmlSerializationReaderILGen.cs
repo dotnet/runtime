@@ -205,17 +205,17 @@ namespace System.Xml.Serialization
             if (!GeneratedMethods.Add(mapping))
                 return;
 
-            if (mapping is StructMapping)
+            if (mapping is StructMapping structMapping)
             {
-                WriteStructMethod((StructMapping)mapping);
+                WriteStructMethod(structMapping);
             }
-            else if (mapping is EnumMapping)
+            else if (mapping is EnumMapping enumMapping)
             {
-                WriteEnumMethod((EnumMapping)mapping);
+                WriteEnumMethod(enumMapping);
             }
-            else if (mapping is NullableMapping)
+            else if (mapping is NullableMapping nullableMapping)
             {
-                WriteNullableMethod((NullableMapping)mapping);
+                WriteNullableMethod(nullableMapping);
             }
         }
 
@@ -267,10 +267,10 @@ namespace System.Xml.Serialization
                 return null;
             if (!xmlMapping.GenerateSerializer)
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
-            if (xmlMapping is XmlTypeMapping)
-                return GenerateTypeElement((XmlTypeMapping)xmlMapping);
-            else if (xmlMapping is XmlMembersMapping)
-                return GenerateMembersElement((XmlMembersMapping)xmlMapping);
+            if (xmlMapping is XmlTypeMapping xmlTypeMapping)
+                return GenerateTypeElement(xmlTypeMapping);
+            else if (xmlMapping is XmlMembersMapping xmlMembersMapping)
+                return GenerateMembersElement(xmlMembersMapping);
             else
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
@@ -2966,9 +2966,9 @@ namespace System.Xml.Serialization
                 ILGenSet(checkSpecified, true);
             }
 
-            if (element.Mapping is ArrayMapping)
+            if (element.Mapping is ArrayMapping arrayMapping)
             {
-                WriteArray(source, arrayName, (ArrayMapping)element.Mapping, readOnly, element.IsNullable, elementIndex);
+                WriteArray(source, arrayName, arrayMapping, readOnly, element.IsNullable, elementIndex);
             }
             else if (element.Mapping is NullableMapping)
             {

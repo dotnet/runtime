@@ -61,7 +61,7 @@ namespace System.Xml.Linq
                 else if (_text.Length > 0)
                 {
                     XText? prevXText = _previous as XText;
-                    if (prevXText != null && !(_previous is XCData))
+                    if (prevXText != null && _previous is not XCData)
                     {
                         prevXText.Value += _text;
                     }
@@ -130,7 +130,7 @@ namespace System.Xml.Linq
                 if (_text.Length > 0)
                 {
                     XText? prevXText = _previous as XText;
-                    if (prevXText != null && !(_previous is XCData))
+                    if (prevXText != null && _previous is not XCData)
                     {
                         prevXText.Value += _text;
                     }

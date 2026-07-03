@@ -86,11 +86,11 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is ulong))
+            if (obj is not ulong num)
             {
                 return false;
             }
-            return m_value == ((ulong)obj).m_value;
+            return m_value == num.m_value;
         }
 
         [NonVersionable]

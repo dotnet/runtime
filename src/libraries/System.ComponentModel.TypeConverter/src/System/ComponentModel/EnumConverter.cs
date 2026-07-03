@@ -103,11 +103,11 @@ namespace System.ComponentModel
                     throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, (string)value, EnumType.Name), e);
                 }
             }
-            else if (value is Enum[])
+            else if (value is Enum[] enums)
             {
                 bool isUnderlyingTypeUInt64 = Enum.GetUnderlyingType(EnumType) == typeof(ulong);
                 long finalValue = 0;
-                foreach (Enum e in (Enum[])value)
+                foreach (Enum e in enums)
                 {
                     finalValue |= GetEnumValue(isUnderlyingTypeUInt64, e, culture);
                 }
@@ -147,9 +147,9 @@ namespace System.ComponentModel
                     // a ToObject call on enum.
                     //
                     Type underlyingType = Enum.GetUnderlyingType(EnumType);
-                    if (value is IConvertible)
+                    if (value is IConvertible convertible)
                     {
-                        object convertedValue = ((IConvertible)value).ToType(underlyingType, culture);
+                        object convertedValue = convertible.ToType(underlyingType, culture);
 
                         MethodInfo? method = typeof(Enum).GetMethod("ToObject", new Type[] { typeof(Type), underlyingType });
                         if (method != null)

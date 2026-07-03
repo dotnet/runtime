@@ -117,13 +117,13 @@ namespace System.Xml
             if (node == null)
                 return null;
 
-            if (!(node is XmlAttribute))
+            if (node is not XmlAttribute xmlAttribute)
                 throw new ArgumentException(SR.Xdom_AttrCol_Object);
 
             int offset = FindNodeOffset(node.LocalName, node.NamespaceURI);
             if (offset == -1)
             {
-                return InternalAppendAttribute((XmlAttribute)node);
+                return InternalAppendAttribute(xmlAttribute);
             }
             else
             {

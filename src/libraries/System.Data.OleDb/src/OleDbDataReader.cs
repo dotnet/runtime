@@ -2406,9 +2406,9 @@ namespace System.Data.OleDb
             }
 
             int visibleCount = metainfo.Count;
-            if (hiddenColumns is int)
+            if (hiddenColumns is int num)
             {
-                visibleCount -= (int)hiddenColumns;
+                visibleCount -= num;
             }
 
             //  if one key column is invalidated, they all need to be invalidated. The SET is the key,

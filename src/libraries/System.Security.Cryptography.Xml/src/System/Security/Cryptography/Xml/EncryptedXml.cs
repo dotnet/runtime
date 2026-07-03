@@ -442,8 +442,8 @@ namespace System.Security.Cryptography.Xml
                             throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
                         }
                         // kek is either a SymmetricAlgorithm or an RSA key, otherwise, we wouldn't be able to insert it in the hash table
-                        if (kek is SymmetricAlgorithm)
-                            return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, (SymmetricAlgorithm)kek);
+                        if (kek is SymmetricAlgorithm symmetricAlgorithm)
+                            return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, symmetricAlgorithm);
 
                         // kek is an RSA key: get fOAEP from the algorithm, default to false
                         fOAEP = (encryptedKey.EncryptionMethod != null && encryptedKey.EncryptionMethod.KeyAlgorithm == EncryptedXml.XmlEncRSAOAEPUrl);
@@ -536,7 +536,7 @@ namespace System.Security.Cryptography.Xml
             ArgumentNullException.ThrowIfNull(keyName);
             ArgumentNullException.ThrowIfNull(keyObject);
 
-            if (!(keyObject is SymmetricAlgorithm) && !(keyObject is RSA))
+            if (keyObject is not SymmetricAlgorithm && keyObject is not RSA)
                 throw new CryptographicException(SR.Cryptography_Xml_NotSupportedCryptographicTransform);
             _keyNameMapping.Add(keyName, keyObject);
         }

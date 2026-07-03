@@ -221,7 +221,7 @@ namespace System.Composition.Convention
             }
 
             IEnumerable<Attribute> appliedAttributes;
-            if (!(member is TypeInfo) && member.DeclaringType != reflectedType)
+            if (member is not TypeInfo && member.DeclaringType != reflectedType)
                 appliedAttributes = Enumerable.Empty<Attribute>();
             else
                 appliedAttributes = member.GetCustomAttributes<Attribute>(false);

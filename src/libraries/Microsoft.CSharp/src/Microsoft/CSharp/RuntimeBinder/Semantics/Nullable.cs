@@ -28,7 +28,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             while (IsNullableConstructor(pExpr, out ExprCall call))
             {
                 pExpr = call.OptionalArguments;
-                Debug.Assert(pExpr != null && !(pExpr is ExprList));
+                Debug.Assert(pExpr != null && pExpr is not ExprList);
             }
 
             return pExpr;
@@ -45,7 +45,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (IsNullableConstructor(exprSrc, out ExprCall call))
             {
                 Expr args = call.OptionalArguments;
-                Debug.Assert(args != null && !(args is ExprList));
+                Debug.Assert(args != null && args is not ExprList);
                 return args;
             }
 

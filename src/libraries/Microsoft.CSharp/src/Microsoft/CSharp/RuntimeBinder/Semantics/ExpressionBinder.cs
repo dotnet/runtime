@@ -665,7 +665,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private ExprCall BindLiftedUDUnop(Expr arg, CType typeArg, MethPropWithInst mpwi)
         {
             CType typeRaw = typeArg.StripNubs();
-            if (!(arg.Type is NullableType) || !canConvert(arg.Type.StripNubs(), typeRaw, CONVERTTYPE.NOUDC))
+            if (arg.Type is not NullableType || !canConvert(arg.Type.StripNubs(), typeRaw, CONVERTTYPE.NOUDC))
             {
                 // Convert then lift.
                 arg = mustConvert(arg, typeArg);
@@ -673,7 +673,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(arg.Type is NullableType);
 
             CType typeRet = TypeManager.SubstType(mpwi.Meth().RetType, mpwi.GetType());
-            if (!(typeRet is NullableType))
+            if (typeRet is not NullableType)
             {
                 typeRet = TypeManager.GetNullable(typeRet);
             }
@@ -792,7 +792,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             list = null;
                         }
 
-                        if (!(arg is ExprNamedArgumentSpecification))
+                        if (arg is not ExprNamedArgumentSpecification)
                         {
                             return NamedArgumentsKind.NonTrailing;
                         }
@@ -882,8 +882,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return;
             }
 
-            Debug.Assert(!(expr is ExprLocal));
-            Debug.Assert(!(expr is ExprMemberGroup));
+            Debug.Assert(expr is not ExprLocal);
+            Debug.Assert(expr is not ExprMemberGroup);
 
             switch (expr.Kind)
             {

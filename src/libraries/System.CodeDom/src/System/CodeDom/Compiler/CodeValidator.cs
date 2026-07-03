@@ -20,41 +20,41 @@ namespace System.CodeDom.Compiler
 
         internal void ValidateIdentifiers(CodeObject e)
         {
-            if (e is CodeCompileUnit)
+            if (e is CodeCompileUnit codeCompileUnit)
             {
-                ValidateCodeCompileUnit((CodeCompileUnit)e);
+                ValidateCodeCompileUnit(codeCompileUnit);
             }
             else if (e is CodeComment)
             {
                 // do nothing
             }
-            else if (e is CodeExpression)
+            else if (e is CodeExpression codeExpression)
             {
-                ValidateExpression((CodeExpression)e);
+                ValidateExpression(codeExpression);
             }
-            else if (e is CodeNamespace)
+            else if (e is CodeNamespace codeNamespace)
             {
-                ValidateNamespace((CodeNamespace)e);
+                ValidateNamespace(codeNamespace);
             }
-            else if (e is CodeNamespaceImport)
+            else if (e is CodeNamespaceImport codeNamespaceImport)
             {
-                ValidateNamespaceImport((CodeNamespaceImport)e);
+                ValidateNamespaceImport(codeNamespaceImport);
             }
-            else if (e is CodeStatement)
+            else if (e is CodeStatement codeStatement)
             {
-                ValidateStatement((CodeStatement)e);
+                ValidateStatement(codeStatement);
             }
-            else if (e is CodeTypeMember)
+            else if (e is CodeTypeMember codeTypeMember)
             {
-                ValidateTypeMember((CodeTypeMember)e);
+                ValidateTypeMember(codeTypeMember);
             }
-            else if (e is CodeTypeReference)
+            else if (e is CodeTypeReference codeTypeReference)
             {
-                ValidateTypeReference((CodeTypeReference)e);
+                ValidateTypeReference(codeTypeReference);
             }
-            else if (e is CodeDirective)
+            else if (e is CodeDirective codeDirective)
             {
-                ValidateCodeDirective((CodeDirective)e);
+                ValidateCodeDirective(codeDirective);
             }
             else
             {
@@ -68,29 +68,29 @@ namespace System.CodeDom.Compiler
             ValidateCodeDirectives(e.StartDirectives);
             ValidateCodeDirectives(e.EndDirectives);
 
-            if (e is CodeMemberEvent)
+            if (e is CodeMemberEvent codeMemberEvent)
             {
-                ValidateEvent((CodeMemberEvent)e);
+                ValidateEvent(codeMemberEvent);
             }
-            else if (e is CodeMemberField)
+            else if (e is CodeMemberField codeMemberField)
             {
-                ValidateField((CodeMemberField)e);
+                ValidateField(codeMemberField);
             }
-            else if (e is CodeMemberMethod)
+            else if (e is CodeMemberMethod codeMemberMethod)
             {
-                ValidateMemberMethod((CodeMemberMethod)e);
+                ValidateMemberMethod(codeMemberMethod);
             }
-            else if (e is CodeMemberProperty)
+            else if (e is CodeMemberProperty codeMemberProperty)
             {
-                ValidateProperty((CodeMemberProperty)e);
+                ValidateProperty(codeMemberProperty);
             }
             else if (e is CodeSnippetTypeMember)
             {
                 // do nothing
             }
-            else if (e is CodeTypeDeclaration)
+            else if (e is CodeTypeDeclaration codeTypeDeclaration)
             {
-                ValidateTypeDeclaration((CodeTypeDeclaration)e);
+                ValidateTypeDeclaration(codeTypeDeclaration);
             }
             else
             {
@@ -318,17 +318,17 @@ namespace System.CodeDom.Compiler
             ValidateTypeParameters(e.TypeParameters);
             ValidateTypeReferences(e.ImplementationTypes);
 
-            if (e is CodeEntryPointMethod)
+            if (e is CodeEntryPointMethod codeEntryPointMethod)
             {
-                ValidateStatements(((CodeEntryPointMethod)e).Statements);
+                ValidateStatements(codeEntryPointMethod.Statements);
             }
-            else if (e is CodeConstructor)
+            else if (e is CodeConstructor codeConstructor)
             {
-                ValidateConstructor((CodeConstructor)e);
+                ValidateConstructor(codeConstructor);
             }
-            else if (e is CodeTypeConstructor)
+            else if (e is CodeTypeConstructor codeTypeConstructor)
             {
-                ValidateTypeConstructor((CodeTypeConstructor)e);
+                ValidateTypeConstructor(codeTypeConstructor);
             }
             else
             {
@@ -401,57 +401,57 @@ namespace System.CodeDom.Compiler
             {
                 // nothing
             }
-            else if (e is CodeMethodReturnStatement)
+            else if (e is CodeMethodReturnStatement codeMethodReturnStatement)
             {
-                ValidateMethodReturnStatement((CodeMethodReturnStatement)e);
+                ValidateMethodReturnStatement(codeMethodReturnStatement);
             }
-            else if (e is CodeConditionStatement)
+            else if (e is CodeConditionStatement codeConditionStatement)
             {
-                ValidateConditionStatement((CodeConditionStatement)e);
+                ValidateConditionStatement(codeConditionStatement);
             }
-            else if (e is CodeTryCatchFinallyStatement)
+            else if (e is CodeTryCatchFinallyStatement codeTryCatchFinallyStatement)
             {
-                ValidateTryCatchFinallyStatement((CodeTryCatchFinallyStatement)e);
+                ValidateTryCatchFinallyStatement(codeTryCatchFinallyStatement);
             }
-            else if (e is CodeAssignStatement)
+            else if (e is CodeAssignStatement codeAssignStatement)
             {
-                ValidateAssignStatement((CodeAssignStatement)e);
+                ValidateAssignStatement(codeAssignStatement);
             }
-            else if (e is CodeExpressionStatement)
+            else if (e is CodeExpressionStatement codeExpressionStatement)
             {
-                ValidateExpressionStatement((CodeExpressionStatement)e);
+                ValidateExpressionStatement(codeExpressionStatement);
             }
-            else if (e is CodeIterationStatement)
+            else if (e is CodeIterationStatement codeIterationStatement)
             {
-                ValidateIterationStatement((CodeIterationStatement)e);
+                ValidateIterationStatement(codeIterationStatement);
             }
-            else if (e is CodeThrowExceptionStatement)
+            else if (e is CodeThrowExceptionStatement codeThrowExceptionStatement)
             {
-                ValidateThrowExceptionStatement((CodeThrowExceptionStatement)e);
+                ValidateThrowExceptionStatement(codeThrowExceptionStatement);
             }
             else if (e is CodeSnippetStatement)
             {
                 // do nothing
             }
-            else if (e is CodeVariableDeclarationStatement)
+            else if (e is CodeVariableDeclarationStatement codeVariableDeclarationStatement)
             {
-                ValidateVariableDeclarationStatement((CodeVariableDeclarationStatement)e);
+                ValidateVariableDeclarationStatement(codeVariableDeclarationStatement);
             }
-            else if (e is CodeAttachEventStatement)
+            else if (e is CodeAttachEventStatement codeAttachEventStatement)
             {
-                ValidateAttachEventStatement((CodeAttachEventStatement)e);
+                ValidateAttachEventStatement(codeAttachEventStatement);
             }
-            else if (e is CodeRemoveEventStatement)
+            else if (e is CodeRemoveEventStatement codeRemoveEventStatement)
             {
-                ValidateRemoveEventStatement((CodeRemoveEventStatement)e);
+                ValidateRemoveEventStatement(codeRemoveEventStatement);
             }
-            else if (e is CodeGotoStatement)
+            else if (e is CodeGotoStatement codeGotoStatement)
             {
-                ValidateGotoStatement((CodeGotoStatement)e);
+                ValidateGotoStatement(codeGotoStatement);
             }
-            else if (e is CodeLabeledStatement)
+            else if (e is CodeLabeledStatement codeLabeledStatement)
             {
-                ValidateLabeledStatement((CodeLabeledStatement)e);
+                ValidateLabeledStatement(codeLabeledStatement);
             }
             else
             {
@@ -665,89 +665,89 @@ namespace System.CodeDom.Compiler
 
         private void ValidateExpression(CodeExpression e)
         {
-            if (e is CodeArrayCreateExpression)
+            if (e is CodeArrayCreateExpression codeArrayCreateExpression)
             {
-                ValidateArrayCreateExpression((CodeArrayCreateExpression)e);
+                ValidateArrayCreateExpression(codeArrayCreateExpression);
             }
             else if (e is CodeBaseReferenceExpression)
             {
                 // Nothing to validate
             }
-            else if (e is CodeBinaryOperatorExpression)
+            else if (e is CodeBinaryOperatorExpression codeBinaryOperatorExpression)
             {
-                ValidateBinaryOperatorExpression((CodeBinaryOperatorExpression)e);
+                ValidateBinaryOperatorExpression(codeBinaryOperatorExpression);
             }
-            else if (e is CodeCastExpression)
+            else if (e is CodeCastExpression codeCastExpression)
             {
-                ValidateCastExpression((CodeCastExpression)e);
+                ValidateCastExpression(codeCastExpression);
             }
-            else if (e is CodeDefaultValueExpression)
+            else if (e is CodeDefaultValueExpression codeDefaultValueExpression)
             {
-                ValidateDefaultValueExpression((CodeDefaultValueExpression)e);
+                ValidateDefaultValueExpression(codeDefaultValueExpression);
             }
-            else if (e is CodeDelegateCreateExpression)
+            else if (e is CodeDelegateCreateExpression codeDelegateCreateExpression)
             {
-                ValidateDelegateCreateExpression((CodeDelegateCreateExpression)e);
+                ValidateDelegateCreateExpression(codeDelegateCreateExpression);
             }
-            else if (e is CodeFieldReferenceExpression)
+            else if (e is CodeFieldReferenceExpression codeFieldReferenceExpression)
             {
-                ValidateFieldReferenceExpression((CodeFieldReferenceExpression)e);
+                ValidateFieldReferenceExpression(codeFieldReferenceExpression);
             }
-            else if (e is CodeArgumentReferenceExpression)
+            else if (e is CodeArgumentReferenceExpression codeArgumentReferenceExpression)
             {
-                ValidateArgumentReferenceExpression((CodeArgumentReferenceExpression)e);
+                ValidateArgumentReferenceExpression(codeArgumentReferenceExpression);
             }
-            else if (e is CodeVariableReferenceExpression)
+            else if (e is CodeVariableReferenceExpression codeVariableReferenceExpression)
             {
-                ValidateVariableReferenceExpression((CodeVariableReferenceExpression)e);
+                ValidateVariableReferenceExpression(codeVariableReferenceExpression);
             }
-            else if (e is CodeIndexerExpression)
+            else if (e is CodeIndexerExpression codeIndexerExpression)
             {
-                ValidateIndexerExpression((CodeIndexerExpression)e);
+                ValidateIndexerExpression(codeIndexerExpression);
             }
-            else if (e is CodeArrayIndexerExpression)
+            else if (e is CodeArrayIndexerExpression codeArrayIndexerExpression)
             {
-                ValidateArrayIndexerExpression((CodeArrayIndexerExpression)e);
+                ValidateArrayIndexerExpression(codeArrayIndexerExpression);
             }
             else if (e is CodeSnippetExpression)
             {
                 // do nothing
             }
-            else if (e is CodeMethodInvokeExpression)
+            else if (e is CodeMethodInvokeExpression codeMethodInvokeExpression)
             {
-                ValidateMethodInvokeExpression((CodeMethodInvokeExpression)e);
+                ValidateMethodInvokeExpression(codeMethodInvokeExpression);
             }
-            else if (e is CodeMethodReferenceExpression)
+            else if (e is CodeMethodReferenceExpression codeMethodReferenceExpression)
             {
-                ValidateMethodReferenceExpression((CodeMethodReferenceExpression)e);
+                ValidateMethodReferenceExpression(codeMethodReferenceExpression);
             }
-            else if (e is CodeEventReferenceExpression)
+            else if (e is CodeEventReferenceExpression codeEventReferenceExpression)
             {
-                ValidateEventReferenceExpression((CodeEventReferenceExpression)e);
+                ValidateEventReferenceExpression(codeEventReferenceExpression);
             }
-            else if (e is CodeDelegateInvokeExpression)
+            else if (e is CodeDelegateInvokeExpression codeDelegateInvokeExpression)
             {
-                ValidateDelegateInvokeExpression((CodeDelegateInvokeExpression)e);
+                ValidateDelegateInvokeExpression(codeDelegateInvokeExpression);
             }
-            else if (e is CodeObjectCreateExpression)
+            else if (e is CodeObjectCreateExpression codeObjectCreateExpression)
             {
-                ValidateObjectCreateExpression((CodeObjectCreateExpression)e);
+                ValidateObjectCreateExpression(codeObjectCreateExpression);
             }
-            else if (e is CodeParameterDeclarationExpression)
+            else if (e is CodeParameterDeclarationExpression codeParameterDeclarationExpression)
             {
-                ValidateParameterDeclarationExpression((CodeParameterDeclarationExpression)e);
+                ValidateParameterDeclarationExpression(codeParameterDeclarationExpression);
             }
-            else if (e is CodeDirectionExpression)
+            else if (e is CodeDirectionExpression codeDirectionExpression)
             {
-                ValidateDirectionExpression((CodeDirectionExpression)e);
+                ValidateDirectionExpression(codeDirectionExpression);
             }
             else if (e is CodePrimitiveExpression)
             {
                 // do nothing
             }
-            else if (e is CodePropertyReferenceExpression)
+            else if (e is CodePropertyReferenceExpression codePropertyReferenceExpression)
             {
-                ValidatePropertyReferenceExpression((CodePropertyReferenceExpression)e);
+                ValidatePropertyReferenceExpression(codePropertyReferenceExpression);
             }
             else if (e is CodePropertySetValueReferenceExpression)
             {
@@ -757,13 +757,13 @@ namespace System.CodeDom.Compiler
             {
                 // Do nothing
             }
-            else if (e is CodeTypeReferenceExpression)
+            else if (e is CodeTypeReferenceExpression codeTypeReferenceExpression)
             {
-                ValidateTypeReference(((CodeTypeReferenceExpression)e).Type);
+                ValidateTypeReference(codeTypeReferenceExpression.Type);
             }
-            else if (e is CodeTypeOfExpression)
+            else if (e is CodeTypeOfExpression codeTypeOfExpression)
             {
-                ValidateTypeOfExpression((CodeTypeOfExpression)e);
+                ValidateTypeOfExpression(codeTypeOfExpression);
             }
             else
             {
@@ -928,13 +928,13 @@ namespace System.CodeDom.Compiler
 
         private static void ValidateCodeDirective(CodeDirective e)
         {
-            if (e is CodeChecksumPragma)
+            if (e is CodeChecksumPragma codeChecksumPragma)
             {
-                ValidateChecksumPragma((CodeChecksumPragma)e);
+                ValidateChecksumPragma(codeChecksumPragma);
             }
-            else if (e is CodeRegionDirective)
+            else if (e is CodeRegionDirective codeRegionDirective)
             {
-                ValidateRegionDirective((CodeRegionDirective)e);
+                ValidateRegionDirective(codeRegionDirective);
             }
             else
             {
@@ -954,8 +954,8 @@ namespace System.CodeDom.Compiler
                 throw new ArgumentException(SR.Format(SR.InvalidRegion, e.RegionText), nameof(e));
         }
 
-        private bool IsCurrentInterface => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
+        private bool IsCurrentInterface => _currentClass != null && _currentClass is not CodeTypeDelegate ? _currentClass.IsInterface : false;
 
-        private bool IsCurrentEnum => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsEnum : false;
+        private bool IsCurrentEnum => _currentClass != null && _currentClass is not CodeTypeDelegate ? _currentClass.IsEnum : false;
     }
 }

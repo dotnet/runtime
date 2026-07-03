@@ -280,7 +280,7 @@ namespace System.Security.AccessControl
 
             // As a final check, confirm that the advertised ACE header length
             // was the actual parsed length
-            if (((!(result is ObjectAce)) && ((binaryForm[offset + 2] << 0) + (binaryForm[offset + 3] << 8) != result.BinaryLength))
+            if (((result is not ObjectAce) && ((binaryForm[offset + 2] << 0) + (binaryForm[offset + 3] << 8) != result.BinaryLength))
                 // This is needed because object aces created through ADSI have the advertised ACE length
                 // greater than the actual length by 32 (bug in ADSI).
                 || ((result is ObjectAce) && ((binaryForm[offset + 2] << 0) + (binaryForm[offset + 3] << 8) != result.BinaryLength) && (((binaryForm[offset + 2] << 0) + (binaryForm[offset + 3] << 8) - 32) != result.BinaryLength)))

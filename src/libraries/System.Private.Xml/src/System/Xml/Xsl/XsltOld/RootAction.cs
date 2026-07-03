@@ -200,13 +200,13 @@ namespace System.Xml.Xsl.XsltOld
             }
             foreach (Action action in container.containedActions)
             {
-                if (action is UseAttributeSetsAction)
+                if (action is UseAttributeSetsAction useAttributeSetsAction)
                 {
-                    CheckAttributeSets_RecurceInList(markTable, ((UseAttributeSetsAction)action).UsedSets!);
+                    CheckAttributeSets_RecurceInList(markTable, useAttributeSetsAction.UsedSets!);
                 }
-                else if (action is ContainerAction)
+                else if (action is ContainerAction containerAction)
                 {
-                    CheckAttributeSets_RecurceInContainer(markTable, (ContainerAction)action);
+                    CheckAttributeSets_RecurceInContainer(markTable, containerAction);
                 }
             }
         }

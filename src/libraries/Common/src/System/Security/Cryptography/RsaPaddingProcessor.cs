@@ -365,7 +365,7 @@ namespace System.Security.Cryptography
                     destination[0] = 0;
                 }
             }
-            catch (Exception e) when (!(e is CryptographicException))
+            catch (Exception e) when (e is not CryptographicException)
             {
                 Debug.Fail("Bad exception produced from OAEP padding: " + e);
                 throw new CryptographicException();

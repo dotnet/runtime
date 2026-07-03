@@ -342,9 +342,9 @@ namespace System.Data.Odbc
                         {
                             cch = 0;
                         }
-                        else if (value is string)
+                        else if (value is string str)
                         {
-                            cch = ((string)value).Length - offset;
+                            cch = str.Length - offset;
 
                             if ((0 != (ParameterDirection.Output & _internalDirection)) && (0x3fffffff <= _internalSize))
                             {
@@ -370,9 +370,9 @@ namespace System.Data.Odbc
                                 cch = System.Text.Encoding.Default.GetMaxByteCount(cch);
                             }
                         }
-                        else if (value is char[])
+                        else if (value is char[] chars)
                         {
-                            cch = ((char[])value).Length - offset;
+                            cch = chars.Length - offset;
                             if ((0 != (ParameterDirection.Output & _internalDirection)) && (0x3fffffff <= _internalSize))
                             {
                                 cch = Math.Max(cch, 4 * 1024); // MDAC 69224
@@ -384,9 +384,9 @@ namespace System.Data.Odbc
                                 cch = System.Text.Encoding.Default.GetMaxByteCount(cch);
                             }
                         }
-                        else if (value is byte[])
+                        else if (value is byte[] bytes)
                         {
-                            cch = ((byte[])value).Length - offset;
+                            cch = bytes.Length - offset;
 
                             if ((0 != (ParameterDirection.Output & _internalDirection)) && (0x3fffffff <= _internalSize))
                             {
@@ -425,19 +425,19 @@ namespace System.Data.Odbc
             if (0 >= cch)
             {
                 bool twobytesperunit = false;
-                if (value is string)
+                if (value is string str)
                 {
-                    cch = ((string)value).Length - offset;
+                    cch = str.Length - offset;
                     twobytesperunit = true;
                 }
-                else if (value is char[])
+                else if (value is char[] chars)
                 {
-                    cch = ((char[])value).Length - offset;
+                    cch = chars.Length - offset;
                     twobytesperunit = true;
                 }
-                else if (value is byte[])
+                else if (value is byte[] bytes)
                 {
-                    cch = ((byte[])value).Length - offset;
+                    cch = bytes.Length - offset;
                 }
                 else
                 {
@@ -488,17 +488,17 @@ namespace System.Data.Odbc
                                 ccb = 0;
                             }
                         }
-                        else if (value is string)
+                        else if (value is string str)
                         {
-                            ccb = (((string)value).Length - offset) * 2 + 2;
+                            ccb = (str.Length - offset) * 2 + 2;
                         }
-                        else if (value is char[])
+                        else if (value is char[] chars)
                         {
-                            ccb = (((char[])value).Length - offset) * 2 + 2;
+                            ccb = (chars.Length - offset) * 2 + 2;
                         }
-                        else if (value is byte[])
+                        else if (value is byte[] bytes)
                         {
-                            ccb = ((byte[])value).Length - offset;
+                            ccb = bytes.Length - offset;
                         }
 #if DEBUG
                         else { Debug.Fail("not expecting this"); }
@@ -561,7 +561,7 @@ namespace System.Data.Odbc
         {
             // For any value that is not decimal simply return the Scale
             //
-            if (!(value is decimal))
+            if (value is not decimal d)
             {
                 return _internalScale;
             }
@@ -570,7 +570,7 @@ namespace System.Data.Odbc
             // If the user specified a lower scale we return the user specified scale,
             // otherwise the values scale
             //
-            byte s = (byte)((decimal.GetBits((decimal)value)[3] & 0x00ff0000) >> 0x10);
+            byte s = (byte)((decimal.GetBits(d)[3] & 0x00ff0000) >> 0x10);
             if ((_internalScale > 0) && (_internalScale < s))
             {
                 return _internalScale;
@@ -635,23 +635,23 @@ namespace System.Data.Odbc
             //
             if (offset > 0)
             {
-                if (value is string)
+                if (value is string str)
                 {
-                    if (offset > ((string)value).Length)
+                    if (offset > str.Length)
                     {
                         throw ADP.OffsetOutOfRangeException();
                     }
                 }
-                else if (value is char[])
+                else if (value is char[] chars)
                 {
-                    if (offset > ((char[])value).Length)
+                    if (offset > chars.Length)
                     {
                         throw ADP.OffsetOutOfRangeException();
                     }
                 }
-                else if (value is byte[])
+                else if (value is byte[] bytes)
                 {
-                    if (offset > ((byte[])value).Length)
+                    if (offset > bytes.Length)
                     {
                         throw ADP.OffsetOutOfRangeException();
                     }

@@ -31,12 +31,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             public override bool Equals(object obj)
             {
                 Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
-                if (!(obj is KeyPair<TKey1, TKey2>))
+                if (obj is not KeyPair<TKey1, TKey2> keyPair)
                 {
                     return false;
                 }
 
-                return Equals((KeyPair<TKey1, TKey2>)obj);
+                return Equals(keyPair);
             }
 
             public override int GetHashCode()

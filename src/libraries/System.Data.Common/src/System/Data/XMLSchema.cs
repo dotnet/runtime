@@ -182,34 +182,34 @@ namespace System.Data
 
             foreach (object item in schema.Items)
             {
-                if (item is XmlSchemaAnnotation)
+                if (item is XmlSchemaAnnotation xmlSchemaAnnotation)
                 {
-                    _annotations!.Add((XmlSchemaAnnotation)item);
+                    _annotations!.Add(xmlSchemaAnnotation);
                 }
                 if (item is XmlSchemaElement elem)
                 {
                     _elements!.Add(elem);
                     _elementsTable![elem.QualifiedName] = elem;
                 }
-                if (item is XmlSchemaAttribute)
+                if (item is XmlSchemaAttribute xmlSchemaAttribute)
                 {
-                    XmlSchemaAttribute attr = (XmlSchemaAttribute)item;
+                    XmlSchemaAttribute attr = xmlSchemaAttribute;
                     _attributes![attr.QualifiedName] = attr;
                 }
-                if (item is XmlSchemaAttributeGroup)
+                if (item is XmlSchemaAttributeGroup xmlSchemaAttributeGroup)
                 {
-                    XmlSchemaAttributeGroup attr = (XmlSchemaAttributeGroup)item;
+                    XmlSchemaAttributeGroup attr = xmlSchemaAttributeGroup;
                     _attributeGroups![attr.QualifiedName] = attr;
                 }
-                if (item is XmlSchemaType)
+                if (item is XmlSchemaType xmlSchemaType)
                 {
                     string? MSDATATargetNamespace = null;
                     if (item is XmlSchemaSimpleType)
                     {
-                        MSDATATargetNamespace = XSDSchema.GetMsdataAttribute((XmlSchemaType)item, Keywords.TARGETNAMESPACE);
+                        MSDATATargetNamespace = XSDSchema.GetMsdataAttribute(xmlSchemaType, Keywords.TARGETNAMESPACE);
                     }
 
-                    XmlSchemaType type = (XmlSchemaType)item;
+                    XmlSchemaType type = xmlSchemaType;
                     _schemaTypes![type.QualifiedName] = type;
 
                     // if we have a User Defined simple type, cache it so later we may need for mapping
@@ -535,28 +535,28 @@ namespace System.Data
 
             foreach (XmlSchemaAnnotated el in items)
             {
-                if (el is XmlSchemaElement)
+                if (el is XmlSchemaElement xmlSchemaElement)
                 {
                     // pushing max occur of choice element to its imidiate children of type xs:elements
-                    if (isChoice && pt.MaxOccurs > decimal.One && (((XmlSchemaElement)el).SchemaType is XmlSchemaComplexType)) // we know frominference condition
-                        ((XmlSchemaElement)el).MaxOccurs = pt.MaxOccurs;
+                    if (isChoice && pt.MaxOccurs > decimal.One && (xmlSchemaElement.SchemaType is XmlSchemaComplexType)) // we know frominference condition
+                        xmlSchemaElement.MaxOccurs = pt.MaxOccurs;
 
-                    if (((XmlSchemaElement)el).RefName.Name.Length != 0)
+                    if (xmlSchemaElement.RefName.Name.Length != 0)
                     {
-                        if (!FromInference || (((XmlSchemaElement)el).MaxOccurs != decimal.One && !(((XmlSchemaElement)el).SchemaType is XmlSchemaComplexType)))
+                        if (!FromInference || (xmlSchemaElement.MaxOccurs != decimal.One && xmlSchemaElement.SchemaType is not XmlSchemaComplexType))
                             continue;
                     }
 
 
-                    if (!IsTable((XmlSchemaElement)el))
+                    if (!IsTable(xmlSchemaElement))
                         return false;
 
                     continue;
                 }
 
-                if (el is XmlSchemaParticle)
+                if (el is XmlSchemaParticle xmlSchemaParticle)
                 {
-                    if (!IsDatasetParticle((XmlSchemaParticle)el))
+                    if (!IsDatasetParticle(xmlSchemaParticle))
                         return false;
                 }
             }
@@ -623,8 +623,8 @@ namespace System.Data
                             return null; // it's a table
                     }
 
-                    if (ct.BaseXmlSchemaType is XmlSchemaComplexType)
-                        ct = (XmlSchemaComplexType)ct.BaseXmlSchemaType;
+                    if (ct.BaseXmlSchemaType is XmlSchemaComplexType xmlSchemaComplexType)
+                        ct = xmlSchemaComplexType;
                     else
                         break;
                 }
@@ -857,9 +857,9 @@ namespace System.Data
         private void HandleRelations(XmlSchemaAnnotation ann, bool fNested)
         {
             foreach (object __items in ann.Items)
-                if (__items is XmlSchemaAppInfo)
+                if (__items is XmlSchemaAppInfo xmlSchemaAppInfo)
                 {
-                    XmlNode[] relations = ((XmlSchemaAppInfo)__items).Markup!;
+                    XmlNode[] relations = xmlSchemaAppInfo.Markup!;
                     for (int i = 0; i < relations.Length; i++)
                         if (FEqualIdentity(relations[i], Keywords.MSD_RELATION, Keywords.MSDNS))
                             HandleRelation((XmlElement)relations[i], fNested);
@@ -868,12 +868,12 @@ namespace System.Data
 
         internal static XmlSchemaObjectCollection? GetParticleItems(XmlSchemaParticle? pt)
         {
-            if (pt is XmlSchemaSequence)
-                return ((XmlSchemaSequence)pt).Items;
-            if (pt is XmlSchemaAll)
-                return ((XmlSchemaAll)pt).Items;
-            if (pt is XmlSchemaChoice)
-                return ((XmlSchemaChoice)pt).Items;
+            if (pt is XmlSchemaSequence xmlSchemaSequence)
+                return xmlSchemaSequence.Items;
+            if (pt is XmlSchemaAll xmlSchemaAll)
+                return xmlSchemaAll.Items;
+            if (pt is XmlSchemaChoice xmlSchemaChoice)
+                return xmlSchemaChoice.Items;
             if (pt is XmlSchemaAny)
                 return null;
             // the code below is a little hack for the SOM behavior
@@ -883,8 +883,8 @@ namespace System.Data
                 Items.Add(pt);
                 return Items;
             }
-            if (pt is XmlSchemaGroupRef)
-                return GetParticleItems(((XmlSchemaGroupRef)pt).Particle);
+            if (pt is XmlSchemaGroupRef xmlSchemaGroupRef)
+                return GetParticleItems(xmlSchemaGroupRef.Particle);
             // should never get here.
             return null;
         }
@@ -985,9 +985,9 @@ namespace System.Data
         {
             foreach (XmlSchemaObject so in attributes)
             {
-                if (so is XmlSchemaAttribute)
+                if (so is XmlSchemaAttribute xmlSchemaAttribute)
                 {
-                    HandleAttributeColumn((XmlSchemaAttribute)so, table, isBase);
+                    HandleAttributeColumn(xmlSchemaAttribute, table, isBase);
                 }
                 else
                 {  // XmlSchemaAttributeGroupRef
@@ -1007,9 +1007,9 @@ namespace System.Data
         {
             foreach (XmlSchemaObject obj in attributeGroup.Attributes)
             {
-                if (obj is XmlSchemaAttribute)
+                if (obj is XmlSchemaAttribute xmlSchemaAttribute)
                 {
-                    HandleAttributeColumn((XmlSchemaAttribute)obj, table, isBase);
+                    HandleAttributeColumn(xmlSchemaAttribute, table, isBase);
                 }
                 else
                 { // XmlSchemaAttributeGroupRef
@@ -1059,9 +1059,9 @@ namespace System.Data
                         if (!(ct.BaseXmlSchemaType is XmlSchemaComplexType && FromInference))
                             HandleAttributes(ccExtension.Attributes, table, isBase);
 
-                        if (ct.BaseXmlSchemaType is XmlSchemaComplexType)
+                        if (ct.BaseXmlSchemaType is XmlSchemaComplexType xmlSchemaComplexType)
                         {
-                            HandleComplexType((XmlSchemaComplexType)ct.BaseXmlSchemaType, table, tableChildren, isNillable);
+                            HandleComplexType(xmlSchemaComplexType, table, tableChildren, isNillable);
                         }
                         else
                         {
@@ -1100,9 +1100,9 @@ namespace System.Data
                     if (cContent is XmlSchemaSimpleContentExtension ccExtension)
                     {
                         HandleAttributes(ccExtension.Attributes, table, isBase);
-                        if (ct.BaseXmlSchemaType is XmlSchemaComplexType)
+                        if (ct.BaseXmlSchemaType is XmlSchemaComplexType xmlSchemaComplexType2)
                         {
-                            HandleComplexType((XmlSchemaComplexType)ct.BaseXmlSchemaType, table, tableChildren, isNillable);
+                            HandleComplexType(xmlSchemaComplexType2, table, tableChildren, isNillable);
                         }
                         else
                         {
@@ -1143,9 +1143,9 @@ namespace System.Data
                 if (ct.ContentModel is XmlSchemaComplexContent)
                 {
                     XmlSchemaAnnotated cContent = ((XmlSchemaComplexContent)(ct.ContentModel)).Content!;
-                    if (cContent is XmlSchemaComplexContentExtension)
+                    if (cContent is XmlSchemaComplexContentExtension xmlSchemaComplexContentExtension)
                     {
-                        return ((XmlSchemaComplexContentExtension)cContent).Particle;
+                        return xmlSchemaComplexContentExtension.Particle;
                     }
                     else
                     {
@@ -2235,9 +2235,9 @@ namespace System.Data
                     }
                 }
             }
-            else if (typeNode is XmlSchemaElement)
+            else if (typeNode is XmlSchemaElement xmlSchemaElement)
             {
-                strType = ((XmlSchemaElement)typeNode).SchemaTypeName.Name;
+                strType = xmlSchemaElement.SchemaTypeName.Name;
                 type = ParseDataType(strType);
             }
             else
@@ -2378,15 +2378,15 @@ namespace System.Data
                     type = ParseDataType(el.SchemaTypeName.Name);
                 }
             }
-            else if (typeNode is XmlSchemaSimpleType)
+            else if (typeNode is XmlSchemaSimpleType xmlSchemaSimpleType)
             {
                 XmlSchemaSimpleType? simpleTypeNode = typeNode as XmlSchemaSimpleType;
                 xsdType = new SimpleType(simpleTypeNode!);
                 // ((XmlSchemaSimpleType)typeNode).Name != null && ((XmlSchemaSimpleType)typeNode).Name.Length != 0 check is for annonymos simple type,
                 // it should be  user defined  Named  simple type
-                if (!string.IsNullOrEmpty(((XmlSchemaSimpleType)typeNode).Name) && ((XmlSchemaSimpleType)typeNode).QualifiedName.Namespace != Keywords.XSDNS)
+                if (!string.IsNullOrEmpty(xmlSchemaSimpleType.Name) && xmlSchemaSimpleType.QualifiedName.Namespace != Keywords.XSDNS)
                 {
-                    strType = ((XmlSchemaSimpleType)typeNode).QualifiedName.ToString(); // use qualified name
+                    strType = xmlSchemaSimpleType.QualifiedName.ToString(); // use qualified name
                     type = ParseDataType(strType);
                 }
                 else
@@ -2411,9 +2411,9 @@ namespace System.Data
                     }
                 }
             }
-            else if (typeNode is XmlSchemaElement)
+            else if (typeNode is XmlSchemaElement xmlSchemaElement)
             { // theoratically no named simpletype should come here
-                strType = ((XmlSchemaElement)typeNode).SchemaTypeName.Name;
+                strType = xmlSchemaElement.SchemaTypeName.Name;
                 type = ParseDataType(strType);
             }
             else if (typeNode is XmlSchemaComplexType)
@@ -2627,9 +2627,9 @@ namespace System.Data
 
                 foreach (XmlSchemaAnnotated el in items)
                 {
-                    if (el is XmlSchemaElement)
+                    if (el is XmlSchemaElement xmlSchemaElement2)
                     {
-                        if (((XmlSchemaElement)el).RefName.Name.Length != 0)
+                        if (xmlSchemaElement2.RefName.Name.Length != 0)
                         {
                             if (!FromInference)
                             {
@@ -2637,46 +2637,46 @@ namespace System.Data
                             }
                             else
                             {
-                                DataTable? tempTable = _ds.Tables.GetTable(XmlConvert.DecodeName(GetInstanceName((XmlSchemaElement)el)), node.QualifiedName.Namespace);
+                                DataTable? tempTable = _ds.Tables.GetTable(XmlConvert.DecodeName(GetInstanceName(xmlSchemaElement2)), node.QualifiedName.Namespace);
                                 if (tempTable != null)
                                 {
                                     tableSequenceList.Add(tempTable); // if ref table is created, add it
                                 }
                                 bool isComplexTypeOrValidElementType = false;
-                                if (node.ElementSchemaType != null || !(((XmlSchemaElement)el).SchemaType is XmlSchemaComplexType))
+                                if (node.ElementSchemaType != null || xmlSchemaElement2.SchemaType is not XmlSchemaComplexType)
                                 {
                                     isComplexTypeOrValidElementType = true;
                                 }
                                 //                          bool isComplexTypeOrValidElementType = (node.ElementType != null || !(((XmlSchemaElement)el).SchemaType is XmlSchemaComplexType));
-                                if ((((XmlSchemaElement)el).MaxOccurs != decimal.One) && (!isComplexTypeOrValidElementType))
+                                if ((xmlSchemaElement2.MaxOccurs != decimal.One) && (!isComplexTypeOrValidElementType))
                                 {
                                     continue;
                                 }
                             }
                         }
 
-                        DataTable? child = HandleTable((XmlSchemaElement)el);
+                        DataTable? child = HandleTable(xmlSchemaElement2);
                         child?._fNestedInDataset = true;
                         if (FromInference)
                         {
                             tableSequenceList.Add(child!);
                         }
                     }
-                    else if (el is XmlSchemaChoice)
+                    else if (el is XmlSchemaChoice xmlSchemaChoice)
                     { // should we check for inference?
-                        XmlSchemaObjectCollection choiceItems = ((XmlSchemaChoice)el).Items;
+                        XmlSchemaObjectCollection choiceItems = xmlSchemaChoice.Items;
                         if (choiceItems == null)
                             continue;
                         foreach (XmlSchemaAnnotated choiceEl in choiceItems)
                         {
-                            if (choiceEl is XmlSchemaElement)
+                            if (choiceEl is XmlSchemaElement xmlSchemaElement)
                             {
-                                if (((XmlSchemaParticle)el).MaxOccurs > decimal.One && (((XmlSchemaElement)choiceEl).SchemaType is XmlSchemaComplexType)) // amir
-                                    ((XmlSchemaElement)choiceEl).MaxOccurs = ((XmlSchemaParticle)el).MaxOccurs;
-                                if ((((XmlSchemaElement)choiceEl).RefName.Name.Length != 0) && (!FromInference && ((XmlSchemaElement)choiceEl).MaxOccurs != decimal.One && !(((XmlSchemaElement)choiceEl).SchemaType is XmlSchemaComplexType)))
+                                if (((XmlSchemaParticle)el).MaxOccurs > decimal.One && (xmlSchemaElement.SchemaType is XmlSchemaComplexType)) // amir
+                                    xmlSchemaElement.MaxOccurs = ((XmlSchemaParticle)el).MaxOccurs;
+                                if ((xmlSchemaElement.RefName.Name.Length != 0) && (!FromInference && xmlSchemaElement.MaxOccurs != decimal.One && xmlSchemaElement.SchemaType is not XmlSchemaComplexType))
                                     continue;
 
-                                DataTable child = HandleTable((XmlSchemaElement)choiceEl)!;
+                                DataTable child = HandleTable(xmlSchemaElement)!;
                                 if (FromInference)
                                 {
                                     tableSequenceList.Add(child);
@@ -2820,7 +2820,7 @@ namespace System.Data
             }
 
 
-            if ((typeNode == null) || !(typeNode is XmlSchemaComplexType))
+            if ((typeNode == null) || typeNode is not XmlSchemaComplexType)
             {
                 return false;
             }
