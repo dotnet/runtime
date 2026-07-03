@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -27,7 +28,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
+        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             InvalidOperationException ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
             ValidateInvalidOperationException();
@@ -65,7 +66,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(Class_PropertyWith_PrivateInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter_WithAttribute))]
-        public override async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
+        public override async Task NonPublicInitOnlySetter_With_JsonInclude([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             // Inaccessible [JsonInclude] members are ignored (https://github.com/dotnet/runtime/issues/124889).
             // All types have public getter so serialization works; internal setter type can also deserialize.
@@ -94,7 +95,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             // MyEnum (private get, public set): setter works, getter excluded.
             // MyInt (public get, private set): getter works (with converter), setter excluded.
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter());
+            options.Converters.Add(new JsonStringEnumConverter<MySmallEnum>());
 
             string json = """{"MyEnum":"AnotherValue","MyInt":2}""";
             var obj = await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json, options);
@@ -147,7 +148,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(0, obj.MyInt);
         }
 
-        public override async Task NonPublicProperty_JsonInclude_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
+        public override async Task NonPublicProperty_JsonInclude_WorksAsExpected([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, bool isAccessibleBySourceGen)
         {
             // Inaccessible [JsonInclude] members are ignored (https://github.com/dotnet/runtime/issues/124889).
             if (isAccessibleBySourceGen)
@@ -580,7 +581,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail(Type type)
+        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
@@ -589,7 +590,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
+        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             // Since this code goes down fast-path, there's no warm up and we hit the reader exception about having no tokens.
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
@@ -612,15 +613,15 @@ namespace System.Text.Json.SourceGeneration.Tests
                 PublicField = new(),
             };
 
-            string json = JsonSerializer.Serialize(obj, options);
+            string json = JsonSerializer.Serialize(obj, options.GetTypeInfo<PublicClassWithDifferentAccessibilitiesProperties>());
             Assert.Equal("""{"PublicProperty":{},"PublicField":{}}""", json);
 
-            var deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            var deserialized = JsonSerializer.Deserialize(json, options.GetTypeInfo<PublicClassWithDifferentAccessibilitiesProperties>());
             Assert.NotNull(deserialized.PublicProperty);
             Assert.NotNull(deserialized.PublicField);
 
             json = "{}";
-            deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            deserialized = JsonSerializer.Deserialize(json, options.GetTypeInfo<PublicClassWithDifferentAccessibilitiesProperties>());
             Assert.Null(deserialized.PublicProperty);
             Assert.Null(deserialized.PublicField);
         }
@@ -630,8 +631,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonConverter obj = JsonMetadataServices.BooleanConverter;
 
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj, PublicContext.Default.Options));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<JsonConverter>("{}", PublicContext.Default.Options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj, PublicContext.Default.Options.GetTypeInfo<JsonConverter>()));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("{}", PublicContext.Default.Options.GetTypeInfo<JsonConverter>()));
         }
 
         [Fact]
@@ -644,9 +645,9 @@ namespace System.Text.Json.SourceGeneration.Tests
                 IncludeFields = true,
             };
 
-            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options.GetTypeInfo<JsonSerializerOptions>());
 
-            JsonSerializerOptions deserialized = JsonSerializer.Deserialize<JsonSerializerOptions>(json, PublicContext.Default.Options);
+            JsonSerializerOptions deserialized = JsonSerializer.Deserialize(json, PublicContext.Default.Options.GetTypeInfo<JsonSerializerOptions>());
             Assert.Equal(obj.DefaultBufferSize, deserialized.DefaultBufferSize);
             Assert.Equal(obj.DefaultIgnoreCondition, deserialized.DefaultIgnoreCondition);
             Assert.Equal(obj.IncludeFields, deserialized.IncludeFields);
