@@ -35,15 +35,25 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             return () =>
+            {
 #if NET
-                ctorInfo.Invoke(
+                return ctorInfo.Invoke(
                     BindingFlags.DoNotWrapExceptions,
                     binder: null,
                     parameters: null,
                     culture: null);
 #else
-                ctorInfo.Invoke(null);
+                try
+                {
+                    return ctorInfo.Invoke(null);
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
 #endif
+            };
         }
 
         public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
@@ -77,12 +87,13 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     return (T)constructor.Invoke(argsToPass);
                 }
-                catch (TargetInvocationException e)
+                catch (TargetInvocationException e) when (e.InnerException is not null)
                 {
                     // Plumb ArgumentException through for tuples with more than 7 generic parameters, e.g.
                     // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
                     // This doesn't apply to the method below as it supports a max of 4 constructor params.
-                    throw e.InnerException ?? e;
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
                 }
 #endif
             };
@@ -126,15 +137,22 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                return
 #if NET
-                    (T)constructor.Invoke(
-                        BindingFlags.DoNotWrapExceptions,
-                        binder: null,
-                        parameters: arguments,
-                        culture: null);
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: arguments,
+                    culture: null);
 #else
-                    (T)constructor.Invoke(arguments);
+                try
+                {
+                    return (T)constructor.Invoke(arguments);
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
+                }
 #endif
             };
         }
@@ -160,9 +178,10 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     return (T)constructor.Invoke(new object?[] { value });
                 }
-                catch (TargetInvocationException e)
+                catch (TargetInvocationException e) when (e.InnerException is not null)
                 {
-                    throw e.InnerException ?? e;
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw; // unreachable
                 }
 #endif
             };
@@ -187,7 +206,14 @@ namespace System.Text.Json.Serialization.Metadata
                     parameters: new object[] { element! },
                     culture: null);
 #else
-                addMethod.Invoke(collection, new object[] { element! });
+                try
+                {
+                    addMethod.Invoke(collection, new object[] { element! });
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
 #endif
             };
         }
@@ -311,27 +337,10 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 KeyValuePair<Type, MethodInfo> entry = entries[i];
                 caseTypes[i] = entry.Key;
-                object? accessor = typeof(ReflectionMemberAccessor)
+                chain[i] = (UnionTryGetValueAccessor<TUnion>)typeof(ReflectionMemberAccessor)
                     .GetMethod(nameof(CreateUnionTryGetValueAccessorCore), BindingFlags.NonPublic | BindingFlags.Static)!
                     .MakeGenericMethod(typeof(TUnion), entry.Key)
-#if NET
-                    .Invoke(
-                        null,
-                        BindingFlags.DoNotWrapExceptions,
-                        binder: null,
-                        parameters: new object[] { entry.Value },
-                        culture: null);
-#else
-                    .Invoke(null, new object[] { entry.Value });
-#endif
-
-                if (accessor is null)
-                {
-                    throw new InvalidOperationException(
-                        $"Failed to create union accessor for type '{entry.Key}' using method '{entry.Value}'.");
-                }
-
-                chain[i] = (UnionTryGetValueAccessor<TUnion>)accessor;
+                    .Invoke(null, new object[] { entry.Value })!;
             }
 
             return (TUnion union, out Type? caseType, out object? value) =>
