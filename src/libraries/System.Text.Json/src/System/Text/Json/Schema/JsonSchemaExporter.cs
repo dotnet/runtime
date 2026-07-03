@@ -549,6 +549,7 @@ namespace System.Text.Json.Schema
                 }
 
                 ValueStringBuilder sb = new(initialCapacity: path.Length * 10);
+                // Not using a 'using' declaration because 'sb' is passed by ref to helper methods.
                 try
                 {
                     sb.Append('#');
@@ -592,7 +593,7 @@ namespace System.Text.Json.Schema
                                 // so any characters outside the RFC 3986 'fragment' production are
                                 // percent-encoded using their UTF-8 octets.
                                 int codePoint = c;
-                                if (char.IsHighSurrogate(c) && i + 1 < segment.Length && char.IsLowSurrogate(segment[i + 1]))
+                                if (char.IsHighSurrogate(c) && i + 1 < segment.Length && char.IsSurrogatePair(c, segment[i + 1]))
                                 {
                                     codePoint = char.ConvertToUtf32(c, segment[i + 1]);
                                     i++;
