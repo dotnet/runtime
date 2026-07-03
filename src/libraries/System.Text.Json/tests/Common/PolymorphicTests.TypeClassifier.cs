@@ -843,8 +843,8 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
             Assert.Equal(2, options.DerivedTypes.Count);
-            Assert.Contains(options.DerivedTypes, dt => dt.DerivedType == typeof(AttrClassifiedDog) && (string?)dt.TypeDiscriminator == "dog");
-            Assert.Contains(options.DerivedTypes, dt => dt.DerivedType == typeof(AttrClassifiedCat) && (string?)dt.TypeDiscriminator == "cat");
+            Assert.Contains(options.DerivedTypes, dt => dt.DerivedType == typeof(AttrClassifiedDog) && dt.TypeDiscriminator is "dog");
+            Assert.Contains(options.DerivedTypes, dt => dt.DerivedType == typeof(AttrClassifiedCat) && dt.TypeDiscriminator is "cat");
 
             Assert.Null(typeInfo.TypeClassifier);
         }
