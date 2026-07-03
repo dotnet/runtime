@@ -67,9 +67,6 @@ steps:
 
       refs="$(mktemp)"
       raw="$(mktemp)"
-      # Match issue-URL links in source and build files. Keep the full matched line
-      # (not grep -o) so awk can pull every issue number on it and classify the
-      # construct the link sits in. grep exits 1 on no matches, which is not an error.
       grep -rEnI "${owner}/${name}/issues/[0-9]+" $DIRS \
         --include=*.cs --include=*.csproj --include=*.proj --include=*.props --include=*.targets 2>/dev/null > "$raw" \
         || { rc=$?; [ "$rc" -eq 1 ] || exit "$rc"; }
@@ -89,9 +86,7 @@ steps:
           }' "$raw" > "$refs"
       rm -f "$raw"
 
-      # Group references by issue number, keep only issues that appear in at least one
-      # disabling construct, and rank by reference count. State is resolved only for the
-      # top numbers instead of every one (which can be very large in a big repo).
+      # Group references by issue number, keep only issues in a disabling construct.
       grouped="$(mktemp)"
       jq -R 'split("\t") | {number:(.[0]|tonumber), location:.[1], kind:.[2]}' "$refs" \
         | jq -s 'sort_by(.number) | group_by(.number)
@@ -102,9 +97,7 @@ steps:
                  | map(.count = (.refs | length))
                  | sort_by(-.count)' > "$grouped"
 
-      # Resolve state for the most-referenced numbers, plus every issue used in an
-      # ActiveIssue construct (always actionable, even with few references, so it must
-      # never fall outside the probe window).
+      # Resolve state for the top numbers plus every ActiveIssue number.
       probe_nums="$(mktemp)"
       jq -r --argjson probe "$(( MAX * 10 ))" '
           [ (.[0:$probe][].number),
@@ -117,10 +110,6 @@ steps:
         local parts="$1"
         [ -z "$parts" ] && return 0
         local q="query{repository(owner:\"$owner\",name:\"$name\"){ ${parts} }}"
-        # issueOrPullRequest with an `... on Issue` fragment resolves PR numbers to an
-        # empty object rather than erroring, so no per-alias failures for PR links.
-        # Still verify `.data.repository` came back and abort loudly if not, rather
-        # than silently yielding an empty set and a false "nothing found".
         local resp
         resp="$(gh api graphql -f query="$q" 2>/dev/null || true)"
         if ! printf '%s' "$resp" | jq -e '.data.repository' >/dev/null 2>&1; then
@@ -150,17 +139,12 @@ steps:
         | sort_by(-._count) | map(del(._count))
       ' "$states" > "$ranked"
 
-      # Drop issues that already carry the advisory marker so the agent never has to
-      # reason about ones it would only skip, keeping up to MAX new candidates.
+      # Drop issues that already carry the advisory marker; keep up to MAX candidates.
       marker="<!-- closed-issue-reference-check:advice -->"
       keptnums="$(mktemp)"; keptn=0
       while read -r num; do
         [ -z "$num" ] && continue
         [ "$keptn" -ge "$MAX" ] && break
-        # Fetch the issue's comment bodies straight into a file. A REST failure here
-        # (auth/rate-limit/transient) must abort rather than be swallowed: treating it
-        # as "no marker" would re-advise an already-commented issue, breaking the
-        # one-comment-per-issue invariant.
         cbody="$(mktemp)"
         if ! gh api "repos/${REPO}/issues/${num}/comments" --paginate -q '.[].body' > "$cbody" 2>/dev/null; then
           echo "scan: failed to read comments for #${num} (auth/rate-limit/transient); aborting to avoid duplicate advisories" >&2
