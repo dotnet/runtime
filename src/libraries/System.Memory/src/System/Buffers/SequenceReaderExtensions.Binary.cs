@@ -169,5 +169,163 @@ namespace System.Buffers
 
             return false;
         }
+
+        /// <summary>
+        /// Try to peek the given type out of the buffer if possible. Warning: this is dangerous to use with arbitrary
+        /// structs- see remarks for full details.
+        /// </summary>
+        /// <remarks>
+        /// IMPORTANT: The read is a straight copy of bits. If a struct depends on specific state of it's members to
+        /// behave correctly this can lead to exceptions, etc. If reading endian specific integers, use the explicit
+        /// overloads such as <see cref="TryReadLittleEndian(ref SequenceReader{byte}, out short)"/>
+        /// </remarks>
+        /// <returns>
+        /// True if successful. <paramref name="value"/> will be default if failed.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool TryPeek<T>(ref this SequenceReader<byte> reader, out T value) where T : unmanaged
+        {
+            ReadOnlySpan<byte> span = reader.UnreadSpan;
+            if (span.Length < sizeof(T))
+                return TryPeekMultisegment(ref reader, out value);
+
+            value = MemoryMarshal.Read<T>(span);
+            return true;
+        }
+
+        private static unsafe bool TryPeekMultisegment<T>(ref SequenceReader<byte> reader, out T value) where T : unmanaged
+        {
+            Debug.Assert(reader.UnreadSpan.Length < sizeof(T));
+
+            // Not enough data in the current segment, try to peek for the data we need.
+            T buffer = default;
+            Span<byte> tempSpan = new Span<byte>(&buffer, sizeof(T));
+
+            if (!reader.TryCopyTo(tempSpan))
+            {
+                value = default;
+                return false;
+            }
+
+            value = MemoryMarshal.Read<T>(tempSpan);
+            return true;
+        }
+
+        /// <summary>
+        /// Reads an <see cref="short"/> as little endian.
+        /// </summary>
+        /// <returns>False if there wasn't enough data for an <see cref="short"/>.</returns>
+        public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out short value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                return reader.TryPeek(out value);
+            }
+
+            return TryPeekReverseEndianness(ref reader, out value);
+        }
+
+        /// <summary>
+        /// Reads an <see cref="short"/> as big endian.
+        /// </summary>
+        /// <returns>False if there wasn't enough data for an <see cref="short"/>.</returns>
+        public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out short value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                return reader.TryPeek(out value);
+            }
+
+            return TryPeekReverseEndianness(ref reader, out value);
+        }
+
+        private static bool TryPeekReverseEndianness(ref SequenceReader<byte> reader, out short value)
+        {
+            if (reader.TryPeek(out value))
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Reads an <see cref="int"/> as little endian.
+        /// </summary>
+        /// <returns>False if there wasn't enough data for an <see cref="int"/>.</returns>
+        public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out int value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                return reader.TryPeek(out value);
+            }
+
+            return TryPeekReverseEndianness(ref reader, out value);
+        }
+
+        /// <summary>
+        /// Reads an <see cref="int"/> as big endian.
+        /// </summary>
+        /// <returns>False if there wasn't enough data for an <see cref="int"/>.</returns>
+        public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out int value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                return reader.TryPeek(out value);
+            }
+
+            return TryPeekReverseEndianness(ref reader, out value);
+        }
+
+        private static bool TryPeekReverseEndianness(ref SequenceReader<byte> reader, out int value)
+        {
+            if (reader.TryPeek(out value))
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Reads an <see cref="long"/> as little endian.
+        /// </summary>
+        /// <returns>False if there wasn't enough data for an <see cref="long"/>.</returns>
+        public static bool TryPeekLittleEndian(ref this SequenceReader<byte> reader, out long value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                return reader.TryPeek(out value);
+            }
+
+            return TryPeekReverseEndianness(ref reader, out value);
+        }
+
+        /// <summary>
+        /// Reads an <see cref="long"/> as big endian.
+        /// </summary>
+        /// <returns>False if there wasn't enough data for an <see cref="long"/>.</returns>
+        public static bool TryPeekBigEndian(ref this SequenceReader<byte> reader, out long value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                return reader.TryPeek(out value);
+            }
+
+            return TryPeekReverseEndianness(ref reader, out value);
+        }
+
+        private static bool TryPeekReverseEndianness(ref SequenceReader<byte> reader, out long value)
+        {
+            if (reader.TryPeek(out value))
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+                return true;
+            }
+
+            return false;
+        }
     }
 }
