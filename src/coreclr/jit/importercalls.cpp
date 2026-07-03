@@ -4411,12 +4411,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                                 mustExpand);
                         break;
                     }
-                    else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
+                    else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
+                             opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
                     {
                         if (!mustExpand)
                             break;
                     }
-
                 }
 #else
                 else if (genTypeSize(retType) < 4)
@@ -4470,16 +4470,16 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         if (!opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
                         {
                             if (mustExpand)
-                                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
-                                                                    mustExpand);
+                                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method,
+                                                                    sig, mustExpand);
                             break;
                         }
-                        else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
+                        else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
+                                 opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
                         {
                             if (!mustExpand)
                                 break;
                         }
-
                     }
 #else
                     break;
@@ -11666,9 +11666,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     result = NI_IsSupported_Type;
                                 }
 #if defined(TARGET_LOONGARCH64)
-                                else if ((strncmp(className, "BH", 2) == 0) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
+                                else if ((strncmp(className, "BH", 2) == 0) &&
+                                         opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
                                 {
-                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(InstructionSet_LAM_BH))
+                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
+                                        compExactlyDependsOn(InstructionSet_LAM_BH))
                                     {
                                         result = NI_IsSupported_True;
                                     }
@@ -11678,9 +11680,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                         result = NI_IsSupported_Dynamic;
                                     }
                                 }
-                                else if ((strncmp(className, "CAS", 3) == 0) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
+                                else if ((strncmp(className, "CAS", 3) == 0) &&
+                                         opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
                                 {
-                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(InstructionSet_LAM_CAS))
+                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
+                                        compExactlyDependsOn(InstructionSet_LAM_CAS))
                                     {
                                         result = NI_IsSupported_True;
                                     }

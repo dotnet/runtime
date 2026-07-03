@@ -1,9 +1,9 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.Runtime.Intrinsics.LoongArch.LAM.BH">
+    <type fullname="System.Runtime.Intrinsics.LoongArch.LAM/BH">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
-    <type fullname="System.Runtime.Intrinsics.LoongArch.LAM.CAS">
+    <type fullname="System.Runtime.Intrinsics.LoongArch.LAM/CAS">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
   </assembly>

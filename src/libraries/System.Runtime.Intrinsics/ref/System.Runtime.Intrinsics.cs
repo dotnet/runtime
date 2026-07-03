@@ -7349,26 +7349,25 @@ namespace System.Runtime.Intrinsics.Arm
 }
 namespace System.Runtime.Intrinsics.LoongArch
 {
-    [System.CLSCompliantAttribute(false)]
-    public abstract partial class LAM
+    internal abstract partial class LAM
     {
         internal LAM() { }
-        public abstract partial class BH
+        internal abstract partial class BH
         {
             internal BH() { }
-            public static bool IsSupported { get { throw null; } }
-            public static byte Exchange(ref byte location1, byte value) { throw null; }
-            public static ushort Exchange(ref ushort location1, ushort value) { throw null; }
+            internal static bool IsSupported { get { throw null; } }
+            internal static byte Exchange(ref byte location1, byte value) { throw null; }
+            internal static ushort Exchange(ref ushort location1, ushort value) { throw null; }
         }
-        public abstract partial class CAS
+        internal abstract partial class CAS
         {
             internal CAS() { }
-            public static bool IsSupported { get { throw null; } }
-            public static byte CompareExchange(ref byte location1, byte value, byte comparand) { throw null; }
-            public static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand) { throw null; }
-            public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
-            public static unsafe int CompareExchange(int* location1, int value, int comparand) { throw null; }
-            public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
+            internal static bool IsSupported { get { throw null; } }
+            internal static byte CompareExchange(ref byte location1, byte value, byte comparand) { throw null; }
+            internal static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand) { throw null; }
+            internal static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
+            internal static unsafe int CompareExchange(int* location1, int value, int comparand) { throw null; }
+            internal static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
         }
     }
 }
