@@ -404,7 +404,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
 ARGS_NON_NULL_ALL static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
 {
     int32_t ret = -1;
-    jobject int32MaxBigInt = NULL;
+    INIT_LOCALS(loc, int32MaxBigInt);
 
     jint signum = (*env)->CallIntMethod(env, bigInteger, g_sigNumMethod);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -413,10 +413,10 @@ ARGS_NON_NULL_ALL static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, j
     if (signum < 0)
         goto cleanup;
 
-    int32MaxBigInt = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)INT32_MAX);
+    loc[int32MaxBigInt] = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)INT32_MAX);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    int willOverflow = (*env)->CallIntMethod(env, bigInteger, g_compareToMethod, int32MaxBigInt);
+    int willOverflow = (*env)->CallIntMethod(env, bigInteger, g_compareToMethod, loc[int32MaxBigInt]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // If bigInteger > int32MaxBigInt, then a conversion to int32_t would be lossy.
@@ -429,7 +429,7 @@ ARGS_NON_NULL_ALL static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, j
     ret = result;
 
 cleanup:
-    ReleaseLRef(env, int32MaxBigInt);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

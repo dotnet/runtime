@@ -126,35 +126,38 @@ int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
     abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
 
-    jstring alias = make_java_string(env, hashString);
+    INIT_LOCALS(loc, alias);
+    loc[alias] = make_java_string(env, hashString);
+
     EntryFlags flags;
     bool contains = false;
-    if (ContainsEntryForAlias(env, store, cert, alias, &contains, &flags) != SUCCESS)
-    {
-        ReleaseLRef(env, alias);
-        return FAIL;
-    }
+    if (ContainsEntryForAlias(env, store, cert, loc[alias], &contains, &flags) != SUCCESS)
+        goto cleanup;
+
     if (contains)
     {
-        ReleaseLRef(env, alias);
         EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
         if ((flags & matchesFlags) != matchesFlags)
         {
             LOG_ERROR("Store already contains alias with entry that does not match the expected certificate");
-            return FAIL;
+            goto cleanup;
         }
 
         // Certificate is already in store - nothing to do
         LOG_DEBUG("Store already contains certificate");
-        return SUCCESS;
+        ret = SUCCESS;
+        goto cleanup;
     }
 
     // store.setCertificateEntry(alias, cert);
-    (*env)->CallVoidMethod(env, store, g_KeyStoreSetCertificateEntry, alias, cert);
-    (*env)->DeleteLocalRef(env, alias);
+    (*env)->CallVoidMethod(env, store, g_KeyStoreSetCertificateEntry, loc[alias], cert);
+    ret = CheckJNIExceptions(env) ? FAIL : SUCCESS;
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyStore*/ store,
@@ -263,16 +266,18 @@ bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store
     abort_if_invalid_pointer_argument (hashString);
 
     JNIEnv* env = GetJNIEnv();
-    jstring alias = make_java_string(env, hashString);
+    INIT_LOCALS(loc, alias);
+    loc[alias] = make_java_string(env, hashString);
 
     bool containsCert = false;
-    if (ContainsMatchingCertificateForAlias(env, store, cert, alias, &containsCert) != SUCCESS)
+    if (ContainsMatchingCertificateForAlias(env, store, cert, loc[alias], &containsCert) != SUCCESS)
     {
         // Lookup failed (JNI exception). Treat as "not contained" so the exception
         // doesn't leak back to managed code.
         containsCert = false;
     }
-    (*env)->DeleteLocalRef(env, alias);
+
+    RELEASE_LOCALS(loc, env);
     return containsCert;
 }
 
@@ -512,10 +517,11 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
+    INIT_LOCALS(loc, alias);
 
-    jstring alias = make_java_string(env, hashString);
+    loc[alias] = make_java_string(env, hashString);
     bool containsCert = false;
-    if (ContainsMatchingCertificateForAlias(env, store, cert, alias, &containsCert) != SUCCESS)
+    if (ContainsMatchingCertificateForAlias(env, store, cert, loc[alias], &containsCert) != SUCCESS)
         goto cleanup;
     if (!containsCert)
     {
@@ -525,11 +531,11 @@ int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ stor
     }
 
     // store.deleteEntry(alias);
-    (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, alias);
+    (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, loc[alias]);
     ret = CheckJNIExceptions(env) ? FAIL : SUCCESS;
 
 cleanup:
-    ReleaseLRef(env, alias);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

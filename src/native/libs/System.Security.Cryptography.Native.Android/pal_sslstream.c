@@ -186,36 +186,35 @@ ARGS_NON_NULL_ALL static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer,
 ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus, int* bytesConsumed, bool* repeat)
 {
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
-    jobject resultHandshakeStatus = NULL;
-    jobject resultStatus = NULL;
+    INIT_LOCALS(loc, result, resultHandshakeStatus, resultStatus);
 
     // SSLEngineResult result = sslEngine.wrap(appOutBuffer, netOutBuffer);
-    jobject result = (*env)->CallObjectMethod(
+    loc[result] = (*env)->CallObjectMethod(
         env, sslStream->sslEngine, g_SSLEngineWrap, sslStream->appOutBuffer, sslStream->netOutBuffer);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (result == NULL)
+    if (loc[result] == NULL)
         goto cleanup;
 
     // handshakeStatus = result.getHandshakeStatus();
     // bytesConsumed = result.bytesConsumed();
     // SSLEngineResult.Status status = result.getStatus();
-    resultHandshakeStatus = (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetHandshakeStatus);
+    loc[resultHandshakeStatus] = (*env)->CallObjectMethod(env, loc[result], g_SSLEngineResultGetHandshakeStatus);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (resultHandshakeStatus == NULL)
+    if (loc[resultHandshakeStatus] == NULL)
         goto cleanup;
 
-    *handshakeStatus = (*env)->CallIntMethod(env, resultHandshakeStatus, g_EnumOrdinal);
+    *handshakeStatus = (*env)->CallIntMethod(env, loc[resultHandshakeStatus], g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    *bytesConsumed = (*env)->CallIntMethod(env, result, g_SSLEngineResultBytesConsumed);
+    *bytesConsumed = (*env)->CallIntMethod(env, loc[result], g_SSLEngineResultBytesConsumed);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    resultStatus = (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus);
+    loc[resultStatus] = (*env)->CallObjectMethod(env, loc[result], g_SSLEngineResultGetStatus);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (resultStatus == NULL)
+    if (loc[resultStatus] == NULL)
         goto cleanup;
 
-    int status = (*env)->CallIntMethod(env, resultStatus, g_EnumOrdinal);
+    int status = (*env)->CallIntMethod(env, loc[resultStatus], g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     switch (status)
@@ -256,9 +255,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, S
     }
 
 cleanup:
-    ReleaseLRef(env, resultHandshakeStatus);
-    ReleaseLRef(env, resultStatus);
-    ReleaseLRef(env, result);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -296,10 +293,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
 {
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
     uint8_t* tmpNative = NULL;
-    jobject tmp = NULL;
-    jobject result = NULL;
-    jobject resultHandshakeStatus = NULL;
-    jobject resultStatus = NULL;
+    INIT_LOCALS(loc, tmp, result, resultHandshakeStatus, resultStatus);
 
     // if (netInBuffer.position() == 0)
     // {
@@ -329,12 +323,12 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         }
 
         // ByteBuffer tmp = ByteBuffer.allocateDirect(count);
-        tmp = (*env)->NewDirectByteBuffer(env, tmpNative, count);
+        loc[tmp] = (*env)->NewDirectByteBuffer(env, tmpNative, count);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
         // netInBuffer.put(tmp);
         IGNORE_RETURN(
-            (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPutBuffer, tmp));
+            (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPutBuffer, loc[tmp]));
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
@@ -343,10 +337,10 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // SSLEngineResult result = sslEngine.unwrap(netInBuffer, appInBuffer);
-    result = (*env)->CallObjectMethod(
+    loc[result] = (*env)->CallObjectMethod(
         env, sslStream->sslEngine, g_SSLEngineUnwrap, sslStream->netInBuffer, sslStream->appInBuffer);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (result == NULL)
+    if (loc[result] == NULL)
         goto cleanup;
 
     // netInBuffer.compact();
@@ -355,20 +349,20 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
 
     // handshakeStatus = result.getHandshakeStatus();
     // SSLEngineResult.Status status = result.getStatus();
-    resultHandshakeStatus = (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetHandshakeStatus);
+    loc[resultHandshakeStatus] = (*env)->CallObjectMethod(env, loc[result], g_SSLEngineResultGetHandshakeStatus);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (resultHandshakeStatus == NULL)
+    if (loc[resultHandshakeStatus] == NULL)
         goto cleanup;
 
-    *handshakeStatus = (*env)->CallIntMethod(env, resultHandshakeStatus, g_EnumOrdinal);
+    *handshakeStatus = (*env)->CallIntMethod(env, loc[resultHandshakeStatus], g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    resultStatus = (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus);
+    loc[resultStatus] = (*env)->CallObjectMethod(env, loc[result], g_SSLEngineResultGetStatus);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (resultStatus == NULL)
+    if (loc[resultStatus] == NULL)
         goto cleanup;
 
-    int status = (*env)->CallIntMethod(env, resultStatus, g_EnumOrdinal);
+    int status = (*env)->CallIntMethod(env, loc[resultStatus], g_EnumOrdinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     switch (status)
@@ -426,10 +420,7 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
 
 cleanup:
     free(tmpNative);
-    ReleaseLRef(env, tmp);
-    ReleaseLRef(env, resultHandshakeStatus);
-    ReleaseLRef(env, resultStatus);
-    ReleaseLRef(env, result);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -735,24 +726,24 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
 
-    jobject sslEngine = NULL;
+    INIT_LOCALS(loc, peerHostStr, sslEngine);
     if (peerHost)
     {
         // SSLEngine sslEngine = sslContext.createSSLEngine(peerHost, -1);
-        jstring peerHostStr = make_java_string(env, peerHost);
-        sslEngine = (*env)->CallObjectMethod(env, sslStream->sslContext, g_SSLContextCreateSSLEngineMethodWithHostAndPort, peerHostStr, -1);
-        ReleaseLRef(env, peerHostStr);
+        loc[peerHostStr] = make_java_string(env, peerHost);
+        loc[sslEngine] = (*env)->CallObjectMethod(env, sslStream->sslContext, g_SSLContextCreateSSLEngineMethodWithHostAndPort, loc[peerHostStr], -1);
         ON_EXCEPTION_PRINT_AND_GOTO(exit);
     }
     else
     {
         // SSLEngine sslEngine = sslContext.createSSLEngine();
-        sslEngine = (*env)->CallObjectMethod(env, sslStream->sslContext, g_SSLContextCreateSSLEngineMethod);
+        loc[sslEngine] = (*env)->CallObjectMethod(env, sslStream->sslContext, g_SSLContextCreateSSLEngineMethod);
         ON_EXCEPTION_PRINT_AND_GOTO(exit);
     }
 
     // sslEngine.setUseClientMode(!isServer);
-    sslStream->sslEngine = ToGRef(env, sslEngine);
+    sslStream->sslEngine = ToGRef(env, loc[sslEngine]);
+    loc[sslEngine] = NULL;
     ON_EXCEPTION_PRINT_AND_GOTO(exit);
     if (sslStream->sslEngine == NULL)
         goto exit;
@@ -792,6 +783,7 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     ret = SUCCESS;
 
 exit:
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -932,9 +924,10 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
 
     JNIEnv* env = GetJNIEnv();
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
+    INIT_LOCALS(loc, bufferByteBuffer);
 
     // ByteBuffer bufferByteBuffer = ...;
-    jobject bufferByteBuffer = (*env)->NewDirectByteBuffer(env, buffer, length);
+    loc[bufferByteBuffer] = (*env)->NewDirectByteBuffer(env, buffer, length);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // appOutBuffer.compact();
@@ -948,7 +941,7 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
         goto cleanup;
 
     sslStream->appOutBuffer = appOutBuffer;
-    IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutBuffer, bufferByteBuffer));
+    IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutBuffer, loc[bufferByteBuffer]));
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     int32_t written = 0;
@@ -971,7 +964,7 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
     }
 
 cleanup:
-    (*env)->DeleteLocalRef(env, bufferByteBuffer);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
