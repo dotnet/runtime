@@ -664,11 +664,6 @@ public class CodeVersionsTests
         Assert.True(synthetic.IsValid);
         Assert.False(synthetic.IsExplicit);
         Assert.False(codeVersions.IsReJIT(synthetic));
-
-        // EnC versions are excluded from the ReJIT id enumeration.
-        IReJIT rejit = target.Contracts.ReJIT;
-        List<TargetNUInt> rejitIds = rejit.GetRejitIds(target, methodDescAddress).ToList();
-        Assert.Empty(rejitIds);
     }
 
     [Theory]

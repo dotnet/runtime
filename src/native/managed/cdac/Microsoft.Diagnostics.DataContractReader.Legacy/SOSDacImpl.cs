@@ -5305,7 +5305,7 @@ public sealed unsafe partial class SOSDacImpl
             ILCodeVersionHandle ilCodeVersionHandle = codeVersions.GetILCodeVersions(methodDescPtr)
                 .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId, ILCodeVersionHandle.Invalid);
 
-            if (!ilCodeVersionHandle.IsValid || !codeVersions.IsReJIT(ilCodeVersionHandle))
+            if (!ilCodeVersionHandle.IsValid)
                 throw new ArgumentException();
 
             IRuntimeTypeSystem runtimeTypeSystemContract = _target.Contracts.RuntimeTypeSystem;

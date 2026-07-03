@@ -255,12 +255,14 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     ilCodeVersion.SetSource(CodeVersionSource::kEnC);
                     ilCodeVersion.SetEnCVersion(m_applyChangesCount);
                 }
-                if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
                 {
-                    LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
-                    return hr;
+                    GCX_PREEMP();
+                    if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
+                    {
+                        LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
+                        return hr;
+                    }
                 }
-
                 // use module to resolve to method
                 pMethod = LookupMethodDef(token);
                 if (pMethod)

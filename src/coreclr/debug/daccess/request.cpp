@@ -1245,7 +1245,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, rejitId);
 
-        if (ilCodeVersion.IsNull() || !ilCodeVersion.IsReJIT())
+        if (ilCodeVersion.IsNull())
         {
             // Bad rejit ID
             hr = E_INVALIDARG;
