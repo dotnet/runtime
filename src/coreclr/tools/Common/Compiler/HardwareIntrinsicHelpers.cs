@@ -374,9 +374,9 @@ namespace ILCompiler
             {
                 return instructionSet switch
                 {
-                    InstructionSet.LOONGARCH64_LAM_BH => LAM_BH,
-                    InstructionSet.LOONGARCH64_LAM_CAS => LAM_CAS,
-                    _ => throw new NotSupportedException(((InstructionSet_LOONGARCH64)instructionSet).ToString())
+                    InstructionSet.LoongArch64_LAM_BH => LAM_BH,
+                    InstructionSet.LoongArch64_LAM_CAS => LAM_CAS,
+                    _ => throw new NotSupportedException(((InstructionSet_LoongArch64)instructionSet).ToString())
                 };
             }
         }

@@ -55,6 +55,8 @@ namespace Internal.JitInterface
         ARM64_SveAes_Arm64 = InstructionSet_ARM64.SveAes_Arm64,
         ARM64_SveSha3_Arm64 = InstructionSet_ARM64.SveSha3_Arm64,
         ARM64_SveSm4_Arm64 = InstructionSet_ARM64.SveSm4_Arm64,
+        LoongArch64_LAM_BH = InstructionSet_LoongArch64.LAM_BH,
+        LoongArch64_LAM_CAS = InstructionSet_LoongArch64.LAM_CAS,
         RiscV64_RiscV64Base = InstructionSet_RiscV64.RiscV64Base,
         RiscV64_Zba = InstructionSet_RiscV64.Zba,
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
@@ -154,8 +156,6 @@ namespace Internal.JitInterface
         X86_SHA_X64 = InstructionSet_X86.SHA_X64,
         X86_WAITPKG_X64 = InstructionSet_X86.WAITPKG_X64,
         X86_X86Serialize_X64 = InstructionSet_X86.X86Serialize_X64,
-        LOONGARCH64_LAM_BH = InstructionSet_LOONGARCH64.LAM_BH,
-        LOONGARCH64_LAM_CAS = InstructionSet_LOONGARCH64.LAM_CAS,
     }
     public enum InstructionSet_ARM64
     {
@@ -199,6 +199,14 @@ namespace Internal.JitInterface
         SveAes_Arm64 = 36,
         SveSha3_Arm64 = 37,
         SveSm4_Arm64 = 38,
+    }
+
+    public enum InstructionSet_LoongArch64
+    {
+        ILLEGAL = InstructionSet.ILLEGAL,
+        NONE = InstructionSet.NONE,
+        LAM_BH = 1,
+        LAM_CAS = 2,
     }
 
     public enum InstructionSet_RiscV64
@@ -324,20 +332,14 @@ namespace Internal.JitInterface
         X86Serialize_X64 = 46,
     }
 
-    public enum InstructionSet_LOONGARCH64
-    {
-        ILLEGAL = InstructionSet.ILLEGAL,
-        NONE = InstructionSet.NONE,
-        LAM_BH = 1,
-        LAM_CAS = 2,
-    }
-
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
     {
         private const int FlagsFieldCount = 2;
         private const int BitsPerFlagsField = 64;
         private fixed ulong _flags[FlagsFieldCount];
         public IEnumerable<InstructionSet_ARM64> ARM64Flags => this.Select((x) => (InstructionSet_ARM64)x);
+
+        public IEnumerable<InstructionSet_LoongArch64> LoongArch64Flags => this.Select((x) => (InstructionSet_LoongArch64)x);
 
         public IEnumerable<InstructionSet_RiscV64> RiscV64Flags => this.Select((x) => (InstructionSet_RiscV64)x);
 
@@ -346,8 +348,6 @@ namespace Internal.JitInterface
         public IEnumerable<InstructionSet_X64> X64Flags => this.Select((x) => (InstructionSet_X64)x);
 
         public IEnumerable<InstructionSet_X86> X86Flags => this.Select((x) => (InstructionSet_X86)x);
-
-        public IEnumerable<InstructionSet_LOONGARCH64> LOONGARCH64Flags => this.Select((x) => (InstructionSet_LOONGARCH64)x);
 
         public InstructionSetFlags() { }
 
@@ -602,6 +602,9 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                        break;
+
+                    case TargetArchitecture.LoongArch64:
                         break;
 
                     case TargetArchitecture.RiscV64:
@@ -909,6 +912,9 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
                         break;
 
+                    case TargetArchitecture.LoongArch64:
+                        break;
+
                     case TargetArchitecture.RiscV64:
                         if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbb);
@@ -1163,6 +1169,11 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("sve_sm4", "SveSm4", InstructionSet.ARM64_SveSm4, true);
                     break;
 
+                case TargetArchitecture.LoongArch64:
+                    yield return new InstructionSetInfo("lam_bh", "LAM_BH", InstructionSet.LoongArch64_LAM_BH, true);
+                    yield return new InstructionSetInfo("lam_cas", "LAM_CAS", InstructionSet.LoongArch64_LAM_CAS, true);
+                    break;
+
                 case TargetArchitecture.RiscV64:
                     yield return new InstructionSetInfo("base", "", InstructionSet.RiscV64_RiscV64Base, true);
                     yield return new InstructionSetInfo("zba", "", InstructionSet.RiscV64_Zba, true);
@@ -1323,11 +1334,6 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avxvnniint", "AvxVnniInt16", InstructionSet.X86_AVXVNNIINT, true);
                     yield return new InstructionSetInfo("avxvnniint_v512", "AvxVnniInt16_V512", InstructionSet.X86_AVXVNNIINT_V512, true);
                     break;
-
-                case TargetArchitecture.LoongArch64:
-                    yield return new InstructionSetInfo("lam_bh", "LAM_BH", InstructionSet.LOONGARCH64_LAM_BH, true);
-                    yield return new InstructionSetInfo("lam_cas", "LAM_CAS", InstructionSet.LOONGARCH64_LAM_CAS, true);
-                    break;
             }
         }
 
@@ -1367,6 +1373,9 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_SveSm4))
                         AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
+                    break;
+
+                case TargetArchitecture.LoongArch64:
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1436,6 +1445,9 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
+                    break;
+
+                case TargetArchitecture.LoongArch64:
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1627,6 +1639,12 @@ namespace Internal.JitInterface
                             else
                                 return InstructionSet.ARM64_SveSm4;
 
+                        default:
+                            return InstructionSet.ILLEGAL;
+                    }
+                case TargetArchitecture.LoongArch64:
+                    switch (typeName)
+                    {
                         default:
                             return InstructionSet.ILLEGAL;
                     }

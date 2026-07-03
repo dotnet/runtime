@@ -56,6 +56,10 @@ enum CORINFO_InstructionSet
     InstructionSet_SveSha3_Arm64=37,
     InstructionSet_SveSm4_Arm64=38,
 #endif // TARGET_ARM64
+#ifdef TARGET_LOONGARCH64
+    InstructionSet_LAM_BH=1,
+    InstructionSet_LAM_CAS=2,
+#endif // TARGET_LOONGARCH64
 #ifdef TARGET_RISCV64
     InstructionSet_RiscV64Base=1,
     InstructionSet_Zba=2,
@@ -163,11 +167,6 @@ enum CORINFO_InstructionSet
     InstructionSet_WAITPKG_X64=45,
     InstructionSet_X86Serialize_X64=46,
 #endif // TARGET_X86
-#ifdef TARGET_LOONGARCH64
-    InstructionSet_LAM_BH=1,
-    InstructionSet_LAM_CAS=2,
-    // TODO-LA-SIMD-other: add other ISA-features.
-#endif // TARGET_LOONGARCH64
 
 };
 
@@ -293,6 +292,8 @@ public:
         if (HasInstructionSet(InstructionSet_SveSm4))
             AddInstructionSet(InstructionSet_SveSm4_Arm64);
 #endif // TARGET_ARM64
+#ifdef TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64
 #ifdef TARGET_RISCV64
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
@@ -453,6 +454,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
         if (resultflags.HasInstructionSet(InstructionSet_SveSm4) && !resultflags.HasInstructionSet(InstructionSet_Sm4))
             resultflags.RemoveInstructionSet(InstructionSet_SveSm4);
 #endif // TARGET_ARM64
+#ifdef TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64
 #ifdef TARGET_RISCV64
         if (resultflags.HasInstructionSet(InstructionSet_Zbb) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
             resultflags.RemoveInstructionSet(InstructionSet_Zbb);
@@ -751,6 +754,12 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
         case InstructionSet_SveSm4_Arm64 :
             return "SveSm4_Arm64";
 #endif // TARGET_ARM64
+#ifdef TARGET_LOONGARCH64
+        case InstructionSet_LAM_BH :
+            return "LAM_BH";
+        case InstructionSet_LAM_CAS :
+            return "LAM_CAS";
+#endif // TARGET_LOONGARCH64
 #ifdef TARGET_RISCV64
         case InstructionSet_RiscV64Base :
             return "RiscV64Base";
@@ -925,12 +934,6 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
         case InstructionSet_AVXVNNIINT_V512 :
             return "AVXVNNIINT_V512";
 #endif // TARGET_X86
-#ifdef TARGET_LOONGARCH64
-        case InstructionSet_LAM_BH :
-            return "LAM_BH";
-        case InstructionSet_LAM_CAS :
-            return "LAM_CAS";
-#endif // TARGET_LOONGARCH64
 
         default:
             return "UnknownInstructionSet";
@@ -970,6 +973,10 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_SveSha3: return InstructionSet_SveSha3;
         case READYTORUN_INSTRUCTION_SveSm4: return InstructionSet_SveSm4;
 #endif // TARGET_ARM64
+#ifdef TARGET_LOONGARCH64
+        case READYTORUN_INSTRUCTION_LAM_BH: return InstructionSet_LAM_BH;
+        case READYTORUN_INSTRUCTION_LAM_CAS: return InstructionSet_LAM_CAS;
+#endif // TARGET_LOONGARCH64
 #ifdef TARGET_RISCV64
         case READYTORUN_INSTRUCTION_RiscV64Base: return InstructionSet_RiscV64Base;
         case READYTORUN_INSTRUCTION_Zba: return InstructionSet_Zba;
@@ -1120,10 +1127,6 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_AvxVnniInt16: return InstructionSet_AVXVNNIINT;
         case READYTORUN_INSTRUCTION_AvxVnniInt16_V512: return InstructionSet_AVXVNNIINT_V512;
 #endif // TARGET_X86
-#ifdef TARGET_LOONGARCH64
-        case READYTORUN_INSTRUCTION_LAM_BH: return InstructionSet_LAM_BH;
-        case READYTORUN_INSTRUCTION_LAM_CAS: return InstructionSet_LAM_CAS;
-#endif // TARGET_LOONGARCH64
 
         default:
             return InstructionSet_ILLEGAL;

@@ -1012,6 +1012,9 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveAes_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
+#elif defined (TARGET_LOONGARCH64)
+    { FIRST_NI_LAM_BH, LAST_NI_LAM_BH },                        // LAM_BH
+    { FIRST_NI_LAM_CAS, LAST_NI_LAM_CAS },                      // LAM_CAS
 #elif defined(TARGET_WASM)
     { NI_Illegal, NI_Illegal },                                 //      WasmBase
     { FIRST_NI_PackedSimd, LAST_NI_PackedSimd },                // PackedSimd
