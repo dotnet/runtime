@@ -3717,12 +3717,19 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
     return swapOps[relop - GT_EQ];
 }
 
-/*****************************************************************************
- *
- *  Reverse the meaning of the given test condition.
- */
-
-GenTree* Compiler::gtReverseCond(GenTree* tree)
+//------------------------------------------------------------------------
+// gtTryReverseCond: Try to reverse the meaning of the given test condition
+//    in-place, without introducing any new IR nodes.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    True if the condition was reversed in-place. False if reversing the
+//    condition would require introducing a new node (e.g. wrapping the tree
+//    in a "tree == 0" comparison); in that case, the tree is not modified.
+//
+bool Compiler::gtTryReverseCond(GenTree* tree)
 {
     if (tree->OperIsCompare())
     {
@@ -3736,23 +3743,45 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         {
             tree->gtFlags ^= GTF_RELOP_NAN_UN;
         }
+        return true;
     }
-    else if (tree->OperIs(GT_JCC, GT_SETCC))
+    if (tree->OperIs(GT_JCC, GT_SETCC))
     {
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
+        return true;
     }
-    else if (tree->OperIs(GT_JCMP, GT_JTEST))
+    if (tree->OperIs(GT_JCMP, GT_JTEST))
     {
         GenTreeOpCC* opCC = tree->AsOpCC();
         opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
+        return true;
     }
-    else if (tree->IsIntegralConst())
+    if (tree->IsIntegralConst())
     {
         GenTreeIntConCommon* con = tree->AsIntConCommon();
         con->SetIntegralValue(con->IsIntegralConst(0) ? 1 : 0);
+        return true;
     }
-    else
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// gtReverseCond: Reverse the meaning of the given test condition.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    The reversed condition tree. This is normally the same node as the
+//    input tree, with its operator (or condition) reversed in-place. If the
+//    tree cannot be reversed in-place, a new GT_EQ node comparing the tree
+//    to zero is returned instead.
+//
+GenTree* Compiler::gtReverseCond(GenTree* tree)
+{
+    if (!gtTryReverseCond(tree))
     {
         tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
     }
