@@ -340,16 +340,12 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
             switch (id)
             {
 #if defined(TARGET_XARCH)
-                case NI_Vector256_ExtractMostSignificantBits:
-                case NI_Vector512_ExtractMostSignificantBits:
                 case NI_X86Base_MoveMask:
                 case NI_AVX_MoveMask:
                 case NI_AVX2_MoveMask:
                 case NI_AVX512_MoveMask:
-#elif defined(TARGET_ARM64)
-                case NI_Vector64_ExtractMostSignificantBits:
 #endif
-                case NI_Vector128_ExtractMostSignificantBits:
+                case NI_Vector_ExtractMostSignificantBits:
                 {
                     // We have 1 bit per element, remaining upper bits are 0
 
@@ -1948,23 +1944,10 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         GenTreeHWIntrinsic* hwi = op1->AsHWIntrinsic();
         switch (hwi->GetHWIntrinsicId())
         {
-#if defined(TARGET_XARCH)
-            case NI_Vector128_op_Equality:
-            case NI_Vector256_op_Equality:
-            case NI_Vector512_op_Equality:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_op_Equality:
-            case NI_Vector128_op_Equality:
-#endif
+            case NI_Vector_op_Equality:
                 break;
-#if defined(TARGET_XARCH)
-            case NI_Vector128_op_Inequality:
-            case NI_Vector256_op_Inequality:
-            case NI_Vector512_op_Inequality:
-#elif defined(TARGET_ARM64)
-            case NI_Vector64_op_Inequality:
-            case NI_Vector128_op_Inequality:
-#endif
+
+            case NI_Vector_op_Inequality:
                 equals = !equals;
                 break;
 
