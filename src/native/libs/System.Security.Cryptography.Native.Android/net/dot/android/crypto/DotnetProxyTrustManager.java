@@ -15,11 +15,11 @@ import javax.net.ssl.X509TrustManager;
  * Trust model: the platform's verdict is combined with managed (.NET) validation
  * to be MORE strict, never less:
  *
- *  - Platform rejects the chain -> chainTrustedByPlatform=false is passed to the
- *    managed callback, which pre-seeds sslPolicyErrors with RemoteCertificateChainErrors.
+ *  - Platform rejects the chain -> the platform's textual rejection reason is passed to
+ *    the managed callback, which pre-seeds sslPolicyErrors with RemoteCertificateChainErrors.
  *    Managed validation cannot clear this flag.
  *
- *  - Platform accepts the chain -> chainTrustedByPlatform=true, but managed validation
+ *  - Platform accepts the chain -> a null reason is passed, but managed validation
  *    (X509Chain.Build) still runs independently and can introduce its own errors.
  *
  * The RemoteCertificateValidationCallback always receives the union of both assessments.
@@ -39,45 +39,45 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
 
     public void checkClientTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
-        boolean platformTrusted = isClientTrustedByPlatformTrustManager(chain, authType);
-        if (!verifyRemoteCertificate(sslStreamProxyHandle, platformTrusted)) {
+        if (!verifyRemoteCertificate(sslStreamProxyHandle, getClientTrustValidationError(chain, authType))) {
             throw new CertificateException();
         }
     }
 
     public void checkServerTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
-        boolean platformTrusted = isServerTrustedByPlatformTrustManager(chain, authType);
-        if (!verifyRemoteCertificate(sslStreamProxyHandle, platformTrusted)) {
+        if (!verifyRemoteCertificate(sslStreamProxyHandle, getServerTrustValidationError(chain, authType))) {
             throw new CertificateException();
         }
     }
 
     /**
      * Checks the server's certificate chain against the platform trust manager.
-     * Returns true if the platform trusts the chain, false otherwise.
-     * A false result does NOT abort the handshake — it is forwarded to the managed
-     * SslStream validation code as the chainTrustedByPlatform flag.
+     * Returns null if the platform trusts the chain, or the platform's textual
+     * rejection reason otherwise.
+     * A non-null result does NOT abort the handshake — it is forwarded to the managed
+     * SslStream validation code, which treats a non-null reason as a chain error while
+     * also surfacing the text for diagnostics.
      */
-    private boolean isServerTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
+    private String getServerTrustValidationError(X509Certificate[] chain, String authType) {
         try {
             if (targetHost != null) {
                 platformTrustManagerExtensions.checkServerTrusted(chain, authType, targetHost);
             } else {
                 platformTrustManager.checkServerTrusted(chain, authType);
             }
-            return true;
+            return null;
         } catch (CertificateException e) {
-            return false;
+            return e.toString();
         }
     }
 
-    private boolean isClientTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
+    private String getClientTrustValidationError(X509Certificate[] chain, String authType) {
         try {
             platformTrustManager.checkClientTrusted(chain, authType);
-            return true;
+            return null;
         } catch (CertificateException e) {
-            return false;
+            return e.toString();
         }
     }
 
@@ -87,5 +87,5 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
         return new X509Certificate[0];
     }
 
-    static native boolean verifyRemoteCertificate(long sslStreamProxyHandle, boolean chainTrustedByPlatform);
+    static native boolean verifyRemoteCertificate(long sslStreamProxyHandle, String platformValidationError);
 }

@@ -114,10 +114,26 @@ cleanup:
 // JNI callback registered for DotnetProxyTrustManager.verifyRemoteCertificate().
 // Forwards the platform's trust verdict to the managed SslStream validation callback.
 // The managed side decides how to combine this with its own X509Chain.Build result.
-ARGS_NON_NULL_ALL jboolean DotnetProxyTrustManager_VerifyRemoteCertificate(
-    JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle, jboolean chainTrustedByPlatform)
+// platformValidationError carries the platform's textual rejection reason, or NULL when
+// the platform trusts the chain.
+ARGS_NON_NULL(1, 2) jboolean DotnetProxyTrustManager_VerifyRemoteCertificate(
+    JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle, jstring platformValidationError)
 {
     RemoteCertificateValidationCallback verify = atomic_load(&verifyRemoteCertificate);
     abort_unless(verify, "verifyRemoteCertificate callback has not been registered");
-    return verify((intptr_t)sslStreamProxyHandle, (int32_t)chainTrustedByPlatform);
+
+    const char* validationError = NULL;
+    if (platformValidationError != NULL)
+    {
+        validationError = (*env)->GetStringUTFChars(env, platformValidationError, NULL);
+    }
+
+    jboolean result = verify((intptr_t)sslStreamProxyHandle, validationError);
+
+    if (validationError != NULL)
+    {
+        (*env)->ReleaseStringUTFChars(env, platformValidationError, validationError);
+    }
+
+    return result;
 }

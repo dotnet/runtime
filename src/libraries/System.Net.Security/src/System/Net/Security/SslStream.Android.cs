@@ -9,12 +9,23 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(bool chainTrustedByPlatform)
+        private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(IntPtr platformValidationError)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
-            if (ShouldRespectPlatformValidation() && !chainTrustedByPlatform)
+            if (ShouldRespectPlatformValidation() && platformValidationError != IntPtr.Zero)
             {
                 sslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+
+                // The Android trust manager only tells us whether the chain is trusted, not why it
+                // was rejected, and that reason does not map cleanly onto SslPolicyErrors or the
+                // X509Chain element statuses. Surface the platform's textual reason via NetEventSource
+                // so it remains observable (e.g. through dotnet-trace) during development. Defer the
+                // string marshalling until we know a listener is attached.
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    var validationError = Marshal.PtrToStringUTF8(platformValidationError);
+                    NetEventSource.Error(this, $"The Android platform trust manager rejected the remote certificate chain: {validationError}");
+                }
             }
 
             ProtocolToken alertToken = default;
@@ -92,7 +103,7 @@ namespace System.Net.Security
             }
 
             [UnmanagedCallersOnly]
-            private static unsafe bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, int chainTrustedByPlatform)
+            private static bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, IntPtr platformValidationError)
             {
                 var proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
                 Debug.Assert(proxy is not null);
@@ -100,14 +111,11 @@ namespace System.Net.Security
 
                 try
                 {
-                    proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(chainTrustedByPlatform != 0);
+                    proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(platformValidationError);
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(proxy._sslStream, exception);
-
                     proxy.ValidationException = exception;
                     return false;
                 }
