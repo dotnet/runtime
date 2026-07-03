@@ -142,7 +142,7 @@ For each result, read the body + latest comments through the `github` MCP (NOT `
 
 ### Step 3 — Existing-artifact dedup (search live GitHub, every KBE)
 
-Before doing any analysis work, confirm nothing already handles this KBE. Use the `github` MCP search tools:
+Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing each `Linked KBE:` marker, then resolve checks 1–3 against that map. Use the `github` MCP search tools:
 
 1. **Open fix PR already exists** — `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
 2. **Merged fix PR exists** — `repo:dotnet/runtime is:pr is:merged "Linked KBE: #<kbe>"`. If found, the KBE is likely already fixed -> `-> skipped: fix PR #<n> already merged; KBE may be stale`.
@@ -150,8 +150,6 @@ Before doing any analysis work, confirm nothing already handles this KBE. Use th
 4. **A human (non-`[ci-fix]`) PR already references the KBE** — `repo:dotnet/runtime is:pr is:open "#<kbe>"`. If a maintainer is already fixing it -> `-> skipped: human PR #<n> already addressing`.
 5. **Author already engaged on the KBE.** From the KBE comments you read in Step 2, if any `MEMBER`/`OWNER` comment expresses active investigation or fix-forward intent (case-insensitive any of: `i'm fixing`, `i am fixing`, `investigating`, `will investigate`, `looking into`, `root cause`, `fix forward`, `fix-forward`, `landing in #`, `wait for #`, `pr is up`, `working on`), do NOT duplicate their work -> `-> skipped: author already engaged on #<kbe>`.
 6. **Prior hand-off comment** — if the KBE already carries a comment containing the marker `<!-- ci-fix:handoff -->`, a hand-off was already posted; you may still emit a fix PR this run if you have one, but you may NOT post a second comment (Hard rule 5).
-
-**Search reliability — the `#<kbe>` token is unreliable, so verify against a parsed map.** GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` or `"Linked KBE: #<kbe>"` phrase query frequently fails to surface an existing artifact — that is how one KBE ends up with two open `[ci-fix]` PRs, or a fresh PR gets opened after a prior one already merged. Do **not** rely on the per-KBE `#`-token searches in 1–3 alone. Once per run, enumerate every `[ci-fix]` PR with `repo:dotnet/runtime is:pr in:title "[ci-fix]"` (walking `is:open`, `is:merged`, and `is:closed closed:>=<today-30d>`), read each result's `Linked KBE: #<n>` marker, and build a `<kbe> -> [PRs]` map under `/tmp/gh-aw/agent/`. Checks 1–3 MUST consult this map — confirming a candidate by its parsed marker, not by trusting the phrase match — before opening a PR. If the map shows any open, merged, or within-30d-closed `[ci-fix]` PR for `<kbe>`, apply the matching skip (`open fix PR #<n> already exists` / `fix PR #<n> already merged; KBE may be stale` / `prior fix PR #<n> closed without merge within 30d`) instead of opening a duplicate.
 
 Persist each KBE's dedup verdict to `/tmp/gh-aw/agent/dedup/<kbe>.txt` so later steps don't re-query.
 
@@ -180,7 +178,7 @@ Apply these fixer-specific bounds on top of the skill's guidance:
 
 | KBE pipeline / area | Fix policy |
 |---|---|
-| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. Exception for trimming/AOT reflection failures (`Type.GetType`/reflection name returns `null` under ILLink): do **not** propose an `ILLink.Descriptors.xml` / `TrimmerRootDescriptor` that roots a type **in the test assembly itself** as the fix — library test assemblies are rooted whole by default, so rooting their own (e.g. nested enum) types is a no-op that does not address the failure. Only rooting a *separate* product/helper assembly the test reflects over is potentially valid; confirm from in-repo source which assembly owns the stripped member first, and if you cannot, downgrade to a loop-in comment rather than open a help-wanted PR proposing a likely no-op root. |
+| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. For trimming/AOT reflection failures, do **not** root a type in the test assembly itself via `ILLink.Descriptors.xml`/`TrimmerRootDescriptor` — test assemblies are rooted whole, so this is a no-op; only root a separate owning assembly confirmed from source, else loop in with a comment. |
 | JIT / GC / PGO stress (codegen) | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. Workarounds in unrelated code (e.g. changing library buffer sizes or API call patterns to sidestep a codegen bug) are equally OUT of bounds — go straight to the loop-in comment instead of opening a workaround PR. |
 | `System.Net.*` | In bounds only if it satisfies Step 5.2. |
 | `Microsoft.Extensions.*` | In bounds only if it satisfies Step 5.2. |

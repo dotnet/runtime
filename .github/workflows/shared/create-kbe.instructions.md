@@ -118,18 +118,11 @@ it from the build metadata, not the queue time) against the issue's `closed_at`:
   predecessor `#<n>` in the body so the regression is explicit, mirroring the
   merged-fix-PR recurrence rule below.
 
-**Chronic recurrence — stop re-filing a signature humans keep closing.** If the
-searches above surface **two or more** closed `[ci-scan]` predecessors sharing
-the same test-name stem, the signature is a chronic recurrence (a flaky
-crossgen2/R2R test, a stress-only assert, a long-cycle timeout), not a fresh
-regression. Filing an Nth KBE for it just produces another issue a maintainer
-closes as `duplicate`. Do **not** file: record `existing-kbe #<n>` against the
-most recently closed predecessor and stop (reopening or escalating is a human /
-`ci-failure-fix` decision). For a stem already known to recur this way, widen the
-predecessor searches above from `closed:>=<30-days-ago>` to
-`closed:>=<90-days-ago>` — chronic signatures recur on cycles longer than the
-30-day look-back, and the shorter bound is exactly what lets the duplicate
-through.
+**Chronic recurrence.** If the searches above surface **two or more** closed
+`[ci-scan]` predecessors sharing the same test-name stem, treat it as a chronic
+recurrence, not a fresh regression: do **not** file — record `existing-kbe #<n>`
+against the most recently closed predecessor. For such stems, widen the
+predecessor look-back from `closed:>=<30-days-ago>` to `closed:>=<90-days-ago>`.
 
 <a id="search-area-team-tracker"></a>
 
