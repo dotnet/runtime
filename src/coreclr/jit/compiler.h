@@ -3524,6 +3524,7 @@ public:
 
     GenTree* gtNewSimdGetIndicesNode(var_types type, var_types simdBaseType, unsigned simdSize);
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     GenTree* gtNewSimdGetLowerNode(var_types   type,
                                    GenTree*    op1,
                                    var_types   simdBaseType,
@@ -3533,6 +3534,7 @@ public:
                                    GenTree*    op1,
                                    var_types   simdBaseType,
                                    unsigned    simdSize);
+#endif  // !TARGET_XARCH && !TARGET_ARM64
 
     GenTree* gtNewSimdIsEvenIntegerNode(var_types   type,
                                         GenTree*    op1,
@@ -3724,6 +3726,7 @@ public:
                                       var_types   simdBaseType,
                                       unsigned    simdSize);
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     GenTree* gtNewSimdWithLowerNode(var_types   type,
                                     GenTree*    op1,
                                     GenTree*    op2,
@@ -3735,6 +3738,7 @@ public:
                                     GenTree*    op2,
                                     var_types   simdBaseType,
                                     unsigned    simdSize);
+#endif  // !TARGET_XARCH && !TARGET_ARM64
 
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
@@ -3915,6 +3919,7 @@ public:
     bool gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity);
 
     GenTree* gtReverseCond(GenTree* tree);
+    bool     gtTryReverseCond(GenTree* tree);
 
     static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
@@ -5152,6 +5157,11 @@ protected:
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
 #if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreate(NamedIntrinsic    intrinsic,
+                           CORINFO_SIG_INFO* sig,
+                           var_types         simdBaseType,
+                           var_types         retType,
+                           unsigned          simdSize);
     GenTree* impSimdCreateScalarHalf(GenTree* op1);
     GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
 #endif // FEATURE_HW_INTRINSICS
@@ -5204,6 +5214,13 @@ protected:
                             int                prefixFlags,
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
+
+    GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                CORINFO_CALL_INFO*      callInfo,
+                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                bool                    exactContextNeedsRuntimeLookup,
+                                unsigned                clsFlags,
+                                bool                    isReadonlyCall);
 
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
@@ -5346,6 +5363,16 @@ protected:
                                  unsigned              simdSize,
                                  bool                  mustExpand);
 
+    GenTree* impXplatIntrinsic(NamedIntrinsic        intrinsic,
+                               CORINFO_CLASS_HANDLE  clsHnd,
+                               CORINFO_METHOD_HANDLE method,
+                               CORINFO_SIG_INFO*     sig
+                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
+                               var_types             simdBaseType,
+                               var_types             retType,
+                               unsigned              simdSize,
+                               bool                  mustExpand);
+
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType);
     GenTree* addRangeCheckIfNeeded(
@@ -5468,6 +5495,7 @@ public:
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
     const BYTE* impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal, IL_OFFSET* awaitOffset);
+    bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
@@ -5690,6 +5718,7 @@ private:
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
     bool impWrapTopOfStackInAwait();
+    bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
@@ -5778,14 +5807,12 @@ private:
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                bool                   exactContextNeedsRuntimeLookup,
                                 CORINFO_CALL_INFO*     callInfo,
                                 InlineContext*         inlinersContext);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext,
                                       InlineResult*          inlineResult);
@@ -10924,8 +10951,6 @@ public:
     bool compRegAllocDone               = false;
     bool compRationalIRForm             = false;
 
-    bool compGeneratingProlog       = false;
-    bool compGeneratingEpilog       = false;
     bool compGeneratingUnwindProlog = false;
     bool compGeneratingUnwindEpilog = false;
 

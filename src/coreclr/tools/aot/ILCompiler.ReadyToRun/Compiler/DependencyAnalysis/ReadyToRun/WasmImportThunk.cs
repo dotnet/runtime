@@ -5,6 +5,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
+using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
@@ -124,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             int[] offsets = new int[methodSignature.Length];
             bool[] isIndirectStructArg = new bool[methodSignature.Length];

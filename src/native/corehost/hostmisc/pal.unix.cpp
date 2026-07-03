@@ -136,92 +136,20 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-namespace
-{
-    bool get_loaded_library_from_proc_maps(const pal::char_t* library_name, pal::dll_t* dll, pal::string_t* path)
-    {
-        char* line = nullptr;
-        size_t lineLen = 0;
-        ssize_t read;
-        FILE* file = pal::file_open(_X("/proc/self/maps"), _X("r"));
-        if (file == nullptr)
-            return false;
-
-        // Read maps file line by line to check fo the library
-        bool found = false;
-        pal::string_t path_local;
-        while ((read = getline(&line, &lineLen, file)) != -1)
-        {
-            char buf[PATH_MAX];
-            if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %s\n", buf) == 1)
-            {
-                path_local = buf;
-                size_t pos = path_local.rfind(DIR_SEPARATOR);
-                if (pos == std::string::npos)
-                    continue;
-
-                pos = path_local.find(library_name, pos);
-                if (pos != std::string::npos)
-                {
-                    found = true;
-                    break;
-                }
-            }
-        }
-
-        fclose(file);
-        free(line);
-        if (!found)
-            return false;
-
-        pal::dll_t dll_maybe = dlopen(path_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
-        if (dll_maybe == nullptr)
-            return false;
-
-        *dll = dll_maybe;
-        path->assign(path_local);
-        return true;
-    }
-}
-
 bool pal::get_loaded_library(
     const char_t* library_name,
     const char* symbol_name,
     /*out*/ dll_t* dll,
     /*out*/ pal::string_t* path)
 {
-    pal::string_t library_name_local;
-#if defined(TARGET_OSX)
-    if (!pal::is_path_fully_qualified(library_name))
-        library_name_local.append("@rpath/");
-#endif
-    library_name_local.append(library_name);
-
-    dll_t dll_maybe = dlopen(library_name_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
-    if (dll_maybe == nullptr)
-    {
-        if (pal::is_path_fully_qualified(library_name))
-            return false;
-
-        // dlopen on some systems only finds loaded libraries when given the full path
-        // Check proc maps as a fallback
-        return get_loaded_library_from_proc_maps(library_name, dll, path);
-    }
-
-    // Not all systems support getting the path from just the handle (e.g. dlinfo),
-    // so we rely on the caller passing in a symbol name so that we get (any) address
-    // in the library
-    assert(symbol_name != nullptr);
-    pal::proc_t proc = pal::get_symbol(dll_maybe, symbol_name);
-    Dl_info info;
-    if (dladdr(proc, &info) == 0)
-    {
-        dlclose(dll_maybe);
+    pal_dll_t dll_c = nullptr;
+    pal_char_t* path_c = nullptr;
+    if (!::pal_get_loaded_library(library_name, symbol_name, &dll_c, &path_c))
         return false;
-    }
 
-    *dll = dll_maybe;
-    path->assign(info.dli_fname);
+    *dll = dll_c;
+    path->assign(path_c);
+    free(path_c);
     return true;
 }
 

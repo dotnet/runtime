@@ -17,7 +17,6 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Execution\NativeFormatEnumInfo.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidator.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />
