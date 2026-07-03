@@ -2043,6 +2043,14 @@ CorInfoReloc interceptor_ICJI::getRelocTypeHint(void* target)
     return result;
 }
 
+uint32_t interceptor_ICJI::getAddressAlignment(void* address)
+{
+    mc->cr->AddCall("getAddressAlignment");
+    uint32_t result = original_ICorJitInfo->getAddressAlignment(address);
+    mc->recGetAddressAlignment(address, result);
+    return result;
+}
+
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
 // is cross-compiling (such as the case for crossgen2), it will return a

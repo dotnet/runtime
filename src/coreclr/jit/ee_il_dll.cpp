@@ -1399,6 +1399,30 @@ CorInfoReloc Compiler::eeGetRelocTypeHint(void* target)
     }
 }
 
+//------------------------------------------------------------------------
+// eeGetAddressAlignment: Get the guaranteed alignment, in bytes, of the data referenced by
+//   'address' (a relocation target such as a static, RVA, or frozen-data blob).
+//
+// Arguments:
+//   address - the relocation target to query
+//
+// Return Value:
+//   The guaranteed alignment in bytes, or 1 when it cannot be determined (e.g. when the JIT's
+//   target does not match the VM). The JIT uses this to gate alignment-sensitive relocations.
+//
+uint32_t Compiler::eeGetAddressAlignment(void* address)
+{
+    if (info.compMatchedVM)
+    {
+        return info.compCompHnd->getAddressAlignment(address);
+    }
+    else
+    {
+        // The VM does not match the JIT target, so we cannot assume any alignment.
+        return 1;
+    }
+}
+
 CORINFO_FIELD_HANDLE Compiler::eeFindJitDataOffs(unsigned dataOffs)
 {
     // Data offsets are marked by the fact that the low two bits are 0b01 0x1

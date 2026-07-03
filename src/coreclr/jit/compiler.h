@@ -9667,6 +9667,8 @@ public:
 
     CorInfoReloc eeGetRelocTypeHint(void* target);
 
+    uint32_t eeGetAddressAlignment(void* address);
+
     // ICorStaticInfo wrapper functions
 
 #if defined(UNIX_AMD64_ABI)

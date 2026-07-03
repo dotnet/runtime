@@ -1269,6 +1269,15 @@ CorInfoWasmType WrapICorJitInfo::getWasmLowering(
     return temp;
 }
 
+uint32_t WrapICorJitInfo::getAddressAlignment(
+          void* address)
+{
+    API_ENTER(getAddressAlignment);
+    uint32_t temp = wrapHnd->getAddressAlignment(address);
+    API_LEAVE(getAddressAlignment);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {

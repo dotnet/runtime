@@ -4410,6 +4410,74 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getAddressAlignment(void* address)
+        {
+            if (address == null)
+            {
+                return 1;
+            }
+#if READYTORUN
+            // In R2R, relocatable direct loads only target pointer-aligned data (RVA blobs and
+            // indirection cells); statics and other data are reached through helpers. Report
+            // pointer-size alignment, matching how such targets are laid out.
+            return (uint)_compilation.TypeSystemContext.Target.PointerSize;
+#else
+            if (HandleToObject(address) is ISymbolNode node)
+            {
+                return (uint)GetSymbolNodeAlignment(node);
+            }
+
+            // Unknown target: report unaligned so the JIT avoids alignment-sensitive relocations.
+            return 1;
+#endif
+        }
+
+#if !READYTORUN
+        private int GetSymbolNodeAlignment(ISymbolNode node)
+        {
+            int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
+
+            int alignment;
+            switch (node)
+            {
+                case NonGCStaticsNode nonGcStatics:
+                    // The non-GC static region is aligned only to the largest static field's
+                    // alignment (plus the cctor-context's pointer alignment when present), which
+                    // can be smaller than the pointer size for byte-packed layouts.
+                    LayoutInt fieldAlignment = nonGcStatics.Type.NonGCStaticFieldAlignment;
+                    int baseAlignment = fieldAlignment.IsIndeterminate ? pointerSize : fieldAlignment.AsInt;
+                    alignment = nonGcStatics.HasCCtorContext ? Math.Max(baseAlignment, pointerSize) : baseAlignment;
+                    break;
+
+                case GCStaticsNode:
+                case FieldRvaDataNode:
+                    // These are laid out with at least pointer-size alignment.
+                    alignment = pointerSize;
+                    break;
+
+                default:
+                    // Fail closed: for any other target we cannot prove the alignment (e.g. a
+                    // byte-aligned blob or a 4-byte-aligned code symbol), so report 1 and let the
+                    // JIT fall back to the always-safe unfolded sequence.
+                    return 1;
+            }
+
+            // The symbol may be defined at an offset within its containing node; the effective
+            // alignment cannot exceed the alignment implied by that offset.
+            int offset = node.Offset;
+            if (offset != 0)
+            {
+                int offsetAlignment = offset & (-offset);
+                if (offsetAlignment < alignment)
+                {
+                    alignment = offsetAlignment;
+                }
+            }
+
+            return alignment;
+        }
+#endif
+
         private uint getExpectedTargetArchitecture()
         {
             TargetArchitecture arch = _compilation.TypeSystemContext.Target.Architecture;
