@@ -150,8 +150,8 @@ namespace System.Net.NameResolution.Tests
             DnsResult<AddressRecord> result = await task.WaitAsync(TimeSpan.FromSeconds(30));
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
-            // DnsQueryEx performs a pure-DNS lookup, so "localhost" may legitimately yield
-            // no records (NODATA); if any are returned they must be loopback addresses.
+
+            Assert.NotEmpty(result.Records);
             foreach (AddressRecord rec in result.Records)
             {
                 Assert.True(IPAddress.IsLoopback(rec.Address), $"Expected a loopback address but got {rec.Address}.");

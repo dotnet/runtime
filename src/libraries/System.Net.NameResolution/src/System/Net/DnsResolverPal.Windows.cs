@@ -122,7 +122,11 @@ namespace System.Net
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
-                if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
+                // Network answers arrive in the ANSWER section, but locally-resolved names (e.g. "localhost"
+                // or hosts-file entries) are surfaced by DnsQueryEx in the QUESTION section instead. An
+                // address query only ever returns records for the queried name, so accept both sections to
+                // avoid silently dropping the loopback/hosts results.
+                if (hdr.wType == qtype && (section == Interop.Dnsapi.DNSREC_ANSWER || section == Interop.Dnsapi.DNSREC_QUESTION))
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     if (TryParseAddress(hdr.wType, dataPtr, out IPAddress? address))
