@@ -548,16 +548,23 @@ namespace System.Text.Json.Schema
                     return "#";
                 }
 
-                using ValueStringBuilder sb = new(initialCapacity: path.Length * 10);
-                sb.Append('#');
-
-                foreach (string segment in path)
+                ValueStringBuilder sb = new(initialCapacity: path.Length * 10);
+                try
                 {
-                    sb.Append('/');
-                    AppendEscapedReferenceToken(ref sb, segment);
-                }
+                    sb.Append('#');
 
-                return sb.ToString();
+                    foreach (string segment in path)
+                    {
+                        sb.Append('/');
+                        AppendEscapedReferenceToken(ref sb, segment);
+                    }
+
+                    return sb.ToString();
+                }
+                finally
+                {
+                    sb.Dispose();
+                }
             }
 
             private static void AppendEscapedReferenceToken(ref ValueStringBuilder sb, string segment)
