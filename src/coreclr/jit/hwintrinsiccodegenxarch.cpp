@@ -384,10 +384,33 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*               embMaskNode = nullptr;
     GenTree*               embMaskOp   = nullptr;
 
+#if DEBUG
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    assert(m_compiler->compIsaSupportedDebugOnly(isa));
+
+    if (isa == InstructionSet_Vector)
+    {
+        if (node->GetSimdSize() == 64)
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector512));
+        }
+        else if (node->GetSimdSize() == 32)
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector256));
+        }
+        else
+        {
+            assert((node->GetSimdSize() == 8) || (node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector128));
+        }
+    }
+    else
+    {
+        assert(m_compiler->compIsaSupportedDebugOnly(isa));
+    }
+
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
     assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
+#endif
 
     bool    isTableDriven = HWIntrinsicInfo::genIsTableDrivenHWIntrinsic(intrinsicId, category);
     insOpts instOptions   = INS_OPTS_NONE;
@@ -998,9 +1021,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (isa)
     {
-        case InstructionSet_Vector128:
-        case InstructionSet_Vector256:
-        case InstructionSet_Vector512:
+        case InstructionSet_Vector:
         {
             genBaseIntrinsic(node, instOptions);
             break;
@@ -1940,12 +1961,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     switch (intrinsicId)
     {
-        case NI_Vector128_CreateScalar:
-        case NI_Vector256_CreateScalar:
-        case NI_Vector512_CreateScalar:
-        case NI_Vector128_CreateScalarUnsafe:
-        case NI_Vector256_CreateScalarUnsafe:
-        case NI_Vector512_CreateScalarUnsafe:
+        case NI_Vector_CreateScalar:
+        case NI_Vector_CreateScalarUnsafe:
         {
             if (varTypeIsIntegral(baseType))
             {
@@ -2046,9 +2063,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_Vector128_WithElement:
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
+        case NI_Vector_WithElement:
         {
             // Optimize the case where op2 is not a constant.
 
@@ -2100,9 +2115,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_Vector128_GetElement:
-        case NI_Vector256_GetElement:
-        case NI_Vector512_GetElement:
+        case NI_Vector_GetElement:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2188,7 +2201,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             }
             else if (op2->OperIsConst())
             {
-                assert(intrinsicId == NI_Vector128_GetElement);
+                assert(intrinsicId == NI_Vector_GetElement);
+                assert(simdType == TYP_SIMD16);
                 assert(varTypeIsFloating(baseType));
                 assert(op1Reg != REG_NA);
 
@@ -2259,12 +2273,10 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_Vector128_AsVector128Unsafe:
-        case NI_Vector128_AsVector2:
-        case NI_Vector128_AsVector3:
-        case NI_Vector128_ToScalar:
-        case NI_Vector256_ToScalar:
-        case NI_Vector512_ToScalar:
+        case NI_Vector_AsVector128Unsafe:
+        case NI_Vector_AsVector2:
+        case NI_Vector_AsVector3:
+        case NI_Vector_ToScalar:
         {
             // genOperandDesc looks through a contained CreateScalar/CreateScalarUnsafe to the operand it
             // wraps, which may itself live in a register (e.g. Vector128.CreateScalarUnsafe(x).ToScalar()).
@@ -2307,16 +2319,16 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_Vector128_ToVector256:
-        case NI_Vector128_ToVector512:
-        case NI_Vector256_ToVector512:
+        case NI_Vector_ToVector256:
+        case NI_Vector_ToVector512:
         {
             // ToVector256 has zero-extend semantics in order to ensure it is deterministic
             // We always emit a move to the target register, even when op1Reg == targetReg,
             // in order to ensure that Bits MAXVL-1:128 are zeroed.
 
-            if (intrinsicId == NI_Vector256_ToVector512)
+            if (simdType == TYP_SIMD32)
             {
+                assert(intrinsicId == NI_Vector_ToVector512);
                 attr = emitTypeSize(TYP_SIMD32);
             }
             else
@@ -2338,11 +2350,10 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_Vector128_ToVector256Unsafe:
-        case NI_Vector256_ToVector512Unsafe:
-        case NI_Vector256_GetLower:
-        case NI_Vector512_GetLower:
-        case NI_Vector512_GetLower128:
+        case NI_Vector_ToVector256Unsafe:
+        case NI_Vector_ToVector512Unsafe:
+        case NI_Vector_GetLower:
+        case NI_Vector_GetLower128:
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -2350,7 +2361,11 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 //
                 // For ToVector256Unsafe the upper bits don't matter and for GetLower we
                 // only actually need the lower 16-bytes, so we can just be "more efficient"
-                if ((intrinsicId == NI_Vector512_GetLower) || (intrinsicId == NI_Vector256_ToVector512Unsafe))
+                if (intrinsicId == NI_Vector_GetLower)
+                {
+                    attr = emitTypeSize(node->TypeGet());
+                }
+                else if (intrinsicId == NI_Vector_ToVector512Unsafe)
                 {
                     attr = emitTypeSize(TYP_SIMD32);
                 }
@@ -2371,7 +2386,11 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 // so the upper bits aren't impactful either allowing the same.
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                if ((intrinsicId == NI_Vector128_ToVector256Unsafe) || (intrinsicId == NI_Vector256_GetLower))
+                if (intrinsicId == NI_Vector_GetLower)
+                {
+                    attr = emitTypeSize(node->TypeGet());
+                }
+                else if (intrinsicId == NI_Vector_ToVector256Unsafe)
                 {
                     attr = emitTypeSize(TYP_SIMD32);
                 }
@@ -2384,8 +2403,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_Vector128_op_Division:
-        case NI_Vector256_op_Division:
+        case NI_Vector_op_Division:
         {
             // We can emulate SIMD integer division by converting the 32-bit integer -> 64-bit double,
             // perform a 64-bit double divide, then convert back to a 32-bit integer. This is generating

@@ -1019,6 +1019,81 @@ internal static class R2RAssert
             $"All compiled methods ({allMethods.Count}):\n  {string.Join("\n  ", allMethods.Select(m => $"{m.DeclaringType}:{m.Name}"))}";
         return false;
     }
+
+    /// <summary>
+    /// Reads the raw IL byte stream of a method definition from a component MSIL file.
+    /// </summary>
+    private static bool TryGetMethodIL(string msilFilePath, string declaringType, string methodName, out byte[] il, out string diagnostic)
+    {
+        il = Array.Empty<byte>();
+
+        if (!File.Exists(msilFilePath))
+        {
+            diagnostic = $"Component MSIL file not found: '{msilFilePath}'.";
+            return false;
+        }
+
+        using var fileStream = new FileStream(msilFilePath, FileMode.Open, FileAccess.Read);
+        using var peReader = new PEReader(fileStream);
+        MetadataReader mr = peReader.GetMetadataReader();
+        foreach (TypeDefinitionHandle typeHandle in mr.TypeDefinitions)
+        {
+            TypeDefinition type = mr.GetTypeDefinition(typeHandle);
+            if (mr.GetString(type.Name) != declaringType)
+                continue;
+
+            foreach (MethodDefinitionHandle methodHandle in type.GetMethods())
+            {
+                MethodDefinition method = mr.GetMethodDefinition(methodHandle);
+                if (mr.GetString(method.Name) != methodName)
+                    continue;
+
+                int rva = method.RelativeVirtualAddress;
+                if (rva == 0)
+                {
+                    diagnostic = $"Method '{declaringType}.{methodName}' has no IL body (RVA 0).";
+                    return false;
+                }
+
+                il = peReader.GetMethodBody(rva).GetILBytes() ?? Array.Empty<byte>();
+                diagnostic = string.Empty;
+                return true;
+            }
+        }
+
+        diagnostic = $"Method '{declaringType}.{methodName}' not found in '{msilFilePath}'.";
+        return false;
+    }
+
+    /// <summary>
+    /// Returns true if the method's IL body was stripped by crossgen2 (--strip-il-bodies).
+    /// </summary>
+    public static bool MethodILIsStripped(string msilFilePath, string declaringType, string methodName, out string diagnostic)
+    {
+        if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
+            return false;
+
+        bool stripped = il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0xFE, 0x24]);
+        diagnostic = stripped
+            ? $"IL of '{declaringType}.{methodName}' is stripped (invalid opcode 0xFE 0x24)."
+            : $"Expected IL of '{declaringType}.{methodName}' to be stripped, but it is present ({il.Length} bytes: {BitConverter.ToString(il)}).";
+        return stripped;
+    }
+
+    /// <summary>
+    /// Returns true if the method's full IL body is present in the component MSIL file.
+    /// </summary>
+    public static bool MethodILIsPresent(string msilFilePath, string declaringType, string methodName, out string diagnostic)
+    {
+        if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
+            return false;
+
+        bool present = !il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0xFE, 0x24]);
+        diagnostic = present
+            ? $"IL of '{declaringType}.{methodName}' is present ({il.Length} bytes)."
+            : $"Expected IL of '{declaringType}.{methodName}' to be present, but it was stripped (invalid opcode 0xFE 0x24).";
+        return present;
+    }
 }
 
 /// <summary>

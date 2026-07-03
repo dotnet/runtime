@@ -2559,7 +2559,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             }
             else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
+                // We need AVX2 for TYP_SIMD32 based op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
             else
@@ -4089,8 +4089,9 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
                     value++;
                     loValue = value & UINT32_MAX;
                     hiValue = (value >> 32) & UINT32_MAX;
-                    loSrc2->AsIntCon()->SetIconValue(loValue);
-                    hiSrc2->AsIntCon()->SetIconValue(hiValue);
+                    // Sign-extend (not zero-extend) so the stored value matches across host pointer sizes.
+                    loSrc2->AsIntCon()->SetValueTruncating(static_cast<int32_t>(loValue));
+                    hiSrc2->AsIntCon()->SetValueTruncating(static_cast<int32_t>(hiValue));
 
                     condition = cmp->OperIs(GT_LE) ? GT_LT : GT_GE;
                     mustSwap  = false;

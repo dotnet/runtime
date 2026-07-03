@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Xunit;
 
@@ -143,5 +145,47 @@ public class PlatformContextTests
         Assert.True(ctx.TryReadRegister(0, out TargetNUInt value));
         Assert.Equal(0UL, value.Value);
         Assert.False(ctx.TrySetRegister(0, new TargetNUInt(0xDEAD)));
+    }
+
+    /// <summary>
+    /// Architectures with a hardware single-step (trace) flag, the register that holds it,
+    /// the trace-flag bit, and an unrelated bit that must be preserved by UnsetSingleStepFlag.
+    /// </summary>
+    public static IEnumerable<object[]> HardwareSingleStepContexts()
+    {
+        yield return [new ContextHolder<X86Context>(), "eflags", 0x100UL, 0x202UL];
+        yield return [new ContextHolder<AMD64Context>(), "eflags", 0x100UL, 0x202UL];
+        yield return [new ContextHolder<ARM64Context>(), "cpsr", 0x0020_0000UL, 0x4000_0000UL];
+    }
+
+    [Theory]
+    [MemberData(nameof(HardwareSingleStepContexts))]
+    public void UnsetSingleStepFlag_ClearsTraceFlag_PreservesOtherBits(
+        IPlatformAgnosticContext ctx, string flagRegister, ulong traceFlagBit, ulong otherBits)
+    {
+        Assert.True(ctx.TrySetRegister(flagRegister, new TargetNUInt(traceFlagBit | otherBits)));
+
+        ctx.UnsetSingleStepFlag();
+
+        Assert.True(ctx.TryReadRegister(flagRegister, out TargetNUInt value));
+        Assert.Equal(otherBits, value.Value);
+    }
+
+    public static IEnumerable<object[]> EmulatedSingleStepContexts()
+    {
+        yield return [new ContextHolder<ARMContext>()];
+        yield return [new ContextHolder<LoongArch64Context>()];
+        yield return [new ContextHolder<RISCV64Context>()];
+    }
+
+    [Theory]
+    [MemberData(nameof(EmulatedSingleStepContexts))]
+    public void UnsetSingleStepFlag_IsNoOp_OnEmulatedSingleStepArches(IPlatformAgnosticContext ctx)
+    {
+        byte[] before = ctx.GetBytes();
+
+        ctx.UnsetSingleStepFlag();
+
+        Assert.Equal(before, ctx.GetBytes());
     }
 }

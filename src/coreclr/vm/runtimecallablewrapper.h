@@ -717,26 +717,31 @@ private:
 };
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-FORCEINLINE void NewRCWHolderRelease(RCW* p)
+struct NewRCWHolderTraits final
 {
-    CONTRACTL
+    using Type = RCW*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type p)
     {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    if (p)
-    {
-        GCX_COOP();
+        if (p)
+        {
+            GCX_COOP();
 
-        p->DecoupleFromObject();
-        p->Cleanup();
+            p->DecoupleFromObject();
+            p->Cleanup();
+        }
     }
 };
 
-using NewRCWHolder = SpecializedWrapper<RCW, NewRCWHolderRelease>;
+using NewRCWHolder = LifetimeHolder<NewRCWHolderTraits>;
 
 #ifndef DACCESS_COMPILE
 class RCWHolder

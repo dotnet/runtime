@@ -114,8 +114,6 @@ ValueNumFuncDef(LeadingZeroCount, 1, false, false)
 ValueNumFuncDef(TrailingZeroCount, 1, false, false)
 ValueNumFuncDef(PopCount, 1, false, false)
 
-ValueNumFuncDef(ManagedThreadId, 0, false, false)
-
 ValueNumFuncDef(ObjGetType, 1, false, true)
 ValueNumFuncDef(GetGcstaticBase, 1, false, true)
 ValueNumFuncDef(GetNongcstaticBase, 1, false, true)
@@ -191,43 +189,26 @@ ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compos
 
 // In VN all HW intrinsics encode an extra arg for the base type (except when
 // they are variadic), hence the +1 to the arg count below here.
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
+ValueNumFuncDef(HWI_INTRINSIC_START, -1, false, false)
+
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for x86/x64
-#include "hwintrinsiclistxarch.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
-#define VNF_HWI_LAST  VNF_HWI_AVX512_XnorMask
+#include "hwintrinsiclist.h"
 
-#elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for arm64
-#include "hwintrinsiclistarm64.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
-#define VNF_HWI_LAST  VNF_HWI_Sve_ReverseElement_Predicates
+ValueNumFuncDef(HWI_INTRINSIC_END, -1, false, false)
 
-#elif defined(TARGET_ARM)
-// No Hardware Intrinsics on ARM32
+#define VNF_HWI_FIRST (VNF_HWI_INTRINSIC_START + 1)
+#define VNF_HWI_LAST  (VNF_HWI_INTRINSIC_END - 1)
+#endif // FEATURE_HW_INTRINSICS
 
-#elif defined(TARGET_LOONGARCH64)
-    //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
-
-#elif defined (TARGET_RISCV64)
+#if defined(TARGET_RISCV64)
     // Signed/Unsigned integer min/max intrinsics
     ValueNumFuncDef(MinInt, 2, true, false)
     ValueNumFuncDef(MaxInt, 2, true, false)
     ValueNumFuncDef(MinInt_UN, 2, true, false)
     ValueNumFuncDef(MaxInt_UN, 2, true, false)
-
-#elif defined(TARGET_WASM)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for wasm
-#include "hwintrinsiclistwasm.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_As
-#define VNF_HWI_LAST  VNF_HWI_Vector128_op_UnaryPlus
-
-#else
-#error Unsupported platform
-#endif
+#endif // TARGET_RISCV64
 
 // clang-format on
 
