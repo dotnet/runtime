@@ -36,6 +36,14 @@ public class ModLength
         Test6(new int[10], 0);
         Test7(new int[10], 0);
         Throws<DivideByZeroException>(() => Test8(new int[10], 0));
+        Test10(new int[10], 100);
+        Test11(new int[10], 0);
+        Test11(new int[10], 100);
+        Throws<DivideByZeroException>(() => Test11(new int[0], 10));
+        Throws<DivideByZeroException>(() => Test12(new int[0], 10));
+        Test12(new int[10], 0);
+        Test12(new int[10], 100);
+        Throws<DivideByZeroException>(() => Test12(new int[10], 0));
     }
 
     static void Throws<T>(Action action, [CallerLineNumber] int line = 0)
@@ -80,7 +88,7 @@ public class ModLength
         var span = arr.AsSpan();
         return span[(int)index % (int)span.Length];
     }
-
+    
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test7(int[] arr, int index)
     {
@@ -97,4 +105,37 @@ public class ModLength
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test9(int[] arr, int index) => arr[index / arr.Length];
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test10(int[] arr, uint index)
+    {
+        if (arr.Length > 0)
+        {
+            return arr[arr.Length % index];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test11(int[] arr, int index)
+    {
+        if (index >= 0)
+        {
+            return arr[index % arr.Length];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test12(int[] arr, int index)
+    {
+        if (arr.Length > 0)
+        {
+            return arr[arr.Length % index];
+        }
+
+        return 1234;
+    }
 }

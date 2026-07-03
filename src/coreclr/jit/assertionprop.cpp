@@ -5668,11 +5668,46 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
             }
         }
     }
-    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1) && (idxOp1 == vnCurLen))
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1))
     {
-        // If arr.Length is 0 we technically should keep the bounds check, but since the expression
-        // has to throw DivideByZeroException anyway - no special handling needed.
-        return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
+        if (idxOp0 == vnCurLen)
+        {
+            Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
+
+            if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
+            {
+                return dropBoundsCheck(
+                    INDEBUG("a[a.Length u% X] is always within bounds when a.Length is known to be > 0"));
+            }
+        }
+        else if (idxOp1 == vnCurLen)
+        {
+            // If arr.Length is 0 we technically should keep the bounds check, but since the expression
+            // has to throw DivideByZeroException anyway - no special handling needed.
+            return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
+        }
+    }
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_MOD, &idxOp0, &idxOp1))
+    {
+        if (idxOp0 == vnCurLen)
+        {
+            Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
+
+            if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
+            {
+                return dropBoundsCheck(
+                    INDEBUG("a[a.Length % X] is always within bounds when a.Length is known to be > 0"));
+            }
+        }
+        else if (idxOp1 == vnCurLen)
+        {
+            Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
+
+            if (idxRng.LowerLimit().IsConstant() && idxRng.LowerLimit().GetConstant() >= 0)
+            {
+                return dropBoundsCheck(INDEBUG("a[X % a.Length] is always within bounds when X is known to be >= 0"));
+            }
+        }
     }
 
     // Let's see if we can remove the bounds check based on the ranges.
