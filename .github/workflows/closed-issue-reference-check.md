@@ -102,9 +102,15 @@ steps:
                  | map(.count = (.refs | length))
                  | sort_by(-.count)' > "$grouped"
 
+      # Resolve state for the most-referenced numbers, plus every issue used in an
+      # ActiveIssue construct (always actionable, even with few references, so it must
+      # never fall outside the probe window).
       probe_nums="$(mktemp)"
-      jq -r --argjson probe "$(( MAX * 10 ))" '.[0:$probe][].number' "$grouped" > "$probe_nums"
-      echo "scan: $(jq 'length' "$grouped") referenced issue numbers under ${DIRS}; resolving state for top $(wc -l < "$probe_nums" | tr -d ' ')"
+      jq -r --argjson probe "$(( MAX * 10 ))" '
+          [ (.[0:$probe][].number),
+            (.[] | select(.kinds | index("ActiveIssue")) | .number) ]
+          | unique | .[]' "$grouped" > "$probe_nums"
+      echo "scan: $(jq 'length' "$grouped") referenced issue numbers under ${DIRS}; resolving state for $(wc -l < "$probe_nums" | tr -d ' ')"
 
       states="$(mktemp)"
       emit_query() {
@@ -151,11 +157,21 @@ steps:
       while read -r num; do
         [ -z "$num" ] && continue
         [ "$keptn" -ge "$MAX" ] && break
-        comments="$(gh api "repos/${REPO}/issues/${num}/comments" --paginate -q '.[].body' 2>/dev/null || true)"
-        if printf '%s' "$comments" | grep -qF "$marker"; then
+        # Fetch the issue's comment bodies straight into a file. A REST failure here
+        # (auth/rate-limit/transient) must abort rather than be swallowed: treating it
+        # as "no marker" would re-advise an already-commented issue, breaking the
+        # one-comment-per-issue invariant.
+        cbody="$(mktemp)"
+        if ! gh api "repos/${REPO}/issues/${num}/comments" --paginate -q '.[].body' > "$cbody" 2>/dev/null; then
+          echo "scan: failed to read comments for #${num} (auth/rate-limit/transient); aborting to avoid duplicate advisories" >&2
+          rm -f "$cbody"; exit 1
+        fi
+        if grep -qF "$marker" "$cbody"; then
+          rm -f "$cbody"
           echo "scan: #${num} already advised -> filtered"
           continue
         fi
+        rm -f "$cbody"
         echo "$num" >> "$keptnums"; keptn=$((keptn+1))
       done < <(jq -r '.[].number' "$ranked")
 
