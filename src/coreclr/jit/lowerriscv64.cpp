@@ -1248,8 +1248,6 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
                 }
                 BlockRange().Remove(relopOp2);
                 BlockRange().Remove(relop);
-                DEBUG_DESTROY_NODE(relopOp2);
-                DEBUG_DESTROY_NODE(relop);
             }
         }
         // genCodeForCompare reverses GE/LE into LT/GT and emits a trailing xori 1.
