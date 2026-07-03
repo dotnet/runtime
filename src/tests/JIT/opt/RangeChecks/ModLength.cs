@@ -7,7 +7,7 @@ using Xunit;
 
 public class ModLength
 {
-    [Fact]
+        [Fact]
     public static void TestEntryPoint()
     {
         Throws<DivideByZeroException>(() => Test1(new int[0], 0));
@@ -36,14 +36,38 @@ public class ModLength
         Test6(new int[10], 0);
         Test7(new int[10], 0);
         Throws<DivideByZeroException>(() => Test8(new int[10], 0));
-        Test10(new int[10], 100);
+
+        Test10(new int[10], 9U);
+        Throws<DivideByZeroException>(() => Test10(new int[10], 0U));
+
         Test11(new int[10], 0);
         Test11(new int[10], 100);
         Throws<DivideByZeroException>(() => Test11(new int[0], 10));
-        Throws<DivideByZeroException>(() => Test12(new int[0], 10));
-        Test12(new int[10], 0);
-        Test12(new int[10], 100);
+
+        Test12(new int[10], 9);
         Throws<DivideByZeroException>(() => Test12(new int[10], 0));
+
+        Test13(new int[10], 9U);
+        Test13(new int[10], 10U);
+        Throws<DivideByZeroException>(() => Test13(new int[10], 0U));
+
+        Test14(new int[10], 9);
+        Test14(new int[10], 10);
+        Throws<DivideByZeroException>(() => Test14(new int[10], 0));
+
+        Test15(new int[10], 9U);
+        Throws<DivideByZeroException>(() => Test15(new int[10], 0U));
+
+        Test16(new int[10], 9);
+        Throws<DivideByZeroException>(() => Test16(new int[10], 0));
+
+        Test17(new int[10], 9U);
+        Test17(new int[10], 10U);
+        Throws<DivideByZeroException>(() => Test17(new int[10], 0U));
+
+        Test18(new int[10], 9);
+        Test18(new int[10], 10);
+        Throws<DivideByZeroException>(() => Test18(new int[10], 0));
     }
 
     static void Throws<T>(Action action, [CallerLineNumber] int line = 0)
@@ -88,7 +112,7 @@ public class ModLength
         var span = arr.AsSpan();
         return span[(int)index % (int)span.Length];
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test7(int[] arr, int index)
     {
@@ -109,9 +133,9 @@ public class ModLength
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test10(int[] arr, uint index)
     {
-        if (arr.Length > 0)
+        if (arr.Length > 0 && arr.Length > index)
         {
-            return arr[arr.Length % index];
+            return arr[(uint)arr.Length % index];
         }
 
         return 1234;
@@ -131,7 +155,73 @@ public class ModLength
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test12(int[] arr, int index)
     {
-        if (arr.Length > 0)
+        if (arr.Length > 0 && arr.Length > index)
+        {
+            return arr[arr.Length % index];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test13(int[] arr, uint index)
+    {
+        if (arr.Length > 0 && arr.Length >= index)
+        {
+            return arr[(uint)arr.Length % index];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test14(int[] arr, int index)
+    {
+        if (arr.Length > 0 && arr.Length >= index)
+        {
+            return arr[arr.Length % index];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test15(int[] arr, uint index)
+    {
+        if (arr.Length > 0 && index < arr.Length)
+        {
+            return arr[(uint)arr.Length % index];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test16(int[] arr, int index)
+    {
+        if (arr.Length > 0 && index < arr.Length)
+        {
+            return arr[arr.Length % index];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test17(int[] arr, uint index)
+    {
+        if (arr.Length > 0 && index <= arr.Length)
+        {
+            return arr[(uint)arr.Length % index];
+        }
+
+        return 1234;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test18(int[] arr, int index)
+    {
+        if (arr.Length > 0 && index <= arr.Length)
         {
             return arr[arr.Length % index];
         }
