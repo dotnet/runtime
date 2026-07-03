@@ -1073,9 +1073,9 @@ internal static class R2RAssert
         if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
             return false;
 
-        bool stripped = il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x14, 0x7A]);
+        bool stripped = il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0xFE, 0x24]);
         diagnostic = stripped
-            ? $"IL of '{declaringType}.{methodName}' is stripped (ldnull; throw)."
+            ? $"IL of '{declaringType}.{methodName}' is stripped (invalid opcode 0xFE 0x24)."
             : $"Expected IL of '{declaringType}.{methodName}' to be stripped, but it is present ({il.Length} bytes: {BitConverter.ToString(il)}).";
         return stripped;
     }
@@ -1088,10 +1088,10 @@ internal static class R2RAssert
         if (!TryGetMethodIL(msilFilePath, declaringType, methodName, out byte[] il, out diagnostic))
             return false;
 
-        bool present = !il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0x14, 0x7A]);
+        bool present = !il.AsSpan().SequenceEqual((ReadOnlySpan<byte>)[0xFE, 0x24]);
         diagnostic = present
             ? $"IL of '{declaringType}.{methodName}' is present ({il.Length} bytes)."
-            : $"Expected IL of '{declaringType}.{methodName}' to be present, but it was stripped (ldnull; throw).";
+            : $"Expected IL of '{declaringType}.{methodName}' to be present, but it was stripped (invalid opcode 0xFE 0x24).";
         return present;
     }
 }
