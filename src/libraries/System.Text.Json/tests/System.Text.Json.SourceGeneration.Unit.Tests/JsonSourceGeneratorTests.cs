@@ -1054,39 +1054,41 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             string source = """
                 using System;
                 using System.Diagnostics.CodeAnalysis;
-                using System.Runtime.CompilerServices;
                 using System.Text.Json;
                 using System.Text.Json.Serialization;
                 using System.Text.Json.Serialization.Metadata;
 
-                [JsonUnion(TypeClassifier = typeof(IntOrLongClassifier))]
-                [Union]
-                public readonly struct IntOrLongUnion : IUnion
+                [JsonPolymorphic(TypeClassifier = typeof(AnimalClassifierFactory))]
+                [JsonDerivedType(typeof(Dog), "dog")]
+                public class Animal
                 {
-                    public IntOrLongUnion(int value) { Value = value; }
-                    public IntOrLongUnion(long value) { Value = value; }
-                    public object Value { get; }
+                    public int Age { get; set; }
                 }
 
-                public sealed class IntOrLongClassifier : JsonTypeClassifierFactory
+                public class Dog : Animal
+                {
+                    public int Bark { get; set; }
+                }
+
+                public sealed class AnimalClassifierFactory : JsonTypeClassifierFactory
                 {
                     [Experimental("EXP_CLS_CTOR")]
-                    public IntOrLongClassifier() { }
+                    public AnimalClassifierFactory() { }
 
                     public override bool CanClassify(JsonTypeClassifierContext context) => true;
                     public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
-                        (ref Utf8JsonReader reader) => typeof(int);
+                        (ref Utf8JsonReader reader) => typeof(Dog);
                 }
 
-                [JsonSerializable(typeof(IntOrLongUnion))]
+                [JsonSerializable(typeof(Animal))]
                 public partial class MyContext : JsonSerializerContext { }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
-            TypeGenerationSpec union = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "IntOrLongUnion");
-            Assert.Equal(new[] { "EXP_CLS_CTOR" }, union.ExperimentalDiagnosticIds);
+            TypeGenerationSpec animal = result.AllGeneratedTypes.Single(s => s.TypeRef.Name == "Animal");
+            Assert.Equal(new[] { "EXP_CLS_CTOR" }, animal.ExperimentalDiagnosticIds);
         }
 
         [Fact]
