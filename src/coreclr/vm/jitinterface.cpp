@@ -12553,6 +12553,16 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "System.OrdinalIgnoreCaseComparer",".cctor"},
 	{ "System.OrdinalIgnoreCaseComparer",".ctor"},
 	{ "OrdinalIgnoreCaseComparer",".ctor"},
+	{ "System.Diagnostics.Tracing.EventSource",".cctor"},
+	{ "System.Diagnostics.Tracing.NativeRuntimeEventSource",".cctor"},
+	{ "System.Diagnostics.Tracing.NativeRuntimeEventSource",".ctor"},
+	{ "System.Diagnostics.Tracing.TraceLoggingEventHandleTable",".ctor"},
+	{ "System.Diagnostics.Tracing.TraceLoggingEventHandleTable",".ctor"},
+	{ "System.Diagnostics.Tracing.ActivityTracker",".cctor"},
+	{ "System.Diagnostics.Tracing.ActivityTracker",".ctor"},
+	{ "System.Text.Encoding",".cctor"},
+	{ "UTF8EncodingSealed",".ctor"},
+	{ "System.ReadOnlySpan`1[Byte]",".ctor"},
     };
 
     const size_t numInclusions = sizeof(jitInclusionList) / sizeof(jitInclusionList[0]);
