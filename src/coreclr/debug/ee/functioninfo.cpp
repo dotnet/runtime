@@ -1861,7 +1861,7 @@ bool DebuggerMethodInfo::HasMoreRecentEnCVersion()
 /******************************************************************************
  * Updated the instrumented-IL map
  ******************************************************************************/
-void DebuggerMethodInfo::SetInstrumentedILMap(COR_IL_MAP * pMap, SIZE_T cEntries)
+void DebuggerMethodInfo::SetInstrumentedILMap(COR_IL_MAP * pMap, UINT cEntries)
 {
     InstrumentedILOffsetMapping mapping;
     mapping.SetMappingInfo(cEntries, pMap);

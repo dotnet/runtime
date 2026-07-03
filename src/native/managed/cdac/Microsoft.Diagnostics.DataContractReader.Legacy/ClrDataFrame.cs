@@ -108,8 +108,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
         try
         {
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomainAddr = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomainAddr = _target.Contracts.Loader.GetAppDomain();
 
             if (appDomainAddr != TargetPointer.Null)
             {
@@ -358,8 +357,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 throw new InvalidCastException(); // E_NOINTERFACE
 
             MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
-            TargetPointer appDomain = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.AppDomain));
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
             method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
         }
@@ -459,8 +457,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         IStackWalk stackWalk = _target.Contracts.StackWalk;
         IDebugInfo debugInfo = _target.Contracts.DebugInfo;
 
-        TargetPointer ip = stackWalk.GetInstructionPointer(_dataFrame);
-        TargetCodePointer codePointer = new TargetCodePointer(ip.Value);
+        TargetCodePointer codePointer = stackWalk.GetInstructionPointer(_dataFrame);
         byte[] context = stackWalk.GetRawContext(_dataFrame);
         IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out uint codeOffset);
         NativeVarLocation[] locations = FindAndResolveVarLocation(varInfos, codeOffset, varInfoSlot, context, _target);

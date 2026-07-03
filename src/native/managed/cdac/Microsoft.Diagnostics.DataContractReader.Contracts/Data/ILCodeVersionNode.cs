@@ -13,4 +13,5 @@ internal sealed partial class ILCodeVersionNode : IData<ILCodeVersionNode>
     [Field] public uint Deoptimized { get; }
     [Field] public uint Source { get; }
     [Field] public TargetNUInt EnCVersion { get; }
+    [Field] public InstrumentedILOffsetMapping InstrumentedILMap { get; }
 }

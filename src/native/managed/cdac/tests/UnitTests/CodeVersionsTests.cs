@@ -140,6 +140,7 @@ public class CodeVersionsTests
             [DataType.NativeCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(builder.NativeCodeVersionNodeLayout),
             [DataType.ILCodeVersioningState] = TargetTestHelpers.CreateTypeInfo(builder.ILCodeVersioningStateLayout),
             [DataType.ILCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(builder.ILCodeVersionNodeLayout),
+            [DataType.InstrumentedILOffsetMapping] = TargetTestHelpers.CreateTypeInfo(builder.InstrumentedILOffsetMappingLayout),
             [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(builder.GCCoverageInfoLayout),
         };
 
@@ -888,5 +889,44 @@ public class CodeVersionsTests
         NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
         OptimizationTier tier = codeVersions.GetOptimizationTier(handle);
         Assert.Equal(OptimizationTier.OptimizationTierUnknown, tier);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetInstrumentedILMap_Explicit(MockTarget.Architecture arch)
+    {
+        MockCodeVersions builder = new(arch);
+
+        const uint expectedCount = 3;
+        TargetPointer expectedEntries = new(0x4321_0000);
+        MockILCodeVersionNode ilVersionNode = builder.AddILCodeVersionNode(versionId: 1, /* kStateActive */ 0x00000002);
+        builder.SetInstrumentedILMap(ilVersionNode, expectedCount, expectedEntries.Value);
+
+        var target = CreateTarget(arch, builder);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        ILCodeVersionHandle handle = ILCodeVersionHandle.CreateExplicit(ilVersionNode.Address);
+        bool result = codeVersions.TryGetInstrumentedILMap(handle, out uint mapEntryCount, out TargetPointer mapEntries);
+
+        Assert.True(result);
+        Assert.Equal(expectedCount, mapEntryCount);
+        Assert.Equal(expectedEntries, mapEntries);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetInstrumentedILMap_Synthetic_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        MockCodeVersions builder = new(arch);
+
+        var target = CreateTarget(arch, builder);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        ILCodeVersionHandle handle = ILCodeVersionHandle.CreateSynthetic(new TargetPointer(0x1a0a_0000), methodDef: 0x06000001);
+        bool result = codeVersions.TryGetInstrumentedILMap(handle, out uint mapEntryCount, out TargetPointer mapEntries);
+
+        Assert.False(result);
+        Assert.Equal(0u, mapEntryCount);
+        Assert.Equal(TargetPointer.Null, mapEntries);
     }
 }

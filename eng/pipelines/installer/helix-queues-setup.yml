@@ -33,11 +33,11 @@ jobs:
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
-      - (Alpine.323.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-amd64@sha256:daedc4ed84012104bed0fbcfe8dc92191253bcc5d38490ce5e999427f98853a0
+      - (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:a31c5d53a8c241bf7ad42e2dea0980e538ce1acee6968c11a61b9c23869460ed
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
-      - (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8@sha256:33d25e02f1ffcdbb2a9912ca04feea1f7248686326b4d123d80f09e38650a2fe
+      - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:9c20e0a9728be8eebfc8aa5e096488229ffed20c6cd99c20b90637ac29284df2
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:

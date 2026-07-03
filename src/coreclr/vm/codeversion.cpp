@@ -713,7 +713,7 @@ void ILCodeVersionNode::SetEnCVersion(SIZE_T encVersion)
     m_encVersion = encVersion;
 }
 
-void ILCodeVersionNode::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
+void ILCodeVersionNode::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
@@ -1094,7 +1094,7 @@ void ILCodeVersion::SetEnCVersion(SIZE_T encVersion)
     AsNode()->SetEnCVersion(encVersion);
 }
 
-void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
+void ILCodeVersion::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     AsNode()->SetInstrumentedILMap(cMap, rgMap);

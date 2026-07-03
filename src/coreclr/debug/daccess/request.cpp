@@ -2422,7 +2422,7 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 {
     SOSDacEnter();
 
-    adsData->systemDomain = HOST_CDADDR(SystemDomain::System());
+    adsData->systemDomain = (CLRDATA_ADDRESS)NULL;
     adsData->sharedDomain = (CLRDATA_ADDRESS)NULL;
 
     // Get an accurate count of appdomains.
@@ -2437,45 +2437,42 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 HRESULT
 ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *appdomainData)
 {
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    if (addr == 0)
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        hr = E_INVALIDARG;
+        hr = E_FAIL;
     }
     else
     {
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
-        appdomainData->AppDomainPtr = addr;
+        appdomainData->AppDomainPtr = HOST_CDADDR(pAppDomain);
         PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (addr != HOST_CDADDR(SystemDomain::System()))
+        appdomainData->dwId = DefaultADID;
+
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
+            kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+        while (i.Next(pAssembly.This()))
         {
-            PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-
-            appdomainData->dwId = DefaultADID;
-
-            AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
-                kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-            CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-            while (i.Next(pAssembly.This()))
+            if (pAssembly->IsLoaded())
             {
-                if (pAssembly->IsLoaded())
-                {
-                    appdomainData->AssemblyCount++;
-                }
+                appdomainData->AssemblyCount++;
             }
+        }
 
-            AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
-            while (j.Next())
-            {
-                appdomainData->FailedAssemblyCount++;
-            }
+        AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
+        while (j.Next())
+        {
+            appdomainData->FailedAssemblyCount++;
         }
     }
 
@@ -2561,19 +2558,16 @@ ClrDataAccess::GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned i
 HRESULT
 ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS values[], int *pNeeded)
 {
-    if (addr == (CLRDATA_ADDRESS)NULL)
-        return E_INVALIDARG;
-
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        // We shouldn't be asking for the assemblies in SystemDomain
-        hr = E_INVALIDARG;
+        hr = E_FAIL;
     }
     else
     {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
         AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -2637,20 +2631,16 @@ ClrDataAccess::GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count,
 HRESULT
 ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        // SystemDomain doesn't have this field.
-        if (pNeeded)
-            *pNeeded = 1;
-        if (name && count > 0)
-            name[0] = 0;
+        hr = E_FAIL;
     }
     else
     {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-
         size_t countAsSizeT = count;
         if (pAppDomain->m_friendlyName.IsValid())
         {

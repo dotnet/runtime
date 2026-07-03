@@ -416,6 +416,23 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         return (CodeVersionSource)AsNode(ilCodeVersionHandle).Source == CodeVersionSource.ReJIT;
     }
 
+    bool ICodeVersions.TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries)
+    {
+        mapEntryCount = 0;
+        mapEntries = TargetPointer.Null;
+
+        // ILCodeVersion::GetInstrumentedILMap returns NULL for synthetic versions
+        if (!ilCodeVersionHandle.IsExplicit)
+        {
+            return false;
+        }
+
+        Data.InstrumentedILOffsetMapping mapping = AsNode(ilCodeVersionHandle).InstrumentedILMap;
+        mapEntryCount = mapping.Count;
+        mapEntries = mapping.Map;
+        return true;
+    }
+
     OptimizationTier ICodeVersions.GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)
     {
         if (!codeVersionHandle.Valid)

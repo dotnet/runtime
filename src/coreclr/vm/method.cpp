@@ -2022,8 +2022,10 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        // On portable entrypoint platforms resolving the entrypoint may need to run the prestub
+        // (e.g. to publish R2R native code for the method), which can trigger a GC.
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
         PRECONDITION(HasUnmanagedCallersOnlyAttribute());
     }
     CONTRACTL_END;
@@ -3186,8 +3188,8 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested() &&
 
-        // Tiering the async thunk methods is not supported currently
-        !IsAsyncThunkMethod() &&
+        // We tier async versions, but not task-returning wrapper thunks
+        (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen()) &&
 
         // Tiering P/Invoke methods is not supported currently
         !IsPInvoke()

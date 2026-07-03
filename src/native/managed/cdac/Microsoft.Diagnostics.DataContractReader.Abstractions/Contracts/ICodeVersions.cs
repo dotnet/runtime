@@ -37,6 +37,8 @@ public interface ICodeVersions : IContract
 
     public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
     public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+    public virtual bool TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries) => throw new NotImplementedException();
+
     public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
     public virtual bool IsReJIT(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
 }

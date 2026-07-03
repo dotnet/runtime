@@ -221,7 +221,7 @@ public:
     void SetJitFlags(DWORD flags);
     void SetSource(CodeVersionSource source);
     void SetEnCVersion(SIZE_T encVersion);
-    void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
+    void SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap);
     HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier,
         NativeCodeVersion* pNativeCodeVersion, PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
@@ -421,7 +421,7 @@ public:
 #ifndef DACCESS_COMPILE
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
-    void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
+    void SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap);
     void SetRejitState(RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
@@ -452,6 +452,7 @@ struct cdac_data<ILCodeVersionNode>
     static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
     static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
     static constexpr size_t ILAddress = offsetof(ILCodeVersionNode, m_pIL);
+    static constexpr size_t InstrumentedILMap = offsetof(ILCodeVersionNode, m_instrumentedILMap);
     static constexpr size_t Deoptimized = offsetof(ILCodeVersionNode, m_deoptimized);
     static constexpr size_t Source = offsetof(ILCodeVersionNode, m_source);
     static constexpr size_t EnCVersion = offsetof(ILCodeVersionNode, m_encVersion);

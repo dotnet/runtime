@@ -24,6 +24,7 @@ public class ReJITTests
             [DataType.NativeCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.NativeCodeVersionNodeLayout),
             [DataType.ILCodeVersioningState] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ILCodeVersioningStateLayout),
             [DataType.ILCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ILCodeVersionNodeLayout),
+            [DataType.InstrumentedILOffsetMapping] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.InstrumentedILOffsetMappingLayout),
             [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.GCCoverageInfoLayout),
         };
 

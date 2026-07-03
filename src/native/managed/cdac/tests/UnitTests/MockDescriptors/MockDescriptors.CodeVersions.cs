@@ -152,6 +152,8 @@ internal sealed class MockILCodeVersionNode : TypedView
     private const string NextFieldName = "Next";
     private const string RejitStateFieldName = "RejitState";
     private const string ILAddressFieldName = "ILAddress";
+    private const string InstrumentedILMapFieldName = "InstrumentedILMap";
+    private const string InstrumentedILMapEntriesFieldName = "InstrumentedILMapEntries";
     private const string DeoptimizedFieldName = "Deoptimized";
     private const string SourceFieldName = "Source";
     private const string EnCVersionFieldName = "EnCVersion";
@@ -162,6 +164,8 @@ internal sealed class MockILCodeVersionNode : TypedView
             .AddPointerField(NextFieldName)
             .AddUInt32Field(RejitStateFieldName)
             .AddPointerField(ILAddressFieldName)
+            .AddUInt32Field(InstrumentedILMapFieldName)
+            .AddPointerField(InstrumentedILMapEntriesFieldName)
             .AddUInt32Field(DeoptimizedFieldName)
             .AddUInt32Field(SourceFieldName)
             .AddNUIntField(EnCVersionFieldName)
@@ -185,6 +189,24 @@ internal sealed class MockILCodeVersionNode : TypedView
         set => WriteUInt32Field(RejitStateFieldName, value);
     }
 
+    public ulong ILAddress
+    {
+        get => ReadPointerField(ILAddressFieldName);
+        set => WritePointerField(ILAddressFieldName, value);
+    }
+
+    public uint InstrumentedILMapCount
+    {
+        get => ReadUInt32Field(InstrumentedILMapFieldName);
+        set => WriteUInt32Field(InstrumentedILMapFieldName, value);
+    }
+
+    public ulong InstrumentedILMapEntries
+    {
+        get => ReadPointerField(InstrumentedILMapEntriesFieldName);
+        set => WritePointerField(InstrumentedILMapEntriesFieldName, value);
+    }
+
     public uint Deoptimized
     {
         get => ReadUInt32Field(DeoptimizedFieldName);
@@ -202,6 +224,18 @@ internal sealed class MockILCodeVersionNode : TypedView
         get => ReadPointerField(EnCVersionFieldName);
         set => WritePointerField(EnCVersionFieldName, value);
     }
+}
+
+internal sealed class MockInstrumentedILOffsetMapping : TypedView
+{
+    private const string CountFieldName = "Count";
+    private const string MapFieldName = "Map";
+
+    public static Layout<MockInstrumentedILOffsetMapping> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InstrumentedILOffsetMapping", architecture)
+            .AddUInt32Field(CountFieldName)
+            .AddPointerField(MapFieldName)
+            .Build<MockInstrumentedILOffsetMapping>();
 }
 
 internal sealed class MockGCCoverageInfo : TypedView
@@ -229,6 +263,7 @@ internal sealed class MockCodeVersionsBuilder
     internal Layout<MockNativeCodeVersionNode> NativeCodeVersionNodeLayout { get; }
     internal Layout<MockILCodeVersioningState> ILCodeVersioningStateLayout { get; }
     internal Layout<MockILCodeVersionNode> ILCodeVersionNodeLayout { get; }
+    internal Layout<MockInstrumentedILOffsetMapping> InstrumentedILOffsetMappingLayout { get; }
     internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout { get; }
 
     private readonly MockMemorySpace.BumpAllocator _codeVersionsAllocator;
@@ -260,6 +295,7 @@ internal sealed class MockCodeVersionsBuilder
         NativeCodeVersionNodeLayout = MockNativeCodeVersionNode.CreateLayout(architecture);
         ILCodeVersioningStateLayout = MockILCodeVersioningState.CreateLayout(architecture);
         ILCodeVersionNodeLayout = MockILCodeVersionNode.CreateLayout(architecture);
+        InstrumentedILOffsetMappingLayout = MockInstrumentedILOffsetMapping.CreateLayout(architecture);
         GCCoverageInfoLayout = MockGCCoverageInfo.CreateLayout(architecture);
     }
 
@@ -330,7 +366,7 @@ internal sealed class MockCodeVersionsBuilder
         => ILCodeVersioningStateLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersioningStateLayout.Size, "ILCodeVersioningState"));
 
-    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false, uint source = 1 /* CodeVersionSource.ReJIT */, ulong encVersion = 0)
+    public MockILCodeVersionNode AddILCodeVersionNode(ulong versionId, uint rejitFlags, bool deoptimized = false, uint source = 1 /* CodeVersionSource.ReJIT */, ulong encVersion = 0, ulong ilAddress = 0)
     {
         MockILCodeVersionNode node = ILCodeVersionNodeLayout.Create(
             _codeVersionsAllocator.Allocate((ulong)ILCodeVersionNodeLayout.Size, "ILCodeVersionNode"));
@@ -339,8 +375,16 @@ internal sealed class MockCodeVersionsBuilder
         node.Deoptimized = deoptimized ? 1u : 0u;
         node.Source = source;
         node.EnCVersion = encVersion;
+        node.ILAddress = ilAddress;
         node.Next = 0;
 
         return node;
+    }
+
+    public void SetInstrumentedILMap(MockILCodeVersionNode node, uint count, ulong entries)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        node.InstrumentedILMapCount = count;
+        node.InstrumentedILMapEntries = entries;
     }
 }
