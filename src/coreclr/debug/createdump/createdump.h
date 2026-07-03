@@ -34,6 +34,7 @@ extern void trace_verbose_printf(const char* format, ...);
 
 #include <windows.h>
 #include <stdlib.h>
+#include <crtdbg.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -48,8 +49,19 @@ extern void trace_verbose_printf(const char* format, ...);
 #include <mscoree.h>
 typedef int T_CONTEXT;
 #include <dacprivate.h>
-#include <arrayholder.h>
-#include <releaseholder.h>
+
+#ifndef _ASSERTE
+#define _ASSERTE(expr) assert(expr)
+#define UNDEF__ASSERTE
+#endif // _ASSERTE
+
+#include <holder.h>
+
+#ifdef UNDEF__ASSERTE
+#undef _ASSERTE
+#undef UNDEF__ASSERTE
+#endif // UNDEF__ASSERTE
+
 #ifdef HOST_UNIX
 #include <minipal/strings.h>
 #include <minipal/utf8.h>

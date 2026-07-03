@@ -41,7 +41,7 @@ public static partial class XmlSerializerTests
         var expectedXml = WithXmlHeader(@$"<BaseIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" xmlns=""{XmlSerializableBaseClass.XmlNamespace}"" />");
         var fromBase = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableBaseClass), new Type[] { typeof(XmlSerializableDerivedClass) }));
         Assert.Equal(dClass.AttributeString, fromBase.AttributeString);
-        Assert.StrictEqual(dClass.DateTimeValue, fromBase.DateTimeValue);
+        Assert.Equal(dClass.DateTimeValue, fromBase.DateTimeValue);
         Assert.Equal(dClass.BoolValue, fromBase.BoolValue);
 
         // Derived class does not apply XmlRoot attribute to force itself to be emitted with the base class element name, so update expected xml accordingly.
@@ -49,7 +49,7 @@ public static partial class XmlSerializerTests
         expectedXml = WithXmlHeader(@"<DerivedIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" />");
         var fromDerived = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableDerivedClass)));
         Assert.Equal(dClass.AttributeString, fromDerived.AttributeString);
-        Assert.StrictEqual(dClass.DateTimeValue, fromDerived.DateTimeValue);
+        Assert.Equal(dClass.DateTimeValue, fromDerived.DateTimeValue);
         Assert.Equal(dClass.BoolValue, fromDerived.BoolValue);
     }
 
@@ -76,37 +76,4 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.StringField1, actual.StringField1);
         Assert.Equal(value.StringField2, actual.StringField2);
     }
-
-    // TODO - Move this test to XmlSerializerTests.RuntimeOnly.cs once #1399 is fixed for the ReflectionOnly serializer.
-    [Fact]
-    public static void Xml_XmlSchema()
-    {
-        var expectedXml = WithXmlHeader("<xsd:schema xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" elementFormDefault=\"qualified\" targetNamespace=\"http://example.com/my-schema\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <xsd:element name=\"MyElement\" type=\"xsd:string\" />\r\n  <xsd:group name=\"MyGroup\">\r\n    <xsd:sequence>\r\n      <xsd:element name=\"Item1\" />\r\n      <xsd:element name=\"Item2\" />\r\n    </xsd:sequence>\r\n  </xsd:group>\r\n</xsd:schema>");
-
-        XmlSchema schema = new XmlSchema
-        {
-            TargetNamespace = "http://example.com/my-schema",
-            ElementFormDefault = XmlSchemaForm.Qualified
-        };
-        schema.Items.Add(new XmlSchemaElement
-        {
-            Name = "MyElement",
-            SchemaTypeName = new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema")
-        });
-        schema.Items.Add(new XmlSchemaGroup
-        {
-            Name = "MyGroup",
-            Particle = new XmlSchemaSequence
-            {
-                Items = { new XmlSchemaElement { Name = "Item1" }, new XmlSchemaElement { Name = "Item2" } }
-            }
-        });
-        schema.Namespaces.Add("xsd", "http://www.w3.org/2001/XMLSchema");
-        schema.Namespaces.Add("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-
-        var actual = SerializeAndDeserialize(schema, expectedXml, () => new XmlSerializer(typeof(XmlSchema)));
-
-        Assert.Equivalent(schema, actual);
-    }
-
 }

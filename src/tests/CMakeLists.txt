@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(Tests)
 
@@ -67,13 +67,6 @@ if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     ADDSUBDIR_REC("${CMAKE_CURRENT_SOURCE_DIR}")
 else()
     set(TEST_LIB_TYPE STATIC)
-
-    add_compile_options(
-      -fwasm-exceptions 
-      -msimd128)
-    add_link_options(
-      -fwasm-exceptions 
-      )
 
     # opt in into tests that make sense for WASM
     add_subdirectory(JIT/interpreter)

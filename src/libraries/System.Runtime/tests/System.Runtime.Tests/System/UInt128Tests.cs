@@ -517,5 +517,26 @@ namespace System.Tests
             UInt128 upper = UInt128.BigMul(a, b, out UInt128 lower);
             Assert.Equal(result, $"{upper:X32}{lower:X32}");
         }
+
+        [Fact]
+        public static void ExplicitConversionToDouble_LargeValue()
+        {
+            // Value: 309485009821345068741558271 (approx 2^88)
+            // This tests the path for values < 2^104 (after fix) or >= 2^88 (before fix)
+            UInt128 value = UInt128.Parse("309485009821345068741558271");
+            double d = (double)value;
+            Assert.Equal(309485009821345068741558271.0, d);
+
+            // Value >= 2^104
+            // 2^104 = 20282409603651670423947251286016
+            // The value is constructed as 2^104 + 2^24 + 1.
+            // This tests a value with a 1 at bit 104, a 1 at bit 24, and a 1 at bit 0.
+            // The lower bits (24 and 0) should contribute to the sticky bit calculation.
+            UInt128 value2 = new(0x0100_0000_0000, 0x0100_0001);
+            double d2 = (double)value2;
+            // Expected: 2^104. 2^24 is far below ULP (2^52).
+            double expected2 = 20282409603651670423947251286016.0;
+            Assert.Equal(expected2, d2);
+        }
     }
 }

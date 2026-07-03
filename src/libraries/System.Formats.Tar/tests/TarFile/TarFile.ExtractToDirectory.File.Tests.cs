@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -367,6 +368,194 @@ namespace System.Formats.Tar.Tests
 
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             Assert.True(File.Exists(linkPath), $"{linkPath}' does not exist.");
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.CopyContents)]
+        public void HardLinkExtractionRoundtrip(TarEntryFormat format, TarHardLinkMode linkMode)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create hardlinked dir1/file.txt and dir2/linked.txt.
+            string sourceDir1 = Path.Join(root.Path, "source", "dir1");
+            string sourceDir2 = Path.Join(root.Path, "source", "dir2");
+            Directory.CreateDirectory(sourceDir1);
+            Directory.CreateDirectory(sourceDir2);
+            string sourceFile1 = Path.Join(sourceDir1, "file.txt");
+            File.WriteAllText(sourceFile1, "test content");
+            string sourceFile2 = Path.Join(sourceDir2, "linked.txt");
+            File.CreateHardLink(sourceFile2, sourceFile1);
+
+            // Create archive file.
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkMode = linkMode };
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: false))
+            {
+                writer.WriteEntry(sourceDir1, "dir1");
+                writer.WriteEntry(sourceFile1, "dir1/file.txt");
+                writer.WriteEntry(sourceDir2, "dir2");
+                writer.WriteEntry(sourceFile2, "dir2/linked.txt");
+            }
+
+            // Extract archive using ExtractToDirectory.
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            TarFile.ExtractToDirectory(archivePath, destination, overwriteFiles: false);
+
+            // Verify extracted files
+            string targetFile1 = Path.Join(destination, "dir1", "file.txt");
+            string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
+            if (linkMode == TarHardLinkMode.PreserveLink)
+            {
+                AssertPathsAreHardLinked(targetFile1, targetFile2);
+            }
+            else
+            {
+                Assert.True(File.Exists(targetFile1));
+                Assert.True(File.Exists(targetFile2));
+                Assert.Equal("test content", File.ReadAllText(targetFile1));
+                Assert.Equal("test content", File.ReadAllText(targetFile2));
+            }
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
+        public void HardLinkExtraction_CopyContents()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create hardlinked dir1/file.txt and dir2/linked.txt.
+            string sourceDir1 = Path.Join(root.Path, "source", "dir1");
+            string sourceDir2 = Path.Join(root.Path, "source", "dir2");
+            Directory.CreateDirectory(sourceDir1);
+            Directory.CreateDirectory(sourceDir2);
+            string sourceFile1 = Path.Join(sourceDir1, "file.txt");
+            File.WriteAllText(sourceFile1, "test content");
+            string sourceFile2 = Path.Join(sourceDir2, "linked.txt");
+            File.CreateHardLink(sourceFile2, sourceFile1);
+
+            // Create archive with hard link preservation.
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkMode = TarHardLinkMode.PreserveLink };
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, writerOptions, leaveOpen: false))
+            {
+                writer.WriteEntry(sourceDir1, "dir1");
+                writer.WriteEntry(sourceFile1, "dir1/file.txt");
+                writer.WriteEntry(sourceDir2, "dir2");
+                writer.WriteEntry(sourceFile2, "dir2/linked.txt");
+            }
+
+            // Extract archive with CopyContents mode.
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkMode = TarHardLinkMode.CopyContents };
+            TarFile.ExtractToDirectory(archivePath, destination, extractOptions);
+
+            // Verify extracted files are independent copies.
+            string targetFile1 = Path.Join(destination, "dir1", "file.txt");
+            string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
+            Assert.True(File.Exists(targetFile1));
+            Assert.True(File.Exists(targetFile2));
+            Assert.Equal("test content", File.ReadAllText(targetFile1));
+            Assert.Equal("test content", File.ReadAllText(targetFile2));
+            AssertPathsAreNotHardLinked(targetFile1, targetFile2);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsSymlinkDirectoryTraversal_WithNestedFile()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            // Absolute path outside destDir
+            string linkTarget = "/tmp/outside";
+
+            string tarPath = Path.Combine(root.Path, "symlink_dir_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                // symlink: "link" -> "/tmp/outside"
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link")
+                {
+                    LinkName = linkTarget
+                });
+
+                // file: "link/test.txt" with "hello"
+                byte[] content = Encoding.UTF8.GetBytes("hello");
+                var fileEntry = new PaxTarEntry(TarEntryType.RegularFile, "link/test.txt")
+                {
+                    DataStream = new MemoryStream(content, writable: false)
+                };
+
+                fileEntry.DataStream.Position = 0;
+                writer.WriteEntry(fileEntry);
+            }
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+
+            // Nothing should be created in dest
+            string linkPath = Path.Combine(destDir, "link");
+            string outsideFilePath = Path.Combine(destDir, "link", "test.txt");
+            Assert.False(File.Exists(linkPath) || Directory.Exists(linkPath), "link should not have been created.");
+            Assert.False(File.Exists(outsideFilePath) || Directory.Exists(outsideFilePath), "traversal link should not have been created.");
+        }
+
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal_WithNestedFile()
+        {
+            // dir a/
+            // symlink a/b ? .
+            // symlink a/b/c ? .
+            // symlink a/b/c/d ? ../../outside
+            // file a/d/ pwned.txt escapes
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "chained_symlink_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b") { LinkName = "." });
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c") { LinkName = "." });
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/d") { LinkName = "../../outside" });
+
+                var pwned = new PaxTarEntry(TarEntryType.RegularFile, "a/d/pwned.txt")
+                {
+                    DataStream = new MemoryStream(Encoding.UTF8.GetBytes("pwned"))
+                };
+                writer.WriteEntry(pwned);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                // Windows only creates file symlinks and trying to process a directory symlink will throw UnauthorizedAccessException instead of IOException
+                Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            }
+
+            string outsideDir = Path.Combine(root.Path, "outside");
+            Assert.False(Directory.Exists(outsideDir), "outside/directory should not have been created.");
+            Assert.False(File.Exists(Path.Combine(outsideDir, "pwned.txt")), "pwned.txt should not have been written outside destination.");
+
         }
     }
 }

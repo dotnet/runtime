@@ -22,6 +22,7 @@ namespace System.IO.Compression
         private Deflater? _deflater;
         private byte[]? _buffer;
         private volatile bool _activeAsyncOperation;
+        private volatile bool _decompressionFinished;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
@@ -52,8 +53,14 @@ namespace System.IO.Compression
         /// <param name="compressionOptions">The options for fine tuning the compression stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="DeflateStream"/> object; otherwise, <see langword="false" /></param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
-        public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, compressionOptions, leaveOpen, ZLibNative.Deflate_DefaultWindowBits)
+        public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(compressionOptions);
+
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(compressionOptions.WindowLog, CompressionFormat.Deflate);
+
+            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen, windowBits);
         }
 
         internal DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen, int windowBits)
@@ -78,7 +85,7 @@ namespace System.IO.Compression
                     if (!stream.CanRead)
                         throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-                    _inflater = new Inflater(windowBits, uncompressedSize);
+                    _inflater = Inflater.CreateInflater(windowBits, uncompressedSize);
                     _stream = stream;
                     _mode = CompressionMode.Decompress;
                     _leaveOpen = leaveOpen;
@@ -113,7 +120,7 @@ namespace System.IO.Compression
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
-            _deflater = new Deflater(compressionLevel, strategy, windowBits, GetMemLevel(compressionLevel));
+            _deflater = Deflater.CreateDeflater(compressionLevel, strategy, windowBits, GetMemLevel(compressionLevel));
 
             _stream = stream;
             _mode = CompressionMode.Compress;
@@ -354,6 +361,13 @@ namespace System.IO.Compression
                 }
             }
 
+            // When decompression finishes, rewind the stream to the exact end of compressed data
+            if (bytesRead == 0 && InflatorIsFinished && !_decompressionFinished && _stream.CanSeek)
+            {
+                TryRewindStream(_stream);
+                _decompressionFinished = true;
+            }
+
             return bytesRead;
         }
 
@@ -496,6 +510,13 @@ namespace System.IO.Compression
                             // subsequent call may end up getting one earlier than otherwise preferred.
                             break;
                         }
+                    }
+
+                    // When decompression finishes, rewind the stream to the exact end of compressed data
+                    if (bytesRead == 0 && InflatorIsFinished && !_decompressionFinished && _stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
+                        _decompressionFinished = true;
                     }
 
                     return bytesRead;
@@ -659,6 +680,33 @@ namespace System.IO.Compression
             } while (!finished);
         }
 
+        /// <summary>
+        /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
+        /// This is called when decompression finishes to reset the stream position.
+        /// </summary>
+        private void TryRewindStream(Stream stream)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(_mode == CompressionMode.Decompress);
+            Debug.Assert(stream.CanSeek);
+            Debug.Assert(_inflater != null);
+
+            // Check if there are unconsumed bytes in the inflater's input buffer
+            int unconsumedBytes = _inflater.GetAvailableInput();
+            if (unconsumedBytes > 0)
+            {
+                try
+                {
+                    // Rewind the stream to the exact end of the compressed data
+                    stream.Seek(-unconsumedBytes, SeekOrigin.Current);
+                }
+                catch
+                {
+                    // If seeking fails, we don't want to throw during disposal
+                }
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -673,7 +721,9 @@ namespace System.IO.Compression
                 try
                 {
                     if (disposing && !_leaveOpen)
+                    {
                         _stream?.Dispose();
+                    }
                 }
                 finally
                 {
@@ -728,7 +778,9 @@ namespace System.IO.Compression
                     try
                     {
                         if (!_leaveOpen && stream != null)
+                        {
                             await stream.DisposeAsync().ConfigureAwait(false);
+                        }
                     }
                     finally
                     {
@@ -913,6 +965,13 @@ namespace System.IO.Compression
                     {
                         ThrowTruncatedInvalidData();
                     }
+
+                    // Rewind the stream if decompression has finished and the stream supports seeking
+                    if (_deflateStream._inflater.Finished() && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
+                    {
+                        _deflateStream.TryRewindStream(_deflateStream._stream);
+                        _deflateStream._decompressionFinished = true;
+                    }
                 }
                 finally
                 {
@@ -948,6 +1007,13 @@ namespace System.IO.Compression
                     if (s_useStrictValidation && !_deflateStream._inflater.Finished())
                     {
                         ThrowTruncatedInvalidData();
+                    }
+
+                    // Rewind the stream if decompression has finished and the stream supports seeking
+                    if (_deflateStream._inflater.Finished() && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
+                    {
+                        _deflateStream.TryRewindStream(_deflateStream._stream);
+                        _deflateStream._decompressionFinished = true;
                     }
                 }
                 finally

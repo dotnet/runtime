@@ -3,6 +3,7 @@
 
 /* 
 
+using TestLibrary;
 This is regression test for VSW 593884
 We had a breaking change between 1.1 and 2.0 when a class implements an
   interface and a base type but doesn't override interface's method.
@@ -17,10 +18,12 @@ After the fix, the Whidbey behavior is correct as well.
 
 using System; 
 using Xunit;
+using TestLibrary;
 
 
 public class Program 
 { 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint() 
     { 

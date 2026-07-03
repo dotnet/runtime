@@ -11,6 +11,7 @@ schedules:
 
 variables:
   - template: variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -106,3 +107,47 @@ extends:
                       testScope: outerloop
                       creator: dotnet-bot
                       extraHelixArguments: /p:BuildTargetFramework=net481
+
+        # WebAssembly CoreCLR - run the library test suites on Chrome with the slow
+        # [OuterLoop] tests enabled. Uses -testscope all (not outerloop) on purpose:
+        # the outerloop scope adds a '-trait category=OuterLoop' include filter, and the
+        # wasm test host (xharness) treats a matching include as "always run", short-
+        # circuiting the '-notrait category=failing' exclude. That leaks [OuterLoop]
+        # tests from classes disabled via [ConditionalClass] (e.g. on
+        # IsMultithreadingSupported) onto single-threaded wasm, where they block the
+        # one thread and hang the job. -testscope all carries no OuterLoop include, so
+        # the failing-tagged classes are skipped as intended; it also covers the slow
+        # suites' innerloop tests.
+        # Gated on includeLinuxOuterloop (browser_wasm builds on a Linux host) so the
+        # wasm suites run in the umbrella and -linux outerloop definitions only, not in
+        # every platform-split (-windows/-osx) outerloop definition.
+        - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
+          - template: /eng/pipelines/common/platform-matrix.yml
+            parameters:
+              jobTemplate: /eng/pipelines/common/global-build-job.yml
+              helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+              buildConfig: Release
+              runtimeFlavor: coreclr
+              platforms:
+              - browser_wasm
+              jobParameters:
+                testScope: all
+                nameSuffix: LibraryTestsCoreCLR
+                buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope all /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) /p:InstallChromeForTests=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
+                # This lane runs the slow suites with a 04:00:00 per-suite xharness
+                # timeout and a per-batch Helix cap of 300 min (see
+                # eng/testing/tests.wasm.targets and src/libraries/sendtohelix-browser.targets).
+                # The job waits synchronously for the slowest batch, so it must outlast that
+                # batch plus build/queue overhead.
+                timeoutInMinutes: 600
+                includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+                # extra steps, run tests
+                postBuildSteps:
+                  - template: /eng/pipelines/libraries/helix.yml
+                    parameters:
+                      scenarios:
+                      - WasmTestOnChrome
+                      testScope: all
+                      creator: dotnet-bot
+                      testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                      extraHelixArguments: /p:BrowserHost=$(_hostedOs)

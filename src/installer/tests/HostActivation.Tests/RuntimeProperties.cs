@@ -3,7 +3,10 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
+using FluentAssertions;
 using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.TestUtils;
 using Xunit;
@@ -29,7 +32,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                .And.HavePropertyValue(SharedTestState.AppTestPropertyName, SharedTestState.AppTestPropertyValue);
         }
 
         [Fact]
@@ -40,7 +43,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.FrameworkTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.FrameworkTestPropertyValue}");
+                .And.HavePropertyValue(SharedTestState.FrameworkTestPropertyName, SharedTestState.FrameworkTestPropertyValue);
         }
 
         [Fact]
@@ -56,7 +59,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Property {SharedTestState.FrameworkTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.FrameworkTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                .And.HavePropertyValue(SharedTestState.FrameworkTestPropertyName, SharedTestState.AppTestPropertyValue);
         }
 
         [Fact]
@@ -77,7 +80,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining($"Property '{SharedTestState.HostFxrPathPropertyName}' was not found.");
+                .And.NotFindProperty(SharedTestState.HostFxrPathPropertyName);
         }
 
         [Fact]
@@ -98,20 +101,38 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void SpecifiedInConfigAndDevConfig_ConfigWins()
+        public void SpecifiedInConfigAndDevConfig_DevConfigWins()
         {
             var app = sharedState.App.Copy();
 
+            const string devConfigValue = "VALUE_FROM_DEV_CONFIG";
             RuntimeConfig.FromFile(app.RuntimeDevConfigJson)
-                .WithProperty(SharedTestState.AppTestPropertyName, "VALUE_FROM_DEV_CONFIG")
+                .WithProperty(SharedTestState.AppTestPropertyName, devConfigValue)
                 .Save();
 
             sharedState.DotNet.Exec(app.AppDll, PrintProperties, SharedTestState.AppTestPropertyName)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {devConfigValue}")
+                .And.HavePropertyValue(SharedTestState.AppTestPropertyName, devConfigValue);
+        }
+
+        [Fact]
+        public void KnownHostProperty_AppCanGetData()
+        {
+            sharedState.DotNet.Exec(sharedState.App.AppDll, PrintProperties,
+                    "TRUSTED_PLATFORM_ASSEMBLIES", "NATIVE_DLL_SEARCH_DIRECTORIES",
+                    "PLATFORM_RESOURCE_ROOTS", "APP_PATHS")
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HavePropertyContaining("TRUSTED_PLATFORM_ASSEMBLIES",
+                    Path.Combine(sharedState.DotNet.GreatestVersionSharedFxPath, "System.Private.CoreLib.dll"))
+                .And.HavePropertyContaining("NATIVE_DLL_SEARCH_DIRECTORIES",
+                    sharedState.DotNet.GreatestVersionSharedFxPath)
+                .And.NotFindProperty("PLATFORM_RESOURCE_ROOTS")
+                .And.NotFindProperty("APP_PATHS");
         }
 
         public class SharedTestState : IDisposable
@@ -131,9 +152,9 @@ namespace HostActivation.Tests
             public SharedTestState()
             {
                 // Make a copy of the built .NET, as we will update the framework's runtime config
-                copiedDotnet = TestArtifact.CreateFromCopy("runtimeProperties", TestContext.BuiltDotNet.BinPath);
+                copiedDotnet = TestArtifact.CreateFromCopy("runtimeProperties", HostTestContext.BuiltDotNet.BinPath);
 
-                MockSDK = new DotNetBuilder(copiedDotnet.Location, TestContext.BuiltDotNet.BinPath, "mocksdk")
+                MockSDK = new DotNetBuilder(copiedDotnet.Location, HostTestContext.BuiltDotNet.BinPath, "mocksdk")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr("9999.0.0")
                     .AddMockSDK("9999.0.0-dev", "9999.0.0")
                     .Build();
@@ -156,6 +177,25 @@ namespace HostActivation.Tests
                 App?.Dispose();
                 copiedDotnet.Dispose();
             }
+        }
+    }
+
+    internal static class RuntimePropertyCommandResultExtensions
+    {
+        public static AndConstraint<CommandResultAssertions> NotFindProperty(this CommandResultAssertions assertion, string propertyName)
+        {
+            return assertion.HaveStdOutContaining($"Property '{propertyName}' was not found.");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HavePropertyValue(this CommandResultAssertions assertion, string propertyName, string expectedValue)
+        {
+            return assertion.HaveStdOutContaining($"AppContext.GetData({propertyName}) = {expectedValue}");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HavePropertyContaining(this CommandResultAssertions assertion, string propertyName, string expectedSubstring)
+        {
+            return assertion.HaveStdOutMatching(
+                $@"AppContext\.GetData\({Regex.Escape(propertyName)}\) = .*{Regex.Escape(expectedSubstring)}");
         }
     }
 }

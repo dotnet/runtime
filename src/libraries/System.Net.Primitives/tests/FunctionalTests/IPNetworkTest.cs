@@ -109,7 +109,7 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("192.168.0.1", 33)]
         [InlineData("::", -1)]
         [InlineData("ffff::", 129)]
-        public void Constructor_PrefixLenghtOutOfRange_ThrowsArgumentOutOfRangeException(string ipStr, int prefixLength)
+        public void Constructor_PrefixLengthOutOfRange_ThrowsArgumentOutOfRangeException(string ipStr, int prefixLength)
         {
             IPAddress address = IPAddress.Parse(ipStr);
             Assert.Throws<ArgumentOutOfRangeException>(() => new IPNetwork(address, prefixLength));

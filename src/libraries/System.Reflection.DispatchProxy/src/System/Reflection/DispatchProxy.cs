@@ -6,22 +6,23 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Reflection
 {
     /// <summary>
-    /// DispatchProxy provides a mechanism for the instantiation of proxy objects and handling of
-    /// their method dispatch.
+    /// Provides a mechanism for instantiating proxy objects and handling their method dispatch.
     /// </summary>
     public abstract class DispatchProxy
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DispatchProxy"/> class.
+        /// </summary>
         protected DispatchProxy()
         {
         }
 
         /// <summary>
-        /// Whenever any method on the generated proxy type is called, this method
-        /// will be invoked to dispatch control.
+        /// Whenever any method on the generated proxy type is called, this method is invoked to dispatch control.
         /// </summary>
-        /// <param name="targetMethod">The method the caller invoked</param>
-        /// <param name="args">The arguments the caller passed to the method</param>
-        /// <returns>The object to return to the caller, or <c>null</c> for void methods</returns>
+        /// <param name="targetMethod">The method the caller invoked.</param>
+        /// <param name="args">The arguments the caller passed to the method.</param>
+        /// <returns>The object to return to the caller, or <see langword="null" /> for void methods.</returns>
         protected abstract object? Invoke(MethodInfo? targetMethod, object?[]? args);
 
         /// <summary>
@@ -31,8 +32,7 @@ namespace System.Reflection
         /// <typeparam name="T">The interface the proxy should implement.</typeparam>
         /// <typeparam name="TProxy">The base class to use for the proxy class.</typeparam>
         /// <returns>An object instance that implements <typeparamref name="T"/>.</returns>
-        /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is a class,
-        /// or <typeparamref name="TProxy"/> is sealed or does not have a parameterless constructor</exception>
+        /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is not an interface type, or <typeparamref name="TProxy"/> is sealed or abstract or does not have a parameterless constructor.</exception>
         //
         // https://github.com/dotnet/runtime/issues/73136 - we can remove the RequiresDynamicCode annotation.
         // This has been done AOT-safely with .NET Native in the past.
@@ -50,10 +50,12 @@ namespace System.Reflection
         /// <param name="interfaceType">The interface the proxy should implement.</param>
         /// <param name="proxyType">The base class to use for the proxy class.</param>
         /// <returns>An object instance that implements <paramref name="interfaceType"/>.</returns>
-        /// <exception cref="System.ArgumentNullException"><paramref name="interfaceType"/> or <paramref name="proxyType"/> is null</exception>
-        /// <exception cref="System.ArgumentException"><paramref name="interfaceType"/> is a class,
-        /// or <paramref name="proxyType"/> is sealed or abstract or does not inherited from the <see cref="System.Reflection.DispatchProxy"/>
-        /// type or have a parameterless constructor</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="interfaceType"/> or <paramref name="proxyType"/> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentException">
+        /// <para><paramref name="interfaceType"/> is not an interface type.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="proxyType"/> is sealed or abstract, or does not inherit from the <see cref="System.Reflection.DispatchProxy"/> type or does not have a parameterless constructor.</para>
+        /// </exception>
         [RequiresDynamicCode("Creating a proxy instance requires generating code at runtime")]
         public static object Create([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyType)
         {

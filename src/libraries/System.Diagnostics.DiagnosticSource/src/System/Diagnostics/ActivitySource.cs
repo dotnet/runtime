@@ -4,21 +4,24 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Diagnostics
 {
-    public sealed class ActivitySource : IDisposable
+    [DebuggerDisplay("Name = {Name}")]
+    public class ActivitySource : IDisposable
     {
         private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
         private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
+        private static readonly SynchronizedList<ActivityListener> s_disposedListeners = new SynchronizedList<ActivityListener>();
         private SynchronizedList<ActivityListener>? _listeners;
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
-        public ActivitySource(string name) : this(name, version: "", tags: null, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name) : this(name, version: "", tags: null, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -26,7 +29,7 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ActivitySource(string name, string? version = "") : this(name, version, tags: null, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name, string? version = "") : this(name, version, tags: null, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -34,18 +37,19 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         /// <param name="tags">The optional ActivitySource tags.</param>
-        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default) : this(name, version, tags, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default) : this(name, version, tags, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Initialize a new instance of the ActivitySource object using the <see cref="ActivitySourceOptions" />.
         /// </summary>
         /// <param name="options">The <see cref="ActivitySourceOptions" /> object to use for initializing the ActivitySource object.</param>
-        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.TelemetrySchemaUrl) {}
+        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.Scope, options.TelemetrySchemaUrl) {}
 
-        private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, string? telemetrySchemaUrl)
+        private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope, string? telemetrySchemaUrl)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
+            Scope = scope;
             TelemetrySchemaUrl = telemetrySchemaUrl;
 
             // Sorting the tags to make sure the tags are always in the same order.
@@ -72,6 +76,22 @@ namespace System.Diagnostics
                 }
             }, this);
 
+            // If a listener was disposed concurrently with the walk above, its DetachListener
+            // sweep may have passed this source before we attached, leaving the listener
+            // resurrected on us. Sweep our own listeners and detach any disposed entries; the
+            // per-list ops are idempotent so racing Dispose's walk per listener is safe.
+            SynchronizedList<ActivityListener>? listeners = Volatile.Read(ref _listeners);
+            if (listeners is not null && !ReferenceEquals(listeners, s_disposedListeners))
+            {
+                listeners.EnumWithAction((listener, source) =>
+                {
+                    if (listener.IsDisposed)
+                    {
+                        ((ActivitySource)source).RemoveListener(listener);
+                    }
+                }, this);
+            }
+
             GC.KeepAlive(DiagnosticSourceEventSource.Log);
         }
 
@@ -91,6 +111,11 @@ namespace System.Diagnostics
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
         /// <summary>
+        /// Returns the ActivitySource scope object.
+        /// </summary>
+        public object? Scope { get; }
+
+        /// <summary>
         /// Returns the telemetry schema URL associated with the ActivitySource.
         /// </summary>
         public string? TelemetrySchemaUrl { get; }
@@ -104,7 +129,9 @@ namespace System.Diagnostics
         public bool HasListeners()
         {
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            return listeners != null && listeners.Count > 0;
+            return listeners != null
+                && !ReferenceEquals(listeners, s_disposedListeners)
+                && listeners.Count > 0;
         }
 
         /// <summary>
@@ -203,12 +230,14 @@ namespace System.Diagnostics
         private Activity? CreateActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags,
                                             IEnumerable<ActivityLink>? links, DateTimeOffset startTime, bool startIt = true, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
         {
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners == null || listeners.Count == 0)
             {
                 return null;
             }
+
+            Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
 
             Activity? activity = null;
             ActivityTagsCollection? samplerTags;
@@ -336,8 +365,16 @@ namespace System.Diagnostics
         /// </summary>
         public void Dispose()
         {
-            _listeners = null;
-            s_activeSources.Remove(this);
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (Interlocked.Exchange(ref _listeners, s_disposedListeners) != s_disposedListeners)
+            {
+                s_activeSources.Remove(this);
+            }
         }
 
         /// <summary>
@@ -357,6 +394,78 @@ namespace System.Diagnostics
                         source.AddListener((ActivityListener)obj);
                     }
                 }, listener);
+
+                // If Dispose ran concurrently it may have walked past some sources before we
+                // attached to them, leaving the listener resurrected. Re-run the same cleanup
+                // Dispose performs; every per-list op is idempotent, so racing Dispose's walk
+                // per source is safe regardless of order.
+                if (listener.IsDisposed)
+                {
+                    DetachListener(listener);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resets source filters for the <see cref="ActivityListener"/> object to start or stop listening to the <see cref="Activity"/> events based on the listener configuration.
+        /// </summary>
+        /// <param name="listener">The <see cref="ActivityListener"/> instance whose configuration, in particular its <see cref="ActivityListener.ShouldListenTo"/> callback, determines which <see cref="ActivitySource"/> instances it should listen to.</param>
+        internal static void ResetSourceFilters(ActivityListener listener)
+        {
+            ArgumentNullException.ThrowIfNull(listener);
+
+            // Register first so any ActivitySource constructed after this point sees us
+            // in s_allListeners and self-attaches via its own walk (see the ActivitySource
+            // ctor walking s_allListeners). Without this, a source created during the
+            // iteration below could be missed by both us and itself.
+            s_allListeners.AddIfNotExist(listener);
+
+            List<Exception>? predicateFailures = null;
+            s_activeSources.EnumWithAction((source, obj) =>
+            {
+                var ls = (ActivityListener)obj;
+                bool listen;
+                try
+                {
+                    listen = ls.ShouldListenTo?.Invoke(source) ?? false;
+                }
+                catch (Exception ex)
+                {
+                    // Predicate threw for this source: leave its attachment state untouched
+                    // (the result was inconclusive, so neither attach nor detach is correct)
+                    // and continue with the remaining sources. We surface the throw(s) once
+                    // the walk completes so the caller sees what went wrong.
+                    (predicateFailures ??= new List<Exception>()).Add(ex);
+                    return;
+                }
+
+                if (listen)
+                {
+                    source.AddListener(ls);
+                }
+                else
+                {
+                    source.RemoveListener(ls);
+                }
+            }, listener);
+
+            // If Dispose ran concurrently it may have walked some sources before we
+            // attached to them, leaving the listener resurrected. Re-run the same
+            // cleanup Dispose performs; every per-list op is idempotent, so racing
+            // Dispose's walk per source is safe regardless of order.
+            if (listener.IsDisposed)
+            {
+                DetachListener(listener);
+            }
+
+            if (predicateFailures is not null)
+            {
+                if (predicateFailures.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(predicateFailures[0]).Throw();
+                }
+
+                throw new AggregateException(SR.ActivityListener_RefreshSourceFilters_PredicateThrew, predicateFailures);
             }
         }
 
@@ -364,28 +473,57 @@ namespace System.Diagnostics
 
         internal void AddListener(ActivityListener listener)
         {
-            if (_listeners == null)
+            SynchronizedList<ActivityListener>? listeners = Volatile.Read(ref _listeners);
+            if (ReferenceEquals(listeners, s_disposedListeners))
             {
-                Interlocked.CompareExchange(ref _listeners, new SynchronizedList<ActivityListener>(), null);
+                return;
             }
 
-            _listeners.AddIfNotExist(listener);
+            if (listeners is null)
+            {
+                SynchronizedList<ActivityListener> newListeners = new SynchronizedList<ActivityListener>();
+                listeners = Interlocked.CompareExchange(ref _listeners, newListeners, null);
+                if (listeners is null)
+                {
+                    newListeners.AddIfNotExist(listener);
+                    return;
+                }
+
+                if (ReferenceEquals(listeners, s_disposedListeners))
+                {
+                    return;
+                }
+            }
+
+            listeners.AddIfNotExist(listener);
+        }
+
+        internal void RemoveListener(ActivityListener listener)
+        {
+            SynchronizedList<ActivityListener>? listeners = Volatile.Read(ref _listeners);
+            if (listeners is null || ReferenceEquals(listeners, s_disposedListeners))
+            {
+                return;
+            }
+
+            listeners.Remove(listener);
         }
 
         internal static void DetachListener(ActivityListener listener)
         {
             s_allListeners.Remove(listener);
-            s_activeSources.EnumWithAction((source, obj) => source._listeners?.Remove((ActivityListener) obj), listener);
+            s_activeSources.EnumWithAction((source, obj) => source.RemoveListener((ActivityListener)obj), listener);
         }
 
         internal void NotifyActivityStart(Activity activity)
         {
             Debug.Assert(activity != null);
 
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null && listeners.Count > 0)
             {
+                Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity)obj), activity);
             }
         }
@@ -394,10 +532,11 @@ namespace System.Diagnostics
         {
             Debug.Assert(activity != null);
 
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null && listeners.Count > 0)
             {
+                Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity)obj), activity);
             }
         }
@@ -406,10 +545,11 @@ namespace System.Diagnostics
         {
             Debug.Assert(activity != null);
 
-            // _listeners can get assigned to null in Dispose.
+            // _listeners can get assigned to the disposed sentinel in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
             if (listeners != null && listeners.Count > 0)
             {
+                Debug.Assert(!ReferenceEquals(listeners, s_disposedListeners));
                 listeners.EnumWithExceptionNotification(activity, exception, ref tags);
             }
         }

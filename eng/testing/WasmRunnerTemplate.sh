@@ -40,18 +40,17 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 		JS_ENGINE="--engine=V8"
 	fi
 	if [[ -z "$MAIN_JS" ]]; then
-		MAIN_JS="--js-file=test-main.js"
+		MAIN_JS="--js-file=test-main.mjs"
 	fi
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
-
-        if [[ "$JS_ENGINE" == "--engine=V8" ]] ; then
-            JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--module"
-        fi
+		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000 --engine-arg=--experimental-wasm-exnref"
 	fi
 else
 	if [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
+		if [[ -z "$BROWSER_PATH" && "$(uname -s)" == "Darwin" && -n "$HELIX_CORRELATION_PAYLOAD" ]]; then
+			BROWSER_PATH="--browser-path=$HELIX_CORRELATION_PAYLOAD/chrome-mac/Chromium.app/Contents/MacOS/Chromium"
+		fi
 		if [[ -z "$JS_ENGINE_ARGS" ]]; then
 			JS_ENGINE_ARGS="--browser-arg=--js-flags=--stack-trace-limit=1000"
 		fi
@@ -66,7 +65,7 @@ else
 fi
 
 if [[ -z "$XHARNESS_ARGS" ]]; then
-	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
+	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $BROWSER_PATH $MAIN_JS"
 fi
 
 if [[ -n "$PREPEND_PATH" ]]; then
@@ -87,6 +86,7 @@ echo XHARNESS_COMMAND=$XHARNESS_COMMAND
 echo MAIN_JS=$MAIN_JS
 echo JS_ENGINE=$JS_ENGINE
 echo JS_ENGINE_ARGS=$JS_ENGINE_ARGS
+echo BROWSER_PATH=$BROWSER_PATH
 echo XHARNESS_ARGS=$XHARNESS_ARGS
 
 function _buildAOTFunc()

@@ -13,8 +13,7 @@
 
   <ItemGroup>
     <!-- Configures xunit to not print out passing tests with output when diagnostic messages are enabled. -->
-    <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
-    <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
+    <SetScriptCommands Include="$(EnvVarCommand) XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BundleXunitRunner)' == 'true'">
@@ -53,7 +52,7 @@
     <XunitExcludesTxtFileContent>$(_withoutCategories.Replace(';', '%0dcategory='))</XunitExcludesTxtFileContent>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestSingleFile)' == 'true'">
+  <PropertyGroup Condition="'$(TestSingleFile)' == 'true' and '$(TargetsAppleMobile)' != 'true'">
     <!-- Pass the results file -->
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
   </PropertyGroup>

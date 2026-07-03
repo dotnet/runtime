@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105479;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -24,21 +27,15 @@ public class Runtime_105479_A
         Avx.Compare(vr1, vr1, (FloatComparisonMode)255);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(AdvSimd.IsSupported))]
     public static void TestEntryPointArm()
     {
-        if (AdvSimd.IsSupported)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method0());
-        }
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method0());
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Avx), nameof(Avx.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx.IsSupported)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method1());
-        }
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method1());
     }
 }

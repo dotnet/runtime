@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -34,20 +35,20 @@ namespace System.Text.Json.Serialization.Tests
                 ((ITestClassWithParameterizedCtor)obj).Verify();
             }
 
-            async Task DeserializeObjectMinimalAsync(Type type, JsonSerializerOptions options)
+            async Task DeserializeObjectMinimalAsync([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json_minimal").GetValue(null);
                 var obj = await Serializer.DeserializeWrapper(json, type, options);
                 ((ITestClassWithParameterizedCtor)obj).VerifyMinimal();
             };
 
-            async Task DeserializeObjectFlippedAsync(Type type, JsonSerializerOptions options)
+            async Task DeserializeObjectFlippedAsync([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json_flipped").GetValue(null);
                 await DeserializeObjectAsync(json, type, options);
             };
 
-            async Task DeserializeObjectNormalAsync(Type type, JsonSerializerOptions options)
+            async Task DeserializeObjectNormalAsync([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, JsonSerializerOptions options)
             {
                 string json = (string)type.GetProperty("s_json").GetValue(null);
                 await DeserializeObjectAsync(json, type, options);
@@ -59,7 +60,7 @@ namespace System.Text.Json.Serialization.Tests
                 await Serializer.SerializeWrapper(obj, options);
             };
 
-            async Task RunTestAsync(Type type)
+            async Task RunTestAsync([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
             {
                 // Use local options to avoid obtaining already cached metadata from the default options.
                 JsonSerializerOptions options = Serializer.CreateOptions();
@@ -129,7 +130,7 @@ namespace System.Text.Json.Serialization.Tests
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public async Task MultipleTypes()
         {
-            async Task Serialize<T>(object[] args)
+            async Task Serialize<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(object[] args)
             {
                 Type type = typeof(T);
 
@@ -145,7 +146,7 @@ namespace System.Text.Json.Serialization.Tests
                 obj.Verify();
             };
 
-            async Task RunTestAsync<T>(T testObj, object[] args)
+            async Task RunTestAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(T testObj, object[] args)
             {
                 // Get the test json with the default options to avoid cache pollution of DeserializeAsync() below.
                 ((ITestClass)testObj).Initialize();

@@ -1666,7 +1666,7 @@ namespace System.Runtime.Serialization.DataContracts
             ns = GetDefaultXmlNamespace(ns);
         }
 
-        private static void CheckExplicitDataContractNamespaceUri(string dataContractNs, Type type)
+        private static unsafe void CheckExplicitDataContractNamespaceUri(string dataContractNs, Type type)
         {
             if (dataContractNs.Length > 0)
             {

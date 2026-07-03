@@ -13,6 +13,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
+    [DataContract]
     public sealed partial class Thread
     {
         // Extra bits used in _threadState
@@ -29,7 +30,9 @@ namespace System.Threading
 
         private volatile int _threadState = (int)ThreadState.Unstarted;
         private ThreadPriority _priority;
+        [DataContract]
         private ManagedThreadId _managedThreadId;
+        [DataContract]
         private string? _name;
         private StartHelper? _startHelper;
         private Exception? _startException;
@@ -272,24 +275,12 @@ namespace System.Threading
 
         private int SetThreadStateBit(ThreadState bit)
         {
-            int oldState, newState;
-            do
-            {
-                oldState = _threadState;
-                newState = oldState | (int)bit;
-            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
-            return oldState;
+            return Interlocked.Or(ref _threadState, (int)bit);
         }
 
         private int ClearThreadStateBit(ThreadState bit)
         {
-            int oldState, newState;
-            do
-            {
-                oldState = _threadState;
-                newState = oldState & ~(int)bit;
-            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
-            return oldState;
+            return Interlocked.And(ref _threadState, ~(int)bit);
         }
 
         internal void SetWaitSleepJoinState()
@@ -318,16 +309,6 @@ namespace System.Threading
                     SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return millisecondsTimeout;
-        }
-
-        public bool Join(int millisecondsTimeout)
-        {
-            VerifyTimeoutMilliseconds(millisecondsTimeout);
-            if (GetThreadStateBit(ThreadState.Unstarted))
-            {
-                throw new ThreadStateException(SR.ThreadState_NotStarted);
-            }
-            return JoinInternal(millisecondsTimeout);
         }
 
         /// <summary>

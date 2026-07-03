@@ -25,11 +25,14 @@ namespace ILLink.RoslynAnalyzer
         public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
         public const string FullyQualifiedFeatureGuardAttribute = "System.Diagnostics.CodeAnalysis.FeatureGuardAttribute";
         public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>>(GetRequiresAnalyzers);
-        private static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers() =>
-            ImmutableArray.Create<RequiresAnalyzerBase>(
-                new RequiresAssemblyFilesAnalyzer(),
-                new RequiresUnreferencedCodeAnalyzer(),
-                new RequiresDynamicCodeAnalyzer());
+        private static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers()
+        {
+            var builder = ImmutableArray.CreateBuilder<RequiresAnalyzerBase>();
+            builder.Add(new RequiresAssemblyFilesAnalyzer());
+            builder.Add(new RequiresUnreferencedCodeAnalyzer());
+            builder.Add(new RequiresDynamicCodeAnalyzer());
+            return builder.ToImmutable();
+        }
 
         public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics()
         {
@@ -128,7 +131,7 @@ namespace ILLink.RoslynAnalyzer
                 });
 
                 // Remaining actions are only for DynamicallyAccessedMembers analysis.
-                if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+                if (dataFlowAnalyzerContext.TrimAnalyzer is null)
                     return;
 
                 // Examine generic instantiations in base types and interface list
@@ -144,9 +147,7 @@ namespace ILLink.RoslynAnalyzer
                     var location = GetPrimaryLocation(type.Locations);
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
-                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
-                    if (type.BaseType is INamedTypeSymbol baseType)
-                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(baseType);
+                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext.TrimAnalyzer, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
 
                     foreach (var interfaceType in type.Interfaces)
                         genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);

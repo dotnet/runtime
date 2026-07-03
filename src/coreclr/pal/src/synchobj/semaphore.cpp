@@ -39,8 +39,7 @@ CObjectType CorUnix::otSemaphore(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
-                CObjectType::ThreadReleaseAltersSignalCount,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseAltersSignalCount
                 );
 
 CAllowedObjectTypes aotSempahore(otiSemaphore);

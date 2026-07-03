@@ -52,7 +52,7 @@ export function update_thread_info (): void {
     monoThreadInfo.threadPrefix = `${hexPrefix}${hexPtr}-${threadType}`;
 
     loaderHelpers.set_thread_prefix(monoThreadInfo.threadPrefix!);
-    if (!loaderHelpers.config.forwardConsoleLogsToWS) {
+    if (!loaderHelpers.config.forwardConsole) {
         set_thread_prefix(monoThreadInfo.threadPrefix!);
     }
 
@@ -87,11 +87,6 @@ export function exec_synchronization_context_pump (): void {
 export function mono_wasm_schedule_synchronization_context (): void {
     if (!WasmEnableThreads) return;
     Module.safeSetTimeout(exec_synchronization_context_pump, 0);
-}
-
-export function mono_wasm_pthread_ptr (): PThreadPtr {
-    if (!WasmEnableThreads) return PThreadPtrNull;
-    return (<any>Module)["_pthread_self"]();
 }
 
 export function mono_wasm_main_thread_ptr (): PThreadPtr {

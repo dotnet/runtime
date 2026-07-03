@@ -22,12 +22,12 @@ using std::nothrow;
 #include "winwrap.h"
 #include <wchar.h>
 #include <ole2.h>
-#include <oleauto.h>
 #include "clrtypes.h"
 #include "safewrap.h"
 #include "volatile.h"
 #include <daccess.h>
 #include "clrhost.h"
+#include "dn_xxhash.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
 #include "check.h"
@@ -38,11 +38,13 @@ using std::nothrow;
 #include <stddef.h>
 #include <minipal/guid.h>
 #include <minipal/log.h>
+#include <minipal/ospagesize.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
 
 #include "random.h"
+#include "cdacdata.h"
 
 #define WINDOWS_KERNEL32_DLLNAME_A "kernel32"
 #define WINDOWS_KERNEL32_DLLNAME_W W("kernel32")
@@ -342,51 +344,11 @@ inline HRESULT OutOfMemory()
 }
 #endif
 
-//*****************************************************************************
-// Handle accessing localizable resource strings
-//*****************************************************************************
-typedef LPCWSTR LocaleID;
-typedef WCHAR LocaleIDValue[LOCALE_NAME_MAX_LENGTH];
-
-// Notes about the culture callbacks:
-// - The language we're operating in can change at *runtime*!
-// - A process may operate in *multiple* languages.
-//     (ex: Each thread may have it's own language)
-// - If we don't care what language we're in (or have no way of knowing),
-//     then return a 0-length name and UICULTUREID_DONTCARE for the culture ID.
-// - GetCultureName() and the GetCultureId() must be in sync (refer to the
-//     same language).
-// - We have two functions separate functions for better performance.
-//     - The name is used to resolve a directory for MsCorRC.dll.
-//     - The id is used as a key to map to a dll hinstance.
-
-// Callback to obtain both the culture name and the culture's parent culture name
-typedef HRESULT (*FPGETTHREADUICULTURENAMES)(__inout StringArrayList* pCultureNames);
-const LPCWSTR UICULTUREID_DONTCARE = NULL;
-
-typedef int (*FPGETTHREADUICULTUREID)(LocaleIDValue*);
-
 HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName);
 
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 
 BOOL CLRFreeLibrary(HMODULE hModule);
-
-// Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
-
-// Specify callbacks so that UtilLoadStringRC can find out which language we're in.
-// If no callbacks specified (or both parameters are NULL), we default to the
-// resource dll in the root (which is probably english).
-void SetResourceCultureCallbacks(
-    FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-    FPGETTHREADUICULTUREID fpGetThreadUICultureId
-);
-
-void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId
-);
 
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
@@ -406,205 +368,14 @@ private:
 };
 
 //*****************************************************************************
-// Must associate each handle to an instance of a resource dll with the int
-// that it represents
-//*****************************************************************************
-typedef HINSTANCE HRESOURCEDLL;
-
-
-class CCulturedHInstance
-{
-    LocaleIDValue   m_LangId;
-    HRESOURCEDLL    m_hInst;
-    BOOL            m_fMissing;
-
-public:
-    CCulturedHInstance()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_hInst = NULL;
-        m_fMissing = FALSE;
-    }
-
-    BOOL HasID(LocaleID id)
-    {
-        _ASSERTE(m_hInst != NULL || m_fMissing);
-        if (id == UICULTUREID_DONTCARE)
-            return FALSE;
-
-        return u16_strcmp(id, m_LangId) == 0;
-    }
-
-    HRESOURCEDLL GetLibraryHandle()
-    {
-        return m_hInst;
-    }
-
-    BOOL IsSet()
-    {
-        return m_hInst != NULL;
-    }
-
-    BOOL IsMissing()
-    {
-        return m_fMissing;
-    }
-
-    void SetMissing(LocaleID id)
-    {
-        _ASSERTE(m_hInst == NULL);
-        SetId(id);
-        m_fMissing = TRUE;
-    }
-
-    void Set(LocaleID id, HRESOURCEDLL hInst)
-    {
-        _ASSERTE(m_hInst == NULL);
-        _ASSERTE(m_fMissing == FALSE);
-        SetId(id);
-        m_hInst = hInst;
-    }
-  private:
-    void SetId(LocaleID id)
-    {
-        if (id != UICULTUREID_DONTCARE)
-        {
-            wcsncpy_s(m_LangId, ARRAY_SIZE(m_LangId), id, ARRAY_SIZE(m_LangId));
-            m_LangId[STRING_LENGTH(m_LangId)] = W('\0');
-        }
-        else
-        {
-            m_LangId[0] = W('\0');
-        }
-    }
- };
-
-#ifndef DACCESS_COMPILE
-void AddThreadPreferredUILanguages(StringArrayList* pArray);
-#endif
-//*****************************************************************************
-// CCompRC manages string Resource access for CLR. This includes loading
-// the MsCorRC.dll for resources as well allowing each thread to use a
-// a different localized version.
+// CCompRC manages string Resource access for CLR.
 //*****************************************************************************
 class CCompRC
 {
 public:
 
-    enum ResourceCategory
-    {
-        // must be present
-        Required,
-
-        // present in Desktop CLR and Core CLR + debug pack, an error
-        // If missing, get a generic error message instead
-        Error,
-
-        // present in Desktop CLR and Core CLR + debug pack, normal operation (e.g tracing)
-        // if missing, get a generic "resource not found" message instead
-        Debugging,
-
-        // present in Desktop CLR, optional for CoreCLR
-        DesktopCLR,
-
-        // might not be present, non essential
-        Optional
-    };
-
-    CCompRC()
-    {
-        // This constructor will be fired up on startup. Make sure it doesn't
-        // do anything besides zero-out out values.
-        m_fpGetThreadUICultureId = NULL;
-        m_fpGetThreadUICultureNames = NULL;
-
-        m_pHash = NULL;
-        m_nHashSize = 0;
-        m_csMap = NULL;
-        m_pResourceFile = NULL;
-    }// CCompRC
-
-    HRESULT Init(LPCWSTR pResourceFile);
-    void Destroy();
-
-    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
-    HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
-
-    void SetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID fpGetThreadUICultureId
-    );
-
-    void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId
-    );
-
-    // Get the default resource location (mscorrc.dll)
-    static CCompRC* GetDefaultResourceDll();
-
-    static void GetDefaultCallbacks(
-                    FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-                    FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_DefaultResourceDll.GetResourceCultureCallbacks(
-                    fpGetThreadUICultureNames,
-                    fpGetThreadUICultureId);
-    }
-
-    static void SetDefaultCallbacks(
-                FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-                FPGETTHREADUICULTUREID fpGetThreadUICultureId)
-    {
-        WRAPPER_NO_CONTRACT;
-        // Either both are NULL or neither are NULL
-        _ASSERTE((fpGetThreadUICultureNames != NULL) ==
-                 (fpGetThreadUICultureId != NULL));
-
-        m_DefaultResourceDll.SetResourceCultureCallbacks(
-                fpGetThreadUICultureNames,
-                fpGetThreadUICultureId);
-    }
-
-private:
-// String resources packaged as PE files only exist on Windows
-#ifdef HOST_WINDOWS
-    HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
-#ifndef DACCESS_COMPILE
-    HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                              SString& rcPath);
-    HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
-    HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
-    HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
-#endif // DACCESS_COMPILE
-#endif // HOST_WINDOWS
-
-    // We do not have global constructors any more
-    static LONG     m_dwDefaultInitialized;
-    static CCompRC  m_DefaultResourceDll;
-    static LPCWSTR  m_pDefaultResource;
-
-    // We must map between a thread's int and a dll instance.
-    // Since we only expect 1 language almost all of the time, we'll special case
-    // that and then use a variable size map for everything else.
-    CCulturedHInstance m_Primary;
-    CCulturedHInstance * m_pHash;
-    int m_nHashSize;
-
-    CRITSEC_COOKIE m_csMap;
-
-    LPCWSTR m_pResourceFile;
-
-    // Main accessors for hash
-    HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
-    HRESULT AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing = FALSE);
-
-    FPGETTHREADUICULTUREID m_fpGetThreadUICultureId;
-    FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
+    static HRESULT LoadString(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 };
-
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
@@ -727,7 +498,14 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
 
-#include "ostype.h"
+#ifdef HOST_64BIT
+inline BOOL RunningInWow64()
+{
+    return FALSE;
+}
+#else
+BOOL RunningInWow64();
+#endif
 
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
@@ -738,11 +516,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                                    SIZE_T dwSize,
                                    DWORD flAllocationType,
                                    DWORD flProtect);
-
-//
-// Allocate free memory with specific alignment
-//
-LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
 
 #ifdef HOST_WINDOWS
 
@@ -805,8 +578,6 @@ int GetTotalProcessorCount();
 // Returns the number of processors that a process has been configured to run on
 //******************************************************************************
 int GetCurrentProcessCpuCount();
-
-uint32_t GetOsPageSize();
 
 
 //*****************************************************************************
@@ -911,28 +682,40 @@ private:
 // class.
 //*****************************************************************************
 
+class CUnorderedArrayBase
+{
+    friend struct ::cdac_data<CUnorderedArrayBase>;
+protected:
+    int   m_iCount;     // # of elements used in the list.
+    TADDR m_pTable;     // Pointer to the list of elements (opaque address;
+                        // the templated derived class supplies the element type).
+
+    CUnorderedArrayBase()
+        : m_iCount(0), m_pTable((TADDR)NULL)
+    {
+    }
+};
+
+template<>
+struct cdac_data<CUnorderedArrayBase>
+{
+    static constexpr size_t Count = offsetof(CUnorderedArrayBase, m_iCount);
+    static constexpr size_t Table = offsetof(CUnorderedArrayBase, m_pTable);
+};
+
 template <class T,
           int iGrowInc,
           class ALLOCATOR>
-class CUnorderedArrayWithAllocator
+class CUnorderedArrayWithAllocator : public CUnorderedArrayBase
 {
-    int         m_iCount;               // # of elements used in the list.
     int         m_iSize;                // # of elements allocated in the list.
-public:
-#ifndef DACCESS_COMPILE
-    T           *m_pTable;              // Pointer to the list of elements.
-#else
-    TADDR        m_pTable;              // Pointer to the list of elements.
-#endif
 
 public:
 
 #ifndef DACCESS_COMPILE
 
     CUnorderedArrayWithAllocator() :
-        m_iCount(0),
-        m_iSize(0),
-        m_pTable(NULL)
+        m_iSize(0)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -940,29 +723,29 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // Free the chunk of memory.
-        if (m_pTable != NULL)
-            ALLOCATOR::Free(this, m_pTable);
+        if (m_pTable != (TADDR)NULL)
+            ALLOCATOR::Free(this, reinterpret_cast<T*>(m_pTable));
     }
 
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
-        : m_iCount{ 0 }
-        , m_iSize{ 0 }
-        , m_pTable{ NULL}
+        : m_iSize{ other.m_iSize }
     {
         LIMITED_METHOD_CONTRACT;
+        m_iCount = other.m_iCount;
+        m_pTable = other.m_pTable;
         other.m_iCount = 0;
         other.m_iSize = 0;
-        other.m_pTable = NULL;
+        other.m_pTable = (TADDR)NULL;
     }
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator&& other)
     {
         LIMITED_METHOD_CONTRACT;
         if (this != &other)
         {
-            if (m_pTable != NULL)
-                ALLOCATOR::Free(this, m_pTable);
+            if (m_pTable != (TADDR)NULL)
+                ALLOCATOR::Free(this, reinterpret_cast<T*>(m_pTable));
 
             m_iCount = other.m_iCount;
             m_iSize = other.m_iSize;
@@ -970,7 +753,7 @@ public:
 
             other.m_iCount = 0;
             other.m_iSize = 0;
-            other.m_pTable = NULL;
+            other.m_pTable = (TADDR)NULL;
         }
         return *this;
     }
@@ -983,8 +766,8 @@ public:
         {
             T* tmp = ALLOCATOR::AllocNoThrow(this, iGrowInc);
             if (tmp) {
-                ALLOCATOR::Free(this, m_pTable);
-                m_pTable = tmp;
+                ALLOCATOR::Free(this, reinterpret_cast<T*>(m_pTable));
+                m_pTable = reinterpret_cast<TADDR>(tmp);
                 m_iSize = iGrowInc;
             }
         }
@@ -994,9 +777,10 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         int     iSize;
+        T*      pTable = reinterpret_cast<T*>(m_pTable);
 
         if (iFirst + iCount < m_iCount)
-            memmove(&m_pTable[iFirst], &m_pTable[iFirst + iCount], sizeof(T) * (m_iCount - (iFirst + iCount)));
+            memmove(&pTable[iFirst], &pTable[iFirst + iCount], sizeof(T) * (m_iCount - (iFirst + iCount)));
 
         m_iCount -= iCount;
 
@@ -1005,9 +789,9 @@ public:
         {
             T *tmp = ALLOCATOR::AllocNoThrow(this, iSize);
             if (tmp) {
-                memcpy (tmp, m_pTable, iSize * sizeof(T));
-                delete [] m_pTable;
-                m_pTable = tmp;
+                memcpy (tmp, pTable, iSize * sizeof(T));
+                delete [] pTable;
+                m_pTable = reinterpret_cast<TADDR>(tmp);
                 m_iSize = iSize;
             }
         }
@@ -1017,7 +801,7 @@ public:
     T *Table()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_pTable);
+        return reinterpret_cast<T*>(m_pTable);
     }
 
     T *Append()
@@ -1029,7 +813,7 @@ public:
         // The array should grow, if we can't fit one more element into the array.
         if (m_iSize <= m_iCount && GrowNoThrow() == NULL)
             return (NULL);
-        return (&m_pTable[m_iCount++]);
+        return (&reinterpret_cast<T*>(m_pTable)[m_iCount++]);
     }
 
     T *AppendThrowing()
@@ -1041,17 +825,18 @@ public:
         // The array should grow, if we can't fit one more element into the array.
         if (m_iSize <= m_iCount)
             Grow();
-        return (&m_pTable[m_iCount++]);
+        return (&reinterpret_cast<T*>(m_pTable)[m_iCount++]);
     }
 
     void Delete(const T &Entry)
     {
         LIMITED_METHOD_CONTRACT;
+        T* pTable = reinterpret_cast<T*>(m_pTable);
         --m_iCount;
         for (int i=0; i <= m_iCount; ++i)
-            if (m_pTable[i] == Entry)
+            if (pTable[i] == Entry)
             {
-                m_pTable[i] = m_pTable[m_iCount];
+                pTable[i] = pTable[m_iCount];
                 return;
             }
 
@@ -1062,20 +847,22 @@ public:
     void DeleteByIndex(int i)
     {
         LIMITED_METHOD_CONTRACT;
+        T* pTable = reinterpret_cast<T*>(m_pTable);
         --m_iCount;
-        m_pTable[i] = m_pTable[m_iCount];
+        pTable[i] = pTable[m_iCount];
     }
 
     void Swap(int i,int j)
     {
         LIMITED_METHOD_CONTRACT;
         T       tmp;
+        T*      pTable = reinterpret_cast<T*>(m_pTable);
 
         if (i == j)
             return;
-        tmp = m_pTable[i];
-        m_pTable[i] = m_pTable[j];
-        m_pTable[j] = tmp;
+        tmp = pTable[i];
+        pTable[i] = pTable[j];
+        pTable[j] = tmp;
     }
 
 #else
@@ -1120,13 +907,14 @@ T *CUnorderedArrayWithAllocator<T,iGrowInc,ALLOCATOR>::GrowNoThrow()  // NULL if
 {
     WRAPPER_NO_CONTRACT;
     T       *pTemp;
+    T       *pTable = reinterpret_cast<T*>(m_pTable);
 
     // try to allocate memory for reallocation.
     if ((pTemp = ALLOCATOR::AllocNoThrow(this, m_iSize+iGrowInc)) == NULL)
         return (NULL);
-    memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
-    ALLOCATOR::Free(this, m_pTable);
-    m_pTable = pTemp;
+    memcpy (pTemp, pTable, m_iSize*sizeof(T));
+    ALLOCATOR::Free(this, pTable);
+    m_pTable = reinterpret_cast<TADDR>(pTemp);
     m_iSize += iGrowInc;
     _ASSERTE(m_iSize > 0);
     return (pTemp);
@@ -1139,13 +927,14 @@ T *CUnorderedArrayWithAllocator<T,iGrowInc,ALLOCATOR>::Grow()  // exception if c
 {
     WRAPPER_NO_CONTRACT;
     T       *pTemp;
+    T       *pTable = reinterpret_cast<T*>(m_pTable);
 
     // try to allocate memory for reallocation.
     pTemp = ALLOCATOR::AllocThrowing(this, m_iSize+iGrowInc);
     if (m_iSize > 0)
-        memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
-    ALLOCATOR::Free(this, m_pTable);
-    m_pTable = pTemp;
+        memcpy (pTemp, pTable, m_iSize*sizeof(T));
+    ALLOCATOR::Free(this, pTable);
+    m_pTable = reinterpret_cast<TADDR>(pTemp);
     m_iSize += iGrowInc;
     _ASSERTE(m_iSize > 0);
     return (pTemp);
@@ -2166,15 +1955,29 @@ inline COUNT_T HashPtr(COUNT_T currentHash, PTR_VOID ptr)
 inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
 {
     LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
 
-    BYTE const *pbDataEnd = pbData + iSize;
+    ULONG hash = 5381;
+    hash += (ULONG)iSize;
 
-    for (/**/ ; pbData < pbDataEnd; pbData++)
+    // Process 4 bytes at a time.
+    while (iSize >= sizeof(uint32_t))
     {
-        hash = ((hash << 5) + hash) ^ *pbData;
+        uint32_t val;
+        memcpy(&val, pbData, sizeof(val));
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
+        pbData += sizeof(val);
+        iSize -= sizeof(val);
     }
-    return hash;
+
+    // Process remaining bytes.
+    if (iSize > 0)
+    {
+        uint32_t val = 0;
+        memcpy(&val, pbData, iSize);
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
+    }
+
+    return xxHash<xxHashDefaultTraits>::MixFinal(hash);
 }
 
 // Helper function for hashing a string char by char.
@@ -2206,58 +2009,12 @@ inline ULONG HashString(LPCWSTR szStr)
     return hash;
 }
 
-inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-
-    // hash the string two characters at a time
-    ULONG *ptr = (ULONG *)szStr;
-
-    // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= u16_strlen(szStr));
-    SIZE_T cDwordCount = (cchStr + 1) / 2;
-
-    for (SIZE_T i = 0; i < cDwordCount; i++)
-    {
-        hash = ((hash << 5) + hash) ^ ptr[i];
-    }
-
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringA(LPCSTR szStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ toupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
 // Case-insensitive string hash function.
 inline ULONG HashiString(LPCWSTR szStr)
 {
     LIMITED_METHOD_CONTRACT;
     ULONG   hash = 5381;
     while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ towupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringN(LPCWSTR szStr, DWORD count)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0 && count--)
     {
         hash = ((hash << 5) + hash) ^ towupper(*szStr);
         szStr++;
@@ -2996,70 +2753,6 @@ private:
     BYTE m_inited;
 };
 
-/**************************************************************************/
-class ConfigString
-{
-public:
-    inline LPWSTR val(const CLRConfig::ConfigStringInfo & info)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init(info);
-        return m_value;
-    }
-
-    bool isInitialized()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        return m_inited == 1;
-    }
-
-private:
-    void init(const CLRConfig::ConfigStringInfo & info);
-
-private:
-    LPWSTR m_value;
-    BYTE m_inited;
-};
-
-/**************************************************************************/
-class ConfigMethodSet
-{
-public:
-    bool isEmpty()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(m_inited == 1);
-        return m_list.IsEmpty();
-    }
-
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, int argCount = -1);
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
-
-    inline void ensureInit(const CLRConfig::ConfigStringInfo & info)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init(info);
-    }
-
-private:
-    void init(const CLRConfig::ConfigStringInfo & info);
-
-private:
-    MethodNamesListBase m_list;
-
-    BYTE m_inited;
-};
-
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
 //*****************************************************************************
@@ -3318,6 +3011,11 @@ INT32 GetArm64Rel21(UINT32 * pCode);
 INT32 GetArm64Rel12(UINT32 * pCode);
 
 //*****************************************************************************
+//  Extract the page offset from an ldr (unsigned immediate) instruction
+//*****************************************************************************
+INT32 GetArm64Rel12Ldr(UINT32 * pCode);
+
+//*****************************************************************************
 //  Deposit the PC-Relative offset 'imm28' into a b or bl instruction
 //*****************************************************************************
 void PutArm64Rel28(UINT32 * pCode, INT32 imm28);
@@ -3331,6 +3029,11 @@ void PutArm64Rel21(UINT32 * pCode, INT32 imm21);
 //  Deposit the page offset 'imm12' into an add instruction
 //*****************************************************************************
 void PutArm64Rel12(UINT32 * pCode, INT32 imm12);
+
+//*****************************************************************************
+//  Deposit the page offset 'imm12' into an ldr (unsigned immediate) instruction
+//*****************************************************************************
+void PutArm64Rel12Ldr(UINT32 * pCode, INT32 imm12);
 
 //*****************************************************************************
 //  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
@@ -3353,14 +3056,14 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
 
 //*****************************************************************************
-//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-INT64 GetRiscV64AuipcItype(UINT32 * pCode);
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype);
 
 //*****************************************************************************
-//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction
@@ -3400,6 +3103,19 @@ inline bool FitsInRel12(INT32 val32)
 inline bool FitsInRel28(INT64 val64)
 {
     return (val64 >= -0x08000000LL) && (val64 < 0x08000000LL);
+}
+
+//*****************************************************************************
+// Returns whether the offset fits into a RISC-V auipc + I-type or S-type instruction combo
+//*****************************************************************************
+inline bool FitsInRiscV64AuipcCombo(INT64 val64)
+{
+    // A PC relative load/store/jalr/addi is 2 instructions, e.g.:
+    //     auipc reg,      offset_hi20  # range: [0x80000000, 0x7FFFF000]
+    //     ld    reg, reg, offset_lo12  # range: [0xFFFFF800, 0x000007FF]
+    // Both hi20 and lo12 immediates are sign-extended and combined with a 64-bit adder,
+    // which shifts the total 32-bit range into the negative by half of the 12-bit immediate range.
+    return (val64 >= -(1ll << 31) - (1ll << 11)) && (val64 < (1ll << 31) - (1ll << 11));
 }
 
 //
@@ -3733,12 +3449,6 @@ namespace util
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
-#ifdef FEATURE_COMINTEROP
-FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }
-
-typedef Wrapper<BSTR, DoNothing, HolderSysFreeString> BSTRHolder;
-#endif
-
 BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
 namespace UtilCode
@@ -3996,7 +3706,6 @@ struct SpinConstants
     DWORD dwMaximumDuration;
     DWORD dwBackoffFactor;
     DWORD dwRepetitions;
-    DWORD dwMonitorSpinCount;
 };
 
 extern SpinConstants g_SpinConstants;

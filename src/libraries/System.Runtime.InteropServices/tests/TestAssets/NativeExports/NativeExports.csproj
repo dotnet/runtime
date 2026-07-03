@@ -24,7 +24,7 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppCurrent)' != 'net$(BundledNETCoreAppTargetFrameworkVersion)'">
     <KnownAppHostPack Include="@(KnownAppHostPack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))"
                       TargetFramework="$(NetCoreAppCurrent)" />
   </ItemGroup>
@@ -40,7 +40,7 @@
 
   <Target Name="GetUnixBuildArgumentsForDNNE" Condition="'$(OS)' == 'Unix'">
     <PropertyGroup>
-      <NativeCompiler>$(Compiler)</NativeCompiler>
+      <NativeCompiler>$(CppCompilerAndLinker)</NativeCompiler>
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
     </PropertyGroup>
 
@@ -124,14 +124,8 @@
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
-      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="SetRidGraphPath"
-          BeforeTargets="ProcessFrameworkReferences">
-    <PropertyGroup>
-      <RuntimeIdentifierGraphPath Condition="'$(UseBootstrap)' == 'true'">$([MSBuild]::NormalizePath('$(BootstrapRidGraphDir)', 'runtime.json'))</RuntimeIdentifierGraphPath>
+      <DnneNetHostDir Condition="'$(UseBootstrap)' == 'true'">$(DotNetHostBinDir.TrimEnd('/\'))</DnneNetHostDir>
+      <DnneNetHostDir Condition="'$(UseBootstrap)' != 'true'">$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
 </Project>

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105966;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -19,18 +22,15 @@ public class Runtime_105966
 {
     public static ulong s_3 = 0;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512F.IsSupported)
-        {
-            var vr4 = Vector512.Create<ulong>(s_3);
-            var vr5 = M4();
-            var vr6 = Vector512.CreateScalar(vr5); 
-            Vector512<ulong> vr7 = Avx512F.Min(vr4, vr6);
-            Vector512<ulong> expected = Vector512.Create((ulong)0);
-            Assert.Equal(expected, vr7);
-        }
+        var vr4 = Vector512.Create<ulong>(s_3);
+        var vr5 = M4();
+        var vr6 = Vector512.CreateScalar(vr5); 
+        Vector512<ulong> vr7 = Avx512F.Min(vr4, vr6);
+        Vector512<ulong> expected = Vector512.Create((ulong)0);
+        Assert.Equal(expected, vr7);
     }
 
     public static ulong M4()

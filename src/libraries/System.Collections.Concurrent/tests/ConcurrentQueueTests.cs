@@ -20,7 +20,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override string CopyToNoLengthParamName => null;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Concurrent_Enqueue_TryDequeue_AllItemsReceived()
         {
             int items = 1000;
@@ -56,7 +56,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(producer, consumer);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Concurrent_Enqueue_TryPeek_TryDequeue_AllItemsSeen()
         {
             int items = 1000;
@@ -90,7 +90,7 @@ namespace System.Collections.Concurrent.Tests
             Task.WaitAll(producer, consumer);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(1, 4, 1024)]
         [InlineData(4, 1, 1024)]
         [InlineData(3, 3, 1024)]
@@ -212,6 +212,7 @@ namespace System.Collections.Concurrent.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/16413", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ReferenceTypes_NulledAfterDequeue()
         {
             int iterations = 10; // any number <32 will do
@@ -246,7 +247,7 @@ namespace System.Collections.Concurrent.Tests
             GC.KeepAlive(queue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ManySegments_ConcurrentDequeues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();
@@ -276,7 +277,8 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(Iters, dequeues);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ManySegments_ConcurrentEnqueues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();
@@ -357,7 +359,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(1, 10)]
         [InlineData(3, 100)]
         [InlineData(8, 1000)]

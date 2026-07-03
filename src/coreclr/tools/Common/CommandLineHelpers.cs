@@ -25,6 +25,9 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
+        public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "openbsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
+        public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+
         public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
@@ -67,21 +70,25 @@ namespace System.CommandLine
                     return TargetOS.OSX;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
                     return TargetOS.FreeBSD;
-
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD")))
+                    return TargetOS.OpenBSD;
                 throw new NotImplementedException();
             }
 
             return token.ToLowerInvariant() switch
             {
-                "linux" => TargetOS.Linux,
+                "linux" or "android" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
+                "openbsd" => TargetOS.OpenBSD,
                 "maccatalyst" => TargetOS.MacCatalyst,
                 "iossimulator" => TargetOS.iOSSimulator,
                 "ios" => TargetOS.iOS,
                 "tvossimulator" => TargetOS.tvOSSimulator,
                 "tvos" => TargetOS.tvOS,
+                "browser" => TargetOS.Browser,
+                "wasi" => TargetOS.Wasi,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }
@@ -96,6 +103,7 @@ namespace System.CommandLine
                     Architecture.X64 => TargetArchitecture.X64,
                     Architecture.Arm => TargetArchitecture.ARM,
                     Architecture.Arm64 => TargetArchitecture.ARM64,
+                    Architecture.Wasm => TargetArchitecture.Wasm32,
                     Architecture.LoongArch64 => TargetArchitecture.LoongArch64,
                     Architecture.RiscV64 => TargetArchitecture.RiscV64,
                     _ => throw new NotImplementedException()
@@ -109,11 +117,29 @@ namespace System.CommandLine
                     "x64" => TargetArchitecture.X64,
                     "arm" or "armel" => TargetArchitecture.ARM,
                     "arm64" => TargetArchitecture.ARM64,
+                    "wasm" => TargetArchitecture.Wasm32,
                     "loongarch64" => TargetArchitecture.LoongArch64,
                     "riscv64" => TargetArchitecture.RiscV64,
                     _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
                 };
             }
+        }
+
+        public static (TargetArchitecture, TargetOS, TargetAbi) GetTargetSpec(string targetArchitectureToken, string targetOSToken)
+        {
+            targetArchitectureToken = targetArchitectureToken?.ToLowerInvariant();
+            targetOSToken = targetOSToken?.ToLowerInvariant();
+
+            TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
+            TargetOS targetOS = GetTargetOS(targetOSToken);
+            TargetAbi targetAbi = (targetOSToken, targetArchitectureToken) switch
+            {
+                (_, "armel") => TargetAbi.NativeAotArmel,
+                ("android", "arm") => TargetAbi.NativeAotArmel,
+                _ => TargetAbi.NativeAot,
+            };
+
+            return (targetArchitecture, targetOS, targetAbi);
         }
 
         public static RootCommand UseVersion(this RootCommand command)
@@ -311,9 +337,22 @@ namespace System.CommandLine
                         string reproFileDir = prefix + originalToReproPackageFileName.Count.ToString() + Path.DirectorySeparatorChar;
                         reproPackagePath = Path.Combine(reproFileDir, Path.GetFileName(originalPath));
                         if (!input)
+                        {
                             archive.CreateEntry(reproFileDir); // for outputs just create output directory
+                        }
                         else
+                        {
                             archive.CreateEntryFromFile(originalPath, reproPackagePath);
+
+                            // The compiler probes for .pdb files next to input assemblies. For simplicity, just try to look
+                            // for PDB next to any file we package.
+                            string originalPdbPath = Path.ChangeExtension(originalPath, "pdb");
+                            if (!string.Equals(originalPath, originalPdbPath, StringComparison.InvariantCultureIgnoreCase)
+                                && File.Exists(originalPdbPath))
+                            {
+                                archive.CreateEntryFromFile(originalPdbPath, Path.ChangeExtension(reproPackagePath, "pdb"));
+                            }
+                        }
                         originalToReproPackageFileName.Add(originalPath, reproPackagePath);
 
                         return reproPackagePath;

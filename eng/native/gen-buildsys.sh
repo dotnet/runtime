@@ -39,7 +39,7 @@ code_coverage=OFF
 build_tests=OFF
 scan_build=OFF
 generator="Unix Makefiles"
-__UnprocessedCMakeArgs=""
+__UnprocessedCMakeArgs=()
 
 for i in "${@:6}"; do
     upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
@@ -56,7 +56,7 @@ for i in "${@:6}"; do
       scan_build=ON
       ;;
       *)
-      __UnprocessedCMakeArgs="${__UnprocessedCMakeArgs}${__UnprocessedCMakeArgs:+ }$i"
+      __UnprocessedCMakeArgs+=("$i")
     esac
 done
 
@@ -81,10 +81,6 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
     fi
 fi
 
-if [[ "$host_arch" == "armel" ]]; then
-    cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
-fi
-
 if ! cmake_command=$(command -v cmake); then
     echo "CMake was not found in PATH."
     exit 1
@@ -107,6 +103,9 @@ if [[ "$host_arch" == "wasm" ]]; then
         fi
         export EMSDK_QUIET=1 && source "$EMSDK_PATH"/emsdk_env.sh
         cmake_command="emcmake $cmake_command"
+        # Use WASM-specific tryrun cache to speed up CMake configure
+        # The -C flag must be early in the command line to be effective
+        cmake_extra_defines="-C $scriptroot/tryrun.browser.cmake $cmake_extra_defines"
     elif [[ "$target_os" == "wasi" ]]; then
         if [[ -z "$WASI_SDK_PATH" ]]; then
             if [[ -d "$reporoot"/artifacts/wasi-sdk ]]; then
@@ -116,7 +115,7 @@ if [[ "$host_arch" == "wasm" ]]; then
                 exit 1
             fi
         fi
-        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
+        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake")
     else
         echo "target_os was not specified"
         exit 1
@@ -129,7 +128,7 @@ $cmake_command \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
-  $__UnprocessedCMakeArgs \
+  "${__UnprocessedCMakeArgs[@]}" \
   "${cmake_extra_defines_wasm[@]}" \
   -S "$1" \
   -B "$2"

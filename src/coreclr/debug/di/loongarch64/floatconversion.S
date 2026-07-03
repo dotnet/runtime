@@ -4,9 +4,9 @@
 #include <unixasmmacros.inc>
 
 // Arguments
-//     input: (in A0) the value to be converted to a double
-//     output: the double corresponding to the _NEON128 input value
+//     input: (in A0) the address of the ULONGLONG to be converted to a double
+//     output: the double corresponding to the ULONGLONG input value
 LEAF_ENTRY FPFillR8, .TEXT
-        ld.d     $a0, $a0, 0
+        fld.d    $fa0, $a0, 0
         jirl   $r0, $ra, 0
 LEAF_END FPFillR8, .TEXT

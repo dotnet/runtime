@@ -228,7 +228,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (methodDef.Attributes.HasFlag(MethodAttributes.RTSpecialName))
                         {
-                            if (!method.Name.SequenceEqual(".cctor"u8) && !method.Name.StartsWith("_VtblGap"u8))
+                            if (method.Name != ".cctor"u8 && !method.Name.StartsWith("_VtblGap"u8))
                             {
                                 AddTypeValidationError(type, $"Special name method {method} defined on interface");
                                 return false;
@@ -494,40 +494,43 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-                foreach (var virtualMethod in type.EnumAllVirtualSlots())
+                if (!type.IsInterface)
                 {
-                    var implementationMethod = virtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type);
-
-                    if (implementationMethod != null)
+                    foreach (var virtualMethod in type.EnumAllVirtualSlots())
                     {
-                        // Validate that for every override involving generic methods that the generic method constraints are matching
-                        if (!CompareMethodConstraints(virtualMethod, implementationMethod))
-                        {
-                            AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overridden by method '{implementationMethod}' which does not have matching generic constraints");
-                            return false;
-                        }
+                        var implementationMethod = virtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type);
 
-                        // Validate that if the decl method for the virtual is not on the immediate base type, that the intermediate type did not establish a
-                        // covariant return type which requires the implementation method to specify a more specific base type
-                        if ((virtualMethod.OwningType != type.BaseType) && (virtualMethod.OwningType != type) && (baseTypeVirtualMethodAlgorithm != null))
+                        if (implementationMethod != null)
                         {
-                            var implementationOnBaseType = baseTypeVirtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type.BaseType);
-                            if (!implementationMethod.Signature.ApplySubstitution(type.Instantiation).EquivalentWithCovariantReturnType(implementationOnBaseType.Signature.ApplySubstitution(type.Instantiation)))
+                            // Validate that for every override involving generic methods that the generic method constraints are matching
+                            if (!CompareMethodConstraints(virtualMethod, implementationMethod))
                             {
-                                AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overridden by method '{implementationMethod}' does not satisfy the covariant return type introduced with '{implementationOnBaseType}'");
+                                AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overridden by method '{implementationMethod}' which does not have matching generic constraints");
                                 return false;
                             }
-                        }
-                    }
 
-                    // Validate that all virtual static methods are actually implemented if the type is not abstract
-                    // Validate that all virtual instance methods are actually implemented if the type is not abstract
-                    if (!type.IsAbstract)
-                    {
-                        if (implementationMethod == null || implementationMethod.IsAbstract)
+                            // Validate that if the decl method for the virtual is not on the immediate base type, that the intermediate type did not establish a
+                            // covariant return type which requires the implementation method to specify a more specific base type
+                            if ((virtualMethod.OwningType != type.BaseType) && (virtualMethod.OwningType != type) && (baseTypeVirtualMethodAlgorithm != null))
+                            {
+                                var implementationOnBaseType = baseTypeVirtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type.BaseType);
+                                if (!implementationMethod.Signature.ApplySubstitution(type.Instantiation).EquivalentWithCovariantReturnType(implementationOnBaseType.Signature.ApplySubstitution(type.Instantiation)))
+                                {
+                                    AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overridden by method '{implementationMethod}' does not satisfy the covariant return type introduced with '{implementationOnBaseType}'");
+                                    return false;
+                                }
+                            }
+                        }
+
+                        // Validate that all virtual static methods are actually implemented if the type is not abstract
+                        // Validate that all virtual instance methods are actually implemented if the type is not abstract
+                        if (!type.IsAbstract)
                         {
-                            AddTypeValidationError(type, $"Interface method '{virtualMethod}' does not have implementation");
-                            return false;
+                            if (implementationMethod == null || implementationMethod.IsAbstract)
+                            {
+                                AddTypeValidationError(type, $"Interface method '{virtualMethod}' does not have implementation");
+                                return false;
+                            }
                         }
                     }
                 }

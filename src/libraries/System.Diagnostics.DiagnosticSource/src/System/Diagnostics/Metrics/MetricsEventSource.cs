@@ -48,11 +48,9 @@ namespace System.Diagnostics.Metrics
     ///         not counting the special zero bucket. The default value is 160.
     ///       o reportDeltas - If true, the histogram will report deltas instead of whole accumulated values. The default value is false.
     /// </summary>
-    [EventSource(Name = MetricsEventSourceName)]
-    internal sealed class MetricsEventSource : EventSource
+    [EventSource(Name = "System.Diagnostics.Metrics")]
+    internal sealed partial class MetricsEventSource : EventSource
     {
-        private const string MetricsEventSourceName = "System.Diagnostics.Metrics";
-
         public static readonly MetricsEventSource Log = new();
 
         // Although this API isn't public, it is invoked via reflection from System.Private.CoreLib and needs the same back-compat
@@ -96,11 +94,6 @@ namespace System.Diagnostics.Metrics
                 }
                 return _handler;
             }
-        }
-
-        private MetricsEventSource()
-            : base(MetricsEventSourceName, EventSourceSettings.EtwManifestEventFormat)
-        {
         }
 
         /// <summary>

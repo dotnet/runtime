@@ -7,16 +7,9 @@ using System.Threading;
 
 namespace System.Net.Sockets
 {
-    [EventSource(Name = SocketsTelemetryName)]
-    internal sealed class SocketsTelemetry : EventSource
+    [EventSource(Name = "System.Net.Sockets")]
+    internal sealed partial class SocketsTelemetry : EventSource
     {
-        private const string SocketsTelemetryName = "System.Net.Sockets";
-
-        public SocketsTelemetry()
-            : base(SocketsTelemetryName, EventSourceSettings.EtwManifestEventFormat)
-        {
-        }
-
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
         private static readonly ActivitySource s_connectActivitySource = new ActivitySource(ActivitySourceName);
@@ -154,9 +147,16 @@ namespace System.Net.Sockets
             long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
             Debug.Assert(newCount >= 0);
 
+            // _currentOutgoingConnectAttempts tracks managed Connect calls. A non-blocking Connect call
+            // can return WouldBlock (Windows) or InProgress (Unix) while the OS connect attempt remains
+            // pending after this method returns. That later result may be observed by Socket when it
+            // checks whether the pending non-blocking connect completed, but it is not available to this
+            // synchronous Connect telemetry callback. Don't report these pending results as failures.
+            bool connectPending = error is SocketError.WouldBlock or SocketError.InProgress;
+
             if (activity is not null)
             {
-                if (error != SocketError.Success)
+                if (error != SocketError.Success && !connectPending)
                 {
                     activity.SetStatus(ActivityStatusCode.Error);
                     activity.SetTag("error.type", GetErrorType(error));
@@ -170,7 +170,7 @@ namespace System.Net.Sockets
                 Debug.Assert(exceptionMessage is null);
                 Interlocked.Increment(ref _outgoingConnectionsEstablished);
             }
-            else
+            else if (!connectPending)
             {
                 ConnectFailed(error, exceptionMessage);
             }

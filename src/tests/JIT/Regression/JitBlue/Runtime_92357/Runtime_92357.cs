@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_92357;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -9,15 +12,10 @@ using Xunit;
 
 public static class Runtime_92357
 {
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static void Problem()
     {
-        if (!Avx2.IsSupported)
-        {
-            return;
-        }
-
         int y1 = 5;
 
         Vector256<short> actual1 = Test1(Vector256<short>.One, ref y1);

@@ -11,6 +11,9 @@ using Xunit;
 
 public class PredicateInstructions
 {
+    private static readonly float[] s_floatValues = new float[64];
+    private static readonly double[] s_doubleValues = new double[64];
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     [Fact]
     public static void TestPredicateInstructions()
@@ -40,6 +43,17 @@ public class PredicateInstructions
             UnzipEvenZipLowMask(vecs, vecs);
             TransposeEvenAndMask(vecs, vecs, vecs);
 
+            PredicateCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
+            PredicateCastFloatLocalLoad(s_floatValues, 0, s_floatValues.Length);
+            PointerCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
+            WhileLessThanSingleFloatLoad(s_floatValues, 0, s_floatValues.Length);
+            PredicateCastFloatLoop(s_floatValues, s_floatValues, s_floatValues.Length);
+
+            PredicateCastDoubleLoad(s_doubleValues, 0, s_doubleValues.Length);
+            PredicateCastDoubleLocalLoad(s_doubleValues, 0, s_doubleValues.Length);
+            PointerCastDoubleLoad(s_doubleValues, 0, s_doubleValues.Length);
+            WhileLessThanDoubleLoad(s_doubleValues, 0, s_doubleValues.Length);
+            PredicateCastDoubleLoop(s_doubleValues, s_doubleValues, s_doubleValues.Length);
         }
     }
 
@@ -112,7 +126,9 @@ public class PredicateInstructions
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector<short> BitwiseClearMask(Vector<short> a, Vector<short> b)
     {
-        //ARM64-FULL-LINE: bic {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        //TODO-SVE: Restore check for SVE once >128bits is supported
+        //ARM64-FULL-LINE: {{bic .*}}
+        // {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
         return Sve.ConditionalSelect(
                 Sve.CreateTrueMaskInt16(),
                 Sve.BitwiseClear(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
@@ -176,5 +192,173 @@ public class PredicateInstructions
                     Sve.CreateTrueMaskInt16(),
                     Sve.And(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
                     Sve.CompareLessThan(a, b)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> PredicateCastFloatLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<uint> mask = Sve.CreateWhileLessThanMaskUInt32(index, length);
+            return Sve.LoadVector((Vector<float>)mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> PointerCastFloatLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<uint> mask = Sve.CreateWhileLessThanMaskUInt32(index, length);
+            return (Vector<float>)Sve.LoadVector(mask, (uint*)(ptr + index));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> PredicateCastFloatLocalLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<uint> uintMask = Sve.CreateWhileLessThanMaskUInt32(index, length);
+            Vector<float> floatMask = (Vector<float>)uintMask;
+            return Sve.LoadVector(floatMask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<float> WhileLessThanSingleFloatLoad(float[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (float* ptr = values)
+        {
+            Vector<float> mask = Sve.CreateWhileLessThanMaskSingle(index, length);
+            return Sve.LoadVector(mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void PredicateCastFloatLoop(float[] input, float[] output, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: st1w { {{z[0-9]+}}.s }, {{p[0-9]+}}, [{{x[0-9]+}}]
+        fixed (float* inputPtr = input, outputPtr = output)
+        {
+            int i = 0;
+            int count = (int)Sve.Count32BitElements();
+
+            while (i < length)
+            {
+                Vector<uint> loopMask = Sve.CreateWhileLessThanMaskUInt32(i, length);
+                Vector<float> floatMask = (Vector<float>)loopMask;
+                Vector<float> value = Sve.LoadVector(floatMask, inputPtr + i);
+                Sve.StoreAndZip(floatMask, outputPtr + i, value);
+
+                i += count;
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> PredicateCastDoubleLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<ulong> mask = Sve.CreateWhileLessThanMaskUInt64(index, length);
+            return Sve.LoadVector((Vector<double>)mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> PointerCastDoubleLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<ulong> mask = Sve.CreateWhileLessThanMaskUInt64(index, length);
+            return (Vector<double>)Sve.LoadVector(mask, (ulong*)(ptr + index));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> PredicateCastDoubleLocalLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<ulong> ulongMask = Sve.CreateWhileLessThanMaskUInt64(index, length);
+            Vector<double> doubleMask = (Vector<double>)ulongMask;
+            return Sve.LoadVector(doubleMask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe Vector<double> WhileLessThanDoubleLoad(double[] values, int index, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        fixed (double* ptr = values)
+        {
+            Vector<double> mask = Sve.CreateWhileLessThanMaskDouble(index, length);
+            return Sve.LoadVector(mask, ptr + index);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void PredicateCastDoubleLoop(double[] input, double[] output, int length)
+    {
+        //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
+        //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: {{^ *}}cmp
+        //ARM64-FULL-LINE: st1d { {{z[0-9]+}}.d }, {{p[0-9]+}}, [{{x[0-9]+}}]
+        fixed (double* inputPtr = input, outputPtr = output)
+        {
+            int i = 0;
+            int count = (int)Sve.Count64BitElements();
+
+            while (i < length)
+            {
+                Vector<ulong> loopMask = Sve.CreateWhileLessThanMaskUInt64(i, length);
+                Vector<double> doubleMask = (Vector<double>)loopMask;
+                Vector<double> value = Sve.LoadVector(doubleMask, inputPtr + i);
+                Sve.StoreAndZip(doubleMask, outputPtr + i, value);
+
+                i += count;
+            }
+        }
     }
 }

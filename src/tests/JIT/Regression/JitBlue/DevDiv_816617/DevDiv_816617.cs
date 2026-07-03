@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace DevDiv_816617_ro;
+
 using System;
 using Xunit;
 
@@ -9,6 +12,7 @@ public static class Repro
 {
     static double NegativeZero = -0.0;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

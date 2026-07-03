@@ -11,6 +11,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 namespace XarchHardwareIntrinsicTest._CpuId
 {
@@ -22,6 +23,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
         const int Pass = 100;
         const int Fail = 0;
 
+        [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
         [Fact]
         [SkipOnMono("Mono does not currently have full support for intrinsics on xarch", TestPlatforms.Any)]
         public unsafe static void CpuId()
@@ -237,10 +239,10 @@ namespace XarchHardwareIntrinsicTest._CpuId
                     testResult = Fail;
                 }
 
-                // if (IsBitIncorrect(ecx, 11, typeof(AvxVnni.V512), AvxVnni.V512.IsSupported, "AVX512v3", ref isHierarchyDisabled))
-                // {
-                //     testResult = Fail;
-                // }
+                if (IsBitIncorrect(ecx, 11, typeof(AvxVnni.V512), AvxVnni.V512.IsSupported, "AVX512v3", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
 
                 // if (IsBitIncorrect(ecx, 14, typeof(Avx512Vpopcntdq), Avx512Vpopcntdq.IsSupported, "AVX512v3", ref isHierarchyDisabled))
                 // {

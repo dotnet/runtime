@@ -20,14 +20,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly bool _useVirtualCall;
         private readonly bool _useJumpableStub;
 
-        private readonly ImportThunk _delayLoadHelper;
+        private readonly ISymbolNode _delayLoadHelper;
+
+        public bool UseVirtualCall => _useVirtualCall;
+        public bool UseJumpableStub => _useJumpableStub;
+        public ReadyToRunHelper HelperId => _helper;
 
         public DelayLoadHelperImport(
-            NodeFactory factory, 
-            ImportSectionNode importSectionNode, 
-            ReadyToRunHelper helper, 
-            Signature instanceSignature, 
-            bool useVirtualCall = false, 
+            NodeFactory factory,
+            ImportSectionNode importSectionNode,
+            ReadyToRunHelper helper,
+            Signature instanceSignature,
+            bool useVirtualCall = false,
             bool useJumpableStub = false,
             MethodDesc callingMethod = null)
             : base(importSectionNode, instanceSignature, callingMethod)
@@ -35,7 +39,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _helper = helper;
             _useVirtualCall = useVirtualCall;
             _useJumpableStub = useJumpableStub;
-            _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
+            if (factory.Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
+            }
+            else
+            {
+                _delayLoadHelper = factory.ImportThunk(helper, importSectionNode, useVirtualCall, useJumpableStub);
+            }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -63,10 +74,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            // This needs to be an empty target pointer since it will be filled in with Module*
-            // when loaded by CoreCLR
-            dataBuilder.EmitReloc(_delayLoadHelper,
-                factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, factory.Target.CodeDelta);
+            if (_delayLoadHelper is not null)
+            {
+                // This needs to be an empty target pointer since it will be filled in with Module*
+                // when loaded by CoreCLR
+                dataBuilder.EmitReloc(_delayLoadHelper,
+                    factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64);
+            }
+            else
+            {
+                // Eager fixups don't need a delay load helper thunk — emit a zero pointer
+                dataBuilder.EmitNaturalInt(0);
+            }
 
             if (Table.EntrySize == (factory.Target.PointerSize * 2))
             {
@@ -80,9 +99,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new DependencyListEntry[] 
+            if (_delayLoadHelper is not null)
             {
-                new DependencyListEntry(_delayLoadHelper, "Delay load helper thunk for ready-to-run fixup import"),
+                return new DependencyListEntry[]
+                {
+                    new DependencyListEntry(_delayLoadHelper, "Delay load helper thunk for ready-to-run fixup import"),
+                    new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"),
+                };
+            }
+
+            return new DependencyListEntry[]
+            {
                 new DependencyListEntry(ImportSignature, "Signature for ready-to-run fixup import"),
             };
         }

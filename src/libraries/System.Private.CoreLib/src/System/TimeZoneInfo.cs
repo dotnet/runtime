@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -71,7 +71,7 @@ namespace System
         //
         private sealed partial class CachedData
         {
-            private volatile TimeZoneInfo? _localTimeZone;
+            private TimeZoneInfo? _localTimeZone;
 
             private TimeZoneInfo CreateLocal()
             {
@@ -149,9 +149,20 @@ namespace System
                 return localTicks;
             }
 
+
+            // System time zones list. This could be a superset of the list we return from TimeZoneInfo.GetSystemTimeZones on Linux and macOS.
+            // This list can contain duplicate time zones with different legacy IDs.
             public Dictionary<string, TimeZoneInfo>? _systemTimeZones;
+
+            // The sorted readonly collection created after populating _systemTimeZones.
+            // This collection returned to the callers of TimeZoneInfo.GetSystemTimeZones(skipSorting: false).
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
+
+            // The unsorted readonly collection created after populating _systemTimeZones.
+            // This collection returned to the callers of TimeZoneInfo.GetSystemTimeZones(skipSorting: true).
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlyUnsortedSystemTimeZones;
+
+            // Alternative IDs usually be IANA names when running on Windows and will be Windows TZ IDs on Linux/macOS.
             public Dictionary<string, TimeZoneInfo>? _timeZonesUsingAlternativeIds;
             public bool _allSystemTimeZonesRead;
             public volatile DateTimeNowCache? _dateTimeNowCache;
@@ -205,7 +216,7 @@ namespace System
         /// Returns an array of TimeSpan objects representing all of
         /// the possible UTC offset values for this ambiguous time.
         /// </summary>
-        public TimeSpan[] GetAmbiguousTimeOffsets(DateTimeOffset dateTimeOffset)
+        public unsafe TimeSpan[] GetAmbiguousTimeOffsets(DateTimeOffset dateTimeOffset)
         {
             Span<TimeSpan> offsets = stackalloc TimeSpan[2];
 
@@ -221,7 +232,7 @@ namespace System
         /// Returns an array of TimeSpan objects representing all of
         /// possible UTC offset values for this ambiguous time.
         /// </summary>
-        public TimeSpan[] GetAmbiguousTimeOffsets(DateTime dateTime)
+        public unsafe TimeSpan[] GetAmbiguousTimeOffsets(DateTime dateTime)
         {
             if (!SupportsDaylightSavingTime)
             {
@@ -638,7 +649,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_ConvertMismatch, nameof(sourceTimeZone));
             }
 
-            bool isInvalidTime = !sourceTimeZone.TryLocalToUtc(dateTime, out DateTime utcDateTime);
+            bool isInvalidTime = !sourceTimeZone.TryLocalToUtc(dateTime, out long utcTicks);
 
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && isInvalidTime)
             {
@@ -649,7 +660,10 @@ namespace System
             {
                 // This is not logical to do but we are keeping it for app compatibility reason.
                 // We get here if the dateTime is invalid in the source time zone.
-                utcDateTime = new DateTime(dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
+                // Preserve the historical behavior of throwing if the computed UTC time is
+                // outside the DateTime range, rather than silently clamping it later.
+                DateTime invalidTimeUtc = new DateTime(dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
+                utcTicks = invalidTimeUtc.Ticks;
             }
 
             DateTimeKind targetKind = cachedData.GetCorrespondingKind(destinationTimeZone);
@@ -660,7 +674,15 @@ namespace System
                 return dateTime;
             }
 
-            DateTime targetConverted = destinationTimeZone.UtcToLocal(utcDateTime, out bool isDaylightSaving);
+            // Use a clamped DateTime for destination offset lookup because transition-table lookups require
+            // an in-range DateTime. This preserves the existing offset-selection behavior for the lookup,
+            // while the final local ticks are still computed from the raw utcTicks to avoid double-clamping.
+            DateTime utcForLookup = SafeCreateDateTimeFromTicks(utcTicks, DateTimeKind.Utc);
+            TimeSpan destOffset = destinationTimeZone.GetOffsetForUtcDate(utcForLookup, out bool isDaylightSaving);
+
+            // Compute the final result from raw ticks to avoid precision loss from double-clamping.
+            // The intermediate UTC ticks may be outside DateTime range, but the final local ticks may be valid.
+            DateTime targetConverted = SafeCreateDateTimeFromTicks(utcTicks + destOffset.Ticks);
 
             if (targetKind == DateTimeKind.Local)
             {
@@ -757,17 +779,14 @@ namespace System
             {
                 if ((skipSorting ? cachedData._readOnlyUnsortedSystemTimeZones : cachedData._readOnlySystemTimeZones) is null)
                 {
-                    if (!cachedData._allSystemTimeZonesRead)
-                    {
-                        PopulateAllSystemTimeZones(cachedData);
-                        cachedData._allSystemTimeZonesRead = true;
-                    }
+                    Dictionary<string, TimeZoneInfo>? filteredTimeZones = PopulateAllSystemTimeZones(cachedData);
+                    cachedData._allSystemTimeZonesRead = true;
 
-                    if (cachedData._systemTimeZones != null)
+                    if (filteredTimeZones is not null)
                     {
-                        // return a collection of the cached system time zones
-                        TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
-                        cachedData._systemTimeZones.Values.CopyTo(array, 0);
+                        // return a collection of the filtered cached system time zones
+                        TimeZoneInfo[] array = new TimeZoneInfo[filteredTimeZones.Count];
+                        filteredTimeZones.Values.CopyTo(array, 0);
 
                         if (!skipSorting)
                         {
@@ -1205,18 +1224,15 @@ namespace System
             }
 
             // check the cache
-            if (cachedData._systemTimeZones != null)
+            if (cachedData._systemTimeZones?.TryGetValue(id, out value) is true)
             {
-                if (cachedData._systemTimeZones.TryGetValue(id, out value))
+                if (dstDisabled && value._supportsDaylightSavingTime)
                 {
-                    if (dstDisabled && value._supportsDaylightSavingTime)
-                    {
-                        // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
-                    }
-
-                    return result;
+                    // we found a cache hit but we want a time zone without DST and this one has DST data
+                    value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                 }
+
+                return result;
             }
 
             if (Invariant)

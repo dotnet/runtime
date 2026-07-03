@@ -199,7 +199,7 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError Send(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Send(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
             const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
@@ -295,8 +295,54 @@ namespace System.Net.Sockets
             fixed (byte* prePinnedBuffer = preBuffer)
             fixed (byte* postPinnedBuffer = postBuffer)
             {
-                bool success = TransmitFileHelper(handle, fileHandle, null, (IntPtr)prePinnedBuffer, preBuffer.Length, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
-                return success ? SocketError.Success : GetLastSocketError();
+                // Get file length if we have a file
+                long fileLength = 0;
+                if (fileHandle is not null)
+                {
+                    fileLength = RandomAccess.GetLength(fileHandle);
+                }
+
+                // If file length exceeds int.MaxValue, we need to partition the sends
+                if (fileLength > int.MaxValue)
+                {
+                    // Separate behavior/performance flags from terminal flags
+                    // Behavior flags (WriteBehind, UseSystemThread, UseKernelApc) apply to all operations
+                    // Terminal flags (Disconnect, ReuseSocket) apply only to the final operation
+                    TransmitFileOptions behaviorFlags = flags & ~(TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket);
+
+                    long remaining = fileLength;
+                    bool isFirstChunk = true;
+
+                    while (remaining > 0)
+                    {
+                        int chunkSize = (int)Math.Min(remaining, int.MaxValue);
+                        bool isLastChunk = remaining == chunkSize;
+
+                        // For the first chunk, include preBuffer; for the last chunk, include postBuffer
+                        IntPtr preBufferPtr = isFirstChunk ? (IntPtr)prePinnedBuffer : IntPtr.Zero;
+                        int preBufferLen = isFirstChunk ? preBuffer.Length : 0;
+                        IntPtr postBufferPtr = isLastChunk ? (IntPtr)postPinnedBuffer : IntPtr.Zero;
+                        int postBufferLen = isLastChunk ? postBuffer.Length : 0;
+                        TransmitFileOptions currentFlags = isLastChunk ? flags : behaviorFlags;
+
+                        bool success = TransmitFileHelper(handle, fileHandle, null, preBufferPtr, preBufferLen, postBufferPtr, postBufferLen, currentFlags, chunkSize);
+                        if (!success)
+                        {
+                            return GetLastSocketError();
+                        }
+
+                        remaining -= chunkSize;
+                        isFirstChunk = false;
+                    }
+
+                    return SocketError.Success;
+                }
+                else
+                {
+                    // File is small enough, use single call
+                    bool success = TransmitFileHelper(handle, fileHandle, null, (IntPtr)prePinnedBuffer, preBuffer.Length, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
+                    return success ? SocketError.Success : GetLastSocketError();
+                }
             }
         }
 
@@ -321,7 +367,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Receive(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
             const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
@@ -881,7 +927,7 @@ namespace System.Net.Sockets
         public static unsafe SocketError Select(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int StackThreshold = 64; // arbitrary limit to avoid too much space on stack
-            static bool ShouldStackAlloc(IList? list, scoped ref IntPtr[]? lease, out Span<IntPtr> span)
+            static unsafe bool ShouldStackAlloc(IList? list, scoped ref IntPtr[]? lease, out Span<IntPtr> span)
             {
                 int count;
                 if (list == null || (count = list.Count) == 0)
@@ -1004,7 +1050,8 @@ namespace System.Net.Sockets
             int preBufferLength,
             IntPtr pinnedPostBuffer,
             int postBufferLength,
-            TransmitFileOptions flags)
+            TransmitFileOptions flags,
+            int numberOfBytesToWrite = 0)
         {
             bool needTransmitFileBuffers = false;
             Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = default;
@@ -1027,14 +1074,14 @@ namespace System.Net.Sockets
             IntPtr fileHandlePtr = IntPtr.Zero;
             try
             {
-                if (fileHandle != null)
+                if (fileHandle is not null)
                 {
                     fileHandle.DangerousAddRef(ref releaseRef);
                     fileHandlePtr = fileHandle.DangerousGetHandle();
                 }
 
                 return Interop.Mswsock.TransmitFile(
-                    socket, fileHandlePtr, 0, 0, overlapped,
+                    socket, fileHandlePtr, numberOfBytesToWrite, 0, overlapped,
                     needTransmitFileBuffers ? &transmitFileBuffers : null, flags);
             }
             finally

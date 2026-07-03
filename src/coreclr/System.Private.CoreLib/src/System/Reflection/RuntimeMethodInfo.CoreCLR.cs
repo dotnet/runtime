@@ -78,6 +78,9 @@ namespace System.Reflection
 
         private ParameterInfo FetchReturnParameter() =>
             m_returnParameter ??= RuntimeParameterInfo.GetReturnParameter(this, this, Signature);
+
+        private bool IsDisallowedAsyncHelper =>
+            RuntimeMethodHandle.IsAsyncMethod(new RuntimeMethodHandleInternal(m_handle));
         #endregion
 
         #region Internal Members

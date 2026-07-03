@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MergedWrapperProjectReference Include="mcc/**/*.??proj" />
+    <MergedWrapperProjectReference Include="mcc/interop/mcc_interop.ilproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

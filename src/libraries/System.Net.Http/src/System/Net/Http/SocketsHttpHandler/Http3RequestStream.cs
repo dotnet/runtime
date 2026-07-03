@@ -46,7 +46,7 @@ namespace System.Net.Http
         private string[] _headerValues = Array.Empty<string>();
 
         /// <summary>Any trailing headers.</summary>
-        private List<(HeaderDescriptor name, string value)>? _trailingHeaders;
+        private HttpResponseHeaders? _trailingHeaders;
 
         // When reading response content, keep track of the number of bytes left in the current data frame.
         private long _responseDataPayloadRemaining;
@@ -632,7 +632,7 @@ namespace System.Net.Http
 
         private async ValueTask ProcessTrailersAsync(long payloadLength, CancellationToken cancellationToken)
         {
-            _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
+            _trailingHeaders = new HttpResponseHeaders(containsTrailingHeaders: true);
             await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
             // In typical cases, there should be no more frames. Make sure to read the EOS.
@@ -651,13 +651,9 @@ namespace System.Net.Http
 
         private void CopyTrailersToResponseMessage(HttpResponseMessage responseMessage)
         {
-            if (_trailingHeaders?.Count > 0)
+            if (_trailingHeaders is not null)
             {
-                foreach ((HeaderDescriptor name, string value) in _trailingHeaders)
-                {
-                    responseMessage.TrailingHeaders.TryAddWithoutValidation(name, value);
-                }
-                _trailingHeaders.Clear();
+                responseMessage.StoreReceivedTrailingHeaders(_trailingHeaders);
             }
         }
 
@@ -962,16 +958,6 @@ namespace System.Net.Http
 
         private async ValueTask ReadHeadersAsync(long headersLength, CancellationToken cancellationToken)
         {
-            // TODO: this header budget is sent as SETTINGS_MAX_HEADER_LIST_SIZE, so it should not use frame payload but rather 32 bytes + uncompressed size per entry.
-            // https://tools.ietf.org/html/draft-ietf-quic-http-24#section-4.1.1
-            if (headersLength > _headerBudgetRemaining)
-            {
-                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
-                throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
-            }
-
-            _headerBudgetRemaining -= (int)headersLength;
-
             while (headersLength != 0)
             {
                 if (_recvBuffer.ActiveLength == 0)
@@ -1046,6 +1032,13 @@ namespace System.Net.Http
         /// <remarks>One of <paramref name="staticValue"/> or <paramref name="literalValue"/> will be set.</remarks>
         private void OnHeader(int? staticIndex, HeaderDescriptor descriptor, string? staticValue, ReadOnlySpan<byte> literalValue)
         {
+            _headerBudgetRemaining -= descriptor.Name.Length + (staticValue?.Length ?? literalValue.Length);
+            if (_headerBudgetRemaining < 0)
+            {
+                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
+                throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
+            }
+
             if (descriptor.Name[0] == ':')
             {
                 if (!descriptor.Equals(KnownHeaders.PseudoStatus))
@@ -1156,7 +1149,7 @@ namespace System.Net.Http
                         _response!.Headers.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         break;
                     case HeaderState.TrailingHeaders:
-                        _trailingHeaders!.Add((descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue));
+                        _trailingHeaders!.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         break;
                     default:
                         Debug.Fail($"Unexpected {nameof(Http3RequestStream)}.{nameof(_headerState)} '{_headerState}'.");

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tracing
@@ -190,7 +191,7 @@ namespace System.Diagnostics.Tracing
                 length = ushort.MaxValue;
             }
 
-            int size = length * itemSize;
+            int size = checked(length * itemSize);
             if (this.bufferNesting != 0)
             {
                 this.EnsureBuffer(size + 2);

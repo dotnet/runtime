@@ -21,10 +21,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="T">The type of the elements within the tensor span.</typeparam>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
-    public readonly ref struct ReadOnlyTensorSpan<T>
-#if NET9_0_OR_GREATER
-        : IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>
-#endif
+    public readonly ref struct ReadOnlyTensorSpan<T> : IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>
     {
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Empty" />
         public static ReadOnlyTensorSpan<T> Empty => default;
@@ -501,7 +498,6 @@ namespace System.Numerics.Tensors
             return true;
         }
 
-#if NET9_0_OR_GREATER
         //
         // IReadOnlyTensor
         //
@@ -535,7 +531,6 @@ namespace System.Numerics.Tensors
 
             return result;
         }
-#endif
 
         /// <summary>Enumerates the elements of a tensor span.</summary>
         public ref struct Enumerator : IEnumerator<T>

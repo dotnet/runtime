@@ -47,8 +47,7 @@
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
 	// Add the global tools dir to the PATH so that globally installed tools will work
 	"remoteEnv": {
-		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerWorkspaceFolder}/.dotnet-tools-global:${containerEnv:PATH}",
-		"DOTNET_MULTILEVEL_LOOKUP": "0",
+		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerWorkspaceFolder}/.dotnet-tools-global:${containerEnv:PATH}"
 	},
 
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
@@ -58,7 +57,7 @@
 	"forwardPorts": [8000],
 	"portsAttributes": {
 		"8000": {
-			"label": "mono wasm samples (8000)",
+			"label": "mono wasm samples (8000)"
 		}
 	}
 }

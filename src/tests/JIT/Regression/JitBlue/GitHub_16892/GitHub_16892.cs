@@ -16,6 +16,9 @@ using Xunit;
 //  into a new compiler temp, before storing any outgoing arguments.
 //
 
+
+namespace GitHub_16892;
+
 class Item
 {
     int _value;

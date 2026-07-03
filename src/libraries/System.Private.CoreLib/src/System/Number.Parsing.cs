@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -133,6 +133,48 @@ namespace System
         static abstract int MaxPrecisionCustomFormat { get; }
     }
 
+    internal interface IDecimalIeee754ParseAndFormatInfo<TSelf, TValue>
+        where TSelf : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSelf, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        static abstract int Precision { get; }
+        static abstract int BufferLength { get; }
+        static abstract int MaxExponent { get; }
+        static abstract int MinExponent { get; }
+        static virtual int MaxAdjustedExponent => TSelf.MaxExponent - TSelf.Precision + 1;
+        static virtual int MinAdjustedExponent => TSelf.MinExponent - TSelf.Precision + 1;
+        static abstract int ExponentBias { get; }
+        static abstract TValue PositiveInfinity { get; }
+        static abstract TValue NegativeInfinity { get; }
+        static abstract TValue NaN { get; }
+        static abstract TValue Zero { get; }
+        static abstract TValue MaxSignificand { get; }
+        static abstract TValue NumberToSignificand(ref Number.NumberBuffer number, int digits);
+        static abstract string ToDecStr(TValue significand);
+        static abstract int ConvertToExponent(TValue value);
+        static abstract TValue Power10(int exponent);
+        static abstract (TValue Quotient, TValue Remainder) DivRemPow10(TValue value, int exponent);
+        static abstract TSelf Construct(TValue value);
+        static abstract int CountDigits(TValue significand);
+        static abstract int NumberBitsSignificand { get; }
+        static abstract TValue NaNMask { get; }
+        static abstract TValue SignMask { get; }
+        static abstract TValue G0G1Mask { get; }
+        static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
+        static abstract TValue G2ToGwPlus3ExponentMask { get; } //G2 to G(w+3)
+        static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
+        static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
+        static abstract TValue MostSignificantBitOfSignificandMask { get; }
+        static abstract bool IsNaN(TValue decimalBits);
+        static abstract bool IsFinite(TValue decimalBits);
+        static abstract bool IsInfinity(TValue decimalBits);
+        static abstract bool IsPositiveInfinity(TValue decimalBits);
+        static abstract bool IsNegativeInfinity(TValue decimalBits);
+        static abstract bool IsNegative(TValue decimalBits);
+        static abstract TValue EncodeExponentToG0ThroughGwPlus1(uint biasedExponent);
+        static abstract TValue EncodeExponentToG2ThroughGwPlus3(uint biasedExponent);
+    }
+
     internal static partial class Number
     {
         private const int Int32Precision = 10;
@@ -244,7 +286,7 @@ namespace System
             return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
-        private static ParsingStatus TryParseBinaryIntegerNumber<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+        private static unsafe ParsingStatus TryParseBinaryIntegerNumber<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
@@ -767,6 +809,21 @@ namespace System
             return result;
         }
 
+        internal static TDecimal ParseDecimalIeee754<TChar, TDecimal, TValue>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            ParsingStatus status = TryParseDecimalIeee754<TChar, TDecimal, TValue>(value, styles, info, out TDecimal result);
+
+            if (status == ParsingStatus.Failed)
+            {
+                ThrowFormatException(value);
+            }
+
+            return result;
+        }
+
         internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
@@ -898,7 +955,7 @@ namespace System
             return result;
         }
 
-        internal static ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
+        internal static unsafe ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
@@ -914,6 +971,86 @@ namespace System
             {
                 return ParsingStatus.Overflow;
             }
+
+            return ParsingStatus.OK;
+        }
+
+        internal static ParsingStatus TryParseDecimalIeee754<TChar, TDecimal, TValue>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TDecimal result)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[TDecimal.BufferLength]);
+            result = default;
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
+                ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                {
+                    result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                    return ParsingStatus.OK;
+                }
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, info.NegativeInfinitySymbolTChar<TChar>()))
+                {
+                    result = TDecimal.Construct(TDecimal.NegativeInfinity);
+                    return ParsingStatus.OK;
+                }
+
+                ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                {
+                    result = TDecimal.Construct(TDecimal.NaN);
+                    return ParsingStatus.OK;
+                }
+
+                var positiveSign = info.PositiveSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(positiveSign.Length);
+
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                        return ParsingStatus.OK;
+                    }
+                    else if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+
+                    result = TDecimal.Construct(TDecimal.Zero);
+                    return ParsingStatus.Failed;
+                }
+
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(negativeSign.Length), nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+
+                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+                }
+
+                result = TDecimal.Construct(TDecimal.Zero);
+                return ParsingStatus.Failed;
+            }
+
+            result = NumberToDecimalIeee754<TDecimal, TValue>(ref number);
 
             return ParsingStatus.OK;
         }
@@ -979,10 +1116,376 @@ namespace System
             }
         }
 
-        internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
+        private static bool TryParseHexFloatingPoint<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
+            result = TFloat.Zero;
+
+            if (value.IsEmpty)
+            {
+                return false;
+            }
+
+            int index = 0;
+
+            // Skip leading whitespace
+            if ((styles & NumberStyles.AllowLeadingWhite) != 0)
+            {
+                while (index < value.Length && IsWhite(TChar.CastToUInt32(value[index])))
+                {
+                    index++;
+                }
+            }
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Parse optional sign
+            bool isNegative = false;
+            if ((styles & NumberStyles.AllowLeadingSign) != 0)
+            {
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+                if (!negativeSign.IsEmpty && value.Slice(index).StartsWith(negativeSign))
+                {
+                    isNegative = true;
+                    index += negativeSign.Length;
+                }
+                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
+                {
+                    isNegative = true;
+                    index++;
+                }
+                else
+                {
+                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+                    if (!positiveSign.IsEmpty && value.Slice(index).StartsWith(positiveSign))
+                    {
+                        index += positiveSign.Length;
+                    }
+                }
+            }
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Require "0x" or "0X" prefix (consistent with IEEE 754 conventions)
+            if (TChar.CastToUInt32(value[index]) != '0' ||
+                index + 1 >= value.Length ||
+                (TChar.CastToUInt32(value[index + 1]) | 0x20) != 'x')
+            {
+                return false;
+            }
+            index += 2;
+
+            if (index >= value.Length)
+            {
+                return false;
+            }
+
+            // Parse hex significand.
+            // We accumulate up to 16 significant hex digits into a ulong.
+            // We track the exponent adjustment due to digit position.
+            //
+            // The value is: significand * 2^(binaryExponent - 4 * fractionalDigitsConsumed + 4 * overflowIntegerDigits)
+
+            ulong significand = 0;
+            int significandDigits = 0;       // Count of significant (non-leading-zero) digits consumed into significand
+            int overflowIntegerDigits = 0;   // Integer digits that didn't fit
+            bool hasDiscardedNonZeroDigits = false;  // IEEE 754 "sticky bit": any nonzero digit discarded beyond significand capacity
+
+            int integerPartStart = index;
+            while (index < value.Length)
+            {
+                uint ch = TChar.CastToUInt32(value[index]);
+                int digit = HexConverter.FromChar((int)ch);
+                if (digit >= 16)
+                {
+                    break;
+                }
+
+                // Accumulate up to 16 significant hex digits. The '|| significand == 0' is
+                // a defensive check: significandDigits only increments when a nonzero digit is
+                // accumulated, so significandDigits >= 16 implies significand != 0 in practice.
+                if (significandDigits < 16 || significand == 0)
+                {
+                    if (significand != 0 || digit != 0)
+                    {
+                        significand = (significand << 4) | (uint)digit;
+                        significandDigits++;
+                    }
+                }
+                else
+                {
+                    overflowIntegerDigits++;
+                    hasDiscardedNonZeroDigits |= digit != 0;
+                }
+
+                index++;
+            }
+            bool hasIntegerPart = index > integerPartStart;
+
+            // Parse fractional part
+            int fractionalDigitsConsumed = 0;
+            bool hasFractionalPart = false;
+
+            if ((styles & NumberStyles.AllowDecimalPoint) != 0 && index < value.Length)
+            {
+                ReadOnlySpan<TChar> decimalSeparator = info.NumberDecimalSeparatorTChar<TChar>();
+                if (value.Slice(index).StartsWith(decimalSeparator))
+                {
+                    index += decimalSeparator.Length;
+
+                    int fractionalPartStart = index;
+                    while (index < value.Length)
+                    {
+                        uint ch = TChar.CastToUInt32(value[index]);
+                        int digit = HexConverter.FromChar((int)ch);
+                        if (digit >= 16)
+                        {
+                            break;
+                        }
+
+                        // Accumulate significant digits (see integer loop comment for '|| significand == 0').
+                        // Discarded fractional digits intentionally do NOT increment fractionalDigitsConsumed:
+                        // they are beyond significand precision and only contribute sticky bits for rounding.
+                        if (significandDigits < 16 || significand == 0)
+                        {
+                            if (significand != 0 || digit != 0)
+                            {
+                                significand = (significand << 4) | (uint)digit;
+                                significandDigits++;
+                            }
+
+                            // Always increment, even for leading zeros: positional value matters
+                            // (e.g., 0x0.004p0 = 4 * 2^-12, so all three fractional digits count).
+                            fractionalDigitsConsumed++;
+                        }
+                        else
+                        {
+                            hasDiscardedNonZeroDigits |= digit != 0;
+                        }
+
+                        index++;
+                    }
+                    hasFractionalPart = index > fractionalPartStart;
+                }
+            }
+
+            if (!hasIntegerPart && !hasFractionalPart)
+            {
+                return false;
+            }
+
+            // Parse the exponent: 'p' or 'P' followed by optional sign and decimal digits.
+            // The decimal value specifies an exponent in the radix of the floating-point format
+            // (for binary types, the value is multiplied by 2 raised to this power).
+            int binaryExponent = 0;
+            if (index < value.Length && ((TChar.CastToUInt32(value[index]) | 0x20) == 'p'))
+            {
+                index++;
+
+                if (index >= value.Length)
+                {
+                    return false;
+                }
+
+                bool exponentIsNegative = false;
+                ReadOnlySpan<TChar> negSign = info.NegativeSignTChar<TChar>();
+                ReadOnlySpan<TChar> posSign = info.PositiveSignTChar<TChar>();
+                if (!negSign.IsEmpty && value.Slice(index).StartsWith(negSign))
+                {
+                    exponentIsNegative = true;
+                    index += negSign.Length;
+                }
+                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
+                {
+                    exponentIsNegative = true;
+                    index++;
+                }
+                else if (!posSign.IsEmpty && value.Slice(index).StartsWith(posSign))
+                {
+                    index += posSign.Length;
+                }
+
+                if (index >= value.Length)
+                {
+                    return false;
+                }
+
+                int exponentStart = index;
+                while (index < value.Length)
+                {
+                    uint ech = TChar.CastToUInt32(value[index]);
+                    if (!IsDigit(ech))
+                    {
+                        break;
+                    }
+
+                    int digit = (int)(ech - '0');
+
+                    // Saturate at int.MaxValue on overflow. Unlike the significand (which tracks
+                    // overflow digits and sticky bits for rounding), the exponent just needs to be
+                    // large enough to guarantee the result resolves to infinity or zero.
+                    binaryExponent = binaryExponent <= (int.MaxValue - digit) / 10 ?
+                        binaryExponent * 10 + digit :
+                        int.MaxValue;
+
+                    index++;
+                }
+
+                if (index == exponentStart)
+                {
+                    return false;
+                }
+
+                if (exponentIsNegative)
+                {
+                    binaryExponent = -binaryExponent;
+                }
+            }
+            else
+            {
+                // Exponent indicator (p/P) is required
+                return false;
+            }
+
+            // Skip trailing whitespace
+            if ((styles & NumberStyles.AllowTrailingWhite) != 0)
+            {
+                while (index < value.Length && IsWhite(TChar.CastToUInt32(value[index])))
+                {
+                    index++;
+                }
+            }
+
+            // For compatibility, allow trailing null characters (same as other number parsers).
+            if (index != value.Length && !TrailingZeros(value, index))
+            {
+                return false;
+            }
+
+            if (significand == 0)
+            {
+                result = isNegative ? TFloat.NegativeZero : TFloat.Zero;
+                return true;
+            }
+
+            // Compute the effective binary exponent.
+            // value = significand * 2^(-4 * fractionalDigitsConsumed) * 2^(4 * overflowIntegerDigits) * 2^binaryExponent
+            long exp = (long)binaryExponent - 4L * fractionalDigitsConsumed + 4L * overflowIntegerDigits;
+
+            // Normalize: shift significand so MSB is at bit 63
+            int lz = BitOperations.LeadingZeroCount(significand);
+            significand <<= lz;
+            exp -= lz;
+
+            // significand is now in [2^63, 2^64), so value = significand * 2^exp
+            // = (significand / 2^63) * 2^(exp + 63) = 1.xxx * 2^(exp + 63)
+            long actualExp = exp + 63;
+
+            int mantissaBits = TFloat.DenormalMantissaBits;
+
+            if (actualExp > TFloat.MaxBinaryExponent)
+            {
+                result = isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
+                return true;
+            }
+
+            int shiftRight = 63 - mantissaBits;
+            Debug.Assert(shiftRight >= 11, "shiftRight is always >= 11 for all IEEE float types (double: 11, float: 40, Half: 53, BFloat16: 56)");
+            long biasedExp = actualExp + TFloat.ExponentBias;
+
+            if (biasedExp <= 0)
+            {
+                long denormalShift = 1L - biasedExp;
+                if (denormalShift > 64 - shiftRight)
+                {
+                    // Value is too small to round to min subnormal
+                    result = isNegative ? TFloat.NegativeZero : TFloat.Zero;
+                    return true;
+                }
+                shiftRight += (int)denormalShift;
+                biasedExp = 0;
+            }
+
+            // Round to nearest, ties to even
+            ulong mantissa = 0;
+            if (shiftRight > 0 && shiftRight < 64)
+            {
+                ulong roundBit = 1UL << (shiftRight - 1);
+                ulong stickyBits = (significand & (roundBit - 1)) | (hasDiscardedNonZeroDigits ? 1UL : 0UL);
+                mantissa = significand >> shiftRight;
+
+                if ((significand & roundBit) != 0 && (stickyBits != 0 || (mantissa & 1) != 0))
+                {
+                    mantissa++;
+
+                    if (biasedExp == 0 && mantissa > TFloat.DenormalMantissaMask)
+                    {
+                        biasedExp = 1;
+                        mantissa &= TFloat.DenormalMantissaMask;
+                    }
+                    else if (mantissa > ((1UL << (mantissaBits + 1)) - 1))
+                    {
+                        mantissa >>= 1;
+                        biasedExp++;
+                        if (biasedExp >= TFloat.InfinityExponent)
+                        {
+                            result = isNegative ? TFloat.NegativeInfinity : TFloat.PositiveInfinity;
+                            return true;
+                        }
+                    }
+                }
+            }
+            else if (shiftRight == 64)
+            {
+                // Significand is at bit 63. Round bit is bit 63, sticky bits are 62..0.
+                ulong roundBit = 1UL << 63;
+                ulong stickyBits = (significand & (roundBit - 1)) | (hasDiscardedNonZeroDigits ? 1UL : 0UL);
+                mantissa = 0;
+
+                // mantissa is 0 (even), so ties-to-even rounds up only when sticky bits are nonzero.
+                if ((significand & roundBit) != 0 && stickyBits != 0)
+                {
+                    mantissa = 1;
+                    if (mantissa > TFloat.DenormalMantissaMask)
+                    {
+                        biasedExp = 1;
+                        mantissa &= TFloat.DenormalMantissaMask;
+                    }
+                }
+            }
+            // shiftRight > 64 is impossible: max is 63 - 7 + denormalShift, capped by the
+            // early return when denormalShift > 64 - shiftRight.
+            // shiftRight == 0 is impossible: minimum is 63 - 52 = 11 (for double), see assert above.
+            Debug.Assert(shiftRight > 0 && shiftRight <= 64);
+
+            mantissa &= TFloat.DenormalMantissaMask;
+
+            ulong bits = ((ulong)biasedExp << mantissaBits) | mantissa;
+            result = TFloat.BitsToFloat(bits);
+            if (isNegative)
+            {
+                result = -result;
+            }
+
+            return true;
+        }
+
+        internal static unsafe bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+        {
+            if ((styles & NumberStyles.AllowHexSpecifier) != 0)
+            {
+                return TryParseHexFloatingPoint(value, styles, info, out result);
+            }
+
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TFloat.NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
@@ -1134,6 +1637,15 @@ namespace System
             }
 
             return number.IsNegative ? -result : result;
+        }
+
+        internal static TDecimal NumberToDecimalIeee754<TDecimal, TValue>(ref NumberBuffer number)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            number.CheckConsistency();
+            TValue value = NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+            return TDecimal.Construct(value);
         }
     }
 }

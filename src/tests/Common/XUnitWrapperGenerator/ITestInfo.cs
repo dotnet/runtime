@@ -147,10 +147,15 @@ public sealed class ConditionalTest : ITestInfo
 
         _innerTest = innerTest;
         _condition = condition;
-   }
+    }
 
     public ConditionalTest(ITestInfo innerTest, Xunit.TestPlatforms platform)
         : this(innerTest, GetPlatformConditionFromTestPlatform(platform))
+    {
+    }
+
+    public ConditionalTest(ITestInfo innerTest, string condition, Xunit.TestPlatforms platform)
+        : this(innerTest, $"{(condition.Length == 0 ? "true" : condition)} && ({GetPlatformConditionFromTestPlatform(platform)})")
     {
     }
 
@@ -176,7 +181,6 @@ public sealed class ConditionalTest : ITestInfo
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("string reason = string.Empty;");
             builder.AppendLine(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
         }
         return builder;
@@ -206,6 +210,16 @@ public sealed class ConditionalTest : ITestInfo
     private static string GetPlatformConditionFromTestPlatform(Xunit.TestPlatforms platform)
     {
         List<string> platformCheckConditions = new();
+
+        if (platform == Xunit.TestPlatforms.Any)
+        {
+            return "true";
+        }
+
+        if (platform == 0)
+        {
+            return "false";
+        }
 
         if (platform.HasFlag(Xunit.TestPlatforms.Windows))
         {
@@ -256,6 +270,10 @@ public sealed class ConditionalTest : ITestInfo
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsFreeBSD()");
         }
+        if (platform.HasFlag(Xunit.TestPlatforms.OpenBSD))
+        {
+            platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""OpenBSD"")");
+        }
         if (platform.HasFlag(Xunit.TestPlatforms.NetBSD))
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""NetBSD"")");
@@ -281,9 +299,11 @@ public sealed class MemberDataTest : ITestInfo
                           string externAlias,
                           string argumentLoopVarIdentifier)
     {
-        TestNameExpression = innerTest.TestNameExpression;
         Method = innerTest.Method;
         ContainingType = innerTest.ContainingType;
+        // Use a static expression that doesn't reference the loop variable since it may be used
+        // outside the foreach loop scope (e.g., in a ConditionalTest's else branch).
+        TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}(...)\"";
         DisplayNameForFiltering = $"{ContainingType}.{Method}(...)";
 
         _innerTest = innerTest;
@@ -502,8 +522,6 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($"string reason = {_filterLocalIdentifier}"
-                             + $".GetTestExclusionReason({test.TestNameExpression});");
             builder.AppendLine(GenerateSkippedTestReporting(test));
         }
         return builder;
@@ -516,7 +534,7 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
              + $" \"{skippedTest.ContainingType}\","
              + $" @\"{skippedTest.Method}\","
              + $" System.TimeSpan.Zero,"
-             + $" reason,"
+             + $" string.Empty,"
              + $" tempLogSw,"
              + $" statsCsvSw);";
     }

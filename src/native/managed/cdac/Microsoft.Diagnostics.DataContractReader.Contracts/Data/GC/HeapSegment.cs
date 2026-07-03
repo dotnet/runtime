@@ -3,34 +3,18 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class HeapSegment : IData<HeapSegment>
+[CdacType(nameof(DataType.HeapSegment))]
+internal sealed partial class HeapSegment : IData<HeapSegment>
 {
-    static HeapSegment IData<HeapSegment>.Create(Target target, TargetPointer address) => new HeapSegment(target, address);
-    public HeapSegment(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.HeapSegment);
+    [Field] public TargetPointer Allocated { get; }
+    [Field] public TargetPointer Committed { get; }
+    [Field] public TargetPointer Reserved { get; }
+    [Field] public TargetPointer Used { get; }
+    [Field] public TargetPointer Mem { get; }
+    [Field] public TargetNUInt Flags { get; }
+    [Field] public TargetPointer Next { get; }
+    [Field] public TargetPointer BackgroundAllocated { get; }
 
-        Allocated = target.ReadPointer(address + (ulong)type.Fields[nameof(Allocated)].Offset);
-        Committed = target.ReadPointer(address + (ulong)type.Fields[nameof(Committed)].Offset);
-        Reserved = target.ReadPointer(address + (ulong)type.Fields[nameof(Reserved)].Offset);
-        Used = target.ReadPointer(address + (ulong)type.Fields[nameof(Used)].Offset);
-        Mem = target.ReadPointer(address + (ulong)type.Fields[nameof(Mem)].Offset);
-        Flags = target.ReadNUInt(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        BackgroundAllocated = target.ReadPointer(address + (ulong)type.Fields[nameof(BackgroundAllocated)].Offset);
-
-        // Field only exists in MULTIPLE_HEAPS builds
-        if (type.Fields.ContainsKey(nameof(Heap)))
-            Heap = target.ReadPointer(address + (ulong)type.Fields[nameof(Heap)].Offset);
-    }
-
-    public TargetPointer Allocated { get; }
-    public TargetPointer Committed { get; }
-    public TargetPointer Reserved { get; }
-    public TargetPointer Used { get; }
-    public TargetPointer Mem { get; }
-    public TargetNUInt Flags { get; }
-    public TargetPointer Next { get; }
-    public TargetPointer BackgroundAllocated { get; }
-    public TargetPointer? Heap { get; }
+    // Field only exists in MULTIPLE_HEAPS builds
+    [Field] public TargetPointer? Heap { get; }
 }

@@ -379,7 +379,7 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
         free(buffer);
         size_t tmpEstimatedSize;
         if (!multiply_s(estimatedSize, (size_t)2, &tmpEstimatedSize) ||
-            (buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t))) == NULL)
+            (buffer = (uint8_t*)malloc(tmpEstimatedSize * sizeof(uint8_t))) == NULL)
         {
             errno = ENOMEM;
             return -1;
@@ -493,7 +493,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         free(buffer);
         size_t tmpEstimatedSize;
         if (!multiply_s(estimatedSize, (size_t)2, &tmpEstimatedSize) ||
-            (buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t))) == NULL)
+            (buffer = (uint8_t*)malloc(tmpEstimatedSize * sizeof(uint8_t))) == NULL)
         {
             errno = ENOMEM;
             return -1;
@@ -572,6 +572,97 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
     free(buffer);
     return 0;
 }
+
+#else
+int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
+{
+    (void)retStats;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetEstimatedTcpConnectionCount(void)
+{
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
+{
+    (void)infos;
+    (void)infoCount;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetEstimatedUdpListenerCount(void)
+{
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
+{
+    (void)infos;
+    (void)infoCount;
+    errno = ENOTSUP;
+    return -1;
+}
+#endif // HAVE_NETINET_TCP_VAR_H
+
+// SystemNative_GetNativeIPInterfaceStatistics and SystemNative_GetNumRoutes only require the
+// route/interface sysctl APIs (rt_msghdr), not the protocol statistics that live in tcp_var.h.
+// Gate them on HAVE_RT_MSGHDR so platforms that lack tcp_var.h but do have rt_msghdr (e.g. OpenBSD)
+// still get the real implementation instead of the ENOTSUP stub.
+#if HAVE_RT_MSGHDR
+#include <string.h>
+#include <assert.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#if HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <net/if.h>
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
+#else
+#include <net/route.h>
+#endif
+#if HAVE_NET_IFMEDIA_H
+#include <net/if_media.h>
+#elif HAVE_IOS_NET_IFMEDIA_H
+#include "ios/net/if_media.h"
+#endif
 
 int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
 {
@@ -709,6 +800,7 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
     memset(retStats, 0, sizeof(NativeIPInterfaceStatistics));
     return -1;
 }
+
 int32_t SystemNative_GetNumRoutes(void)
 {
     int32_t count = 0;
@@ -753,69 +845,6 @@ int32_t SystemNative_GetNumRoutes(void)
     return count;
 }
 #else
-int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
-{
-    (void)retStats;
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
-{
-    (void)retStats;
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
-{
-    (void)retStats;
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
-{
-    (void)retStats;
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
-{
-    (void)retStats;
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetEstimatedTcpConnectionCount(void)
-{
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
-{
-    (void)infos;
-    (void)infoCount;
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetEstimatedUdpListenerCount(void)
-{
-    errno = ENOTSUP;
-    return -1;
-}
-
-int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
-{
-    (void)infos;
-    (void)infoCount;
-    errno = ENOTSUP;
-    return -1;
-}
-
 int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
 {
     (void)interfaceName;
@@ -829,4 +858,4 @@ int32_t SystemNative_GetNumRoutes(void)
     errno = ENOTSUP;
     return -1;
 }
-#endif // HAVE_NETINET_TCP_VAR_H
+#endif // HAVE_RT_MSGHDR

@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
-    <DefineConstants>$(DefineConstants);OP_MUL</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="overflow03.cs" />
-  </ItemGroup>
-</Project>

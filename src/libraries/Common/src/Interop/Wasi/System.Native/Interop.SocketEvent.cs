@@ -20,6 +20,9 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetWasiSocketDescriptor")]
-        internal static unsafe partial Error GetWasiSocketDescriptor(IntPtr socket, IntPtr* entry);
+        internal static unsafe partial Error GetWasiSocketDescriptor(IntPtr socket, IntPtr* entry, int* socketType);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WasiSubscribeSocketPollable")]
+        internal static partial int WasiSubscribeSocketPollable(int kind, int handle);
     }
 }

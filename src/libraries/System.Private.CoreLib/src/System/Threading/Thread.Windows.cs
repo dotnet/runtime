@@ -18,14 +18,149 @@ namespace System.Threading
     {
         internal static void UninterruptibleSleep0() => Interop.Kernel32.Sleep(0);
 
-#if MONO
-        private static void SleepInternal(int millisecondsTimeout)
+        internal static void SleepInternal(int millisecondsTimeout)
         {
-            Debug.Assert(millisecondsTimeout >= -1);
-            Interop.Kernel32.Sleep((uint)millisecondsTimeout);
+            Debug.Assert(millisecondsTimeout >= Timeout.Infinite);
+
+            CheckForPendingInterrupt();
+
+            Thread currentThread = CurrentThread;
+            if (millisecondsTimeout == Timeout.Infinite)
+            {
+                // Infinite wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                uint result;
+                while (true)
+                {
+                    result = Interop.Kernel32.SleepEx(Timeout.UnsignedInfinite, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    {
+                        break;
+                    }
+                    CheckForPendingInterrupt();
+                }
+
+                currentThread.ClearWaitSleepJoinState();
+            }
+            else
+            {
+                // Timed wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                long startTime = Environment.TickCount64;
+                while (true)
+                {
+                    uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
+                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    {
+                        break;
+                    }
+                    // Check if this was our interrupt APC
+                    CheckForPendingInterrupt();
+                    // Handle APC completion by adjusting timeout and retrying
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+
+                currentThread.ClearWaitSleepJoinState();
+            }
+        }
+
+#if !MONO
+        private bool JoinInternal(int millisecondsTimeout)
+        {
+            // This method assumes the thread has been started
+            Debug.Assert((ThreadState & ThreadState.Unstarted) == 0 || (millisecondsTimeout == 0));
+            SafeWaitHandle waitHandle = GetJoinHandle();
+
+            // If an OS thread is terminated and its Thread object is resurrected, waitHandle may be finalized and closed
+            if (waitHandle.IsClosed)
+            {
+                return true;
+            }
+
+            // Handle race condition with the finalizer
+            try
+            {
+                waitHandle.DangerousAddRef();
+            }
+            catch (ObjectDisposedException)
+            {
+                return true;
+            }
+
+            try
+            {
+                if (waitHandle.IsInvalid)
+                {
+                    // If the thread has died, the handle can be marked as invalid.
+                    // Waiting on an invalid handle will never complete, so complete now.
+                    return true;
+                }
+
+                if (millisecondsTimeout == 0)
+                {
+                    int result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
+                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
+                }
+                else
+                {
+                    Thread currentThread = CurrentThread;
+                    currentThread.SetWaitSleepJoinState();
+                    uint result;
+                    if (millisecondsTimeout == Timeout.Infinite)
+                    {
+                        // Infinite wait
+                        while (true)
+                        {
+                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), Timeout.UnsignedInfinite, Interop.BOOL.TRUE);
+                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                            {
+                                break;
+                            }
+                            // Check if this was our interrupt APC
+                            CheckForPendingInterrupt();
+                        }
+                    }
+                    else
+                    {
+                        long startTime = Environment.TickCount64;
+                        while (true)
+                        {
+                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                            {
+                                break;
+                            }
+                            // Check if this was our interrupt APC
+                            CheckForPendingInterrupt();
+                            // Handle APC completion by adjusting timeout and retrying
+                            long currentTime = Environment.TickCount64;
+                            long elapsed = currentTime - startTime;
+                            if (elapsed >= millisecondsTimeout)
+                            {
+                                result = Interop.Kernel32.WAIT_TIMEOUT;
+                                break;
+                            }
+                            millisecondsTimeout -= (int)elapsed;
+                            startTime = currentTime;
+                        }
+                    }
+                    currentThread.ClearWaitSleepJoinState();
+                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
+                }
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
         }
 #endif
-
         internal static int GetCurrentProcessorNumber()
         {
             Interop.Kernel32.PROCESSOR_NUMBER procNumber;

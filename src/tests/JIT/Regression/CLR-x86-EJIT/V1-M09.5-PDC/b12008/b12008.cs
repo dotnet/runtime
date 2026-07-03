@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b12008;
+
 using System;
 using Xunit;
 
@@ -20,6 +23,7 @@ public class Bug
         Func(ref str[0]);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -24,7 +24,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
-#include "pal/sharedmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
@@ -115,14 +114,8 @@ static minipal_mutex* init_critsec = NULL;
 
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
-static int Initialize(int argc, const char *const argv[], DWORD flags);
-static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
+static int Initialize(DWORD flags);
 static LPWSTR INIT_GetCurrentEXEPath();
-static BOOL INIT_SharedFilesPath(void);
-
-#ifdef _DEBUG
-extern void PROCDumpThreadList(void);
-#endif
 
 /*++
 Function:
@@ -144,7 +137,7 @@ PAL_Initialize(
     int argc,
     char *const argv[])
 {
-    return Initialize(argc, argv, PAL_INITIALIZE);
+    return Initialize(PAL_INITIALIZE);
 }
 
 /*++
@@ -168,7 +161,7 @@ PAL_InitializeWithFlags(
     const char *const argv[],
     DWORD flags)
 {
-    return Initialize(argc, argv, flags);
+    return Initialize(flags);
 }
 
 /*++
@@ -187,7 +180,7 @@ int
 PALAPI
 PAL_InitializeDLL()
 {
-    return Initialize(0, nullptr, g_initializeDLLFlags);
+    return Initialize(g_initializeDLLFlags);
 }
 
 /*++
@@ -290,14 +283,11 @@ Return:
 --*/
 int
 Initialize(
-    int argc,
-    const char *const argv[],
     DWORD flags)
 {
     PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = nullptr;
     CListedObjectManager *plom = nullptr;
-    LPWSTR command_line = nullptr;
     LPWSTR exe_path = nullptr;
     int retval = -1;
     bool fFirstTimeInit = false;
@@ -305,7 +295,7 @@ Initialize(
     /* the first ENTRY within the first call to PAL_Initialize is a special
        case, since debug channels are not initialized yet. So in that case the
        ENTRY will be called after the DBG channels initialization */
-    ENTRY_EXTERNAL("PAL_Initialize(argc = %d argv = %p)\n", argc, argv);
+    ENTRY_EXTERNAL("PAL_Initialize\n");
 
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
@@ -336,9 +326,8 @@ Initialize(
 
     if (init_count == 0)
     {
-        // Set our pid and sid.
+        // Set our pid.
         gPID = getpid();
-        gSID = getsid(gPID);
 
         // Initialize the thread local storage
         if (FALSE == TLSInitialize())
@@ -351,20 +340,6 @@ Initialize(
         if (FALSE == DBG_init_channels())
         {
             palError = ERROR_PALINIT_DBG_CHANNELS;
-            goto CLEANUP0a;
-        }
-
-        // The gSharedFilesPath is allocated dynamically so its destructor does not get
-        // called unexpectedly during cleanup
-        gSharedFilesPath = new(std::nothrow) PathCharString();
-        if (gSharedFilesPath == nullptr)
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto CLEANUP0a;
-        }
-
-        if (INIT_SharedFilesPath() == FALSE)
-        {
             goto CLEANUP0a;
         }
 
@@ -407,19 +382,6 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        SharedMemoryManager::StaticInitialize();
-
-        //
-        // Initialize global process data
-        //
-
-        palError = InitializeProcessData();
-        if (NO_ERROR != palError)
-        {
-            ERROR("Unable to initialize process data\n");
-            goto CLEANUP1;
-        }
-
 #if HAVE_MACH_EXCEPTIONS
         // Mach exception port needs to be set up before the thread
         // data or threads are set up.
@@ -441,8 +403,6 @@ Initialize(
             ERROR("Unable to create initial thread data\n");
             goto CLEANUP1a;
         }
-
-        PROCAddThread(pThread, pThread);
 
         //
         // It's now safe to access our thread data
@@ -502,49 +462,24 @@ Initialize(
 
     palError = ERROR_GEN_FAILURE;
 
-    if (argc > 0 && argv != nullptr)
+    /* find out the application's full path */
+    exe_path = INIT_GetCurrentEXEPath();
+    if (nullptr == exe_path)
     {
-        /* build the command line */
-        command_line = INIT_FormatCommandLine(argc, argv);
-        if (nullptr == command_line)
-        {
-            ERROR("Error building command line\n");
-            palError = ERROR_PALINIT_COMMAND_LINE;
-            goto CLEANUP1d;
-        }
-
-        /* find out the application's full path */
-        exe_path = INIT_GetCurrentEXEPath();
-        if (nullptr == exe_path)
-        {
-            ERROR("Unable to find exe path\n");
-            palError = ERROR_PALINIT_CONVERT_EXE_PATH;
-            goto CLEANUP1e;
-        }
-
-        palError = InitializeProcessCommandLine(
-            command_line,
-            exe_path);
-
-        if (NO_ERROR != palError)
-        {
-            ERROR("Unable to initialize command line\n");
-            goto CLEANUP2;
-        }
-
-        // InitializeProcessCommandLine took ownership of this memory.
-        command_line = nullptr;
-
-        if (!LOADSetExeName(exe_path))
-        {
-            ERROR("Unable to set exe name\n");
-            palError = ERROR_PALINIT_SET_EXE_NAME;
-            goto CLEANUP2;
-        }
-
-        // LOADSetExeName took ownership of this memory.
-        exe_path = nullptr;
+        ERROR("Unable to find exe path\n");
+        palError = ERROR_PALINIT_CONVERT_EXE_PATH;
+        goto CLEANUP1e;
     }
+
+    if (!LOADSetExeName(exe_path))
+    {
+        ERROR("Unable to set exe name\n");
+        palError = ERROR_PALINIT_SET_EXE_NAME;
+        goto CLEANUP2;
+    }
+
+    // LOADSetExeName took ownership of this memory.
+    exe_path = nullptr;
 
     if (init_count == 0)
     {
@@ -588,20 +523,6 @@ Initialize(
             }
         }
 
-#ifndef TARGET_WASM
-        if (flags & PAL_INITIALIZE_SYNC_THREAD)
-        {
-            //
-            // Tell the synchronization manager to start its worker thread
-            //
-            palError = CPalSynchMgrController::StartWorker(pThread);
-            if (NO_ERROR != palError)
-            {
-                ERROR("Synch manager failed to start worker thread\n");
-                goto CLEANUP13;
-            }
-        }
-#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -622,7 +543,9 @@ Initialize(
         }
 
         TRACE("First-time PAL initialization complete.\n");
-        init_count++;
+        // Incrementing the init_count here serves as a synchronization point,
+        // since it is a Volatile<T> variable, and modifying it will have release semantics.
+        init_count.Store(init_count.Load() + 1);
 
         /* Set LastError to a non-good value - functions within the
            PAL startup may set lasterror to a nonzero value. */
@@ -631,7 +554,7 @@ Initialize(
     }
     else
     {
-        init_count++;
+        init_count.Store(init_count.Load() + 1);
 
         TRACE("Initialization count increases to %d\n", init_count.Load());
 
@@ -647,12 +570,10 @@ CLEANUP13:
 CLEANUP10:
     MAPCleanup();
 CLEANUP6:
-    PROCCleanupInitialProcess();
+    // Cleanup initial process data
 CLEANUP2:
     free(exe_path);
 CLEANUP1e:
-    free(command_line);
-CLEANUP1d:
     // Cleanup synchronization manager
 CLEANUP1c:
     // Cleanup object manager
@@ -689,8 +610,7 @@ Function:
   PAL_InitializeCoreCLR
 
 Abstract:
-  A replacement for PAL_Initialize when loading CoreCLR. Instead of taking a command line (which CoreCLR
-  instances aren't given anyway) the path into which the CoreCLR is installed is supplied instead.
+  A replacement for PAL_Initialize when loading CoreCLR.
 
   This routine also makes sure the psuedo dynamic libraries PALRT and mscorwks have their initialization
   methods called.
@@ -702,12 +622,11 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
+PAL_InitializeCoreCLR(BOOL runningInExe)
 {
     g_running_in_exe = runningInExe;
 
-    // Fake up a command line to call PAL initialization with.
-    int result = Initialize(1, &szExePath, PAL_INITIALIZE_CORECLR);
+    int result = Initialize(PAL_INITIALIZE_CORECLR);
     if (result != 0)
     {
         return GetLastError();
@@ -719,7 +638,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
-#ifndef TARGET_WASM // we don't use shared libraries on wasm
+#ifndef TARGET_WASM // we don't use shared libraries on wasm and don't support dbg mini dump
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -727,13 +646,12 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
-#endif // !TARGET_WASM
-
     if (!PROCAbortInitialize())
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
+#endif // !TARGET_WASM
 
     return ERROR_SUCCESS;
 }
@@ -834,12 +752,6 @@ PALCommonCleanup()
         // Let the synchronization manager know we're about to shutdown
         //
         CPalSynchMgrController::PrepareForShutdown();
-
-        SharedMemoryManager::StaticClose();
-
-#ifdef _DEBUG
-        PROCDumpThreadList();
-#endif
     }
 }
 
@@ -907,132 +819,6 @@ void PALInitUnlock(void)
 
 /*++
 Function:
-    INIT_FormatCommandLine [Internal]
-
-Abstract:
-    This function converts an array of arguments (argv) into a Unicode
-    command-line for use by GetCommandLineW
-
-Parameters :
-    int argc : number of arguments in argv
-    char **argv : argument list in an array of NULL-terminated strings
-
-Return value :
-    pointer to Unicode command line. This is a buffer allocated with malloc;
-    caller is responsible for freeing it with free()
-
-Note : not all peculiarities of Windows command-line processing are supported;
-
--what is supported :
-    -arguments with white-space must be double quoted (we'll just double-quote
-     all arguments to simplify things)
-    -some characters must be escaped with \ : particularly, the double-quote,
-     to avoid confusion with the double-quotes at the start and end of
-     arguments, and \ itself, to avoid confusion with escape sequences.
--what is not supported:
-    -under Windows, \\ is interpreted as an escaped \ ONLY if it's followed by
-     an escaped double-quote \". \\\" is passed to argv as \", but \\a is
-     passed to argv as \\a... there may be other similar cases
-    -there may be other characters which must be escaped
---*/
-static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
-{
-    LPWSTR retval;
-    LPSTR command_line=nullptr, command_ptr;
-    LPCSTR arg_ptr;
-    INT length, i,j;
-    BOOL bQuoted = FALSE;
-
-    /* list of characters that need no be escaped with \ when building the
-       command line. currently " and \ */
-    LPCSTR ESCAPE_CHARS="\"\\";
-
-    /* allocate temporary memory for the string. Play it safe :
-       double the length of each argument (in case they're composed
-       exclusively of escaped characters), and add 3 (for the double-quotes
-       and separating space). This is temporary anyway, we return a LPWSTR */
-    length=0;
-    for(i=0; i<argc; i++)
-    {
-        TRACE("argument %d is %s\n", i, argv[i]);
-        length+=3;
-        length+=strlen(argv[i])*2;
-    }
-    command_line = reinterpret_cast<LPSTR>(malloc(length != 0 ? length : 1));
-
-    if(!command_line)
-    {
-        ERROR("couldn't allocate memory for command line!\n");
-        return nullptr;
-    }
-
-    command_ptr=command_line;
-    for(i=0; i<argc; i++)
-    {
-        /* double-quote at beginning of argument containing at least one space */
-        for(j = 0; (argv[i][j] != 0) && (!isspace((unsigned char) argv[i][j])); j++);
-
-        if (argv[i][j] != 0)
-        {
-            *command_ptr++='"';
-            bQuoted = TRUE;
-        }
-        /* process the argument one character at a time */
-        for(arg_ptr=argv[i]; *arg_ptr; arg_ptr++)
-        {
-            /* if character needs to be escaped, prepend a \ to it. */
-            if( strchr(ESCAPE_CHARS,*arg_ptr))
-            {
-                *command_ptr++='\\';
-            }
-
-            /* now we can copy the actual character over. */
-            *command_ptr++=*arg_ptr;
-        }
-        /* double-quote at end of argument; space to separate arguments */
-        if (bQuoted == TRUE)
-        {
-            *command_ptr++='"';
-            bQuoted = FALSE;
-        }
-        *command_ptr++=' ';
-    }
-    /* replace the last space with a NULL terminator */
-    command_ptr--;
-    *command_ptr='\0';
-
-    /* convert to Unicode */
-    i = MultiByteToWideChar(CP_ACP, 0,command_line, -1, nullptr, 0);
-    if (i == 0)
-    {
-        ASSERT("MultiByteToWideChar failure\n");
-        free(command_line);
-        return nullptr;
-    }
-
-    retval = reinterpret_cast<LPWSTR>(malloc((sizeof(WCHAR)*i)));
-    if(retval == nullptr)
-    {
-        ERROR("can't allocate memory for Unicode command line!\n");
-        free(command_line);
-        return nullptr;
-    }
-
-    if(!MultiByteToWideChar(CP_ACP, 0,command_line, -1, retval, i))
-    {
-        ASSERT("MultiByteToWideChar failure\n");
-        free(retval);
-        retval = nullptr;
-    }
-    else
-        TRACE("Command line is %s\n", command_line);
-
-    free(command_line);
-    return retval;
-}
-
-/*++
-Function:
   INIT_GetCurrentEXEPath
 
 Abstract:
@@ -1088,64 +874,4 @@ static LPWSTR INIT_GetCurrentEXEPath()
     }
 
     return return_value;
-}
-
-/*++
-Function:
-  INIT_SharedFilesPath
-
-Abstract:
-    Initializes the shared application
---*/
-static BOOL INIT_SharedFilesPath(void)
-{
-#ifdef __APPLE__
-    // Store application group Id. It will be null if not set
-    gApplicationGroupId = getenv("DOTNET_SANDBOX_APPLICATION_GROUP_ID");
-
-    if (nullptr != gApplicationGroupId)
-    {
-        // Verify the length of the application group ID
-        gApplicationGroupIdLength = strlen(gApplicationGroupId);
-        if (gApplicationGroupIdLength > MAX_APPLICATION_GROUP_ID_LENGTH)
-        {
-            SetLastError(ERROR_BAD_LENGTH);
-            return FALSE;
-        }
-
-        // In sandbox, all IPC files (locks, pipes) should be written to the application group
-        // container. There will be no write permissions to TEMP_DIRECTORY_PATH
-        if (!GetApplicationContainerFolder(*gSharedFilesPath, gApplicationGroupId, gApplicationGroupIdLength))
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            return FALSE;
-        }
-
-        // Verify the size of the path won't exceed maximum allowed size
-        if (gSharedFilesPath->GetCount() + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ > MAX_LONGPATH)
-        {
-            SetLastError(ERROR_FILENAME_EXCED_RANGE);
-            return FALSE;
-        }
-
-        // Check if the path already exists and it's a directory
-        struct stat statInfo;
-        int statResult = stat(*gSharedFilesPath, &statInfo);
-
-        // If the path exists, check that it's a directory
-        if (statResult != 0 || !(statInfo.st_mode & S_IFDIR))
-        {
-            SetLastError(ERROR_PATH_NOT_FOUND);
-            return FALSE;
-        }
-
-        return TRUE;
-    }
-#endif // __APPLE__
-
-    // If we are here, then we are not in sandbox mode, resort to TEMP_DIRECTORY_PATH as shared files path
-    return gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
-
-    // We can verify statically the non sandboxed case, since the size is known during compile time
-    static_assert(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 }

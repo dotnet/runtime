@@ -455,14 +455,17 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
-            T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+            // Even with FMA, ARM64 vectorized trig can diverge a few tens of ULPs from scalar.
+            T? trigTolerance = IsFmaSupported
+                ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f)
+                : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
             yield return Create(TensorPrimitives.Acos, T.Acos);
             yield return Create(TensorPrimitives.Asinh, T.Asinh);
             yield return Create(TensorPrimitives.AsinPi, T.AsinPi);
-            yield return Create(TensorPrimitives.Asin, T.Asin);
+            yield return Create(TensorPrimitives.Asin, T.Asin, trigTolerance);
             yield return Create(TensorPrimitives.Atanh, T.Atanh);
             yield return Create(TensorPrimitives.AtanPi, T.AtanPi);
             yield return Create(TensorPrimitives.Atan, T.Atan);
@@ -1806,6 +1809,38 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Throws<OverflowException>(() => TensorPrimitives.SumOfMagnitudes<T>(x.Span));
             });
         }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(One);
+                    x[expected] = MinValue;
+                    x[tensorLength - 1] = MinValue;
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(MinValue);
+                    x[expected] = One;
+                    x[tensorLength - 1] = One;
+                    Assert.Equal(expected, IndexOfMinMagnitude(x));
+                }
+            });
+        }
     }
 
     public unsafe abstract class GenericIntegerTensorPrimitivesTests<T> : GenericNumberTensorPrimitivesTests<T>
@@ -2722,7 +2757,7 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
             {
-                throw EqualException.ForMismatchedValues(expected, actual);
+                throw EqualException.ForMismatchedValues($"{expected}", $"{actual}");
             }
         }
 

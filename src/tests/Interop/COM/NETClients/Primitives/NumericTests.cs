@@ -18,11 +18,12 @@ namespace NetClient
             Console.WriteLine($"Numeric RNG seed: {this.seed}");
 
             this.rng = new Random(this.seed);
-            this.server = (Server.Contract.Servers.NumericTesting)new Server.Contract.Servers.NumericTestingClass();
+            this.server = new Server.Contract.Servers.NumericTesting();
         }
 
         public void Run()
         {
+            Console.WriteLine(nameof(NumericTests));
             int a = this.rng.Next();
             int b = this.rng.Next();
 

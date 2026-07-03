@@ -33,7 +33,6 @@
  *  Forward declarations
  */
 class   AppDomain;
-class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;

@@ -6,9 +6,12 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public static class BasicTest
 {
+    [ActiveIssue("No crossgen folder under Core_Root", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("No crossgen folder under Core_Root", TestPlatforms.Android)]
     [Fact]
     public static void TestEntryPoint()
     {

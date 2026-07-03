@@ -13,6 +13,7 @@ class TreeLifeUpdater
 {
 public:
     TreeLifeUpdater(Compiler* compiler);
+    template <bool GeneralLclAddrHandling>
     void UpdateLife(GenTree* tree);
     bool UpdateLifeFieldVar(GenTreeLclVar* lclNode, unsigned multiRegIndex);
 
@@ -23,7 +24,7 @@ private:
     void DumpLifeDelta(GenTree* tree);
 
 private:
-    Compiler* compiler;
+    Compiler* m_compiler;
 #ifdef DEBUG
     unsigned  epoch; // VarSets epoch when the class was created, must stay the same during its using.
     VARSET_TP oldLife;

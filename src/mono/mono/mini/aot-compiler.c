@@ -4545,7 +4545,7 @@ get_runtime_invoke (MonoAotCompile *acfg, MonoMethod *method, gboolean virtual_)
 }
 
 static gboolean
-can_marshal_struct (MonoClass *klass)
+can_marshal_struct_internal (MonoClass *klass, int depth)
 {
 	MonoClassField *field;
 	gboolean can_marshal = TRUE;
@@ -4553,6 +4553,15 @@ can_marshal_struct (MonoClass *klass)
 	MonoMarshalType *info;
 
 	if (mono_class_is_auto_layout (klass))
+		return FALSE;
+
+	/*
+	 * Guard against runaway recursion for self-referential or cyclic layout types: a
+	 * reference-class field can point back to its declaring class, directly or indirectly.
+	 * Such a type cannot be marshalled as a flat struct anyway, so treat it as
+	 * non-marshalable instead of overflowing the stack.
+	 */
+	if (depth > 32)
 		return FALSE;
 
 	info = mono_marshal_load_type_info (klass);
@@ -4581,7 +4590,17 @@ can_marshal_struct (MonoClass *klass)
 		case MONO_TYPE_STRING:
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (!m_class_is_enumtype (mono_class_from_mono_type_internal (field->type)) && !can_marshal_struct (mono_class_from_mono_type_internal (field->type)))
+			if (!m_class_is_enumtype (mono_class_from_mono_type_internal (field->type)) && !can_marshal_struct_internal (mono_class_from_mono_type_internal (field->type), depth + 1))
+				can_marshal = FALSE;
+			break;
+		case MONO_TYPE_CLASS:
+			/*
+			 * A field whose type is a non-auto-layout (sequential/explicit) class is marshalled
+			 * as an embedded struct, the same way the runtime marshalling code handles it. Allow it
+			 * if the nested class is itself marshalable; otherwise the StructureToPtr/PtrToStructure
+			 * wrappers are not AOT compiled and full-AOT fails with a JIT-in-aot-only error.
+			 */
+			if (!can_marshal_struct_internal (mono_class_from_mono_type_internal (field->type), depth + 1))
 				can_marshal = FALSE;
 			break;
 		case MONO_TYPE_SZARRAY: {
@@ -4609,6 +4628,12 @@ can_marshal_struct (MonoClass *klass)
 		return TRUE;
 
 	return can_marshal;
+}
+
+static gboolean
+can_marshal_struct (MonoClass *klass)
+{
+	return can_marshal_struct_internal (klass, 0);
 }
 
 /* Create a ref shared instantiation */
@@ -9298,8 +9323,10 @@ get_concrete_sig (MonoMethodSignature *sig)
 			concrete = FALSE;
 	}
 	copy->has_type_parameters = 0;
-	if (!concrete)
+	if (!concrete) {
+		g_free (copy);
 		return NULL;
+	}
 	return copy;
 }
 

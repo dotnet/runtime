@@ -6,12 +6,11 @@
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
-    <DefineConstants Condition="'$(UseMonoRuntime)' != 'true'">$(DefineConstants);CORECLR_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <SelfContained>true</SelfContained>
 
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == '' and '$(UseMonoRuntime)' == 'true'">true</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
@@ -29,9 +28,6 @@
 
   <ItemGroup>
     <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
-    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_InterpMode=3" />
-    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_ReadyToRun=0" />
-    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_InterpDump=*!*" />
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
@@ -48,11 +44,11 @@
           AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
     <!-- Install and run on a device or simulator -->
-    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
-    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=&quot;$(AppBundlePath)&quot; --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=&quot;$(AppBundlePath)&quot; --targets=ios-device --output-directory=/tmp/out" />
 
     <!-- run on maccatalyst -->
-    <Exec Condition="'$(TargetOS)' == 'maccatalyst'" Command="open -W $(AppBundlePath)" />
+    <Exec Condition="'$(TargetOS)' == 'maccatalyst'" Command="open -W &quot;$(AppBundlePath)&quot;" />
   </Target>
 
   <Target Name="CopySampleAppToHelixTestDir"

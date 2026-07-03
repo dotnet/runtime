@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 using System.Threading;
 
@@ -344,7 +345,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                return InternalLoadFromPath(assemblyPath, null);
+                return InternalLoadFromPath(assemblyPath);
             }
         }
 
@@ -367,7 +368,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                return InternalLoadFromPath(assemblyPath, nativeImagePath);
+                return InternalLoadFromPath(assemblyPath);
             }
         }
 
@@ -385,7 +386,7 @@ namespace System.Runtime.Loader
             ReadOnlySpan<byte> spanAssembly = ReadAllBytes(assembly);
             if (spanAssembly.IsEmpty)
             {
-                throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+                throw new BadImageFormatException(SR.BadImageFormat_EmptyAssembly);
             }
 
             // Read the symbol stream if provided
@@ -624,7 +625,7 @@ namespace System.Runtime.Loader
                 {
                     TraceResolvingHandlerInvoked(
                         assemblyName.FullName,
-                        handler.Method.Name,
+                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         this != Default ? ToString() : Name,
                         resolvedAssembly?.FullName,
                         resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
@@ -679,25 +680,21 @@ namespace System.Runtime.Loader
             return (assembly != null) ? ValidateAssemblyNameWithSimpleName(assembly, simpleName) : null;
         }
 
-        // This method is called by the VM.
         private static void OnAssemblyLoad(RuntimeAssembly assembly)
         {
             AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
         }
 
-        // This method is called by the VM.
-        internal static RuntimeAssembly? OnResourceResolve(RuntimeAssembly assembly, string resourceName)
+        internal static RuntimeAssembly? OnResourceResolve(RuntimeAssembly? assembly, string resourceName)
         {
             return InvokeResolveEvent(ResourceResolve, assembly, resourceName);
         }
 
-        // This method is called by the VM
         internal static RuntimeAssembly? OnTypeResolve(RuntimeAssembly? assembly, string typeName)
         {
             return InvokeResolveEvent(TypeResolve, assembly, typeName);
         }
 
-        // This method is called by the VM.
         private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly? assembly, string assemblyFullName)
         {
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
@@ -725,7 +722,7 @@ namespace System.Runtime.Loader
                 {
                     TraceAssemblyResolveHandlerInvoked(
                         name,
-                        handler.Method.Name,
+                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         asm?.FullName,
                         asm != null && !asm.IsDynamic ? asm.Location : null);
                 }
@@ -737,6 +734,107 @@ namespace System.Runtime.Loader
 
             return null;
         }
+
+#if CORECLR
+        // UnmanagedCallersOnly wrappers for VM callbacks
+        // These methods provide efficient reverse P/Invoke entry points for the VM.
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnAssemblyLoad(RuntimeAssembly* pAssembly, Exception* pException)
+        {
+            try
+            {
+                OnAssemblyLoad(*pAssembly);
+            }
+            catch (Exception)
+            {
+                // The VM does not expect exceptions to propagate out of this callback
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnTypeResolve(RuntimeAssembly* pAssembly, byte* typeName, RuntimeAssembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                string name = Utf8StringMarshaller.ConvertToManaged(typeName)!;
+                *ppResult = OnTypeResolve(*pAssembly, name);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnResourceResolve(RuntimeAssembly* pAssembly, byte* resourceName, RuntimeAssembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                string name = Utf8StringMarshaller.ConvertToManaged(resourceName)!;
+                *ppResult = OnResourceResolve(*pAssembly, name);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnAssemblyResolve(RuntimeAssembly* pAssembly, char* assemblyFullName, RuntimeAssembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = OnAssemblyResolve(*pAssembly, new string(assemblyFullName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Resolve(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
+                *ppResult = context.ResolveUsingLoad(*pAssemblyName);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ResolveSatelliteAssembly(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
+                *ppResult = context.ResolveSatelliteAssembly(*pAssemblyName);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ResolveUsingEvent(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
+                *ppResult = context.ResolveUsingEvent(*pAssemblyName);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif // CORECLR
 #endif // !NATIVEAOT
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -760,11 +858,29 @@ namespace System.Runtime.Loader
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
+
+#if TARGET_BROWSER
+            // On Browser/WASM, assemblies loaded via external_assembly_probe have empty Location
+            // (PEAssembly::GetPath returns empty for IsExternalData). Satellite assemblies are
+            // registered in JS loadedAssemblies with virtual paths like "/{culture}/{name}.dll".
+            // Construct the path matching the JS loader's normalizeVirtualPath format.
+            string assemblyPath = string.IsNullOrEmpty(parentDirectory)
+                ? $"/{assemblyName.CultureName}/{assemblyName.Name}.dll"
+                : Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
+
+            try
+            {
+                return (RuntimeAssembly?)parentALC.LoadFromAssemblyPath(assemblyPath);
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
+#else
             if (parentDirectory == null)
                 return null;
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
-
             bool exists = FileSystem.FileExists(assemblyPath);
             if (!exists && PathInternal.IsCaseSensitive)
             {
@@ -787,6 +903,7 @@ namespace System.Runtime.Loader
 #endif // CORECLR
 
             return asm;
+#endif // TARGET_BROWSER
         }
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)

@@ -24,7 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // locations must remain correct after the prolog and epilogs are generated.
 //
 // For the prolog, instructions are put in the special, preallocated, prolog instruction group.
-// We don't want to expose the emitPrologIG unnecessarily (locations are actually pointers to
+// We don't want to expose the prolog IG unnecessarily (locations are actually pointers to
 // emitter instruction groups). Since we know the offset of the start of the function/funclet,
 // where the prolog is, will be zero, we use a nullptr start location to indicate that.
 //
@@ -51,8 +51,6 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
                                       /* OUT */ emitLocation** ppStartLoc,
                                       /* OUT */ emitLocation** ppEndLoc)
 {
-    assert(UsesFunclets());
-
     if (func->funKind == FUNC_ROOT)
     {
         // Since all funclets are pulled out of line, the main code size is everything
@@ -115,22 +113,12 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
     }
     else
     {
-        EHblkDsc* HBtab = ehGetDsc(func->funEHIndex);
+        BasicBlock* const startBlock = func->GetStartBlock(this);
+        BasicBlock* const lastBlock  = func->GetLastBlock(this);
 
-        if (func->funKind == FUNC_FILTER)
-        {
-            assert(HBtab->HasFilter());
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdFilter));
-            *ppEndLoc   = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-        }
-        else
-        {
-            assert(func->funKind == FUNC_HANDLER);
-            *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
-            *ppEndLoc   = HBtab->ebdHndLast->IsLast() ? nullptr
-                                                      : new (this, CMK_UnwindInfo)
-                                                          emitLocation(ehEmitCookie(HBtab->ebdHndLast->Next()));
-        }
+        *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(startBlock));
+        *ppEndLoc =
+            lastBlock->IsLast() ? nullptr : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(lastBlock->Next()));
     }
 }
 
@@ -145,7 +133,7 @@ void Compiler::createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR
 
 void Compiler::unwindPushPopCFI(regNumber reg)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -194,24 +182,21 @@ typedef jitstd::vector<CFI_CODE> CFICodeVector;
 
 void Compiler::unwindBegPrologCFI()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
-    if (UsesFunclets())
+    FuncInfoDsc* func = funCurrentFunc();
+
+    // There is only one prolog for a function/funclet, and it comes first. So now is
+    // a good time to initialize all the unwind data structures.
+
+    unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
+
+    if (fgFirstColdBlock != nullptr)
     {
-        FuncInfoDsc* func = funCurrentFunc();
-
-        // There is only one prolog for a function/funclet, and it comes first. So now is
-        // a good time to initialize all the unwind data structures.
-
-        unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
-
-        if (fgFirstColdBlock != nullptr)
-        {
-            unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
-        }
-
-        func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
+        unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
     }
+
+    func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
 }
 
 void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
@@ -249,10 +234,10 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 
 void Compiler::unwindAllocStackCFI(unsigned size)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = 0;
-    if (compGeneratingProlog)
+    if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
     {
         cbProlog = unwindGetCurrentOffset(func);
     }
@@ -268,7 +253,7 @@ void Compiler::unwindAllocStackCFI(unsigned size)
 //
 void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
@@ -413,6 +398,11 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
                 assert(dwarfReg == DWARF_REG_ILLEGAL);
                 printf("    CodeOffset: 0x%02X Op: AdjustCfaOffset Offset:0x%X\n", codeOffset, offset);
                 break;
+            case CFI_NEGATE_RA_STATE:
+                assert(dwarfReg == DWARF_REG_ILLEGAL);
+                assert(offset == 0);
+                printf("    CodeOffset: 0x%02X Op: NegateRAState\n", codeOffset);
+                break;
             default:
                 printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);
                 break;
@@ -435,27 +425,12 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
 //
 UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 {
-    assert(compGeneratingProlog);
-    UNATIVE_OFFSET offset;
-    if (func->funKind == FUNC_ROOT)
-    {
-        offset = GetEmitter()->emitGetPrologOffsetEstimate();
-    }
-    else
-    {
-        if (TargetArchitecture::IsX64 ||
-            (TargetOS::IsUnix &&
-             (TargetArchitecture::IsArmArch || TargetArchitecture::IsX86 || TargetArchitecture::IsLoongArch64)))
-        {
-            assert(func->startLoc != nullptr);
-            offset = func->startLoc->GetFuncletPrologOffset(GetEmitter());
-        }
-        else
-        {
-            offset = 0; // TODO ???
-        }
-    }
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    emitLocation* loc = func->startLoc;
+    insGroup*     ig  = (loc != nullptr) ? loc->GetIG() : nullptr;
+    assert((ig == nullptr) || (loc->GetInsOffset() == 0));
 
+    UNATIVE_OFFSET offset = GetEmitter()->emitGetCurrentCodeOffsetFrom(ig);
     return offset;
 }
 

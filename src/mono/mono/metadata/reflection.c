@@ -1017,8 +1017,13 @@ add_parameter_object_to_array (MonoMethod *method, MonoObjectHandle member, int 
 	goto_if_nok (error, leave);
 
 	MonoStringHandle name_str;
-	name_str = mono_string_new_handle (name, error);
-	goto_if_nok (error, leave);
+	if (name != NULL) {
+		name_str = mono_string_new_handle (name, error);
+		goto_if_nok (error, leave);
+	} else {
+		// Keep NULL as NULL instead of converting to empty string
+		name_str = MONO_HANDLE_NEW (MonoString, NULL);
+	}
 
 	MonoObjectHandle def_value;
 

@@ -17,7 +17,7 @@
     <Compile Include="ThreadingAclExtensionsTests.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 

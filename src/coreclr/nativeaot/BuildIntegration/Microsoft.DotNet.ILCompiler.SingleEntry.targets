@@ -42,17 +42,27 @@
   <PropertyGroup>
     <!-- If the NativeAOT toolchain is being consumed via package, runtime-specific properties must be set before compilation can proceed -->
     <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
-    <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
+    <IlcSetupPropertiesDependsOn Condition="'$(_IlcReferencedAsPackage)' != 'false'">ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
   </PropertyGroup>
 
   <!-- Update the KnownILCompilerPack version to match the PackageReference, in case there's an explicit reference to a specific version. -->
   <!-- The _IlcReferencedAsPackage check is only there for using live ILCompiler targets (not a supported scenario outside of dotnet/runtime). -->
-  <ItemGroup Condition="'$(_IlcReferencedAsPackage)' != 'false'">
-    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
-      <ILCompilerPackVersion>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(ILCompilerTargetsPath)))))))</ILCompilerPackVersion>
-    </KnownILCompilerPack>
-  </ItemGroup>
+  <Target Name="UpdateKnownILCompilerPackForExplicitPackageReference"
+          Condition="'$(_IlcReferencedAsPackage)' != 'false'"
+          BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <_ExplicitILCompilerPackageReference Include="@(PackageReference)"
+                                           Condition="'%(PackageReference.Identity)' == 'Microsoft.DotNet.ILCompiler' And '%(PackageReference.IsImplicitlyDefined)' != 'true'" />
+
+      <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler"
+                           Condition="'@(_ExplicitILCompilerPackageReference)' != ''">
+        <ILCompilerPackVersion>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(ILCompilerTargetsPath)))))))</ILCompilerPackVersion>
+      </KnownILCompilerPack>
+
+      <_ExplicitILCompilerPackageReference Remove="@(_ExplicitILCompilerPackageReference)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Generate a warning if the user added an explicit PackageReference  -->
   <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(ILCompilerTargetsPath)' != ''"
@@ -62,7 +72,7 @@
   </Target>
 
   <!-- Locate the runtime package according to the current target runtime -->
-  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and '$(PublishAot)' == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
+  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and '$(PublishAot)' == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)">
     <Error Condition="'@(ResolvedILCompilerPack)' == ''" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
 
     <PropertyGroup>

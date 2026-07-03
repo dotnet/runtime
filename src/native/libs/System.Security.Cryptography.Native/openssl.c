@@ -22,11 +22,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
 c_static_assert(CRYPTO_EX_INDEX_X509 == 3);
-#else
-c_static_assert(CRYPTO_EX_INDEX_X509 == 10);
-#endif
+c_static_assert(CRYPTO_EX_INDEX_SSL_SESSION == 2);
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
@@ -40,31 +37,6 @@ c_static_assert(CRYPTO_EX_INDEX_X509 == 10);
 #define NAME_TYPE_DNSALT 4
 // See X509NameType.UrlName
 #define NAME_TYPE_URL 5
-
-/*
-Function:
-MakeTimeT
-
-Used to convert the constituent elements of a struct tm into a time_t. As time_t does not have
-a guaranteed blitting size, this function is static and cannot be p/invoked. It is here merely
-as a utility.
-
-Return values:
-A time_t representation of the input date. See also man mktime(3).
-*/
-static time_t
-MakeTimeT(int32_t year, int32_t month, int32_t day, int32_t hour, int32_t minute, int32_t second, int32_t isDst)
-{
-    struct tm currentTm;
-    currentTm.tm_year = year - 1900;
-    currentTm.tm_mon = month - 1;
-    currentTm.tm_mday = day;
-    currentTm.tm_hour = hour;
-    currentTm.tm_min = minute;
-    currentTm.tm_sec = second;
-    currentTm.tm_isdst = isDst;
-    return mktime(&currentTm);
-}
 
 /*
 Function:
@@ -213,7 +185,12 @@ ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 
     if (x509)
     {
-        X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
         ASN1_OBJECT* algOid;
 
         if (pubkey && X509_PUBKEY_get0_param(&algOid, NULL, NULL, NULL, pubkey))
@@ -275,7 +252,12 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
         return 0;
     }
 
-    X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
 
     if (!pubkey)
     {
@@ -327,7 +309,7 @@ Return values:
 NULL if the public key cannot be determined, a pointer to the ASN1_BIT_STRING structure representing
 the public key.
 */
-ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
+const ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 {
     // No error queue impact.
 
@@ -381,7 +363,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return 0;
     }
 
-    int length = asn1->length;
+    int length = ASN1_STRING_length(asn1);
     assert(length >= 0);
     if (length < 0)
     {
@@ -393,7 +375,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return -length;
     }
 
-    memcpy_s(pBuf, Int32ToSizeT(cBuf), asn1->data, Int32ToSizeT(length));
+    memcpy_s(pBuf, Int32ToSizeT(cBuf), ASN1_STRING_get0_data(asn1), Int32ToSizeT(length));
     return 1;
 }
 
@@ -487,28 +469,28 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
     // UrlName: SAN.Entries.FirstOrDefault(type == GEN_URI);
     if (nameType == NAME_TYPE_SIMPLE)
     {
-        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
+        const X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
 
         if (name)
         {
-            ASN1_STRING* cn = NULL;
-            ASN1_STRING* ou = NULL;
-            ASN1_STRING* o = NULL;
-            ASN1_STRING* e = NULL;
-            ASN1_STRING* firstRdn = NULL;
+            const ASN1_STRING* cn = NULL;
+            const ASN1_STRING* ou = NULL;
+            const ASN1_STRING* o = NULL;
+            const ASN1_STRING* e = NULL;
+            const ASN1_STRING* firstRdn = NULL;
 
             // Walk the list backwards because it is stored in stack order
             for (int i = X509_NAME_entry_count(name) - 1; i >= 0; --i)
             {
-                X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
+                const X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
 
                 if (!entry)
                 {
                     continue;
                 }
 
-                ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
-                ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
+                const ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
+                const ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
 
                 if (!oid || !str)
                 {
@@ -541,7 +523,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                 }
             }
 
-            ASN1_STRING* answer = cn;
+            const ASN1_STRING* answer = cn;
 
             // If there was no CN, but there was something, then perform fallbacks.
             if (!answer && firstRdn)
@@ -665,7 +647,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
 
     if (nameType == NAME_TYPE_EMAIL || nameType == NAME_TYPE_DNS)
     {
-        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
+        const X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
         int expectedNid = NID_undef;
 
         switch (nameType)
@@ -683,15 +665,15 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
             // Walk the list backwards because it is stored in stack order
             for (int i = X509_NAME_entry_count(name) - 1; i >= 0; --i)
             {
-                X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
+                const X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
 
                 if (!entry)
                 {
                     continue;
                 }
 
-                ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
-                ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
+                const ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
+                const ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
 
                 if (!oid || !str)
                 {
@@ -803,12 +785,19 @@ int32_t CryptoNative_CheckX509IpAddress(
 
             ipAddr = sanEntry->d.iPAddress;
 
-            if (!ipAddr || !ipAddr->data || ipAddr->length != addressBytesLen)
+            if (!ipAddr || ASN1_STRING_length(ipAddr) != addressBytesLen)
             {
                 continue;
             }
 
-            if (!memcmp(addressBytes, ipAddr->data, (size_t)addressBytesLen))
+            const uint8_t* ipAddrData = ASN1_STRING_get0_data(ipAddr);
+
+            if (!ipAddrData)
+            {
+                continue;
+            }
+
+            if (!memcmp(addressBytes, ipAddrData, (size_t)addressBytesLen))
             {
                 success = 1;
                 break;
@@ -821,7 +810,7 @@ int32_t CryptoNative_CheckX509IpAddress(
     if (!success)
     {
         // This is a shared/interor pointer, do not free!
-        X509_NAME* subject = X509_get_subject_name(x509);
+        OSSL4CONST X509_NAME* subject = X509_get_subject_name(x509);
 
         if (subject)
         {
@@ -830,11 +819,14 @@ int32_t CryptoNative_CheckX509IpAddress(
             while ((i = X509_NAME_get_index_by_NID(subject, subjectNid, i)) >= 0)
             {
                 // Shared/interior pointers, do not free!
-                X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
-                ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
+                const X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
+                const ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
 
-                if (cn->length == cchHostname &&
-                    !strncasecmp((const char*)cn->data, hostname, (size_t)cchHostname))
+                const char* data = (const char*)ASN1_STRING_get0_data(cn);
+
+                if (ASN1_STRING_length(cn) == cchHostname &&
+                    data != NULL &&
+                    !strncasecmp(data, hostname, (size_t)cchHostname))
                 {
                     success = 1;
                     break;
@@ -897,20 +889,14 @@ Function:
 SetX509StoreVerifyTime
 
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to assign the
-verification time to the chain building.  The input is in LOCAL time, not UTC.
+verification time to the chain building. The input is an absolute instant as Unix time
+(seconds since 1970-01-01 UTC), directly convertible to a time_t value.
 
 Return values:
-0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
+0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or if the time is out of bounds on a 32-bit time environment.
 1 on success.
 */
-int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
-                                            int32_t year,
-                                            int32_t month,
-                                            int32_t day,
-                                            int32_t hour,
-                                            int32_t minute,
-                                            int32_t second,
-                                            int32_t isDst)
+int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx, int64_t unixTime)
 {
     ERR_clear_error();
 
@@ -919,12 +905,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-    time_t verifyTime = MakeTimeT(year, month, day, hour, minute, second, isDst);
-
-    if (verifyTime == (time_t)-1)
-    {
-        return 0;
-    }
+    time_t verifyTime = (time_t)unixTime;
 
     X509_VERIFY_PARAM* verifyParams = X509_STORE_get0_param(ctx);
 
@@ -933,7 +914,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (g_libSslUses32BitTime)
     {
         if (verifyTime > INT_MAX || verifyTime < INT_MIN)
@@ -1024,6 +1005,13 @@ int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
     return BIO_seek(bio, ofs);
 }
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+static void local_sk_X509_freefunc_thunk(OPENSSL_sk_freefunc freefunc_arg, void* ptr)
+{
+    freefunc_arg(ptr);
+}
+#endif
+
 /*
 Function:
 NewX509Stack
@@ -1037,7 +1025,19 @@ A STACK_OF(X509*) with no comparator.
 STACK_OF(X509) * CryptoNative_NewX509Stack(void)
 {
     ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    OPENSSL_STACK* sk = OPENSSL_sk_new_null();
+
+    if (API_EXISTS(OPENSSL_sk_set_thunks))
+    {
+        OPENSSL_sk_set_thunks(sk, local_sk_X509_freefunc_thunk);
+    }
+
+    return (STACK_OF(X509)*)sk;
+#else
     return sk_X509_new_null();
+#endif
 }
 
 /*
@@ -1152,7 +1152,7 @@ int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** 
 
 /*
 Function:
-SSLeay (OpenSSL_version_num for OpenSSL 1.1+)
+OpenSSL_version_num
 
 Gets the version of openssl library.
 
@@ -1192,11 +1192,7 @@ static void ExDataFreeOcspResponse(
 // In the OpenSSL 3 headers, `from_d` changed from (void*) to (void**).
 static int ExDataDupOcspResponse(
     CRYPTO_EX_DATA* to,
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
-#else
-    CRYPTO_EX_DATA* from,
-#endif
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
     void** from_d,
 #else
@@ -1249,11 +1245,7 @@ static void ExDataFreeNoOp(
 
 static int ExDataDupNoOp(
     CRYPTO_EX_DATA* to,
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
-#else
-    CRYPTO_EX_DATA* from,
-#endif
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
     void** from_d,
 #else
@@ -1313,150 +1305,6 @@ int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm)
     return ret;
 }
 
-#ifdef NEED_OPENSSL_1_0
-// Lock used to make sure EnsureopenSslInitialized itself is thread safe
-static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
-
-// Set of locks initialized for OpenSSL
-static pthread_mutex_t* g_locks = NULL;
-
-/*
-Function:
-LockingCallback
-
-Called back by OpenSSL to lock or unlock.
-*/
-static void LockingCallback(int mode, int n, const char* file, int line)
-{
-    (void)file, (void)line; // deliberately unused parameters
-
-// Clang complains about releasing locks that are not held.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wthread-safety-analysis"
-
-#ifndef CRYPTO_LOCK
-#define CRYPTO_LOCK 1
-#endif
-
-    int result;
-    if (mode & CRYPTO_LOCK)
-    {
-        result = pthread_mutex_lock(&g_locks[n]);
-    }
-    else
-    {
-        result = pthread_mutex_unlock(&g_locks[n]);
-    }
-
-    if (result != 0)
-    {
-        assert(0 && "LockingCallback failed.");
-    }
-#pragma clang diagnostic pop
-}
-
-/*
-Function:
-EnsureOpenSslInitialized
-
-Initializes OpenSSL with a locking callback to ensure thread safety.
-
-Return values:
-0 on success
-non-zero on failure
-*/
-static int32_t EnsureOpenSsl10Initialized(void)
-{
-    int ret = 0;
-    int numLocks = 0;
-    int locksInitialized = 0;
-    int randPollResult = 0;
-    size_t allocationSize = 0;
-
-    pthread_mutex_lock(&g_initLock);
-
-    if (g_locks != NULL)
-    {
-        // Already initialized; nothing more to do.
-        goto done;
-    }
-
-    // Determine how many locks are needed
-    numLocks = CRYPTO_num_locks();
-    if (numLocks <= 0)
-    {
-        assert(0 && "CRYPTO_num_locks returned invalid value.");
-        ret = 1;
-        goto done;
-    }
-
-    // Create the locks array
-    if (!multiply_s(sizeof(pthread_mutex_t), (size_t)numLocks, &allocationSize))
-    {
-        ret = 2;
-        goto done;
-    }
-
-    g_locks = (pthread_mutex_t*)malloc(allocationSize);
-    if (g_locks == NULL)
-    {
-        ret = 2;
-        goto done;
-    }
-
-    // Initialize each of the locks
-    for (locksInitialized = 0; locksInitialized < numLocks; locksInitialized++)
-    {
-        if (pthread_mutex_init(&g_locks[locksInitialized], NULL) != 0)
-        {
-            ret = 3;
-            goto done;
-        }
-    }
-
-    // Initialize the callback
-    CRYPTO_set_locking_callback(LockingCallback);
-
-    // Initialize the random number generator seed
-    randPollResult = RAND_poll();
-    if (randPollResult < 1)
-    {
-        ret = 4;
-        goto done;
-    }
-
-    // Load the SHA-2 hash algorithms, and anything else not in the default
-    // support set.
-    OPENSSL_add_all_algorithms_conf();
-
-    // Ensure that the error message table is loaded.
-    ERR_load_crypto_strings();
-
-    // In OpenSSL 1.0.2-, CRYPTO_EX_INDEX_X509 is 10.
-    g_x509_ocsp_index = CRYPTO_get_ex_new_index(10, 0, NULL, NULL, ExDataDupOcspResponse, ExDataFreeOcspResponse);
-    // In OpenSSL 1.0.2-, CRYPTO_EX_INDEX_SSL_SESSION is 3.
-    g_ssl_sess_cert_index = CRYPTO_get_ex_new_index(3, 0, NULL, NULL, ExDataDupNoOp, ExDataFreeNoOp);
-
-done:
-    if (ret != 0)
-    {
-        // Cleanup on failure
-        if (g_locks != NULL)
-        {
-            for (int i = locksInitialized - 1; i >= 0; i--)
-            {
-                pthread_mutex_destroy(&g_locks[i]); // ignore failures
-            }
-            free(g_locks);
-            g_locks = NULL;
-        }
-    }
-
-    pthread_mutex_unlock(&g_initLock);
-    return ret;
-}
-#endif // NEED_OPENSSL_1_0 */
-
 #if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
 // Only defined in OpenSSL 1.1.1+, has no effect on 1.1.0.
@@ -1483,19 +1331,33 @@ static void HandleShutdown(void)
 
 static int32_t EnsureOpenSsl11Initialized(void)
 {
-    // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
-    // so do the same for 1.1
-    OPENSSL_init_ssl(
-        // OPENSSL_add_all_algorithms_conf
+    // OPENSSL_init_ssl returns 1 on success, 0 on failure.
+    // When OPENSSL_INIT_LOAD_CONFIG is specified with a broken configuration,
+    // this call can fail or leave OpenSSL in a partially initialized state.
+    if (!OPENSSL_init_ssl(
             OPENSSL_INIT_ADD_ALL_CIPHERS |
             OPENSSL_INIT_ADD_ALL_DIGESTS |
             OPENSSL_INIT_LOAD_CONFIG |
-        // Do not unload on process exit, as the CLR may still have threads running
+            // Do not unload on process exit, as the CLR may still have threads running
             OPENSSL_INIT_NO_ATEXIT |
-        // ERR_load_crypto_strings
             OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
             OPENSSL_INIT_LOAD_SSL_STRINGS,
-        NULL);
+        NULL))
+    {
+        // Try again without loading the config. This allows the application
+        // to continue even if the openssl.cnf is malformed (e.g., missing
+        // provider sections, referencing non-existent modules).
+        if (!OPENSSL_init_ssl(
+                OPENSSL_INIT_ADD_ALL_CIPHERS |
+                OPENSSL_INIT_ADD_ALL_DIGESTS |
+                OPENSSL_INIT_NO_ATEXIT |
+                OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
+                OPENSSL_INIT_LOAD_SSL_STRINGS,
+            NULL))
+        {
+            return 1;
+        }
+    }
 
     // As a fallback for when the NO_ATEXIT isn't respected, register a later
     // atexit handler, so we will indicate that we're in the shutdown state
@@ -1528,11 +1390,6 @@ int g_ssl_sess_cert_index = -1;
 
 static int32_t EnsureOpenSslInitializedCore(void)
 {
-    int ret = 0;
-
-    // If portable then decide which OpenSSL we are, and call the right one.
-    // If 1.0, call the 1.0 one.
-    // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     InitializeOpenSSLShim();
 #endif
@@ -1540,25 +1397,10 @@ static int32_t EnsureOpenSslInitializedCore(void)
     // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
     InitializeMemoryDebug();
 
-#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (API_EXISTS(SSL_state))
-    {
-        ret = EnsureOpenSsl10Initialized();
-    }
-    else
-    {
-        ret = EnsureOpenSsl11Initialized();
-    }
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-    ret = EnsureOpenSsl10Initialized();
-#else
-    ret = EnsureOpenSsl11Initialized();
-#endif
+    int ret = EnsureOpenSsl11Initialized();
 
     if (ret == 0)
     {
-        // On OpenSSL 1.0.2 our expected index is 0.
-        // On OpenSSL 1.1.0+ 0 is a reserved value and we expect 1.
         assert(g_x509_ocsp_index != -1);
         assert(g_ssl_sess_cert_index != -1);
     }

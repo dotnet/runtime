@@ -22,8 +22,10 @@ namespace Internal.TypeSystem
         tvOSSimulator,
         FreeBSD,
         NetBSD,
+        OpenBSD,
         SunOS,
-        WebAssembly
+        Browser,
+        Wasi
     }
 
     public enum TargetAbi
@@ -292,6 +294,17 @@ namespace Internal.TypeSystem
                     return new LayoutInt(4);
                 default:
                     throw new NotSupportedException();
+            }
+        }
+
+        /// <summary>
+        /// Returns True if compiling for WebAssembly (Wasm32 or Wasm64)
+        /// </summary>
+        public bool IsWasm
+        {
+            get
+            {
+                return Architecture == TargetArchitecture.Wasm32;
             }
         }
 

@@ -754,7 +754,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public virtual void HandlesNestedTypes()
         {
-            string json = @"{""MyInt"":5}";
+            string json = """{"MyInt":5}""";
             MyNestedClass obj = JsonSerializer.Deserialize<MyNestedClass>(json, DefaultContext.MyNestedClass);
             Assert.Equal(5, obj.MyInt);
             Assert.Equal(json, JsonSerializer.Serialize(obj, DefaultContext.MyNestedClass));
@@ -777,7 +777,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public void ConstructingFromOptionsKeepsReference()
         {
-            JsonStringEnumConverter converter = new();
+            JsonConverter converter = new JsonStringEnumConverter<JsonIgnoreCondition>();
             JsonSerializerOptions options = new()
             {
                 PropertyNameCaseInsensitive = true,
@@ -817,8 +817,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         public virtual void ParameterizedConstructor()
         {
             string json = JsonSerializer.Serialize(new HighLowTempsImmutable(1, 2), DefaultContext.HighLowTempsImmutable);
-            Assert.Contains(@"""High"":1", json);
-            Assert.Contains(@"""Low"":2", json);
+            Assert.Contains("""
+                "High":1
+                """, json);
+            Assert.Contains("""
+                "Low":2
+                """, json);
 
             HighLowTempsImmutable obj = JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable);
             Assert.Equal(1, obj.High);
@@ -829,8 +833,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         public virtual void PositionalRecord()
         {
             string json = JsonSerializer.Serialize(new HighLowTempsRecord(1, 2), DefaultContext.HighLowTempsRecord);
-            Assert.Contains(@"""High"":1", json);
-            Assert.Contains(@"""Low"":2", json);
+            Assert.Contains("""
+                "High":1
+                """, json);
+            Assert.Contains("""
+                "Low":2
+                """, json);
 
             HighLowTempsRecord obj = JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsRecord);
             Assert.Equal(1, obj.High);
@@ -865,6 +873,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 Uri = new Uri("http://contoso.com"),
                 Array = new int[] { 42 },
+                ByteArray = new byte[] { 1, 2, 3 },
                 Poco = new ClassWithNullableProperties.MyPoco(),
 
                 NullableUri = new Uri("http://contoso.com"),
@@ -877,10 +886,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             void RunTest(ClassWithNullableProperties expected)
             {
                 string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithNullableProperties);
+
+                if (expected.ByteArray is null)
+                {
+                    Assert.Contains("\"ByteArray\":null", json);
+                }
+
                 ClassWithNullableProperties actual = JsonSerializer.Deserialize(json, DefaultContext.ClassWithNullableProperties);
 
                 Assert.Equal(expected.Uri, actual.Uri);
                 Assert.Equal(expected.Array, actual.Array);
+                Assert.Equal(expected.ByteArray, actual.ByteArray);
                 Assert.Equal(expected.Poco, actual.Poco);
 
                 Assert.Equal(expected.NullableUri, actual.NullableUri);
@@ -935,6 +951,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             public Uri? Uri { get; set; }
             public int[]? Array { get; set; }
+            public byte[]? ByteArray { get; set; }
             public MyPoco? Poco { get; set; }
 
             public Uri? NullableUri { get; set; }
@@ -1024,7 +1041,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             };
 
             string json = JsonSerializer.Serialize(person, DefaultContext.NullablePersonStruct);
-            JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+            JsonTestHelper.AssertJsonEqual("""{"FirstName":"Jane","LastName":"Doe"}""", json);
 
             person = JsonSerializer.Deserialize(json, DefaultContext.NullablePersonStruct);
             Assert.Equal("Jane", person.Value.FirstName);
@@ -1037,7 +1054,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             var instance = new TypeWithValidationAttributes { Name = "Test Name", Email = "email@test.com" };
 
             string json = JsonSerializer.Serialize(instance, DefaultContext.TypeWithValidationAttributes);
-            JsonTestHelper.AssertJsonEqual(@"{""Name"":""Test Name"",""Email"":""email@test.com""}", json);
+            JsonTestHelper.AssertJsonEqual("""{"Name":"Test Name","Email":"email@test.com"}""", json);
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
                 // Deserialization not supported in fast path serialization only mode
@@ -1057,7 +1074,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             var instance = new TypeWithDerivedAttribute();
 
             string json = JsonSerializer.Serialize(instance, DefaultContext.TypeWithDerivedAttribute);
-            JsonTestHelper.AssertJsonEqual(@"{}", json);
+            JsonTestHelper.AssertJsonEqual("{}", json);
 
             // Deserialization not supported in fast path serialization only mode
             // but we can deserialize empty types as we throw only when looking up properties and there are no properties here.
@@ -1076,7 +1093,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
             else
             {
-                string expectedJson = @"{""$type"" : ""derivedClass"", ""Number"" : 42, ""Boolean"" : true }";
+                string expectedJson = """{"$type" : "derivedClass", "Number" : 42, "Boolean" : true }""";
                 string actualJson = JsonSerializer.Serialize(value, DefaultContext.PolymorphicClass);
                 JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
             }
@@ -1085,7 +1102,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public void PolymorphicClass_Deserialization()
         {
-            string json = @"{""$type"" : ""derivedClass"", ""Number"" : 42, ""Boolean"" : true }";
+            string json = """{"$type" : "derivedClass", "Number" : 42, "Boolean" : true }""";
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
@@ -1109,7 +1126,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
             else
             {
-                JsonTestHelper.AssertJsonEqual(@"{""Id"":""0""}", JsonSerializer.Serialize(new PocoWithNumberHandlingAttr(), DefaultContext.PocoWithNumberHandlingAttr));
+                JsonTestHelper.AssertJsonEqual("""{"Id":"0"}""", JsonSerializer.Serialize(new PocoWithNumberHandlingAttr(), DefaultContext.PocoWithNumberHandlingAttr));
             }
         }
 

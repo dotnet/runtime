@@ -112,9 +112,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         foreach ((string expectedFilename, bool expectFingerprint) in superSet.OrderByDescending(kvp => kvp.Key))
         {
-            string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
-            string extension = Path.GetExtension(expectedFilename).Substring(1);
-
             dotnetFiles = dotnetFiles
                 .Where(actualFile =>
                 {
@@ -127,7 +124,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                                expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                                expectFingerprintForThisFile: expectFingerprint))
                     {
-                        string pattern = $"^{prefix}{s_dotnetVersionHashRegex}{extension}$";
+                        string pattern = GetFingerprintRegexPattern(expectedFilename);
                         var match = Regex.Match(actualFilename, pattern);
                         if (!match.Success)
                             return true;
@@ -338,7 +335,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged)
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged, string? bootConfigDir = null)
     {
         List<string> files = new()
         {
@@ -379,7 +376,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         if (IsFingerprintingEnabled)
         {
-            string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.js");
+            string bootJsonPath = GetBootConfigPath(bootConfigDir ?? paths.BinFrameworkDir, "dotnet.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
             AssetsData assets = (AssetsData)bootJson.resources;
             var keysToUpdate = new List<string>();
@@ -418,6 +415,19 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public bool ShouldCheckFingerprint(string expectedFilename, bool? expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
         => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs == true) || expectFingerprintForThisFile);
 
+    private static string GetFingerprintRegexPattern(string expectedFilename)
+    {
+        const string jsSymbolsSuffix = ".js.symbols";
+        if (expectedFilename.EndsWith(jsSymbolsSuffix, StringComparison.Ordinal))
+        {
+            string prefix = expectedFilename[..^jsSymbolsSuffix.Length];
+            return $"^{Regex.Escape(prefix)}{s_dotnetVersionHashRegex}js\\.symbols$";
+        }
+
+        string defaultPrefix = Path.GetFileNameWithoutExtension(expectedFilename);
+        string extension = Path.GetExtension(expectedFilename).Substring(1);
+        return $"^{Regex.Escape(defaultPrefix)}{s_dotnetVersionHashRegex}{Regex.Escape(extension)}$";
+    }
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
@@ -429,6 +439,18 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         string actualPath = match.Groups[1].Value;
         if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
+    }
+
+    // Extract the runtime pack root that the build actually resolved (printed by
+    // BrowserWasmApp.targets / BrowserWasmApp.CoreCLR.targets as
+    // "** MicrosoftNetCoreAppRuntimePackDir : '<path>'"). Returns null when the line is
+    // not present (e.g. assertions running off a cached output that didn't capture it).
+    public static string? TryGetRuntimePackDirFromBuildOutput(string? buildOutput)
+    {
+        if (string.IsNullOrEmpty(buildOutput))
+            return null;
+        var match = s_runtimePackPathRegex.Match(buildOutput);
+        return match.Success && match.Groups.Count == 2 ? match.Groups[1].Value : null;
     }
 
     public static void AssertDotNetJsSymbols(AssertBundleOptions assertOptions)
@@ -494,7 +516,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.BuildOptions.GlobalizationMode is GlobalizationMode.Custom)
         {
             string srcPath = assertOptions.BuildOptions.CustomIcuFile!;
-            string runtimePackDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
+            // Prefer the runtime-pack root the build actually resolved (from MSBuild output),
+            // since that is the same pack the publish output was produced from. The SDK's
+            // workload-pack dir (GetRuntimeNativeDir) can diverge from it on CoreCLR no-workload
+            // runs where the publish-time pack comes from a per-test NuGet cache.
+            string runtimePackDir = !string.IsNullOrEmpty(assertOptions.RuntimePackDir)
+                ? Path.Combine(assertOptions.RuntimePackDir, "runtimes", BuildEnvironment.DefaultRuntimeIdentifier, "native")
+                : BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
             if (!Path.IsPathRooted(srcPath))
                 srcPath = Path.Combine(runtimePackDir, assertOptions.BuildOptions.CustomIcuFile!);
             TestUtils.AssertSameFile(srcPath, actual.Single());
@@ -550,11 +578,22 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
+    private static string GetDefaultBootConfigFileName(string binFrameworkDir)
+    {
+        // Probe for the boot config file to support different TFMs:
+        // - blazor.boot.json for pre-net10
+        // - dotnet.js with embedded config for net10+ (inline boot config)
+        if (File.Exists(Path.Combine(binFrameworkDir, "blazor.boot.json")))
+            return "blazor.boot.json";
+
+        return "dotnet.js";
+    }
+
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
 
         EnsureProjectDirIsSet();
-        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, GetDefaultBootConfigFileName(options.BinFrameworkDir));
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         AssetsData assets = (AssetsData)bootJson.resources;
 
@@ -567,7 +606,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var bootJsonEntries = assets.jsModuleNative.Select(a => a.name)
             .Union(assets.wasmNative.Select(a => a.name))
             .Union(assets.jsModuleRuntime.Select(a => a.name))
-            .Union(assets.jsModuleWorker?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.jsModuleDiagnostics?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.wasmSymbols?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .ToArray();
@@ -585,14 +623,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             bool expectFingerprint = knownSet[expectedFilename];
             expectedEntries[expectedFilename] = item =>
             {
-                string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
-                string extension = Path.GetExtension(expectedFilename).Substring(1);
-
                 if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
                                            expectFingerprintOnDotnetJs: options.ExpectDotnetJsFingerprinting,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
-                    return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
+                    return Regex.Match(item, GetFingerprintRegexPattern(expectedFilename)).Success;
                 }
                 else
                 {

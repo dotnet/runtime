@@ -45,11 +45,7 @@ namespace System.Runtime.Caching
                 {
                     return false;
                 }
-                if (s2.Length != s1.Length)
-                {
-                    return false;
-                }
-                return 0 == string.Compare(s1, 0, s2, 0, s2.Length, StringComparison.OrdinalIgnoreCase);
+                return s1.Equals(s2, StringComparison.OrdinalIgnoreCase);
             }
 
             private void OnChanged(object sender, FileSystemEventArgs e)
