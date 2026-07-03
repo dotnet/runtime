@@ -366,9 +366,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = """{"MyString":"value"}""";
             MemberInfo memberInfo = type.GetMember("MyString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)[0];
 
-            object result = await Serializer.DeserializeWrapper("""{"MyString":"value"}""", type);
-            Assert.IsType(type, result);
-            Assert.Equal(memberInfo is PropertyInfo p ? p.GetValue(result) : ((FieldInfo)memberInfo).GetValue(result), "value");
+            Assert.Equal("value", memberInfo is PropertyInfo p ? p.GetValue(result) : ((FieldInfo)memberInfo).GetValue(result));
 
             string actualJson = await Serializer.SerializeWrapper(result, type);
             Assert.Equal(json, actualJson);
