@@ -345,7 +345,7 @@ namespace System.IO
                     releaseSharedData = true;
                 }
             }
-            catch (Exception)
+            catch
             {
                 // Ignore the error, just don't release shared data.
             }
@@ -560,7 +560,7 @@ namespace System.IO
                         {
                             FileSystem.SetUnixFileMode(directoryPath, permissionsMask);
                         }
-                        catch (Exception)
+                        catch
                         {
                             try { Directory.Delete(directoryPath); } catch { }
                             throw;
@@ -575,7 +575,7 @@ namespace System.IO
                         {
                             FileSystem.SetUnixFileMode(directoryPath, permissionsMask);
                         }
-                        catch (Exception)
+                        catch
                         {
                             try { Directory.Delete(directoryPath); } catch { }
                             throw;
