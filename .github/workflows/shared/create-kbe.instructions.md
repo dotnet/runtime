@@ -118,9 +118,9 @@ it from the build metadata, not the queue time) against the issue's `closed_at`:
   predecessor `#<n>` in the body so the regression is explicit, mirroring the
   merged-fix-PR recurrence rule below.
 
-**Chronic recurrence.** If the searches above surface **two or more** closed
-`[ci-scan]` predecessors sharing the same test-name stem, treat it as a chronic
-recurrence, not a fresh regression: do **not** file — record `existing-kbe #<n>`
+**Recurring signature.** If the searches above surface **two or more** closed
+`[ci-scan]` predecessors sharing the same test-name stem, treat it as a recurring
+signature, not a fresh regression: do **not** file — record `existing-kbe #<n>`
 against the most recently closed predecessor. For such stems, widen the
 predecessor look-back from `closed:>=<30-days-ago>` to `closed:>=<90-days-ago>`.
 
