@@ -50,7 +50,20 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
-            state.StackState->CriticalNotifier = awaiter;
+
+            // We optimize specially for "await Task.Yield()" -- in the same
+            // way that YieldAwaiter implements IStateMachineBoxAwareAwaiter
+            // for async1. This avoids allocating internal thread pool objects
+            // for this case.
+            if (typeof(TAwaiter) == typeof(YieldAwaitable.YieldAwaiter))
+            {
+                state.StackState->CriticalNotifier = RuntimeAsyncYielder.Instance;
+            }
+            else
+            {
+                state.StackState->CriticalNotifier = awaiter;
+            }
+
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }

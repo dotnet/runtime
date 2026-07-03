@@ -356,6 +356,12 @@ namespace System
             }
         }
 
+        internal object GetTargetForSingleCastInstanceDelegate()
+        {
+            Debug.Assert(Target == _target && _target != null);
+            return _target;
+        }
+
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 

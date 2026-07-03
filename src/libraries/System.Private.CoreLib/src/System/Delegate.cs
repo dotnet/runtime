@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -81,6 +82,12 @@ namespace System
         public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
 
         public object? Target => Unsafe.As<MulticastDelegate>(this).Target;
+
+        internal object GetTargetForSingleCastInstanceDelegate()
+        {
+            Debug.Assert(Target == _target && _target != null);
+            return _target;
+        }
 #endif
 
         /// <summary>
