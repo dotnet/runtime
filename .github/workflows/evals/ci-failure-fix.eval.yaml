@@ -52,7 +52,7 @@ stimuli:
       - type: file-not-matches
         config:
           path: "out/decision.md"
-          pattern: '\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported'
+          pattern: '(?i)\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|\bmut(e|ed|es|ing)\b'
 
       - type: file-not-matches
         config:

@@ -40,7 +40,7 @@ stimuli:
       - Then a blank line and the KBE issue body per the shared template: a `## Build Information` section citing the real build id and leg you found, a `## Error Details` section with the fenced log excerpt, and a `## Error Message` section containing exactly one ` ```json ` block with the four keys `ErrorMessage`, `ErrorPattern`, `BuildRetry`, `ExcludeConsoleLog` (exactly one of `ErrorMessage`/`ErrorPattern` non-empty, a specific substring copied verbatim from the real log — never a bare test name).
       - Embed the `<!-- ci-scan-match-count: <N> hits in failure.log -->` marker with the real grep count from step 2.
 
-      If, after a genuine search across the outer-loop pipelines, nothing is currently failing on `main` in the window, write `./out/kbe.md` containing exactly `NO-ACTIONABLE-FAILURE` on the first line and a one-line explanation. Keep all scratch state under /tmp.
+      Outer-loop pipelines have failing `main` builds essentially all the time — search across defs (154 and other outer-loop defs) until you find a real one; do not give up and do not fabricate. Keep all scratch state under /tmp.
 
     graders:
       - type: file-matches
@@ -71,7 +71,7 @@ stimuli:
       - type: file-not-matches
         config:
           path: "out/kbe.md"
-          pattern: '\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|\bMut(e|ing)\b'
+          pattern: '(?i)\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|\bmut(e|ed|es|ing)\b'
 
       - type: tool-calls
         name: fetched-real-failing-build
@@ -92,4 +92,4 @@ stimuli:
         config:
           scoring: binary
           prompt: |
-            Read ./out/kbe.md. If its first line is `NO-ACTIONABLE-FAILURE`, fail (the scanner should have found a real live outer-loop failure). Otherwise pass ONLY if it conforms to the static Known Build Error format: a `[ci-scan] ` title naming exactly one failure shape (no run-specific IDs), the `Known Build Error` label plus exactly one of `blocking-clean-ci`/`blocking-clean-ci-optional`, the three body sections, and exactly ONE fenced json block with all four keys where exactly one of ErrorMessage/ErrorPattern is a non-empty specific substring (not a bare identifier) and the other is `""`, and the Build Information section cites a concrete real build id. Otherwise fail.
+            Read ./out/kbe.md. Pass ONLY if it conforms to the static Known Build Error format: a `[ci-scan] ` title naming exactly one failure shape (no run-specific IDs), the `Known Build Error` label plus exactly one of `blocking-clean-ci`/`blocking-clean-ci-optional`, the three body sections, and exactly ONE fenced json block with all four keys where exactly one of ErrorMessage/ErrorPattern is a non-empty specific substring (not a bare identifier) and the other is `""`, and the Build Information section cites a concrete real build id. Otherwise fail.

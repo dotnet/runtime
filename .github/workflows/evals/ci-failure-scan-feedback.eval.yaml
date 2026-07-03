@@ -32,8 +32,8 @@ stimuli:
 
       This is a LIVE run — gather the signals yourself from the real repository. Do NOT invent signals.
 
-      1. Scan the scanner's recent output: `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --sort created --limit 30` (include recently CLOSED ones — an auto-closed `[ci-scan]` KBE is a strong signal). For a few, `gh issue view <n> --repo dotnet/runtime --comments` to read maintainer (MEMBER/OWNER) feedback and the close reason.
-      2. Scan the fixer's recent output: `gh search prs 'in:title [ci-fix]' --repo dotnet/runtime --sort created --limit 30` and note their state (open/merged/closed, review status).
+      1. Scan the scanner's recent output. `gh search issues` defaults to open only, so run it once for each state and merge — the CLOSED ones matter most (an auto-closed `[ci-scan]` KBE is a strong non-match signal): `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state closed --sort updated --limit 30` and `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open --sort created --limit 30`. For a few, `gh issue view <n> --repo dotnet/runtime --comments` to read maintainer (MEMBER/OWNER) feedback and the close reason.
+      2. Scan the fixer's recent output across states (merged PRs are closed, so query both): `gh search prs 'in:title [ci-fix]' --repo dotnet/runtime --state closed --sort updated --limit 30` and `gh search prs 'in:title [ci-fix]' --repo dotnet/runtime --state open --sort created --limit 30`, and note each one's state (open/merged/closed, review status).
 
       Then **emit the safe-output you would produce, as a markdown document at `./out/feedback.md`.** Make it constructive and grounded in what you actually found:
 
