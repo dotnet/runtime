@@ -379,7 +379,7 @@ namespace System.Net.Tests
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21590", TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/127786", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
         public async Task Write_ContentToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -420,7 +420,7 @@ namespace System.Net.Tests
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21590", TestPlatforms.OSX | TestPlatforms.FreeBSD)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/127786", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
         public async Task Write_ContentToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";

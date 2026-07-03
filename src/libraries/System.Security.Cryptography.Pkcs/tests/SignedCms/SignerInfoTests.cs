@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/127786", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
     public static partial class SignerInfoTests
     {
         [Fact]
