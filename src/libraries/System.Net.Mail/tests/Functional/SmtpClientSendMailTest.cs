@@ -147,13 +147,9 @@ namespace System.Net.Mail.Tests
 
         [Theory]
         [MemberData(nameof(SendMail_MultiLineDomainLiterals_Data))]
-        public async Task MultiLineDomainLiterals_Disabled_Throws(string from, string to)
+        public void MultiLineDomainLiterals_Disabled_Throws(string from, string to)
         {
-            Smtp.Credentials = new NetworkCredential("Foo", "Bar");
-
-            using var msg = new MailMessage(@from, @to, "subject", "body");
-
-            await SendMail<SmtpException>(msg);
+            Assert.Throws<FormatException>(() => new MailMessage(@from, @to, "subject", "body"));
         }
 
         public static IEnumerable<object[]> SendMail_MultiLineDomainLiterals_Data()
