@@ -305,6 +305,10 @@ namespace System.Tests
 
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
+            yield return new object[] { Decimal32.Parse("0e5"), Decimal32.Parse("1e1"), -1 };
+            yield return new object[] { Decimal32.Parse("0e5"), Decimal32.Parse("-1e1"), 1 };
+            yield return new object[] { Decimal32.Parse("0e-5"), Decimal32.Parse("1e1"), -1 };
+            yield return new object[] { Decimal32.Parse("0e-5"), Decimal32.Parse("-1e1"), 1 };
             yield return new object[] { Decimal32.Parse("-1e1"), Decimal32.Parse("-10"), 0 };
             yield return new object[] { Decimal32.Parse("-2"), Decimal32.Parse("-3"), 1 };
             yield return new object[] { Decimal32.Parse("3"), Decimal32.Parse("2"), 1 };
@@ -332,6 +336,7 @@ namespace System.Tests
             yield return new object[] { Decimal32.Parse("5e-102"), Decimal32.Zero, 0 };
             yield return new object[] { Decimal32.Parse("5.00001e-102"), Decimal32.Epsilon, 0 };
             yield return new object[] { Decimal32.Parse("0.5" + new string('0', 100) + "1e-101"), Decimal32.Epsilon, 0 };
+            yield return new object[] { Decimal32.Parse("0.5" + new string('0', 100) + "1e-102"), Decimal32.Epsilon, -1 };
             yield return new object[] { Decimal32.Parse("5." + new string('0', 300) + "1e-102"), Decimal32.Epsilon, 0 };
             yield return new object[] { Decimal32.Parse("6e-102"), Decimal32.Parse("1e-101"), 0 };
             yield return new object[] { Decimal32.Parse("1000000001e-110"), Decimal32.Epsilon, 0 };

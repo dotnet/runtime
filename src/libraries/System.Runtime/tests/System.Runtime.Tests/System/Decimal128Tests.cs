@@ -306,6 +306,10 @@ namespace System.Tests
 
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
+            yield return new object[] { Decimal128.Parse("0e5"), Decimal128.Parse("1e1"), -1 };
+            yield return new object[] { Decimal128.Parse("0e5"), Decimal128.Parse("-1e1"), 1 };
+            yield return new object[] { Decimal128.Parse("0e-5"), Decimal128.Parse("1e1"), -1 };
+            yield return new object[] { Decimal128.Parse("0e-5"), Decimal128.Parse("-1e1"), 1 };
             yield return new object[] { Decimal128.Parse("-1e1"), Decimal128.Parse("-1e1"), 0 };
             yield return new object[] { Decimal128.Parse("-2e1"), Decimal128.Parse("-3e1"), 1 };
             yield return new object[] { Decimal128.Parse("3e1"), Decimal128.Parse("2e1"), 1 };
@@ -335,6 +339,7 @@ namespace System.Tests
             yield return new object[] { Decimal128.Parse("5e-6177"), Decimal128.Zero, 0 };
             yield return new object[] { Decimal128.Parse("5.00001e-6177"), Decimal128.Epsilon, 0 };
             yield return new object[] { Decimal128.Parse("0.5" + new string('0', 300) + "1e-6176"), Decimal128.Epsilon, 0 };
+            yield return new object[] { Decimal128.Parse("0.5" + new string('0', 300) + "1e-6178"), Decimal128.Epsilon, -1 };
             yield return new object[] { Decimal128.Parse("5." + new string('0', 300) + "1e-6177"), Decimal128.Epsilon, 0 };
             yield return new object[] { Decimal128.Parse("5." + new string('0', 300) + "1e-6178"), Decimal128.Zero, 0 };
             yield return new object[] { Decimal128.Parse("6e-6177"), Decimal128.Parse("1e-6176"), 0 };

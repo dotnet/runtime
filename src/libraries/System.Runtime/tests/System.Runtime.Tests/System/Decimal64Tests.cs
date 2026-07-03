@@ -311,6 +311,10 @@ namespace System.Tests
 
         public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
         {
+            yield return new object[] { Decimal64.Parse("0e5"), Decimal64.Parse("1e1"), -1 };
+            yield return new object[] { Decimal64.Parse("0e5"), Decimal64.Parse("-1e1"), 1 };
+            yield return new object[] { Decimal64.Parse("0e-5"), Decimal64.Parse("1e1"), -1 };
+            yield return new object[] { Decimal64.Parse("0e-5"), Decimal64.Parse("-1e1"), 1 };
             yield return new object[] { Decimal64.Parse("-1e1"), Decimal64.Parse("-10"), 0 };
             yield return new object[] { Decimal64.Parse("-2"), Decimal64.Parse("-3"), 1 };
             yield return new object[] { Decimal64.Parse("3"), Decimal64.Parse("2"), 1 };
@@ -338,6 +342,7 @@ namespace System.Tests
             yield return new object[] { Decimal64.Parse("5e-399"), Decimal64.Zero, 0 };
             yield return new object[] { Decimal64.Parse("5.00001e-399"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-398"), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("0.5" + new string('0', 200) + "1e-399 "), Decimal64.Epsilon, -1 };
             yield return new object[] { Decimal64.Parse("5." + new string('0', 300) + "1e-399"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("6e-399"), Decimal64.Parse("1e-398"), 0 };
             yield return new object[] { Decimal64.Parse("1" + new string('0', 21) + "1e-420"), Decimal64.Epsilon, 0 };
