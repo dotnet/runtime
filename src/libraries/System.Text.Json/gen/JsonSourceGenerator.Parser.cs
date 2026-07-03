@@ -1986,12 +1986,6 @@ namespace System.Text.Json.SourceGeneration
 
                     AddPropertyWithConflictResolution(propertySpec, memberInfo, propertyIndex: properties.Count, ref state);
                     properties.Add(propertySpec);
-
-                    // Note: ParsePropertyGenerationSpec intentionally does not mark inaccessible
-                    // [JsonInclude] members as invalid for fast-path generation. Some callers rely
-                    // on that omission to source-generate against experimental APIs without
-                    // introducing new warnings until https://github.com/dotnet/runtime/issues/124889
-                    // is completed.
                 }
 
                 bool PropertyIsOverriddenAndIgnored(IPropertySymbol property, Dictionary<string, ISymbol>? ignoredMembers)
@@ -2162,15 +2156,9 @@ namespace System.Text.Json.SourceGeneration
                     out bool isRequired,
                     out bool canUseGetter,
                     out bool canUseSetter,
-                    out bool hasJsonIncludeButIsInaccessible,
                     out bool setterIsInitOnly,
                     out bool isGetterNonNullable,
                     out bool isSetterNonNullable);
-
-                if (hasJsonIncludeButIsInaccessible)
-                {
-                    ReportDiagnostic(DiagnosticDescriptors.InaccessibleJsonIncludePropertiesNotSupported, memberInfo.GetLocation(), declaringType.Name, memberInfo.Name);
-                }
 
                 if (isExtensionData)
                 {
@@ -2187,11 +2175,13 @@ namespace System.Text.Json.SourceGeneration
                     typeHasExtensionDataProperty = true;
                 }
 
-                if ((!canUseGetter && !canUseSetter && !hasJsonIncludeButIsInaccessible) ||
+                if ((!canUseGetter && !canUseSetter && !hasJsonInclude) ||
                     !IsSymbolAccessibleWithin(memberType, within: contextType))
                 {
                     // Skip the member if either of the two conditions hold
-                    // 1. Member has no accessible getters or setters (but is not marked with JsonIncludeAttribute since we need to throw a runtime exception) OR
+                    // 1. Member has no accessible getters or setters and is not annotated with
+                    //    JsonIncludeAttribute (inaccessible [JsonInclude] members are read/written
+                    //    using UnsafeAccessor or reflection) OR
                     // 2. The member type is not accessible within the generated context.
                     return null;
                 }
@@ -2244,10 +2234,7 @@ namespace System.Text.Json.SourceGeneration
                     NumberHandling = numberHandling,
                     ObjectCreationHandling = objectCreationHandling,
                     Order = order,
-                    // TODO: remove the inaccessibility check once https://github.com/dotnet/runtime/issues/124889
-                    // is complete; some callers currently rely on this omission when source-generating
-                    // against experimental APIs (tracking: https://github.com/dotnet/runtime/issues/88519).
-                    HasJsonInclude = hasJsonInclude && !hasJsonIncludeButIsInaccessible,
+                    HasJsonInclude = hasJsonInclude,
                     CanUseUnsafeAccessors = _knownSymbols.UnsafeAccessorAttributeType is not null
                         && (memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true }
                             || _knownSymbols.SupportsGenericUnsafeAccessors),
@@ -2396,7 +2383,6 @@ namespace System.Text.Json.SourceGeneration
                 out bool isRequired,
                 out bool canUseGetter,
                 out bool canUseSetter,
-                out bool hasJsonIncludeButIsInaccessible,
                 out bool isSetterInitOnly,
                 out bool isGetterNonNullable,
                 out bool isSetterNonNullable)
@@ -2406,7 +2392,6 @@ namespace System.Text.Json.SourceGeneration
                 isRequired = false;
                 canUseGetter = false;
                 canUseSetter = false;
-                hasJsonIncludeButIsInaccessible = false;
                 isSetterInitOnly = false;
                 isGetterNonNullable = false;
                 isSetterNonNullable = false;
@@ -2429,10 +2414,6 @@ namespace System.Text.Json.SourceGeneration
                                 isAccessible = true;
                                 canUseGetter = hasJsonInclude;
                             }
-                            else
-                            {
-                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                            }
                         }
 
                         if (propertyInfo.SetMethod is { } setMethod)
@@ -2448,10 +2429,6 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 isAccessible = true;
                                 canUseSetter = hasJsonInclude;
-                            }
-                            else
-                            {
-                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
                             }
                         }
                         else
@@ -2477,10 +2454,6 @@ namespace System.Text.Json.SourceGeneration
                             isAccessible = true;
                             canUseGetter = hasJsonInclude;
                             canUseSetter = hasJsonInclude && !isReadOnly;
-                        }
-                        else
-                        {
-                            hasJsonIncludeButIsInaccessible = hasJsonInclude;
                         }
 
                         fieldInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable);
