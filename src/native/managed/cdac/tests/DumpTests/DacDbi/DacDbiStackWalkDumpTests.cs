@@ -41,7 +41,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(Target);
         ctx.FillFromBuffer(contextBuffer);
-        Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
+        Assert.NotEqual(TargetCodePointer.Null, ctx.InstructionPointer);
     }
 
     [ConditionalTheory]

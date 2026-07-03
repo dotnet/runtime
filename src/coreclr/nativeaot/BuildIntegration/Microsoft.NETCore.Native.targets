@@ -391,6 +391,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />
       <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,-u,DotNetRuntimeContractDescriptor" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'browser' and '$(DebuggerSupport)' != 'false'" />
       <CustomLinkerArg Include="-Wl,-dead_strip" Condition="'$(_IsApplePlatform)' == 'true'" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>

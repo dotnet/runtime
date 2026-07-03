@@ -43,6 +43,10 @@
        to guarantee it's in the same shell as the test runner. -->
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
     <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
+    <!-- The test harness exec's corerun directly to launch each debuggee.
+         Helix may strip Unix exec bits during payload extraction (the dotnet
+         chmod above is evidence of that), so ensure corerun is executable too. -->
+    <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/shared/Microsoft.NETCore.App/*/corerun" />
   </ItemGroup>
 
   <PropertyGroup>

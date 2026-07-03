@@ -401,6 +401,11 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public virtual Type? GetNullableUnderlyingType() => null;
 
+        internal virtual void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
+        {
+            throw new NotSupportedException();
+        }
+
         public Type MakeArrayType()
         {
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a
