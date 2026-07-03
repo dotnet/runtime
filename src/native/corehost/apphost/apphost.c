@@ -98,16 +98,11 @@ static bool is_exe_enabled_for_execution(pal_char_t* app_dll, size_t app_dll_len
         return false;
     }
 
-#if defined(_WIN32)
-    // Convert embedded UTF-8 path to wide string
     if (!pal_utf8_to_palstr(&embed[0], app_dll, app_dll_len))
     {
         trace_error(_X("The managed DLL bound to this executable could not be retrieved from the executable image."));
         return false;
     }
-#else
-    memcpy(app_dll, embed, binding_len + 1);
-#endif
 
     trace_info(_X("The managed DLL bound to this executable is: '%s'"), app_dll);
     return true;

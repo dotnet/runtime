@@ -341,6 +341,20 @@ void* pal_get_symbol(void* library, const char* name)
     return result;
 }
 
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
+{
+    // On Unix pal_char_t is char and the input is already UTF-8, so this is a
+    // length-checked copy rather than an encoding conversion.
+    size_t required = strlen(utf8) + 1;
+    if (required > out_len)
+    {
+        return false;
+    }
+
+    memcpy(out, utf8, required);
+    return true;
+}
+
 // Two-level stringize so PATH_MAX's value (not its name) can be used as an
 // explicit sscanf field width below.
 #define PROC_MAPS_STR2(x) #x

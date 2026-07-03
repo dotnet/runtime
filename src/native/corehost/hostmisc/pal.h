@@ -217,13 +217,8 @@ void pal_unload_library(void* library);
 // Resolve an exported symbol from a loaded library, or NULL if not found.
 void* pal_get_symbol(void* library, const char* name);
 
-#if defined(TARGET_WINDOWS)
-// Convert a narrow UTF-8 string to a pal_char_t (wide) string written into the
-// caller-provided buffer of out_len characters. Returns false if conversion
-// fails or the result does not fit. Windows-only; on Unix pal_char_t is char
-// and no conversion is needed.
+// Convert a UTF-8 string into the platform character type
 bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
-#endif
 
 // Handle to a loaded dynamic library.
 #if defined(_WIN32)

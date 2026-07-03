@@ -58,21 +58,11 @@ static bool try_get_dotnet_search_options(fxr_search_location* out_search_locati
         return false;
     }
 
-#if defined(_WIN32)
-    // Convert UTF-8 embedded path to wide string
     if (!pal_utf8_to_palstr(binding, out_app_relative_dotnet, out_app_relative_dotnet_len))
     {
         trace_error(_X("The app-relative .NET path could not be retrieved from the executable image."));
         return false;
     }
-#else
-    if (binding_len >= out_app_relative_dotnet_len)
-    {
-        trace_error(_X("The app-relative .NET path could not be retrieved from the executable image."));
-        return false;
-    }
-    memcpy(out_app_relative_dotnet, binding, binding_len + 1);
-#endif
 
     trace_info(_X("Embedded app-relative .NET path: '%s'"), out_app_relative_dotnet);
     return true;
