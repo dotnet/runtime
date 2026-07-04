@@ -1358,7 +1358,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                 "failed": 0,
                 "skipped": 0,
             })
-        assembly_info["time"] += float(assembly.attrib["time"])
+        assembly_info["time"] += float(assembly.attrib["time"].replace(",", "."))
 
         for collection in assembly:
             # In the non-merged tests model, we expect to see a `<errors />` tag within `<assembly>`.
@@ -1387,7 +1387,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     if len(name) > 0:
                         test_name += " (" + name + ")"
                     result = test.attrib["result"]
-                    time = float(collection.attrib["time"])
+                    time = float(collection.attrib["time"].replace(",", "."))
                     test_output = test.findtext("output")
                     tests.append(defaultdict(lambda: None, {
                         "name": test_name,
