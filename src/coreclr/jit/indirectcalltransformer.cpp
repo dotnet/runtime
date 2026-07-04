@@ -331,12 +331,11 @@ private:
                 Statement* firstNewStmt    = nullptr;
                 GenTree**  splitPointInUse = nullptr;
 
-                m_compiler->gtSplitTree(m_currBlock, stmt, m_origCall->gtControlExpr, &firstNewStmt, &splitPointInUse,
-                                        true);
+                m_compiler->gtSplitTree(block, stmt, m_origCall->gtControlExpr, &firstNewStmt, &splitPointInUse, true);
                 const unsigned   fptrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("fat pointer temp"));
                 GenTree* const   store      = m_compiler->gtNewTempStore(fptrLclNum, m_origCall->gtControlExpr);
-                Statement* const storeStmt  = m_compiler->gtNewStmt(store);
-                m_compiler->fgInsertStmtBefore(m_currBlock, stmt, storeStmt);
+                Statement* const storeStmt  = m_compiler->gtNewStmt(store, stmt->GetDebugInfo());
+                m_compiler->fgInsertStmtBefore(block, stmt, storeStmt);
                 m_origCall->gtControlExpr =
                     m_compiler->gtNewLclvNode(fptrLclNum, genActualType(m_origCall->gtControlExpr->TypeGet()));
             }
