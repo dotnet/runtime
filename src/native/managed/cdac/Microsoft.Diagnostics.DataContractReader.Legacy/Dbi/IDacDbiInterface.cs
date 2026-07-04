@@ -9,15 +9,6 @@ using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorEle
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct DbiVersion
-{
-    public uint m_dwFormat;
-    public uint m_dwDbiVersion;
-    public uint m_dwProtocolBreakingChangeCounter;
-    public uint m_dwReservedMustBeZero1;
-}
-
-[StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {
     public ulong token1;
@@ -424,9 +415,6 @@ public enum CorDebugSetContextFlags
 [Guid("DB505C1B-A327-4A46-8C32-AF55A56F8E09")]
 public unsafe partial interface IDacDbiInterface
 {
-    [PreserveSig]
-    int CheckDbiVersion(DbiVersion* pVersion);
-
     [PreserveSig]
     int FlushCache();
 

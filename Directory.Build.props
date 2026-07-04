@@ -238,6 +238,9 @@
 
     <!-- this property is used by the SDK to pull in mono-based runtime packs -->
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == 'true' and '$(TargetsMobile)' != 'true' and (
+        $(TargetFramework.EndsWith('-android')) or $(TargetFramework.EndsWith('-ios')) or
+        $(TargetFramework.EndsWith('-tvos')) or $(TargetFramework.EndsWith('-maccatalyst')))">false</UseMonoRuntime>
 
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
     <!-- TODO: Enable XUnitLogChecker for NativeAOT tests https://github.com/dotnet/runtime/issues/94722 -->

@@ -2483,7 +2483,7 @@ namespace System
 
             if ((uint)startIndex > (uint)Length)
             {
-                ThrowSubstringArgumentOutOfRange(startIndex, length);
+                ThrowSubstringArgumentOutOfRange(startIndex, length, Length);
             }
 
             return InternalSubString(startIndex, length);
@@ -2498,7 +2498,7 @@ namespace System
             if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
 #endif
             {
-                ThrowSubstringArgumentOutOfRange(startIndex, length);
+                ThrowSubstringArgumentOutOfRange(startIndex, length, Length);
             }
 
             if (length == 0)
@@ -2516,11 +2516,11 @@ namespace System
         }
 
         [DoesNotReturn]
-        private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
+        private static void ThrowSubstringArgumentOutOfRange(int startIndex, int length, int thisLength)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
-            if (startIndex > Length)
+            if (startIndex > thisLength)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
             }

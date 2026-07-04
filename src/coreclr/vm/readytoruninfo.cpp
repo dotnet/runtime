@@ -368,9 +368,14 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
     }
     CONTRACTL_END;
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(DACCESS_COMPILE)
     // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
-    // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
+    // The map only contains true method entry points, so a lookup for an odd (funclet) address is
+    // always a miss. Skip the guaranteed-miss lookup as a performance optimization.
+    //
+    // This is intentionally limited to non-DAC builds. The DAC must perform the lookup so that the
+    // hashmap bucket pages it touches are enumerated into triage minidumps; otherwise a consumer
+    // (such as the cDAC) faults when it later probes those not-in-dump pages. See dotnet/diagnostics#5910.
     if ((entryPoint & 0x1) != 0)
         return NULL;
 #endif
