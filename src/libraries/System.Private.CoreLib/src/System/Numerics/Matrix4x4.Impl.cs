@@ -1358,7 +1358,7 @@ namespace System.Numerics
                 // Get the determinant
                 float det = Vector4.Dot(C0.AsVector4(), row1.AsVector4());
 
-                // Check determinate is not zero
+                // Check determinant is not zero
                 if (float.Abs(det) < float.Epsilon)
                 {
                     Vector4 vNaN = Vector4.NaN;
@@ -1474,7 +1474,7 @@ namespace System.Numerics
                 Vector128<float> lowerXZ = Vector128.ZipLower(x, z);         // x[0], z[0], x[1], z[1]
                 Vector128<float> lowerYW = Vector128.ZipLower(y, w);         // y[0], w[0], y[1], w[1]
                 Vector128<float> upperXZ = Vector128.ZipUpper(x, z);         // x[2], z[2], x[3], z[3]
-                Vector128<float> upperYW = Vector128.ZipUpper(y, w);         // y[2], w[2], y[3], z[3]
+                Vector128<float> upperYW = Vector128.ZipUpper(y, w);         // y[2], w[2], y[3], w[3]
 
                 result.X = Vector128.ZipLower(lowerXZ, lowerYW).AsVector4(); // x[0], y[0], z[0], w[0]
                 result.Y = Vector128.ZipUpper(lowerXZ, lowerYW).AsVector4(); // x[1], y[1], z[1], w[1]
