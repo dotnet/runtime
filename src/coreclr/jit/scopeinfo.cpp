@@ -187,23 +187,26 @@ ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumb
 //
 void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumber otherReg)
 {
-#ifdef TARGET_AMD64
     assert(genIsValidIntReg(reg) || genIsValidFloatReg(reg));
     assert((otherReg == REG_NA) || genIsValidIntReg(otherReg) || genIsValidFloatReg(otherReg));
-#else
-    assert(genIsValidIntReg(reg));
-    assert((otherReg == REG_NA) || genIsValidIntReg(otherReg));
-#endif
 
     if (otherReg == REG_NA)
     {
+        if (genIsValidFloatReg(reg))
+        {
+            vlType = VLT_REG_FP;
 #ifdef TARGET_AMD64
-        vlType       = genIsValidFloatReg(reg) ? VLT_REG_FP : VLT_REG;
-        vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
+            vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
 #else
-        vlType       = VLT_REG;
-        vlReg.vlrReg = reg;
+            // Non-AMD64: store 0-based FP register index (DBI adds platform base)
+            vlReg.vlrReg = static_cast<regNumber>(reg - REG_FP_FIRST);
 #endif
+        }
+        else
+        {
+            vlType       = VLT_REG;
+            vlReg.vlrReg = reg;
+        }
     }
     else
     {
@@ -212,6 +215,13 @@ void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumb
         vlRegReg.vlrrReg1 = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
         vlRegReg.vlrrReg2 = static_cast<regNumber>(mapRegNumToDebugRegNum(otherReg));
 #else
+        // Non-AMD64: VLT_REG_REG only supports int registers. If either is FP,
+        // we cannot encode this — fall back to VLT_INVALID.
+        if (!genIsValidIntReg(reg) || !genIsValidIntReg(otherReg))
+        {
+            vlType = VLT_INVALID;
+            return;
+        }
         vlType            = VLT_REG_REG;
         vlRegReg.vlrrReg1 = reg;
         vlRegReg.vlrrReg2 = otherReg;
@@ -1801,20 +1811,14 @@ void CodeGen::psiBegProlog()
 
         if (reg1 != REG_NA)
         {
-#ifdef TARGET_AMD64
-            // On AMD64, storeVariableInRegisters handles both int and FP
-            // registers via the unified RegNum encoding.
+            // storeVariableInRegisters handles int and FP registers on all
+            // platforms (FP → VLT_REG_FP, mixed multi-reg → VLT_INVALID on
+            // non-AMD64). Only fall back to stack if the register is truly
+            // not representable (neither int nor FP).
             if (genIsValidIntReg(reg1) || genIsValidFloatReg(reg1))
             {
                 varLocation.storeVariableInRegisters(reg1, reg2);
             }
-#else
-            // On non-AMD64, only int registers are supported in RegNum.
-            if (genIsValidIntReg(reg1))
-            {
-                varLocation.storeVariableInRegisters(reg1, reg2);
-            }
-#endif
             else
             {
                 varLocation.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(lclVarDsc));
