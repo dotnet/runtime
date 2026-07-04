@@ -1134,7 +1134,6 @@ namespace System.Numerics
                 return result;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool Invert(in Impl matrix, out Impl result)
             {
                 // This implementation is based on the DirectX Math Library XMMatrixInverse method
