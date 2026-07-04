@@ -48,8 +48,8 @@ namespace System
         public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(object[]);
 
         public object? Target =>
-            TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
-                ? invocations[^1].Target
+            TryGetInvocations(out ReadOnlySpan<object> invocations)
+                ? ((Delegate)invocations[^1]).Target
                 : IsUnmanagedFunctionPtr || _methodPtrAux != 0 ? null : _target;
 
         private unsafe MethodDesc* MethodDesc
@@ -110,12 +110,23 @@ namespace System
         }
 
         // This method returns the Invocation list of this multicast delegate.
-        public Delegate[] GetInvocationList() =>
-            TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
-                ? ((ReadOnlySpan<Delegate>)invocations).ToArray() : [this];
+        public Delegate[] GetInvocationList()
+        {
+            if (!TryGetInvocations(out ReadOnlySpan<object> invocations))
+            {
+                return [this];
+            }
+
+            Delegate[] invocationList = new Delegate[invocations.Length];
+            for (int i = 0; i < invocations.Length; i++)
+            {
+                invocationList[i] = (Delegate)invocations[i];
+            }
+            return invocationList;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
+        private bool TryGetInvocations(out ReadOnlySpan<object> invocations)
         {
             if (HasSingleTarget)
             {
@@ -130,19 +141,17 @@ namespace System
             Debug.Assert((uint)invocationList.Length >= (nuint)_extraData);
             Debug.Assert(invocationList[0] is MulticastDelegate);
 
-            ref object reference = ref MemoryMarshal.GetArrayDataReference(invocationList);
-            ref MulticastDelegate first = ref Unsafe.As<object, MulticastDelegate>(ref reference);
-            invocations = MemoryMarshal.CreateReadOnlySpan(ref first, (int)_extraData);
+            invocations = new ReadOnlySpan<object>(invocationList, 0, (int)_extraData);
             return true;
         }
 
         // Used by delegate invocation list enumerator
         private Delegate? TryGetAt(int index)
         {
-            if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
             {
                 if ((uint)index < (uint)invocations.Length)
-                    return invocations[index];
+                    return (Delegate)invocations[index];
             }
             else if (index == 0)
             {
@@ -175,9 +184,18 @@ namespace System
             Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
             Delegate other = Unsafe.As<Delegate>(obj);
 
-            if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
             {
-                return other.TryGetInvocations(out ReadOnlySpan<MulticastDelegate> otherInvocations) && invocations.SequenceEqual(otherInvocations);
+                if (!other.TryGetInvocations(out ReadOnlySpan<object> otherInvocations) || invocations.Length != otherInvocations.Length)
+                    return false;
+
+                for (int i = 0; i < invocations.Length; i++)
+                {
+                    if (!invocations[i].Equals(otherInvocations[i]))
+                        return false;
+                }
+
+                return true;
             }
 
             if (IsUnmanagedFunctionPtr)
@@ -228,7 +246,7 @@ namespace System
 
         public override unsafe int GetHashCode()
         {
-            if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
             {
                 int hash = 0;
                 foreach (MulticastDelegate multicastDelegate in invocations)
@@ -253,8 +271,8 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
-                ? invocations[^1].Method
+            return TryGetInvocations(out ReadOnlySpan<object> invocations)
+                ? ((Delegate)invocations[^1]).Method
                 : _helperObject as MethodInfo ?? GetMethodImplUncached();
 
             [MethodImpl(MethodImplOptions.NoInlining)]
