@@ -3558,12 +3558,12 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
                                                          ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
                                                          pNativeCodeStartAddress,
                                                          pConfig->GetCodeVersion().GetVersionId(),
-                                                         pConfig->GetCodeVersion().GetILCodeVersionId());
+                                                         pConfig->GetCodeVersion().GetILCodeVersion().IsReJIT() ? pConfig->GetCodeVersion().GetILCodeVersionId() : 0);
         }
 
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
         {
-            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
+            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersion().IsReJIT() ? pConfig->GetCodeVersion().GetILCodeVersionId() : 0, NULL);
         }
 
     } EX_CATCH { } EX_END_CATCH
@@ -5053,7 +5053,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
             else
             {
                 nativeCodeVersionId = nativeCodeVersion.GetVersionId();
-                ilCodeId = nativeCodeVersion.GetILCodeVersionId();
+                ilCodeId = nativeCodeVersion.GetILCodeVersion().IsReJIT() ? nativeCodeVersion.GetILCodeVersionId() : 0;
             }
         }
         else
