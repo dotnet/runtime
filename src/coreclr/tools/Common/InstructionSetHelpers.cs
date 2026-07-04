@@ -94,6 +94,11 @@ namespace System.CommandLine
                     }
                 }
             }
+            else if (targetArchitecture == TargetArchitecture.Wasm32)
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");
+            }
 
             bool throttleAvx512 = false;
 
@@ -285,6 +290,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
