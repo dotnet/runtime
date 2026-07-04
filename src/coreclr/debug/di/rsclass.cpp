@@ -343,7 +343,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
                                       pType,
                                       fIsBoxed,
                                       remoteValue,
-                                      MemoryRange(NULL, 0),
+                                      HostBuffer(NULL, 0),
                                       NULL,
                                       &pValue);  // throws
     }

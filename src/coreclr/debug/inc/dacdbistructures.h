@@ -160,6 +160,60 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
+// Describes a buffer in the host (ie, the debugger's own process).
+//
+// This is the host-address-space analog of code:TargetBuffer, and it is deliberately shaped like
+// code:MemoryRange:
+// - simple!
+// - Not mutable
+// - no ownership semantics.
+// - no manipulation, growing semantics.
+// - no memory marshalling, allocation, copying. etc.
+// - can be efficiently passed / copied / returned by value
+//
+// Whereas code:MemoryRange / code:TargetBuffer describe memory in the target (debuggee) process,
+// HostBuffer describes memory that lives in the debugger's own address space (for example, a local
+// copy of a value read out of the target). Keeping the two address spaces in distinct types makes it
+// obvious at each call site which space a pointer refers to.
+class HostBuffer
+{
+public:
+    // Constructor to create an empty host buffer.
+    HostBuffer() :
+        m_pStartAddress(NULL),
+        m_cbBytes(0)
+    {
+    }
+
+    // Constructor to create a host buffer around a (start address, size) pair.
+    HostBuffer(void * pStartAddress, SIZE_T cbBytes) :
+        m_pStartAddress(pStartAddress),
+        m_cbBytes(cbBytes)
+    {
+    }
+
+    // Note: use compiler-default copy ctor and assignment operator
+
+    // Get the starting address (in the host address space).
+    void * StartAddress() const
+    {
+        return m_pStartAddress;
+    }
+
+    // Get the size of the range in bytes
+    SIZE_T Size() const
+    {
+        return m_cbBytes;
+    }
+
+private:
+    // The start of the host memory range.
+    void * m_pStartAddress;
+
+    // The size of the memory range in bytes.
+    SIZE_T m_cbBytes;
+};
+
 // Module properties, retrieved by DAC.
 struct MSLAYOUT ModuleInfo
 {

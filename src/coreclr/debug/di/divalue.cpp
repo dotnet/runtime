@@ -9,13 +9,13 @@
 #include "stdafx.h"
 #include "primitives.h"
 
-// copy from a MemoryRange to dest
+// copy from a HostBuffer to dest
 // Arguments:
-//     input:  source - MemoryRange describing the start address and size of the source buffer
+//     input:  source - HostBuffer describing the start address and size of the source buffer
 //     output: dest   - address of the buffer to which the source buffer is copied
 // Note: the buffer for dest must be allocated by the caller and must be large enough to hold the
 //       bytes from the source buffer.
-void localCopy(void * dest, MemoryRange source)
+void localCopy(void * dest, HostBuffer source)
 {
     _ASSERTE(dest != NULL);
     _ASSERTE(source.StartAddress() != NULL);
@@ -104,7 +104,7 @@ void CordbValue::Neuter()
 void CordbValue::CreateGenericValue(CordbAppDomain *               pAppdomain,
                                     CordbType *                    pType,
                                     TargetBuffer                   remoteValue,
-                                    MemoryRange                    localValue,
+                                    HostBuffer                    localValue,
                                     EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                     ICorDebugValue**               ppValue)
 {
@@ -143,7 +143,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                        CordbType *                    pType,
                                        bool                           boxed,
                                        TargetBuffer                   remoteValue,
-                                       MemoryRange                    localValue,
+                                       HostBuffer                    localValue,
                                        EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                        ICorDebugValue**               ppValue)
 
@@ -204,7 +204,7 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
                                               CordbType *                    pType,
                                               bool                           boxed,
                                               TargetBuffer                   remoteValue,
-                                              MemoryRange                    localValue,
+                                              HostBuffer                    localValue,
                                               EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                               ICorDebugValue**               ppValue)
 {
@@ -281,7 +281,7 @@ CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDo
     VOID* pRemoteAddr = CORDB_ADDRESS_TO_PTR((CORDB_ADDRESS)VmPtrToCookie(vmObj));
     // This creates a local reference that has a remote address in it. Ie &pRemoteAddr is an address
     // in the host address space and pRemoteAddr is an address in the target.
-    MemoryRange localReferenceDescription(&pRemoteAddr, sizeof(pRemoteAddr));
+    HostBuffer localReferenceDescription(&pRemoteAddr, sizeof(pRemoteAddr));
     RSSmartPtr<CordbReferenceValue> pRefValue;
     IfFailThrow(CordbReferenceValue::Build(pAppDomain,
                                            NULL,
@@ -608,7 +608,7 @@ HRESULT CordbGenericValue::QueryInterface(REFIID id, void **pInterface)
 //            could be a field from the cached copy of a CordbVCObjectValue or CordbObjectValue
 //            instance or an element from the cached copy of a CordbArrayValue instance
 // Note: Throws error codes from reading process memory
-void CordbGenericValue::Init(MemoryRange localValue)
+void CordbGenericValue::Init(HostBuffer localValue)
 {
     INTERNAL_SYNC_API_ENTRY(this->GetProcess());
 
@@ -623,7 +623,7 @@ void CordbGenericValue::Init(MemoryRange localValue)
         }
         else
         {
-            m_pValueHome->GetValue(MemoryRange(m_pCopyOfData, m_size)); // throws
+            m_pValueHome->GetValue(HostBuffer(m_pCopyOfData, m_size)); // throws
         }
     }
 } // CordbGenericValue::Init
@@ -668,7 +668,7 @@ HRESULT CordbGenericValue::SetValue(void *pFrom)
     {
         if(!m_isLiteral)
         {
-            m_pValueHome->SetValue(MemoryRange(pFrom, m_size), m_type);  // throws
+            m_pValueHome->SetValue(HostBuffer(pFrom, m_size), m_type);  // throws
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -728,7 +728,7 @@ bool CordbGenericValue::CopyLiteralData(BYTE *pBuffer)
 // Note: this may throw OOM
 CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomain,
                                          CordbType *                   pType,
-                                         MemoryRange                   localValue,
+                                         HostBuffer                   localValue,
                                          TargetBuffer                  remoteValue,
                                          EnregisteredValueHomeHolder * ppRemoteRegAddr,
                                          VMPTR_OBJECTHANDLE            vmObjectHandle)
@@ -977,7 +977,7 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
 
 	EX_TRY
 	{
-        m_valueHome.m_pHome->SetValue(MemoryRange(&address, sizeof(void *)), m_type); // throws
+        m_valueHome.m_pHome->SetValue(HostBuffer(&address, sizeof(void *)), m_type); // throws
 	}
 	EX_CATCH_HRESULT(hr);
 
@@ -992,7 +992,7 @@ HRESULT CordbReferenceValue::SetValue(CORDB_ADDRESS address)
         {
             // update information about the string
             void * pObjRef = CORDB_ADDRESS_TO_PTR(m_info.objRef);
-            InitRef(MemoryRange(&pObjRef, sizeof (void *)));
+            InitRef(HostBuffer(&pObjRef, sizeof (void *)));
         }
 
         // All other data in m_info is no longer valid, and we may have invalidated other
@@ -1028,7 +1028,7 @@ HRESULT CordbReferenceValue::Dereference(ICorDebugValue **ppValue)
 
     if (m_continueCounterLastSync != m_appdomain->GetProcess()->m_continueCounter)
     {
-        IfFailRet(InitRef(MemoryRange(NULL, 0)));
+        IfFailRet(InitRef(HostBuffer(NULL, 0)));
     }
 
     EX_TRY
@@ -1184,7 +1184,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
                     ptrType,
                     false,
                     remoteValue,
-                    MemoryRange(NULL, 0), // local value
+                    HostBuffer(NULL, 0), // local value
                     NULL,
                     ppValue);  // throws
             }
@@ -1210,7 +1210,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
                     pRealTypeOfTypedByref,
                     false,
                     remoteValue,
-                    MemoryRange(NULL, 0), // local value
+                    HostBuffer(NULL, 0), // local value
                     NULL,
                     ppValue);  // throws
             }
@@ -1240,7 +1240,7 @@ HRESULT CordbReferenceValue::DereferenceCommon(
 HRESULT CordbReferenceValue::Build(CordbAppDomain *          appdomain,
                                    CordbType *               type,
                                    TargetBuffer                  remoteValue,
-                                   MemoryRange                   localValue,
+                                   HostBuffer                   localValue,
                                    VMPTR_OBJECTHANDLE        vmObjectHandle,
                                    EnregisteredValueHomeHolder * ppRemoteRegAddr,
                                    CordbReferenceValue**     ppValue)
@@ -1323,7 +1323,7 @@ HRESULT CordbReferenceValue::BuildFromGCHandle(
         pAppDomain,
         NULL, // unknown type
         remoteValue, // CORDB_ADDRESS remoteAddress,
-        MemoryRange(NULL, 0),
+        HostBuffer(NULL, 0),
         gcHandle, // objectRefsInHandles,
         NULL, // EnregisteredValueHome * pRemoteRegAddr,
         &pRefValue);
@@ -1414,7 +1414,7 @@ void CordbReferenceValue::SanityCheckPointer (CorElementType type)
 // Notes:
 //     - fills in the m_info field of "this"
 //     - Throws (errors from reading process memory)
-void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localValue)
+void CordbReferenceValue::GetPointerData(CorElementType type, HostBuffer localValue)
 {
     HRESULT hr = S_OK;
     // Fill in the type since we will not be getting it from the DAC
@@ -1465,7 +1465,7 @@ void CordbReferenceValue::GetPointerData(CorElementType type, MemoryRange localV
         // do some preinitialization in case we get an exception
         EX_TRY
         {
-            m_valueHome.m_pHome->GetValue(MemoryRange(&(m_info.objRef), sizeof(void*)));  // throws
+            m_valueHome.m_pHome->GetValue(HostBuffer(&(m_info.objRef), sizeof(void*)));  // throws
         }
         EX_CATCH_HRESULT(hr);
         if (FAILED(hr))
@@ -1577,7 +1577,7 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
 //  Arguments: none
 //  Return Value: the address of the object referenced (i.e., the value of the object ref)
 //  Note: Throws
-void * CordbReferenceValue::GetObjectAddress(MemoryRange localValue)
+void * CordbReferenceValue::GetObjectAddress(HostBuffer localValue)
 {
     void * objectAddress;
     if (localValue.StartAddress() != NULL)
@@ -1589,7 +1589,7 @@ void * CordbReferenceValue::GetObjectAddress(MemoryRange localValue)
     else
     {
         _ASSERTE(m_valueHome.m_pHome != NULL);
-        m_valueHome.m_pHome->GetValue(MemoryRange(&objectAddress, sizeof(void *)));   // throws
+        m_valueHome.m_pHome->GetValue(HostBuffer(&objectAddress, sizeof(void *)));   // throws
     }
     return objectAddress;
 } // CordbReferenceValue::GetObjectAddress
@@ -1634,7 +1634,7 @@ void CordbReferenceValue::UpdateTypeInfo()
 //                         code:CordbReferenceValue::GetPointerData for further explanation of local locations.)
 // Return Value: S_OK on success or E_INVALIDARG or  write process memory errors on failure
 
-HRESULT CordbReferenceValue::InitRef(MemoryRange localValue)
+HRESULT CordbReferenceValue::InitRef(HostBuffer localValue)
 {
     INTERNAL_SYNC_API_ENTRY(this->GetProcess());
 
@@ -2379,7 +2379,7 @@ HRESULT CordbObjectValue::Init()
 
     EX_TRY
     {
-        m_valueHome.GetValue(MemoryRange(m_pObjectCopy, m_size));  // throws
+        m_valueHome.GetValue(HostBuffer(m_pObjectCopy, m_size));  // throws
     }
     EX_CATCH_HRESULT(hr);
     IfFailRet(hr);
@@ -3221,7 +3221,7 @@ HRESULT CordbVCObjectValue::SetValue(void * pSrc)
 
     EX_TRY
     {
-        m_pValueHome->SetValue(MemoryRange(pSrc, m_size), m_type); // throws
+        m_pValueHome->SetValue(HostBuffer(pSrc, m_size), m_type); // throws
     }
     EX_CATCH_HRESULT(hr);
     if (SUCCEEDED(hr))
@@ -3288,7 +3288,7 @@ HRESULT CordbVCObjectValue::SetFromManagedCopy(IUnknown *pObject)
 // Exceptions
 //      None
 //
-HRESULT CordbVCObjectValue::Init(MemoryRange localValue)
+HRESULT CordbVCObjectValue::Init(HostBuffer localValue)
 {
     HRESULT hr = S_OK;
 
@@ -3320,13 +3320,13 @@ HRESULT CordbVCObjectValue::Init(MemoryRange localValue)
         //    smaller than the size of a full register. For that reason, we can't just use localValue.Size()
         //    as the number of bytes to copy, because only enough space for the value has been allocated.
         _ASSERTE(localValue.Size() >= m_size);
-        localCopy(m_pObjectCopy, MemoryRange(localValue.StartAddress(), m_size));
+        localCopy(m_pObjectCopy, HostBuffer(localValue.StartAddress(), m_size));
         return S_OK;
     }
 
     EX_TRY
     {
-        m_pValueHome->GetValue(MemoryRange(m_pObjectCopy, m_size));  // throws
+        m_pValueHome->GetValue(HostBuffer(m_pObjectCopy, m_size));  // throws
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -3926,7 +3926,7 @@ HRESULT CordbArrayValue::GetElementAtPosition(ULONG32 nPosition,
         // Copy the proper subrange of the array over
         EX_TRY
         {
-            m_valueHome.GetInternalValue(MemoryRange(m_pObjectCopy + cbHeader, cbSize), cbOffsetFrom); // throws
+            m_valueHome.GetInternalValue(HostBuffer(m_pObjectCopy + cbHeader, cbSize), cbOffsetFrom); // throws
         }
         EX_CATCH_HRESULT(hr);
         IfFailRet(hr);
@@ -4017,7 +4017,7 @@ HRESULT CordbArrayValue::GetValue(void *pTo)
     {
         // Copy out the value, which is the whole array.
         // There's no lazy-evaluation here, so this could be rather large
-        m_valueHome.GetValue(MemoryRange(pTo, m_size));  // throws
+        m_valueHome.GetValue(HostBuffer(pTo, m_size));  // throws
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4072,7 +4072,7 @@ HRESULT CordbArrayValue::Init()
         m_arrayLowerBase  = (DWORD*)(m_pObjectCopy);
         EX_TRY
         {
-            m_valueHome.GetInternalValue(MemoryRange(m_arrayLowerBase, cbVector),
+            m_valueHome.GetInternalValue(HostBuffer(m_arrayLowerBase, cbVector),
                                                      m_info.arrayInfo.offsetToLowerBounds); // throws
         }
         EX_CATCH_HRESULT(hr);
@@ -4085,7 +4085,7 @@ HRESULT CordbArrayValue::Init()
         m_arrayUpperBase  = (DWORD*)(m_pObjectCopy + cbVector);
         EX_TRY
         {
-            m_valueHome.GetInternalValue(MemoryRange(m_arrayUpperBase, cbVector),
+            m_valueHome.GetInternalValue(HostBuffer(m_arrayUpperBase, cbVector),
                                                      m_info.arrayInfo.offsetToUpperBounds); // throws
         }
         EX_CATCH_HRESULT(hr);

@@ -7722,7 +7722,7 @@ public:
     // Note: Throws E_FAIL for invalid input or various HRESULTs from an
     //                         unsuccessful call to WriteProcessMemory
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(HostBuffer newValue, DT_CONTEXT * pContext, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     // Arguments:
@@ -7731,7 +7731,7 @@ public:
     // Note: Throws E_NOTIMPL for attempts to get an enregistered value for a float register
     // (implementation for derived class FloatRegValueHome)
     virtual
-    void GetEnregisteredValue(MemoryRange valueOutBuffer) = 0;
+    void GetEnregisteredValue(HostBuffer valueOutBuffer) = 0;
 
     // initialize an instance of RemoteAddress for use in an IPC event buffer with values from this
     // instance of a derived class of EnregisteredValueHome
@@ -7798,11 +7798,11 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(HostBuffer newValue, DT_CONTEXT * pContext, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
-    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+    void GetEnregisteredValue(HostBuffer valueOutBuffer);
     // initialize an instance of RemoteAddress for use in an IPC event buffer with values from this
     // instance of a derived class of RegValueHome
     virtual
@@ -7858,11 +7858,11 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(HostBuffer newValue, DT_CONTEXT * pContext, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
-    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+    void GetEnregisteredValue(HostBuffer valueOutBuffer);
 
     // initialize an instance of RemoteAddress for use in an IPC event buffer with values from this
     // instance of a derived class of EnregisteredValueHome
@@ -7915,11 +7915,11 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * DT_pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(HostBuffer newValue, DT_CONTEXT * DT_pContext, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     virtual
-    void GetEnregisteredValue(MemoryRange valueOutBuffer) = 0;
+    void GetEnregisteredValue(HostBuffer valueOutBuffer) = 0;
 
     // initialize an instance of RemoteAddress for use in an IPC event buffer with values from this
     // instance of a derived class of EnregisteredValueHome
@@ -7973,11 +7973,11 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(HostBuffer newValue, DT_CONTEXT * pContext, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
-    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+    void GetEnregisteredValue(HostBuffer valueOutBuffer);
 
     // initialize an instance of RemoteAddress for use in an IPC event buffer with values from this
     // instance of a derived class of EnregisteredValueHome
@@ -8023,11 +8023,11 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(HostBuffer newValue, DT_CONTEXT * pContext, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
-    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+    void GetEnregisteredValue(HostBuffer valueOutBuffer);
 
     // initialize an instance of RemoteAddress for use in an IPC event buffer with values from this
     // instance of a derived class of EnregisteredValueHome
@@ -8068,11 +8068,11 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(HostBuffer newValue, DT_CONTEXT * pContext, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
-    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+    void GetEnregisteredValue(HostBuffer valueOutBuffer);
 
     // initialize an instance of RemoteAddress for use in an IPC event buffer with values from this
     // instance of a derived class of EnregisteredValueHome
@@ -8140,7 +8140,7 @@ public:
     //     indicate an error.
     // Note: Throws errors from read process memory operation or GetThreadContext operation
     virtual
-    void GetValue(MemoryRange dest) = 0;
+    void GetValue(HostBuffer dest) = 0;
 
     // Sets a location to the value provided in src
     // Arguments:
@@ -8149,7 +8149,7 @@ public:
     //     output: none, but on success, changes m_remoteValue to hold the new value
     // Note: Throws errors from SafeWriteBuffer
     virtual
-    void SetValue(MemoryRange src, CordbType * pType) = 0;
+    void SetValue(HostBuffer src, CordbType * pType) = 0;
 
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     // Arguments:
@@ -8174,7 +8174,7 @@ public:
     //     output: dest   - buffer to hold the value--memory for this buffer is owned by the caller
     // Note: Throws process memory write errors
     virtual
-    void GetInternalValue(MemoryRange dest, SIZE_T offset) = 0;
+    void GetInternalValue(HostBuffer dest, SIZE_T offset) = 0;
 
     // copies register information from this to a RemoteAddress instance for FuncEval
     // Arguments:
@@ -8218,11 +8218,11 @@ public:
 
     // Gets a value and returns it in dest
     virtual
-    void GetValue(MemoryRange dest);
+    void GetValue(HostBuffer dest);
 
     // Sets a location to the value provided in src
     virtual
-    void SetValue(MemoryRange src, CordbType * pType);
+    void SetValue(HostBuffer src, CordbType * pType);
 
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
@@ -8234,7 +8234,7 @@ public:
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
-    void GetInternalValue(MemoryRange dest, SIZE_T offset);
+    void GetInternalValue(HostBuffer dest, SIZE_T offset);
 
     // copies register information from this to a RemoteAddress instance for FuncEval
     virtual
@@ -8271,11 +8271,11 @@ public:
 
     // Gets a value and returns it in dest
     virtual
-    void GetValue(MemoryRange dest);
+    void GetValue(HostBuffer dest);
 
     // Sets a location to the value provided in src
     virtual
-    void SetValue(MemoryRange src, CordbType * pType);
+    void SetValue(HostBuffer src, CordbType * pType);
 
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
@@ -8287,7 +8287,7 @@ public:
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
-    void GetInternalValue(MemoryRange dest, SIZE_T offset);
+    void GetInternalValue(HostBuffer dest, SIZE_T offset);
 
     // copies the register information from this to a RemoteAddress instance
     virtual
@@ -8296,10 +8296,10 @@ public:
 protected:
 
     // sets a remote enregistered location to a new value
-    void SetEnregisteredValue(MemoryRange src, bool fIsSigned);
+    void SetEnregisteredValue(HostBuffer src, bool fIsSigned);
 
     // gets a value from an enregistered location
-    void GetEnregisteredValue(MemoryRange dest);
+    void GetEnregisteredValue(HostBuffer dest);
 
     bool IsSigned(CorElementType elementType);
 
@@ -8338,11 +8338,11 @@ public:
 
     // Gets a value and returns it in dest
     virtual
-    void GetValue(MemoryRange dest);
+    void GetValue(HostBuffer dest);
 
     // Sets a location to the value provided in src
     virtual
-    void SetValue(MemoryRange src, CordbType * pType);
+    void SetValue(HostBuffer src, CordbType * pType);
 
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
@@ -8354,7 +8354,7 @@ public:
 
     // Gets the value of a field or element of an existing ICDValue instance and returns it in dest
     virtual
-    void GetInternalValue(MemoryRange dest, SIZE_T offset);
+    void GetInternalValue(HostBuffer dest, SIZE_T offset);
 
     // copies the register information from this to a RemoteAddress instance
     virtual
@@ -8381,7 +8381,7 @@ public:
 
     // Sets a location to the value provided in src
     virtual
-    void SetValue(MemoryRange src, CordbType * pType);
+    void SetValue(HostBuffer src, CordbType * pType);
 
 }; // class VCRemoteValueHome
 
@@ -8400,7 +8400,7 @@ public:
 
     // Sets a location to the value provided in src
     virtual
-    void SetValue(MemoryRange src, CordbType * pType);
+    void SetValue(HostBuffer src, CordbType * pType);
 
 }; // class RefRemoteValueHome
 
@@ -8595,7 +8595,7 @@ public:
     void CreateGenericValue(CordbAppDomain *               pAppdomain,
                             CordbType *                    pType,
                             TargetBuffer                   remoteValue,
-                            MemoryRange                    localValue,
+                            HostBuffer                    localValue,
                             EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                             ICorDebugValue**               ppValue);
 
@@ -8606,7 +8606,7 @@ public:
                                CordbType *                    pType,
                                bool                           boxed,
                                TargetBuffer                   remoteValue,
-                               MemoryRange                    localValue,
+                               HostBuffer                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                ICorDebugValue**               ppValue);
 
@@ -8615,7 +8615,7 @@ public:
                                   CordbType *                    type,
                                   bool                           boxed,
                                   TargetBuffer                   remoteValue,
-                                  MemoryRange                    localValue,
+                                  HostBuffer                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
                                   ICorDebugValue**               ppValue);
 
@@ -8821,7 +8821,7 @@ public:
 
     // initialize a generic value by copying the necessary data, either
     // from the remote process or from another value in this process.
-    void Init(MemoryRange localValue);
+    void Init(HostBuffer localValue);
     bool CopyLiteralData(BYTE *pBuffer);
 
     // Returns a pointer to the ValueHome field
@@ -8850,7 +8850,7 @@ class CordbReferenceValue : public CordbValue, public ICorDebugReferenceValue, p
 public:
     CordbReferenceValue(CordbAppDomain *              pAppdomain,
                         CordbType *                   pType,
-                        MemoryRange                   localValue,
+                        HostBuffer                   localValue,
                         TargetBuffer                  remoteValue,
                         EnregisteredValueHomeHolder * ppRegAddr,
                         VMPTR_OBJECTHANDLE            vmObjectHandle);
@@ -8942,7 +8942,7 @@ public:
 
     // get information about the reference when it's not an object address but another kind of pointer type:
     // ELEMENT_TYPE_BYREF, ELEMENT_TYPE_PTR or ELEMENT_TYPE_FNPTR
-    void GetPointerData(CorElementType type, MemoryRange localValue);
+    void GetPointerData(CorElementType type, HostBuffer localValue);
 
     // get basic object specific data when a reference points to an object, plus extra data if the object is
     // an array or string
@@ -8962,7 +8962,7 @@ public:
                            DacDbiObjectData * pInfo);
 
     //  get the address of the object referenced
-    void * GetObjectAddress(MemoryRange localValue);
+    void * GetObjectAddress(HostBuffer localValue);
 
     // update type information after initializing -- when we initialize, we may get more exact type
     // information than we previously had
@@ -8970,14 +8970,14 @@ public:
 
     // Initialize this CordbReferenceValue. This may involve inspecting the LS to get information about the
     // referent.
-    HRESULT InitRef(MemoryRange localValue);
+    HRESULT InitRef(HostBuffer localValue);
 
     bool CopyLiteralData(BYTE *pBuffer);
 
     static HRESULT Build(CordbAppDomain *              appdomain,
                          CordbType *                   type,
                          TargetBuffer                  remoteValue,
-                         MemoryRange                   localValue,
+                         HostBuffer                   localValue,
                          VMPTR_OBJECTHANDLE            vmObjectHandle,
                          EnregisteredValueHomeHolder * ppRemoteRegAddr,
                          CordbReferenceValue**         ppValue);
@@ -9333,7 +9333,7 @@ public:
     //-----------------------------------------------------------
 
     // Initializes the Right-Side's representation of a Value Class object.
-    HRESULT Init(MemoryRange localValue);
+    HRESULT Init(HostBuffer localValue);
     //HRESULT ResolveValueClass();
     CordbClass *GetClass();
 

@@ -6738,7 +6738,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
                                       pType,
                                       false,
                                       EMPTY_BUFFER,
-                                      MemoryRange(pLocalValue, REG_SIZE),
+                                      HostBuffer(pLocalValue, REG_SIZE),
                                       pRegHolder,
                                       &pValue);  // throws
 
@@ -6771,7 +6771,7 @@ HRESULT CordbNativeFrame::GetLocalDoubleRegisterValue(
                                       pType,
                                       false,
                                       EMPTY_BUFFER,
-                                      MemoryRange(NULL, 0),
+                                      HostBuffer(NULL, 0),
                                       pRegHolder,
                                       ppValue);  // throws
     }
@@ -6819,7 +6819,7 @@ CordbNativeFrame::GetLocalMemoryValue(CORDB_ADDRESS address,
                                       pType,
                                       false,
                                       TargetBuffer(address, CordbValue::GetSizeForType(pType, kUnboxed)),
-                                      MemoryRange(NULL, 0),
+                                      HostBuffer(NULL, 0),
                                       NULL,
                                       &pValue);  // throws
     }
@@ -6874,7 +6874,7 @@ CordbNativeFrame::GetLocalRegisterMemoryValue(CorDebugRegister highWordReg,
                                       pType,
                                       false,
                                       EMPTY_BUFFER,
-                                      MemoryRange(NULL, 0),
+                                      HostBuffer(NULL, 0),
                                       pRegHolder,
                                       ppValue);  // throws
     }
@@ -6921,7 +6921,7 @@ CordbNativeFrame::GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
                                       pType,
                                       false,
                                       EMPTY_BUFFER,
-                                      MemoryRange(NULL, 0),
+                                      HostBuffer(NULL, 0),
                                       pRegHolder,
                                       ppValue);  // throws
     }
@@ -7032,7 +7032,7 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
                                           pType,
                                           false,
                                           EMPTY_BUFFER,
-                                          MemoryRange(&(pThread->m_floatValues[index]), sizeof(double)),
+                                          HostBuffer(&(pThread->m_floatValues[index]), sizeof(double)),
                                           pRegHolder,
                                           &pValue);  // throws
 
@@ -10338,7 +10338,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
                                           pType,
                                           true,
                                           remoteValue,
-                                          MemoryRange(NULL, 0),
+                                          HostBuffer(NULL, 0),
                                           NULL,
                                           ppResult);  // throws
         }
@@ -10468,7 +10468,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
             // create a reference value
             CordbReferenceValue *rv = new CordbReferenceValue(pType);
 
-            if (SUCCEEDED(rv->InitRef(MemoryRange(NULL,0))))
+            if (SUCCEEDED(rv->InitRef(HostBuffer(NULL,0))))
             {
                 // Do not delete rv here even if the initialization fails.
                 // The neuter list still has a reference to it, and it will be cleaned up automatically.
@@ -10486,7 +10486,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
             // Create a generic value.
             gv = new CordbGenericValue(pType);
 
-            gv->Init(MemoryRange(NULL,0));
+            gv->Init(HostBuffer(NULL,0));
             // Do not delete gv here even if the initialization fails.
             // The neuter list still has a reference to it, and it will be cleaned up automatically.
             gv->ExternalAddRef();
@@ -11083,7 +11083,7 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
                     pType,
                     false,
                     TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
-                    MemoryRange(NULL, 0),
+                    HostBuffer(NULL, 0),
                     NULL,
                     ppValue);
                 foundArg = true;
@@ -11262,7 +11262,7 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
                     pType,
                     false,
                     TargetBuffer(m_continuationAddress + m_asyncVars[i].offset, CordbValue::GetSizeForType(pType, kUnboxed)),
-                    MemoryRange(NULL, 0),
+                    HostBuffer(NULL, 0),
                     NULL,
                     ppValue);
                 foundLocal = true;
