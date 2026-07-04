@@ -325,8 +325,24 @@ private:
         {
             m_doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
             m_origCall        = GetCall(stmt);
-            m_fptrAddress     = m_origCall->gtControlExpr;
-            m_pointerType     = m_fptrAddress->TypeGet();
+
+            if (m_origCall->IsGenericVirtual(m_compiler) && m_origCall->IsFatPointerCandidate())
+            {
+                Statement* firstNewStmt    = nullptr;
+                GenTree**  splitPointInUse = nullptr;
+
+                m_compiler->gtSplitTree(m_currBlock, stmt, m_origCall->gtControlExpr, &firstNewStmt, &splitPointInUse,
+                                        true);
+                const unsigned   fptrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("fat pointer temp"));
+                GenTree* const   store      = m_compiler->gtNewTempStore(fptrLclNum, m_origCall->gtControlExpr);
+                Statement* const storeStmt  = m_compiler->gtNewStmt(store);
+                m_compiler->fgInsertStmtBefore(m_currBlock, stmt, storeStmt);
+                m_origCall->gtControlExpr =
+                    m_compiler->gtNewLclvNode(fptrLclNum, genActualType(m_origCall->gtControlExpr->TypeGet()));
+            }
+
+            m_fptrAddress = m_origCall->gtControlExpr;
+            m_pointerType = m_fptrAddress->TypeGet();
         }
 
     protected:

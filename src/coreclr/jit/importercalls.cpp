@@ -566,9 +566,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (needsFatPointerHandling)
                 {
-                    const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
-                    impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
-                    call->AsCall()->gtControlExpr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
@@ -8050,6 +8047,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         }
     }
 
+    if (call->IsGenericVirtual(this))
+    {
+        JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
+        return;
+    }
+
     // NativeAOT is the only target that currently supports getExactClasses-based GDV
     // where we know the exact number of classes implementing the given base in compile-time.
     // For now, let's only do this when we don't have any PGO data. In future, we should be able to benefit
@@ -9499,6 +9502,7 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
     Metrics.DevirtualizedCall++;
 
     // Make the updates.
+    call->ClearFatPointerCandidate();
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
     call->gtCallMethHnd = derivedMethod;
