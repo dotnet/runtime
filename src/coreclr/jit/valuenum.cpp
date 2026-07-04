@@ -12850,23 +12850,36 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
 
 //----------------------------------------------------------------------------------
 // GetObjectHandleAndOffset: Try to obtain a constant object handle with an offset from
-//    the given tree.
+//    the given address tree.
 //
 // Arguments:
-//    tree       - tree node to inspect
+//    tree       - address tree to inspect
 //    byteOffset - [Out] resulting byte offset
 //    pObj       - [Out] constant object handle
 //
 // Return Value:
-//    true if the given tree is a ObjHandle + CNS
+//    true if the given tree represents a (constant) object handle plus a constant offset.
+//
+// Notes:
+//    The returned object handle may point to a movable object when the address is a load
+//    of an immutable "static readonly" reference-typed field. This is only safe because
+//    the handle is used to read the object's immutable content at compile time and is
+//    never materialized into codegen (materializing a movable object handle would be a GC
+//    hole).
 //
 bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORINFO_OBJECT_HANDLE* pObj)
 {
-    if (!tree->gtVNPair.BothEqual())
+    // Look through ARR_ADDR to the underlying address computation. This lets us handle
+    // string/array element addresses (numbered as VNF_PtrToArrElem) uniformly: the wrapped
+    // ADD already encodes the absolute byte offset from the object's base.
+    if (tree->OperIs(GT_ARR_ADDR))
     {
-        return false;
+        tree = tree->AsArrAddr()->Addr();
     }
 
+    // Use the liberal VN: the content we are about to read is immutable, so a constant fold is
+    // correct even when the liberal and conservative VNs differ (e.g. a load from a movable
+    // 'static readonly' reference field has an opaque conservative VN).
     ValueNum treeVN = tree->gtVNPair.GetLiberal();
     if (treeVN == ValueNumStore::NoVN)
     {
@@ -12876,11 +12889,56 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&treeVN, &offset);
 
+    // Case 1: a frozen (immovable) object handle.
     if (vnStore->IsVNObjHandle(treeVN))
     {
         *pObj       = vnStore->ConstantObjHandle(treeVN);
         *byteOffset = offset;
         return true;
+    }
+
+    // Case 2: a load of a 'static readonly' reference-typed field. The referenced object may be
+    // movable, so we only resolve it here (where it is used to read immutable content at compile
+    // time, never to materialize the reference) and require it to be immutable so that reading its
+    // content and folding to a constant is legal. Such a load is numbered either as
+    // "MapSelect(heap, fieldHandle)" (when the enclosing class is not known to be initialized) or
+    // as "InvariantNonNullLoad(fieldSeq)" (an invariant load of an initialized field).
+    CORINFO_FIELD_HANDLE fieldHnd = nullptr;
+    VNFuncApp            funcApp;
+    if ((vnStore->TypeOfVN(treeVN) == TYP_REF) && vnStore->GetVNFunc(treeVN, &funcApp))
+    {
+        if (funcApp.FuncIs(VNF_MapSelect) && vnStore->IsVNHandle(funcApp.GetArg(1), GTF_ICON_FIELD_HDL))
+        {
+            fieldHnd = reinterpret_cast<CORINFO_FIELD_HANDLE>(vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(1)));
+        }
+        else if (funcApp.FuncIs(VNF_InvariantNonNullLoad) && vnStore->IsVNHandle(funcApp.GetArg(0), GTF_ICON_FIELD_SEQ))
+        {
+            FieldSeq* fieldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.GetArg(0));
+            if (fieldSeq != nullptr)
+            {
+                fieldHnd = fieldSeq->GetFieldHandle();
+            }
+        }
+    }
+
+    if (fieldHnd != nullptr)
+    {
+        CORINFO_OBJECT_HANDLE fieldObj = NO_OBJECT_HANDLE;
+        if (info.compCompHnd->getStaticFieldContent(fieldHnd, reinterpret_cast<uint8_t*>(&fieldObj), sizeof(fieldObj),
+                                                    0, /* ignoreMovableObjects */ false) &&
+            (fieldObj != NO_OBJECT_HANDLE) && info.compCompHnd->isObjectImmutable(fieldObj))
+        {
+            // 'isObjectImmutable' reports arrays as immutable (they have no instance fields), but only
+            // their reference is 'readonly' - the elements are mutable. Exclude them so that we never
+            // fold (potentially mutated) array content to a constant.
+            CORINFO_CLASS_HANDLE objType = info.compCompHnd->getObjectType(fieldObj);
+            if ((info.compCompHnd->getClassAttribs(objType) & CORINFO_FLG_ARRAY) == 0)
+            {
+                *pObj       = fieldObj;
+                *byteOffset = offset;
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -12897,11 +12955,6 @@ bool Compiler::GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORI
 //
 bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 {
-    if (!tree->gtVNPair.BothEqual())
-    {
-        return false;
-    }
-
     // First, let's check if we can detect RVA[const_index] pattern to fold, e.g.:
     //
     //   static ReadOnlySpan<sbyte> RVA => new sbyte[] { -100, 100 }
@@ -12969,67 +13022,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         }
     }
 
-    // Throughput check, the logic below is only for USHORT (char)
-    if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_USHORT))
-    {
-        return false;
-    }
-
-    ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
-    VNFuncApp funcApp;
-    if (!vnStore->GetVNFunc(addrVN, &funcApp))
-    {
-        return false;
-    }
-
-    // Is given VN representing a frozen object handle
-    auto isCnsObjHandle = [](ValueNumStore* vnStore, ValueNum vn, CORINFO_OBJECT_HANDLE* handle) -> bool {
-        if (vnStore->IsVNObjHandle(vn))
-        {
-            *handle = vnStore->ConstantObjHandle(vn);
-            return true;
-        }
-        return false;
-    };
-
-    CORINFO_OBJECT_HANDLE objHandle = NO_OBJECT_HANDLE;
-    size_t                index     = -1;
-
-    // First, let see if we have PtrToArrElem
-    if (funcApp.FuncIs(VNF_PtrToArrElem))
-    {
-        ValueNum arrVN  = funcApp.GetArg(1);
-        ValueNum inxVN  = funcApp.GetArg(2);
-        ssize_t  offset = vnStore->ConstantValue<ssize_t>(funcApp.GetArg(3));
-
-        if (isCnsObjHandle(vnStore, arrVN, &objHandle) && (offset == 0) && vnStore->IsVNConstant(inxVN))
-        {
-            index = vnStore->CoercedConstantValue<size_t>(inxVN);
-        }
-    }
-    else if (funcApp.FuncIs(VNF_ADD))
-    {
-        target_ssize_t dataOffset = 0;
-        vnStore->PeelOffsets(&addrVN, &dataOffset);
-        ValueNum baseVN = addrVN;
-
-        if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
-            ((dataOffset % 2) == 0))
-        {
-            static_assert((OFFSETOF__CORINFO_String__chars % 2) == 0);
-            index = (dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
-        }
-    }
-
-    USHORT charValue;
-    if (((size_t)index < INT_MAX) && (objHandle != NO_OBJECT_HANDLE) &&
-        info.compCompHnd->getStringChar(objHandle, (int)index, &charValue))
-    {
-        JITDUMP("Folding \"cns_str\"[%d] into %u", (int)index, (unsigned)charValue);
-
-        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(charValue));
-        return true;
-    }
     return false;
 }
 
