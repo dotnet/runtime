@@ -1578,7 +1578,6 @@ namespace Internal.JitInterface
                 {
 #if READYTORUN
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
-
 #else
                     info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
