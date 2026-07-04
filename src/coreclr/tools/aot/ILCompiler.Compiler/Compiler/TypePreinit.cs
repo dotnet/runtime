@@ -656,36 +656,7 @@ namespace ILCompiler
                             {
                                 // We don't want to end up with GC pointers in the frozen region
                                 // because write barriers can't handle that.
-
-                                // We can make an exception for readonly fields.
-                                bool allGcPointersAreReadonly = true;
-                                TypeDesc currentType = owningType;
-                                do
-                                {
-                                    foreach (FieldDesc field in currentType.GetFields())
-                                    {
-                                        if (field.IsStatic)
-                                            continue;
-
-                                        TypeDesc fieldType = field.FieldType;
-                                        if (fieldType.IsGCPointer)
-                                        {
-                                            if (!_readOnlyPolicy.IsReadOnly(field))
-                                            {
-                                                allGcPointersAreReadonly = false;
-                                                break;
-                                            }
-                                        }
-                                        else if (fieldType.IsValueType && ((DefType)fieldType).ContainsGCPointers)
-                                        {
-                                            allGcPointersAreReadonly = false;
-                                            break;
-                                        }
-                                    }
-                                } while (allGcPointersAreReadonly && (currentType = currentType.BaseType) != null && !currentType.IsValueType);
-
-                                if (!allGcPointersAreReadonly)
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
                             }
 
                             recursionProtect ??= new Stack<MethodDesc>();
