@@ -820,11 +820,26 @@ bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImpli
     // Ask the EE: if runtime type is-a domCls, is it also is-a treeCls?
     // Must    -> yes for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is non-null.
     // MustNot -> no  for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is null.
-    //   ...BUT: IDynamicInterfaceCastable lets an object dynamically claim to satisfy an
-    //   interface cast that its static type hierarchy would say MustNot. Restrict the
-    //   MustNot inference to non-interface tree targets. Must is safe: static inheritance
-    //   can't be removed by IDCC.
     // May -> ambiguous.
+    //
+    // BUT: `compareTypesForCast` answers CanCastTo(domCls, treeCls). That is designed for
+    // downcast folding, not for reasoning about arbitrary objects satisfying an isinst on
+    // the two class handles:
+    //   * treeCls interface: an object could dynamically claim to implement treeCls via
+    //     IDynamicInterfaceCastable even if the static type hierarchy would say MustNot.
+    //   * domCls interface: an object where `isinst(domCls, obj)` succeeded can have any
+    //     runtime type that implements domCls; unrelated classes could still implement it,
+    //     so a MustNot answer over the two class handles is not a proof about the object.
+    //   * treeCls derives from domCls: CanCastTo(domCls, treeCls) is false so the EE
+    //     returns MustNot, but the object could be a treeCls (a subclass of domCls) and
+    //     hence `isinst(treeCls, obj)` may succeed. So MustNot inference is unsound here.
+    // Must inference (domCls derives from treeCls) is safe: subclasses of domCls all
+    // derive from treeCls too, and IDCC cannot make a subclass "not implement" a class.
+    const unsigned domClsAttribs   = info.compCompHnd->getClassAttribs(domCls);
+    const unsigned treeClsAttribs  = info.compCompHnd->getClassAttribs(treeCls);
+    const bool     domIsInterface  = (domClsAttribs & CORINFO_FLG_INTERFACE) != 0;
+    const bool     treeIsInterface = (treeClsAttribs & CORINFO_FLG_INTERFACE) != 0;
+
     TypeCompareState const castResult = info.compCompHnd->compareTypesForCast(domCls, treeCls);
     if (castResult == TypeCompareState::May)
     {
@@ -833,8 +848,17 @@ bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImpli
 
     if (castResult == TypeCompareState::MustNot)
     {
-        const unsigned treeClsAttribs = info.compCompHnd->getClassAttribs(treeCls);
-        if ((treeClsAttribs & CORINFO_FLG_INTERFACE) != 0)
+        // Reject when either side is an interface (see comment above).
+        if (domIsInterface || treeIsInterface)
+        {
+            return false;
+        }
+
+        // Reject when treeCls derives from domCls: an object of runtime type treeCls is
+        // also a domCls, so `isinst(domCls, obj)` succeeds while `isinst(treeCls, obj)`
+        // may also succeed. Detected by asking the reverse cast.
+        TypeCompareState const reverseCast = info.compCompHnd->compareTypesForCast(treeCls, domCls);
+        if (reverseCast != TypeCompareState::MustNot)
         {
             return false;
         }
@@ -872,6 +896,7 @@ bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImpli
             "compareTypesForCast(dom, tree) = %s, canInferFromTrue = %s, canInferFromFalse = %s, reverseSense = %s\n",
             (castResult == TypeCompareState::Must) ? "Must" : "MustNot", rii->canInferFromTrue ? "true" : "false",
             rii->canInferFromFalse ? "true" : "false", rii->reverseSense ? "true" : "false");
+
     return true;
 }
 
