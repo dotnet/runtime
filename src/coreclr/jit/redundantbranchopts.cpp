@@ -501,6 +501,16 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         }
     }
 
+    // See if dominating and tree compares are both of the form
+    //   EQ/NE(VNF_IsInstanceOf(clsA, obj), null)
+    // with the same object VN. Then we can infer the tree's value from the
+    // relationship between the two class handles.
+    //
+    if (optRelopTryInferFromTypeCheck(domApp, rii))
+    {
+        return;
+    }
+
     // See if dominating compare is a compound comparison that might
     // tell us the value of the tree compare.
     //
@@ -711,6 +721,155 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
     rii->canInferFromTrue  = (ifTrueStatus != RelopResult::Unknown);
     rii->canInferFromFalse = (ifFalseStatus != RelopResult::Unknown);
     rii->reverseSense      = (ifFalseStatus == RelopResult::AlwaysTrue) || (ifTrueStatus == RelopResult::AlwaysFalse);
+    return true;
+}
+
+//------------------------------------------------------------------------
+// optRelopTryInferFromTypeCheck: infer the tree relop's value when both
+//   dom and tree relops compare a VNF_IsInstanceOf against null on the
+//   same object VN, using the class-handle relationship.
+//
+// Arguments:
+//   domApp - The dominating relop's VN func app
+//   rii    - [in/out] struct with relop implication information
+//            (rii->treeNormVN is the tree relop's VN)
+//
+// Returns:
+//   True if we set canInfer.
+//
+// Recognizes:
+//     dom:  EQ/NE(VNF_IsInstanceOf(clsA, obj), null)
+//    tree:  EQ/NE(VNF_IsInstanceOf(clsB, obj), null)
+//
+// If compareTypesForCast(clsA, clsB) is Must:  dom-true implies tree-true.
+// If it is MustNot:                            dom-true implies tree-false.
+//
+bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImplicationInfo* rii)
+{
+    // Both dom and tree must be EQ or NE.
+    genTreeOps const domOper = genTreeOps(domApp.GetFunc());
+    if (!GenTree::StaticOperIs(domOper, GT_EQ, GT_NE))
+    {
+        return false;
+    }
+
+    VNFuncApp treeApp;
+    if (!vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
+    {
+        return false;
+    }
+
+    genTreeOps const treeOper = genTreeOps(treeApp.GetFunc());
+    if (!GenTree::StaticOperIs(treeOper, GT_EQ, GT_NE))
+    {
+        return false;
+    }
+
+    // Canonicalize: put the (potentially) IsInstanceOf side on arg 0 and null side on arg 1.
+    auto extractIsInst = [this](const VNFuncApp& app, ValueNum* clsVN, ValueNum* objVN) -> bool {
+        for (unsigned side = 0; side < 2; side++)
+        {
+            ValueNum lhs = app.GetArg(side);
+            ValueNum rhs = app.GetArg(1 - side);
+
+            if (rhs != vnStore->VNForNull())
+            {
+                continue;
+            }
+
+            VNFuncApp isInstApp;
+            if (vnStore->GetVNFunc(lhs, &isInstApp) && (isInstApp.GetFunc() == VNF_IsInstanceOf))
+            {
+                *clsVN = isInstApp.GetArg(0);
+                *objVN = isInstApp.GetArg(1);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    ValueNum domClsVN;
+    ValueNum domObjVN;
+    ValueNum treeClsVN;
+    ValueNum treeObjVN;
+    if (!extractIsInst(domApp, &domClsVN, &domObjVN) || !extractIsInst(treeApp, &treeClsVN, &treeObjVN))
+    {
+        return false;
+    }
+
+    // Must be on the same object VN.
+    if (domObjVN != treeObjVN)
+    {
+        return false;
+    }
+
+    // Same class handle - direct VN match should have handled this; be defensive.
+    if (domClsVN == treeClsVN)
+    {
+        return false;
+    }
+
+    // Both class-handle VNs must be constant type handles we can extract.
+    if (!vnStore->IsVNTypeHandle(domClsVN) || !vnStore->IsVNTypeHandle(treeClsVN))
+    {
+        return false;
+    }
+
+    CORINFO_CLASS_HANDLE domCls  = NO_CLASS_HANDLE;
+    CORINFO_CLASS_HANDLE treeCls = NO_CLASS_HANDLE;
+    if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(domClsVN), (ssize_t*)&domCls) ||
+        !vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(treeClsVN), (ssize_t*)&treeCls))
+    {
+        return false;
+    }
+
+    if ((domCls == NO_CLASS_HANDLE) || (treeCls == NO_CLASS_HANDLE))
+    {
+        return false;
+    }
+
+    // Ask the EE: if runtime type is-a domCls, is it also is-a treeCls?
+    // Must    -> yes for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is non-null.
+    // MustNot -> no  for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is null.
+    // May     -> ambiguous.
+    TypeCompareState const castResult = info.compCompHnd->compareTypesForCast(domCls, treeCls);
+    if (castResult == TypeCompareState::May)
+    {
+        return false;
+    }
+
+    // Translate to the {canInferFromTrue, canInferFromFalse, reverseSense} tuple used by RBO.
+    //
+    //   dom relop = "EQ(IsInst(A,obj), null)"  is true  when "obj is NOT A"
+    //   dom relop = "NE(IsInst(A,obj), null)"  is true  when "obj is A"
+    //  tree relop = "EQ(IsInst(B,obj), null)"  is true  when "obj is NOT B"
+    //  tree relop = "NE(IsInst(B,obj), null)"  is true  when "obj is B"
+    //
+    // We can only infer the tree relop's value when the dominating path establishes
+    // "obj is A" (i.e., when the dom relop is true and domOper == NE, or when the dom
+    // relop is false and domOper == EQ). Under "obj is A", "obj is B" equals the
+    // castResult == Must outcome, so the tree relop's semantic value is
+    // (objIsB == treeTrueMeansObjIsB).
+    //
+    // The RBO consumer of `reverseSense` applies:
+    //   relopValue = !reverseSense  when using canInferFromTrue  (dom relop is true)
+    //   relopValue =  reverseSense  when using canInferFromFalse (dom relop is false)
+    // so we set reverseSense accordingly.
+    //
+    bool const treeTrueMeansObjIsB  = (treeOper == GT_NE);
+    bool const objIsB               = (castResult == TypeCompareState::Must);
+    bool const treeValueUnderObjIsA = (objIsB == treeTrueMeansObjIsB);
+
+    rii->canInfer          = true;
+    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+    rii->canInferFromTrue  = (domOper == GT_NE);
+    rii->canInferFromFalse = (domOper == GT_EQ);
+    rii->reverseSense      = (domOper == GT_NE) ? !treeValueUnderObjIsA : treeValueUnderObjIsA;
+
+    JITDUMP("Can infer tree IsInstanceOf outcome from dominating IsInstanceOf: "
+            "compareTypesForCast(dom, tree) = %s, canInferFromTrue = %s, canInferFromFalse = %s, reverseSense = %s\n",
+            (castResult == TypeCompareState::Must) ? "Must" : "MustNot", rii->canInferFromTrue ? "true" : "false",
+            rii->canInferFromFalse ? "true" : "false", rii->reverseSense ? "true" : "false");
     return true;
 }
 

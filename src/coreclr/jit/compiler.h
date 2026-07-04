@@ -8300,6 +8300,7 @@ public:
     bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
                                                       const VNFuncApp&      treeApp,
                                                       RelopImplicationInfo* rii);
+    bool          optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImplicationInfo* rii);
 
     /**************************************************************************
      *               Value/Assertion propagation
