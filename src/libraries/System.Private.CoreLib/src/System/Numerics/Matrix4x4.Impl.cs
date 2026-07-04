@@ -1602,7 +1602,7 @@ namespace System.Numerics
                     }
                 }
 
-                return Vector128.ConcatLowerUpper(
+                return Vector128.ConcatLowerLower(
                     Vector128.Shuffle(lower, Vector128.Create(xIndex, yIndex, 0, 0)),
                     Vector128.Shuffle(upper, Vector128.Create(zIndex, wIndex, 0, 0))
                 );
