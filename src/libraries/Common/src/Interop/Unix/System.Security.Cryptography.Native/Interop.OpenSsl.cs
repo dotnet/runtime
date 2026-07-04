@@ -1040,10 +1040,21 @@ internal static partial class Interop
                 sslHandle = options!.SafeSslHandle as SafeSslHandle;
                 Debug.Assert(sslHandle is not null, "Expected SslAuthenticationOptions.SafeSslHandle to be set by SafeSslHandle.Create");
 
-                // No in-callback validator (TlsSession path): accept the certificate
-                // here so the TLS handshake completes, then surface the peer cert to
-                // the caller via NeedsCertificateValidation on the next ProcessHandshake.
-                // Any subsequent Encrypt/Decrypt blocks until the caller posts a verdict.
+                // No in-callback validator (TlsSession path): accept the certificate here so
+                // the TLS handshake completes, then surface the peer cert to the caller via
+                // NeedsCertificateValidation on the next ProcessHandshake. Any subsequent
+                // Encrypt/Decrypt blocks until the caller posts a verdict.
+                //
+                // Ideally we would pause the handshake via SSL_set_retry_verify on OpenSSL 3.0+
+                // so a caller's reject can emit a fatal TLS alert to the peer mid-handshake.
+                // In practice SSL_set_retry_verify is not honored for peer-cert verification
+                // on either client or server SSLs in current upstream OpenSSL (the callback is
+                // not re-entered after SSL_do_handshake resumes). The native shim
+                // CryptoNative_SslSetRetryVerify, the SafeSslHandle.RetryVerifyAttempted /
+                // ExternalValidationAccepted fields, and TlsSession's PushExternalValidation-
+                // VerdictToPalIfRetryVerify are kept in place as dormant infrastructure; once
+                // upstream OpenSSL honors retry-verify, gate the SSL_set_retry_verify path in
+                // this branch behind a version check (or feature probe) to opt into it.
                 if (options.RemoteCertificateValidator is null)
                 {
                     Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);

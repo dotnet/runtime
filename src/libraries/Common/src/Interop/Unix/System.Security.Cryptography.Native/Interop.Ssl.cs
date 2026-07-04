@@ -238,6 +238,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
         internal static partial void SslSetVerifyPeer(SafeSslHandle ssl, [MarshalAs(UnmanagedType.Bool)] bool failIfNoPeerCert);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetRetryVerify")]
+        internal static partial int SslSetRetryVerify(SafeSslHandle ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
         internal static partial IntPtr SslGetData(IntPtr ssl);
 
@@ -457,6 +460,17 @@ namespace Microsoft.Win32.SafeHandles
         // Storage for the exception that occurred during certificate validation callback so that
         // we may rethrow it after returning to managed code.
         public Exception? CertificateValidationException;
+
+        // OpenSSL 3.0+ retry-verify state (dormant infrastructure). When CertVerifyCallback
+        // eventually opts into SSL_set_retry_verify (currently disabled — upstream OpenSSL
+        // does not re-enter the peer-cert verify callback on either client or server SSLs),
+        // it will set RetryVerifyAttempted = true and, on re-entry, honor
+        // ExternalValidationAccepted (posted by TlsSession.PushExternalValidationVerdict-
+        // ToPalIfRetryVerify). Both fields are read but never written today, hence CS0649.
+#pragma warning disable CS0649
+        public bool RetryVerifyAttempted;
+        public bool ExternalValidationAccepted;
+#pragma warning restore CS0649
 
         public bool IsServer
         {

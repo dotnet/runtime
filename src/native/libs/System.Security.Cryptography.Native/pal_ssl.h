@@ -501,6 +501,12 @@ Shims the SSL_set_verify method.
 PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert);
 
 /*
+Shims SSL_set_retry_verify (OpenSSL 3.0+). Returns 1 on success, 0 if the
+symbol is unavailable (e.g. on OpenSSL 1.1.x).
+*/
+PALEXPORT int32_t CryptoNative_SslSetRetryVerify(SSL* ssl);
+
+/*
 Shims SSL_set_ex_data to attach application context.
 */
 PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void* ptr);

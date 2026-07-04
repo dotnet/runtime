@@ -662,6 +662,22 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
     return SSL_is_init_finished(ssl);
 }
 
+int32_t CryptoNative_SslSetRetryVerify(SSL* ssl)
+{
+    // OpenSSL 3.0+ only. SSL_set_retry_verify is a macro that wraps SSL_ctrl with
+    // SSL_CTRL_SET_RETRY_VERIFY (=136). Calling this from inside the certificate
+    // verification callback (and returning -1 from the callback) suspends the
+    // handshake so the application can perform validation asynchronously and then
+    // resume by calling SSL_do_handshake again. On older OpenSSL versions the
+    // unknown control code returns 0 from SSL_ctrl, so the caller can fall back to
+    // inline validation.
+#ifndef SSL_CTRL_SET_RETRY_VERIFY
+#define SSL_CTRL_SET_RETRY_VERIFY 136
+#endif
+    long rc = SSL_ctrl(ssl, SSL_CTRL_SET_RETRY_VERIFY, 0, NULL);
+    return rc > 0 ? 1 : 0;
+}
+
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
     X509* cert = SSL_get1_peer_certificate(ssl);

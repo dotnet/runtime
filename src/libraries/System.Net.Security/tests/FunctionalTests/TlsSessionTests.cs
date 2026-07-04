@@ -325,6 +325,214 @@ namespace System.Net.Security.Tests
             }
         }
 
+        // Cross-platform baseline: SslStream on BOTH sides, server rejects client cert.
+        // - TLS 1.2: server validates client cert before sending ServerFinished, so the client's
+        //   AuthenticateAsClientAsync must throw AuthenticationException.
+        // - TLS 1.3: server sends Finished before processing the client's Certificate, so the
+        //   client's AuthenticateAsClientAsync completes; the rejection surfaces only on the
+        //   first encrypted I/O after handshake (per TLS 1.3 spec, RFC 8446 §4.4.2.4).
+        // This pins the protocol-level expectation against which TlsSession behavior is compared.
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task SslStreamServer_RejectsClientCert_ClientObservesAlert(SslProtocols protocol)
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false, (_, _, _, _) => false))
+            {
+                Task serverAuth = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = protocol,
+                    ClientCertificateRequired = true,
+                });
+                Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = protocol,
+                    ClientCertificates = new X509CertificateCollection { clientCert },
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth.WaitAsync(TimeSpan.FromSeconds(30)));
+
+                if (protocol == SslProtocols.Tls12)
+                {
+                    await Assert.ThrowsAsync<AuthenticationException>(() => clientAuth.WaitAsync(TimeSpan.FromSeconds(30)));
+                    Assert.False(clientSsl.IsAuthenticated);
+                }
+                else
+                {
+                    await clientAuth.WaitAsync(TimeSpan.FromSeconds(30));
+                    Assert.True(clientSsl.IsAuthenticated);
+                    byte[] buf = new byte[1];
+                    await Assert.ThrowsAnyAsync<IOException>(async () =>
+                    {
+                        await clientSsl.WriteAsync(buf).AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+                        await clientSsl.ReadAsync(buf).AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+                    });
+                }
+            }
+        }
+
+        // TlsSession does NOT wire SslAuthenticationOptions.RemoteCertificateValidator (unlike
+        // SslStream, which sets it to SslStream.VerifyRemoteCertificate). The OpenSSL
+        // CertVerifyCallback therefore takes the wedge branch (accept-and-defer) even when the
+        // caller passes RemoteCertificateValidationCallback on the underlying server options:
+        // the callback is only invoked later, by AcceptWithDefaultValidation, after the caller
+        // resolves the post-hoc NeedsCertificateValidation suspension. Document that with a
+        // test so the API contract is explicit — there is exactly one validation timing on
+        // TlsSession (post-hoc), and the SslStream-style in-callback timing is unavailable.
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task ServerSession_RemoteCertificateValidationCallback_IsInvokedPostHoc(SslProtocols protocol)
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            int validatorCalls = 0;
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = protocol,
+                    ClientCertificateRequired = true,
+                    RemoteCertificateValidationCallback = (_, _, _, _) =>
+                    {
+                        Interlocked.Increment(ref validatorCalls);
+                        return true;
+                    },
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = protocol,
+                    ClientCertificates = new X509CertificateCollection { clientCert },
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
+                await Task.WhenAll(clientAuth, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                // The callback is invoked exactly once, via AcceptWithDefaultValidation inside
+                // DriveHandshakeAsync's NeedsCertificateValidation branch — not from within the
+                // OpenSSL CertVerifyCallback during the wire handshake.
+                Assert.Equal(1, validatorCalls);
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(clientSsl.IsAuthenticated);
+            }
+        }
+
+        // TlsSession server rejects the presented client cert post-hoc via
+        // SetRemoteCertificateValidationResult on NeedsCertificateValidation. On OpenSSL 3.x
+        // SSL_set_retry_verify is not honored for the peer-cert verification callback on a
+        // server SSL (the callback is not re-entered), so CertVerifyCallback takes the
+        // accept-and-defer branch on the server path. The wire handshake therefore completes
+        // before the caller's verdict is known.
+        //
+        // Documented current behavior (mirrors SslStreamServer_RejectsClientCert_... only for
+        // the server-side fault surfacing; the client will NOT see a fatal alert until upstream
+        // OpenSSL gains server-side retry-verify support):
+        // - Both TLS 1.2 and 1.3: client's AuthenticateAsClientAsync completes; the reject
+        //   surfaces on the server as AuthenticationException when the caller invokes
+        //   Encrypt/Decrypt after SetRemoteCertificateValidationResult(errors).
+        // - The client observes an EndOfStream/IOException only when it attempts I/O after
+        //   the server closes the transport (post-hoc, not mid-handshake).
+        //
+        // Once the OpenSSL fix lands, this test should be tightened to assert an
+        // AuthenticationException on the client side (TLS 1.2) or on first I/O (TLS 1.3),
+        // matching SslStreamServer_RejectsClientCert_ClientObservesAlert.
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public async Task ServerSession_ExternalValidation_RejectsClientCert_ServerFaultsPostHoc(SslProtocols protocol)
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = protocol,
+                    ClientCertificateRequired = true,
+                    // No RemoteCertificateValidationCallback — caller drives validation externally.
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = protocol,
+                    ClientCertificates = new X509CertificateCollection { clientCert },
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                bool suspensionObserved = false;
+                string? observedClientCertThumbprint = null;
+                Exception? serverFault = null;
+                Task serverHandshake = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await DriveHandshakeWithExternalValidationAsync(
+                            session, serverStream,
+                            onSuspend: () =>
+                            {
+                                suspensionObserved = true;
+                                // Capture the thumbprint before SetRemoteCertificateValidationResult
+                                // disposes the pending cert on the reject path.
+                                using (X509Certificate2? observed = session.GetRemoteCertificate())
+                                {
+                                    observedClientCertThumbprint = observed?.Thumbprint;
+                                }
+                                session.SetRemoteCertificateValidationResult(SslPolicyErrors.RemoteCertificateChainErrors);
+                            });
+                    }
+                    catch (AuthenticationException ex) { serverFault = ex; }
+                });
+
+                // Client's handshake completes on both TLS versions today (upstream OpenSSL
+                // limitation; the caller's server-side rejection cannot inject a mid-handshake
+                // alert). Give the client a moment to finish and don't assert on it.
+                await clientAuth.WaitAsync(TimeSpan.FromSeconds(30));
+
+                await serverHandshake.WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.True(suspensionObserved, "Server never observed NeedsCertificateValidation.");
+                Assert.NotNull(observedClientCertThumbprint);
+                Assert.Equal(clientCert.Thumbprint, observedClientCertThumbprint);
+
+                // Server-side, the rejection MUST surface as AuthenticationException on the
+                // next session operation. If the DriveHandshakeWithExternalValidationAsync
+                // helper already threw, we captured it; otherwise assert on an Encrypt call.
+                if (serverFault is null)
+                {
+                    byte[] pt = "blocked"u8.ToArray();
+                    byte[] ct = new byte[CipherBufSize];
+                    Assert.Throws<AuthenticationException>(() => session.Encrypt(pt, ct, out _, out _));
+                }
+
+            }
+        }
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
@@ -1171,6 +1379,34 @@ namespace System.Net.Security.Tests
                 session.SetRemoteCertificateValidationResult(SslPolicyErrors.None));
             Assert.Throws<InvalidOperationException>(() =>
                 session.AcceptWithDefaultValidation());
+        }
+
+        // After a handshake-time AuthenticationException, flush any TLS alert bytes the PAL
+        // queued in the session's pending buffer to the wire so the peer observes a fatal
+        // alert instead of timing out / seeing handshake-completed.
+        private static async Task DrainAfterAuthFaultAsync(TlsSession session, Stream transport)
+        {
+            byte[] scratch = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+            try
+            {
+                while (session.HasPendingOutput)
+                {
+                    session.DrainPendingOutput(scratch, out int n);
+                    if (n > 0)
+                    {
+                        await transport.WriteAsync(scratch.AsMemory(0, n));
+                        await transport.FlushAsync();
+                    }
+                }
+            }
+            catch
+            {
+                // Best-effort: the peer may have already torn down the connection.
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(scratch);
+            }
         }
 
         // Like DriveHandshakeAsync but pauses on NeedsCertificateValidation to invoke the supplied

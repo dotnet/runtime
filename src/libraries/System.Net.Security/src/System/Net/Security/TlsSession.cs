@@ -323,6 +323,14 @@ namespace System.Net.Security
             _externalValidationPending = false;
             _externalValidationResolved = true;
 
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+            // OpenSSL 3.0+ retry-verify path: the handshake paused inside the CertVerifyCallback.
+            // Push the verdict to the SafeSslHandle so the next SSL_do_handshake call (driven by
+            // the caller's next ProcessHandshake) re-invokes the callback and either accepts the
+            // peer cert (Finished is emitted) or rejects it (a fatal alert is emitted).
+            PushExternalValidationVerdictToPalIfRetryVerify(errors);
+#endif
+
             if (errors == SslPolicyErrors.None)
             {
                 // Caller accepted. Promote the pending cert to the canonical remote-cert slot
@@ -340,7 +348,16 @@ namespace System.Net.Security
             }
             else
             {
-                _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                // Post-hoc rejection (handshake already wire-complete on OpenSSL 1.1.x or Schannel):
+                // surface the fault immediately so subsequent Encrypt/Decrypt throw. For the
+                // retry-verify path the handshake is still incomplete and the fault is set when
+                // ProcessHandshake drives SSL_do_handshake to failure (so any pending alert bytes
+                // are drained to the caller first).
+                if (_isHandshakeComplete)
+                {
+                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                }
+
                 // VerifyRemoteCertificateCore assigns _remoteCertificate to the candidate before it
                 // knows whether the chain validates, so on the reject path the rejected leaf is sitting
                 // in the canonical slot. Drop it so GetRemoteCertificate cannot surface a cert the caller
@@ -360,6 +377,25 @@ namespace System.Net.Security
 
             DisposeExternalRemoteCertificates();
         }
+
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+        // Client-side only path. When CertVerifyCallback paused the handshake via
+        // SSL_set_retry_verify, RetryVerifyAttempted is set on the SafeSslHandle. Stamp
+        // the caller's verdict onto the handle so the next SSL_do_handshake (driven by
+        // the caller's next ProcessHandshake) re-enters the callback and either accepts
+        // the peer cert or emits a fatal alert. No-op on server sessions and on 1.1.x
+        // where CertVerifyCallback took the accept-and-defer branch instead of retrying.
+        private void PushExternalValidationVerdictToPalIfRetryVerify(SslPolicyErrors errors)
+        {
+            if (_securityContext is not Microsoft.Win32.SafeHandles.SafeSslHandle sslHandle ||
+                !sslHandle.RetryVerifyAttempted)
+            {
+                return;
+            }
+
+            sslHandle.ExternalValidationAccepted = errors == SslPolicyErrors.None;
+        }
+#endif
 
         /// <summary>
         /// Server-side only. The parsed ClientHello information, populated when
@@ -750,7 +786,24 @@ namespace System.Net.Security
                     token.Status.ErrorCode != SecurityStatusPalErrorCode.CredentialsNeeded &&
                     token.Status.ErrorCode != SecurityStatusPalErrorCode.CertValidationNeeded)
                 {
-                    throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
+                    Exception authExc = new AuthenticationException(SR.net_auth_SSPI, token.GetException());
+
+                    // OpenSSL queued a TLS alert in the BIO during the failing SSL_do_handshake
+                    // (e.g. bad_certificate after the client-side retry-verify callback rejected
+                    // the peer). Drain the alert to the caller's output buffer before throwing so
+                    // the peer observes an AuthenticationException instead of a connection reset.
+                    // The fault is re-raised on the next ProcessHandshake call once the queue is
+                    // empty. Only fires on the client path today; server-side never reaches this
+                    // branch for external-validation reasons because CertVerifyCallback
+                    // accepts-and-defers (see gating in Interop.OpenSsl.CertVerifyCallback).
+                    if (_pendingLength > 0)
+                    {
+                        bytesWritten = DrainTo(output);
+                        _externalValidationFault = authExc;
+                        return TlsOperationStatus.WantWrite;
+                    }
+
+                    throw authExc;
                 }
 
                 bool done = token.Status.ErrorCode == SecurityStatusPalErrorCode.OK;
