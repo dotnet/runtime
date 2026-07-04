@@ -58,6 +58,12 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.EnumerateLiveSlots(instructionOffset, options);
     }
 
+    bool IGCInfo.IsGcSafe(IGCInfoHandle gcInfoHandle, uint instructionOffset)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.IsGcSafe(instructionOffset);
+    }
+
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
     {
         if (gcInfoHandle is not IGCInfoDecoder handle)

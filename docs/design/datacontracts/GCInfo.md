@@ -47,6 +47,9 @@ IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 // (not implemented for x86 — see X86GCInfo for the underlying transition data; the cDAC
 // adapter is future work).
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
+
+// Returns true if the instruction offset is a GC-safe point.
+bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset);
 ```
 
 ```csharp
@@ -602,4 +605,22 @@ IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle,
     //   5. Apply slot filtering (scratch registers, FP-based-only mode)
     // Collect each live slot into a list and return it.
 }
+
+bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset)
+{
+    // Ensure header and body are decoded through interruptible ranges, then return true
+    // if the offset is fully interruptible or (for the general decoder) matches an entry
+    // in the safe point table.
+}
 ```
+
+### IsGcSafe
+
+`IsGcSafe` determines whether an instruction offset is a GC-safe point.
+
+For the general decoder (x64, arm, arm64, etc.), the offset is GC-safe if it is either fully interruptible or a partially-interruptible safe point.
+
+- **Interruptible**: the offset lies within the `[start, stop)` bounds of any interruptible range.
+- **Safe point**: the offset matches an entry in the explicit **safe point table**.
+
+For the x86 encoding (`X86GCInfo` — native `hdrInfo` / `gc_unwind_x86`), there is **no** safe point table. The offset is *not* GC-safe if it falls in a prolog or epilog, if the method is not marked interruptible, or if it falls within an explicit no-GC region.
