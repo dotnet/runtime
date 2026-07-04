@@ -58,9 +58,10 @@ public:
     // Get the cpu stub for a delegate invoke.
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
-    static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
+    static MethodDesc* GetMethodDesc(OBJECTREF obj);
+    static MethodDesc* GetCachedMethodDesc(DELEGATEREF delegate);
 
-    static BOOL IsTrueMulticastDelegate(DELEGATEREF delegate);
+    static BOOL HasSingleTarget(DELEGATEREF delegate);
 
     // Throw if the method violates any usage restrictions
     // for UnmanagedCallersOnlyAttribute.

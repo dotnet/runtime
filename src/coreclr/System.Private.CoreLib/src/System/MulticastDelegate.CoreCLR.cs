@@ -47,7 +47,7 @@ namespace System
         private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(RuntimeHelpers.GetMethodTable(this)));
+            MulticastDelegate result = InternalAlloc(RuntimeHelpers.GetMethodTable(this));
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
@@ -157,8 +157,7 @@ namespace System
         private object[] DeleteFromInvocationList(object[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
         {
             Debug.Assert(_helperObject is object[]);
-            object[]? thisInvocationList = Unsafe.As<object[]>(_helperObject);
-            Debug.Assert(thisInvocationList is not null);
+            object[] thisInvocationList = (object[])_helperObject;
 
             int allocCount = thisInvocationList.Length;
             while (allocCount / 2 >= invocationCount - deleteCount)

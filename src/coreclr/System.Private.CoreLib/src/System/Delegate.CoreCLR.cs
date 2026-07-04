@@ -26,7 +26,7 @@ namespace System
         // 3. Collectible delegates - LoaderAllocator and such
         internal object? _helperObject;
 
-        // _target is the object we will invoke on; null if static delegate
+        // _target is the object we will invoke on
         // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
         internal object? _target;
 
@@ -123,12 +123,15 @@ namespace System
                 return false;
             }
 
-            object[] invocationList = (object[])_helperObject!;
-            Debug.Assert(invocationList.Length > 1);
-            Debug.Assert(invocationList[0] is MulticastDelegate);
-            Debug.Assert((uint)invocationList.Length >= (nuint)_extraData);
+            Debug.Assert(_helperObject is object[]);
+            object[] invocationList = (object[])_helperObject;
 
-            ref MulticastDelegate first = ref Unsafe.As<object, MulticastDelegate>(ref MemoryMarshal.GetArrayDataReference(invocationList));
+            Debug.Assert(invocationList.Length > 1);
+            Debug.Assert((uint)invocationList.Length >= (nuint)_extraData);
+            Debug.Assert(invocationList[0] is MulticastDelegate);
+
+            ref object reference = ref MemoryMarshal.GetArrayDataReference(invocationList);
+            ref MulticastDelegate first = ref Unsafe.As<object, MulticastDelegate>(ref reference);
             invocations = MemoryMarshal.CreateReadOnlySpan(ref first, (int)_extraData);
             return true;
         }
@@ -184,7 +187,7 @@ namespace System
                        _methodPtrAux == other._methodPtrAux;
             }
 
-            // do an optimistic check first. This is hopefully cheap enough to be worth
+            // Try checking full equality for other types, this is hopefully cheap enough to be worth it
             if (_target == other._target &&
                 _methodPtr == other._methodPtr &&
                 _methodPtrAux == other._methodPtrAux)
@@ -262,7 +265,7 @@ namespace System
                 MethodInfo method = GetMethodImplCore();
                 Debug.Assert(method is not null);
 
-                Volatile.Write(ref _helperObject, method);
+                _helperObject = method;
                 return method;
             }
         }
@@ -526,6 +529,12 @@ namespace System
         {
             Debug.Assert(type.IsAssignableTo(typeof(MulticastDelegate)));
             return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAlloc(type));
+        }
+
+        internal static unsafe MulticastDelegate InternalAlloc(MethodTable* type)
+        {
+            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(type).IsAssignableTo(typeof(MulticastDelegate)));
+            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(type));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

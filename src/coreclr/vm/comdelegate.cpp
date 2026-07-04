@@ -1788,7 +1788,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     END_QCALL;
 }
 
-MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
+MethodDesc* COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 {
     CONTRACTL
     {
@@ -1811,10 +1811,10 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // - MethodDesc already cached
 
         // we return the method desc for the invoke for the first two cases
-        if (IsTrueMulticastDelegate(thisDel) || extraData == DELEGATE_MARKER_UNMANAGEDFPTR)
+        if (!HasSingleTarget(thisDel) || extraData == DELEGATE_MARKER_UNMANAGEDFPTR)
             return FindDelegateInvokeMethod(thisDel->GetMethodTable());
 
-        return (MethodDesc*)extraData;
+        return GetCachedMethodDesc(thisDel);
     }
 
     // Next, check for an open delegate
@@ -1832,23 +1832,42 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     return pMethodHandle;
 }
 
-BOOL COMDelegate::IsTrueMulticastDelegate(DELEGATEREF delegate)
+MethodDesc* COMDelegate::GetCachedMethodDesc(DELEGATEREF delegate)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(HasSingleTarget(delegate));
+
+    INT_PTR extraData = delegate->GetExtraData();
+
+    _ASSERTE(extraData != DELEGATE_MARKER_UNMANAGEDFPTR);
+
+    return (MethodDesc*)extraData;
+}
+
+BOOL COMDelegate::HasSingleTarget(DELEGATEREF delegate)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
     OBJECTREF helperObject = delegate->GetHelperObject();
     if (helperObject == NULL)
     {
-        return false;
+        return true;
     }
 
-    return helperObject->GetMethodTable()->IsArray();
+    return !helperObject->GetMethodTable()->IsArray();
 }
 
 // Get the cpu stub for a delegate invoke.

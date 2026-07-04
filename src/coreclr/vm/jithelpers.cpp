@@ -1911,7 +1911,7 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     INT_PTR extraData = del->GetExtraData();
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
-    if (!COMDelegate::IsTrueMulticastDelegate(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
+    if (COMDelegate::HasSingleTarget(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
         MethodDesc* pMD = NULL;
         if (del->GetMethodPtrAux() == (PCODE)NULL)
@@ -1962,7 +1962,7 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     INT_PTR extraData = del->GetExtraData();
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
-    if (!COMDelegate::IsTrueMulticastDelegate(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
+    if (COMDelegate::HasSingleTarget(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
         MethodDesc* pMD = NULL;
         if (del->GetMethodPtrAux() == (PCODE)NULL)

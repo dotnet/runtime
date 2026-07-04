@@ -89,6 +89,11 @@ Global variables used:
 | `SyncBlockHashCodeMask` | uint32 | Mask for extracting the hash code from the sync block value. |
 | `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
 
+Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `unmanagedMarker` | nint | Sentinel value for detecting unmanaged pointer delegates. | `-1` |
+
 Contracts used:
 | Contract Name |
 | --- |
@@ -233,8 +238,9 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
         isMulticast = rts.IsArray(rts.GetTypeHandle(mt), out _);
     }
 
+    const nint unmanagedMarker = -1;
     DelegateType delegateType = DelegateType.Unknown;
-    if (!isMulticast && target.ReadNInt(address + /* Delegate::ExtraData offset */) != -1)
+    if (!isMulticast && target.ReadNInt(address + /* Delegate::ExtraData offset */) != unmanagedMarker)
     {
         delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
     }
