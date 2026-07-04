@@ -810,20 +810,9 @@ bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImpli
     }
 
     // Both class-handle VNs must be constant type handles we can extract.
-    if (!vnStore->IsVNTypeHandle(domClsVN) || !vnStore->IsVNTypeHandle(treeClsVN))
-    {
-        return false;
-    }
-
     CORINFO_CLASS_HANDLE domCls  = NO_CLASS_HANDLE;
     CORINFO_CLASS_HANDLE treeCls = NO_CLASS_HANDLE;
-    if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(domClsVN), (ssize_t*)&domCls) ||
-        !vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(treeClsVN), (ssize_t*)&treeCls))
-    {
-        return false;
-    }
-
-    if ((domCls == NO_CLASS_HANDLE) || (treeCls == NO_CLASS_HANDLE))
+    if (!vnStore->IsVNTypeHandle(domClsVN, &domCls) || !vnStore->IsVNTypeHandle(treeClsVN, &treeCls))
     {
         return false;
     }
@@ -831,11 +820,24 @@ bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImpli
     // Ask the EE: if runtime type is-a domCls, is it also is-a treeCls?
     // Must    -> yes for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is non-null.
     // MustNot -> no  for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is null.
-    // May     -> ambiguous.
+    //   ...BUT: IDynamicInterfaceCastable lets an object dynamically claim to satisfy an
+    //   interface cast that its static type hierarchy would say MustNot. Restrict the
+    //   MustNot inference to non-interface tree targets. Must is safe: static inheritance
+    //   can't be removed by IDCC.
+    // May -> ambiguous.
     TypeCompareState const castResult = info.compCompHnd->compareTypesForCast(domCls, treeCls);
     if (castResult == TypeCompareState::May)
     {
         return false;
+    }
+
+    if (castResult == TypeCompareState::MustNot)
+    {
+        const unsigned treeClsAttribs = info.compCompHnd->getClassAttribs(treeCls);
+        if ((treeClsAttribs & CORINFO_FLG_INTERFACE) != 0)
+        {
+            return false;
+        }
     }
 
     // Translate to the {canInferFromTrue, canInferFromFalse, reverseSense} tuple used by RBO.

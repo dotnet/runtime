@@ -8,12 +8,25 @@
 
 namespace Runtime_97581;
 
+using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 file class Program1 {}
 file class Program2 {}
 file class Derived1 : Program1 {}
+
+file interface IFoo {}
+
+file class DcastToIFoo : IDynamicInterfaceCastable
+{
+    bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+        => interfaceType.Equals(typeof(IFoo).TypeHandle);
+    RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType) =>
+        throw new InvalidOperationException();
+}
 
 public class Runtime_97581
 {
@@ -64,6 +77,21 @@ public class Runtime_97581
         return 3;
     }
 
+    // IDynamicInterfaceCastable can make an object dynamically implement an interface
+    // that its static type does not. compareTypesForCast(DcastToIFoo, IFoo) is MustNot
+    // statically, but the runtime cast succeeds. The optimization must not fold
+    // "o is DcastToIFoo -> o is IFoo" to false.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int MustNotInterfaceTree(object o)
+    {
+        if (o is DcastToIFoo)
+        {
+            if (o is IFoo) return 1; // must not be folded away
+            return 2;
+        }
+        return 3;
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -71,6 +99,7 @@ public class Runtime_97581
         var p2  = new Program2();
         var d1  = new Derived1();
         object str = "hello";
+        object dc  = new DcastToIFoo();
 
         if (MustNotEqTree(p1)  != 2) return 101;
         if (MustNotEqTree(p2)  != 3) return 102;
@@ -87,6 +116,12 @@ public class Runtime_97581
 
         if (MustNeTree(d1)  != 2) return 131;
         if (MustNeTree(p1)  != 3) return 132;
+
+        // The IDCC object satisfies "o is DcastToIFoo" statically and also
+        // "o is IFoo" via IDynamicInterfaceCastable. Result must be 1.
+        if (MustNotInterfaceTree(dc)  != 1) return 141;
+        if (MustNotInterfaceTree(p1)  != 3) return 142;
+        if (MustNotInterfaceTree(str) != 3) return 143;
 
         return 100;
     }
