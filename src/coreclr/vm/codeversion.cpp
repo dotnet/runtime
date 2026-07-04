@@ -566,13 +566,15 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_rejitState(RejitFlags::kStateRequested),
     m_pIL(),
     m_jitFlags(0),
+    m_source(CodeVersionSource::kUnknown),
+    m_encVersion(CorDB_DEFAULT_ENC_FUNCTION_VERSION),
     m_deoptimized(FALSE)
 {
     m_pIL.Store(dac_cast<PTR_COR_ILMETHOD>(nullptr));
 }
 
 #ifndef DACCESS_COMPILE
-ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized) :
+ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized, CodeVersionSource source, SIZE_T encVersion) :
     m_pModule(pModule),
     m_methodDef(methodDef),
     m_rejitId(id),
@@ -580,8 +582,8 @@ ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJ
     m_rejitState(RejitFlags::kStateRequested),
     m_pIL(nullptr),
     m_jitFlags(0),
-    m_source(CodeVersionSource::kUnknown),
-    m_encVersion(CorDB_DEFAULT_ENC_FUNCTION_VERSION),
+    m_source(source),
+    m_encVersion(encVersion),
     m_deoptimized(isDeoptimized)
 {}
 #endif
@@ -697,20 +699,6 @@ void ILCodeVersionNode::SetJitFlags(DWORD flags)
 {
     LIMITED_METHOD_CONTRACT;
     m_jitFlags.Store(flags);
-}
-
-void ILCodeVersionNode::SetSource(CodeVersionSource source)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
-    m_source = source;
-}
-
-void ILCodeVersionNode::SetEnCVersion(SIZE_T encVersion)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
-    m_encVersion = encVersion;
 }
 
 void ILCodeVersionNode::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
@@ -1080,18 +1068,6 @@ void ILCodeVersion::SetJitFlags(DWORD flags)
 {
     LIMITED_METHOD_CONTRACT;
     AsNode()->SetJitFlags(flags);
-}
-
-void ILCodeVersion::SetSource(CodeVersionSource source)
-{
-    LIMITED_METHOD_CONTRACT;
-    AsNode()->SetSource(source);
-}
-
-void ILCodeVersion::SetEnCVersion(SIZE_T encVersion)
-{
-    LIMITED_METHOD_CONTRACT;
-    AsNode()->SetEnCVersion(encVersion);
 }
 
 void ILCodeVersion::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
@@ -1587,7 +1563,7 @@ NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMetho
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized)
+HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized, CodeVersionSource source, SIZE_T encVersion)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
@@ -1600,7 +1576,7 @@ HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef method
         return hr;
     }
 
-    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalCodeVersionId)), isDeoptimized);
+    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalCodeVersionId)), isDeoptimized, source, encVersion);
     if (pILCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;
@@ -2099,6 +2075,10 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     {
         pMD = pMD->GetAsyncVariantNoCreate();
     }
+    if (pMD == NULL)
+    {
+        return S_OK;
+    }
 
     if (!pMD->HasClassOrMethodInstantiation())
     {
@@ -2183,6 +2163,10 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
         if (pLoadedMD->IsAsyncThunkMethod())
         {
             pLoadedMD = pLoadedMD->GetAsyncVariantNoCreate();
+        }
+        if (pLoadedMD == NULL)
+        {
+            continue;
         }
 
         if (!pLoadedMD->IsVersionable())

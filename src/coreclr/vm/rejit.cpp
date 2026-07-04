@@ -903,7 +903,7 @@ HRESULT ReJitManager::BindILVersion(
     // Either there was no ILCodeVersion yet for this MethodDesc OR whatever we've found
     // couldn't be reused (and needed to be reverted).  Create a new ILCodeVersion to return
     // to the caller.
-    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion, FALSE);
+    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion, FALSE, CodeVersionSource::kReJIT);
     pILCodeVersion->SetEnableReJITCallback(fDoCallback);
     return hr;
 }
@@ -1031,7 +1031,6 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 {
                     ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
                     ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
-                    ilCodeVersion.SetSource(CodeVersionSource::kReJIT);
                 }
             }
 
@@ -1054,7 +1053,6 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 // So now we transfer it out to the SharedReJitInfo.
                 ilCodeVersion.SetJitFlags(pFuncControl->GetCodegenFlags());
                 ilCodeVersion.SetIL((COR_ILMETHOD*)pFuncControl->GetIL());
-                ilCodeVersion.SetSource(CodeVersionSource::kReJIT);
                 // ilCodeVersion is now the owner of the memory for the IL buffer
                 ilCodeVersion.SetInstrumentedILMap(pFuncControl->GetInstrumentedMapEntryCount(),
                     pFuncControl->GetInstrumentedMapEntries());

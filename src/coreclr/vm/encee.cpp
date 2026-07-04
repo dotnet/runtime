@@ -245,15 +245,13 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
                 {
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
-                    if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(this, token, &ilCodeVersion, FALSE)))
+                    if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(this, token, &ilCodeVersion, FALSE, CodeVersionSource::kEnC, m_applyChangesCount)))
                     {
                         LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error AddILCodeVersion returned hr 0x%x\n", hr));
                         return hr;
                     }
                     ilCodeVersion.SetIL((COR_ILMETHOD*)&pLocalILMemory[dwMethodRVA]);
                     ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
-                    ilCodeVersion.SetSource(CodeVersionSource::kEnC);
-                    ilCodeVersion.SetEnCVersion(m_applyChangesCount);
                 }
                 {
                     GCX_PREEMP();

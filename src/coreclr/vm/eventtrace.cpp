@@ -3543,6 +3543,14 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 
     EX_TRY
     {
+        ReJITID ilCodeVersionId = 0;
+#ifdef FEATURE_CODE_VERSIONING
+        if (pConfig->GetCodeVersion().GetILCodeVersion().IsReJIT())
+        {
+            ilCodeVersionId = pConfig->GetCodeVersion().GetILCodeVersionId();
+        }
+#endif // FEATURE_CODE_VERSIONING
+
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
@@ -3558,12 +3566,12 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
                                                          ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
                                                          pNativeCodeStartAddress,
                                                          pConfig->GetCodeVersion().GetVersionId(),
-                                                         pConfig->GetCodeVersion().GetILCodeVersion().IsReJIT() ? pConfig->GetCodeVersion().GetILCodeVersionId() : 0);
+                                                         ilCodeVersionId);
         }
 
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
         {
-            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersion().IsReJIT() ? pConfig->GetCodeVersion().GetILCodeVersionId() : 0, NULL);
+            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), ilCodeVersionId, NULL);
         }
 
     } EX_CATCH { } EX_END_CATCH
