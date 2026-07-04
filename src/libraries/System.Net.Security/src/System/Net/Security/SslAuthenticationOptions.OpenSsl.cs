@@ -23,5 +23,14 @@ namespace System.Net.Security
         // reads/writes the socket directly. Used by TlsSession's socket-bound mode
         // (Create(TlsContext, SafeSocketHandle)).
         internal SafeSocketHandle? SocketHandle { get; set; }
+
+        // ClientHello bytes already consumed from SocketHandle by the managed
+        // pre-fetch loop used to surface SNI to a deferred ServerOptionsSelectionCallback.
+        // When both SocketHandle and this are set, SafeSslHandle.Create installs a
+        // socket-replay BIO on the SSL* instead of SSL_set_fd so those bytes are
+        // fed back to OpenSSL's handshake state machine before further recv().
+        // Only meaningful when SocketHandle is also set; cleared once transferred
+        // to the BIO (the BIO holds its own copy).
+        internal byte[]? ReplayPrefix { get; set; }
     }
 }

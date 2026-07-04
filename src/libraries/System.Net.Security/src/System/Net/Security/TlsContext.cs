@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Security
 {
@@ -16,6 +17,7 @@ namespace System.Net.Security
     /// cache reuse is not yet wired through; each <see cref="TlsSession"/>
     /// gets its own native context allocated lazily on the first handshake call.
     /// </remarks>
+    [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class TlsContext : IDisposable
     {
         private readonly SslAuthenticationOptions _options;

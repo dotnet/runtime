@@ -81,6 +81,53 @@ namespace System.Net.Security.Tests
             }
         }
 
+        // Server starts with TlsContext.Create((SslServerAuthenticationOptions?)null) - no options
+        // baked in. ProcessHandshake parses the ClientHello, surfaces NeedsServerOptions with
+        // ClientHelloInfo populated, and the caller picks options based on SNI before resuming.
+        [Fact]
+        public async Task ServerSession_DeferredOptions_SelectedFromSni_Succeeds()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            int factoryCalls = 0;
+            string? observedSni = null;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream, hello =>
+                {
+                    factoryCalls++;
+                    observedSni = hello.ServerName;
+                    return new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = serverCert,
+                        EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    };
+                });
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(clientSsl.IsAuthenticated);
+                Assert.Equal(1, factoryCalls);
+                Assert.Equal(serverName, observedSni);
+            }
+        }
+
         // Two consecutive handshakes against the same TlsContext / SslStream client
         // pair. With AllowTlsResume=true (default), the second handshake should resume
         // and transfer significantly fewer bytes than the first (no Certificate
@@ -1721,7 +1768,13 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static async Task DriveHandshakeAsync(TlsSession session, Stream transport)
+        private static Task DriveHandshakeAsync(TlsSession session, Stream transport)
+            => DriveHandshakeAsync(session, transport, serverOptionsFactory: null);
+
+        private static async Task DriveHandshakeAsync(
+            TlsSession session,
+            Stream transport,
+            Func<SslClientHelloInfo, SslServerAuthenticationOptions>? serverOptionsFactory)
         {
             byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
@@ -1755,6 +1808,15 @@ namespace System.Net.Security.Tests
                     switch (status)
                     {
                         case TlsOperationStatus.Complete:
+                            continue;
+
+                        case TlsOperationStatus.NeedsServerOptions:
+                            if (serverOptionsFactory is null)
+                            {
+                                throw new InvalidOperationException(
+                                    "Handshake suspended on NeedsServerOptions but no factory was supplied.");
+                            }
+                            session.SetServerOptions(serverOptionsFactory(session.ClientHelloInfo!.Value));
                             continue;
 
                         case TlsOperationStatus.NeedsCertificateValidation:
@@ -2021,6 +2083,348 @@ namespace System.Net.Security.Tests
             Assert.Equal(pong, back);
 
             // Cleanup: session owns serverHandle and will close it on dispose.
+        }
+
+        // Socket-bound server session with deferred options. The handshake loop must
+        // suspend on NeedsServerOptions, expose ClientHelloInfo (SNI), and continue
+        // after SetServerOptions. On the OpenSSL socket-bound fast path, the managed
+        // pre-fetch loop peels the ClientHello off the socket to surface SNI, then
+        // SetServerOptions activates fd-mode with a socket-replay BIO that hands
+        // those bytes to OpenSSL before the fd is consulted again.
+        [Fact]
+        public async Task SocketBoundSession_DeferredOptions_SelectedFromSni_Succeeds()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            int factoryCalls = 0;
+            string? observedSni = null;
+
+            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    TlsOperationStatus s = session.Handshake();
+                    if (s == TlsOperationStatus.Complete)
+                    {
+                        return;
+                    }
+                    if (s == TlsOperationStatus.NeedsServerOptions)
+                    {
+                        factoryCalls++;
+                        observedSni = session.ClientHelloInfo!.Value.ServerName;
+                        session.SetServerOptions(new SslServerAuthenticationOptions
+                        {
+                            ServerCertificate = serverCert,
+                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                        });
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.NeedsCertificateValidation)
+                    {
+                        session.AcceptWithDefaultValidation();
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    {
+                        await Task.Delay(5);
+                        continue;
+                    }
+                    throw new InvalidOperationException($"Unexpected handshake status: {s}");
+                }
+            });
+
+            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsHandshakeComplete);
+            Assert.Equal(1, factoryCalls);
+            Assert.Equal(serverName, observedSni);
+        }
+
+        // Two consecutive sessions on the same TlsContext, each carrying a different SNI.
+        // Verifies the deferred-options factory returns the right cert per connection and
+        // that the OpenSSL socket-bound fast path picks up the freshly-set cert per session
+        // (i.e. no cert leaks from a stale/preallocated shared SSL_CTX).
+        [Fact]
+        public async Task SocketBoundSession_DeferredOptions_MultipleSni_SelectsMatchingCert()
+        {
+            using X509Certificate2 certA = TestCertificates.GetServerCertificate();
+            using X509Certificate2 certB = CreateSelfSignedServerCert("tls-session-vhost-b.example");
+            string nameA = certA.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+            const string nameB = "tls-session-vhost-b.example";
+
+            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+
+            for (int iter = 0; iter < 2; iter++)
+            {
+                string requestedSni = iter == 0 ? nameA : nameB;
+                X509Certificate2 expectedCert = iter == 0 ? certA : certB;
+                string? sniSeenByServer = null;
+                X509Certificate2? certSeenByClient = null;
+
+                using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+                int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+                using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+                Socket serverSocket = await listener.AcceptAsync();
+                await connect;
+
+                serverSocket.Blocking = false;
+                SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+                using TlsSession session = TlsSession.Create(ctx, serverHandle);
+
+                using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = requestedSni,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = (_, cert, _, _) =>
+                    {
+                        // Capture the raw cert bytes: the X509Certificate handed to the callback
+                        // is short-lived and gets disposed with SslStream.
+                        if (cert is not null)
+                        {
+                            certSeenByClient = X509CertificateLoader.LoadCertificate(cert.Export(X509ContentType.Cert));
+                        }
+                        return true;
+                    },
+                });
+
+                Task serverHandshake = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        TlsOperationStatus s = session.Handshake();
+                        if (s == TlsOperationStatus.Complete)
+                        {
+                            return;
+                        }
+                        if (s == TlsOperationStatus.NeedsServerOptions)
+                        {
+                            sniSeenByServer = session.ClientHelloInfo!.Value.ServerName;
+                            X509Certificate2 pick = string.Equals(sniSeenByServer, nameB, StringComparison.OrdinalIgnoreCase) ? certB : certA;
+                            session.SetServerOptions(new SslServerAuthenticationOptions
+                            {
+                                ServerCertificate = pick,
+                                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                            });
+                            continue;
+                        }
+                        if (s == TlsOperationStatus.NeedsCertificateValidation)
+                        {
+                            session.AcceptWithDefaultValidation();
+                            continue;
+                        }
+                        if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                        {
+                            await Task.Delay(5);
+                            continue;
+                        }
+                        throw new InvalidOperationException($"Unexpected handshake status: {s}");
+                    }
+                });
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+                Assert.True(session.IsHandshakeComplete);
+                Assert.Equal(requestedSni, sniSeenByServer);
+                Assert.NotNull(certSeenByClient);
+                Assert.Equal(expectedCert.Thumbprint, certSeenByClient!.Thumbprint);
+                certSeenByClient.Dispose();
+            }
+        }
+
+        // ApplicationProtocols supplied in the deferred SetServerOptions call must survive
+        // the handoff onto the fd-mode replay-BIO path and be honored by OpenSSL's ALPN
+        // selection callback.
+        [Fact]
+        public async Task SocketBoundSession_DeferredOptions_WithAlpn_NegotiatesProtocol()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 },
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    TlsOperationStatus s = session.Handshake();
+                    if (s == TlsOperationStatus.Complete)
+                    {
+                        return;
+                    }
+                    if (s == TlsOperationStatus.NeedsServerOptions)
+                    {
+                        session.SetServerOptions(new SslServerAuthenticationOptions
+                        {
+                            ServerCertificate = serverCert,
+                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                            ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
+                        });
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.NeedsCertificateValidation)
+                    {
+                        session.AcceptWithDefaultValidation();
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    {
+                        await Task.Delay(5);
+                        continue;
+                    }
+                    throw new InvalidOperationException($"Unexpected handshake status: {s}");
+                }
+            });
+
+            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsHandshakeComplete);
+            Assert.Equal(SslApplicationProtocol.Http2, clientSsl.NegotiatedApplicationProtocol);
+        }
+
+        // Deferred SetServerOptions with an EnabledSslProtocols set that has no overlap
+        // with the client's ClientHello must fail the handshake cleanly (no crash, no hang)
+        // via the socket-replay BIO path.
+        [Fact]
+        public async Task SocketBoundSession_DeferredOptions_ProtocolMismatch_Fails()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    TlsOperationStatus s = session.Handshake();
+                    if (s == TlsOperationStatus.Complete)
+                    {
+                        return;
+                    }
+                    if (s == TlsOperationStatus.NeedsServerOptions)
+                    {
+                        session.SetServerOptions(new SslServerAuthenticationOptions
+                        {
+                            ServerCertificate = serverCert,
+                            EnabledSslProtocols = SslProtocols.Tls13,
+                        });
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.NeedsCertificateValidation)
+                    {
+                        session.AcceptWithDefaultValidation();
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    {
+                        await Task.Delay(5);
+                        continue;
+                    }
+                    throw new InvalidOperationException($"Unexpected handshake status: {s}");
+                }
+            });
+
+            await Assert.ThrowsAnyAsync<AuthenticationException>(() => serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+            // Client side may fail with either AuthenticationException or IOException depending
+            // on how quickly the server-side alert lands; either is acceptable.
+            await Assert.ThrowsAnyAsync<Exception>(() => clientHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.False(session.IsHandshakeComplete);
+        }
+
+        private static X509Certificate2 CreateSelfSignedServerCert(string commonName)
+        {
+            using System.Security.Cryptography.RSA rsa = System.Security.Cryptography.RSA.Create(2048);
+            var req = new CertificateRequest($"CN={commonName}", rsa, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+            req.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
+            req.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new System.Security.Cryptography.OidCollection { new System.Security.Cryptography.Oid("1.3.6.1.5.5.7.3.1") }, false));
+            req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, false));
+            var san = new SubjectAlternativeNameBuilder();
+            san.AddDnsName(commonName);
+            req.CertificateExtensions.Add(san.Build());
+            X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddDays(1));
+            if (OperatingSystem.IsWindows())
+            {
+                X509Certificate2 fromPfx = X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), (string?)null);
+                cert.Dispose();
+                return fromPfx;
+            }
+            return cert;
         }
     }
 }
