@@ -1499,7 +1499,6 @@ namespace System.Numerics
                     && W.Equals(other.W);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public readonly float GetDeterminant()
             {
                 // | a b c d |     | f g h |     | e g h |     | e f h |     | e f g |
