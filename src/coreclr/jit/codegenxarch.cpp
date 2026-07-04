@@ -5433,12 +5433,11 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                     GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
                     NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
                     var_types           baseType    = hwintrinsic->GetSimdBaseType();
+                    unsigned            simdSize    = hwintrinsic->GetSimdSize();
 
                     switch (intrinsicId)
                     {
-                        case NI_Vector128_ToScalar:
-                        case NI_Vector256_ToScalar:
-                        case NI_Vector512_ToScalar:
+                        case NI_Vector_ToScalar:
                         case NI_X86Base_ConvertToInt32:
                         case NI_X86Base_ConvertToUInt32:
                         case NI_X86Base_X64_ConvertToInt64:
@@ -5459,9 +5458,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             break;
                         }
 
-                        case NI_Vector128_GetElement:
+                        case NI_Vector_GetElement:
                         {
                             assert(baseType == TYP_FLOAT);
+                            assert(simdSize == 16);
                             FALLTHROUGH;
                         }
 

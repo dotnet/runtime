@@ -2037,12 +2037,8 @@ static GenTree* SkipContainedUnaryOp(GenTree* node)
 
         switch (intrinsicId)
         {
-            case NI_Vector128_CreateScalar:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
+            case NI_Vector_CreateScalar:
+            case NI_Vector_CreateScalarUnsafe:
             {
                 return hwintrinsic->Op(1);
             }
@@ -2201,15 +2197,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // must be handled within the case.
         switch (intrinsicId)
         {
-            case NI_Vector128_CreateScalar:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
-            case NI_Vector128_ToScalar:
-            case NI_Vector256_ToScalar:
-            case NI_Vector512_ToScalar:
+            case NI_Vector_CreateScalar:
+            case NI_Vector_CreateScalarUnsafe:
+            case NI_Vector_ToScalar:
             {
                 assert(numArgs == 1);
 
@@ -2243,9 +2233,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_GetElement:
-            case NI_Vector256_GetElement:
-            case NI_Vector512_GetElement:
+            case NI_Vector_GetElement:
             {
                 assert(numArgs == 2);
 
@@ -2265,9 +2253,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_WithElement:
-            case NI_Vector256_WithElement:
-            case NI_Vector512_WithElement:
+            case NI_Vector_WithElement:
             {
                 assert(numArgs == 3);
 
@@ -2292,17 +2278,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_AsVector128Unsafe:
-            case NI_Vector128_AsVector2:
-            case NI_Vector128_AsVector3:
-            case NI_Vector128_ToVector256:
-            case NI_Vector128_ToVector512:
-            case NI_Vector256_ToVector512:
-            case NI_Vector128_ToVector256Unsafe:
-            case NI_Vector256_ToVector512Unsafe:
-            case NI_Vector256_GetLower:
-            case NI_Vector512_GetLower:
-            case NI_Vector512_GetLower128:
+            case NI_Vector_AsVector128Unsafe:
+            case NI_Vector_AsVector2:
+            case NI_Vector_AsVector3:
+            case NI_Vector_ToVector256:
+            case NI_Vector_ToVector256Unsafe:
+            case NI_Vector_ToVector512:
+            case NI_Vector_ToVector512Unsafe:
+            case NI_Vector_GetLower:
+            case NI_Vector_GetLower128:
             {
                 assert(numArgs == 1);
                 SingleTypeRegSet apxAwareRegCandidates =
@@ -2831,8 +2815,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_op_Division:
-            case NI_Vector256_op_Division:
+            case NI_Vector_op_Division:
             {
                 srcCount = BuildOperandUses(op1, lowSIMDRegs());
                 srcCount += BuildOperandUses(op2, lowSIMDRegs());
