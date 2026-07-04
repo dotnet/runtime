@@ -2210,7 +2210,7 @@ namespace System
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
                     // break out of this logic & use the more optimistic loop below.
-                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    // This is similar logic to SpanHelpers.Packed.cs's IndexOf.
                     Vector256<byte> packedComparand1 = Vector256.Create((byte)c);
                     Vector256<byte> packedComparand2 = Vector256.Create((byte)c2);
                     Vector256<byte> packedComparand3 = Vector256.Create((byte)c3);
@@ -2305,7 +2305,7 @@ namespace System
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
                     // break out of this logic & use the more optimistic loop below.
-                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    // This is similar logic to SpanHelpers.Packed.cs's IndexOf.
                     Vector128<byte> packedComparand1 = Vector128.Create((byte)c);
                     Vector128<byte> packedComparand2 = Vector128.Create((byte)c2);
                     Vector128<byte> packedComparand3 = Vector128.Create((byte)c3);
