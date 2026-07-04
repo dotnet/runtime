@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
@@ -1139,339 +1140,247 @@ namespace System.Numerics
                 // This implementation is based on the DirectX Math Library XMMatrixInverse method
                 // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
 
-                if (Sse.IsSupported)
+                //                                       -1
+                // If you have matrix M, inverse Matrix M   can compute
+                //
+                //     -1       1
+                //    M   = --------- A
+                //            det(M)
+                //
+                // A is adjugate (adjoint) of M, where,
+                //
+                //      T
+                // A = C
+                //
+                // C is Cofactor matrix of M, where,
+                //           i + j
+                // C   = (-1)      * det(M  )
+                //  ij                    ij
+                //
+                //     [ a b c d ]
+                // M = [ e f g h ]
+                //     [ i j k l ]
+                //     [ m n o p ]
+                //
+                // First Row
+                //           2 | f g h |
+                // C   = (-1)  | j k l | = + ( f ( kp - lo ) - g ( jp - ln ) + h ( jo - kn ) )
+                //  11         | n o p |
+                //
+                //           3 | e g h |
+                // C   = (-1)  | i k l | = - ( e ( kp - lo ) - g ( ip - lm ) + h ( io - km ) )
+                //  12         | m o p |
+                //
+                //           4 | e f h |
+                // C   = (-1)  | i j l | = + ( e ( jp - ln ) - f ( ip - lm ) + h ( in - jm ) )
+                //  13         | m n p |
+                //
+                //           5 | e f g |
+                // C   = (-1)  | i j k | = - ( e ( jo - kn ) - f ( io - km ) + g ( in - jm ) )
+                //  14         | m n o |
+                //
+                // Second Row
+                //           3 | b c d |
+                // C   = (-1)  | j k l | = - ( b ( kp - lo ) - c ( jp - ln ) + d ( jo - kn ) )
+                //  21         | n o p |
+                //
+                //           4 | a c d |
+                // C   = (-1)  | i k l | = + ( a ( kp - lo ) - c ( ip - lm ) + d ( io - km ) )
+                //  22         | m o p |
+                //
+                //           5 | a b d |
+                // C   = (-1)  | i j l | = - ( a ( jp - ln ) - b ( ip - lm ) + d ( in - jm ) )
+                //  23         | m n p |
+                //
+                //           6 | a b c |
+                // C   = (-1)  | i j k | = + ( a ( jo - kn ) - b ( io - km ) + c ( in - jm ) )
+                //  24         | m n o |
+                //
+                // Third Row
+                //           4 | b c d |
+                // C   = (-1)  | f g h | = + ( b ( gp - ho ) - c ( fp - hn ) + d ( fo - gn ) )
+                //  31         | n o p |
+                //
+                //           5 | a c d |
+                // C   = (-1)  | e g h | = - ( a ( gp - ho ) - c ( ep - hm ) + d ( eo - gm ) )
+                //  32         | m o p |
+                //
+                //           6 | a b d |
+                // C   = (-1)  | e f h | = + ( a ( fp - hn ) - b ( ep - hm ) + d ( en - fm ) )
+                //  33         | m n p |
+                //
+                //           7 | a b c |
+                // C   = (-1)  | e f g | = - ( a ( fo - gn ) - b ( eo - gm ) + c ( en - fm ) )
+                //  34         | m n o |
+                //
+                // Fourth Row
+                //           5 | b c d |
+                // C   = (-1)  | f g h | = - ( b ( gl - hk ) - c ( fl - hj ) + d ( fk - gj ) )
+                //  41         | j k l |
+                //
+                //           6 | a c d |
+                // C   = (-1)  | e g h | = + ( a ( gl - hk ) - c ( el - hi ) + d ( ek - gi ) )
+                //  42         | i k l |
+                //
+                //           7 | a b d |
+                // C   = (-1)  | e f h | = - ( a ( fl - hj ) - b ( el - hi ) + d ( ej - fi ) )
+                //  43         | i j l |
+                //
+                //           8 | a b c |
+                // C   = (-1)  | e f g | = + ( a ( fk - gj ) - b ( ek - gi ) + c ( ej - fi ) )
+                //  44         | i j k |
+
+                // Load the matrix values into rows
+                Vector128<float> row1 = matrix.X.AsVector128();
+                Vector128<float> row2 = matrix.Y.AsVector128();
+                Vector128<float> row3 = matrix.Z.AsVector128();
+                Vector128<float> row4 = matrix.W.AsVector128();
+
+                // Transpose the matrix
+                Vector128<float> vTemp1 = Vector128.ConcatLowerLower(row1, row2);
+                Vector128<float> vTemp3 = Vector128.ConcatUpperUpper(row1, row2);
+                Vector128<float> vTemp2 = Vector128.ConcatLowerLower(row3, row4);
+                Vector128<float> vTemp4 = Vector128.ConcatUpperUpper(row3, row4);
+
+                row1 = Vector128.UnzipEven(vTemp1, vTemp2);
+                row2 = Vector128.UnzipOdd(vTemp1, vTemp2);
+                row3 = Vector128.UnzipEven(vTemp3, vTemp4);
+                row4 = Vector128.UnzipOdd(vTemp3, vTemp4);
+
+                Vector128<float> V00 = Vector128.Shuffle(row3, Vector128.Create(0, 0, 1, 1));
+                Vector128<float> V10 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 2, 3));
+                Vector128<float> V01 = Vector128.Shuffle(row1, Vector128.Create(0, 0, 1, 1));
+                Vector128<float> V11 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 2, 3));
+                Vector128<float> V02 = Vector128.UnzipEven(row3, row1);
+                Vector128<float> V12 = Vector128.UnzipOdd(row4, row2);
+
+                Vector128<float> D0 = V00 * V10;
+                Vector128<float> D1 = V01 * V11;
+                Vector128<float> D2 = V02 * V12;
+
+                V00 = Vector128.Shuffle(row3, Vector128.Create(2, 3, 2, 3));
+                V10 = Vector128.Shuffle(row4, Vector128.Create(0, 0, 1, 1));
+                V01 = Vector128.Shuffle(row1, Vector128.Create(2, 3, 2, 3));
+                V11 = Vector128.Shuffle(row2, Vector128.Create(0, 0, 1, 1));
+                V02 = Vector128.UnzipOdd(row3, row1);
+                V12 = Vector128.UnzipEven(row4, row2);
+
+                D0 = Vector128.MultiplyAddEstimate(-V00, V10, D0);
+                D1 = Vector128.MultiplyAddEstimate(-V01, V11, D1);
+                D2 = Vector128.MultiplyAddEstimate(-V02, V12, D2);
+
+                // V11 = D0Y,D0W,D2Y,D2Y
+                V11 = Shuffle2(D0, D2, 1, 3, 1, 1);
+                V00 = Vector128.Shuffle(row2, Vector128.Create(1, 2, 0, 1));
+                V10 = Shuffle2(V11, D0, 2, 0, 3, 0);
+                V01 = Vector128.Shuffle(row1, Vector128.Create(2, 0, 1, 0));
+                V11 = Shuffle2(V11, D0, 1, 2, 1, 2);
+
+                // V13 = D1Y,D1W,D2W,D2W
+                Vector128<float> V13 = Shuffle2(D1, D2, 1, 3, 3, 3);
+                V02 = Vector128.Shuffle(row4, Vector128.Create(1, 2, 0, 1));
+                V12 = Shuffle2(V13, D1, 2, 0, 3, 0);
+                Vector128<float> V03 = Vector128.Shuffle(row3, Vector128.Create(2, 0, 1, 0));
+                V13 = Shuffle2(V13, D1, 1, 2, 1, 2);
+
+                Vector128<float> C0 = V00 * V10;
+                Vector128<float> C2 = V01 * V11;
+                Vector128<float> C4 = V02 * V12;
+                Vector128<float> C6 = V03 * V13;
+
+                // V11 = D0X,D0Y,D2X,D2X
+                V11 = Shuffle2(D0, D2, 0, 1, 0, 0);
+                V00 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 1, 2));
+                V10 = Shuffle2(D0, V11, 3, 0, 1, 2);
+                V01 = Vector128.Shuffle(row1, Vector128.Create(3, 2, 3, 1));
+                V11 = Shuffle2(D0, V11, 2, 1, 2, 0);
+
+                // V13 = D1X,D1Y,D2Z,D2Z
+                V13 = Shuffle2(D1, D2, 0, 1, 2, 2);
+                V02 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 1, 2));
+                V12 = Shuffle2(D1, V13, 3, 0, 1, 2);
+                V03 = Vector128.Shuffle(row3, Vector128.Create(3, 2, 3, 1));
+                V13 = Shuffle2(D1, V13, 2, 1, 2, 0);
+
+                C0 = Vector128.MultiplyAddEstimate(-V00, V10, C0);
+                C2 = Vector128.MultiplyAddEstimate(-V01, V11, C2);
+                C4 = Vector128.MultiplyAddEstimate(-V02, V12, C4);
+                C6 = Vector128.MultiplyAddEstimate(-V03, V13, C6);
+
+                V00 = Vector128.Shuffle(row2, Vector128.Create(3, 0, 3, 0));
+
+                // V10 = D0Z,D0Z,D2X,D2Y
+                V10 = Shuffle2(D0, D2, 2, 2, 0, 1);
+                V10 = Vector128.Shuffle(V10, Vector128.Create(0, 3, 2, 0));
+                V01 = Vector128.Shuffle(row1, Vector128.Create(1, 3, 0, 2));
+
+                // V11 = D0X,D0W,D2X,D2Y
+                V11 = Shuffle2(D0, D2, 0, 3, 0, 1);
+                V11 = Vector128.Shuffle(V11, Vector128.Create(3, 0, 1, 2));
+                V02 = Vector128.Shuffle(row4, Vector128.Create(3, 0, 3, 0));
+
+                // V12 = D1Z,D1Z,D2Z,D2W
+                V12 = Shuffle2(D1, D2, 2, 2, 2, 3);
+                V12 = Vector128.Shuffle(V12, Vector128.Create(0, 3, 2, 0));
+                V03 = Vector128.Shuffle(row3, Vector128.Create(1, 3, 0, 2));
+
+                // V13 = D1X,D1W,D2Z,D2W
+                V13 = Shuffle2(D1, D2, 0, 3, 2, 3);
+                V13 = Vector128.Shuffle(V13, Vector128.Create(3, 0, 1, 2));
+
+                V00 *= V10;
+                V01 *= V11;
+                V02 *= V12;
+                V03 *= V13;
+
+                Vector128<float> C1 = C0 - V00;
+                C0 += V00;
+
+                Vector128<float> C3 = C2 + V01;
+                C2 -= V01;
+
+                Vector128<float> C5 = C4 - V02;
+                C4 += V02;
+
+                Vector128<float> C7 = C6 + V03;
+                C6 -= V03;
+
+                C0 = Shuffle2(C0, C1, 0, 2, 1, 3);
+                C2 = Shuffle2(C2, C3, 0, 2, 1, 3);
+                C4 = Shuffle2(C4, C5, 0, 2, 1, 3);
+                C6 = Shuffle2(C6, C7, 0, 2, 1, 3);
+
+                C0 = Vector128.Shuffle(C0, Vector128.Create(0, 2, 1, 3));
+                C2 = Vector128.Shuffle(C2, Vector128.Create(0, 2, 1, 3));
+                C4 = Vector128.Shuffle(C4, Vector128.Create(0, 2, 1, 3));
+                C6 = Vector128.Shuffle(C6, Vector128.Create(0, 2, 1, 3));
+
+                // Get the determinant
+                float det = Vector4.Dot(C0.AsVector4(), row1.AsVector4());
+
+                // Check determinate is not zero
+                if (float.Abs(det) < float.Epsilon)
                 {
-                    return SseImpl(in matrix, out result);
+                    Vector4 vNaN = Vector4.NaN;
+
+                    result.X = vNaN;
+                    result.Y = vNaN;
+                    result.Z = vNaN;
+                    result.W = vNaN;
+
+                    return false;
                 }
 
-                return SoftwareFallback(in matrix, out result);
+                // Create Vector128<float> copy of the determinant and invert them.
 
-                [CompExactlyDependsOn(typeof(Sse))]
-                static bool SseImpl(in Impl matrix, out Impl result)
-                {
-                    if (!Sse.IsSupported)
-                    {
-                        // Redundant test so we won't prejit remainder of this method on platforms without SSE.
-                        ThrowPlatformNotSupportedException();
-                    }
+                Vector128<float> vTemp = Vector128<float>.One / det;
 
-                    // Load the matrix values into rows
-                    Vector128<float> row1 = matrix.X.AsVector128();
-                    Vector128<float> row2 = matrix.Y.AsVector128();
-                    Vector128<float> row3 = matrix.Z.AsVector128();
-                    Vector128<float> row4 = matrix.W.AsVector128();
+                result.X = (C0 * vTemp).AsVector4();
+                result.Y = (C2 * vTemp).AsVector4();
+                result.Z = (C4 * vTemp).AsVector4();
+                result.W = (C6 * vTemp).AsVector4();
 
-                    // Transpose the matrix
-                    Vector128<float> vTemp1 = Sse.Shuffle(row1, row2, 0b01_00_01_00); //_MM_SHUFFLE(1, 0, 1, 0)
-                    Vector128<float> vTemp3 = Sse.Shuffle(row1, row2, 0b11_10_11_10); //_MM_SHUFFLE(3, 2, 3, 2)
-                    Vector128<float> vTemp2 = Sse.Shuffle(row3, row4, 0b01_00_01_00); //_MM_SHUFFLE(1, 0, 1, 0)
-                    Vector128<float> vTemp4 = Sse.Shuffle(row3, row4, 0b11_10_11_10); //_MM_SHUFFLE(3, 2, 3, 2)
-
-                    row1 = Sse.Shuffle(vTemp1, vTemp2, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
-                    row2 = Sse.Shuffle(vTemp1, vTemp2, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
-                    row3 = Sse.Shuffle(vTemp3, vTemp4, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
-                    row4 = Sse.Shuffle(vTemp3, vTemp4, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
-
-                    Vector128<float> V00 = Vector128.Shuffle(row3, Vector128.Create(0, 0, 1, 1));
-                    Vector128<float> V10 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 2, 3));
-                    Vector128<float> V01 = Vector128.Shuffle(row1, Vector128.Create(0, 0, 1, 1));
-                    Vector128<float> V11 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 2, 3));
-                    Vector128<float> V02 = Sse.Shuffle(row3, row1, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
-                    Vector128<float> V12 = Sse.Shuffle(row4, row2, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
-
-                    Vector128<float> D0 = V00 * V10;
-                    Vector128<float> D1 = V01 * V11;
-                    Vector128<float> D2 = V02 * V12;
-
-                    V00 = Vector128.Shuffle(row3, Vector128.Create(2, 3, 2, 3));
-                    V10 = Vector128.Shuffle(row4, Vector128.Create(0, 0, 1, 1));
-                    V01 = Vector128.Shuffle(row1, Vector128.Create(2, 3, 2, 3));
-                    V11 = Vector128.Shuffle(row2, Vector128.Create(0, 0, 1, 1));
-                    V02 = Sse.Shuffle(row3, row1, 0b11_01_11_01); //_MM_SHUFFLE(3, 1, 3, 1)
-                    V12 = Sse.Shuffle(row4, row2, 0b10_00_10_00); //_MM_SHUFFLE(2, 0, 2, 0)
-
-                    D0 = Vector128.MultiplyAddEstimate(-V00, V10, D0);
-                    D1 = Vector128.MultiplyAddEstimate(-V01, V11, D1);
-                    D2 = Vector128.MultiplyAddEstimate(-V02, V12, D2);
-
-                    // V11 = D0Y,D0W,D2Y,D2Y
-                    V11 = Sse.Shuffle(D0, D2, 0b01_01_11_01);  //_MM_SHUFFLE(1, 1, 3, 1)
-                    V00 = Vector128.Shuffle(row2, Vector128.Create(1, 2, 0, 1));
-                    V10 = Sse.Shuffle(V11, D0, 0b00_11_00_10); //_MM_SHUFFLE(0, 3, 0, 2)
-                    V01 = Vector128.Shuffle(row1, Vector128.Create(2, 0, 1, 0));
-                    V11 = Sse.Shuffle(V11, D0, 0b10_01_10_01); //_MM_SHUFFLE(2, 1, 2, 1)
-
-                    // V13 = D1Y,D1W,D2W,D2W
-                    Vector128<float> V13 = Sse.Shuffle(D1, D2, 0b11_11_11_01); //_MM_SHUFFLE(3, 3, 3, 1)
-                    V02 = Vector128.Shuffle(row4, Vector128.Create(1, 2, 0, 1));
-                    V12 = Sse.Shuffle(V13, D1, 0b00_11_00_10);                 //_MM_SHUFFLE(0, 3, 0, 2)
-                    Vector128<float> V03 = Vector128.Shuffle(row3, Vector128.Create(2, 0, 1, 0));
-                    V13 = Sse.Shuffle(V13, D1, 0b10_01_10_01);                 //_MM_SHUFFLE(2, 1, 2, 1)
-
-                    Vector128<float> C0 = V00 * V10;
-                    Vector128<float> C2 = V01 * V11;
-                    Vector128<float> C4 = V02 * V12;
-                    Vector128<float> C6 = V03 * V13;
-
-                    // V11 = D0X,D0Y,D2X,D2X
-                    V11 = Sse.Shuffle(D0, D2, 0b00_00_01_00);   //_MM_SHUFFLE(0, 0, 1, 0)
-                    V00 = Vector128.Shuffle(row2, Vector128.Create(2, 3, 1, 2));
-                    V10 = Sse.Shuffle(D0, V11, 0b10_01_00_11);  //_MM_SHUFFLE(2, 1, 0, 3)
-                    V01 = Vector128.Shuffle(row1, Vector128.Create(3, 2, 3, 1));
-                    V11 = Sse.Shuffle(D0, V11, 0b00_10_01_10);  //_MM_SHUFFLE(0, 2, 1, 2)
-
-                    // V13 = D1X,D1Y,D2Z,D2Z
-                    V13 = Sse.Shuffle(D1, D2, 0b10_10_01_00);   //_MM_SHUFFLE(2, 2, 1, 0)
-                    V02 = Vector128.Shuffle(row4, Vector128.Create(2, 3, 1, 2));
-                    V12 = Sse.Shuffle(D1, V13, 0b10_01_00_11);  //_MM_SHUFFLE(2, 1, 0, 3)
-                    V03 = Vector128.Shuffle(row3, Vector128.Create(3, 2, 3, 1));
-                    V13 = Sse.Shuffle(D1, V13, 0b_00_10_01_10); //_MM_SHUFFLE(0, 2, 1, 2)
-
-                    C0 = Vector128.MultiplyAddEstimate(-V00, V10, C0);
-                    C2 = Vector128.MultiplyAddEstimate(-V01, V11, C2);
-                    C4 = Vector128.MultiplyAddEstimate(-V02, V12, C4);
-                    C6 = Vector128.MultiplyAddEstimate(-V03, V13, C6);
-
-                    V00 = Vector128.Shuffle(row2, Vector128.Create(3, 0, 3, 0));
-
-                    // V10 = D0Z,D0Z,D2X,D2Y
-                    V10 = Sse.Shuffle(D0, D2, 0b01_00_10_10); //_MM_SHUFFLE(1, 0, 2, 2)
-                    V10 = Vector128.Shuffle(V10, Vector128.Create(0, 3, 2, 0));
-                    V01 = Vector128.Shuffle(row1, Vector128.Create(1, 3, 0, 2));
-
-                    // V11 = D0X,D0W,D2X,D2Y
-                    V11 = Sse.Shuffle(D0, D2, 0b01_00_11_00); //_MM_SHUFFLE(1, 0, 3, 0)
-                    V11 = Vector128.Shuffle(V11, Vector128.Create(3, 0, 1, 2));
-                    V02 = Vector128.Shuffle(row4, Vector128.Create(3, 0, 3, 0));
-
-                    // V12 = D1Z,D1Z,D2Z,D2W
-                    V12 = Sse.Shuffle(D1, D2, 0b11_10_10_10); //_MM_SHUFFLE(3, 2, 2, 2)
-                    V12 = Vector128.Shuffle(V12, Vector128.Create(0, 3, 2, 0));
-                    V03 = Vector128.Shuffle(row3, Vector128.Create(1, 3, 0, 2));
-
-                    // V13 = D1X,D1W,D2Z,D2W
-                    V13 = Sse.Shuffle(D1, D2, 0b11_10_11_00); //_MM_SHUFFLE(3, 2, 3, 0)
-                    V13 = Vector128.Shuffle(V13, Vector128.Create(3, 0, 1, 2));
-
-                    V00 *= V10;
-                    V01 *= V11;
-                    V02 *= V12;
-                    V03 *= V13;
-
-                    Vector128<float> C1 = C0 - V00;
-                    C0 += V00;
-
-                    Vector128<float> C3 = C2 + V01;
-                    C2 -= V01;
-
-                    Vector128<float> C5 = C4 - V02;
-                    C4 += V02;
-
-                    Vector128<float> C7 = C6 + V03;
-                    C6 -= V03;
-
-                    C0 = Sse.Shuffle(C0, C1, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C2 = Sse.Shuffle(C2, C3, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C4 = Sse.Shuffle(C4, C5, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
-                    C6 = Sse.Shuffle(C6, C7, 0b11_01_10_00); //_MM_SHUFFLE(3, 1, 2, 0)
-
-                    C0 = Vector128.Shuffle(C0, Vector128.Create(0, 2, 1, 3));
-                    C2 = Vector128.Shuffle(C2, Vector128.Create(0, 2, 1, 3));
-                    C4 = Vector128.Shuffle(C4, Vector128.Create(0, 2, 1, 3));
-                    C6 = Vector128.Shuffle(C6, Vector128.Create(0, 2, 1, 3));
-
-                    // Get the determinant
-                    float det = Vector4.Dot(C0.AsVector4(), row1.AsVector4());
-
-                    // Check determinate is not zero
-                    if (float.Abs(det) < float.Epsilon)
-                    {
-                        Vector4 vNaN = Vector4.NaN;
-
-                        result.X = vNaN;
-                        result.Y = vNaN;
-                        result.Z = vNaN;
-                        result.W = vNaN;
-
-                        return false;
-                    }
-
-                    // Create Vector128<float> copy of the determinant and invert them.
-
-                    Vector128<float> vTemp = Vector128<float>.One / det;
-
-                    result.X = (C0 * vTemp).AsVector4();
-                    result.Y = (C2 * vTemp).AsVector4();
-                    result.Z = (C4 * vTemp).AsVector4();
-                    result.W = (C6 * vTemp).AsVector4();
-
-                    return true;
-                }
-
-                static bool SoftwareFallback(in Impl matrix, out Impl result)
-                {
-                    //                                       -1
-                    // If you have matrix M, inverse Matrix M   can compute
-                    //
-                    //     -1       1
-                    //    M   = --------- A
-                    //            det(M)
-                    //
-                    // A is adjugate (adjoint) of M, where,
-                    //
-                    //      T
-                    // A = C
-                    //
-                    // C is Cofactor matrix of M, where,
-                    //           i + j
-                    // C   = (-1)      * det(M  )
-                    //  ij                    ij
-                    //
-                    //     [ a b c d ]
-                    // M = [ e f g h ]
-                    //     [ i j k l ]
-                    //     [ m n o p ]
-                    //
-                    // First Row
-                    //           2 | f g h |
-                    // C   = (-1)  | j k l | = + ( f ( kp - lo ) - g ( jp - ln ) + h ( jo - kn ) )
-                    //  11         | n o p |
-                    //
-                    //           3 | e g h |
-                    // C   = (-1)  | i k l | = - ( e ( kp - lo ) - g ( ip - lm ) + h ( io - km ) )
-                    //  12         | m o p |
-                    //
-                    //           4 | e f h |
-                    // C   = (-1)  | i j l | = + ( e ( jp - ln ) - f ( ip - lm ) + h ( in - jm ) )
-                    //  13         | m n p |
-                    //
-                    //           5 | e f g |
-                    // C   = (-1)  | i j k | = - ( e ( jo - kn ) - f ( io - km ) + g ( in - jm ) )
-                    //  14         | m n o |
-                    //
-                    // Second Row
-                    //           3 | b c d |
-                    // C   = (-1)  | j k l | = - ( b ( kp - lo ) - c ( jp - ln ) + d ( jo - kn ) )
-                    //  21         | n o p |
-                    //
-                    //           4 | a c d |
-                    // C   = (-1)  | i k l | = + ( a ( kp - lo ) - c ( ip - lm ) + d ( io - km ) )
-                    //  22         | m o p |
-                    //
-                    //           5 | a b d |
-                    // C   = (-1)  | i j l | = - ( a ( jp - ln ) - b ( ip - lm ) + d ( in - jm ) )
-                    //  23         | m n p |
-                    //
-                    //           6 | a b c |
-                    // C   = (-1)  | i j k | = + ( a ( jo - kn ) - b ( io - km ) + c ( in - jm ) )
-                    //  24         | m n o |
-                    //
-                    // Third Row
-                    //           4 | b c d |
-                    // C   = (-1)  | f g h | = + ( b ( gp - ho ) - c ( fp - hn ) + d ( fo - gn ) )
-                    //  31         | n o p |
-                    //
-                    //           5 | a c d |
-                    // C   = (-1)  | e g h | = - ( a ( gp - ho ) - c ( ep - hm ) + d ( eo - gm ) )
-                    //  32         | m o p |
-                    //
-                    //           6 | a b d |
-                    // C   = (-1)  | e f h | = + ( a ( fp - hn ) - b ( ep - hm ) + d ( en - fm ) )
-                    //  33         | m n p |
-                    //
-                    //           7 | a b c |
-                    // C   = (-1)  | e f g | = - ( a ( fo - gn ) - b ( eo - gm ) + c ( en - fm ) )
-                    //  34         | m n o |
-                    //
-                    // Fourth Row
-                    //           5 | b c d |
-                    // C   = (-1)  | f g h | = - ( b ( gl - hk ) - c ( fl - hj ) + d ( fk - gj ) )
-                    //  41         | j k l |
-                    //
-                    //           6 | a c d |
-                    // C   = (-1)  | e g h | = + ( a ( gl - hk ) - c ( el - hi ) + d ( ek - gi ) )
-                    //  42         | i k l |
-                    //
-                    //           7 | a b d |
-                    // C   = (-1)  | e f h | = - ( a ( fl - hj ) - b ( el - hi ) + d ( ej - fi ) )
-                    //  43         | i j l |
-                    //
-                    //           8 | a b c |
-                    // C   = (-1)  | e f g | = + ( a ( fk - gj ) - b ( ek - gi ) + c ( ej - fi ) )
-                    //  44         | i j k |
-                    //
-                    // Cost of operation
-                    // 53 adds, 104 muls, and 1 div.
-
-                    float a = matrix.X.X, b = matrix.X.Y, c = matrix.X.Z, d = matrix.X.W;
-                    float e = matrix.Y.X, f = matrix.Y.Y, g = matrix.Y.Z, h = matrix.Y.W;
-                    float i = matrix.Z.X, j = matrix.Z.Y, k = matrix.Z.Z, l = matrix.Z.W;
-                    float m = matrix.W.X, n = matrix.W.Y, o = matrix.W.Z, p = matrix.W.W;
-
-                    float kp_lo = k * p - l * o;
-                    float jp_ln = j * p - l * n;
-                    float jo_kn = j * o - k * n;
-                    float ip_lm = i * p - l * m;
-                    float io_km = i * o - k * m;
-                    float in_jm = i * n - j * m;
-
-                    float a11 = +(f * kp_lo - g * jp_ln + h * jo_kn);
-                    float a12 = -(e * kp_lo - g * ip_lm + h * io_km);
-                    float a13 = +(e * jp_ln - f * ip_lm + h * in_jm);
-                    float a14 = -(e * jo_kn - f * io_km + g * in_jm);
-
-                    float det = a * a11 + b * a12 + c * a13 + d * a14;
-
-                    if (float.Abs(det) < float.Epsilon)
-                    {
-                        Vector4 vNaN = Vector4.NaN;
-
-                        result.X = vNaN;
-                        result.Y = vNaN;
-                        result.Z = vNaN;
-                        result.W = vNaN;
-
-                        return false;
-                    }
-
-                    float invDet = 1.0f / det;
-
-                    result.X.X = a11 * invDet;
-                    result.Y.X = a12 * invDet;
-                    result.Z.X = a13 * invDet;
-                    result.W.X = a14 * invDet;
-
-                    result.X.Y = -(b * kp_lo - c * jp_ln + d * jo_kn) * invDet;
-                    result.Y.Y = +(a * kp_lo - c * ip_lm + d * io_km) * invDet;
-                    result.Z.Y = -(a * jp_ln - b * ip_lm + d * in_jm) * invDet;
-                    result.W.Y = +(a * jo_kn - b * io_km + c * in_jm) * invDet;
-
-                    float gp_ho = g * p - h * o;
-                    float fp_hn = f * p - h * n;
-                    float fo_gn = f * o - g * n;
-                    float ep_hm = e * p - h * m;
-                    float eo_gm = e * o - g * m;
-                    float en_fm = e * n - f * m;
-
-                    result.X.Z = +(b * gp_ho - c * fp_hn + d * fo_gn) * invDet;
-                    result.Y.Z = -(a * gp_ho - c * ep_hm + d * eo_gm) * invDet;
-                    result.Z.Z = +(a * fp_hn - b * ep_hm + d * en_fm) * invDet;
-                    result.W.Z = -(a * fo_gn - b * eo_gm + c * en_fm) * invDet;
-
-                    float gl_hk = g * l - h * k;
-                    float fl_hj = f * l - h * j;
-                    float fk_gj = f * k - g * j;
-                    float el_hi = e * l - h * i;
-                    float ek_gi = e * k - g * i;
-                    float ej_fi = e * j - f * i;
-
-                    result.X.W = -(b * gl_hk - c * fl_hj + d * fk_gj) * invDet;
-                    result.Y.W = +(a * gl_hk - c * el_hi + d * ek_gi) * invDet;
-                    result.Z.W = -(a * fl_hj - b * el_hi + d * ej_fi) * invDet;
-                    result.W.W = +(a * fk_gj - b * ek_gi + c * ej_fi) * invDet;
-
-                    return true;
-                }
+                return true;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1557,47 +1466,20 @@ namespace System.Numerics
 
                 Impl result;
 
-                if (AdvSimd.Arm64.IsSupported)
-                {
-                    Vector128<float> x = matrix.X.AsVector128();
-                    Vector128<float> y = matrix.Y.AsVector128();
-                    Vector128<float> z = matrix.Z.AsVector128();
-                    Vector128<float> w = matrix.W.AsVector128();
+                Vector128<float> x = matrix.X.AsVector128();
+                Vector128<float> y = matrix.Y.AsVector128();
+                Vector128<float> z = matrix.Z.AsVector128();
+                Vector128<float> w = matrix.W.AsVector128();
 
-                    Vector128<float> lowerXZ = AdvSimd.Arm64.ZipLow(x, z);          // x[0], z[0], x[1], z[1]
-                    Vector128<float> lowerYW = AdvSimd.Arm64.ZipLow(y, w);          // y[0], w[0], y[1], w[1]
-                    Vector128<float> upperXZ = AdvSimd.Arm64.ZipHigh(x, z);         // x[2], z[2], x[3], z[3]
-                    Vector128<float> upperYW = AdvSimd.Arm64.ZipHigh(y, w);         // y[2], w[2], y[3], z[3]
+                Vector128<float> lowerXZ = Vector128.ZipLower(x, z);         // x[0], z[0], x[1], z[1]
+                Vector128<float> lowerYW = Vector128.ZipLower(y, w);         // y[0], w[0], y[1], w[1]
+                Vector128<float> upperXZ = Vector128.ZipUpper(x, z);         // x[2], z[2], x[3], z[3]
+                Vector128<float> upperYW = Vector128.ZipUpper(y, w);         // y[2], w[2], y[3], z[3]
 
-                    result.X = AdvSimd.Arm64.ZipLow(lowerXZ, lowerYW).AsVector4();  // x[0], y[0], z[0], w[0]
-                    result.Y = AdvSimd.Arm64.ZipHigh(lowerXZ, lowerYW).AsVector4(); // x[1], y[1], z[1], w[1]
-                    result.Z = AdvSimd.Arm64.ZipLow(upperXZ, upperYW).AsVector4();  // x[2], y[2], z[2], w[2]
-                    result.W = AdvSimd.Arm64.ZipHigh(upperXZ, upperYW).AsVector4(); // x[3], y[3], z[3], w[3]
-                }
-                else if (Sse.IsSupported)
-                {
-                    Vector128<float> x = matrix.X.AsVector128();
-                    Vector128<float> y = matrix.Y.AsVector128();
-                    Vector128<float> z = matrix.Z.AsVector128();
-                    Vector128<float> w = matrix.W.AsVector128();
-
-                    Vector128<float> lowerXZ = Sse.UnpackLow(x, z);                 // x[0], z[0], x[1], z[1]
-                    Vector128<float> lowerYW = Sse.UnpackLow(y, w);                 // y[0], w[0], y[1], w[1]
-                    Vector128<float> upperXZ = Sse.UnpackHigh(x, z);                // x[2], z[2], x[3], z[3]
-                    Vector128<float> upperYW = Sse.UnpackHigh(y, w);                // y[2], w[2], y[3], z[3]
-
-                    result.X = Sse.UnpackLow(lowerXZ, lowerYW).AsVector4();         // x[0], y[0], z[0], w[0]
-                    result.Y = Sse.UnpackHigh(lowerXZ, lowerYW).AsVector4();        // x[1], y[1], z[1], w[1]
-                    result.Z = Sse.UnpackLow(upperXZ, upperYW).AsVector4();         // x[2], y[2], z[2], w[2]
-                    result.W = Sse.UnpackHigh(upperXZ, upperYW).AsVector4();        // x[3], y[3], z[3], w[3]
-                }
-                else
-                {
-                    result.X = Vector4.Create(matrix.X.X, matrix.Y.X, matrix.Z.X, matrix.W.X);
-                    result.Y = Vector4.Create(matrix.X.Y, matrix.Y.Y, matrix.Z.Y, matrix.W.Y);
-                    result.Z = Vector4.Create(matrix.X.Z, matrix.Y.Z, matrix.Z.Z, matrix.W.Z);
-                    result.W = Vector4.Create(matrix.X.W, matrix.Y.W, matrix.Z.W, matrix.W.W);
-                }
+                result.X = Vector128.ZipLower(lowerXZ, lowerYW).AsVector4(); // x[0], y[0], z[0], w[0]
+                result.Y = Vector128.ZipUpper(lowerXZ, lowerYW).AsVector4(); // x[1], y[1], z[1], w[1]
+                result.Z = Vector128.ZipLower(upperXZ, upperYW).AsVector4(); // x[2], y[2], z[2], w[2]
+                result.W = Vector128.ZipUpper(upperXZ, upperYW).AsVector4(); // x[3], y[3], z[3], w[3]
 
                 return result;
             }
@@ -1641,95 +1523,57 @@ namespace System.Numerics
                 //   | e f g |
                 // d | i j k | = d ( e ( jo - kn ) - f ( io - km ) + g ( in - jm ) )
                 //   | m n o |
-                //
-                // Cost of operation
-                // 17 adds and 28 muls.
-                //
-                // add: 6 + 8 + 3 = 17
-                // mul: 12 + 16 = 28
 
-                if (Vector128.IsHardwareAccelerated)
-                {
-                    Vector128<float> w = W.AsVector128();
-                    Vector128<float> x = X.AsVector128();
-                    Vector128<float> y = Y.AsVector128();
-                    Vector128<float> z = Z.AsVector128();
+                Vector128<float> w = W.AsVector128();
+                Vector128<float> x = X.AsVector128();
+                Vector128<float> y = Y.AsVector128();
+                Vector128<float> z = Z.AsVector128();
 
-                    Vector128<float> z_kjji = Vector128.Shuffle(z, Vector128.Create(2, 1, 1, 0));
-                    Vector128<float> z_iiij = Vector128.Shuffle(z, Vector128.Create(0, 0, 0, 1));
-                    Vector128<float> w_ppop = Vector128.Shuffle(w, Vector128.Create(3, 3, 2, 3));
-                    Vector128<float> w_onpo = Vector128.Shuffle(w, Vector128.Create(2, 1, 3, 2));
-                    Vector128<float> z_llkl = Vector128.Shuffle(z, Vector128.Create(3, 3, 2, 3));
-                    Vector128<float> z_kjlk = Vector128.Shuffle(z, Vector128.Create(2, 1, 3, 2));
-                    Vector128<float> w_onnm = Vector128.Shuffle(w, Vector128.Create(2, 1, 1, 0));
-                    Vector128<float> w_mmmn = Vector128.Shuffle(w, Vector128.Create(0, 0, 0, 1));
-                    Vector128<float> y_feee = Vector128.Shuffle(y, Vector128.Create(1, 0, 0, 0));
-                    Vector128<float> y_ggff = Vector128.Shuffle(y, Vector128.Create(2, 2, 1, 1));
-                    Vector128<float> y_hhhg = Vector128.Shuffle(y, Vector128.Create(3, 3, 3, 2));
+                Vector128<float> z_kjji = Vector128.Shuffle(z, Vector128.Create(2, 1, 1, 0));
+                Vector128<float> z_iiij = Vector128.Shuffle(z, Vector128.Create(0, 0, 0, 1));
+                Vector128<float> w_ppop = Vector128.Shuffle(w, Vector128.Create(3, 3, 2, 3));
+                Vector128<float> w_onpo = Vector128.Shuffle(w, Vector128.Create(2, 1, 3, 2));
+                Vector128<float> z_llkl = Vector128.Shuffle(z, Vector128.Create(3, 3, 2, 3));
+                Vector128<float> z_kjlk = Vector128.Shuffle(z, Vector128.Create(2, 1, 3, 2));
+                Vector128<float> w_onnm = Vector128.Shuffle(w, Vector128.Create(2, 1, 1, 0));
+                Vector128<float> w_mmmn = Vector128.Shuffle(w, Vector128.Create(0, 0, 0, 1));
+                Vector128<float> y_feee = Vector128.Shuffle(y, Vector128.Create(1, 0, 0, 0));
+                Vector128<float> y_ggff = Vector128.Shuffle(y, Vector128.Create(2, 2, 1, 1));
+                Vector128<float> y_hhhg = Vector128.Shuffle(y, Vector128.Create(3, 3, 3, 2));
 
-                    // tmp1[0] = kp_lo
-                    // tmp1[1] = jp_ln
-                    // tmp1[2] = jo_kn
-                    // tmp1[3] = ip_lm
-                    Vector128<float> tmp1 = z_kjji * w_ppop - z_llkl * w_onnm;
+                // tmp1[0] = kp_lo
+                // tmp1[1] = jp_ln
+                // tmp1[2] = jo_kn
+                // tmp1[3] = ip_lm
+                Vector128<float> tmp1 = z_kjji * w_ppop - z_llkl * w_onnm;
 
-                    // tmp2[0] = io_km
-                    // tmp2[1] = in_jm
-                    // tmp2[2] = ip_lm
-                    // tmp2[3] = jo_kn
-                    Vector128<float> tmp2 = z_iiij * w_onpo - z_kjlk * w_mmmn;
+                // tmp2[0] = io_km
+                // tmp2[1] = in_jm
+                // tmp2[2] = ip_lm
+                // tmp2[3] = jo_kn
+                Vector128<float> tmp2 = z_iiij * w_onpo - z_kjlk * w_mmmn;
 
-                    // tmp3[0] = kp_lo
-                    // tmp3[1] = kp_lo
-                    // tmp3[2] = jp_ln
-                    // tmp3[3] = jo_kn
-                    Vector128<float> tmp3 = Vector128.Shuffle(tmp1, Vector128.Create(0, 0, 1, 2));
+                // tmp3[0] = kp_lo
+                // tmp3[1] = kp_lo
+                // tmp3[2] = jp_ln
+                // tmp3[3] = jo_kn
+                Vector128<float> tmp3 = Vector128.Shuffle(tmp1, Vector128.Create(0, 0, 1, 2));
 
-                    // tmp4[0] = jp_ln
-                    // tmp4[1] = ip_lm
-                    // tmp4[2] = ip_lm
-                    // tmp4[3] = io_km
-                    Vector128<float> tmp4;
-                    if (Sse.IsSupported)
-                    {
-                        tmp4 = Sse.Shuffle(tmp1, tmp2, 0b00_10_11_01);
-                    }
-                    else
-                    {
-                        tmp4 = Vector128.ConditionalSelect(
-                            Vector128.Create(-1, -1, 0, 0).AsSingle(),
-                            Vector128.Shuffle(tmp1, Vector128.Create(1, 3, 1, 3)),
-                            Vector128.Shuffle(tmp2, Vector128.Create(2, 0, 2, 0))
-                        );
-                    }
+                // tmp4[0] = jp_ln
+                // tmp4[1] = ip_lm
+                // tmp4[2] = ip_lm
+                // tmp4[3] = io_km
+                Vector128<float> tmp4 = Shuffle2(tmp1, tmp2, 1, 3, 2, 0);
 
-                    // tmp5[0] = jo_kn
-                    // tmp5[1] = io_km
-                    // tmp5[2] = in_jm
-                    // tmp5[3] = in_jm
-                    Vector128<float> tmp5 = Vector128.Shuffle(tmp2, Vector128.Create(3, 0, 1, 1));
+                // tmp5[0] = jo_kn
+                // tmp5[1] = io_km
+                // tmp5[2] = in_jm
+                // tmp5[3] = in_jm
+                Vector128<float> tmp5 = Vector128.Shuffle(tmp2, Vector128.Create(3, 0, 1, 1));
 
-                    Vector128<float> tmp6 = x * (y_feee * tmp3 - y_ggff * tmp4 + y_hhhg * tmp5);
-                    Vector128<float> tmp7 = tmp6 - Vector128.Shuffle(tmp6, Vector128.Create(1, 0, 3, 0));
-                    return tmp7[0] + tmp7[2];
-                }
-
-                float a = X.X, b = X.Y, c = X.Z, d = X.W;
-                float e = Y.X, f = Y.Y, g = Y.Z, h = Y.W;
-                float i = Z.X, j = Z.Y, k = Z.Z, l = Z.W;
-                float m = W.X, n = W.Y, o = W.Z, p = W.W;
-
-                float kp_lo = k * p - l * o;
-                float jp_ln = j * p - l * n;
-                float jo_kn = j * o - k * n;
-                float ip_lm = i * p - l * m;
-                float io_km = i * o - k * m;
-                float in_jm = i * n - j * m;
-
-                return a * (f * kp_lo - g * jp_ln + h * jo_kn) -
-                       b * (e * kp_lo - g * ip_lm + h * io_km) +
-                       c * (e * jp_ln - f * ip_lm + h * in_jm) -
-                       d * (e * jo_kn - f * io_km + g * in_jm);
+                Vector128<float> tmp6 = x * (y_feee * tmp3 - y_ggff * tmp4 + y_hhhg * tmp5);
+                Vector128<float> tmp7 = tmp6 - Vector128.Shuffle(tmp6, Vector128.Create(1, 0, 3, 0));
+                return tmp7[0] + tmp7[2];
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1737,7 +1581,32 @@ namespace System.Numerics
 
             readonly bool IEquatable<Impl>.Equals(Impl other) => Equals(in other);
 
-            private static void ThrowPlatformNotSupportedException() => throw new PlatformNotSupportedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static Vector128<float> Shuffle2(Vector128<float> lower, Vector128<float> upper, [ConstantExpected] byte xIndex, [ConstantExpected] byte yIndex, [ConstantExpected] byte zIndex, [ConstantExpected] byte wIndex)
+            {
+                if (RuntimeHelpers.IsKnownConstant(xIndex) && RuntimeHelpers.IsKnownConstant(yIndex) && RuntimeHelpers.IsKnownConstant(zIndex) && RuntimeHelpers.IsKnownConstant(wIndex))
+                {
+                    if (Sse.IsSupported)
+                    {
+#pragma warning disable CA1857 // The parameter expects a constant for optimal performance
+                        return Sse.Shuffle(lower, upper, (byte)((wIndex << 6) | (zIndex << 4) | (yIndex << 2) | xIndex));
+#pragma warning restore CA1857 // The parameter expects a constant for optimal performance
+                    }
+                    else if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.VectorTableLookup((lower.AsByte(), upper.AsByte()), ((Vector128.Create(xIndex, yIndex, zIndex, wIndex) * Vector128.Create(0x04040404)) + Vector128.Create(0x03020100, 0x03020100, 0x13121110, 0x13121110)).AsByte()).AsSingle();
+                    }
+                    else if (PackedSimd.IsSupported)
+                    {
+                        return PackedSimd.Shuffle(lower.AsByte(), upper.AsByte(), ((Vector128.Create(xIndex, yIndex, zIndex, wIndex) * Vector128.Create(0x04040404)) + Vector128.Create(0x03020100, 0x03020100, 0x13121110, 0x13121110)).AsByte()).AsSingle();
+                    }
+                }
+
+                return Vector128.ConcatLowerUpper(
+                    Vector128.Shuffle(lower, Vector128.Create(xIndex, yIndex, 0, 0)),
+                    Vector128.Shuffle(upper, Vector128.Create(zIndex, wIndex, 0, 0))
+                );
+            }
         }
     }
 }
