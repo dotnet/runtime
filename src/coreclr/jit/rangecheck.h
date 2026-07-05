@@ -525,8 +525,13 @@ struct RangeOps
     {
         if (r1.LowerLimit().IsConstant())
         {
-            int r2ConstVal;
+            int r1ConstVal;
+            if (r1.IsSingleValueConstant(&r1ConstVal) && (r1ConstVal == 0))
+            {
+                return Range(Limit(Limit::keConstant, 0));
+            }
 
+            int r2ConstVal;
             if (r2.IsSingleValueConstant(&r2ConstVal))
             {
                 if (r2ConstVal == 0)
@@ -534,52 +539,39 @@ struct RangeOps
                     return Range(Limit(Limit::keUnknown));
                 }
 
-                int r1ConstVal;
-
-                if (r1.IsSingleValueConstant(&r1ConstVal))
+                if (r1.IsSingleValueConstant())
                 {
                     return Range(Limit(Limit::keConstant, r1ConstVal % r2ConstVal));
                 }
             }
 
-            const auto SafeAbsMinusOne = [](const int value) {
-                return value == INT32_MIN ? INT32_MAX : (abs(value) - 1);
-            };
-
             const int r1lo = r1.LowerLimit().GetConstant();
 
-            if (r1lo >= 0)
+            const bool isAlwaysPositive = r1lo >= 0;
+            const bool isAlwaysNegative = r1.UpperLimit().IsConstant() && r1.UpperLimit().GetConstant() <= 0;
+
+            if (r2.IsConstantRange())
             {
-                if (r2.IsConstantRange())
-                {
-                    const int r2lo        = r2.LowerLimit().GetConstant();
-                    const int r2hi        = r2.UpperLimit().GetConstant();
-                    // x % [-4..2] -> [0..3]
-                    const int maxAbsRight = max(SafeAbsMinusOne(r2lo), SafeAbsMinusOne(r2hi));
-                    const int rightLimit =
-                        r1.UpperLimit().IsConstant() ? min(r1.UpperLimit().GetConstant(), maxAbsRight) : maxAbsRight;
+                const auto SafeAbsMinusOne = [](const int value) {
+                    return value == INT32_MIN ? INT32_MAX : (abs(value) - 1);
+                };
 
-                    return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, rightLimit));
-                }
+                const int r2lo = r2.LowerLimit().GetConstant();
+                const int r2hi = r2.UpperLimit().GetConstant();
+                // x % [-4..2] -> [0..3]
+                const int maxAbsRight = max(SafeAbsMinusOne(r2lo), SafeAbsMinusOne(r2hi));
 
-                return Range(Limit(Limit::keConstant, 0), Limit(Limit::keUnknown));
+                const int leftLimit  = isAlwaysPositive ? 0 : max(r1lo, -maxAbsRight);
+                const int rightLimit = isAlwaysNegative ? -0
+                                        : r1.UpperLimit().IsConstant()
+                                            ? min(r1.UpperLimit().GetConstant(), maxAbsRight)
+                                            : maxAbsRight;
+
+                return Range(Limit(Limit::keConstant, leftLimit), Limit(Limit::keConstant, rightLimit));
             }
-            else
-            {
-                if (r2.IsConstantRange())
-                {
-                    const int r2lo        = r2.LowerLimit().GetConstant();
-                    const int r2hi        = r2.UpperLimit().GetConstant();
-                    // x % [-4..2] -> [0..3]
-                    const int maxAbsRight = max(SafeAbsMinusOne(r2lo), SafeAbsMinusOne(r2hi));
 
-                    const int leftLimit = max(r1lo, -maxAbsRight);
-
-                    return Range(Limit(Limit::keConstant, leftLimit), Limit(Limit::keConstant, -0));
-                }
-
-                return Range(Limit(Limit::keUnknown), Limit(Limit::keConstant, -0));
-            }
+            return Range(isAlwaysPositive ? Limit(Limit::keConstant, 0) : Limit(Limit::keUnknown),
+                isAlwaysNegative ? Limit(Limit::keConstant, -0) : Limit(Limit::keUnknown));
         }
 
         return Range(Limit(Limit::keUnknown));

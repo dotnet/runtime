@@ -5619,118 +5619,117 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
     }
     else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1))
     {
-        //if (idxOp0 == vnCurLen)
-        //{
-        //    Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
+        if (idxOp0 == vnCurLen)
+        {
+            Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
 
-        //    if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
-        //    {
-        //        BitVecOps::Iter iter(apTraits, assertions);
-        //        unsigned        index = 0;
-        //        while (iter.NextElem(&index))
-        //        {
-        //            AssertionIndex assertionIndex = GetAssertionIndex(index);
-        //            const Compiler::AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
+            if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
+            {
+                BitVecOps::Iter iter(apTraits, assertions);
+                unsigned        index = 0;
+                while (iter.NextElem(&index))
+                {
+                    AssertionIndex assertionIndex = GetAssertionIndex(index);
+                    const Compiler::AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
 
-        //            if (curAssertion.GetOp1().GetVN() == vnCurLen && curAssertion.GetOp2().GetVN() == idxOp1)
-        //            {
-        //                if (curAssertion.KindIs(OAK_GT))
-        //                {
-        //                    // when length > index, length % index has the range [0..length - 1]
-        //                    return dropBoundsCheck(INDEBUG(
-        //                        "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and a.Length > X"));
-        //                }
-        //                else if (curAssertion.KindIs(OAK_GE))
-        //                {
-        //                    // when length >= index, length % index has the range [0..length - 1]
-        //                    return dropBoundsCheck(INDEBUG(
-        //                        "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and a.Length >= X"));
-        //                }
-        //            }
-        //            else if (curAssertion.GetOp1().GetVN() == idxOp1 && curAssertion.GetOp2().GetVN() == vnCurLen)
-        //            {
-        //                if (curAssertion.KindIs(OAK_LT))
-        //                {
-        //                    // when index < length, length % index has the range [0..length - 1]
-        //                    return dropBoundsCheck(INDEBUG(
-        //                        "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and X < a.Length"));
-        //                }
-        //                else if (curAssertion.KindIs(OAK_LE))
-        //                {
-        //                    // when index <= length, length % index has the range [0..length - 1]
-        //                    return dropBoundsCheck(INDEBUG(
-        //                        "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and X <= a.Length"));
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
-        //else
-        if (idxOp1 == vnCurLen)
+                    if (curAssertion.GetOp1().GetVN() == vnCurLen && curAssertion.GetOp2().GetVN() == idxOp1)
+                    {
+                        if (curAssertion.KindIs(OAK_GT))
+                        {
+                            // when length > index, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(INDEBUG(
+                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and a.Length > X"));
+                        }
+                        else if (curAssertion.KindIs(OAK_GE))
+                        {
+                            // when length >= index, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(INDEBUG(
+                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and a.Length >= X"));
+                        }
+                    }
+                    else if (curAssertion.GetOp1().GetVN() == idxOp1 && curAssertion.GetOp2().GetVN() == vnCurLen)
+                    {
+                        if (curAssertion.KindIs(OAK_LT))
+                        {
+                            // when index < length, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(INDEBUG(
+                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and X < a.Length"));
+                        }
+                        else if (curAssertion.KindIs(OAK_LE))
+                        {
+                            // when index <= length, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(INDEBUG(
+                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and X <= a.Length"));
+                        }
+                    }
+                }
+            }
+        }
+        else if (idxOp1 == vnCurLen)
         {
             // If arr.Length is 0 we technically should keep the bounds check, but since the expression
             // has to throw DivideByZeroException anyway - no special handling needed.
             return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
         }
     }
-    //else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_MOD, &idxOp0, &idxOp1))
-    //{
-    //    if (idxOp0 == vnCurLen)
-    //    {
-    //        Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_MOD, &idxOp0, &idxOp1))
+    {
+        if (idxOp0 == vnCurLen)
+        {
+            Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
 
-    //        if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
-    //        {
-    //            BitVecOps::Iter iter(apTraits, assertions);
-    //            unsigned        index = 0;
-    //            while (iter.NextElem(&index))
-    //            {
-    //                AssertionIndex assertionIndex = GetAssertionIndex(index);
-    //                const Compiler::AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
+            if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
+            {
+                BitVecOps::Iter iter(apTraits, assertions);
+                unsigned        index = 0;
+                while (iter.NextElem(&index))
+                {
+                    AssertionIndex assertionIndex = GetAssertionIndex(index);
+                    const Compiler::AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
 
-    //                if (curAssertion.GetOp1().GetVN() == vnCurLen && curAssertion.GetOp2().GetVN() == idxOp1)
-    //                {
-    //                    if (curAssertion.KindIs(OAK_GT))
-    //                    {
-    //                        // when length > index, length % index has the range [0..length - 1]
-    //                        return dropBoundsCheck(
-    //                            INDEBUG("a[a.Length % X] is always within bounds when a.Length is known to be > 0 and a.Length > X"));
-    //                    }
-    //                    else if (curAssertion.KindIs(OAK_GE))
-    //                    {
-    //                        // when length >= index, length % index has the range [0..length - 1]
-    //                        return dropBoundsCheck(
-    //                            INDEBUG("a[a.Length % X] is always within bounds when a.Length is known to be > 0 and a.Length >= X"));
-    //                    }
-    //                }
-    //                else if (curAssertion.GetOp1().GetVN() == idxOp1 && curAssertion.GetOp2().GetVN() == vnCurLen)
-    //                {
-    //                    if (curAssertion.KindIs(OAK_LT))
-    //                    {
-    //                        // when index < length, length % index has the range [0..length - 1]
-    //                        return dropBoundsCheck(INDEBUG(
-    //                            "a[a.Length % X] is always within bounds when a.Length is known to be > 0 and X < a.Length"));
-    //                    }
-    //                    else if (curAssertion.KindIs(OAK_LE))
-    //                    {
-    //                        // when index <= length, length % index has the range [0..length - 1]
-    //                        return dropBoundsCheck(INDEBUG(
-    //                            "a[a.Length % X] is always within bounds when a.Length is known to be > 0 and X <= a.Length"));
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    //    else if (idxOp1 == vnCurLen)
-    //    {
-    //        Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
+                    if (curAssertion.GetOp1().GetVN() == vnCurLen && curAssertion.GetOp2().GetVN() == idxOp1)
+                    {
+                        if (curAssertion.KindIs(OAK_GT))
+                        {
+                            // when length > index, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(
+                                INDEBUG("a[a.Length % X] is always within bounds when a.Length is known to be > 0 and a.Length > X"));
+                        }
+                        else if (curAssertion.KindIs(OAK_GE))
+                        {
+                            // when length >= index, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(
+                                INDEBUG("a[a.Length % X] is always within bounds when a.Length is known to be > 0 and a.Length >= X"));
+                        }
+                    }
+                    else if (curAssertion.GetOp1().GetVN() == idxOp1 && curAssertion.GetOp2().GetVN() == vnCurLen)
+                    {
+                        if (curAssertion.KindIs(OAK_LT))
+                        {
+                            // when index < length, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(INDEBUG(
+                                "a[a.Length % X] is always within bounds when a.Length is known to be > 0 and X < a.Length"));
+                        }
+                        else if (curAssertion.KindIs(OAK_LE))
+                        {
+                            // when index <= length, length % index has the range [0..length - 1]
+                            return dropBoundsCheck(INDEBUG(
+                                "a[a.Length % X] is always within bounds when a.Length is known to be > 0 and X <= a.Length"));
+                        }
+                    }
+                }
+            }
+        }
+        else if (idxOp1 == vnCurLen)
+        {
+            Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
 
-    //        if (idxRng.LowerLimit().IsConstant() && idxRng.LowerLimit().GetConstant() >= 0)
-    //        {
-    //            return dropBoundsCheck(INDEBUG("a[X % a.Length] is always within bounds when X is known to be >= 0"));
-    //        }
-    //    }
-    //}
+            if (idxRng.LowerLimit().IsConstant() && idxRng.LowerLimit().GetConstant() >= 0)
+            {
+                return dropBoundsCheck(INDEBUG("a[X % a.Length] is always within bounds when X is known to be >= 0"));
+            }
+        }
+    }
 
     // Let's see if we can remove the bounds check based on the ranges.
     Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
