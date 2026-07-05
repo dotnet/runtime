@@ -696,6 +696,15 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(!interfaceMethod.Signature.IsStatic);
 
+            MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
+            if (interfaceMethod != interfaceMethodDefinition)
+            {
+                // Generic method arguments do not participate in interface slot selection.
+                // Resolve the GVM definition first and reapply the instantiation to the resolved target.
+                MethodDesc impl = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodDefinition, currentType, returnRecursive);
+                return impl?.MakeInstantiatedMethod(interfaceMethod.Instantiation);
+            }
+
             // This would be a default interface method resolution. The algorithm below would sort of work, but doesn't handle
             // things like diamond cases and it's better not to let it resolve as such.
             if (currentType.IsInterface)
@@ -768,6 +777,15 @@ namespace Internal.TypeSystem
         public static MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
             Debug.Assert(!interfaceMethod.Signature.IsStatic);
+
+            MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
+            if (interfaceMethod != interfaceMethodDefinition)
+            {
+                // Generic method arguments do not participate in interface slot selection.
+                // Resolve the GVM definition first and reapply the instantiation to the resolved target.
+                MethodDesc impl = ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethodDefinition, currentType);
+                return impl?.MakeInstantiatedMethod(interfaceMethod.Instantiation);
+            }
 
             MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
             bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
