@@ -56,6 +56,29 @@ namespace Internal.IL.Stubs
 
             callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(rawTargetMethod));
 
+            if (MarshalHelpers.ShouldCheckForPendingException(context.Target, _importMetadata))
+            {
+                MetadataType objcMarshalType = context.SystemModule.GetKnownType(
+                    "System.Runtime.InteropServices.ObjectiveC"u8, "ObjectiveCMarshal"u8);
+
+                // Spill the native return value across the pending-exception helper call.
+                ILLocalVariable nativeReturnLocal = (ILLocalVariable)(-1);
+                bool hasNativeReturn = !nativeReturnType.IsVoid;
+                if (hasNativeReturn)
+                {
+                    nativeReturnLocal = emitter.NewLocal(nativeReturnType);
+                    callsiteSetupCodeStream.EmitStLoc(nativeReturnLocal);
+                }
+
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    objcMarshalType.GetKnownMethod("ThrowPendingExceptionObject"u8, null)));
+
+                if (hasNativeReturn)
+                {
+                    callsiteSetupCodeStream.EmitLdLoc(nativeReturnLocal);
+                }
+            }
+
             static PInvokeTargetNativeMethod AllocateTargetNativeMethod(MethodDesc targetMethod, MethodSignature nativeSigArg)
             {
                 var contextMethods = s_contexts.GetOrCreateValue(targetMethod.Context);
@@ -70,9 +93,6 @@ namespace Internal.IL.Stubs
         private MethodIL EmitIL()
         {
             if (!_importMetadata.Flags.PreserveSig)
-                throw new NotSupportedException();
-
-            if (MarshalHelpers.ShouldCheckForPendingException(_targetMethod.Context.Target, _importMetadata))
                 throw new NotSupportedException();
 
             if (_targetMethod.IsUnmanagedCallersOnly)
@@ -142,7 +162,9 @@ namespace Internal.IL.Stubs
 
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL) : base(methodIL)
         {
-            IsMarshallingRequired = Marshaller.IsMarshallingRequired(methodIL.OwningMethod);
+            MethodDesc method = methodIL.OwningMethod;
+            IsMarshallingRequired = Marshaller.IsMarshallingRequired(method)
+                || MarshalHelpers.ShouldCheckForPendingException(method.Context.Target, method.GetPInvokeMethodMetadata());
         }
     }
 }

@@ -117,9 +117,6 @@ namespace Internal.TypeSystem.Interop
             if (!flags.PreserveSig)
                 return true;
 
-            if (MarshalHelpers.ShouldCheckForPendingException(targetMethod.Context.Target, metadata))
-                return true;
-
             var marshallers = GetMarshallersForMethod(targetMethod);
             for (int i = 0; i < marshallers.Length; i++)
             {
