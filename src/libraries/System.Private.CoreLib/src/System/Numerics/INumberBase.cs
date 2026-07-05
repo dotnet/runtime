@@ -430,10 +430,11 @@ namespace System.Numerics
         static virtual bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int charsConsumed)
         {
             // NumberStyles.AllowTrailingInvalidCharacters is new with the introduction of this DIM and so the expected behavior of TryParse
-            // is to throw, meaning that we will always consume "everything" or "nothing". Types which add support for the new flag will be
-            // expected to override this method and provide a correct implementation.
+            // is to throw, meaning that we will always consume "everything" or "nothing". The style is passed through unmodified so a type
+            // that doesn't understand the flag throws as expected. Types which add support for the new flag are expected to override this
+            // method and provide a correct implementation.
 
-            if (TSelf.TryParse(s, style & ~NumberStyles.AllowTrailingInvalidCharacters, provider, out result))
+            if (TSelf.TryParse(s, style, provider, out result))
             {
                 charsConsumed = s.Length;
                 return true;
@@ -463,10 +464,11 @@ namespace System.Numerics
         static virtual bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int charsConsumed)
         {
             // NumberStyles.AllowTrailingInvalidCharacters is new with the introduction of this DIM and so the expected behavior of TryParse
-            // is to throw, meaning that we will always consume "everything" or "nothing". Types which add support for the new flag will be
-            // expected to override this method and provide a correct implementation.
+            // is to throw, meaning that we will always consume "everything" or "nothing". The style is passed through unmodified so a type
+            // that doesn't understand the flag throws as expected. Types which add support for the new flag are expected to override this
+            // method and provide a correct implementation.
 
-            if (TSelf.TryParse(s, style & ~NumberStyles.AllowTrailingInvalidCharacters, provider, out result))
+            if (TSelf.TryParse(s, style, provider, out result))
             {
                 charsConsumed = s.Length;
                 return true;
@@ -542,10 +544,11 @@ namespace System.Numerics
         static virtual bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int bytesConsumed)
         {
             // NumberStyles.AllowTrailingInvalidCharacters is new with the introduction of this DIM and so the expected behavior of TryParse
-            // is to throw, meaning that we will always consume "everything" or "nothing". Types which add support for the new flag will be
-            // expected to override this method and provide a correct implementation.
+            // is to throw, meaning that we will always consume "everything" or "nothing". The style is passed through unmodified so a type
+            // that doesn't understand the flag throws as expected. Types which add support for the new flag are expected to override this
+            // method and provide a correct implementation.
 
-            if (TSelf.TryParse(utf8Text, style & ~NumberStyles.AllowTrailingInvalidCharacters, provider, out result))
+            if (TSelf.TryParse(utf8Text, style, provider, out result))
             {
                 bytesConsumed = utf8Text.Length;
                 return true;
