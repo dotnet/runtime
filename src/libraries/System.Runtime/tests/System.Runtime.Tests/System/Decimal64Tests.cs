@@ -504,5 +504,62 @@ namespace System.Tests
             yield return new object[] { Decimal64.NaN, canonical | 0x0000_0000_000F_FFFFUL };
             yield return new object[] { Decimal64.NaN, canonical | 0x03FF_FFFF_FFFF_FFFFUL };
         }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+
+            // Trailing invalid characters after a valid number
+            yield return new object[] { "123abc", style, CultureInfo.InvariantCulture, Decimal64.Parse("123", CultureInfo.InvariantCulture), 3 };
+            yield return new object[] { "12.5xyz", style, CultureInfo.InvariantCulture, Decimal64.Parse("12.5", CultureInfo.InvariantCulture), 4 };
+            yield return new object[] { "+7e2!!", style, CultureInfo.InvariantCulture, Decimal64.Parse("7e2", CultureInfo.InvariantCulture), 4 };
+            yield return new object[] { "-8.0#", style, CultureInfo.InvariantCulture, Decimal64.Parse("-8.0", CultureInfo.InvariantCulture), 4 };
+
+            // No trailing invalid characters
+            yield return new object[] { "123", style, CultureInfo.InvariantCulture, Decimal64.Parse("123", CultureInfo.InvariantCulture), 3 };
+
+            // Special values with trailing invalid characters
+            yield return new object[] { "Infinityabc", style, CultureInfo.InvariantCulture, Decimal64.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinityxyz", style, CultureInfo.InvariantCulture, Decimal64.NegativeInfinity, 9 };
+            yield return new object[] { "NaNabc", style, CultureInfo.InvariantCulture, Decimal64.NaN, 3 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, Decimal64 expected, int expectedCharsConsumed)
+        {
+            Assert.True(Decimal64.TryParse(value, style, provider, out Decimal64 result, out int charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            Assert.True(Decimal64.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
+            Assert.True(Decimal64.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, bytesConsumed);
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+
+            yield return new object[] { "", style, CultureInfo.InvariantCulture };
+            yield return new object[] { "abc", style, CultureInfo.InvariantCulture };
+            yield return new object[] { ".abc", style, CultureInfo.InvariantCulture };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            Assert.False(Decimal64.TryParse(value, style, provider, out Decimal64 result, out int charsConsumed));
+            Assert.Equal(0, charsConsumed);
+
+            Assert.False(Decimal64.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0, charsConsumed);
+        }
     }
 }

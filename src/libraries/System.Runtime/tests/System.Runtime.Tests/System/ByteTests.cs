@@ -465,5 +465,44 @@ namespace System.Tests
                 Assert.Equal(expectedCharsConsumed, bytesConsumed);
             }
         }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            yield return new object[] { "", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "   ", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "!!!", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { ".123", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+
+            // Overflow of the leading valid digits
+            yield return new object[] { "256abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "999abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+
+            // Invalid hex/binary starting characters
+            yield return new object[] { "Gxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "2abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            byte result;
+            int charsConsumed;
+
+            Assert.False(byte.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            Assert.False(byte.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, charsConsumed);
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(byte.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0, result);
+            Assert.Equal(0, bytesConsumed);
+        }
     }
 }

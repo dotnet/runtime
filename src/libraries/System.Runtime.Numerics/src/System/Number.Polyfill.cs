@@ -91,7 +91,7 @@ namespace System
 
             for (int i = 0; i < span.Length; i += elemsConsumed)
             {
-                if (DecodeFromUtfChar(span, out Rune rune, out elemsConsumed) != OperationStatus.Done)
+                if (DecodeFromUtfChar(span[i..], out Rune rune, out elemsConsumed) != OperationStatus.Done)
                 {
                     elementsConsumed = i;
                     return false;

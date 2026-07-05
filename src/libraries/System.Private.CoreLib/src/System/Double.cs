@@ -427,12 +427,6 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
             return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
@@ -1491,13 +1485,6 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s is null)
-            {
-                result = 0;
-                charsConsumed = 0;
-                return false;
-            }
             return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
         }
 

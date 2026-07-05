@@ -169,12 +169,6 @@ namespace System.Numerics
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result)
         {
             NumberFormatInfo.ValidateParseStyleDecimal(style);
-
-            if (s == null)
-            {
-                result = default;
-                return false;
-            }
             return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
@@ -260,13 +254,6 @@ namespace System.Numerics
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Decimal128 result, out int charsConsumed)
         {
             NumberFormatInfo.ValidateParseStyleDecimal(style);
-
-            if (s is null)
-            {
-                result = default;
-                charsConsumed = 0;
-                return false;
-            }
             return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 

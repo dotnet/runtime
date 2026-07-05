@@ -13,8 +13,10 @@ namespace System
         private static unsafe bool TryParseNumber<TChar>(TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(str != null);
-            Debug.Assert(strEnd != null);
+            // str/strEnd may be null when the input is an empty span (e.g. default(ReadOnlySpan<TChar>)
+            // originating from a null string), in which case they are both null and the range is empty.
+            Debug.Assert((str != null) || (str == strEnd));
+            Debug.Assert((strEnd != null) || (str == strEnd));
             Debug.Assert(str <= strEnd);
             Debug.Assert((styles & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) == 0);
 
@@ -343,7 +345,11 @@ namespace System
         private static unsafe TChar* MatchChars<TChar>(TChar* p, TChar* pEnd, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert((p != null) && (pEnd != null) && (p <= pEnd));
+            // p/pEnd may be null when the input being parsed is an empty span (e.g. from a null string),
+            // in which case they are both null and the range is empty; the loop below never dereferences p then.
+            Debug.Assert((p != null) || (p == pEnd));
+            Debug.Assert((pEnd != null) || (p == pEnd));
+            Debug.Assert(p <= pEnd);
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {

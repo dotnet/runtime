@@ -175,8 +175,29 @@ namespace System
                 }
                 whiteIndex++;
 
-                value = value[..whiteIndex];
                 trailingWhiteLength = value.Length - whiteIndex;
+                value = value[..whiteIndex];
+            }
+
+            // When trailing invalid characters are allowed, parsing should stop at the first
+            // character that isn't a valid digit for the given base. Truncate the input to the
+            // leading run of valid digits so the block-based parsing below operates on a fully
+            // valid sequence. If we stop early, any trailing whitespace we skipped above was
+            // beyond the first invalid character and therefore wasn't actually consumed.
+            if ((style & NumberStyles.AllowTrailingInvalidCharacters) != 0)
+            {
+                int validLength = 0;
+
+                while ((validLength < value.Length) && TParser.IsValidDigit(TChar.CastToUInt32(value[validLength])))
+                {
+                    validLength++;
+                }
+
+                if (validLength != value.Length)
+                {
+                    value = value[..validLength];
+                    trailingWhiteLength = 0;
+                }
             }
 
             if (value.IsEmpty)
@@ -264,22 +285,11 @@ namespace System
             nuint[] bits = new nuint[totalUIntCount];
             Span<nuint> wholeBlockDestination = bits.AsSpan(0, wholeBlockCount);
 
-            if (!TParser.TryParseWholeBlocks(value, wholeBlockDestination, out int blocksWritten))
+            if (!TParser.TryParseWholeBlocks(value, wholeBlockDestination))
             {
-                if ((style & NumberStyles.AllowTrailingInvalidCharacters) != 0)
-                {
-                    nuint[] actualBits = new nuint[blocksWritten];
-                    wholeBlockDestination.Slice(0, blocksWritten).CopyTo(actualBits);
-
-                    bits = actualBits;
-                    trailingWhiteLength = 0;
-                }
-                else
-                {
-                    goto FailExit;
-                }
+                goto FailExit;
             }
-            index += (TParser.DigitsPerBlock * blocksWritten);
+            index += value.Length;
 
             bits[^1] = leading;
 
@@ -1551,6 +1561,8 @@ namespace System
 
         static abstract nuint GetSignBitsIfValid(uint ch);
 
+        static abstract bool IsValidDigit(uint ch);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static virtual bool TryParseUnalignedBlock(ReadOnlySpan<TChar> input, out nuint result)
         {
@@ -1569,7 +1581,7 @@ namespace System
         static virtual bool TryParseSingleBlock(ReadOnlySpan<TChar> input, out nuint result)
             => TParser.TryParseUnalignedBlock(input, out result);
 
-        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<nuint> destination, out int blocksWritten)
+        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<nuint> destination)
         {
             Debug.Assert(destination.Length * TParser.DigitsPerBlock == input.Length);
 
@@ -1578,12 +1590,10 @@ namespace System
                 int blockStart = input.Length - (i + 1) * TParser.DigitsPerBlock;
                 if (!TParser.TryParseSingleBlock(input.Slice(blockStart, TParser.DigitsPerBlock), out destination[i]))
                 {
-                    blocksWritten = i;
                     return false;
                 }
             }
 
-            blocksWritten = destination.Length;
             return true;
         }
     }
@@ -1597,6 +1607,9 @@ namespace System
 
         /// <summary>Returns all-zero bits if <paramref name="ch"/> is a valid hex digit and considered positive ('0'-'7'), or all-one bits otherwise.</summary>
         public static nuint GetSignBitsIfValid(uint ch) => (nuint)(nint)((ch & 0b_1111_1000) == 0b_0011_0000 ? 0 : -1);
+
+        /// <summary>Returns <see langword="true"/> if <paramref name="ch"/> is a valid hex digit ('0'-'9', 'a'-'f', or 'A'-'F').</summary>
+        public static bool IsValidDigit(uint ch) => ((ch - '0') <= ('9' - '0')) || (((ch | 0x20) - 'a') <= ('f' - 'a'));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<nuint> destination)
@@ -1630,5 +1643,8 @@ namespace System
 
         /// <summary>Returns all-zero bits if <paramref name="ch"/> is '0', or all-one bits if '1' (using LSB sign extension).</summary>
         public static nuint GetSignBitsIfValid(uint ch) => (nuint)(nint)(((int)ch << 31) >> 31);
+
+        /// <summary>Returns <see langword="true"/> if <paramref name="ch"/> is a valid binary digit ('0' or '1').</summary>
+        public static bool IsValidDigit(uint ch) => (ch - '0') <= ('1' - '0');
     }
 }

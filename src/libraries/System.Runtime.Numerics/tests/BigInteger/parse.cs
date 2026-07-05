@@ -1424,7 +1424,7 @@ namespace System.Numerics.Tests
             
             // HexNumber with trailing invalid characters
             yield return new object[] { "ABCDEFxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("ABCDEF", NumberStyles.HexNumber), 6 };
-            yield return new object[] { "FFGHxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(0xFF), 2 };
+            yield return new object[] { "FFGHxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 2 };
             
             // BinaryNumber with trailing invalid characters
             yield return new object[] { "101010abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("101010", NumberStyles.BinaryNumber), 6 };

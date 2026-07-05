@@ -300,6 +300,7 @@ namespace System
 
             if (!TryNumberBufferToBinaryInteger(ref number, ref result))
             {
+                elementsConsumed = 0;
                 return ParsingStatus.Overflow;
             }
 
@@ -615,7 +616,7 @@ namespace System
 
         internal readonly struct HexParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            public static NumberStyles AllowedStyles => NumberStyles.HexNumber;
+            public static NumberStyles AllowedStyles => NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters;
             public static bool IsValidChar(uint ch) => HexConverter.IsHexChar((int)ch);
             public static uint FromChar(uint ch) => (uint)HexConverter.FromChar((int)ch);
             public static uint MaxDigitValue => 0xF;
@@ -625,7 +626,7 @@ namespace System
 
         private readonly struct BinaryParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            public static NumberStyles AllowedStyles => NumberStyles.BinaryNumber;
+            public static NumberStyles AllowedStyles => NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters;
             public static bool IsValidChar(uint ch) => (ch - '0') <= 1;
             public static uint FromChar(uint ch) => ch - '0';
             public static uint MaxDigitValue => 1;
@@ -990,6 +991,7 @@ namespace System
 
             if (!TryNumberToDecimal(ref number, ref result))
             {
+                elementsConsumed = 0;
                 return ParsingStatus.Overflow;
             }
 
@@ -1007,46 +1009,62 @@ namespace System
             if (!TryStringToNumber(value, styles, ref number, info, out elementsConsumed))
             {
                 ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
+                bool allowTrailingInvalid = (styles & NumberStyles.AllowTrailingInvalidCharacters) != 0;
+
+                // For AllowTrailingInvalidCharacters we match a special-value symbol as a prefix of the
+                // trimmed input and report the leading whitespace plus the matched symbol as consumed.
+                // Otherwise the entire trimmed input must match the symbol exactly and the whole input
+                // (including any surrounding whitespace) is reported as consumed.
+                int leadingOffset = (allowTrailingInvalid && !valueTrim.IsEmpty)
+                    ? (int)(Unsafe.ByteOffset(ref MemoryMarshal.GetReference(value), ref MemoryMarshal.GetReference(valueTrim)) / Unsafe.SizeOf<TChar>())
+                    : 0;
+
                 ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
 
-                if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                if (TryMatchSpecialValueSymbol(valueTrim, positiveInfinitySymbol, allowTrailingInvalid, out int matchedLength))
                 {
                     result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                    elementsConsumed = allowTrailingInvalid ? leadingOffset + matchedLength : value.Length;
                     return ParsingStatus.OK;
                 }
 
-                if (SpanEqualsOrdinalIgnoreCase(valueTrim, info.NegativeInfinitySymbolTChar<TChar>()))
+                if (TryMatchSpecialValueSymbol(valueTrim, info.NegativeInfinitySymbolTChar<TChar>(), allowTrailingInvalid, out matchedLength))
                 {
                     result = TDecimal.Construct(TDecimal.NegativeInfinity);
+                    elementsConsumed = allowTrailingInvalid ? leadingOffset + matchedLength : value.Length;
                     return ParsingStatus.OK;
                 }
 
                 ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
 
-                if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                if (TryMatchSpecialValueSymbol(valueTrim, nanSymbol, allowTrailingInvalid, out matchedLength))
                 {
                     result = TDecimal.Construct(TDecimal.NaN);
+                    elementsConsumed = allowTrailingInvalid ? leadingOffset + matchedLength : value.Length;
                     return ParsingStatus.OK;
                 }
 
-                var positiveSign = info.PositiveSignTChar<TChar>();
+                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
 
                 if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
                 {
-                    valueTrim = valueTrim.Slice(positiveSign.Length);
+                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(positiveSign.Length);
 
-                    if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                    if (TryMatchSpecialValueSymbol(afterSign, positiveInfinitySymbol, allowTrailingInvalid, out matchedLength))
                     {
                         result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + positiveSign.Length + matchedLength : value.Length;
                         return ParsingStatus.OK;
                     }
-                    else if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                    else if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, out matchedLength))
                     {
                         result = TDecimal.Construct(TDecimal.NaN);
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + positiveSign.Length + matchedLength : value.Length;
                         return ParsingStatus.OK;
                     }
 
                     result = TDecimal.Construct(TDecimal.Zero);
+                    elementsConsumed = 0;
                     return ParsingStatus.Failed;
                 }
 
@@ -1054,20 +1072,23 @@ namespace System
 
                 if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(negativeSign.Length), nanSymbol))
+                    if (TryMatchSpecialValueSymbol(valueTrim.Slice(negativeSign.Length), nanSymbol, allowTrailingInvalid, out matchedLength))
                     {
                         result = TDecimal.Construct(TDecimal.NaN);
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + negativeSign.Length + matchedLength : value.Length;
                         return ParsingStatus.OK;
                     }
 
-                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
+                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && TryMatchSpecialValueSymbol(valueTrim.Slice(1), nanSymbol, allowTrailingInvalid, out matchedLength))
                     {
                         result = TDecimal.Construct(TDecimal.NaN);
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + 1 + matchedLength : value.Length;
                         return ParsingStatus.OK;
                     }
                 }
 
                 result = TDecimal.Construct(TDecimal.Zero);
+                elementsConsumed = 0;
                 return ParsingStatus.Failed;
             }
 
@@ -1135,6 +1156,30 @@ namespace System
                 ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
                 return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
             }
+        }
+
+        // Matches a special-value symbol (Infinity/NaN and signed variants). When
+        // AllowTrailingInvalidCharacters is set the symbol only needs to be a prefix of the
+        // trimmed input; otherwise the entire trimmed input must match the symbol exactly.
+        internal static bool TryMatchSpecialValueSymbol<TChar>(ReadOnlySpan<TChar> valueTrim, ReadOnlySpan<TChar> symbol, bool allowTrailingInvalid, out int matchedLength)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (allowTrailingInvalid)
+            {
+                if (!symbol.IsEmpty && SpanStartsWith(valueTrim, symbol, StringComparison.OrdinalIgnoreCase))
+                {
+                    matchedLength = symbol.Length;
+                    return true;
+                }
+            }
+            else if (SpanEqualsOrdinalIgnoreCase(valueTrim, symbol))
+            {
+                matchedLength = symbol.Length;
+                return true;
+            }
+
+            matchedLength = 0;
+            return false;
         }
 
         internal static bool TryParseHexFloatingPoint<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
@@ -1534,73 +1579,96 @@ namespace System
                 }
             }
 
-            ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
-
-            // This code would be simpler if we only had the concept of `InfinitySymbol`, but
-            // we don't so we'll check the existing cases first and then handle `PositiveSign` +
-            // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
-
-            ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
-
-            if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+            // Hex floating-point does not support the Infinity/NaN symbols, so only the non-hex
+            // path falls through to the special-value handling below.
+            if ((styles & NumberStyles.AllowHexSpecifier) == 0)
             {
-                result = TFloat.PositiveInfinity;
-                return true;
-            }
+                ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
+                bool allowTrailingInvalid = (styles & NumberStyles.AllowTrailingInvalidCharacters) != 0;
 
-            if (SpanEqualsOrdinalIgnoreCase(valueTrim, info.NegativeInfinitySymbolTChar<TChar>()))
-            {
-                result = TFloat.NegativeInfinity;
-                return true;
-            }
+                // For AllowTrailingInvalidCharacters we match a special-value symbol as a prefix of the
+                // trimmed input and report the leading whitespace plus the matched symbol as consumed.
+                // Otherwise the entire trimmed input must match the symbol exactly and the whole input
+                // (including any surrounding whitespace) is reported as consumed.
+                int leadingOffset = (allowTrailingInvalid && !valueTrim.IsEmpty)
+                    ? (int)(Unsafe.ByteOffset(ref MemoryMarshal.GetReference(value), ref MemoryMarshal.GetReference(valueTrim)) / Unsafe.SizeOf<TChar>())
+                    : 0;
 
-            ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
+                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
+                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
+                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
 
-            if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
-            {
-                result = TFloat.NaN;
-                return true;
-            }
+                ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
 
-            var positiveSign = info.PositiveSignTChar<TChar>();
-
-            if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
-            {
-                valueTrim = valueTrim.Slice(positiveSign.Length);
-
-                if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                if (TryMatchSpecialValueSymbol(valueTrim, positiveInfinitySymbol, allowTrailingInvalid, out int matchedLength))
                 {
                     result = TFloat.PositiveInfinity;
-                    return true;
-                }
-                else if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
-                {
-                    result = TFloat.NaN;
+                    elementsConsumed = allowTrailingInvalid ? leadingOffset + matchedLength : value.Length;
                     return true;
                 }
 
-                result = TFloat.Zero;
-                return false;
-            }
-
-            ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-
-            if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
-            {
-                if (SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(negativeSign.Length), nanSymbol))
+                if (TryMatchSpecialValueSymbol(valueTrim, info.NegativeInfinitySymbolTChar<TChar>(), allowTrailingInvalid, out matchedLength))
                 {
-                    result = TFloat.NaN;
+                    result = TFloat.NegativeInfinity;
+                    elementsConsumed = allowTrailingInvalid ? leadingOffset + matchedLength : value.Length;
                     return true;
                 }
 
-                if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
+                ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
+
+                if (TryMatchSpecialValueSymbol(valueTrim, nanSymbol, allowTrailingInvalid, out matchedLength))
                 {
                     result = TFloat.NaN;
+                    elementsConsumed = allowTrailingInvalid ? leadingOffset + matchedLength : value.Length;
                     return true;
+                }
+
+                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(positiveSign.Length);
+
+                    if (TryMatchSpecialValueSymbol(afterSign, positiveInfinitySymbol, allowTrailingInvalid, out matchedLength))
+                    {
+                        result = TFloat.PositiveInfinity;
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + positiveSign.Length + matchedLength : value.Length;
+                        return true;
+                    }
+                    else if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, out matchedLength))
+                    {
+                        result = TFloat.NaN;
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + positiveSign.Length + matchedLength : value.Length;
+                        return true;
+                    }
+
+                    result = TFloat.Zero;
+                    elementsConsumed = 0;
+                    return false;
+                }
+
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (TryMatchSpecialValueSymbol(valueTrim.Slice(negativeSign.Length), nanSymbol, allowTrailingInvalid, out matchedLength))
+                    {
+                        result = TFloat.NaN;
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + negativeSign.Length + matchedLength : value.Length;
+                        return true;
+                    }
+
+                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && TryMatchSpecialValueSymbol(valueTrim.Slice(1), nanSymbol, allowTrailingInvalid, out matchedLength))
+                    {
+                        result = TFloat.NaN;
+                        elementsConsumed = allowTrailingInvalid ? leadingOffset + 1 + matchedLength : value.Length;
+                        return true;
+                    }
                 }
             }
 
             result = TFloat.Zero;
+            elementsConsumed = 0;
             return false; // We really failed
         }
 

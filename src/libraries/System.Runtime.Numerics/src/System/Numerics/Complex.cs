@@ -30,7 +30,8 @@ namespace System.Numerics
                                                          | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                          | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                          | NumberStyles.AllowThousands | NumberStyles.AllowExponent
-                                                         | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
+                                                         | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
+                                                         | NumberStyles.AllowTrailingInvalidCharacters);
 
         public static readonly Complex Zero = new(0.0, 0.0);
         public static readonly Complex One = new(1.0, 0.0);
@@ -2177,11 +2178,16 @@ namespace System.Numerics
                 return false;
             }
 
+            // The real and imaginary components are exactly delimited by the ';' and '>' separators,
+            // so AllowTrailingInvalidCharacters only applies after the closing bracket, not within a
+            // component. Otherwise something like "<1.5x;2>" would incorrectly parse as (1.5, 2).
+            NumberStyles componentStyle = style & ~NumberStyles.AllowTrailingInvalidCharacters;
+
             ReadOnlySpan<TChar> slice = text.Slice(openBracket + 1, semicolon - openBracket - 1);
 
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double real)
-                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out real))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), componentStyle, provider, out double real)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), componentStyle, provider, out real))
             {
                 result = default;
                 elementsConsumed = 0;
@@ -2201,8 +2207,8 @@ namespace System.Numerics
             slice = text.Slice(semicolon + 1, closeBracket - semicolon - 1);
 
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double imaginary)
-                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out imaginary))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), componentStyle, provider, out double imaginary)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), componentStyle, provider, out imaginary))
             {
                 result = default;
                 elementsConsumed = 0;
@@ -2217,7 +2223,7 @@ namespace System.Numerics
 
                 if ((style & NumberStyles.AllowTrailingWhite) != 0)
                 {
-                    if (text.Slice(closeBracket).IsWhiteSpace(out trailingWhiteLength))
+                    if (text.Slice(closeBracket + 1).IsWhiteSpace(out trailingWhiteLength))
                     {
                         isInvalid = false;
                     }
@@ -2235,7 +2241,7 @@ namespace System.Numerics
             }
 
             result = new Complex(real, imaginary);
-            elementsConsumed = closeBracket + trailingWhiteLength;
+            elementsConsumed = closeBracket + 1 + trailingWhiteLength;
             return true;
         }
 
@@ -2261,11 +2267,6 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result)
         {
-            if (s is null)
-            {
-                result = default;
-                return false;
-            }
             return TryParse(s.AsSpan(), style, provider, out result);
         }
 
