@@ -1720,6 +1720,12 @@ namespace System.Net.Security
                 return fast.Value;
             }
 
+            TryPeekClientHello(ref fast);
+            if (fast.HasValue)
+            {
+                return fast.Value;
+            }
+
             _socketInBuf ??= ArrayPool<byte>.Shared.Rent(SocketScratchSize);
             byte[] scratch = ArrayPool<byte>.Shared.Rent(SocketScratchSize);
             try
@@ -2017,6 +2023,7 @@ namespace System.Net.Security
         // ProcessHandshake/Encrypt/Decrypt path above is used unchanged.
         partial void EnableNativeSocketBinding(SafeSocketHandle socket, ref bool nativeBindingEnabled);
         partial void TryFastHandshake(ref TlsOperationStatus? result);
+        partial void TryPeekClientHello(ref TlsOperationStatus? result);
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result);
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result);
 
@@ -2024,6 +2031,10 @@ namespace System.Net.Security
         // fast path (OpenSSL socket-bound sessions) use this hook to activate
         // native binding now that server options are known.
         partial void OnServerOptionsSet();
+
+        // Fires from Dispose so the OpenSSL partial can release the peek BIO if the
+        // session is disposed before its ownership is transferred to an SSL* handle.
+        partial void OnDispose();
 
         public void Dispose()
         {
@@ -2065,6 +2076,8 @@ namespace System.Net.Security
                 ArrayPool<byte>.Shared.Return(_socketInBuf);
                 _socketInBuf = null;
             }
+
+            OnDispose();
         }
     }
 }
