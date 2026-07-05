@@ -2082,18 +2082,27 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         pCode->EmitLabel(nextDelegate);
 
 #ifdef DEBUGGING_SUPPORTED
-        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
-        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
-
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
         pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
         pCode->EmitCONV_I();
         pCode->EmitLDIND_I4();
-        // g_multicastDelegateTraceActiveCount != 0
+        // g_multicastDelegateTraceActiveCount == 0
         pCode->EmitLDC(0);
-        pCode->EmitBNE_UN(invokeTraceHelper);
+        
+        ILCodeLabel *realLoopStart = pCode->NewCodeLabel();
+        pCode->EmitBEQ(realLoopStart);
 
-        pCode->EmitLabel(debuggerCheckEnd);
+        // Call debugger tracing
+        pCode->EmitLoadThis();
+        pCode->EmitLDLOC(dwStartNum);
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
+        pCode->EmitCALL(pCode->GetToken(gadr, mdTokenNil, methodSpecSigToken), 1, 1);
+        pCode->EmitSUB();
+        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
+
+        // Label_realLoopStart:
+        pCode->EmitLabel(realLoopStart);
 #endif // DEBUGGING_SUPPORTED
 
         // Load the delegate
@@ -2128,19 +2137,6 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
         // Return
         pCode->EmitRET();
-
-#ifdef DEBUGGING_SUPPORTED
-        // Emit debugging support at the end of the method for better perf
-        pCode->EmitLabel(invokeTraceHelper);
-
-        pCode->EmitLoadThis();
-        pCode->EmitLDLOC(dwEndNum);
-        pCode->EmitLDLOC(dwStartNum);
-        pCode->EmitSUB();
-        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
-
-        pCode->EmitBR(debuggerCheckEnd);
-#endif // DEBUGGING_SUPPORTED
 
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
