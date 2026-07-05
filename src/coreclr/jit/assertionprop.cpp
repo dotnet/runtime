@@ -52,14 +52,16 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     assert(block != nullptr);
     assert(tree != nullptr);
 
-    int budget = 64;
+    // TryGetRange walks the SSA use-def chain up to three times per query (range computation, the overflow check,
+    // and a monotonicity-driven re-walk in Widen that recovers loop lower bounds), all sharing this budget.
+    int budget = 256;
 #ifdef DEBUG
     // JIT stress: always take the slow, SSA-based range walk (with a larger budget) to maximize
     // coverage of TryGetRange and shake out correctness issues in the range computation.
     if (comp->compStressCompile(Compiler::STRESS_GET_RANGE, 50))
     {
-        fast   = false;
-        budget = 512;
+        fast = false;
+        budget *= 16;
     }
 #endif
 
