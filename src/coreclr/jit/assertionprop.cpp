@@ -5497,8 +5497,26 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
     ValueNum          vnCurIdx      = optConservativeNormalVN(arrBndsChkIdx);
     ValueNum          vnCurLen      = optConservativeNormalVN(arrBndsChkLen);
 
-    // Let's see if we can remove the bounds check based on the ranges.
-    Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
+    Range idxRng = Limit(Limit::LimitType::keUndef);
+    Range lenRng = Limit(Limit::LimitType::keUndef);
+
+    // Lazily compute the range of the index and length, since it may not be needed.
+
+    auto getIdxRng = [&]() -> Range {
+        if (idxRng.IsUndef())
+        {
+            idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
+        }
+        return idxRng;
+    };
+
+    auto getLenRng = [&]() -> Range {
+        if (lenRng.IsUndef())
+        {
+            lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
+        }
+        return lenRng;
+    };
 
     auto dropBoundsCheck = [&](INDEBUG(const char* reason)) -> GenTree* {
         JITDUMP("\nRemoving redundant (%s) bounds check in " FMT_BB ":\n", reason, compCurBB->bbNum);
@@ -5531,26 +5549,28 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
         assert(curAssertion.GetOp2().IsVNNeverNegative());
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetVN() == optConservativeNormalVN(arrBndsChkLen))
+        if (curAssertion.GetOp2().GetVN() == vnCurLen)
         {
             if (curAssertion.GetOp1().GetVN() == vnCurIdx)
             {
                 return dropBoundsCheck(INDEBUG("a[i] followed by a[i]"));
             }
-            else if (idxRng.IsConstantRange() && idxRng.LowerLimit().GetConstant() >= 0)
+            else if (getIdxRng().IsConstantRange() && getIdxRng().LowerLimit().GetConstant() >= 0)
             {
                 // Get the range of the previously checked index for the same array length.
+                // NOTE: we can't re-use 'assertions' since they may not be live at the point of the previous check.
                 Range rngOfPrevIdx =
                     RangeCheck::GetRangeFromAssertions(this, curAssertion.GetOp1().GetVN(), BitVecOps::UninitVal());
 
                 // We know the range of the previous index, we know the range of the current index.
                 //
                 //  a[prevIdx] = 0; // e.g. prevIdx's range is [5..10]
-                //  a[currIdx] = 0; // e.g. currIdx's range is [0..5] -> drop bounds check for currIdx
+                //  a[currIdx] = 0; // e.g. currIdx's range is [2..5] -> drop bounds check for currIdx
                 //
                 if (rngOfPrevIdx.IsConstantRange() &&
-                    (rngOfPrevIdx.LowerLimit().GetConstant() >= idxRng.UpperLimit().GetConstant()))
+                    (rngOfPrevIdx.LowerLimit().GetConstant() >= getIdxRng().UpperLimit().GetConstant()))
                 {
+                    assert(getIdxRng().LowerLimit().GetConstant() >= 0);
                     return dropBoundsCheck(INDEBUG("currIdx upper bound covered by prevIdx lower bound"));
                 }
             }
@@ -5592,12 +5612,10 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
         return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
     }
 
-    Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
-
-    if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
+    if (getIdxRng().IsConstantRange() && getLenRng().IsConstantRange())
     {
-        int idxLo = idxRng.LowerLimit().GetConstant();
-        int idxHi = idxRng.UpperLimit().GetConstant();
+        int idxLo = getIdxRng().LowerLimit().GetConstant();
+        int idxHi = getIdxRng().UpperLimit().GetConstant();
         int lenLo = lenRng.LowerLimit().GetConstant();
 
         // GT_BOUNDS_CHECK node has an implicit contract - the length node must always be non-negative.
