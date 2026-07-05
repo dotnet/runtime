@@ -35,7 +35,17 @@ namespace System.IO.Pipelines
 
         // The options instance
         private readonly PipeOptions _options;
-        private readonly object _sync = new object();
+
+        // This lock protects the shared state between the writer and reader (most of this class).
+        // On .NET 9+ use System.Threading.Lock, which is faster than Monitor on object; older
+        // targets (netstandard2.0, .NET Framework) fall back to a plain object + Monitor.
+#if NET9_0_OR_GREATER
+        private readonly System.Threading.Lock _sync = new();
+        private System.Threading.Lock SyncObj => _sync;
+#else
+        private readonly object _sync = new();
+        private object SyncObj => _sync;
+#endif
 
         // Computed state from the options instance
         private bool UseSynchronizationContext => _options.UseSynchronizationContext;
@@ -45,9 +55,6 @@ namespace System.IO.Pipelines
 
         private PipeScheduler ReaderScheduler => _options.ReaderScheduler;
         private PipeScheduler WriterScheduler => _options.WriterScheduler;
-
-        // This sync objects protects the shared state between the writer and reader (most of this class)
-        private object SyncObj => _sync;
 
         // The number of bytes flushed but not consumed by the reader
         private long _unconsumedBytes;
