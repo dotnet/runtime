@@ -285,7 +285,7 @@
     _GatherWasmFilesToBuild (unlike _ComputeWasmBuildCandidates) does not pull it in on its own.
   -->
   <Target Name="_CoreCLRResolveRuntimePackVsAppLocalConflicts"
-          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
+          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild;_CoreCLRGatherWasmFiles"
           DependsOnTargets="ResolveReferences"
           Condition="'$(IsBrowserWasmProject)' == 'true'">
     <PropertyGroup>
@@ -371,7 +371,7 @@
     <_CoreCLRWasmBuildAppCoreDependsOn>
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
-      _GatherWasmFilesToBuild;
+      _CoreCLRGatherWasmFiles;
       _CoreCLRPrepareForNativeBuild;
       _CoreCLRGenerateManagedToNative;
       _CoreCLRWriteCompileRsp;
@@ -386,6 +386,16 @@
   <Target Name="_CoreCLRWasmBuildAppCore"
           Condition="'$(WasmBuildNative)' == 'true'"
           DependsOnTargets="$(_CoreCLRWasmBuildAppCoreDependsOn)" />
+
+  <!-- During a nested publish, _GatherWasmFilesToPublish already populated
+       WasmAssembliesToBundle from ResolvedFileToPublish (which includes app
+       satellite assemblies). Calling _GatherWasmFilesToBuild would overwrite
+       that list with build-time items (IntermediateAssembly + ReferenceCopyLocalPaths)
+       which omit app satellites, causing ComputeWasmPublishAssets to fail.
+       Only call the SDK's _GatherWasmFilesToBuild for non-publish builds. -->
+  <Target Name="_CoreCLRGatherWasmFiles"
+          DependsOnTargets="_GatherWasmFilesToBuild"
+          Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
 
   <!-- ======================== Initialize ======================== -->
 
