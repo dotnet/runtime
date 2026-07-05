@@ -741,8 +741,10 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 //     dom:  EQ/NE(VNF_IsInstanceOf(clsA, obj), null)
 //    tree:  EQ/NE(VNF_IsInstanceOf(clsB, obj), null)
 //
-// If compareTypesForCast(clsA, clsB) is Must:  dom-true implies tree-true.
-// If it is MustNot:                            dom-true implies tree-false.
+// Uses compareTypesForCast in both directions to infer whichever holds:
+//   * clsA derives from clsB     : obj is-a clsA implies obj is-a clsB.
+//   * clsB derives from clsA     : obj is-NOT-a clsA implies obj is-NOT-a clsB.
+//   * clsA and clsB unrelated    : obj is-a clsA implies obj is-NOT-a clsB.
 //
 bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImplicationInfo* rii)
 {
@@ -817,85 +819,102 @@ bool Compiler::optRelopTryInferFromTypeCheck(const VNFuncApp& domApp, RelopImpli
         return false;
     }
 
-    // Ask the EE: if runtime type is-a domCls, is it also is-a treeCls?
-    // Must    -> yes for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is non-null.
-    // MustNot -> no  for every subtype of domCls  -> tree IsInstanceOf(treeCls, obj) is null.
-    // May -> ambiguous.
+    // Ask the EE how the two class handles relate. `compareTypesForCast(A, B)` answers
+    // CanCastTo(A, B), i.e., "does A derive from / implement B?". We combine forward and
+    // reverse queries to figure out which "obj is-a" implication is sound:
     //
-    // BUT: `compareTypesForCast` answers CanCastTo(domCls, treeCls). That is designed for
-    // downcast folding, not for reasoning about arbitrary objects satisfying an isinst on
-    // the two class handles:
-    //   * treeCls interface: an object could dynamically claim to implement treeCls via
-    //     IDynamicInterfaceCastable even if the static type hierarchy would say MustNot.
-    //   * domCls interface: an object where `isinst(domCls, obj)` succeeded can have any
-    //     runtime type that implements domCls; unrelated classes could still implement it,
-    //     so a MustNot answer over the two class handles is not a proof about the object.
-    //   * treeCls derives from domCls: CanCastTo(domCls, treeCls) is false so the EE
-    //     returns MustNot, but the object could be a treeCls (a subclass of domCls) and
-    //     hence `isinst(treeCls, obj)` may succeed. So MustNot inference is unsound here.
-    // Must inference (domCls derives from treeCls) is safe: subclasses of domCls all
-    // derive from treeCls too, and IDCC cannot make a subclass "not implement" a class.
+    //   forwardCast == Must:                   domCls derives from treeCls.
+    //                                            obj is-a domCls -> obj is-a treeCls.
+    //   forwardCast, reverseCast == MustNot:   domCls and treeCls are unrelated types.
+    //                                            obj is-a domCls -> obj is-NOT-a treeCls.
+    //                                            (Sound only for non-interface classes:
+    //                                            interfaces can be co-implemented, and a
+    //                                            treeCls interface is subject to IDCC.)
+    //   reverseCast == Must:                   treeCls derives from domCls.
+    //                                            obj is-a treeCls -> obj is-a domCls, so
+    //                                            (contrapositive) obj is-NOT-a domCls ->
+    //                                            obj is-NOT-a treeCls. (Sound if treeCls is
+    //                                            not an interface: IDCC could otherwise make
+    //                                            an unrelated object claim to be treeCls.)
+    //
+    // The Must case gives us information when the dom relop asserts "obj is-a domCls";
+    // the reverseCast==Must case gives us information when it asserts "obj is-NOT-a domCls".
+    //
     const unsigned domClsAttribs   = info.compCompHnd->getClassAttribs(domCls);
     const unsigned treeClsAttribs  = info.compCompHnd->getClassAttribs(treeCls);
     const bool     domIsInterface  = (domClsAttribs & CORINFO_FLG_INTERFACE) != 0;
     const bool     treeIsInterface = (treeClsAttribs & CORINFO_FLG_INTERFACE) != 0;
 
-    TypeCompareState const castResult = info.compCompHnd->compareTypesForCast(domCls, treeCls);
-    if (castResult == TypeCompareState::May)
-    {
-        return false;
-    }
+    TypeCompareState const forwardCast = info.compCompHnd->compareTypesForCast(domCls, treeCls);
+    TypeCompareState const reverseCast = info.compCompHnd->compareTypesForCast(treeCls, domCls);
 
-    if (castResult == TypeCompareState::MustNot)
+    // Pick the sound inference direction, if any.
+    //
+    //   inferredCondIsObjIsA:  true if the inference applies when "obj is-a domCls",
+    //                          false if it applies when "obj is-NOT-a domCls".
+    //   objIsBUnderCond:       value of "obj is-a treeCls" under that condition.
+    //
+    bool inferredCondIsObjIsA;
+    bool objIsBUnderCond;
+
+    if (forwardCast == TypeCompareState::Must)
     {
-        // Reject when either side is an interface (see comment above).
+        inferredCondIsObjIsA = true;
+        objIsBUnderCond      = true;
+    }
+    else if ((forwardCast == TypeCompareState::MustNot) && (reverseCast == TypeCompareState::MustNot))
+    {
         if (domIsInterface || treeIsInterface)
         {
             return false;
         }
-
-        // Reject when treeCls derives from domCls: an object of runtime type treeCls is
-        // also a domCls, so `isinst(domCls, obj)` succeeds while `isinst(treeCls, obj)`
-        // may also succeed. Detected by asking the reverse cast.
-        TypeCompareState const reverseCast = info.compCompHnd->compareTypesForCast(treeCls, domCls);
-        if (reverseCast != TypeCompareState::MustNot)
+        inferredCondIsObjIsA = true;
+        objIsBUnderCond      = false;
+    }
+    else if (reverseCast == TypeCompareState::Must)
+    {
+        if (treeIsInterface)
         {
             return false;
         }
+        inferredCondIsObjIsA = false;
+        objIsBUnderCond      = false;
+    }
+    else
+    {
+        return false;
     }
 
     // Translate to the {canInferFromTrue, canInferFromFalse, reverseSense} tuple used by RBO.
     //
-    //   dom relop = "EQ(IsInst(A,obj), null)"  is true  when "obj is NOT A"
-    //   dom relop = "NE(IsInst(A,obj), null)"  is true  when "obj is A"
-    //  tree relop = "EQ(IsInst(B,obj), null)"  is true  when "obj is NOT B"
-    //  tree relop = "NE(IsInst(B,obj), null)"  is true  when "obj is B"
+    //   dom relop = "EQ(IsInst(A,obj), null)" is true  when "obj is NOT A" and false when "obj is A"
+    //   dom relop = "NE(IsInst(A,obj), null)" is true  when "obj is A"     and false when "obj is NOT A"
+    //  tree relop = "EQ(IsInst(B,obj), null)" is true  when "obj is NOT B" and false when "obj is B"
+    //  tree relop = "NE(IsInst(B,obj), null)" is true  when "obj is B"     and false when "obj is NOT B"
     //
-    // We can only infer the tree relop's value when the dominating path establishes
-    // "obj is A" (i.e., when the dom relop is true and domOper == NE, or when the dom
-    // relop is false and domOper == EQ). Under "obj is A", "obj is B" equals the
-    // castResult == Must outcome, so the tree relop's semantic value is
-    // (objIsB == treeTrueMeansObjIsB).
-    //
-    // The RBO consumer of `reverseSense` applies:
+    // The RBO consumer applies:
     //   relopValue = !reverseSense  when using canInferFromTrue  (dom relop is true)
     //   relopValue =  reverseSense  when using canInferFromFalse (dom relop is false)
     // so we set reverseSense accordingly.
     //
+    bool const condHoldsWhenDomTrue = inferredCondIsObjIsA ? (domOper == GT_NE) : (domOper == GT_EQ);
     bool const treeTrueMeansObjIsB  = (treeOper == GT_NE);
-    bool const objIsB               = (castResult == TypeCompareState::Must);
-    bool const treeValueUnderObjIsA = (objIsB == treeTrueMeansObjIsB);
+    bool const treeValueUnderCond   = (objIsBUnderCond == treeTrueMeansObjIsB);
 
     rii->canInfer          = true;
     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-    rii->canInferFromTrue  = (domOper == GT_NE);
-    rii->canInferFromFalse = (domOper == GT_EQ);
-    rii->reverseSense      = (domOper == GT_NE) ? !treeValueUnderObjIsA : treeValueUnderObjIsA;
+    rii->canInferFromTrue  = condHoldsWhenDomTrue;
+    rii->canInferFromFalse = !condHoldsWhenDomTrue;
+    rii->reverseSense      = condHoldsWhenDomTrue ? !treeValueUnderCond : treeValueUnderCond;
 
-    JITDUMP("Can infer tree IsInstanceOf outcome from dominating IsInstanceOf: "
-            "compareTypesForCast(dom, tree) = %s, canInferFromTrue = %s, canInferFromFalse = %s, reverseSense = %s\n",
-            (castResult == TypeCompareState::Must) ? "Must" : "MustNot", rii->canInferFromTrue ? "true" : "false",
-            rii->canInferFromFalse ? "true" : "false", rii->reverseSense ? "true" : "false");
+    JITDUMP("Can infer tree IsInstanceOf outcome from dominating IsInstanceOf: forwardCast = %s, "
+            "reverseCast = %s, canInferFromTrue = %s, canInferFromFalse = %s, reverseSense = %s\n",
+            (forwardCast == TypeCompareState::Must) ? "Must"
+                                                    : ((forwardCast == TypeCompareState::MustNot) ? "MustNot" : "May"),
+            (reverseCast == TypeCompareState::Must) ? "Must"
+                                                    : ((reverseCast == TypeCompareState::MustNot) ? "MustNot" : "May"),
+            rii->canInferFromTrue ? "true" : "false", rii->canInferFromFalse ? "true" : "false",
+            rii->reverseSense ? "true" : "false");
 
     return true;
 }

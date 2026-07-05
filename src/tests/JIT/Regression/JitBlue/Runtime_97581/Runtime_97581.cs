@@ -92,6 +92,31 @@ public class Runtime_97581
         return 3;
     }
 
+    // False-implies-false: !(o is Program1) implies !(o is Derived1). If the outer
+    // check fails then the runtime type does not derive from Program1, so it cannot
+    // be a Derived1 either.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int MustFalseImpliesFalse(object o)
+    {
+        if (!(o is Program1))
+        {
+            if (o is Derived1) return 1; // must be folded to false
+            return 2;
+        }
+        return 3;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int MustFalseImpliesFalseNeTree(object o)
+    {
+        if (!(o is Program1))
+        {
+            if (!(o is Derived1)) return 1;
+            return 2;
+        }
+        return 3;
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -122,6 +147,16 @@ public class Runtime_97581
         if (MustNotInterfaceTree(dc)  != 1) return 141;
         if (MustNotInterfaceTree(p1)  != 3) return 142;
         if (MustNotInterfaceTree(str) != 3) return 143;
+
+        if (MustFalseImpliesFalse(p1)  != 3) return 151;
+        if (MustFalseImpliesFalse(d1)  != 3) return 152;
+        if (MustFalseImpliesFalse(str) != 2) return 153;
+        if (MustFalseImpliesFalse(p2)  != 2) return 154;
+
+        if (MustFalseImpliesFalseNeTree(p1)  != 3) return 161;
+        if (MustFalseImpliesFalseNeTree(d1)  != 3) return 162;
+        if (MustFalseImpliesFalseNeTree(str) != 1) return 163;
+        if (MustFalseImpliesFalseNeTree(p2)  != 1) return 164;
 
         return 100;
     }
