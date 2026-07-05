@@ -32,5 +32,13 @@ namespace System.Net.Security
         // Only meaningful when SocketHandle is also set; cleared once transferred
         // to the BIO (the BIO holds its own copy).
         internal byte[]? ReplayPrefix { get; set; }
+
+        // Preferred over ReplayPrefix: a socket-replay BIO already bound to the
+        // fd and pre-populated (via BioReadTlsFrame) with the ClientHello record.
+        // SafeSslHandle.Create adopts it as the SSL's read BIO — no separate
+        // managed pre-fetch buffer, no byte[] copy, no second BioNewSocketReplay
+        // allocation. Ownership transfers to the SSL* at Create time; the field
+        // is cleared afterwards.
+        internal SafeBioHandle? PreallocatedReadBio { get; set; }
     }
 }

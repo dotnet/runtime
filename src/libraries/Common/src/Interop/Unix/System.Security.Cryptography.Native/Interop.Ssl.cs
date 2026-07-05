@@ -525,16 +525,27 @@ namespace Microsoft.Win32.SafeHandles
         {
             SafeSocketHandle? socket = options.SocketHandle;
             bool useFd = socket is not null && !socket.IsInvalid;
+            SafeBioHandle? preallocatedReadBio = useFd ? options.PreallocatedReadBio : null;
             byte[]? replayPrefix = useFd ? options.ReplayPrefix : null;
-            bool useReplayBio = useFd && replayPrefix is not null;
+            bool usePreallocatedBio = preallocatedReadBio is not null;
+            bool useReplayBio = usePreallocatedBio || (useFd && replayPrefix is not null);
 
             SafeBioHandle? readBio = null;
             SafeBioHandle? writeBio = null;
-            if (useReplayBio)
+            if (usePreallocatedBio)
             {
-                // Deferred-server flow: managed pre-fetched the ClientHello off the
-                // socket to run a ServerOptionsSelectionCallback. Install a BIO that
-                // replays those bytes to OpenSSL, then delegates recv/send to the fd.
+                // Deferred-server flow (native pre-fetch): the caller populated a
+                // socket-replay BIO via BioReadTlsFrame; adopt it as the read BIO
+                // and create a peer write BIO for OpenSSL's outbound records.
+                // Clear the field so ownership transfer happens exactly once.
+                readBio = preallocatedReadBio;
+                options.PreallocatedReadBio = null;
+                writeBio = Interop.Ssl.BioNewSocketReplay(socket!, ReadOnlySpan<byte>.Empty);
+            }
+            else if (useReplayBio)
+            {
+                // Legacy deferred-server flow (managed pre-fetch): install a socket-
+                // replay BIO seeded with the peeked ClientHello bytes.
                 readBio = Interop.Ssl.BioNewSocketReplay(socket!, replayPrefix);
                 writeBio = Interop.Ssl.BioNewSocketReplay(socket!, ReadOnlySpan<byte>.Empty);
             }
