@@ -8014,6 +8014,12 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 {
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
+    if (call->IsGenericVirtual(this))
+    {
+        JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
+        return;
+    }
+
     bool hasPgoData = true;
 
     CORINFO_CLASS_HANDLE  likelyClasses[MAX_GDV_TYPE_CHECKS] = {};
@@ -8045,12 +8051,6 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         {
             hasPgoData = false;
         }
-    }
-
-    if (call->IsGenericVirtual(this))
-    {
-        JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
-        return;
     }
 
     // NativeAOT is the only target that currently supports getExactClasses-based GDV
