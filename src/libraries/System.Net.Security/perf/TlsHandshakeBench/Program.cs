@@ -86,14 +86,18 @@ public class TlsHandshakeBench
     private SslClientAuthenticationOptions _clientOptions = null!;
     private TlsContext _ctxBuffered = null!;
     private TlsContext _ctxFd = null!;
+    private TlsContext _ctxFdDeferred = null!;
     private IPEndPoint _listenerEp = null!;
     private Socket _listener = null!;
 
     [Params(SslProtocols.Tls12, SslProtocols.Tls13)]
     public SslProtocols Protocol { get; set; }
 
-    [Params(true, false)]
-    public bool AllowResume { get; set; }
+    // AllowTlsResume is fixed to false so every iteration measures a full handshake.
+    // Session resumption requires the shared TlsContext / SSL_CTX pattern (all sessions
+    // built from one context share the ticket cache); a per-session context can't resume
+    // by construction. This bench measures the full-handshake path.
+    public bool AllowResume => false;
 
     [GlobalSetup]
     public void Setup()
@@ -119,6 +123,12 @@ public class TlsHandshakeBench
         // TlsContext is allocated once and reused; SSL_CTX caching is the design point.
         _ctxBuffered = TlsContext.Create(_serverOptions);
         _ctxFd = TlsContext.Create(_serverOptions);
+        // Shared deferred context: SSL_CTX is allocated once (without cert) and reused
+        // across sessions. Each session supplies its cert via SetServerOptions, which
+        // installs it on the per-session SSL* (not the CTX). Matches what a real SNI-
+        // dispatching server would do when the cert varies per connection but the
+        // protocol/cipher config is stable.
+        _ctxFdDeferred = TlsContext.Create((SslServerAuthenticationOptions?)null);
 
         _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         _listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -132,6 +142,7 @@ public class TlsHandshakeBench
         _listener?.Dispose();
         _ctxBuffered?.Dispose();
         _ctxFd?.Dispose();
+        _ctxFdDeferred?.Dispose();
         _cert?.Dispose();
     }
 
@@ -192,6 +203,32 @@ public class TlsHandshakeBench
         if (!client.IsAuthenticated) throw new IOException("client fd handshake not complete");
 
         // session owns ss.SafeHandle; ss itself becomes unusable, so no explicit close needed.
+        GC.KeepAlive(ss);
+    }
+
+    // Same as TlsSession_Fd_Server but the server options (cert, protocols) are supplied
+    // AFTER the ClientHello arrives, via SetServerOptions. Exercises the socket-replay BIO
+    // path that feeds the peeked ClientHello bytes back to OpenSSL.
+    //
+    // Uses the SHARED _ctxFdDeferred (one SSL_CTX for all sessions) — matches the pattern
+    // an SNI-dispatching server would use. The delta vs TlsSession_Fd_Server isolates the
+    // pure pre-fetch + replay-BIO overhead (no per-session SSL_CTX allocation in it).
+    [Benchmark]
+    public async Task TlsSession_Fd_Deferred_Server()
+    {
+        (Socket cs, Socket ss) = await ConnectPairAsync();
+        ss.Blocking = false;
+
+        using var clientStream = new NetworkStream(cs, ownsSocket: true);
+        using var client = new SslStream(clientStream, leaveInnerStreamOpen: false);
+        using TlsSession session = TlsSession.Create(_ctxFdDeferred, ss.SafeHandle);
+
+        Task c = ClientHandshakeThenPingPongAsync(client);
+        Task s = RunOnDedicatedThreadAsync(() => DriveFdDeferredHandshakeAndPingPong(session, ss));
+        await Task.WhenAll(c, s);
+        if (!session.IsHandshakeComplete) throw new IOException("server fd deferred handshake not complete");
+        if (!client.IsAuthenticated) throw new IOException("client fd deferred handshake not complete");
+
         GC.KeepAlive(ss);
     }
 
@@ -424,6 +461,67 @@ public class TlsHandshakeBench
                     continue;
                 default:
                     throw new IOException($"Unexpected handshake status: {s}");
+            }
+        }
+    }
+
+    // Deferred-options fd driver: same as DriveFdHandshake but also handles the initial
+    // NeedsServerOptions suspension. The bench's per-connection cost thus includes the
+    // ClientHello pre-fetch, TryParseClientHello, SetServerOptions, and the socket-replay
+    // BIO installation that hands the peeked bytes back to OpenSSL.
+    private static void DriveFdDeferredHandshakeAndPingPong(TlsSession session, Socket socket)
+    {
+        TlsHandshakeBench bench = s_current!;
+        while (true)
+        {
+            TlsOperationStatus s = session.Handshake();
+            if (s == TlsOperationStatus.Complete) break;
+            switch (s)
+            {
+                case TlsOperationStatus.NeedsServerOptions:
+                    session.SetServerOptions(bench._serverOptions);
+                    continue;
+                case TlsOperationStatus.NeedsCertificateValidation:
+                    session.AcceptWithDefaultValidation();
+                    continue;
+                case TlsOperationStatus.WantRead:
+                    Probe.PollRead++;
+                    socket.Poll(-1, SelectMode.SelectRead);
+                    continue;
+                case TlsOperationStatus.WantWrite:
+                    Probe.PollWrite++;
+                    socket.Poll(-1, SelectMode.SelectWrite);
+                    continue;
+                default:
+                    throw new IOException($"Unexpected handshake status: {s}");
+            }
+        }
+        if (!session.IsHandshakeComplete) throw new IOException("fd deferred handshake not complete before ping/pong");
+
+        byte[] rx = new byte[1];
+        while (true)
+        {
+            TlsOperationStatus s = session.Read(rx, out int produced);
+            if (produced == 1) { if (rx[0] != 0xAB) throw new IOException("fd deferred ping mismatch"); break; }
+            switch (s)
+            {
+                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                default: throw new IOException($"fd deferred read status {s}");
+            }
+        }
+        byte[] tx = new byte[1] { 0xCD };
+        int sent = 0;
+        while (sent < 1)
+        {
+            TlsOperationStatus s = session.Write(tx.AsSpan(sent), out int consumed);
+            sent += consumed;
+            if (sent == 1) break;
+            switch (s)
+            {
+                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                default: throw new IOException($"fd deferred write status {s}");
             }
         }
     }

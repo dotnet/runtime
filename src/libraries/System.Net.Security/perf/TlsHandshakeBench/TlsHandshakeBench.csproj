@@ -16,7 +16,7 @@
     <EnableAnalyzers>false</EnableAnalyzers>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <RunAnalyzers>false</RunAnalyzers>
-    <NoWarn>$(NoWarn);CA2007;CA2025;CS3016;CS1591</NoWarn>
+    <NoWarn>$(NoWarn);CA2007;CA2025;CS3016;CS1591;SYSLIB5007</NoWarn>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <CLSCompliant>false</CLSCompliant>
     <GenerateAssemblyCLSCompliantAttribute>false</GenerateAssemblyCLSCompliantAttribute>
