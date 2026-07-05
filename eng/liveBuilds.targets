@@ -245,8 +245,7 @@
         $(LibrariesSharedFrameworkDir)*.a;
         $(LibrariesSharedFrameworkDir)*.dat;
         "
-        Exclude="$(LibrariesSharedFrameworkDir)libminipal.a;
-                 $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
+        Exclude="$(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
                  $(LibrariesSharedFrameworkDir)libz.a"
         IsNative="true" />
 
