@@ -17,6 +17,7 @@
 
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" TargetPath="Sdk" />
 
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />

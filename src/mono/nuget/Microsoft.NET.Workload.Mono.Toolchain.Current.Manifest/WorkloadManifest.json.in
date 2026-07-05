@@ -15,6 +15,15 @@
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64" ]
     },
+    "wasm-tools-coreclr": {
+      "description": ".NET WebAssembly build tools (CoreCLR) for ${NetVersion}.0",
+      "packs": [
+        "Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}",
+        "Microsoft.NET.Sdk.WebAssembly.Pack.${NetVersion}"
+      ],
+      "extends": [ "microsoft-net-sdk-emscripten" ],
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64" ]
+    },
     "wasm-experimental": {
       "description": ".NET WebAssembly experimental tooling for ${NetVersion}.0",
       "packs": [
