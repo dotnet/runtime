@@ -43,7 +43,7 @@ namespace System.Runtime.Intrinsics.Wasm
 
         public static Vector128<short> MultiplyRoundedQ15(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
-        public static Vector128<short> DotProduct(Vector128<byte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
-        public static Vector128<int>   DotProductAdd(Vector128<byte> left, Vector128<sbyte> right, Vector128<int> accumulator) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> DotProduct(Vector128<sbyte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>   DotProductAdd(Vector128<sbyte> left, Vector128<byte> right, Vector128<int> accumulator) { throw new PlatformNotSupportedException(); }
     }
 }

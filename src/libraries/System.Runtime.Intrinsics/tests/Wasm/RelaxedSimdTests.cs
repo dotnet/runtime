@@ -18,23 +18,24 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         public unsafe void RelaxedSimdIsSupportedReflects()
         {
             MethodInfo methodInfo = typeof(RelaxedSimd).GetMethod("get_IsSupported");
+            Assert.NotNull(methodInfo);
             Assert.Equal(RelaxedSimd.IsSupported, methodInfo.Invoke(null, null));
         }
 
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
         public unsafe void DotProductByteSByteMatchesScalar()
         {
-            // For inputs where each (byte, sbyte) product fits in int16 (which the i7 constraint
-            // on the second operand guarantees) the relaxed dot product equals the scalar pairwise
-            // multiply-add. We use small positive sbytes so the i7 contract holds.
-            var u = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            var s = Vector128.Create((sbyte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
+            // Per the finished spec, `a` is signed and `b` is unsigned-7-bit. When every lane
+            // of `b` is in [0, 127] every implementation must match a straightforward
+            // pairwise (sbyte, byte) -> int16 multiply-add.
+            var s = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
+            var u = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
 
-            Vector128<short> actual = RelaxedSimd.DotProduct(u, s);
+            Vector128<short> actual = RelaxedSimd.DotProduct(s, u);
 
             for (int i = 0; i < 8; i++)
             {
-                short expected = (short)(u[2 * i] * s[2 * i] + u[2 * i + 1] * s[2 * i + 1]);
+                short expected = (short)(s[2 * i] * u[2 * i] + s[2 * i + 1] * u[2 * i + 1]);
                 Assert.Equal(expected, actual[i]);
             }
         }
@@ -42,17 +43,17 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
         public unsafe void DotProductAddByteSByteMatchesScalar()
         {
-            var u = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            var s = Vector128.Create((sbyte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
+            var s = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
+            var u = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
             var acc = Vector128.Create(100, 200, 300, 400);
 
-            Vector128<int> actual = RelaxedSimd.DotProductAdd(u, s, acc);
+            Vector128<int> actual = RelaxedSimd.DotProductAdd(s, u, acc);
 
             for (int i = 0; i < 4; i++)
             {
                 int expected = acc[i];
                 for (int j = 0; j < 4; j++)
-                    expected += u[4 * i + j] * s[4 * i + j];
+                    expected += s[4 * i + j] * u[4 * i + j];
                 Assert.Equal(expected, actual[i]);
             }
         }
@@ -60,8 +61,10 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
         [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
         public unsafe void MultiplyAddFloatMatchesScalarApproximately()
         {
-            // Relaxed FMA may or may not round the intermediate product; verify the result is at
-            // most one ULP from the unfused result.
+            // Relaxed FMA may or may not round the intermediate product; verify the result is
+            // within a small relative tolerance of the unfused result. float.Epsilon is a
+            // subnormal (~1.4e-45) and is not a meaningful ULP scale for this comparison, so we
+            // use a plain relative epsilon calibrated for single precision.
             var a = Vector128.Create(1.5f, 2.25f, -3.125f, 4.0f);
             var b = Vector128.Create(2.0f, -1.5f, 0.5f, 6.25f);
             var c = Vector128.Create(0.5f, 1.0f, -0.25f, -2.0f);
@@ -69,10 +72,12 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Vector128<float> actual = RelaxedSimd.MultiplyAddEstimate(a, b, c);
             Vector128<float> unfused = (a * b) + c;
 
+            const float RelativeTolerance = 1e-5f;
             for (int i = 0; i < 4; i++)
             {
-                Assert.True(Math.Abs(actual[i] - unfused[i]) <= Math.Max(Math.Abs(unfused[i]), 1.0f) * float.Epsilon * 8,
-                    $"lane {i}: relaxed FMA {actual[i]} differs from unfused {unfused[i]} by more than 8 ULP");
+                float tolerance = Math.Max(Math.Abs(unfused[i]), 1.0f) * RelativeTolerance;
+                Assert.True(Math.Abs(actual[i] - unfused[i]) <= tolerance,
+                    $"lane {i}: relaxed FMA {actual[i]} differs from unfused {unfused[i]} by more than {tolerance}");
             }
         }
 

@@ -11931,7 +11931,7 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<short> MultiplyRoundedQ15(Vector128<short> left, Vector128<short> right) { throw null; }
-        public static Vector128<short> DotProduct(Vector128<byte> left, Vector128<sbyte> right) { throw null; }
-        public static Vector128<int> DotProductAdd(Vector128<byte> left, Vector128<sbyte> right, Vector128<int> accumulator) { throw null; }
+        public static Vector128<short> DotProduct(Vector128<sbyte> left, Vector128<byte> right) { throw null; }
+        public static Vector128<int> DotProductAdd(Vector128<sbyte> left, Vector128<byte> right, Vector128<int> accumulator) { throw null; }
     }
 }

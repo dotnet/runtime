@@ -126,16 +126,18 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<short> MultiplyRoundedQ15(Vector128<short> left, Vector128<short> right) => MultiplyRoundedQ15(left, right);
 
-        // Relaxed dot products for mixed unsigned-by-signed bytes. The second operand is interpreted
-        // as signed but its lanes must be in the range [-64, 127] (the "i7" constraint); lanes whose
-        // value falls outside this range produce implementation-defined results.
+        // Relaxed dot products for signed-by-unsigned bytes. Per the finished spec pseudocode,
+        // operand `a` is signed and operand `b` is unsigned 7-bit; when any lane of `b` has the
+        // high bit set that lane's product is implementation-defined (may be interpreted as
+        // signed or unsigned). The pairwise/adjacent summation is also implementation-defined
+        // saturating (may or may not saturate on overflow).
 
-        /// <summary>  i16x8.relaxed_dot_i8x16_i7x16_s — multiplies adjacent (byte, sbyte) pairs and sums each pair into a signed 16-bit lane.</summary>
+        /// <summary>  i16x8.relaxed_dot_i8x16_i7x16_s — multiplies adjacent (sbyte, byte) pairs and sums each pair into a signed 16-bit lane.</summary>
         [Intrinsic]
-        public static Vector128<short> DotProduct(Vector128<byte> left, Vector128<sbyte> right) => DotProduct(left, right);
+        public static Vector128<short> DotProduct(Vector128<sbyte> left, Vector128<byte> right) => DotProduct(left, right);
 
-        /// <summary>  i32x4.relaxed_dot_i8x16_i7x16_add_s — multiplies four adjacent (byte, sbyte) pairs, sums them with a signed 32-bit accumulator, and returns the result.</summary>
+        /// <summary>  i32x4.relaxed_dot_i8x16_i7x16_add_s — multiplies four adjacent (sbyte, byte) pairs, sums them with a signed 32-bit accumulator, and returns the result.</summary>
         [Intrinsic]
-        public static Vector128<int> DotProductAdd(Vector128<byte> left, Vector128<sbyte> right, Vector128<int> accumulator) => DotProductAdd(left, right, accumulator);
+        public static Vector128<int> DotProductAdd(Vector128<sbyte> left, Vector128<byte> right, Vector128<int> accumulator) => DotProductAdd(left, right, accumulator);
     }
 }

@@ -1371,8 +1371,18 @@ emit_sri_relaxedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 	}
 
 #if defined(HOST_BROWSER) || defined(HOST_WASI)
-	if (!mono_interp_relaxed_simd_supported)
+	if (!mono_interp_relaxed_simd_supported) {
+		// IsSupported has already been handled above and returns false when the interp
+		// build did not link the relaxed-simd variant. Well-behaved callers gate on
+		// RelaxedSimd.IsSupported and never reach this point. Reflection or explicit
+		// bypass could still land here; because the managed body of every RelaxedSimd
+		// intrinsic is a self-recursive stub, returning FALSE here would cause the
+		// interpreter to loop through the stub. That matches the general risk pattern
+		// for all wasm intrinsic classes (PackedSimd, WasmBase) and is documented in
+		// the class-level XML remarks; a dedicated PlatformNotSupportedException throw
+		// is tracked as a follow-up covering all wasm intrinsic classes uniformly.
 		return FALSE;
+	}
 
 	if (!vector_klass)
 		return FALSE;
