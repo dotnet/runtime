@@ -685,9 +685,9 @@ namespace ILCompiler
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scannerCompiledMethods,
-                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || IsRelatedToInvalidInput(method));
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || IsRelatedToInvalidInput(method) || method != method.GetCanonMethodTarget(CanonicalFormKind.Specific));
                 DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scannerConstructedTypes,
-                    "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
+                    "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType) || type != type.ConvertToCanonForm(CanonicalFormKind.Specific));
 
                 static bool IsRelatedToInvalidInput(MethodDesc method)
                 {
@@ -711,9 +711,9 @@ namespace ILCompiler
                     // We additionally skip methods in SIMD module because there's just too many intrisics to handle and IL scanner
                     // doesn't expand them. They would show up as noisy diffs.
                     DiffCompilationResults(ref dummy, scannerCompiledMethods, compilationResults.CompiledMethodBodies,
-                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.OwningType.IsIntrinsic);
+                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.OwningType.IsIntrinsic || method != method.GetCanonMethodTarget(CanonicalFormKind.Specific));
                     DiffCompilationResults(ref dummy, scannerConstructedTypes, compilationResults.ConstructedEETypes,
-                        "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
+                        "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType) || type != type.ConvertToCanonForm(CanonicalFormKind.Specific));
                 }
 
                 if (scanningFail)
