@@ -5540,7 +5540,8 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
             else if (idxRng.IsConstantRange() && idxRng.LowerLimit().GetConstant() >= 0)
             {
                 // Get the range of the previously checked index for the same array length.
-                Range rngOfPrevIdx = RangeCheck::GetRangeFromAssertions(this, curAssertion.GetOp1().GetVN(), nullptr);
+                Range rngOfPrevIdx =
+                    RangeCheck::GetRangeFromAssertions(this, curAssertion.GetOp1().GetVN(), BitVecOps::UninitVal());
 
                 // We know the range of the previous index, we know the range of the current index.
                 //
