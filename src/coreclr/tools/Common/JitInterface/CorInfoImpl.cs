@@ -826,13 +826,11 @@ namespace Internal.JitInterface
                 methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_SAVE_CONTEXTS;
             }
 
-#if !READYTORUN
             if (method.SupportsAsyncVersionCodegen())
             {
                 // This is an async version and the IL belongs to the sync version.
                 methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_VERSION;
             }
-#endif
 
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
@@ -1657,7 +1655,7 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            variantIsThunk = method?.IsAsyncThunk() ?? false;
+            variantIsThunk = method.IsAsyncThunk();
             return ObjectToHandle(method);
         }
 
@@ -3599,11 +3597,8 @@ namespace Internal.JitInterface
             instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
             instArg.constLookup.addr = null;
 
-#if READYTORUN
-            return null;
-#else
             MethodDesc caller = HandleToObject(callerHandle);
-            Debug.Assert(caller.IsAsyncVariant() && caller.IsAsyncThunk());
+            Debug.Assert(caller.SupportsAsyncVersionCodegen());
 
             MethodDesc taskReturningMethod = caller.GetTargetOfAsyncVariant();
             TypeDesc taskReturnType = taskReturningMethod.Signature.ReturnType;
@@ -3638,12 +3633,30 @@ namespace Internal.JitInterface
 
             if (result.RequiresInstArg())
             {
+#if READYTORUN
+                if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
+                {
+                    // TODO-Async: the instantiation argument would have to be obtained through a runtime
+                    // generic dictionary lookup, which is not yet emitted here, so defer to the runtime JIT.
+                    throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
+                }
+
+                instArg.constLookup = CreateConstLookupToSymbol(
+                    _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        new MethodWithToken(
+                            runtimeDeterminedResult,
+                            _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(runtimeDeterminedResult, allowDynamicallyCreatedReference: true, throwIfNotFound: true),
+                            constrainedType: null,
+                            unboxing: false,
+                            genericContextObject: caller)));
+#else
                 // Runtime lookup is needed
                 ComputeLookup(caller != MethodBeingCompiled, runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
+#endif
             }
 
             return ObjectToHandle(result);
-#endif
         }
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)

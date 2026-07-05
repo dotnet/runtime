@@ -266,7 +266,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         {
 
             NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
-            if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
+            if (intrinsicId == NI_Vector_op_Division)
             {
                 SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
                 SetThrowHelperBlock(SCK_OVERFLOW, block);

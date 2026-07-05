@@ -28,6 +28,7 @@ void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
 HijackKind GetHijackKind(TargetCodePointer controlPC);
+TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData)
 ```
 
 ## Version 1
@@ -187,5 +188,34 @@ HijackKind GetHijackKind(TargetCodePointer controlPC)
         }
     }
     return HijackKind.None;
+}
+
+private TargetPointer GetHijackAddress()
+{
+    // Returns the start address of the unhandled-exception hijack function
+    // (index UnhandledExceptionHijackIndex == 0 in the RgHijackFunction array).
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return TargetPointer.Null;
+
+    TargetPointer rgHijack = target.ReadPointer(
+        debuggerAddress + /* Debugger::RgHijackFunction offset */);
+    if (rgHijack == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    uint maxHijackFunctions = target.ReadGlobal<uint>("MaxHijackFunctions");
+    if (UnhandledExceptionHijackIndex >= maxHijackFunctions)
+        return TargetPointer.Null;
+
+    uint stride = // Size of one MemoryRange entry
+    TargetPointer entryAddress = rgHijack + (ulong)(UnhandledExceptionHijackIndex * stride);
+    return target.ReadPointer(entryAddress + /* MemoryRange::StartAddress offset */);
+}
+
+TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData)
+{
+    // Finds hijack address via GetHijackAddress.
+    // Writes the exception record and context into the target stack as necessary.
+    // Places the arguments to ExceptionHijackWorker as dictated by the native ABI.
+    // Mutates stack pointer and context as necessary.
 }
 ```

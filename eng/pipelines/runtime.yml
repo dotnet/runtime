@@ -1133,10 +1133,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using Native AOT and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1145,7 +1143,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1178,10 +1176,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using CoreCLR and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1190,7 +1186,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

@@ -3409,7 +3409,7 @@ CreateCrashDumpIfEnabled(bool stackoverflow)
     {
         if (stackoverflow)
         {
-            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper"));
+            HandleHolder createDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper")) };
             if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
             {
                 // Wait for the dump to be generated

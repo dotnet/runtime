@@ -75,6 +75,11 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
     public virtual bool IsByRefLike(TypeHandle typeHandle);
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
+    public virtual bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
@@ -339,6 +344,9 @@ internal partial struct RuntimeTypeSystem_1
 
         IsByRefLike = 0x00001000,                        // value type that may contain managed pointers (e.g. Span<T>, ReadOnlySpan<T>)
 
+        IsHFA = 0x00000800,                              // ARM/ARM64 only (FEATURE_HFA): Homogeneous Floating-point Aggregate.
+                                                         // On UNIX_AMD64_ABI this bit is reused as IsRegStructPassed.
+
         StringArrayValues = GenericsMask_NonGeneric,
     }
 
@@ -371,6 +379,7 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS2_ENUM : uint
     {
         DynamicStatics = 0x0002,
+        IsIntrinsicType = 0x0020,
     }
 
     // Encapsulates the MethodTable flags v1 uses
@@ -410,10 +419,12 @@ internal partial struct RuntimeTypeSystem_1
         public bool RequiresAlign8 => GetFlag(WFLAGS_HIGH.RequiresAlign8) != 0;
         public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+        public bool IsIntrinsicType => GetFlag(WFLAGS2_ENUM.IsIntrinsicType) != 0;
         public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
         public bool IsSharedByGenericInstantiations => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_SharedInst);
         public bool IsByRefLike => TestFlagWithMask(WFLAGS_LOW.IsByRefLike, WFLAGS_LOW.IsByRefLike);
+        public bool IsHFA => TestFlagWithMask(WFLAGS_LOW.IsHFA, WFLAGS_LOW.IsHFA);
     }
 
     [Flags]
@@ -679,6 +690,35 @@ Contracts used:
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+
+    // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. Pseudocode:
+    //
+    //   TryGetHFAElementSize(th):
+    //       if targetArch is not ARM/ARM64:               return false
+    //       if !th.Flags.IsHFA:                           return false
+    //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign8 ? 8 : 4)
+    //       mt = th
+    //       loop (bounded depth):
+    //           if (elem = GetVectorHFAElementSize(mt)):  return (true, elem)
+    //           field = first non-static field of mt
+    //           if field is null:                         return false
+    //           switch field.ElementType:
+    //               R4:        return (true, 4)
+    //               R8:        return (true, 8)
+    //               ValueType: mt = GetFieldDescApproxTypeHandle(field); continue
+    //               default:   return false
+    //
+    //   GetVectorHFAElementSize(mt):                      // detects HVA shapes
+    //       if !mt.Flags.IsIntrinsicType:                 return 0
+    //       (ns, name) = typedef name+namespace via EcmaMetadata
+    //       elem = match on (ns, name):
+    //           "System.Numerics", "Vector`1":            NumInstanceFieldBytes (8 or 16, else 0)
+    //           "System.Runtime.Intrinsics", "Vector128`1": 16
+    //           "System.Runtime.Intrinsics", "Vector64`1":  8
+    //           _:                                          return 0
+    //       if !CorIsNumericalType(GetInstantiation(mt)[0]): return 0
+    //       return elem
+    public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize) { ... }
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
