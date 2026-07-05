@@ -19,13 +19,13 @@ namespace System.Net.Security
         // Socket that will be bound to OpenSSL once server options are resolved.
         // Non-null only in the deferred-server socket-bound flow: the session
         // returns nativeBindingEnabled=false so the managed pre-fetch loop can
-        // parse the ClientHello and surface NeedsServerOptions. OnServerOptionsSet
+        // parse the ClientHello and surface NeedsServerOptions. OnServerContextSet
         // then activates fd-mode with the peeked bytes replayed via the socket BIO.
         private SafeSocketHandle? _pendingFdSocket;
 
         // Socket-replay BIO populated by TryPeekClientHello via BioReadTlsFrame. Holds
         // the ClientHello record buffered off the fd; the same BIO becomes the SSL's
-        // read BIO once OnServerOptionsSet transfers ownership to _options.PreallocatedReadBio.
+        // read BIO once OnServerContextSet transfers ownership to _options.PreallocatedReadBio.
         // Freed by OnDispose if the session is disposed before that handoff runs.
         private SafeBioHandle? _peekBio;
 
@@ -37,7 +37,7 @@ namespace System.Net.Security
         // Server sessions created without options up front (SNI-driven callback)
         // cannot go fd-mode immediately: SSL_set_fd would let OpenSSL consume the
         // ClientHello before managed code sees SNI. Defer binding until
-        // OnServerOptionsSet runs; until then the session uses the managed loop.
+        // OnServerContextSet runs; until then the session uses the managed loop.
         partial void EnableNativeSocketBinding(SafeSocketHandle socket, ref bool nativeBindingEnabled)
         {
             if (_context.IsServer && !_hasServerOptions)
@@ -56,7 +56,7 @@ namespace System.Net.Security
         // NeedsServerOptions. In the deferred socket-bound flow, hand the peeked
         // ClientHello bytes to a socket-replay BIO so OpenSSL sees them, then
         // switch subsequent Handshake/Read/Write calls onto the fd-mode fast path.
-        partial void OnServerOptionsSet()
+        partial void OnServerContextSet()
         {
             if (_pendingFdSocket is null)
             {
@@ -160,7 +160,7 @@ namespace System.Net.Security
         }
 
         // Called from TlsSession.Dispose. If the caller disposed the session before
-        // OnServerOptionsSet transferred the peek BIO to _options.PreallocatedReadBio,
+        // OnServerContextSet transferred the peek BIO to _options.PreallocatedReadBio,
         // release it here so the native buffer / fd reference are freed.
         partial void OnDispose()
         {

@@ -108,15 +108,16 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
 
+                using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
                 Task serverHandshake = DriveHandshakeAsync(session, serverStream, hello =>
                 {
                     factoryCalls++;
                     observedSni = hello.ServerName;
-                    return new SslServerAuthenticationOptions
-                    {
-                        ServerCertificate = serverCert,
-                        EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-                    };
+                    return hostCtx;
                 });
 
                 await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
@@ -246,7 +247,7 @@ namespace System.Net.Security.Tests
         {
             // Null server options are allowed: the server-side session parses the ClientHello
             // and suspends on NeedsServerOptions so the caller can resolve options via
-            // SetServerOptions (e.g. SNI-driven). Only the client overload rejects null.
+            // SetServerContext (e.g. SNI-driven). Only the client overload rejects null.
             using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions)null!);
             Assert.True(ctx.IsServer);
 
@@ -1769,12 +1770,12 @@ namespace System.Net.Security.Tests
         }
 
         private static Task DriveHandshakeAsync(TlsSession session, Stream transport)
-            => DriveHandshakeAsync(session, transport, serverOptionsFactory: null);
+            => DriveHandshakeAsync(session, transport, serverContextFactory: null);
 
         private static async Task DriveHandshakeAsync(
             TlsSession session,
             Stream transport,
-            Func<SslClientHelloInfo, SslServerAuthenticationOptions>? serverOptionsFactory)
+            Func<SslClientHelloInfo, TlsContext>? serverContextFactory)
         {
             byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
@@ -1811,12 +1812,12 @@ namespace System.Net.Security.Tests
                             continue;
 
                         case TlsOperationStatus.NeedsServerOptions:
-                            if (serverOptionsFactory is null)
+                            if (serverContextFactory is null)
                             {
                                 throw new InvalidOperationException(
                                     "Handshake suspended on NeedsServerOptions but no factory was supplied.");
                             }
-                            session.SetServerOptions(serverOptionsFactory(session.ClientHelloInfo!.Value));
+                            session.SetServerContext(serverContextFactory(session.ClientHelloInfo!.Value));
                             continue;
 
                         case TlsOperationStatus.NeedsCertificateValidation:
@@ -2087,9 +2088,9 @@ namespace System.Net.Security.Tests
 
         // Socket-bound server session with deferred options. The handshake loop must
         // suspend on NeedsServerOptions, expose ClientHelloInfo (SNI), and continue
-        // after SetServerOptions. On the OpenSSL socket-bound fast path, the managed
+        // after SetServerContext. On the OpenSSL socket-bound fast path, the managed
         // pre-fetch loop peels the ClientHello off the socket to surface SNI, then
-        // SetServerOptions activates fd-mode with a socket-replay BIO that hands
+        // SetServerContext activates fd-mode with a socket-replay BIO that hands
         // those bytes to OpenSSL before the fd is consulted again.
         [Fact]
         public async Task SocketBoundSession_DeferredOptions_SelectedFromSni_Succeeds()
@@ -2114,6 +2115,11 @@ namespace System.Net.Security.Tests
             string? observedSni = null;
 
             using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+            using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+            });
             using TlsSession session = TlsSession.Create(ctx, serverHandle);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
@@ -2137,11 +2143,7 @@ namespace System.Net.Security.Tests
                     {
                         factoryCalls++;
                         observedSni = session.ClientHelloInfo!.Value.ServerName;
-                        session.SetServerOptions(new SslServerAuthenticationOptions
-                        {
-                            ServerCertificate = serverCert,
-                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-                        });
+                        session.SetServerContext(hostCtx);
                         continue;
                     }
                     if (s == TlsOperationStatus.NeedsCertificateValidation)
@@ -2177,6 +2179,16 @@ namespace System.Net.Security.Tests
             const string nameB = "tls-session-vhost-b.example";
 
             using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+            using TlsContext hostCtxA = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = certA,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+            });
+            using TlsContext hostCtxB = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = certB,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+            });
 
             for (int iter = 0; iter < 2; iter++)
             {
@@ -2230,12 +2242,8 @@ namespace System.Net.Security.Tests
                         if (s == TlsOperationStatus.NeedsServerOptions)
                         {
                             sniSeenByServer = session.ClientHelloInfo!.Value.ServerName;
-                            X509Certificate2 pick = string.Equals(sniSeenByServer, nameB, StringComparison.OrdinalIgnoreCase) ? certB : certA;
-                            session.SetServerOptions(new SslServerAuthenticationOptions
-                            {
-                                ServerCertificate = pick,
-                                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-                            });
+                            TlsContext pickCtx = string.Equals(sniSeenByServer, nameB, StringComparison.OrdinalIgnoreCase) ? hostCtxB : hostCtxA;
+                            session.SetServerContext(pickCtx);
                             continue;
                         }
                         if (s == TlsOperationStatus.NeedsCertificateValidation)
@@ -2262,7 +2270,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        // ApplicationProtocols supplied in the deferred SetServerOptions call must survive
+        // ApplicationProtocols supplied in the deferred SetServerContext call must survive
         // the handoff onto the fd-mode replay-BIO path and be honored by OpenSSL's ALPN
         // selection callback.
         [Fact]
@@ -2285,6 +2293,12 @@ namespace System.Net.Security.Tests
             SafeSocketHandle serverHandle = serverSocket.SafeHandle;
 
             using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+            using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
+            });
             using TlsSession session = TlsSession.Create(ctx, serverHandle);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
@@ -2307,12 +2321,7 @@ namespace System.Net.Security.Tests
                     }
                     if (s == TlsOperationStatus.NeedsServerOptions)
                     {
-                        session.SetServerOptions(new SslServerAuthenticationOptions
-                        {
-                            ServerCertificate = serverCert,
-                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-                            ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
-                        });
+                        session.SetServerContext(hostCtx);
                         continue;
                     }
                     if (s == TlsOperationStatus.NeedsCertificateValidation)
@@ -2334,7 +2343,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(SslApplicationProtocol.Http2, clientSsl.NegotiatedApplicationProtocol);
         }
 
-        // Deferred SetServerOptions with an EnabledSslProtocols set that has no overlap
+        // Deferred SetServerContext with an EnabledSslProtocols set that has no overlap
         // with the client's ClientHello must fail the handshake cleanly (no crash, no hang)
         // via the socket-replay BIO path.
         [Fact]
@@ -2357,6 +2366,11 @@ namespace System.Net.Security.Tests
             SafeSocketHandle serverHandle = serverSocket.SafeHandle;
 
             using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+            using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls13,
+            });
             using TlsSession session = TlsSession.Create(ctx, serverHandle);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
@@ -2378,11 +2392,7 @@ namespace System.Net.Security.Tests
                     }
                     if (s == TlsOperationStatus.NeedsServerOptions)
                     {
-                        session.SetServerOptions(new SslServerAuthenticationOptions
-                        {
-                            ServerCertificate = serverCert,
-                            EnabledSslProtocols = SslProtocols.Tls13,
-                        });
+                        session.SetServerContext(hostCtx);
                         continue;
                     }
                     if (s == TlsOperationStatus.NeedsCertificateValidation)

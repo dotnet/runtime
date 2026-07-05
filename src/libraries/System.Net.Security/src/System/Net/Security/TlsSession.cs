@@ -404,7 +404,7 @@ namespace System.Net.Security
         /// <see cref="ProcessHandshake"/> returns
         /// <see cref="TlsOperationStatus.NeedsServerOptions"/> after the context was
         /// created with null server options. Returns <see langword="null"/> at all
-        /// other times. The value is cleared after <see cref="SetServerOptions"/> is
+        /// other times. The value is cleared after <see cref="SetServerContext"/> is
         /// called.
         /// </summary>
         public SslClientHelloInfo? ClientHelloInfo
@@ -414,41 +414,6 @@ namespace System.Net.Security
                 ThrowIfDisposed();
                 return _clientHelloInfo;
             }
-        }
-
-        /// <summary>
-        /// Server-side only. Supplies the resolved server options when the session is
-        /// suspended on <see cref="TlsOperationStatus.NeedsServerOptions"/>. The next
-        /// <see cref="ProcessHandshake"/> call should be invoked with the same input
-        /// buffer (the ClientHello bytes the session returned uncomsumed).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if the session is not currently awaiting server options, or if
-        /// server options were already supplied at <see cref="TlsContext"/> creation.
-        /// </exception>
-        public void SetServerOptions(SslServerAuthenticationOptions options)
-        {
-            ArgumentNullException.ThrowIfNull(options);
-            ThrowIfDisposed();
-
-            if (!_context.IsServer)
-            {
-                throw new InvalidOperationException("SetServerOptions can only be called on a server-side session.");
-            }
-            if (_hasServerOptions)
-            {
-                throw new InvalidOperationException("Server options were already supplied when the TlsContext was created.");
-            }
-            if (_clientHelloInfo is null)
-            {
-                throw new InvalidOperationException("SetServerOptions can only be called after ProcessHandshake returned NeedsServerOptions.");
-            }
-
-            _options.UpdateOptions(options);
-            _hasServerOptions = true;
-            _clientHelloInfo = null;
-
-            OnServerOptionsSet();
         }
 
         /// <summary>
@@ -503,7 +468,7 @@ namespace System.Net.Security
             _hasServerOptions = true;
             _clientHelloInfo = null;
 
-            OnServerOptionsSet();
+            OnServerContextSet();
         }
 
         /// <summary>
@@ -728,7 +693,7 @@ namespace System.Net.Security
                     if (_securityContext is null)
                     {
                         // Deferred options: parse ClientHello and suspend so the caller can
-                        // supply server options via SetServerOptions. Leave input unconsumed
+                        // supply server options via SetServerContext. Leave input unconsumed
                         // (consumed = 0); the caller re-feeds the same bytes after resuming.
                         if (!_hasServerOptions)
                         {
@@ -2027,10 +1992,10 @@ namespace System.Net.Security
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result);
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result);
 
-        // Fires at the end of SetServerOptions. Platforms with a deferred-server
+        // Fires at the end of SetServerContext. Platforms with a deferred-server
         // fast path (OpenSSL socket-bound sessions) use this hook to activate
         // native binding now that server options are known.
-        partial void OnServerOptionsSet();
+        partial void OnServerContextSet();
 
         // Fires from Dispose so the OpenSSL partial can release the peek BIO if the
         // session is disposed before its ownership is transferred to an SSL* handle.

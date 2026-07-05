@@ -53,7 +53,7 @@ namespace System.Net.Security
         /// Server-side only. The peer's ClientHello has been received but no server options
         /// were supplied when the <see cref="TlsContext"/> was created. Inspect
         /// <see cref="TlsSession.ClientHelloInfo"/>, supply the resolved options via
-        /// <see cref="TlsSession.SetServerOptions"/>, and call
+        /// <see cref="TlsSession.SetServerContext"/>, and call
         /// <see cref="TlsSession.ProcessHandshake"/> again with the same input.
         /// </summary>
         NeedsServerOptions = 6,

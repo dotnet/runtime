@@ -123,11 +123,9 @@ public class TlsHandshakeBench
         // TlsContext is allocated once and reused; SSL_CTX caching is the design point.
         _ctxBuffered = TlsContext.Create(_serverOptions);
         _ctxFd = TlsContext.Create(_serverOptions);
-        // Shared deferred context: SSL_CTX is allocated once (without cert) and reused
-        // across sessions. Each session supplies its cert via SetServerOptions, which
-        // installs it on the per-session SSL* (not the CTX). Matches what a real SNI-
-        // dispatching server would do when the cert varies per connection but the
-        // protocol/cipher config is stable.
+        // Bootstrap context used by the deferred socket-bound flow: no cert baked in,
+        // sessions are created against it and then re-parented to a per-tenant TlsContext
+        // via SetServerContext(...) once the ClientHello arrives.
         _ctxFdDeferred = TlsContext.Create((SslServerAuthenticationOptions?)null);
 
         _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -206,36 +204,10 @@ public class TlsHandshakeBench
         GC.KeepAlive(ss);
     }
 
-    // Same as TlsSession_Fd_Server but the server options (cert, protocols) are supplied
-    // AFTER the ClientHello arrives, via SetServerOptions. Exercises the socket-replay BIO
-    // path that feeds the peeked ClientHello bytes back to OpenSSL.
-    //
-    // Uses the SHARED _ctxFdDeferred (one SSL_CTX for all sessions) — matches the pattern
-    // an SNI-dispatching server would use. The delta vs TlsSession_Fd_Server isolates the
-    // pure pre-fetch + replay-BIO overhead (no per-session SSL_CTX allocation in it).
-    [Benchmark]
-    public async Task TlsSession_Fd_Deferred_Server()
-    {
-        (Socket cs, Socket ss) = await ConnectPairAsync();
-        ss.Blocking = false;
-
-        using var clientStream = new NetworkStream(cs, ownsSocket: true);
-        using var client = new SslStream(clientStream, leaveInnerStreamOpen: false);
-        using TlsSession session = TlsSession.Create(_ctxFdDeferred, ss.SafeHandle);
-
-        Task c = ClientHandshakeThenPingPongAsync(client);
-        Task s = RunOnDedicatedThreadAsync(() => DriveFdDeferredHandshakeAndPingPong(session, ss));
-        await Task.WhenAll(c, s);
-        if (!session.IsHandshakeComplete) throw new IOException("server fd deferred handshake not complete");
-        if (!client.IsAuthenticated) throw new IOException("client fd deferred handshake not complete");
-
-        GC.KeepAlive(ss);
-    }
-
     // Same as TlsSession_Fd_Deferred_Server but the caller resolves the ClientHello to a
     // pre-warmed TlsContext from a pool (here: the shared _ctxFd already carries the cert
     // + protocols + ticket cache for the target virtual host) and calls SetServerContext
-    // instead of SetServerOptions. Measures the throughput improvement of the caller-
+    // instead of SetServerContext. Measures the throughput improvement of the caller-
     // managed TlsContext pool pattern: SSL_CTX reuse, per-tenant ticket cache preserved.
     [Benchmark]
     public async Task TlsSession_Fd_Deferred_Pool_Server()
@@ -489,69 +461,8 @@ public class TlsHandshakeBench
         }
     }
 
-    // Deferred-options fd driver: same as DriveFdHandshake but also handles the initial
-    // NeedsServerOptions suspension. The bench's per-connection cost thus includes the
-    // ClientHello pre-fetch, TryParseClientHello, SetServerOptions, and the socket-replay
-    // BIO installation that hands the peeked bytes back to OpenSSL.
-    private static void DriveFdDeferredHandshakeAndPingPong(TlsSession session, Socket socket)
-    {
-        TlsHandshakeBench bench = s_current!;
-        while (true)
-        {
-            TlsOperationStatus s = session.Handshake();
-            if (s == TlsOperationStatus.Complete) break;
-            switch (s)
-            {
-                case TlsOperationStatus.NeedsServerOptions:
-                    session.SetServerOptions(bench._serverOptions);
-                    continue;
-                case TlsOperationStatus.NeedsCertificateValidation:
-                    session.AcceptWithDefaultValidation();
-                    continue;
-                case TlsOperationStatus.WantRead:
-                    Probe.PollRead++;
-                    socket.Poll(-1, SelectMode.SelectRead);
-                    continue;
-                case TlsOperationStatus.WantWrite:
-                    Probe.PollWrite++;
-                    socket.Poll(-1, SelectMode.SelectWrite);
-                    continue;
-                default:
-                    throw new IOException($"Unexpected handshake status: {s}");
-            }
-        }
-        if (!session.IsHandshakeComplete) throw new IOException("fd deferred handshake not complete before ping/pong");
-
-        byte[] rx = new byte[1];
-        while (true)
-        {
-            TlsOperationStatus s = session.Read(rx, out int produced);
-            if (produced == 1) { if (rx[0] != 0xAB) throw new IOException("fd deferred ping mismatch"); break; }
-            switch (s)
-            {
-                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
-                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
-                default: throw new IOException($"fd deferred read status {s}");
-            }
-        }
-        byte[] tx = new byte[1] { 0xCD };
-        int sent = 0;
-        while (sent < 1)
-        {
-            TlsOperationStatus s = session.Write(tx.AsSpan(sent), out int consumed);
-            sent += consumed;
-            if (sent == 1) break;
-            switch (s)
-            {
-                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
-                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
-                default: throw new IOException($"fd deferred write status {s}");
-            }
-        }
-    }
-
     // Deferred fd driver that resolves NeedsServerOptions via SetServerContext (pool
-    // pattern) instead of SetServerOptions. Uses the bench's pre-warmed _ctxFd as the
+    // pattern) instead of SetServerContext. Uses the bench's pre-warmed _ctxFd as the
     // pooled virtual-host context; SSL_CTX is already allocated and cert-installed on
     // it, so the deferred session just adopts that CTX for the rest of the handshake.
     private static void DriveFdDeferredContextHandshakeAndPingPong(TlsSession session, Socket socket)
