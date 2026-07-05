@@ -547,6 +547,11 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_V
 //
 Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
+    if (vn == ValueNumStore::NoVN)
+    {
+        return Limit(Limit::keUnknown);
+    }
+
     ValueNumStore::SmallValueNumSet set;
     return GetRangeFromAssertionsWorker(comp, vn, assertions, budget, &set);
 }
