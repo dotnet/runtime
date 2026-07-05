@@ -230,7 +230,7 @@
        served binary would be the original (runtime pack) dotnet.native.wasm. -->
   <Target Name="_CoreCLRWasmNativeForBuild"
           DependsOnTargets="WasmBuildApp"
-          BeforeTargets="_ResolveWasmOutputs"
+          BeforeTargets="_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
