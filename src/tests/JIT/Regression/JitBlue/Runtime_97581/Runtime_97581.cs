@@ -54,6 +54,19 @@ public class Runtime_97581
         return 3;
     }
 
+    // Exact pattern from https://github.com/dotnet/runtime/issues/97581.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Issue97581Exact(object o)
+    {
+        if (o is Program1)
+        {
+            if (o is Program2)
+            {
+                System.Console.WriteLine("this branch is never taken");
+            }
+        }
+    }
+
     // Derived -> Base always holds: (o is Derived1) implies (o is Program1) true.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int MustEqTree(object o)
@@ -157,6 +170,11 @@ public class Runtime_97581
         if (MustFalseImpliesFalseNeTree(d1)  != 3) return 162;
         if (MustFalseImpliesFalseNeTree(str) != 1) return 163;
         if (MustFalseImpliesFalseNeTree(p2)  != 1) return 164;
+
+        // Just make sure the exact-issue method doesn't crash and produces no output.
+        Issue97581Exact(p1);
+        Issue97581Exact(p2);
+        Issue97581Exact(str);
 
         return 100;
     }
