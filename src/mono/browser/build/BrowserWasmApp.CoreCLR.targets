@@ -75,8 +75,12 @@
     <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
-  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
+  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods.
+       Only available in-tree (RepositoryEngineeringDir is set by the build system).
+       For the workload path we use EmSdkRepo.Defaults.props and inline the exported
+       functions/methods below. -->
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
+          Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
 
   <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set -->
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
@@ -91,6 +95,55 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+
+  <!-- Exported runtime methods and functions for the emcc link step.
+       In the in-tree path native.wasm.targets also defines a GenerateEmccExports target
+       with the same items plus NativeCMakeArg entries; the last definition wins in MSBuild
+       and the CMake args are unused during app relink, so the override is harmless. -->
+  <Target Name="GenerateEmccExports"
+          Condition="'$(TargetsBrowser)' == 'true'">
+    <ItemGroup>
+      <EmccExportedRuntimeMethod Include="FS" />
+      <EmccExportedRuntimeMethod Include="HEAP8" />
+      <EmccExportedRuntimeMethod Include="HEAP16" />
+      <EmccExportedRuntimeMethod Include="HEAPU8" />
+      <EmccExportedRuntimeMethod Include="HEAPU16" />
+      <EmccExportedRuntimeMethod Include="HEAP32" />
+      <EmccExportedRuntimeMethod Include="HEAPU32" />
+      <EmccExportedRuntimeMethod Include="HEAPF32" />
+      <EmccExportedRuntimeMethod Include="HEAPF64" />
+      <EmccExportedRuntimeMethod Include="HEAP64" />
+      <EmccExportedRuntimeMethod Include="HEAPU64" />
+      <EmccExportedRuntimeMethod Include="out" />
+      <EmccExportedRuntimeMethod Include="err" />
+      <EmccExportedRuntimeMethod Include="ccall" />
+      <EmccExportedRuntimeMethod Include="cwrap" />
+      <EmccExportedRuntimeMethod Include="setValue" />
+      <EmccExportedRuntimeMethod Include="getValue" />
+      <EmccExportedRuntimeMethod Include="UTF8ToString" />
+      <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
+      <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
+      <EmccExportedRuntimeMethod Include="safeSetTimeout" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
+      <EmccExportedRuntimeMethod Include="abort" />
+
+      <EmccExportedFunction Include="_free" />
+      <EmccExportedFunction Include="_htons" />
+      <EmccExportedFunction Include="_malloc" />
+      <EmccExportedFunction Include="_sbrk" />
+      <EmccExportedFunction Include="_memalign" />
+      <EmccExportedFunction Include="_posix_memalign" />
+      <EmccExportedFunction Include="_memset" />
+      <EmccExportedFunction Include="_ntohs" />
+      <EmccExportedFunction Include="stackAlloc" />
+      <EmccExportedFunction Include="stackRestore" />
+      <EmccExportedFunction Include="stackSave" />
+      <EmccExportedFunction Include="___stack_pointer" />
+      <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
+    </ItemGroup>
+  </Target>
 
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
