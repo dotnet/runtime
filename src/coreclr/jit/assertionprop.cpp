@@ -5550,7 +5550,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
                 if (rngOfPrevIdx.IsConstantRange() &&
                     (rngOfPrevIdx.LowerLimit().GetConstant() >= idxRng.UpperLimit().GetConstant()))
                 {
-                    return dropBoundsCheck(INDEBUG("current index is within the previous range"));
+                    return dropBoundsCheck(INDEBUG("currIdx upper bound covered by prevIdx lower bound"));
                 }
             }
         }
