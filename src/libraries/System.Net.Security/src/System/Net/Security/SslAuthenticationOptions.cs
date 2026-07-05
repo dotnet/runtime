@@ -228,6 +228,40 @@ namespace System.Net.Security
             return copy;
         }
 
+        // Bulk-copy field values from another options bag into this one. Used by
+        // TlsSession.SetServerContext to inherit a fully-configured server context's
+        // options into an existing session (whose bag was originally created empty
+        // from a deferred TlsContext.Create((SslServerAuthenticationOptions?)null)).
+        // Mirrors the field set copied by Clone(). Session-scoped state (SafeSslHandle,
+        // RemoteCertificateValidator, SocketHandle, ReplayPrefix, PreallocatedSslContext)
+        // is intentionally NOT copied — those belong to the receiving session.
+        internal void CopyFrom(SslAuthenticationOptions other)
+        {
+            AllowRenegotiation = other.AllowRenegotiation;
+            TargetHost = other.TargetHost;
+            ClientCertificates = other.ClientCertificates;
+            ApplicationProtocols = other.ApplicationProtocols;
+            IsServer = other.IsServer;
+            CertificateContext = other.CertificateContext;
+            OwnsCertificateContext = false;
+            EnabledSslProtocols = other.EnabledSslProtocols;
+            CertificateRevocationCheckMode = other.CertificateRevocationCheckMode;
+            EncryptionPolicy = other.EncryptionPolicy;
+            RemoteCertRequired = other.RemoteCertRequired;
+            CheckCertName = other.CheckCertName;
+            CertValidationDelegate = other.CertValidationDelegate;
+            CertSelectionDelegate = other.CertSelectionDelegate;
+            ServerCertSelectionDelegate = other.ServerCertSelectionDelegate;
+            CipherSuitesPolicy = other.CipherSuitesPolicy;
+            UserState = other.UserState;
+            ServerOptionDelegate = other.ServerOptionDelegate;
+            CertificateChainPolicy = other.CertificateChainPolicy;
+            AllowTlsResume = other.AllowTlsResume;
+            AllowRsaPssPadding = other.AllowRsaPssPadding;
+            AllowRsaPkcs1Padding = other.AllowRsaPkcs1Padding;
+            ForceSyncPal = other.ForceSyncPal;
+        }
+
         internal bool AllowRenegotiation { get; set; }
         internal string TargetHost { get; set; }
         internal X509CertificateCollection? ClientCertificates { get; set; }

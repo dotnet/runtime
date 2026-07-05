@@ -452,6 +452,61 @@ namespace System.Net.Security
         }
 
         /// <summary>
+        /// Server-side only. Resolves a session suspended on
+        /// <see cref="TlsOperationStatus.NeedsServerOptions"/> by supplying an
+        /// already-configured <see cref="TlsContext"/> whose SSL_CTX (and TLS
+        /// session-ticket cache) will back this session. Callers that maintain a
+        /// pool of virtual-host contexts (typically keyed by SNI + options fingerprint)
+        /// use this to steer the session onto the pre-warmed context matching the
+        /// ClientHello, preserving cross-connection resumption on a per-tenant basis.
+        /// </summary>
+        /// <param name="serverContext">A fully-configured server <see cref="TlsContext"/>.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="serverContext"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="serverContext"/> is not a server-side context.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the session is not currently awaiting server options, or if
+        /// server options were already supplied at <see cref="TlsContext"/> creation.
+        /// </exception>
+        public void SetServerContext(TlsContext serverContext)
+        {
+            ArgumentNullException.ThrowIfNull(serverContext);
+            ThrowIfDisposed();
+
+            if (!_context.IsServer)
+            {
+                throw new InvalidOperationException("SetServerContext can only be called on a server-side session.");
+            }
+            if (!serverContext.IsServer)
+            {
+                throw new ArgumentException("TlsContext must be server-side.", nameof(serverContext));
+            }
+            if (_hasServerOptions)
+            {
+                throw new InvalidOperationException("Server options were already supplied when the TlsContext was created.");
+            }
+            if (_clientHelloInfo is null)
+            {
+                throw new InvalidOperationException("SetServerContext can only be called after ProcessHandshake returned NeedsServerOptions.");
+            }
+
+            // Ask the supplied context for a session-options bag — this allocates its
+            // long-lived SSL_CTX (if not already) and stamps PreallocatedSslContext on
+            // the returned bag. Copy those fields (including PreallocatedSslContext) into
+            // our session's options so subsequent AllocateSslHandle picks up the passed
+            // context's SSL_CTX instead of falling back to the per-session cache path.
+            SslAuthenticationOptions serverOpts = serverContext.CreateSessionOptions();
+            _options.CopyFrom(serverOpts);
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+            _options.PreallocatedSslContext = serverOpts.PreallocatedSslContext;
+#endif
+
+            _hasServerOptions = true;
+            _clientHelloInfo = null;
+
+            OnServerOptionsSet();
+        }
+
+        /// <summary>
         /// Client-side only. Supplies the certificate context the session should send
         /// in response to the server's CertificateRequest. Intended to resolve a session
         /// suspended on <see cref="TlsOperationStatus.WantCredentials"/>: callers that need

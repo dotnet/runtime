@@ -232,6 +232,30 @@ public class TlsHandshakeBench
         GC.KeepAlive(ss);
     }
 
+    // Same as TlsSession_Fd_Deferred_Server but the caller resolves the ClientHello to a
+    // pre-warmed TlsContext from a pool (here: the shared _ctxFd already carries the cert
+    // + protocols + ticket cache for the target virtual host) and calls SetServerContext
+    // instead of SetServerOptions. Measures the throughput improvement of the caller-
+    // managed TlsContext pool pattern: SSL_CTX reuse, per-tenant ticket cache preserved.
+    [Benchmark]
+    public async Task TlsSession_Fd_Deferred_Pool_Server()
+    {
+        (Socket cs, Socket ss) = await ConnectPairAsync();
+        ss.Blocking = false;
+
+        using var clientStream = new NetworkStream(cs, ownsSocket: true);
+        using var client = new SslStream(clientStream, leaveInnerStreamOpen: false);
+        using TlsSession session = TlsSession.Create(_ctxFdDeferred, ss.SafeHandle);
+
+        Task c = ClientHandshakeThenPingPongAsync(client);
+        Task s = RunOnDedicatedThreadAsync(() => DriveFdDeferredContextHandshakeAndPingPong(session, ss));
+        await Task.WhenAll(c, s);
+        if (!session.IsHandshakeComplete) throw new IOException("server fd deferred-pool handshake not complete");
+        if (!client.IsAuthenticated) throw new IOException("client fd deferred-pool handshake not complete");
+
+        GC.KeepAlive(ss);
+    }
+
     // BDN's InProcessEmit drives the workload from a single thread via blocking
     // wait; using Task.Run for the server side competes for thread-pool threads
     // with SslStream's continuations and can starve under tight measurement loops.
@@ -522,6 +546,67 @@ public class TlsHandshakeBench
                 case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
                 case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
                 default: throw new IOException($"fd deferred write status {s}");
+            }
+        }
+    }
+
+    // Deferred fd driver that resolves NeedsServerOptions via SetServerContext (pool
+    // pattern) instead of SetServerOptions. Uses the bench's pre-warmed _ctxFd as the
+    // pooled virtual-host context; SSL_CTX is already allocated and cert-installed on
+    // it, so the deferred session just adopts that CTX for the rest of the handshake.
+    private static void DriveFdDeferredContextHandshakeAndPingPong(TlsSession session, Socket socket)
+    {
+        TlsHandshakeBench bench = s_current!;
+        while (true)
+        {
+            TlsOperationStatus s = session.Handshake();
+            if (s == TlsOperationStatus.Complete) break;
+            switch (s)
+            {
+                case TlsOperationStatus.NeedsServerOptions:
+                    session.SetServerContext(bench._ctxFd);
+                    continue;
+                case TlsOperationStatus.NeedsCertificateValidation:
+                    session.AcceptWithDefaultValidation();
+                    continue;
+                case TlsOperationStatus.WantRead:
+                    Probe.PollRead++;
+                    socket.Poll(-1, SelectMode.SelectRead);
+                    continue;
+                case TlsOperationStatus.WantWrite:
+                    Probe.PollWrite++;
+                    socket.Poll(-1, SelectMode.SelectWrite);
+                    continue;
+                default:
+                    throw new IOException($"Unexpected handshake status: {s}");
+            }
+        }
+        if (!session.IsHandshakeComplete) throw new IOException("fd deferred-pool handshake not complete before ping/pong");
+
+        byte[] rx = new byte[1];
+        while (true)
+        {
+            TlsOperationStatus s = session.Read(rx, out int produced);
+            if (produced == 1) { if (rx[0] != 0xAB) throw new IOException("fd deferred-pool ping mismatch"); break; }
+            switch (s)
+            {
+                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                default: throw new IOException($"fd deferred-pool read status {s}");
+            }
+        }
+        byte[] tx = new byte[1] { 0xCD };
+        int sent = 0;
+        while (sent < 1)
+        {
+            TlsOperationStatus s = session.Write(tx.AsSpan(sent), out int consumed);
+            sent += consumed;
+            if (sent == 1) break;
+            switch (s)
+            {
+                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                default: throw new IOException($"fd deferred-pool write status {s}");
             }
         }
     }

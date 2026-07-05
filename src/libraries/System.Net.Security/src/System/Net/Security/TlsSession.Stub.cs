@@ -79,6 +79,9 @@ namespace System.Net.Security
         public void SetServerOptions(SslServerAuthenticationOptions options) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
+        public void SetServerContext(TlsContext serverContext) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
         public void SetClientCertificateContext(SslStreamCertificateContext context) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
