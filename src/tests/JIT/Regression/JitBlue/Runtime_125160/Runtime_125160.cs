@@ -58,11 +58,17 @@ public class Runtime_125160
             Avx.CompareScalar(left, right, FloatComparisonMode.UnorderedTrueSignaling));
 
         // Explicitly validate that the upper elements are preserved and the low element is set.
-        Vector128<float> folded = Avx.CompareScalar(left, right, FloatComparisonMode.OrderedFalseNonSignaling);
-        Assert.Equal(0f, folded.GetElement(0));
-        Assert.Equal(2f, folded.GetElement(1));
-        Assert.Equal(3f, folded.GetElement(2));
-        Assert.Equal(4f, folded.GetElement(3));
+        Vector128<float> foldedFalse = Avx.CompareScalar(left, right, FloatComparisonMode.OrderedFalseNonSignaling);
+        Assert.Equal(0f, foldedFalse.GetElement(0));
+        Assert.Equal(2f, foldedFalse.GetElement(1));
+        Assert.Equal(3f, foldedFalse.GetElement(2));
+        Assert.Equal(4f, foldedFalse.GetElement(3));
+
+        Vector128<float> foldedTrue = Avx.CompareScalar(left, right, FloatComparisonMode.UnorderedTrueNonSignaling);
+        Assert.Equal(-1, foldedTrue.AsInt32().GetElement(0));
+        Assert.Equal(2f, foldedTrue.GetElement(1));
+        Assert.Equal(3f, foldedTrue.GetElement(2));
+        Assert.Equal(4f, foldedTrue.GetElement(3));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -87,9 +93,13 @@ public class Runtime_125160
             Avx.CompareScalar(Opaque(left), Opaque(right), FloatComparisonMode.UnorderedTrueSignaling),
             Avx.CompareScalar(left, right, FloatComparisonMode.UnorderedTrueSignaling));
 
-        Vector128<double> folded = Avx.CompareScalar(left, right, FloatComparisonMode.OrderedFalseNonSignaling);
-        Assert.Equal(0d, folded.GetElement(0));
-        Assert.Equal(2d, folded.GetElement(1));
+        Vector128<double> foldedFalse = Avx.CompareScalar(left, right, FloatComparisonMode.OrderedFalseNonSignaling);
+        Assert.Equal(0d, foldedFalse.GetElement(0));
+        Assert.Equal(2d, foldedFalse.GetElement(1));
+
+        Vector128<double> foldedTrue = Avx.CompareScalar(left, right, FloatComparisonMode.UnorderedTrueNonSignaling);
+        Assert.Equal(-1L, foldedTrue.AsInt64().GetElement(0));
+        Assert.Equal(2d, foldedTrue.GetElement(1));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

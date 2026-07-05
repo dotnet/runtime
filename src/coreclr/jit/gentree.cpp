@@ -36145,6 +36145,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                                 vecCon->gtSimdVal.u64[0] = isFalse ? 0 : 0xFFFFFFFFFFFFFFFF;
                             }
 
+                            fgUpdateConstTreeValueNumber(vecCon);
                             resultNode = vecCon;
                         }
                         else if (isFalse)
@@ -36157,7 +36158,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             // A true comparison produces an all-true mask for the given element count.
 
                             GenTreeMskCon* mskCon = gtNewMskConNode(retType);
-                            mskCon->gtSimdMaskVal = simdmask_t::AllBitsSet(simdSize / genTypeSize(simdBaseType));
+                            mskCon->gtSimdMaskVal = simdmask_t::AllBitsSet(GenTreeVecCon::ElementCount(simdSize, simdBaseType));
                             resultNode            = mskCon;
                         }
 #endif // FEATURE_MASKED_HW_INTRINSICS
