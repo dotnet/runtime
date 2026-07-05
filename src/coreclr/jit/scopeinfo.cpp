@@ -160,20 +160,36 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 // static
 ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumber reg)
 {
-    assert(genIsValidIntReg(reg) || genIsValidFloatReg(reg));
-
 #ifdef TARGET_AMD64
-    constexpr unsigned fpRegDebugNumBase = ICorDebugInfo::REGNUM_FP_FIRST;
+    constexpr unsigned fpRegDebugNumBase  = ICorDebugInfo::REGNUM_FP_FIRST;
+    constexpr unsigned maxEncodableFpRegs = 16; // Only XMM0-XMM15 are in RegNum
 #else
-    constexpr unsigned fpRegDebugNumBase = 0;
+    constexpr unsigned fpRegDebugNumBase  = 0;
+    constexpr unsigned maxEncodableFpRegs = 0;
 #endif
+
+    if (genIsValidIntReg(reg))
+    {
+        return static_cast<ICorDebugInfo::RegNum>(reg);
+    }
 
     if (genIsValidFloatReg(reg))
     {
-        return static_cast<ICorDebugInfo::RegNum>(fpRegDebugNumBase + (reg - REG_FP_FIRST));
+        unsigned fpIndex = reg - REG_FP_FIRST;
+#ifdef TARGET_AMD64
+        // Only XMM0-XMM15 are representable in the debug RegNum enum.
+        // XMM16-XMM31 (AVX-512) cannot be encoded.
+        if (fpIndex >= maxEncodableFpRegs)
+        {
+            return ICorDebugInfo::REGNUM_COUNT; // sentinel: caller checks for this
+        }
+#endif
+        return static_cast<ICorDebugInfo::RegNum>(fpRegDebugNumBase + fpIndex);
     }
 
-    return static_cast<ICorDebugInfo::RegNum>(reg);
+    // Mask registers (K0-K7) and any other non-int/non-float registers
+    // cannot be represented in the debug info encoding.
+    return ICorDebugInfo::REGNUM_COUNT;
 }
 
 //------------------------------------------------------------------------
@@ -187,33 +203,54 @@ ICorDebugInfo::RegNum CodeGenInterface::siVarLoc::mapRegNumToDebugRegNum(regNumb
 //
 void CodeGenInterface::siVarLoc::storeVariableInRegisters(regNumber reg, regNumber otherReg)
 {
-    assert(genIsValidIntReg(reg) || genIsValidFloatReg(reg));
-    assert((otherReg == REG_NA) || genIsValidIntReg(otherReg) || genIsValidFloatReg(otherReg));
+    // Note: mask registers (K0-K7) and XMM16+ are accepted but will produce
+    // VLT_INVALID since they can't be encoded in debug info.
 
     if (otherReg == REG_NA)
     {
         if (genIsValidFloatReg(reg))
         {
-            vlType = VLT_REG_FP;
 #ifdef TARGET_AMD64
-            vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
+            ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(reg);
+            if (debugReg == ICorDebugInfo::REGNUM_COUNT)
+            {
+                // XMM16+ cannot be encoded in the debug info.
+                vlType = VLT_INVALID;
+                return;
+            }
+            vlType       = VLT_REG_FP;
+            vlReg.vlrReg = static_cast<regNumber>(debugReg);
 #else
             // Non-AMD64: store 0-based FP register index (DBI adds platform base)
+            vlType       = VLT_REG_FP;
             vlReg.vlrReg = static_cast<regNumber>(reg - REG_FP_FIRST);
 #endif
         }
-        else
+        else if (genIsValidIntReg(reg))
         {
             vlType       = VLT_REG;
             vlReg.vlrReg = reg;
+        }
+        else
+        {
+            // Mask registers or other non-encodable register types.
+            vlType = VLT_INVALID;
+            return;
         }
     }
     else
     {
 #ifdef TARGET_AMD64
+        ICorDebugInfo::RegNum debugReg1 = mapRegNumToDebugRegNum(reg);
+        ICorDebugInfo::RegNum debugReg2 = mapRegNumToDebugRegNum(otherReg);
+        if (debugReg1 == ICorDebugInfo::REGNUM_COUNT || debugReg2 == ICorDebugInfo::REGNUM_COUNT)
+        {
+            vlType = VLT_INVALID;
+            return;
+        }
         vlType            = VLT_REG_REG;
-        vlRegReg.vlrrReg1 = static_cast<regNumber>(mapRegNumToDebugRegNum(reg));
-        vlRegReg.vlrrReg2 = static_cast<regNumber>(mapRegNumToDebugRegNum(otherReg));
+        vlRegReg.vlrrReg1 = static_cast<regNumber>(debugReg1);
+        vlRegReg.vlrrReg2 = static_cast<regNumber>(debugReg2);
 #else
         // Non-AMD64: VLT_REG_REG only supports int registers. If either is FP,
         // we cannot encode this — fall back to VLT_INVALID.
@@ -465,9 +502,18 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
 #ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
+        {
+            ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(varDsc->GetRegNum());
+            if (debugReg == ICorDebugInfo::REGNUM_COUNT)
+            {
+                // XMM16+ cannot be encoded.
+                this->vlType = VLT_INVALID;
+                break;
+            }
             this->vlType       = VLT_REG_FP;
-            this->vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(varDsc->GetRegNum()));
+            this->vlReg.vlrReg = static_cast<regNumber>(debugReg);
             break;
+        }
 
 #else // !TARGET_64BIT
 
@@ -494,8 +540,15 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
         {
+            ICorDebugInfo::RegNum debugReg = mapRegNumToDebugRegNum(varDsc->GetRegNum());
+            if (debugReg == ICorDebugInfo::REGNUM_COUNT)
+            {
+                // XMM16+/AVX-512 registers cannot be encoded.
+                this->vlType = VLT_INVALID;
+                break;
+            }
             this->vlType       = VLT_REG_FP;
-            this->vlReg.vlrReg = static_cast<regNumber>(mapRegNumToDebugRegNum(varDsc->GetRegNum()));
+            this->vlReg.vlrReg = static_cast<regNumber>(debugReg);
             break;
         }
 #endif // FEATURE_SIMD
@@ -1899,6 +1952,13 @@ void CodeGen::genSetScopeInfo()
 
     for (const EmittedCallReturnInfo& callReturnInfo : *emittedCallReturnInfo)
     {
+        // Skip entries where the return value location couldn't be encoded
+        // (e.g., mask registers, XMM16+ on AVX-512).
+        if (callReturnInfo.returnValueLoc.vlType == VLT_INVALID)
+        {
+            continue;
+        }
+
         UNATIVE_OFFSET retOffset = callReturnInfo.returnLocation.CodeOffset(GetEmitter());
 
         m_compiler->eeSetLVinfo(m_compiler->eeVarsCount++, retOffset, retOffset + 1, callReturnInfo.callILOffset,
@@ -1932,6 +1992,12 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
 
         auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
                                                                    UNATIVE_OFFSET end) {
+            // Skip entries that couldn't be encoded (e.g., mask registers, XMM16+).
+            if (loc->vlType == VLT_INVALID)
+            {
+                return;
+            }
+
             if (varDsc->lvIsParam && (start == end))
             {
                 // If the length is zero, it means that the prolog is empty. In that case,

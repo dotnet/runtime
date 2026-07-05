@@ -1744,9 +1744,9 @@ HRESULT CordbType::ReturnedByValue()
     // pointer-sized registers. Larger value types use the return buffer (stack)
     // path, which the JIT does not currently emit MRV info for.
     //
-    // Two-register returns are encoded via VLT_REG_REG (two integer registers),
-    // VLT_REG_FP_REG_FP (two FP registers), or the mixed VLT_REG_FP_REG /
-    // VLT_REG_REG_FP forms. Single-register returns use VLT_REG / VLT_REG_FP.
+    // On AMD64, the RegNum enum includes FP registers (XMM0-XMM15), so
+    // VLT_REG_REG can encode any combination of int and FP registers for
+    // two-register returns. Single-register returns use VLT_REG / VLT_REG_FP.
     if (unboxedSize > 2 * sizeof(SIZE_T))
         return S_FALSE;
 
@@ -1754,11 +1754,10 @@ HRESULT CordbType::ReturnedByValue()
     // 64-bit target). Single-register (<= pointer-sized) returns only support
     // the original simple cases: a single integer/pointer-sized non-FP field.
     // Floating-point and generic (unbound type-parameter) fields are only
-    // encodable for the two-register multi-reg forms (VLT_REG_FP_REG_FP and the
-    // mixed VLT_REG_FP_REG / VLT_REG_REG_FP). Enabling them for single-register
-    // value classes would
-    // reach unimplemented paths in the value-home code, so they remain
-    // unsupported there.
+    // encodable for the two-register case (where VLT_REG_REG with unified
+    // RegNum handles all int/FP combinations). Enabling them for single-register
+    // value classes would reach unimplemented paths in the value-home code, so
+    // they remain unsupported there.
     const bool twoRegister = (unboxedSize > sizeof(SIZE_T));
 
     // 64-bit targets support multi-field value classes (e.g. ValueTuple<T1, T2>)
