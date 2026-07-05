@@ -711,7 +711,7 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             case VNF_RSH:
             case VNF_RSZ:
             case VNF_UMOD:
-            case VNF_MOD:
+            //case VNF_MOD:
             case VNF_UDIV:
             {
                 // Get ranges of both operands and perform the same operation on the ranges.
