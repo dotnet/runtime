@@ -106,3 +106,20 @@ not take ownership of it or close it in Destroy).
 */
 PALEXPORT BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t prefixLen);
 
+/*
+Reads directly from a socket-replay BIO's bound fd into its internal peek
+buffer until a full TLS record (5-byte header + fragment) is present.
+Used by the deferred-server fast path to peek the ClientHello without a
+managed pre-fetch buffer + copy round-trip: the same BIO becomes the SSL's
+read BIO once SetServerContext/SetServerOptions resumes the handshake.
+
+*outPtr / *outLen point into the BIO's internal buffer and are valid
+until the BIO is destroyed or SocketReplayBioRead begins consuming it.
+
+Returns:
+   1  = full frame present.
+   0  = need more data (fd would block); caller polls SelectRead and retries.
+  -1  = error (invalid args, EOF, oversized record, or recv failure).
+*/
+PALEXPORT int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen);
+

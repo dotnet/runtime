@@ -184,6 +184,18 @@ internal static partial class Interop
             }
         }
 
+        // Reads directly from the BIO's bound fd into its internal peek buffer until a
+        // full TLS record is present. Returns:
+        //   1  = have full frame; framePtr / frameLen point into the BIO's buffer.
+        //   0  = need more data (fd would block); caller polls SelectRead and retries.
+        //  -1  = error (EOF, oversized record, or recv failure).
+        //
+        // The returned pointer is valid until the BIO is destroyed or SocketReplayBioRead
+        // starts consuming the buffer (i.e. once SSL_do_handshake runs against this BIO).
+        // Callers must span-wrap and parse before creating the SSL* that owns the BIO.
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioReadTlsFrame")]
+        internal static unsafe partial int BioReadTlsFrame(SafeBioHandle bio, out byte* framePtr, out int frameLen);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
         internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);
 

@@ -508,6 +508,7 @@ typedef struct
 {
     uint8_t* prefix;
     int32_t  prefixLen;
+    int32_t  prefixCap;
     int32_t  prefixPos;
     int      fd;
 } SocketReplayBioCtx;
@@ -743,7 +744,115 @@ BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t pr
         memcpy(copy, prefix, (size_t)prefixLen);
         ctx->prefix = copy;
         ctx->prefixLen = prefixLen;
+        ctx->prefixCap = prefixLen;
     }
 
     return bio;
+}
+
+// Reads directly from the BIO's bound fd into the BIO's internal peek buffer until
+// a complete TLS record (5-byte header + fragment) is present, or the underlying
+// fd would block. The buffered bytes are visible to managed via *outPtr/*outLen
+// (span-wrap without a copy) and remain in the BIO for later SocketReplayBioRead
+// draining once SSL_do_handshake starts.
+//
+// Returns:
+//   1  = full frame present; *outPtr / *outLen point into the BIO's internal buffer.
+//   0  = need more data (fd would block); caller polls SelectRead and retries.
+//  -1  = error (invalid args, EOF, oversized record, or recv failure).
+//
+// Preconditions: BIO is a socket-replay BIO created via BioNewSocketReplay with
+// no prefix (empty peek buffer). Calling this after SocketReplayBioRead has begun
+// draining the buffer produces undefined framing.
+int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen)
+{
+    ERR_clear_error();
+
+    if (bio == NULL || outPtr == NULL || outLen == NULL)
+    {
+        return -1;
+    }
+
+    SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
+    if (ctx == NULL || ctx->fd < 0)
+    {
+        return -1;
+    }
+
+    // Max TLS record length: 5-byte header + 2^14 payload + 2048 for encryption overhead.
+    // ClientHello is unencrypted so the practical max is 5 + 2^14 = 16389, but we allow
+    // the encrypted-record ceiling so this shim can be reused for other early-record peeks.
+    const int32_t MaxTlsRecord = 5 + (1 << 14) + 2048;
+
+    // Lazy-allocate the peek buffer once, sized to the max record we might see.
+    if (ctx->prefix == NULL)
+    {
+        ctx->prefix = (uint8_t*)malloc((size_t)MaxTlsRecord);
+        if (ctx->prefix == NULL)
+        {
+            return -1;
+        }
+        ctx->prefixCap = MaxTlsRecord;
+        ctx->prefixLen = 0;
+        ctx->prefixPos = 0;
+    }
+    else if (ctx->prefixCap < MaxTlsRecord)
+    {
+        // Caller supplied a smaller buffer via BioNewSocketReplay; refuse to reuse it
+        // as a peek buffer since we can't grow past prefixCap without breaking the
+        // pointer contract exposed to managed.
+        return -1;
+    }
+
+    for (;;)
+    {
+        int32_t need;
+        if (ctx->prefixLen < 5)
+        {
+            need = 5; // read at least the record header
+        }
+        else
+        {
+            // Decode the 2-byte fragment length from the record header (big-endian).
+            int32_t fragmentLen = ((int32_t)ctx->prefix[3] << 8) | (int32_t)ctx->prefix[4];
+            need = 5 + fragmentLen;
+            if (need > ctx->prefixCap)
+            {
+                return -1; // record too large for our buffer
+            }
+            if (ctx->prefixLen >= need)
+            {
+                break; // complete frame
+            }
+        }
+
+        int32_t want = need - ctx->prefixLen;
+        ssize_t n;
+        do
+        {
+            n = recv(ctx->fd, ctx->prefix + ctx->prefixLen, (size_t)want, 0);
+        } while (n < 0 && errno == EINTR);
+
+        if (n > 0)
+        {
+            ctx->prefixLen += (int32_t)n;
+            continue;
+        }
+
+        if (n == 0)
+        {
+            return -1; // peer closed before ClientHello
+        }
+
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            return 0; // caller polls and retries
+        }
+
+        return -1;
+    }
+
+    *outPtr = ctx->prefix;
+    *outLen = ctx->prefixLen;
+    return 1;
 }
