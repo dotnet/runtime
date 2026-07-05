@@ -421,20 +421,41 @@ namespace System.IO.Pipelines
 
         internal void Advance(int bytes)
         {
-            lock (SyncObj)
+            // While writing is active, the writer thread exclusively owns _writingHead,
+            // _writingHeadMemory, _writingHeadBytesBuffered and _unflushedBytes: the reader
+            // only releases/observes them when writing is NOT active. So the bounds check and
+            // AdvanceCore need no lock in that state.
+            if (_operationState.IsWritingActive)
             {
                 if ((uint)bytes > (uint)_writingHeadMemory.Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
                 }
 
-                // If the reader is completed we no-op Advance but leave GetMemory and FlushAsync alone
-                if (_readerCompletion.IsCompleted)
+                // Best-effort no-op if the reader completed; this check is racy even under the
+                // lock (the reader can complete right after), and _state is a reference so the
+                // read is atomic thus a lock-free read is equivalent.
+                if (!_readerCompletion.IsCompleted)
                 {
-                    return;
+                    AdvanceCore(bytes);
                 }
+            }
+            else
+            {
+                // Cold path (e.g. Advance(0) with no prior GetMemory): preserve exact original
+                // semantics under the lock.
+                lock (SyncObj)
+                {
+                    if ((uint)bytes > (uint)_writingHeadMemory.Length)
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
+                    }
 
-                AdvanceCore(bytes);
+                    if (!_readerCompletion.IsCompleted)
+                    {
+                        AdvanceCore(bytes);
+                    }
+                }
             }
         }
 
@@ -630,7 +651,7 @@ namespace System.IO.Pipelines
                             }
                             // If the writing head is the same as the block to be returned, then we need to make sure
                             // there's no pending write and that there's no buffered data for the writing head
-                            else if (_writingHeadBytesBuffered == 0 && !_operationState.IsWritingActive)
+                            else if (!_operationState.IsWritingActive && _writingHeadBytesBuffered == 0)
                             {
                                 // Reset the writing head to null if it's the return block and we've consumed everything
                                 _writingHead = null;
