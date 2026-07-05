@@ -506,7 +506,7 @@ while [[ $# -gt 0 ]]; do
       ;;
 
      -keepnativesymbols)
-        arguments+=("/p:KeepNativeSymbols=true")
+      arguments+=("/p:KeepNativeSymbols=true")
       shift 1
       ;;
 
