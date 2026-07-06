@@ -60,7 +60,6 @@ public static class Constants
         public const string StressLog = nameof(StressLog);
         public const string StressLogModuleTable = nameof(StressLogModuleTable);
         public const string StressLogMaxModules = nameof(StressLogMaxModules);
-        public const string StressLogChunkMaxSize = nameof(StressLogChunkMaxSize);
         public const string StressLogMaxMessageSize = nameof(StressLogMaxMessageSize);
         public const string StressLogChunkSize = nameof(StressLogChunkSize);
         public const string StressLogValidChunkSig = nameof(StressLogValidChunkSig);
