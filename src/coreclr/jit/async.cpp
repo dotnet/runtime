@@ -54,7 +54,7 @@
 //   compiler - The compiler instance.
 //   handle   - The method handle to look up the entrypoint for.
 //
-static void SetCallEntrypointForR2R(GenTreeCall* call, Compiler* compiler, CORINFO_METHOD_HANDLE handle)
+void SetCallEntrypointForR2R(GenTreeCall* call, Compiler* compiler, CORINFO_METHOD_HANDLE handle)
 {
 #ifdef FEATURE_READYTORUN
     if (!compiler->IsReadyToRun())

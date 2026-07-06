@@ -171,6 +171,10 @@ namespace System.Threading.Tasks
 
         // A private flag that would be set (only) by the debugger
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
+        // The debugger sets this field together with the AsyncInstrumentation.Flags.Synchronize bit in
+        // AsyncInstrumentation's active flags (this field first, then the Synchronize bit) so the next instrumentation
+        // checkpoint re-syncs and observes the AsyncDebugger client. Do not change this field's name or the way the
+        // Synchronize bit is composed without coordinating with the debugger; see AsyncInstrumentation.SynchronizeFlags.
         internal static bool s_asyncDebuggingEnabled; // false by default
 
         // This dictionary relates the task id, from an operation id located in the Async Causality log to the actual

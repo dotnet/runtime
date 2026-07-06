@@ -1162,12 +1162,8 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                     break;
                 }
 
-                case NI_Vector128_CreateScalar:
-                case NI_Vector256_CreateScalar:
-                case NI_Vector512_CreateScalar:
-                case NI_Vector128_CreateScalarUnsafe:
-                case NI_Vector256_CreateScalarUnsafe:
-                case NI_Vector512_CreateScalarUnsafe:
+                case NI_Vector_CreateScalar:
+                case NI_Vector_CreateScalarUnsafe:
                 {
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
@@ -1975,45 +1971,19 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
         //
         if (srcInReg)
         {
-            if (varTypeIsUnsigned(srcType))
+            if (!varTypeIsSmall(srcType))
             {
-                if (varTypeIsByte(srcType))
-                {
-                    ins = INS_uxtb;
-                }
-                else if (varTypeIsShort(srcType))
-                {
-                    ins = INS_uxth;
-                }
-                else
-                {
-                    // A mov Rd, Rm instruction performs the zero extend
-                    // for the upper 32 bits when the size is EA_4BYTE
-
-                    ins = INS_mov;
-                }
+                // An int/long value already fills its register width, so a plain mov suffices;
+                // for int the EA_4BYTE mov also zero extends the unused upper bits.
+                ins = INS_mov;
+            }
+            else if (varTypeIsUnsigned(srcType))
+            {
+                ins = varTypeIsByte(srcType) ? INS_uxtb : INS_uxth;
             }
             else
             {
-                if (varTypeIsByte(srcType))
-                {
-                    ins = INS_sxtb;
-                }
-                else if (varTypeIsShort(srcType))
-                {
-                    ins = INS_sxth;
-                }
-                else
-                {
-                    if (srcType == TYP_INT)
-                    {
-                        ins = INS_sxtw;
-                    }
-                    else
-                    {
-                        ins = INS_mov;
-                    }
-                }
+                ins = varTypeIsByte(srcType) ? INS_sxtb : INS_sxth;
             }
         }
         else

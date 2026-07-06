@@ -210,6 +210,18 @@ namespace Internal.IL
             return (_unconditionalDependencies, conditionalDependencies);
         }
 
+        private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, TypeDesc type)
+        {
+            _compilation.TypeSystemContext.EnsureLoadableType(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            return GetGenericLookupHelper(helperId, (object)type);
+        }
+
+        private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, MethodDesc method)
+        {
+            _compilation.TypeSystemContext.EnsureLoadableMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return GetGenericLookupHelper(helperId, (object)method);
+        }
+
         private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, object helperArgument)
         {
             GenericDictionaryLookup lookup = _compilation.ComputeGenericLookup(_canonMethod, helperId, helperArgument);
