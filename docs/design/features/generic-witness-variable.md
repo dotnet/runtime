@@ -252,7 +252,7 @@ or inside another generic instantiation:
 call void Program::Baz<class [System.Collections]System.Collections.Generic.List`1<^W0.U>>()
 ```
 
-There can be cases where multiple type match when matching against interfaces, in which case it should either fail or throw an exception. 
+There can be cases where multiple type match when matching against interfaces, in which case it can take the first eligible interface in the type declaration. Users can adjust the order of interface to match their expectations. 
 
 For example,
 
