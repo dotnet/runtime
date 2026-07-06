@@ -2876,33 +2876,100 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     assert(HWIntrinsicInfo::lookupIsa(intrinsic) == InstructionSet_Vector);
 
 #if defined(TARGET_XARCH)
-    if ((simdSize == 32) && varTypeIsIntegral(simdBaseType))
+    if (simdSize == 32)
     {
         bool potentiallyNotSupported = true;
 
-        switch (intrinsic)
+        if (HWIntrinsicInfo::AvxOnlyCompatible(intrinsic))
         {
-            case NI_Vector_Abs:
+            switch (intrinsic)
             {
-                potentiallyNotSupported = varTypeIsSigned(simdBaseType);
-                break;
-            }
+                case NI_Vector_Abs:
+                case NI_Vector_IsNegative:
+                case NI_Vector_IsPositive:
+                {
+                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    break;
+                }
 
-            case NI_Vector_CreateAlternatingSequence:
-            case NI_Vector_CreateGeometricSequence:
-            case NI_Vector_CreateSequence:
-            {
-                GenTree* op1 = impStackTop(1).val;
-                GenTree* op2 = impStackTop(0).val;
+                case NI_Vector_ExtractMostSignificantBits:
+                {
+                    potentiallyNotSupported = varTypeIsSmall(simdBaseType);
+                    break;
+                }
 
-                potentiallyNotSupported = !op1->OperIsConst() || !op2->OperIsConst();
-                break;
-            }
+                case NI_Vector_AddSaturate:
+                case NI_Vector_Dot:
+                case NI_Vector_Equals:
+                case NI_Vector_GreaterThan:
+                case NI_Vector_GreaterThanOrEqual:
+                case NI_Vector_IsZero:
+                case NI_Vector_LessThan:
+                case NI_Vector_LessThanOrEqual:
+                case NI_Vector_MaxNative:
+                case NI_Vector_MinNative:
+                case NI_Vector_MultiplyAddEstimate:
+                case NI_Vector_Narrow:
+                case NI_Vector_NarrowWithSaturation:
+                case NI_Vector_SubtractSaturate:
+                case NI_Vector_Sum:
+                case NI_Vector_WidenLower:
+                case NI_Vector_WidenUpper:
+                case NI_Vector_op_Addition:
+                case NI_Vector_op_Division:
+                case NI_Vector_op_Equality:
+                case NI_Vector_op_Inequality:
+                case NI_Vector_op_Multiply:
+                case NI_Vector_op_Subtraction:
+                case NI_Vector_op_UnaryNegation:
+                {
+                    potentiallyNotSupported = varTypeIsIntegral(simdBaseType);
+                    break;
+                }
 
-            default:
-            {
-                potentiallyNotSupported = !HWIntrinsicInfo::AvxOnlyCompatible(intrinsic);
-                break;
+                case NI_Vector_IsFinite:
+                case NI_Vector_IsInfinity:
+                case NI_Vector_IsInteger:
+                case NI_Vector_IsNegativeInfinity:
+                case NI_Vector_IsPositiveInfinity:
+                case NI_Vector_IsSubnormal:
+                {
+                    potentiallyNotSupported = varTypeIsFloating(simdBaseType);
+                    break;
+                }
+
+                case NI_Vector_UnzipEven:
+                case NI_Vector_UnzipOdd:
+                {
+                    potentiallyNotSupported = genTypeSize(simdBaseType) != 4;
+                    break;
+                }
+
+                case NI_Vector_CreateAlternatingSequence:
+                {
+                    GenTree* op1 = impStackTop(1).val;
+                    GenTree* op2 = impStackTop(0).val;
+
+                    potentiallyNotSupported = !op1->OperIsConst() || !op2->OperIsConst();
+                    break;
+                }
+
+                case NI_Vector_CreateGeometricSequence:
+                case NI_Vector_CreateSequence:
+                {
+                    GenTree* op1 = impStackTop(1).val;
+                    GenTree* op2 = impStackTop(0).val;
+
+                    potentiallyNotSupported =
+                        varTypeIsIntegral(simdBaseType) && (!op1->OperIsConst() || !op2->OperIsConst());
+                    break;
+                }
+
+                default:
+                {
+                    potentiallyNotSupported = false;
+                    break;
+                }
             }
         }
 
@@ -3842,13 +3909,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -3933,12 +3993,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(varTypeIsFloating(simdBaseType));
 
-#if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#elif defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
             impSpillSideEffect(true,
                                stackState.esStackDepth - 3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
 
@@ -4014,13 +4069,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4031,13 +4079,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GreaterThanAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4061,13 +4102,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4078,13 +4112,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GreaterThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4112,14 +4139,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsFinite:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsFiniteNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4128,14 +4147,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsInfinity:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsInfinityNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4144,14 +4155,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsInteger:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsIntegerNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4168,14 +4171,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsNegative:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsNegativeNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4184,14 +4179,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsNegativeInfinity:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsNegativeInfinityNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4200,14 +4187,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsNormal:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsNormalNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4232,14 +4211,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsPositive:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsPositiveNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4248,14 +4219,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsPositiveInfinity:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsPositiveInfinityNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4264,14 +4227,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsSubnormal:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsSubnormalNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4300,13 +4255,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4317,13 +4265,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_LessThanAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4347,13 +4288,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4364,13 +4298,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_LessThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -5722,13 +5649,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
 
@@ -5766,14 +5686,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_op_RightShift:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
 
             op2 = impPopStack().val;
@@ -5812,13 +5724,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_op_UnsignedRightShift:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
