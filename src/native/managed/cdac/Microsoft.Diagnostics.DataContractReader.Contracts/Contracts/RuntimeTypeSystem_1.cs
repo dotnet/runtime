@@ -613,6 +613,154 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
+    public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+
+    private bool IsFeatureHfaTarget(out RuntimeInfoArchitecture arch)
+    {
+        arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        return arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64;
+    }
+
+    public bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
+    {
+        elementSize = 0;
+
+        if (!IsFeatureHfaTarget(out RuntimeInfoArchitecture arch))
+            return false;
+
+        if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsHFA)
+            return false;
+
+        // ARM shortcut: no HVA, and RequiresAlign8 encodes the R4-vs-R8 choice
+        // (CheckForHFA sets the alignment flag based on the resolved element
+        // type). Avoids walking fields.
+        if (arch == RuntimeInfoArchitecture.Arm)
+        {
+            elementSize = _methodTables[typeHandle.Address].Flags.RequiresAlign8 ? 8 : 4;
+            return true;
+        }
+
+        TypeHandle current = typeHandle;
+        for (int depth = 0; depth < 16; depth++)
+        {
+            int vectorElem = GetVectorHFAElementSize(current);
+            if (vectorElem != 0)
+            {
+                elementSize = vectorElem;
+                return true;
+            }
+
+            TargetPointer firstField = TargetPointer.Null;
+            foreach (TargetPointer fd in ((IRuntimeTypeSystem)this).GetFieldDescList(current))
+            {
+                if (((IRuntimeTypeSystem)this).IsFieldDescStatic(fd))
+                    continue;
+                firstField = fd;
+                break;
+            }
+
+            if (firstField == TargetPointer.Null)
+                return false;
+
+            CorElementType ft = ((IRuntimeTypeSystem)this).GetFieldDescType(firstField);
+            switch (ft)
+            {
+                case CorElementType.R4:
+                    elementSize = 4;
+                    return true;
+                case CorElementType.R8:
+                    elementSize = 8;
+                    return true;
+                case CorElementType.ValueType:
+                    current = ((IRuntimeTypeSystem)this).GetFieldDescApproxTypeHandle(firstField);
+                    if (current.IsNull)
+                        return false;
+                    continue;
+                default:
+                    return false;
+            }
+        }
+
+        return false;
+    }
+
+    // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Any
+    // metadata decode failure returns 0 (treated as "not an HVA").
+    private int GetVectorHFAElementSize(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable() || !_methodTables[typeHandle.Address].Flags.IsIntrinsicType)
+            return 0;
+
+        try
+        {
+            TargetPointer modulePtr = ((IRuntimeTypeSystem)this).GetModule(typeHandle);
+            if (modulePtr == TargetPointer.Null)
+                return 0;
+
+            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader? reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+            if (reader is null)
+                return 0;
+
+            uint typeDefToken = ((IRuntimeTypeSystem)this).GetTypeDefToken(typeHandle);
+            if (EcmaMetadataUtils.GetRowId(typeDefToken) == 0)
+                return 0;
+
+            EntityHandle handle = (EntityHandle)MetadataTokens.Handle((int)typeDefToken);
+            if (handle.Kind != HandleKind.TypeDefinition)
+                return 0;
+
+            TypeDefinition typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)handle);
+            string className = reader.GetString(typeDef.Name);
+            string namespaceName = reader.GetString(typeDef.Namespace);
+
+            int elemSize;
+            if (className == "Vector`1" && namespaceName == "System.Numerics")
+            {
+                elemSize = ((IRuntimeTypeSystem)this).GetNumInstanceFieldBytes(typeHandle) switch
+                {
+                    8 => 8,
+                    16 => 16,
+                    _ => 0,
+                };
+            }
+            else if (className == "Vector128`1" && namespaceName == "System.Runtime.Intrinsics")
+            {
+                elemSize = 16;
+            }
+            else if (className == "Vector64`1" && namespaceName == "System.Runtime.Intrinsics")
+            {
+                elemSize = 8;
+            }
+            else
+            {
+                return 0;
+            }
+
+            if (elemSize == 0)
+                return 0;
+
+            ReadOnlySpan<TypeHandle> instantiation = ((IRuntimeTypeSystem)this).GetInstantiation(typeHandle);
+            if (instantiation.Length < 1)
+                return 0;
+
+            CorElementType argType = ((IRuntimeTypeSystem)this).GetSignatureCorElementType(instantiation[0]);
+            if (!IsCorNumericalType(argType))
+                return 0;
+
+            return elemSize;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    // Mirrors CorIsNumericalType in src/coreclr/inc/cor.h.
+    private static bool IsCorNumericalType(CorElementType t)
+        => (t >= CorElementType.I1 && t <= CorElementType.R8)
+            || t == CorElementType.I
+            || t == CorElementType.U;
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
     public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
@@ -1990,6 +2138,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return IsWrapperStub(methodDesc);
     }
 
+    public bool IsUnboxingStub(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsUnboxingStub;
+    }
+
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
     {
         private readonly RuntimeTypeSystem_1 _rts;
@@ -2070,6 +2224,35 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return (uint)fieldDef.Value.GetRelativeVirtualAddress();
         }
         return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    }
+
+    TypeHandle IRuntimeTypeSystem.GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
+    {
+        try
+        {
+            TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
+            if (enclosingMT == TargetPointer.Null)
+                return default;
+            TypeHandle enclosingType = GetTypeHandle(enclosingMT);
+            TargetPointer modulePtr = GetModule(enclosingType);
+            if (modulePtr == TargetPointer.Null)
+                return default;
+
+            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+            MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+            if (mdReader is null)
+                return default;
+
+            uint memberDef = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
+            FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
+            FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldDefHandle);
+
+            return _target.Contracts.Signature.DecodeFieldSignature(fieldDef.Signature, moduleHandle, enclosingType);
+        }
+        catch
+        {
+            return default;
+        }
     }
 
     TargetPointer IRuntimeTypeSystem.GetFieldDescByName(TypeHandle typeHandle, string fieldName)

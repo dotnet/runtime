@@ -82,6 +82,9 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Gets whether the operation has completed.</summary>
         internal bool IsCompleted => ReferenceEquals(Volatile.Read(ref _continuation), ManualResetValueTaskSourceCoreShared.s_sentinel);
 
+        /// <summary>Gets the continuation object for diagnostic purposes only.</summary>
+        internal object? ContinuationForDiagnostics => _continuationState;
+
         /// <summary>Gets the status of the operation.</summary>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         public ValueTaskSourceStatus GetStatus(short token)

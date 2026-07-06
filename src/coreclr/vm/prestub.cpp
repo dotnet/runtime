@@ -502,6 +502,28 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(HasUnmanagedCallersOnlyAttribute());
+
+#ifdef FEATURE_READYTORUN
+    PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+    config.SetCallerGCMode(CallerGCMode::Preemptive);
+
+    // GetPrecompiledR2RCode resolves the R2R entrypoint and, on portable-entrypoint (wasm) targets,
+    // publishes it into this method's portable entrypoint as a side effect (PortableEntryPoint::SetActualCode).
+    // It never compiles interpreter byte code, so purely interpreted methods simply return NULL here and
+    // are left unprepared for lazy byte code generation on first call.
+    PCODE pCode = GetPrecompiledR2RCode(&config);
+    return pCode != (PCODE)NULL;
+#else // !FEATURE_READYTORUN
+    return false;
+#endif // FEATURE_READYTORUN
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;
@@ -703,6 +725,17 @@ namespace
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
+        Module* pModule = pMD->GetModule();
+        if (pModule->IsReadyToRun()
+            && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
+            && pHeader->GetCodeSize() == 2
+            && pHeader->Code[0] == 0xFE
+            && pHeader->Code[1] == 0x24)
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                W("A method body required at runtime was stripped from the ReadyToRun image."));
+        }
+
         return pHeader;
     }
 
@@ -878,8 +911,20 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #endif // PROFILING_SUPPORTED
 
 #ifdef FEATURE_PERFMAP
-    // Save the JIT'd method information so that perf can resolve JIT'd call frames.
-    PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+#if defined(FEATURE_INTERPRETER)
+    if (isInterpreterCode)
+    {
+        InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+        InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)pPrecode->GetData()->ByteCodeAddr;
+        PCODE irAddress = PINSTRToPCODE((TADDR)interpreterCode);
+        PerfMap::LogInterpreterMethod(this, irAddress, sizeOfCode);
+    }
+    else
+#endif // FEATURE_INTERPRETER
+    {
+        // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+    }
 #endif
 
     // The notification will only occur if someone has registered for this method.
@@ -2081,6 +2126,12 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
 {
+    // targetIp must point to valid interpreter byte code. A NULL here means a caller failed to route a
+    // method that has native (R2R) code but no interpreter code to InvokeManagedMethod. Dispatching a
+    // NULL byte code pointer would be (mis)interpreted as INTOP_INVALID and fail with a cryptic fatal
+    // error, so assert here at the actual point of misuse.
+    _ASSERTE(targetIp != (TADDR)NULL);
+
     // Copy arguments to the stack
     if (argSize > 0)
     {
@@ -2225,10 +2276,14 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
     InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
     if (targetIp == NULL)
     {
-        GCX_PREEMP();
-        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         targetIp = pMD->GetInterpreterCode();
     }
+    // The g_ReverseThunks reverse thunk is only used for UnmanagedCallersOnly methods that are executed
+    // by the interpreter. Methods compiled to native (R2R) code are dispatched directly to their R2R
+    // entrypoint by GetUnmanagedCallersOnlyThunk and never reach this path, so the interpreter byte code
+    // must exist here.
+    _ASSERTE(targetIp != NULL);
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
 }
 #endif // FEATURE_INTERPRETER
@@ -2742,11 +2797,15 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         PTR_READYTORUN_IMPORT_SECTION pImportSection;
         if (sectionIndex != (DWORD)-1)
         {
+            // On some platforms (everywhere except wasm) we can get the section index from the callsite,
+            // so we don't have to search for it.
             pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
             _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
         }
         else
         {
+            // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
+            // the section index, so we search for it instead.
             pImportSection = pModule->GetImportSectionForRVA(rva);
         }
         _ASSERTE(pImportSection != NULL);
@@ -3362,7 +3421,20 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
-    PTR_READYTORUN_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection;
+    if (sectionIndex != (DWORD)-1)
+    {
+        // On some platforms (everywhere except wasm) we can get the section index from the callsite,
+        // so we don't have to search for it.
+        pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    }
+    else
+    {
+        // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
+        // the section index, so we search for it instead.
+        pImportSection = pModule->GetImportSectionForRVA(rva);
+    }
+
     _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
@@ -3393,6 +3465,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     switch (kind)
     {
+#ifndef TARGET_WASM
     case READYTORUN_FIXUP_NewObject:
         th = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
         th.AsMethodTable()->EnsureInstanceActive();
@@ -3444,7 +3517,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             pMD->EnsureActive();
         }
         break;
-
+#endif // !TARGET_WASM
     case READYTORUN_FIXUP_ThisObjDictionaryLookup:
     case READYTORUN_FIXUP_TypeDictionaryLookup:
     case READYTORUN_FIXUP_MethodDictionaryLookup:
@@ -3465,6 +3538,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         {
             switch (kind)
             {
+#ifndef TARGET_WASM
             case READYTORUN_FIXUP_IsInstanceOf:
             case READYTORUN_FIXUP_ChkCast:
                 {
@@ -3554,7 +3628,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     }
                 }
                 break;
-
+#endif // !TARGET_WASM
             default:
                 UNREACHABLE();
             }
@@ -3578,6 +3652,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     {
         switch (kind)
         {
+#ifndef TARGET_WASM
         case READYTORUN_FIXUP_NewObject:
             {
                 bool fHasSideEffectsUnused;
@@ -3651,7 +3726,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
             }
             break;
-
+#endif // !TARGET_WASM
         case READYTORUN_FIXUP_ThisObjDictionaryLookup:
         case READYTORUN_FIXUP_TypeDictionaryLookup:
         case READYTORUN_FIXUP_MethodDictionaryLookup:
