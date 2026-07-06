@@ -207,6 +207,16 @@ And for interfaces:
 
 which find an implemented interface of `T` that matches `IEnumerable<U>`. So if `T` is `List<int>`, it can bind `W0.U = int` through `IEnumerable<int>`.
 
+There can be cases where multiple type match when matching against interfaces, in which case it can take the first eligible interface in the type declaration. Users can adjust the order of interface to match their expectations. 
+
+For example,
+
+```cs
+if (T is IEnumerable<var U>) {}
+```
+
+when T implements both `IEnumerable<int>` and `IEnumerable<string>`.
+
 ### Instantiation
 
 With the type match and type witness variable, we can finally instantiate a generic type or method:
@@ -251,16 +261,6 @@ or inside another generic instantiation:
 ```il
 call void Program::Baz<class [System.Collections]System.Collections.Generic.List`1<^W0.U>>()
 ```
-
-There can be cases where multiple type match when matching against interfaces, in which case it can take the first eligible interface in the type declaration. Users can adjust the order of interface to match their expectations. 
-
-For example,
-
-```cs
-if (T is IEnumerable<var U>) {}
-```
-
-when T implements both `IEnumerable<int>` and `IEnumerable<string>`.
 
 ## Metadata
 
