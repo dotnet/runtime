@@ -146,8 +146,7 @@ In config below please replace `/path/to/runtime/` by a **absolute unix path** t
                     "<node_internals>/**"
                 ],
                 "runtimeArgs": [
-                    "--stack-trace-limit=10000",
-                    "--experimental-wasm-exnref"
+                    "--stack-trace-limit=10000"
                 ],
                 "args": [
                     "HelloWorld.dll"
