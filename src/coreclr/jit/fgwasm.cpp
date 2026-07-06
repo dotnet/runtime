@@ -224,7 +224,7 @@ private:
     BitVec               m_blocks;
     BitVec               m_entries;
     jitstd::vector<Scc*> m_nested;
-    BasicBlock*          m_wasmTryHeader;
+    BasicBlock*          m_tryEntry;
     unsigned             m_numIrr;
 
     // lowest common ancestor try index + 1, or 0 if method region
@@ -248,7 +248,7 @@ public:
         , m_blocks(BitVecOps::UninitVal())
         , m_entries(BitVecOps::UninitVal())
         , m_nested(fgWasm->Comp()->getAllocator(CMK_WasmSccTransform))
-        , m_wasmTryHeader(nullptr)
+        , m_tryEntry(nullptr)
         , m_numIrr(0)
         , m_enclosingTryIndex(0)
         , m_enclosingHndIndex(0)
@@ -269,6 +269,13 @@ public:
     {
         ComputeEntries();
         FindNested();
+    }
+
+    bool IsWasmTryCatch(BasicBlock* block)
+    {
+        assert(m_compiler->bbIsTryBeg(block));
+        GenTree* const lastNode = block->GetLastLIRNode();
+        return ((lastNode != nullptr) && lastNode->OperIs(GT_WASM_JEXCEPT));
     }
 
     void ComputeEntries()
@@ -328,23 +335,20 @@ public:
                         m_enclosingTryIndex = m_compiler->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
                     }
 
+                    // Dispatch through try entries is more complex.
+                    // So limit what we handle; at most one SCC entry
+                    // is also a try entry.
+                    //
                     if (m_compiler->bbIsTryBeg(block))
                     {
-                        GenTree* const lastNode = block->GetLastLIRNode();
-
-                        if ((lastNode != nullptr) && lastNode->OperIs(GT_WASM_JEXCEPT))
+                        if (m_tryEntry == nullptr)
                         {
-                            JITDUMP(FMT_BB " is also a Wasm try entry\n", block->bbNum);
-
-                            if (m_wasmTryHeader == nullptr)
-                            {
-                                m_wasmTryHeader = block;
-                            }
-                            else
-                            {
-                                JITDUMP("Multiple Wasm try entries in SCC %u\n", m_num);
-                                NYI_WASM("SCC with multiple wasm try entry headers");
-                            }
+                            m_tryEntry = block;
+                        }
+                        else
+                        {
+                            JITDUMP("Multiple try entries in SCC %u entry set\n", m_num);
+                            NYI_WASM("SCC with multiple try entry headers");
                         }
                     }
                 }
@@ -577,9 +581,9 @@ public:
         return m_enclosingHndIndex;
     }
 
-    BasicBlock* WasmTryHeader() const
+    BasicBlock* TryHeader() const
     {
-        return m_wasmTryHeader;
+        return m_tryEntry;
     }
 
     //-----------------------------------------------------------------------------
@@ -623,7 +627,7 @@ public:
             LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
-            BasicBlock*      wasmTryHeader = WasmTryHeader();
+            BasicBlock*      tryHeader     = TryHeader();
             FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             unsigned         headerNumber  = 0;
@@ -645,11 +649,11 @@ public:
                     unsigned    dispatchHndIndex = EnclosingHndIndex();
                     BasicBlock* nearBlk          = nullptr;
 
-                    if (wasmTryHeader != nullptr)
+                    if (tryHeader != nullptr)
                     {
-                        dispatchTryIndex = wasmTryHeader->bbTryIndex;
-                        dispatchHndIndex = wasmTryHeader->bbHndIndex;
-                        nearBlk          = wasmTryHeader;
+                        dispatchTryIndex = tryHeader->bbTryIndex;
+                        dispatchHndIndex = tryHeader->bbHndIndex;
+                        nearBlk          = tryHeader;
                     }
 
                     if ((dispatchTryIndex > 0) || (dispatchHndIndex > 0))
@@ -680,29 +684,29 @@ public:
                 //
                 BasicBlock* inboundTarget = dispatcher;
 
-                // With the dispatcher inside the Wasm try region, every external pred must enter
-                // the try via its ebdTryBeg (the Wasm try header) before reaching the dispatcher.
-                // For headers other than the Wasm try header itself, redirect preds to the Wasm
-                // try header; the dispatcher then branches back out to the chosen header. When
-                // header == wasmTryHeader, inboundTarget == header so no rewrite happens.
+                // With the dispatcher inside the try region, every external pred must enter
+                // the try via its ebdTryBeg (the try header) before reaching the dispatcher.
+                // For headers other than the try header itself, redirect preds to the try
+                // header; the dispatcher then branches back out to the chosen header. When
+                // header == tryHeader, inboundTarget == header so no rewrite happens.
                 //
-                if (wasmTryHeader != nullptr)
+                if (tryHeader != nullptr)
                 {
-                    // The dispatcher (inside the Wasm try) can only safely branch to headers in
-                    // a try region that encloses the Wasm try region. A header in a sibling or
+                    // The dispatcher (inside the try) can only safely branch to headers in
+                    // a try region that encloses the try region. A header in a sibling or
                     // deeper-nested try would force a middle-entry edge on its boundary.
                     //
-                    if (header->hasTryIndex() && !m_compiler->bbInTryRegions(header->getTryIndex(), wasmTryHeader))
+                    if (header->hasTryIndex() && !m_compiler->bbInTryRegions(header->getTryIndex(), tryHeader))
                     {
-                        NYI_WASM("SCC entry header in a try region that does not enclose the Wasm try header");
+                        NYI_WASM("SCC entry header in a try region that does not enclose the try header");
                     }
 
-                    if (header != wasmTryHeader)
+                    if (header != tryHeader)
                     {
-                        JITDUMP("Will route flow to " FMT_BB " via Wasm try header " FMT_BB "\n", header->bbNum,
-                                wasmTryHeader->bbNum);
+                        JITDUMP("Will route flow to " FMT_BB " via try header " FMT_BB "\n", header->bbNum,
+                                tryHeader->bbNum);
                     }
-                    inboundTarget = wasmTryHeader;
+                    inboundTarget = tryHeader;
                 }
 
                 weight_t headerWeight = header->bbWeight;
@@ -765,15 +769,28 @@ public:
                 //
                 BasicBlock* outboundTarget = header;
 
-                // But for the wasm try header, normal entry flows from the wasm try header T
-                // to its false target F.
+                // If the header is a try header, things are more complicated.
                 //
-                // Here we make the dispatcher be the false target of T,
-                // and the dispatcher will then jump to F.
+                // If this is a wasm try/catch, we already split up the header to be empty
+                // except for a JTRUE(GT_WASM_JEXCEPT). So the header's false successor
+                // is the original try entry, dispatcher should jump there, and the orignal
+                // try entry should instead jump (if false) to the dispatcher.
                 //
-                if (header == wasmTryHeader)
+                // If this is a try but not a wasm try/catch, then split the header, and
+                // branch from the head of the split to the dispatcher,
+                // and from the dispatcher to the tail of the split.
+                //
+                if (header == tryHeader)
                 {
-                    outboundTarget = wasmTryHeader->GetFalseTarget();
+                    if (IsWasmTryCatch(header))
+                    {
+                        outboundTarget = tryHeader->GetFalseTarget();
+                    }
+                    else
+                    {
+                        outboundTarget = m_compiler->fgSplitBlockAtBeginning(header);
+                    }
+
                     m_compiler->fgReplaceJumpTarget(header, outboundTarget, dispatcher);
                 }
 
