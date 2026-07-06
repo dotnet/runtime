@@ -179,16 +179,16 @@ namespace System.IO.Pipelines
 
         private void AllocateWriteHeadSynchronized(int sizeHint)
         {
-            // Rent the backing memory outside the lock, but only when writing is active.
+            // Speculatively rent backing memory outside the lock.
             //
-            // While writing is active, the writer thread exclusively owns _writingHead and
-            // _writingHeadMemory: the reader only releases them (in AdvanceReader) when writing
-            // is NOT active. That makes the reads below race-free, and it makes them stable - the
-            // reader can only shrink _writingHeadMemory (to default) and cannot even do that while
-            // writing is active, and this (single) writer thread does not change it between here
-            // and taking the lock. So if there isn't enough room now there won't be enough under
-            // the lock either: a buffer rented here is guaranteed to be used and never needs to be
-            // returned. Keeping the (potentially contended) pool rental off the lock is the point.
+            // Reading _writingHeadMemory.Length can race with the reader (which sets
+            // _writingHeadMemory = default under the lock when writing is NOT active), but .Length
+            // reads a single int field, so it is atomic - stale at worst, never torn. It is only a
+            // hint; the authoritative decision is remade under the lock. The rented buffer is always
+            // consumed on non-exceptional paths: _writingHeadMemory.Length only shrinks between this
+            // read and the lock (the reader can only reduce it to zero, and this writer thread does
+            // not touch it in between), so "insufficient room" still holds under the lock. That is
+            // why no return path is needed - see the Debug.Assert(prerented is null) after the lock.
             //
             // Note we deliberately do NOT acquire a BufferSegment here. The segment pool is a
             // single-producer/single-consumer queue, so an unused segment could not be safely
@@ -196,8 +196,7 @@ namespace System.IO.Pipelines
             // lock, at the exact point we are certain to use them. Acquiring via SPSC should be
             // too cheap to bother that it happens under lock.
             object? prerented = null;
-            if (_operationState.IsWritingActive &&
-                (_writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint))
+            if (_writingHeadMemory.Length == 0 || _writingHeadMemory.Length < sizeHint)
             {
                 prerented = RentMemoryUnsynchronized(sizeHint);
             }
@@ -211,11 +210,8 @@ namespace System.IO.Pipelines
                 {
                     if (_writingHead is null)
                     {
-                        // Writing wasn't active on entry, so we could not have pre-rented.
-                        Debug.Assert(prerented is null);
-
                         BufferSegment newSegment = GetOrCreateSegment();
-                        AttachMemory(newSegment, prerented, sizeHint);
+                        AttachMemory(newSegment, ref prerented, sizeHint);
 
                         _writingHead = _readHead = _readTail = newSegment;
                         _lastExaminedIndex = 0;
@@ -236,25 +232,24 @@ namespace System.IO.Pipelines
                             // head's buffer. Reuse the BufferSegment and swap out its memory so
                             // ReadAsync will not observe an empty segment.
                             _writingHead.ResetMemory();
-                            AttachMemory(_writingHead, prerented, sizeHint);
+                            AttachMemory(_writingHead, ref prerented, sizeHint);
                         }
                         else
                         {
                             BufferSegment newSegment = GetOrCreateSegment();
-                            AttachMemory(newSegment, prerented, sizeHint);
+                            AttachMemory(newSegment, ref prerented, sizeHint);
 
                             _writingHead.SetNext(newSegment);
                             _writingHead = newSegment;
                         }
                     }
                 }
-                else
-                {
-                    // The head still has room. Only reachable when writing wasn't active on entry;
-                    // otherwise we would have pre-rented and this branch would not be taken.
-                    Debug.Assert(prerented is null);
-                }
             }
+
+            // On every non-exceptional path the speculative rent is consumed above (AttachMemory
+            // nulls it), because _writingHeadMemory.Length only shrinks between the off-lock read
+            // and the lock. If this fires, that invariant was violated.
+            Debug.Assert(prerented is null);
         }
 
         private BufferSegment AllocateSegment(int sizeHint)
@@ -316,9 +311,9 @@ namespace System.IO.Pipelines
         }
 
         // Attaches memory to a segment and updates _writingHeadMemory. If memory was already rented
-        // outside the lock (prerented) it is attached; otherwise memory is rented here. Must be
-        // called under the lock.
-        private void AttachMemory(BufferSegment segment, object? prerented, int sizeHint)
+        // outside the lock (prerented) it is attached and the reference is cleared; otherwise memory
+        // is rented here (race fallback). Must be called under the lock.
+        private void AttachMemory(BufferSegment segment, ref object? prerented, int sizeHint)
         {
             Debug.Assert(segment.MemoryOwner is null);
 
@@ -327,14 +322,17 @@ namespace System.IO.Pipelines
                 case IMemoryOwner<byte> owner:
                     segment.SetOwnedMemory(owner);
                     _writingHeadMemory = segment.AvailableMemory;
+                    prerented = null;
                     break;
                 case byte[] array:
                     segment.SetOwnedMemory(array);
                     _writingHeadMemory = segment.AvailableMemory;
+                    prerented = null;
                     break;
                 default:
                     Debug.Assert(prerented is null);
-                    // Nothing pre-rented (writing was not active); rent under the lock.
+                    // Nothing pre-rented (the racy read saw enough room but the reader reset it
+                    // before we took the lock); rent under the lock.
                     RentMemory(segment, sizeHint);
                     break;
             }
