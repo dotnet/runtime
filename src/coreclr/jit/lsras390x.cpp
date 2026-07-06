@@ -822,32 +822,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     GenTree* index = nullptr;
     int      cns   = 0;
     
-#ifdef TARGET_ARM
-    // Unaligned loads/stores for floating point values must first be loaded into integer register(s)
-    if (indirTree->gtFlags & GTF_IND_UNALIGNED)
-    {
-        var_types type = TYP_UNDEF;
-        if (indirTree->OperGet() == GT_STOREIND)
-        {
-            type = indirTree->AsStoreInd()->Data()->TypeGet();
-        }
-        else if (indirTree->OperGet() == GT_IND)
-        {
-            type = indirTree->TypeGet();
-        }
-
-        if (type == TYP_FLOAT)
-        {
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
-        else if (type == TYP_DOUBLE)
-        {
-            buildInternalIntRegisterDefForNode(indirTree);
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
-    }
-#endif
-
     if (addr->isContained())
     {
         if (addr->OperGet() == GT_LEA)

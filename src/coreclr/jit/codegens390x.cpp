@@ -1834,10 +1834,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     
     genConsumeAddress(tree->Addr());
     
-    regNumber addrReg = tree->Addr()->GetRegNum();
-    
-    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(type), targetReg, addrReg, 0);
-    
+    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
     genProduceReg(tree);
 }
 
@@ -1859,7 +1856,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     var_types   type = tree->TypeGet();
     instruction ins  = ins_Store(type);
 
-    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(type), dataReg, addrReg, 0);
+    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
 }
 
 //#ifdef TARGET_ARM64

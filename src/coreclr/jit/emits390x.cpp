@@ -12859,8 +12859,6 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 //
 void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
-    _ASSERTE(!"NYI");
-#if 0
     GenTree* addr = indir->Addr();
 
     if (addr->isContained())
@@ -12873,11 +12871,6 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         if (addr->OperGet() == GT_LEA)
         {
             offset = addr->AsAddrMode()->Offset();
-            if (addr->AsAddrMode()->gtScale > 0)
-            {
-                assert(isPow2(addr->AsAddrMode()->gtScale));
-                BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
-            }
         }
 
         GenTree* memBase = indir->Base();
@@ -12892,19 +12885,10 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
                 emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
-                if (emitIns_valid_imm_for_add(offset, EA_8BYTE))
+                if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
                 {
-                    if (lsl > 0)
-                    {
-                        // Generate code to set tmpReg = base + index*scale
-                        emitIns_R_R_R_I(INS_add, addType, tmpReg, memBase->GetRegNum(), index->GetRegNum(), lsl,
-                                        INS_OPTS_LSL);
-                    }
-                    else // no scale
-                    {
                         // Generate code to set tmpReg = base + index
-                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), index->GetRegNum());
-                    }
+                    emitIns_R_R_R(INS_agrk, addType, tmpReg, memBase->GetRegNum(), index->GetRegNum());
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
 
@@ -12917,53 +12901,21 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                     // Then add the base register
                     //      rd = rd + base
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
+                    emitIns_R_R_R(INS_agrk, addType, tmpReg, tmpReg, memBase->GetRegNum());
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
 
-                    // Then load/store dataReg from/to [tmpReg + index*scale]
-                    emitIns_R_R_R_I(ins, attr, dataReg, tmpReg, index->GetRegNum(), lsl, INS_OPTS_LSL);
+                    // Then load/store dataReg from/to [tmpReg + index]
+                    emitIns_R_R_R(INS_agrk, addType, tmpReg, tmpReg, index->GetRegNum());
+                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
                 }
             }
             else // (offset == 0)
             {
-                if (lsl > 0)
-                {
-                    // Then load/store dataReg from/to [memBase + index*scale]
-                    emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum(), INS_OPTS_LSL, lsl);
-                }
-                else // no scale
-                {
-                    if (index->OperIs(GT_BFIZ, GT_CAST) && index->isContained())
-                    {
-                        // Then load/store dataReg from/to [memBase + index*scale with sign/zero extension]
-                        GenTreeCast* cast;
-                        int          cns;
-
-                        if (index->OperIs(GT_BFIZ))
-                        {
-                            cast = index->gtGetOp1()->AsCast();
-                            cns  = (int)index->gtGetOp2()->AsIntCon()->IconValue();
-                        }
-                        else
-                        {
-                            cast = index->AsCast();
-                            cns  = 0;
-                        }
-
-                        // For now, this code only supports extensions from i32/u32
-                        assert(cast->isContained());
-
-                        emitIns_R_R_R_Ext(ins, attr, dataReg, memBase->GetRegNum(), cast->CastOp()->GetRegNum(),
-                                          cast->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW, cns);
-                    }
-                    else
-                    {
-                        // Then load/store dataReg from/to [memBase + index]
-                        emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), index->GetRegNum());
-                    }
-                }
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
+                emitIns_R_R_R(INS_agrk, EA_PTRSIZE, tmpReg, memBase->GetRegNum(), index->GetRegNum());
+                emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
             }
         }
         else // no Index register
@@ -12982,11 +12934,6 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
             }
-            else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
-            {
-                // On Arm64, TEB is in r18, so load from the r18 as base.
-                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
-            }
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
                 // Then load/store dataReg from/to [memBase + offset]
@@ -13001,7 +12948,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
 
                 // Then load/store dataReg from/to [memBase + tmpReg]
-                emitIns_R_R_R(ins, attr, dataReg, memBase->GetRegNum(), tmpReg);
+                emitIns_R_R_R(INS_agrk, EA_PTRSIZE, tmpReg, tmpReg, memBase->GetRegNum());
+                emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
             }
         }
     }
@@ -13018,11 +12966,22 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             assert(!varDsc->lvTracked);
         }
 #endif // DEBUG
-
+        if (addr->OperIs(GT_LCL_ADDR))
+        {
+            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+            unsigned             lclNum  = varNode->GetLclNum();
+            unsigned             offset  = varNode->GetLclOffs();
+            if (emitInsIsStore(ins))
+                emitIns_S_R(ins, attr, dataReg, lclNum, offset);
+            else
+                emitIns_R_S(ins, attr, dataReg, lclNum, offset);
+        }
+        else
+        {
         // Then load/store dataReg from/to [addrReg]
-        emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
+        emitIns_R_R_I(ins, attr, dataReg, addr->GetRegNum(), 0);
+        }
     }
-#endif
 }
 
 // The callee must call genConsumeReg() for any non-contained srcs
