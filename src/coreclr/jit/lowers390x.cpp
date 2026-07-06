@@ -836,7 +836,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 //
 void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 {
-    _ASSERTE(!"NYI");
+//GT_PUTARG_SPLIT is not present on s390x abi, anyways removed in mainline
     GenTree* src = putArgNode->Data();
 
     if (src->TypeIs(TYP_STRUCT))
