@@ -1169,7 +1169,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Debug.Assert(caseId == 12);
 
                 // EE uses the mapped policy identifier,
-                // intermediate requires that the EE certs have a policy extension.
+                // intermediate does not require that the EE certs have a policy extension.
                 // Require that the EE cert is valid for only policy C (no mapping required).
                 //
                 // Despite the intermediate specifying a mapping when it's forbidden (inhibit=<2),
@@ -1180,7 +1180,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         caseId++,
                         keys,
                         rootInhibitMapping,
-                        0,
+                        -1,
                         [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
                         [ChainPolicyTestCase.PolicyC],
                         X509ChainStatusFlags.NoError);
