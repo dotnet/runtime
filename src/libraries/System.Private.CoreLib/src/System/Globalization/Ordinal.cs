@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -741,6 +742,27 @@ namespace System.Globalization
         // BMP character whose simple lower mapping changed its ordinal upper-casing form.
         private static void PreserveOrdinalLowerCasingClass(ReadOnlySpan<char> source, Span<char> destination)
         {
+            // Upper-case the original text and the lowered result once over the whole span instead of calling
+            // TextInfo.ToUpperOrdinal per character. Per-character upper-casing is expensive under NLS, where each
+            // non-ASCII character would otherwise route through a separate invariant ChangeCase call.
+            const int StackAllocThreshold = 256;
+
+            char[]? sourceUpperRented = null;
+            char[]? loweredUpperRented = null;
+
+            Span<char> sourceUpper = source.Length <= StackAllocThreshold
+                ? stackalloc char[StackAllocThreshold]
+                : (sourceUpperRented = ArrayPool<char>.Shared.Rent(source.Length));
+            sourceUpper = sourceUpper.Slice(0, source.Length);
+
+            Span<char> loweredUpper = source.Length <= StackAllocThreshold
+                ? stackalloc char[StackAllocThreshold]
+                : (loweredUpperRented = ArrayPool<char>.Shared.Rent(source.Length));
+            loweredUpper = loweredUpper.Slice(0, source.Length);
+
+            ToUpperOrdinal(source, sourceUpper);
+            ToUpperOrdinal(destination.Slice(0, source.Length), loweredUpper);
+
             for (int i = 0; i < source.Length; i++)
             {
                 char c = source[i];
@@ -752,11 +774,20 @@ namespace System.Globalization
                     continue;
                 }
 
-                char lower = destination[i];
-                if (lower != c && !char.IsAscii(c) && TextInfo.ToUpperOrdinal(lower) != TextInfo.ToUpperOrdinal(c))
+                if (destination[i] != c && !char.IsAscii(c) && sourceUpper[i] != loweredUpper[i])
                 {
                     destination[i] = c;
                 }
+            }
+
+            if (sourceUpperRented is not null)
+            {
+                ArrayPool<char>.Shared.Return(sourceUpperRented);
+            }
+
+            if (loweredUpperRented is not null)
+            {
+                ArrayPool<char>.Shared.Return(loweredUpperRented);
             }
         }
     }
