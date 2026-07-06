@@ -6250,6 +6250,12 @@ ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError 
 	return mono_method_get_unmanaged_wrapper_ftnptr_internal (method, FALSE, error);
 }
 
+gpointer
+ves_icall_RuntimeMethodHandle_GetNativeCode (MonoMethod *method, MonoError *error)
+{
+	return mono_get_runtime_callbacks ()->get_method_code_start (method);
+}
+
 void*
 mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error)
 {
