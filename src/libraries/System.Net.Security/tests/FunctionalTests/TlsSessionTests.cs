@@ -2436,5 +2436,191 @@ namespace System.Net.Security.Tests
             }
             return cert;
         }
+
+        [Fact]
+        public async Task ServerSession_GetClientHelloBytes_BufferedPath_ReturnsWireBytes()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream);
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.True(session.IsHandshakeComplete);
+
+                // Capture bytes via ToArray so we can assert on the shape without re-entering GetClientHelloBytes.
+                byte[] bytes = session.GetClientHelloBytes().ToArray();
+                Assert.True(bytes.Length >= 5, $"ClientHello smaller than TLS record header: {bytes.Length}");
+                // TLS handshake record: content-type 0x16, TLS 1.0/1.2 legacy version 0x0301/0x0303 in header,
+                // then 2-byte length, then message body starting with handshake type 0x01 (client_hello).
+                Assert.Equal(0x16, bytes[0]);
+                int payloadLen = (bytes[3] << 8) | bytes[4];
+                Assert.Equal(5 + payloadLen, bytes.Length);
+                Assert.Equal(0x01, bytes[5]);
+
+                // ClientHelloInfo and TargetHostName are also populated on the options-up-front path.
+                Assert.NotNull(session.ClientHelloInfo);
+                Assert.Equal(serverName, session.ClientHelloInfo!.Value.ServerName);
+                Assert.Equal(serverName, session.TargetHostName);
+            }
+        }
+
+        [Fact]
+        public async Task ServerSession_GetClientHelloBytes_DeferredFlow_AvailableDuringAndAfterCallback()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            byte[]? bytesDuringCallback = null;
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
+            {
+                using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+                using TlsSession session = TlsSession.Create(ctx);
+
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream, hello =>
+                {
+                    bytesDuringCallback = session.GetClientHelloBytes().ToArray();
+                    return hostCtx;
+                });
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.True(session.IsHandshakeComplete);
+
+                Assert.NotNull(bytesDuringCallback);
+                Assert.Equal(0x16, bytesDuringCallback![0]);
+                Assert.Equal(0x01, bytesDuringCallback[5]);
+
+                // Bytes stay available post-handshake and match what we captured during the callback.
+                byte[] bytesAfter = session.GetClientHelloBytes().ToArray();
+                Assert.Equal(bytesDuringCallback, bytesAfter);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        public async Task SocketBoundSession_GetClientHelloBytes_ReturnsWireBytes()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+            serverSocket.Blocking = false;
+
+            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+            });
+            using TlsSession session = TlsSession.Create(ctx, serverSocket.SafeHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(() =>
+            {
+                while (true)
+                {
+                    TlsOperationStatus s = session.Handshake();
+                    if (s == TlsOperationStatus.Complete) return;
+                    if (s == TlsOperationStatus.NeedsCertificateValidation) { session.AcceptWithDefaultValidation(); continue; }
+                    if (s == TlsOperationStatus.WantRead) { serverSocket.Poll(-1, SelectMode.SelectRead); continue; }
+                    if (s == TlsOperationStatus.WantWrite) { serverSocket.Poll(-1, SelectMode.SelectWrite); continue; }
+                    throw new IOException($"Unexpected handshake status {s}");
+                }
+            });
+
+            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsHandshakeComplete);
+
+            // Native path: span backed by socket-replay BIO's retained peek buffer.
+            byte[] bytes = session.GetClientHelloBytes().ToArray();
+            Assert.Equal(0x16, bytes[0]);
+            int payloadLen = (bytes[3] << 8) | bytes[4];
+            Assert.Equal(5 + payloadLen, bytes.Length);
+            Assert.Equal(0x01, bytes[5]);
+
+            Assert.NotNull(session.ClientHelloInfo);
+            Assert.Equal(serverName, session.ClientHelloInfo!.Value.ServerName);
+            Assert.Equal(serverName, session.TargetHostName);
+        }
+
+        [Fact]
+        public void ClientSession_GetClientHelloBytes_Throws()
+        {
+            using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+            {
+                TargetHost = "example.com",
+            });
+            using TlsSession session = TlsSession.Create(ctx);
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                ReadOnlySpan<byte> _ = session.GetClientHelloBytes();
+            });
+        }
+
+        [Fact]
+        public void ServerSession_GetClientHelloBytes_BeforeClientHello_Throws()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+            });
+            using TlsSession session = TlsSession.Create(ctx);
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                ReadOnlySpan<byte> _ = session.GetClientHelloBytes();
+            });
+        }
     }
 }

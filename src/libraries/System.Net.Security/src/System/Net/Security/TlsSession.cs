@@ -723,24 +723,17 @@ namespace System.Net.Security
             {
                 if (_context.IsServer)
                 {
-                    // On the very first server-side call, inspect the incoming
-                    // ClientHello to surface SNI (TargetHost) and, if the caller
-                    // supplied a ServerCertificateSelectionCallback, resolve the
-                    // server certificate from it before AllocateSslHandle runs.
-                    if (_securityContext is null)
+                    // Parse and capture the ClientHello managed-side so the ClientHelloInfo /
+                    // TargetHostName / GetClientHelloBytes surface is consistent across paths.
+                    // We check on every call while _clientHelloBytesBuffered is null because the
+                    // first ProcessHandshake call may pass only a partial CH record - OpenSSL will
+                    // allocate _securityContext even on partial input and return WantRead, so we
+                    // can't rely on _securityContext being null as our re-entry gate.
+                    if (_clientHelloBytesBuffered is null)
                     {
-                        // Parse the ClientHello once and capture it managed-side so the
-                        // ClientHelloInfo / TargetHostName / GetClientHelloBytes surface is
-                        // consistent across paths. Deferred flow: suspend for SetServerContext.
-                        // Options-up-front flow: capture and continue.
-                        if (_clientHelloInfo is null && _clientHelloBytesBuffered is null)
+                        SslClientHelloInfo? parsed = TryParseClientHello(input, out int frameLength);
+                        if (parsed is not null)
                         {
-                            SslClientHelloInfo? parsed = TryParseClientHello(input, out int frameLength);
-                            if (parsed is null)
-                            {
-                                return TlsOperationStatus.WantRead;
-                            }
-
                             _clientHelloInfo = parsed;
                             if (!string.IsNullOrEmpty(parsed.Value.ServerName))
                             {
@@ -750,8 +743,24 @@ namespace System.Net.Security
                             {
                                 _clientHelloBytesBuffered = input.Slice(0, frameLength).ToArray();
                             }
+                            else
+                            {
+                                throw new InvalidOperationException($"CAPTURE-DEBUG: fL={frameLength} iL={input.Length}");
+                            }
                         }
+                        else if (_securityContext is null)
+                        {
+                            // No CH parse-able yet and no PAL context yet - wait for more bytes.
+                            return TlsOperationStatus.WantRead;
+                        }
+                    }
 
+                    // On the very first server-side call, inspect the incoming
+                    // ClientHello to surface SNI (TargetHost) and, if the caller
+                    // supplied a ServerCertificateSelectionCallback, resolve the
+                    // server certificate from it before AllocateSslHandle runs.
+                    if (_securityContext is null)
+                    {
                         if (!_hasServerOptions)
                         {
                             // Deferred / SNI-callback flow: caller resolves via SetServerContext.
@@ -1434,7 +1443,7 @@ namespace System.Net.Security
                 return null;
             }
 
-            frameLength = TlsFrameHelper.HeaderSize + frameInfo.Header.Length;
+            frameLength = frameInfo.Header.Length;
             return new SslClientHelloInfo(frameInfo.TargetName ?? string.Empty, frameInfo.SupportedVersions);
         }
 
