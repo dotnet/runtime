@@ -45,6 +45,12 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
+    [UnmanagedCallersOnly(AssociatedSourceType = typeof(UnmanagedCallersOnlyBasicTest))]
+    public static int ManagedDoubleCallback_AssociatedSourceType(int n)
+    {
+        return DoubleImpl(n);
+    }
+
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("needs triage", TestPlatforms.Android)]
@@ -60,7 +66,17 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         Assert.Equal(expected, UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&ManagedDoubleCallback, n));
     }
 
-   [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    [Fact]
+    public static void TestUnmanagedCallersOnlyValid_AssociatedSourceType()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_AssociatedSourceType)}...");
+
+        int n = 12345;
+        int expected = DoubleImpl(n);
+        Assert.Equal(expected, ((delegate* unmanaged<int, int>)&ManagedDoubleCallback_AssociatedSourceType)(n));
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     public static int ManagedDoubleCallback_Stdcall(int n)
     {
         return DoubleImpl(n);
