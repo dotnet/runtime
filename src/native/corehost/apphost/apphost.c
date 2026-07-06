@@ -11,9 +11,6 @@
 
 #if defined(_WIN32)
 #include "apphost.windows.h"
-#include <_version.h>
-#else
-#include <_version.c>
 #endif
 
 #include <string.h>
@@ -364,13 +361,7 @@ int main(const int argc, const pal_char_t* argv[])
 
     if (trace_is_enabled())
     {
-        trace_info(_X("--- Invoked apphost [version: %s] main = {"),
-#if defined(_WIN32)
-            _STRINGIFY(VER_PRODUCTVERSION_STR)
-#else
-            sccsid
-#endif
-        );
+        trace_info(_X("--- Invoked apphost [version: %s] main = {"), _STRINGIFY(HOST_VERSION));
         for (int i = 0; i < argc; ++i)
         {
             trace_info(_X("%s"), argv[i]);
