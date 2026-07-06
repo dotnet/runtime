@@ -12,11 +12,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Options
 {
-    internal interface IAsyncValidateOptionsName
-    {
-        string? Name { get; }
-    }
-
     internal static class OptionsAsyncValidation
     {
         public static bool IsSyncGuardSuppressed<TOptions>(string name)
@@ -71,52 +66,12 @@ namespace Microsoft.Extensions.Options
             return serviceProvider.GetService<OptionsAsyncValidationCoordinator<TOptions>>();
         }
 
-        public static bool HasApplicableAsyncValidators<TOptions>(IServiceProvider serviceProvider, string name, bool asyncOnly)
-            where TOptions : class
-        {
-            if (!MayHaveAsyncValidators<TOptions>(serviceProvider))
-            {
-                return false;
-            }
-
-            IServiceScopeFactory? scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
-            if (scopeFactory is null)
-            {
-                return false;
-            }
-
-            using IServiceScope scope = scopeFactory.CreateScope();
-            IEnumerable<IAsyncValidateOptions<TOptions>> validators = scope.ServiceProvider.GetServices<IAsyncValidateOptions<TOptions>>();
-            foreach (IAsyncValidateOptions<TOptions> validator in validators)
-            {
-                if (asyncOnly && validator is IValidateOptions<TOptions>)
-                {
-                    continue;
-                }
-
-                if (AppliesToName(validator, name))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public static bool AppliesToName<TOptions>(IAsyncValidateOptions<TOptions> validator, string name)
-            where TOptions : class
-        {
-            return validator is not IAsyncValidateOptionsName namedValidator ||
-                namedValidator.Name is null ||
-                namedValidator.Name == name;
-        }
-
-        public static string GetSyncValidationFailureMessage<TOptions>(string name)
+        public static string GetSyncValidationUnsupportedFailureMessage<TOptions>(string name)
             where TOptions : class
         {
             return name.Length == 0
-                ? $"Asynchronous validation is registered for options type '{typeof(TOptions)}' and must complete before the value can be accessed synchronously. Call ValidateOnStart() or use IOptionsMonitor<TOptions> to establish an asynchronously validated value."
-                : $"Asynchronous validation is registered for options type '{typeof(TOptions)}' and name '{name}' and must complete before the value can be accessed synchronously. Call ValidateOnStart() or use IOptionsMonitor<TOptions> to establish an asynchronously validated value.";
+                ? $"Asynchronous validation is registered for options type '{typeof(TOptions)}' and does not support synchronous validation."
+                : $"Asynchronous validation is registered for options type '{typeof(TOptions)}' and name '{name}' and does not support synchronous validation.";
         }
 
         private static class SyncGuardSuppressionState<TOptions>
@@ -142,69 +97,27 @@ namespace Microsoft.Extensions.Options
         }
     }
 
-    internal sealed class OptionsAsyncValidationApplicability<TOptions>
-        where TOptions : class
-    {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ConcurrentDictionary<string, bool> _hasApplicableAsyncValidators = new ConcurrentDictionary<string, bool>(StringComparer.Ordinal);
-        private readonly ConcurrentDictionary<string, bool> _hasApplicableAsyncOnlyValidators = new ConcurrentDictionary<string, bool>(StringComparer.Ordinal);
-
-        public OptionsAsyncValidationApplicability(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-        }
-
-        public bool HasApplicableAsyncValidators(string name) =>
-            _hasApplicableAsyncValidators.GetOrAdd(name, name =>
-                OptionsAsyncValidation.HasApplicableAsyncValidators<TOptions>(_serviceProvider, name, asyncOnly: false));
-
-        public bool HasApplicableAsyncOnlyValidators(string name) =>
-            _hasApplicableAsyncOnlyValidators.GetOrAdd(name, name =>
-                OptionsAsyncValidation.HasApplicableAsyncValidators<TOptions>(_serviceProvider, name, asyncOnly: true));
-    }
-
     internal sealed class OptionsAsyncValidationCoordinator<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions>
         where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly IOptionsMonitorCache<TOptions> _cache;
-        private readonly OptionsAsyncValidationApplicability<TOptions> _asyncValidationApplicability;
         private readonly IServiceScopeFactory? _scopeFactory;
+        private readonly bool _hasAsyncValidators;
         private readonly ConcurrentDictionary<string, ValidationEntry> _entries = new ConcurrentDictionary<string, ValidationEntry>(StringComparer.Ordinal);
 
         public OptionsAsyncValidationCoordinator(
             IOptionsFactory<TOptions> factory,
             IOptionsMonitorCache<TOptions> cache,
-            IServiceProvider serviceProvider,
-            OptionsAsyncValidationApplicability<TOptions> asyncValidationApplicability)
+            IServiceProvider serviceProvider)
         {
             _factory = factory;
             _cache = cache;
-            _asyncValidationApplicability = asyncValidationApplicability;
             _scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
+            _hasAsyncValidators = OptionsAsyncValidation.MayHaveAsyncValidators<TOptions>(serviceProvider);
         }
 
-        public bool HasApplicableAsyncValidators(string name) => _asyncValidationApplicability.HasApplicableAsyncValidators(name);
-
-        public bool HasApplicableAsyncOnlyValidators(string name) => _asyncValidationApplicability.HasApplicableAsyncOnlyValidators(name);
-
-        public TOptions GetValidatedValueOrThrow(string name)
-        {
-            ValidationEntry entry = GetEntry(name);
-            lock (entry.StateLock)
-            {
-                entry.Failure?.Throw();
-                if (entry.HasValidatedValue)
-                {
-                    return entry.ValidatedValue!;
-                }
-            }
-
-            throw new OptionsValidationException(
-                name,
-                typeof(TOptions),
-                new[] { OptionsAsyncValidation.GetSyncValidationFailureMessage<TOptions>(name) });
-        }
+        public bool HasAsyncValidators => _hasAsyncValidators;
 
         public TOptions GetOrValidate(string name)
         {

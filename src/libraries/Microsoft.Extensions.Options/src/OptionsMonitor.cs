@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Options
             name ??= Options.DefaultName;
             OptionsAsyncValidationCoordinator<TOptions>? asyncValidationCoordinator = _asyncValidationCoordinator;
             if (asyncValidationCoordinator is null ||
-                !asyncValidationCoordinator.HasApplicableAsyncValidators(name))
+                !asyncValidationCoordinator.HasAsyncValidators)
             {
                 InvokeChangedSynchronously(name);
                 return;
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Options
 
         private TOptions GetWithAsyncValidation(string name, OptionsAsyncValidationCoordinator<TOptions> asyncValidationCoordinator)
         {
-            if (!asyncValidationCoordinator.HasApplicableAsyncValidators(name))
+            if (!asyncValidationCoordinator.HasAsyncValidators)
             {
                 return GetSynchronously(name);
             }

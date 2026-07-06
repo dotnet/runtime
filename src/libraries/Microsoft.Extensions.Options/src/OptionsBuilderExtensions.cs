@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
                 .Configure<OptionsAsyncValidationCoordinator<TOptions>>((vo, asyncValidationCoordinator) =>
                 {
-                    if (asyncValidationCoordinator.HasApplicableAsyncValidators(optionsBuilder.Name))
+                    if (asyncValidationCoordinator.HasAsyncValidators)
                     {
                         var validationState = new StartupValidationState<TOptions>(optionsBuilder.Name, asyncValidationCoordinator);
                         vo._validators[(typeof(TOptions), optionsBuilder.Name)] = validationState.Validate;

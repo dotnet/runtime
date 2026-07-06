@@ -26,6 +26,33 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void AsyncValidateOptions_SyncValidateSkipsWhenNameDoesNotMatch()
+        {
+            var validator = new AsyncValidateOptions<FakeOptions>(
+                "expected",
+                (options, ct) => Task.FromResult(false),
+                "Should not run");
+
+            ValidateOptionsResult result = validator.Validate("other", new FakeOptions());
+
+            Assert.True(result.Skipped);
+        }
+
+        [Fact]
+        public void AsyncValidateOptions_SyncValidateFailsWhenNameMatches()
+        {
+            var validator = new AsyncValidateOptions<FakeOptions>(
+                "expected",
+                (options, ct) => Task.FromResult(true),
+                "async fail");
+
+            ValidateOptionsResult result = validator.Validate("expected", new FakeOptions());
+
+            Assert.True(result.Failed);
+            Assert.Contains("Asynchronous validation is registered", result.Failures.Single());
+        }
+
+        [Fact]
         public async Task AsyncValidateOptions_ValidatesWhenNameMatches()
         {
             var validator = new AsyncValidateOptions<FakeOptions>(
@@ -295,7 +322,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void OptionsValue_ReturnsValueAfterMonitorRunsAsyncValidation()
+        public void OptionsValue_DoesNotUseMonitorValidatedValueForSyncAccess()
         {
             var services = new ServiceCollection();
             int asyncRuns = 0;
@@ -311,10 +338,11 @@ namespace Microsoft.Extensions.Options.Tests
             using ServiceProvider sp = services.BuildServiceProvider();
 
             FakeOptions monitorValue = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue;
-            FakeOptions optionsValue = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
+            OptionsValidationException ex = Assert.Throws<OptionsValidationException>(
+                () => sp.GetRequiredService<IOptions<FakeOptions>>().Value);
 
             Assert.Equal("validated", monitorValue.Message);
-            Assert.Same(monitorValue, optionsValue);
+            Assert.Contains("Asynchronous validation is registered", ex.Failures.Single());
             Assert.Equal(1, asyncRuns);
         }
 
@@ -342,7 +370,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void OptionsFactory_AsyncValidatorApplicabilityCheckIsCached()
+        public void OptionsFactory_AsyncValidatorSyncFallbackDisposesScopedDependencies()
         {
             var services = new ServiceCollection();
             var observer = new AsyncValidationObserver();
@@ -360,11 +388,35 @@ namespace Microsoft.Extensions.Options.Tests
             using ServiceProvider sp = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
             var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
 
-            Assert.Throws<OptionsValidationException>(() => factory.Create(Options.DefaultName));
-            Assert.Throws<OptionsValidationException>(() => factory.Create(Options.DefaultName));
+            OptionsValidationException ex = Assert.Throws<OptionsValidationException>(() => factory.Create(Options.DefaultName));
+            OptionsValidationException ex2 = Assert.Throws<OptionsValidationException>(() => factory.Create(Options.DefaultName));
 
+            Assert.Contains("Asynchronous validation is registered", ex.Failures.Single());
+            Assert.Contains("Asynchronous validation is registered", ex2.Failures.Single());
             Assert.Equal(0, observer.ValidationCount);
-            Assert.Equal(1, observer.DisposeCount);
+            Assert.Equal(2, observer.DisposeCount);
+        }
+
+        [Fact]
+        public void DirectAsyncValidator_UsesSyncValidateForNameApplicability()
+        {
+            var services = new ServiceCollection();
+            var validator = new DirectNamedAsyncValidator("named");
+
+            services.Configure<FakeOptions>(o => o.Message = "default");
+            services.Configure<FakeOptions>("named", o => o.Message = "named");
+            services.AddSingleton<IAsyncValidateOptions<FakeOptions>>(validator);
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+            var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
+
+            Assert.Equal("default", sp.GetRequiredService<IOptions<FakeOptions>>().Value.Message);
+            Assert.Equal("default", factory.Create(Options.DefaultName).Message);
+
+            OptionsValidationException ex = Assert.Throws<OptionsValidationException>(() => factory.Create("named"));
+            Assert.Contains("named sync validation failed", ex.Failures.Single());
+            Assert.Equal(3, validator.SyncValidationCount);
+            Assert.Equal(0, validator.AsyncValidationCount);
         }
 
         [Fact]
@@ -493,6 +545,34 @@ namespace Microsoft.Extensions.Options.Tests
             {
                 SyncValidationCount++;
                 return ValidateOptionsResult.Success;
+            }
+
+            public Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
+            {
+                AsyncValidationCount++;
+                return Task.FromResult(ValidateOptionsResult.Success);
+            }
+        }
+
+        private sealed class DirectNamedAsyncValidator : IAsyncValidateOptions<FakeOptions>
+        {
+            private readonly string _name;
+
+            public DirectNamedAsyncValidator(string name)
+            {
+                _name = name;
+            }
+
+            public int SyncValidationCount { get; private set; }
+
+            public int AsyncValidationCount { get; private set; }
+
+            public ValidateOptionsResult Validate(string? name, FakeOptions options)
+            {
+                SyncValidationCount++;
+                return name == _name
+                    ? ValidateOptionsResult.Fail($"{_name} sync validation failed")
+                    : ValidateOptionsResult.Skip;
             }
 
             public Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)

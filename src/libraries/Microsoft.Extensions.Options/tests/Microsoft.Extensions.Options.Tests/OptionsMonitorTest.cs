@@ -116,6 +116,9 @@ namespace Microsoft.Extensions.Options.Tests
                 }
             }
 
+            public ValidateOptionsResult Validate(string? name, FakeOptions options) =>
+                ValidateOptionsResult.Fail("Synchronous validation is not supported.");
+
             public async Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
             {
                 TaskCompletionSource<FakeOptions> startedSource;
@@ -171,6 +174,9 @@ namespace Microsoft.Extensions.Options.Tests
 
                 resultSource.SetResult(result);
             }
+
+            public ValidateOptionsResult Validate(string? name, FakeOptions options) =>
+                ValidateOptionsResult.Fail("Synchronous validation is not supported.");
 
             public async Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
             {
@@ -515,7 +521,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void OptionsValueWithAsyncOnlyValidatorReturnsReloadedValidatedValue()
+        public void OptionsValueWithAsyncOnlyValidatorDoesNotObserveMonitorReloadedValue()
         {
             var services = new ServiceCollection().AddOptions();
             services.AddSingleton<IConfigureOptions<FakeOptions>>(new CountIncrement(this));
@@ -531,14 +537,14 @@ namespace Microsoft.Extensions.Options.Tests
 
             FakeOptions initialOptions = monitor.CurrentValue;
             Assert.Equal("1", initialOptions.Message);
-            Assert.Same(initialOptions, options.Value);
+            Assert.Throws<OptionsValidationException>(() => options.Value);
 
             changeToken.InvokeChangeCallback();
 
-            FakeOptions reloadedOptions = options.Value;
-            Assert.Equal("2", reloadedOptions.Message);
+            FakeOptions reloadedOptions = monitor.CurrentValue;
+            Assert.Equal("3", reloadedOptions.Message);
             Assert.NotSame(initialOptions, reloadedOptions);
-            Assert.Same(reloadedOptions, monitor.CurrentValue);
+            Assert.Throws<OptionsValidationException>(() => options.Value);
         }
 
         [Fact]
@@ -602,7 +608,7 @@ namespace Microsoft.Extensions.Options.Tests
             changeToken.InvokeChangeCallback();
 
             Assert.Equal(2, observer.ValidationCount);
-            Assert.Equal(3, observer.DisposeCount);
+            Assert.Equal(2, observer.DisposeCount);
             Assert.Equal("2", monitor.CurrentValue.Message);
         }
 

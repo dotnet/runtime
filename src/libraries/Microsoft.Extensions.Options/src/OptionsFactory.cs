@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Options
 {
@@ -108,31 +109,78 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly OptionsFactory<TOptions> _factory;
-        private readonly OptionsAsyncValidationApplicability<TOptions> _asyncValidationApplicability;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory? _scopeFactory;
+        private readonly IValidateOptions<TOptions>[] _validations;
 
         public OptionsFactoryWithAsyncValidation(
             IEnumerable<IConfigureOptions<TOptions>> setups,
             IEnumerable<IPostConfigureOptions<TOptions>> postConfigures,
             IEnumerable<IValidateOptions<TOptions>> validations,
-            OptionsAsyncValidationApplicability<TOptions> asyncValidationApplicability)
+            IServiceProvider serviceProvider)
         {
-            _factory = new OptionsFactory<TOptions>(setups, postConfigures, validations);
-            _asyncValidationApplicability = asyncValidationApplicability;
+            _validations = validations as IValidateOptions<TOptions>[] ?? new List<IValidateOptions<TOptions>>(validations).ToArray();
+            _factory = new OptionsFactory<TOptions>(setups, postConfigures, _validations);
+            _serviceProvider = serviceProvider;
+            _scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
         }
 
         public TOptions Create(string name)
         {
             string localName = name ?? Options.DefaultName;
-            if (!OptionsAsyncValidation.IsSyncGuardSuppressed<TOptions>(localName) &&
-                _asyncValidationApplicability.HasApplicableAsyncOnlyValidators(localName))
+            TOptions options = _factory.Create(localName);
+            if (!OptionsAsyncValidation.IsSyncGuardSuppressed<TOptions>(localName))
             {
-                throw new OptionsValidationException(
-                    localName,
-                    typeof(TOptions),
-                    new[] { OptionsAsyncValidation.GetSyncValidationFailureMessage<TOptions>(localName) });
+                ValidateAsyncValidators(localName, options);
             }
 
-            return _factory.Create(localName);
+            return options;
+        }
+
+        private void ValidateAsyncValidators(string name, TOptions options)
+        {
+            IServiceScopeFactory? scopeFactory = _scopeFactory;
+            if (scopeFactory is null ||
+                !OptionsAsyncValidation.MayHaveAsyncValidators<TOptions>(_serviceProvider))
+            {
+                return;
+            }
+
+            List<string>? failures = null;
+            using IServiceScope scope = scopeFactory.CreateScope();
+            IEnumerable<IAsyncValidateOptions<TOptions>> asyncValidations = scope.ServiceProvider.GetServices<IAsyncValidateOptions<TOptions>>();
+            foreach (IAsyncValidateOptions<TOptions> validate in asyncValidations)
+            {
+                if (IsAlreadyValidated(validate))
+                {
+                    continue;
+                }
+
+                ValidateOptionsResult result = validate.Validate(name, options);
+                if (result is not null && result.Failed)
+                {
+                    failures ??= new List<string>();
+                    failures.AddRange(result.Failures);
+                }
+            }
+
+            if (failures is not null && failures.Count > 0)
+            {
+                throw new OptionsValidationException(name, typeof(TOptions), failures);
+            }
+        }
+
+        private bool IsAlreadyValidated(IAsyncValidateOptions<TOptions> validate)
+        {
+            foreach (IValidateOptions<TOptions> syncValidation in _validations)
+            {
+                if (ReferenceEquals(validate, syncValidation))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
