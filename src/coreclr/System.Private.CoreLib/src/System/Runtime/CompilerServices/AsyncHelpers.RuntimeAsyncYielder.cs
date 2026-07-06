@@ -20,8 +20,7 @@ namespace System.Runtime.CompilerServices
                 object continuationTarget = continuation.GetTargetForSingleCastInstanceDelegate();
                 Debug.Assert(
                     continuationTarget != null &&
-                    continuationTarget.GetType().IsGenericType &&
-                    continuationTarget.GetType().GetGenericTypeDefinition() == typeof(RuntimeAsyncTask<>));
+                    continuationTarget.GetType().HasSameMetadataDefinitionAs(typeof(RuntimeAsyncTask<>)));
 
                 Task raTask = (Task)continuationTarget;
 
