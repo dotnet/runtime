@@ -149,11 +149,11 @@ namespace Microsoft.Extensions.Options
     {
         System.Threading.Tasks.Task ValidateAsync(System.Threading.CancellationToken cancellationToken = default);
     }
-    public partial interface IValidateOptions<in TOptions> where TOptions : class
+    public partial interface IValidateOptions<TOptions> where TOptions : class
     {
         Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options);
     }
-    public partial interface IAsyncValidateOptions<in TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
+    public partial interface IAsyncValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         System.Threading.Tasks.Task<Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, TOptions options, System.Threading.CancellationToken cancellationToken = default);
     }

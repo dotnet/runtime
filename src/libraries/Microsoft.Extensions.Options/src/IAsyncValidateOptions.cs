@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Options
     /// equivalent synchronous validation or return a failure that indicates synchronous validation is not supported.
     /// </remarks>
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
-    public interface IAsyncValidateOptions<in TOptions> : IValidateOptions<TOptions> where TOptions : class
+    public interface IAsyncValidateOptions<TOptions> : IValidateOptions<TOptions> where TOptions : class
     {
         /// <summary>
         /// Asynchronously validates a specified named options instance (or all if <paramref name="name"/> is <see langword="null"/>).
