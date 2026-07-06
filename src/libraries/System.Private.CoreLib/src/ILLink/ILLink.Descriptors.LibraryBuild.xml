@@ -39,5 +39,14 @@
       <method name="LoadAssemblyAndGetFunctionPointer" />
       <method name="GetFunctionPointer" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.LoongArch.LAM/BH">
+      <!-- Internal API used by Interlocked.cs -->
+      <method name="get_IsSupported" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.LoongArch.LAM/CAS">
+      <!-- Internal API used by Interlocked.cs -->
+      <method name="get_IsSupported" />
+    </type>
+
   </assembly>
 </linker>
