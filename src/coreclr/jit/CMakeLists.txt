@@ -368,6 +368,7 @@ set( JIT_HEADERS
   host.h
   hostallocator.h
   hwintrinsic.h
+  hwintrinsiclist.h
   ICorJitInfo_names_generated.h
   ICorJitInfo_wrapper_generated.hpp
   inline.h

@@ -74,14 +74,24 @@ public class CdacStressTests : CdacStressTestBase
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
 
-        // Scope of this PR: ARGITER is validated on Windows x86 / x64
-        // only. Other architectures hit known gaps that need follow-up
-        // work (SystemV-AMD64 / ARM64 struct-in-register classification,
-        // arm32 ABI port). Skip there until those land.
-        if (os != OSPlatform.Windows || arch is not (Architecture.X86 or Architecture.X64))
+        // ARGITER stress requires a CdacTypeHandle whose calling-convention
+        // helpers are filled in for the target ABI. Currently validated:
+        //   - Windows x86 / x64        (TransitionBlock + IsTrivialPointerSizedStruct)
+        //   - Windows ARM64            (HFA via MethodTable enum_flag_IsHFA)
+        //   - Linux ARM / ARM64        (HFA, same path)
+        // Still skipped:
+        //   - Linux / macOS x64        (SystemV-AMD64 eightbyte classifier not ported)
+        //   - RISC-V / LoongArch64     (FP struct classifier not ported)
+        //   - WASM32                   (GetFieldAlignment not ported)
+        bool argIterSupported =
+               (os == OSPlatform.Windows && arch is Architecture.X86 or Architecture.X64 or Architecture.Arm64)
+            || (os == OSPlatform.Linux && arch is Architecture.Arm or Architecture.Arm64);
+        if (!argIterSupported)
             throw new SkipTestException(
-                "ARGITER stress is validated for windows-x86 / windows-x64 in this PR; " +
-                "other targets need follow-up work (SystemV / ARM64 struct-in-registers, ARM32 ABI port).");
+                "ARGITER stress: needs follow-up work for this platform " +
+                "(SystemV-AMD64 struct classifier for linux/macOS x64, " +
+                "Windows ARM32 ABI port, RISC-V / LoongArch FP struct classifier, " +
+                "or WASM GetFieldAlignment).");
 
         CdacStressResults results = await RunArgIterStressAsync(debuggee.Name);
         AssertAllArgIterPassed(results, debuggee.Name);

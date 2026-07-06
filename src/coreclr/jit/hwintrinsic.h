@@ -979,95 +979,27 @@ struct HWIntrinsicInfo
 
     static bool IsVectorCreate(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_VectorT_Create:
-            case NI_Vector64_Create:
-#endif // TARGET_ARM64
-            case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector512_Create:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_Create;
     }
 
     static bool IsVectorCreateScalar(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_VectorT_CreateScalar:
-            case NI_Vector64_CreateScalar:
-#endif // TARGET_ARM64
-            case NI_Vector128_CreateScalar:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_CreateScalar;
     }
 
     static bool IsVectorCreateScalarUnsafe(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_VectorT_CreateScalarUnsafe:
-            case NI_Vector64_CreateScalarUnsafe:
-#endif // TARGET_ARM64
-            case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_CreateScalarUnsafe;
     }
 
     static bool IsVectorGetElement(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_GetElement:
-#endif // TARGET_ARM64
-            case NI_Vector128_GetElement:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_GetElement:
-            case NI_Vector512_GetElement:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_GetElement;
     }
 
     static bool IsVectorToScalar(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_ToScalar:
-#endif // TARGET_ARM64
-            case NI_Vector128_ToScalar:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_ToScalar:
-            case NI_Vector512_ToScalar:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_ToScalar;
     }
 
     static bool HasImmediateOperand(NamedIntrinsic id)

@@ -1885,10 +1885,10 @@ void LinearScan::BuildHWIntrinsicTempRegs(GenTreeHWIntrinsic* intrinsicTree,
             }
             break;
 
-        case NI_VectorT_Create:
-        case NI_VectorT_CreateScalarUnsafe:
+        case NI_Vector_Create:
+        case NI_Vector_CreateScalarUnsafe:
             // FP values need moving into a GP register
-            if (varTypeIsFloating(intrin.baseType))
+            if (intrinsicTree->TypeIs(TYP_SIMD) && varTypeIsFloating(intrin.baseType))
             {
                 buildInternalIntRegisterDefForNode(intrinsicTree);
             }
@@ -2420,8 +2420,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
 
     switch (intrinsicId)
     {
-        case NI_Vector64_CreateScalarUnsafe:
-        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector_CreateScalarUnsafe:
             if (varTypeIsFloating(intrinsicTree->Op(1)))
             {
                 delayFreeOp = intrinsicTree->Op(1);
@@ -2437,8 +2436,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
             }
             break;
 
-        case NI_Vector64_ToScalar:
-        case NI_Vector128_ToScalar:
+        case NI_Vector_ToScalar:
             if (varTypeIsFloating(intrinsicTree))
             {
                 delayFreeOp = intrinsicTree->Op(1);
@@ -2446,10 +2444,10 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
             }
             break;
 
-        case NI_Vector64_ToVector128Unsafe:
-        case NI_Vector128_AsVector128Unsafe:
-        case NI_Vector128_AsVector3:
-        case NI_Vector128_GetLower:
+        case NI_Vector_ToVector128Unsafe:
+        case NI_Vector_AsVector128Unsafe:
+        case NI_Vector_AsVector3:
+        case NI_Vector_GetLower:
             delayFreeOp = intrinsicTree->Op(1);
             assert(delayFreeOp != nullptr);
             break;

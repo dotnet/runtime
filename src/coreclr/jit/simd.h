@@ -305,7 +305,6 @@ struct simd64_t
 static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
 // Forward declarations for mask types used by simdmask_t helpers.
 struct simdmaskscalable_t;
 struct simdmaskvalue_t;
@@ -380,7 +379,6 @@ struct simdmask_t
     }
 };
 static_assert(sizeof(simdmask_t) == 8);
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
 // Ensure simd_t is big enough to contain any simd type
 #if defined(TARGET_XARCH)
@@ -640,6 +638,7 @@ inline void EvaluateUnaryMask(
         }
     }
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 inline void EvaluateExtractMSB(simdmask_t* result, const TSimd& arg0)
@@ -702,7 +701,6 @@ inline void EvaluateExtractMSB(var_types baseType, simdmask_t* result, const TSi
         }
     }
 }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0)

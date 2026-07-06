@@ -111,8 +111,6 @@ else()
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
                 -lexports.js
-                -Wl,--export=__stack_pointer
-                -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag
                 -Wl,--error-limit=0)
         endif()
 

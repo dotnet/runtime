@@ -894,10 +894,27 @@ void CodeGen::checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg)
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    const HWIntrinsic intrin(node);
+    const HWIntrinsic      intrin(node);
+    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrin.id);
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    assert(m_compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrin.id)));
+
+    if (isa == InstructionSet_Vector)
+    {
+        if (node->GetSimdSize() == 8)
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector64));
+        }
+        else
+        {
+            assert((node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector128));
+        }
+    }
+    else
+    {
+        assert(m_compiler->compIsaSupportedDebugOnly(isa));
+    }
 
     regNumber targetReg = node->GetRegNum();
 
@@ -1643,9 +1660,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_CreateScalarUnsafe:
-            case NI_Vector128_CreateScalarUnsafe:
-                if (intrin.op1->isContainedFltOrDblImmed())
+            case NI_Vector_CreateScalarUnsafe:
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+
+                if (simdType == TYP_SIMD)
+                {
+                    emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                    if (varTypeIsFloating(intrin.baseType))
+                    {
+                        regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                        insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                        GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                        op1Reg = tmpReg;
+                    }
+
+                    GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
                     const double dataValue = intrin.op1->AsDblCon()->DconValue();
@@ -1675,6 +1708,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_AddWideningLower:
             case NI_AdvSimd_AddWideningUpper:
@@ -1858,18 +1892,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_ToVector128:
+            case NI_Vector_ToVector128:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false);
                 break;
 
-            case NI_Vector64_ToVector128Unsafe:
-            case NI_Vector128_AsVector128Unsafe:
-            case NI_Vector128_GetLower:
+            case NI_Vector_ToVector128Unsafe:
+            case NI_Vector_AsVector128Unsafe:
+            case NI_Vector_GetLower:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
                 break;
 
-            case NI_Vector64_GetElement:
-            case NI_Vector128_GetElement:
+            case NI_Vector_GetElement:
             {
                 assert(intrin.numOperands == 2);
                 assert(!intrin.op1->isContained());
@@ -1904,14 +1937,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector128_GetUpper:
+            case NI_Vector_GetUpper:
             {
                 const int byteIndex = 8;
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op1Reg, byteIndex, INS_OPTS_16B);
                 break;
             }
 
-            case NI_Vector128_AsVector3:
+            case NI_Vector_AsVector3:
             {
                 // AsVector3 can be a no-op when it's already in the right register, otherwise
                 // we just need to move the value over. Vector3 operations will themselves mask
@@ -1922,8 +1955,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_ToScalar:
-            case NI_Vector128_ToScalar:
+            case NI_Vector_ToScalar:
             {
                 if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg)))
                 {
@@ -3084,8 +3116,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_VectorT_Create:
-            case NI_VectorT_CreateScalarUnsafe:
+            case NI_Vector_Create:
             {
                 emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
 
@@ -3101,7 +3132,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_VectorT_CreateSequence:
+            case NI_Vector_CreateSequence:
             {
                 emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
