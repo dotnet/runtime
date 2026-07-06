@@ -1399,7 +1399,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 pParam->inlineInfo->InlineRoot->m_inlineStrategy
                     ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
                                               pParam->inlineInfo->iciCall);
-            pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
             pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
             JITLOG_THIS(pParam->pThis,
@@ -2316,6 +2315,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         InlArgInfo* argInfo;
         if (arg.IsUserArg())
         {
+            assert(ilArgNum < inlineInfo->argCnt);
             argInfo = &inlArgInfo[ilArgNum++];
         }
         else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
@@ -2330,6 +2330,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         assert(argInfo != nullptr);
         fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
     }
+
+    assert(ilArgNum == inlineInfo->argCnt);
 
     // Add the CCTOR check if asked for.
     // Note: We no longer do the optimization that is done before by staticAccessedFirstUsingHelper in the old inliner.
