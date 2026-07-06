@@ -151,6 +151,54 @@ public class GenericVirtualMethodTests
         RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnStringType<string>();
     }
 
+    [Fact]
+    public static void RuntimeLookupInlining()
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static IDevirtTarget MakeTarget()
+        {
+            return new DevirtTarget();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Type LateInlinee<TInlinee>()
+        {
+            return MakeTarget().GetTypeArg<TInlinee>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type LateCaller<TWrong, TRight>()
+        {
+            return LateInlinee<TRight>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Type Inlinee<TInlinee>(IDevirtTarget target)
+        {
+            return target.GetTypeArg<TInlinee>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type Caller<TWrong, TRight>()
+        {
+            return Inlinee<TRight>(new DevirtTarget());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type LateRootCaller<TWrong, TRight>()
+        {
+            return MakeTarget().GetTypeArg<TRight>();
+        }
+
+        Type immediateActual = Caller<string, object>();
+        Type lateActual = LateCaller<string, object>();
+        Type lateRootActual = LateRootCaller<string, object>();
+        Type expected = typeof(object);
+        Assert.Equal(expected, immediateActual);
+        Assert.Equal(expected, lateActual);
+        Assert.Equal(expected, lateRootActual);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ValidateCaller(string scenarioName, IBaseMethodCaller caller)
     {
@@ -490,6 +538,17 @@ internal struct DerivedStructStringNoRecursion : IBase<string>
     {
         return Foo<U>;
     }
+}
+
+interface IDevirtTarget
+{
+    Type GetTypeArg<T>();
+}
+
+sealed class DevirtTarget : IDevirtTarget
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public Type GetTypeArg<T>() => typeof(T);
 }
 
 internal static class IconContextBridgeNonShared<TMethod>

@@ -987,6 +987,7 @@ private:
             dcInfo.pUnboxedResolvedToken =
                 (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodUnboxedResolvedToken : nullptr;
 
+            dcInfo.runtimeLookupContext = nullptr;
             dcInfo.objIsNonNull         = objIsNonNull;
             dcInfo.hadImplicitNullCheck = m_origCall->IsVirtual();
             dcInfo.isDelegateCall       = m_origCall->IsDelegateInvoke();

@@ -1628,10 +1628,17 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_LOOKUP* pLookup, void* compile
         assert(pRuntimeLookup->indirections != 0);
         GenTreeCall* helperCall = gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
 
-        // Spilling it to a temp improves CQ (mainly in Tier0)
-        unsigned callLclNum = lvaGrabTemp(true DEBUGARG("spilling helperCall"));
-        impStoreToTemp(callLclNum, helperCall, CHECK_SPILL_NONE);
-        return gtNewLclvNode(callLclNum, helperCall->TypeGet());
+        if (opts.OptimizationEnabled())
+        {
+            return helperCall;
+        }
+        else
+        {
+            // Spilling it to a temp improves CQ (mainly in Tier0)
+            unsigned callLclNum = lvaGrabTemp(true DEBUGARG("spilling helperCall"));
+            impStoreToTemp(callLclNum, helperCall, CHECK_SPILL_NONE);
+            return gtNewLclvNode(callLclNum, helperCall->TypeGet());
+        }
     }
 
     // Size-check is not expected without testForNull

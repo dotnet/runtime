@@ -5047,6 +5047,7 @@ public:
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token and method handle for the unboxed entry.
         CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
+        GenTree*                runtimeLookupContext;    // Runtime context tree to use for pInstParamLookup, or nullptr.
         CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
         bool                    objIsNonNull;            // True if the receiver is known non-null.
         bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
@@ -7228,9 +7229,11 @@ private:
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
     GenTree* getLookupTree(CORINFO_LOOKUP* pLookup,
                            GenTreeFlags    handleFlags,
-                           void*           compileTimeHandle);
+                           void*           compileTimeHandle,
+                           GenTree*        runtimeLookupContext = nullptr);
     GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup,
-                                  void*           compileTimeHandle);
+                                  void*           compileTimeHandle,
+                                  GenTree*        runtimeLookupContext = nullptr);
     GenTree* getVirtMethodPointerTree(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo);
@@ -8122,7 +8125,8 @@ public:
                                          bool                    isInterface,
                                          CORINFO_METHOD_HANDLE   baseMethod,
                                          CORINFO_CLASS_HANDLE    baseClass,
-                                         CORINFO_CONTEXT_HANDLE* pContextHandle);
+                                         CORINFO_CONTEXT_HANDLE* pContextHandle,
+                                         CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
 

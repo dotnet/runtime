@@ -5512,11 +5512,15 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 //    pLookup - the lookup to get the tree for
 //    handleFlags - flags to set on the result node
 //    compileTimeHandle - compile-time handle corresponding to the lookup
+//    runtimeLookupContext - context tree to use for a runtime lookup, or nullptr to use the current context
 //
 // Return Value:
 //    A node representing the lookup tree
 //
-GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
+GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup,
+                                 GenTreeFlags    handleFlags,
+                                 void*           compileTimeHandle,
+                                 GenTree*        runtimeLookupContext)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
@@ -5539,7 +5543,7 @@ GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFla
         return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
     }
 
-    return getRuntimeLookupTree(pLookup, compileTimeHandle);
+    return getRuntimeLookupTree(pLookup, compileTimeHandle, runtimeLookupContext);
 }
 
 //------------------------------------------------------------------------
@@ -5548,25 +5552,27 @@ GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFla
 // Arguments:
 //    pLookup - the lookup to get the tree for
 //    compileTimeHandle - compile-time handle corresponding to the lookup
+//    runtimeLookupContext - context tree to use for the lookup, or nullptr to use the current context
 //
 // Return Value:
 //    A node representing the runtime lookup tree
 //
-GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
+GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle, GenTree* runtimeLookupContext)
 {
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
+    GenTree*                contextTree    = runtimeLookupContext != nullptr
+                                                 ? runtimeLookupContext
+                                                 : getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
     // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
         pRuntimeLookup->testForNull)
     {
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
-                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
-                                                compileTimeHandle);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, contextTree, compileTimeHandle);
     }
 
-    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+    GenTree* result = contextTree;
 
     ArrayStack<GenTree*> stmts(getAllocator(CMK_ArrayStack));
 
