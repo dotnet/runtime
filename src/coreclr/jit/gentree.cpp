@@ -36158,8 +36158,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             // A true comparison produces an all-true mask for the given element count.
 
                             GenTreeMskCon* mskCon = gtNewMskConNode(retType);
-                            mskCon->gtSimdMaskVal = simdmask_t::AllBitsSet(GenTreeVecCon::ElementCount(simdSize, simdBaseType));
-                            resultNode            = mskCon;
+                            mskCon->gtSimdMaskVal =
+                                simdmask_t::AllBitsSet(GenTreeVecCon::ElementCount(simdSize, simdBaseType));
+                            resultNode = mskCon;
                         }
 #endif // FEATURE_MASKED_HW_INTRINSICS
                         else
