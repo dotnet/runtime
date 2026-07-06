@@ -95,7 +95,7 @@ jobs:
         displayName: 'product build'
 
     # Populate Core_Root
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) -arch $(archType) $(crossArg) generatelayoutonly
       displayName: Populate Core_Root
 
     # Create work item directory and populate with assemblies
@@ -118,6 +118,17 @@ jobs:
           copy $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll $(workItemDirectory)\dlls
         displayName: Create directories
         failOnStderr: true
+
+    # Pre-initialize the dotnet CLI so that sdk.txt is populated before the
+    # parallel crossgen2 fan-out. Without this, 236 parallel dotnet.cmd
+    # invocations race to create artifacts/toolset/sdk.txt, and some may
+    # read it before it exists, producing a "dotnet.exe not found" error.
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)/dotnet.sh --version
+        displayName: Pre-initialize dotnet CLI
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: $(Build.SourcesDirectory)\dotnet.cmd --version
+        displayName: Pre-initialize dotnet CLI
 
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0

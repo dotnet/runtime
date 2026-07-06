@@ -83,7 +83,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         // Options with features that aren't supported in the generated serialization funcs.
         public static IEnumerable<object[]> GetOptionsUsingUnsupportedFeatures()
         {
-            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { Converters = { new JsonStringEnumConverter() } } };
+            yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { Converters = { new JsonStringEnumConverter<JsonIgnoreCondition>() } } };
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping } };
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.WriteAsString } };
             yield return new object[] { new JsonSerializerOptions(s_compatibleOptions) { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals } };
@@ -101,7 +101,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static IEnumerable<object[]> GetIncompatibleOptions()
         {
             yield return new object[] { new JsonSerializerOptions() };
-            yield return new object[] { new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } } };
+            yield return new object[] { new JsonSerializerOptions { Converters = { new JsonStringEnumConverter<JsonIgnoreCondition>() } } };
             yield return new object[] { new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping } };
             yield return new object[] { new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString } };
             yield return new object[] { new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve } };

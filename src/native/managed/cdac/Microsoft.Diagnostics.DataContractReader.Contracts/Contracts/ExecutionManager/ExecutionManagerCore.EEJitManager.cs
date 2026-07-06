@@ -106,7 +106,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return TargetPointer.Null;
 
-            bool featureOnStackReplacement = Target.ReadGlobal<byte>(Constants.Globals.FeatureOnStackReplacement) != 0;
+            bool featureOnStackReplacement = Target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.OnStackReplacement);
             Data.EEJitManager eeJitManager = Target.ProcessedData.GetOrAdd<Data.EEJitManager>(rangeSection.Data.JitManager);
             if (featureOnStackReplacement || eeJitManager.StoreRichDebugInfo)
                 hasFlagByte = true;
