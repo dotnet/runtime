@@ -273,14 +273,15 @@ namespace System
                     }
 
                     int index = (int)(p - str);
-                    int length = (int)(strEnd - str);
+                    var value = new ReadOnlySpan<TChar>(str, (int)(strEnd - str));
 
-                    if ((index == length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0) || TrailingZeros(new ReadOnlySpan<TChar>(str, length), index))
+                    // For compatibility we still need to process any trailing
+                    // nulls that exist and report them as having been consumed.
+
+                    index = ConsumeTrailingNulls(value, index);
+
+                    if ((index == value.Length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0))
                     {
-                        // For AllowTrailingInvalidCharacters, we want to stop at the first invalid character
-                        // including trailing nulls (zeros). Otherwise, for compatibility we still need to
-                        // process any trailing nulls that exist and report them as having been consumed.
-
                         elementsConsumed = index;
                         return true;
                     }
@@ -305,11 +306,17 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
-        private static bool TrailingZeros<TChar>(ReadOnlySpan<TChar> value, int index)
+        private static int ConsumeTrailingNulls<TChar>(ReadOnlySpan<TChar> value, int index)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            // For compatibility, we need to allow trailing zeros at the end of a number string
-            return !value.Slice(index).ContainsAnyExcept(TChar.CastFrom('\0'));
+            // For compatibility, we need to allow trailing nulls at the end of a number string
+            var nullsToConsume = value.Slice(index).IndexOfAnyExcept(TChar.CastFrom('\0'));
+
+            if (nullsToConsume >= 0)
+            {
+                index += nullsToConsume;
+            }
+            return index;
         }
 
         private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));

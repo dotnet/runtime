@@ -552,18 +552,13 @@ namespace System
             return status;
 
         InvalidExit:
-            // For AllowTrailingInvalidCharacters, we want to stop at the first invalid character
-            // including trailing nulls (zeros). Otherwise, for compatibility we still need to
-            // process any trailing nulls that exist and report them as having been consumed.
+            // For compatibility we still need to process any trailing
+            // nulls that exist and report them as having been consumed.
 
-            if ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0)
-            {
-                goto DoneAtEndButPotentialOverflow;
-            }
+            index = ConsumeTrailingNulls(value, index);
 
-            if (TrailingZeros(value, index))
+            if ((index == value.Length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0))
             {
-                index = value.Length;
                 goto DoneAtEndButPotentialOverflow;
             }
 
@@ -760,18 +755,13 @@ namespace System
             return status;
 
         InvalidExit:
-            // For AllowTrailingInvalidCharacters, we want to stop at the first invalid character
-            // including trailing nulls (zeros). Otherwise, for compatibility we still need to
-            // process any trailing nulls that exist and report them as having been consumed.
+            // For compatibility we still need to process any trailing
+            // nulls that exist and report them as having been consumed.
 
-            if ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0)
-            {
-                goto DoneAtEndButPotentialOverflow;
-            }
+            index = ConsumeTrailingNulls(value, index);
 
-            if (TrailingZeros(value, index))
+            if ((index == value.Length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0))
             {
-                index = value.Length;
                 goto DoneAtEndButPotentialOverflow;
             }
 
@@ -1439,8 +1429,12 @@ namespace System
                 }
             }
 
-            // For compatibility, allow trailing null characters (same as other number parsers).
-            if ((index != value.Length) && ((styles & NumberStyles.AllowTrailingInvalidCharacters) == 0) && !TrailingZeros(value, index))
+            // For compatibility we still need to process any trailing
+            // nulls that exist and report them as having been consumed.
+
+            index = ConsumeTrailingNulls(value, index);
+
+            if ((index != value.Length) && ((styles & NumberStyles.AllowTrailingInvalidCharacters) == 0))
             {
                 elementsConsumed = 0;
                 return false;
