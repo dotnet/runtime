@@ -278,6 +278,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateReferencedExperimentalPocoWithPolyfillCompilation()
+        {
+            string source = """
+                namespace System.Diagnostics.CodeAnalysis
+                {
+                    [System.AttributeUsage(System.AttributeTargets.All)]
+                    public sealed class ExperimentalAttribute : System.Attribute
+                    {
+                        public ExperimentalAttribute(string diagnosticId) { DiagnosticId = diagnosticId; }
+                        public string DiagnosticId { get; }
+                        public string UrlFormat { get; set; } = "";
+                    }
+                }
+
+                namespace ReferencedAssembly
+                {
+                    [System.Diagnostics.CodeAnalysis.Experimental("EXP_TEST")]
+                    public class ExperimentalPocoFromLib
+                    {
+                        public int Value { get; set; }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
         public static Compilation CreateReferencedHighLowTempsCompilation()
         {
             string source = """
