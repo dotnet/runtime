@@ -93,11 +93,11 @@ public class TlsHandshakeBench
     [Params(SslProtocols.Tls12, SslProtocols.Tls13)]
     public SslProtocols Protocol { get; set; }
 
-    // AllowTlsResume is fixed to false so every iteration measures a full handshake.
-    // Session resumption requires the shared TlsContext / SSL_CTX pattern (all sessions
-    // built from one context share the ticket cache); a per-session context can't resume
-    // by construction. This bench measures the full-handshake path.
-    public bool AllowResume => false;
+    // When true, both sides opt into TLS session resumption (session tickets on TLS 1.2
+    // and PSK-based resumption on TLS 1.3). Resumption is only effective when all sessions
+    // share a single TlsContext / SSL_CTX (which this bench does for the TlsSession_* rows).
+    [Params(false, true)]
+    public bool AllowResume { get; set; }
 
     [GlobalSetup]
     public void Setup()
@@ -204,13 +204,13 @@ public class TlsHandshakeBench
         GC.KeepAlive(ss);
     }
 
-    // Same as TlsSession_Fd_Deferred_Server but the caller resolves the ClientHello to a
-    // pre-warmed TlsContext from a pool (here: the shared _ctxFd already carries the cert
-    // + protocols + ticket cache for the target virtual host) and calls SetServerContext
-    // instead of SetServerContext. Measures the throughput improvement of the caller-
-    // managed TlsContext pool pattern: SSL_CTX reuse, per-tenant ticket cache preserved.
+    // Socket-bound TlsSession in the deferred-SetServerContext flow: bootstrap TlsContext
+    // (no cert) is used to create the session; after the ClientHello arrives the caller
+    // inspects session.ClientHelloInfo and calls SetServerContext with a pre-built
+    // per-tenant TlsContext (bench reuses _ctxFd for simplicity, but the pattern is one
+    // TlsContext per virtual host / cert).
     [Benchmark]
-    public async Task TlsSession_Fd_Deferred_Pool_Server()
+    public async Task TlsSession_Fd_Deferred_Server()
     {
         (Socket cs, Socket ss) = await ConnectPairAsync();
         ss.Blocking = false;
@@ -220,10 +220,10 @@ public class TlsHandshakeBench
         using TlsSession session = TlsSession.Create(_ctxFdDeferred, ss.SafeHandle);
 
         Task c = ClientHandshakeThenPingPongAsync(client);
-        Task s = RunOnDedicatedThreadAsync(() => DriveFdDeferredContextHandshakeAndPingPong(session, ss));
+        Task s = RunOnDedicatedThreadAsync(() => DriveFdDeferredHandshakeAndPingPong(session, ss));
         await Task.WhenAll(c, s);
-        if (!session.IsHandshakeComplete) throw new IOException("server fd deferred-pool handshake not complete");
-        if (!client.IsAuthenticated) throw new IOException("client fd deferred-pool handshake not complete");
+        if (!session.IsHandshakeComplete) throw new IOException("server fd deferred handshake not complete");
+        if (!client.IsAuthenticated) throw new IOException("client fd deferred handshake not complete");
 
         GC.KeepAlive(ss);
     }
@@ -461,11 +461,11 @@ public class TlsHandshakeBench
         }
     }
 
-    // Deferred fd driver that resolves NeedsServerOptions via SetServerContext (pool
-    // pattern) instead of SetServerContext. Uses the bench's pre-warmed _ctxFd as the
-    // pooled virtual-host context; SSL_CTX is already allocated and cert-installed on
-    // it, so the deferred session just adopts that CTX for the rest of the handshake.
-    private static void DriveFdDeferredContextHandshakeAndPingPong(TlsSession session, Socket socket)
+    // Deferred fd driver that resolves NeedsServerOptions via SetServerContext, using the
+    // bench's pre-warmed _ctxFd as the per-tenant context (SSL_CTX is already allocated
+    // and cert-installed on it, so the deferred session just adopts that CTX for the rest
+    // of the handshake).
+    private static void DriveFdDeferredHandshakeAndPingPong(TlsSession session, Socket socket)
     {
         TlsHandshakeBench bench = s_current!;
         while (true)
@@ -492,18 +492,18 @@ public class TlsHandshakeBench
                     throw new IOException($"Unexpected handshake status: {s}");
             }
         }
-        if (!session.IsHandshakeComplete) throw new IOException("fd deferred-pool handshake not complete before ping/pong");
+        if (!session.IsHandshakeComplete) throw new IOException("fd deferred handshake not complete before ping/pong");
 
         byte[] rx = new byte[1];
         while (true)
         {
             TlsOperationStatus s = session.Read(rx, out int produced);
-            if (produced == 1) { if (rx[0] != 0xAB) throw new IOException("fd deferred-pool ping mismatch"); break; }
+            if (produced == 1) { if (rx[0] != 0xAB) throw new IOException("fd deferred ping mismatch"); break; }
             switch (s)
             {
                 case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
                 case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
-                default: throw new IOException($"fd deferred-pool read status {s}");
+                default: throw new IOException($"fd deferred read status {s}");
             }
         }
         byte[] tx = new byte[1] { 0xCD };
@@ -517,7 +517,7 @@ public class TlsHandshakeBench
             {
                 case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
                 case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
-                default: throw new IOException($"fd deferred-pool write status {s}");
+                default: throw new IOException($"fd deferred write status {s}");
             }
         }
     }
