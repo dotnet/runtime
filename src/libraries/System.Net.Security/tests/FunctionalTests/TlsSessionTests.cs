@@ -2607,6 +2607,141 @@ namespace System.Net.Security.Tests
             });
         }
 
+        // Regression: SetClientCertificateContext used to dispose+null the shared
+        // TlsContext.CredentialsHandle, racing with any concurrent session on the same
+        // context. It must instead acquire session-local credentials without touching
+        // the shared field. Run several client sessions in parallel against a shared
+        // TlsContext, each supplying a distinct cert via SetClientCertificateContext,
+        // and verify every server sees the correct client cert.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        [SkipOnPlatform(TestPlatforms.OSX, "SecureTransport does not surface deferred client-credential prompts.")]
+        public async Task SetClientCertificateContext_ConcurrentSessionsOnSharedContext_DoNotRace()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            const int SessionCount = 4;
+            X509Certificate2[] clientCerts = new X509Certificate2[SessionCount];
+            for (int i = 0; i < SessionCount; i++)
+            {
+                clientCerts[i] = CreateSelfSignedServerCert($"tls-session-concurrent-client-{i}.example");
+            }
+            string?[] observedThumbprints = new string?[SessionCount];
+
+            try
+            {
+                // Shared TlsContext across all sessions - no client cert baked in.
+                using TlsContext sharedCtx = TlsContext.Create(new SslClientAuthenticationOptions
+                {
+                    TargetHost = serverName,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    AllowTlsResume = false,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                });
+
+                Task[] tasks = new Task[SessionCount];
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    int idx = i;
+                    tasks[i] = Task.Run(() => RunConcurrentSessionAsync(sharedCtx, serverCert, clientCerts[idx], observedThumbprints, idx));
+                }
+
+                await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(60));
+
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    Assert.Equal(clientCerts[i].Thumbprint, observedThumbprints[i]);
+                }
+            }
+            finally
+            {
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    clientCerts[i]?.Dispose();
+                }
+            }
+        }
+
+        private static async Task RunConcurrentSessionAsync(
+            TlsContext sharedCtx, X509Certificate2 serverCert, X509Certificate2 clientCert,
+            string?[] observedThumbprints, int slot)
+        {
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
+            {
+                Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    AllowTlsResume = false,
+                    ClientCertificateRequired = true,
+                    RemoteCertificateValidationCallback = (_, c, _, _) =>
+                    {
+                        observedThumbprints[slot] = (c as X509Certificate2)?.Thumbprint;
+                        return true;
+                    },
+                });
+
+                using TlsSession session = TlsSession.Create(sharedCtx);
+                Task clientHandshake = Task.Run(async () =>
+                {
+                    byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+                    byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
+                    int inUsed = 0;
+                    try
+                    {
+                        while (!session.IsHandshakeComplete)
+                        {
+                            TlsOperationStatus status = session.ProcessHandshake(
+                                netIn.AsSpan(0, inUsed), netOut, out int consumed, out int produced);
+                            if (consumed > 0)
+                            {
+                                if (consumed < inUsed) Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
+                                inUsed -= consumed;
+                            }
+                            if (produced > 0)
+                            {
+                                await clientStream.WriteAsync(netOut.AsMemory(0, produced));
+                                await clientStream.FlushAsync();
+                            }
+                            switch (status)
+                            {
+                                case TlsOperationStatus.Complete: continue;
+                                case TlsOperationStatus.NeedsCertificateValidation:
+                                    session.AcceptWithDefaultValidation();
+                                    continue;
+                                case TlsOperationStatus.WantCredentials:
+                                    session.SetClientCertificateContext(
+                                        SslStreamCertificateContext.Create(clientCert, additionalCertificates: null));
+                                    continue;
+                                case TlsOperationStatus.WantWrite:
+                                    await DrainAsync(session, clientStream, netOut);
+                                    continue;
+                                case TlsOperationStatus.WantRead:
+                                    int r = await clientStream.ReadAsync(netIn.AsMemory(inUsed));
+                                    if (r == 0) throw new IOException("EOF during handshake");
+                                    inUsed += r;
+                                    continue;
+                                case TlsOperationStatus.Closed:
+                                    throw new IOException("Peer closed during handshake");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(netIn);
+                        ArrayPool<byte>.Shared.Return(netOut);
+                    }
+                });
+
+                await Task.WhenAll(serverHandshake, clientHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(serverSsl.IsAuthenticated);
+            }
+        }
+
         [Fact]
         public void ServerSession_GetClientHelloBytes_BeforeClientHello_Throws()
         {

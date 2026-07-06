@@ -21,6 +21,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <errno.h>
 
 static WriteCallback _writeFunc;
 static StatusUpdateCallback _statusFunc;
