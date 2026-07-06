@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Xunit;
@@ -396,7 +397,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(KeyNameNullPolicy), "Key")]
         [InlineData(typeof(ValueNameNullPolicy), "Value")]
-        public async Task InvalidPropertyNameFail(Type policyType, string offendingProperty)
+        public async Task InvalidPropertyNameFail([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type policyType, string offendingProperty)
         {
             var options = new JsonSerializerOptions
             {

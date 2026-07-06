@@ -1903,14 +1903,16 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     }
 
     // There may be multiple exits, and one of the other exits may also be a
-    // latch. That latch could be preferable to leave (for example because it
-    // is an IV test). The general BBJ_COND-latch-that-exits check below
-    // subsumes the IV-test case.
-
-    // If the loop is already bottom-tested (has a BBJ_COND latch that exits the loop),
-    // there is no need to invert. Also handle the canonical multi-backedge case, where
-    // optCanonicalizeBackedges has installed a BBJ_ALWAYS latch whose in-loop predecessors
-    // are the original bottom tests.
+    // latch. So avoid inversion if the loop is already bottom-tested.
+    //
+    // We check for two cases:
+    //  1. The latch itself is a BBJ_COND that exits the loop, AND the latch is
+    //     the recognized IV test (so the latch BBJ_COND determines loop
+    //     continuation, not a body-internal early exit that happens to feed the
+    //     back-edge).
+    //  2. The latch is a BBJ_ALWAYS (installed by optCanonicalizeBackedges for
+    //     loops with originally multiple backedges) and one of its in-loop
+    //     predecessors is the recognized IV test BBJ_COND that exits the loop.
     //
     auto isExitingCondLatch = [&](BasicBlock* block) -> bool {
         if ((block == condBlock) || !block->KindIs(BBJ_COND))
@@ -1927,13 +1929,33 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         return false;
     };
 
+    // Only run AnalyzeIteration when we see a back-edge that could
+    // qualify for the bail-out (i.e. its source block, or an in-loop predecessor
+    // of a BBJ_ALWAYS canonical latch, is a candidate for being the IV test).
+    //
+    NaturalLoopIterInfo iterInfo;
+    bool                analyzedIteration = false;
+    BasicBlock*         ivTestBlock       = nullptr;
+
+    auto isIvTest = [&](BasicBlock* candidate) -> bool {
+        if (!analyzedIteration)
+        {
+            analyzedIteration = true;
+            if (loop->AnalyzeIteration(&iterInfo))
+            {
+                ivTestBlock = iterInfo.TestBlock;
+            }
+        }
+        return (ivTestBlock != nullptr) && (candidate == ivTestBlock);
+    };
+
     for (FlowEdge* const backEdge : loop->BackEdges())
     {
         BasicBlock* const latch = backEdge->getSourceBlock();
 
-        if (isExitingCondLatch(latch))
+        if (isExitingCondLatch(latch) && isIvTest(latch))
         {
-            JITDUMP("No loop-inversion for " FMT_LP "; latch " FMT_BB " already makes it bottom-tested\n",
+            JITDUMP("No loop-inversion for " FMT_LP "; IV-test latch " FMT_BB " already makes it bottom-tested\n",
                     loop->GetIndex(), latch->bbNum);
             return false;
         }
@@ -1943,10 +1965,10 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             for (FlowEdge* const predEdge : latch->PredEdges())
             {
                 BasicBlock* const pred = predEdge->getSourceBlock();
-                if (loop->ContainsBlock(pred) && isExitingCondLatch(pred))
+                if (loop->ContainsBlock(pred) && isExitingCondLatch(pred) && isIvTest(pred))
                 {
-                    JITDUMP("No loop-inversion for " FMT_LP "; predecessor " FMT_BB " of canonical latch " FMT_BB
-                            " already makes it bottom-tested\n",
+                    JITDUMP("No loop-inversion for " FMT_LP "; IV-test predecessor " FMT_BB
+                            " of canonical latch " FMT_BB " already makes it bottom-tested\n",
                             loop->GetIndex(), pred->bbNum, latch->bbNum);
                     return false;
                 }
@@ -1999,39 +2021,62 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     const int invertSizeLimit         = JitConfig.JitLoopInversionSizeLimit();
     if (invertSizeLimit >= 0)
     {
-        const int cloneSizeLimit = JitConfig.JitCloneLoopsSizeLimit();
-        unsigned  loopSize       = 0;
+        const int      cloneSizeLimit       = JitConfig.JitCloneLoopsSizeLimit();
+        const unsigned sizeLimit            = (unsigned)max(invertSizeLimit, cloneSizeLimit);
+        unsigned       loopSize             = 0;
+        bool           loopHasBoundsCheck   = false;
+        bool           nestedHasBoundsCheck = false;
 
-        // Loops with bounds checks can benefit from cloning, which depends on inversion running.
-        // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
-        auto countNode = [&mightBenefitFromCloning, &loopSize](GenTree* tree) -> unsigned {
-            mightBenefitFromCloning |= tree->OperIs(GT_BOUNDS_CHECK);
-            loopSize++;
-            return 1;
-        };
+        // Only relax the size cap when this loop's own body has bounds checks AND no nested
+        // loop does. If any nested loop has its own bounds checks, it will be inverted+cloned
+        // independently to eliminate them; inverting (and subsequently cloning) this larger
+        // outer loop on top of that duplicates the entire nested body and disrupts downstream
+        // LICM/CSE on sibling code (see Benchstone.BenchF.InvMt).
+        //
+        loop->VisitLoopBlocks([&, this](BasicBlock* block) -> BasicBlockVisit {
+            bool inNestedLoop = false;
+            for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+            {
+                if (child->ContainsBlock(block))
+                {
+                    inNestedLoop = true;
+                    break;
+                }
+            }
+            bool* const boundsCheckFlag = inNestedLoop ? &nestedHasBoundsCheck : &loopHasBoundsCheck;
 
-        optLoopComplexityExceeds(loop, (unsigned)max(invertSizeLimit, cloneSizeLimit), countNode);
+            const unsigned slack    = sizeLimit > loopSize ? (sizeLimit - loopSize) : 0;
+            const bool     exceeded = block->ComplexityExceeds(this, slack, [&](GenTree* tree) -> unsigned {
+                if (tree->OperIs(GT_BOUNDS_CHECK))
+                {
+                    *boundsCheckFlag = true;
+                }
+                loopSize++;
+                return 1;
+            });
+            return exceeded ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+        });
+
+        mightBenefitFromCloning = loopHasBoundsCheck || nestedHasBoundsCheck;
+
         if (loopSize > (unsigned)invertSizeLimit)
         {
-            // Don't try to invert oversize loops if they don't show cloning potential,
-            // or if they're too big to be cloned anyway.
             JITDUMP(FMT_LP " exceeds inversion size limit of %d\n", loop->GetIndex(), invertSizeLimit);
-            const bool tooBigToClone = (cloneSizeLimit >= 0) && (loopSize > (unsigned)cloneSizeLimit);
-            if (!mightBenefitFromCloning || tooBigToClone)
+            if (!mightBenefitFromCloning)
             {
-                JITDUMP("No inversion for " FMT_LP ": %s\n", loop->GetIndex(),
-                        tooBigToClone ? "too big to clone" : "unlikely to benefit from cloning");
+                JITDUMP("No inversion for " FMT_LP ": unlikely to benefit from cloning\n", loop->GetIndex());
+                return false;
+            }
+            if (nestedHasBoundsCheck)
+            {
+                JITDUMP("No inversion for " FMT_LP
+                        ": nested loops have their own bounds checks; they will be inverted independently\n",
+                        loop->GetIndex());
                 return false;
             }
 
-            // If the loop shows cloning potential, tolerate some excess size.
-            const unsigned liberalInvertSizeLimit = (unsigned)(invertSizeLimit * 1.25);
-            if (loopSize > liberalInvertSizeLimit)
-            {
-                JITDUMP(FMT_LP " might benefit from cloning, but is too large to invert.\n", loop->GetIndex());
-                return false;
-            }
-
+            // Defer further size-based rejection to estDupCostSz below and to the cloning
+            // phase's own size budget.
             JITDUMP(FMT_LP " might benefit from cloning. Continuing.\n", loop->GetIndex());
         }
     }
@@ -2381,22 +2426,21 @@ PhaseStatus Compiler::optOptimizePostLayout()
             GenTree* const test = block->lastNode();
             assert(test->OperIsConditionalJump());
 
+            // Try to reverse the condition in-place. We are running after LSRA, so we cannot
+            // introduce new IR nodes here. If the condition cannot be reversed in-place, bail
+            // on flipping for this block.
+            //
+            // For GT_JTRUE the operand may have a GT_COPY/GT_RELOAD inserted by LSRA on top of
+            // the actual condition node, so skip those to find the underlying condition.
+            GenTree* cond = test;
             if (test->OperIs(GT_JTRUE))
             {
-                // Flip GT_JTRUE node's conditional operand, and handle any new nodes this may introduce
-                GenTree* const cond    = test->gtGetOp1();
-                GenTree* const newCond = gtReverseCond(cond);
-                if (cond != newCond)
-                {
-                    LIR::AsRange(block).InsertAfter(cond, newCond);
-                    test->AsUnOp()->gtOp1 = newCond;
-                }
+                cond = test->gtGetOp1()->gtSkipReloadOrCopy();
             }
-            else
+
+            if (!gtTryReverseCond(cond))
             {
-                // gtReverseCond can handle other conditional jumps without introducing a new node
-                GenTree* const cond = gtReverseCond(test);
-                assert(cond == test);
+                continue;
             }
 
             FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
@@ -5628,26 +5672,6 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
 #endif
 
     return check;
-}
-
-//------------------------------------------------------------------------------
-// optRemoveStandaloneRangeCheck : A thin wrapper over optRemoveRangeCheck that removes standalone checks.
-//
-// Arguments:
-//    check - The standalone top-level CHECK node.
-//    stmt  - The statement "check" is a root node of.
-//
-// Return Value:
-//    If "check" has no side effects, it is retuned, bashed to a no-op.
-//    If it has side effects, the tree that executes them is returned.
-//
-GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt)
-{
-    assert(check != nullptr);
-    assert(stmt != nullptr);
-    assert(check == stmt->GetRootNode());
-
-    return optRemoveRangeCheck(check, nullptr, stmt);
 }
 
 //------------------------------------------------------------------------------

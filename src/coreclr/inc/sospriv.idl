@@ -655,4 +655,5 @@ interface ISOSDacInterface17 : IUnknown
     HRESULT GetStressLogThreadEnumerator([out] ISOSStressLogThreadEnum **ppEnum);
     HRESULT GetStressLogMessageEnumerator([in] CLRDATA_ADDRESS threadStressLogAddress,
                                           [out] ISOSStressLogMsgEnum **ppEnum);
+    HRESULT GetStressLogMemoryRanges([out] ISOSMemoryEnum **ppEnum);
 }

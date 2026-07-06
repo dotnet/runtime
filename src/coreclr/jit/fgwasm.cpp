@@ -136,6 +136,13 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
         }
     }
 
+    // Sort handler entries by funclet index (descending), so
+    // that RPO and funclet emission order agree.
+    //
+    jitstd::sort(entryBlocks.begin(), entryBlocks.end(), [comp](BasicBlock* a, BasicBlock* b) {
+        return comp->funGetFuncIdx(a) > comp->funGetFuncIdx(b);
+    });
+
     // Also look for any non-funclet entry block that is only reachable EH.
     // These should have been connected up to special Wasm switches by fgWasmEhFlow.
     // If not, something is wrong.
@@ -1359,15 +1366,19 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // This interval will inspire a try_table in codegen to handle the resumption
             // request from the runtime.
             //
-            unsigned            endCursor   = cursor + tryRegion->NumBlocks();
-            WasmInterval* const tryInterval = WasmInterval::NewTry(this, block, initialLayout[endCursor]);
+            unsigned const      tryEndCursor = cursor + tryRegion->NumBlocks();
+            WasmInterval* const tryInterval  = WasmInterval::NewTry(this, block, initialLayout[tryEndCursor]);
             fgWasmIntervals->push_back(tryInterval);
 
-            // Pair the TRY with a same-range [exnref]-wrapper Block so
-            // `catch_ref TAG 0` from inside try_table has a valid target.
-            // The sort tiebreaker places the wrapper just outside the TRY.
+            // Pair the TRY with an [exnref]-wrapper Block whose end lands at the
+            // BBF_CATCH_RESUMPTION dispatcher so catch_ref resumes there.
             //
-            WasmInterval* const wrapperInterval = WasmInterval::NewExnRefWrapper(this, block, initialLayout[endCursor]);
+            assert(block->KindIs(BBJ_COND));
+            BasicBlock* const cresume = block->GetTrueTarget();
+            assert((cresume != nullptr) && cresume->HasFlag(BBF_CATCH_RESUMPTION));
+            unsigned const      wrapperEndCursor = max(tryEndCursor, cresume->bbPreorderNum);
+            WasmInterval* const wrapperInterval =
+                WasmInterval::NewExnRefWrapper(this, block, initialLayout[wrapperEndCursor]);
             fgWasmIntervals->push_back(wrapperInterval);
         }
 
@@ -1393,10 +1404,18 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
+            // A branch out of a wasm try/catch needs an explicit Block target
+            // even when the succ is contiguous or cold.
+            //
+            EHblkDsc* const blockTryDsc            = ehGetBlockTryDsc(block);
+            bool const      isCrossingTryCatchExit = (blockTryDsc != nullptr) && blockTryDsc->HasCatchHandler() &&
+                                                !bbInTryRegions(ehGetIndex(blockTryDsc), succ);
+
             // Branch to next needs no block, unless this is a switch or next is a throw helper.
             // We may need to branch to a throw helper mid-block, so can't always fall through.
             //
-            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)))
+            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)) &&
+                !isCrossingTryCatchExit)
             {
                 continue;
             }
@@ -1404,7 +1423,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // Branch to cold block needs no block (presumably something EH related).
             // Eventually we need to case these out and handle them better.
             //
-            if (succNum >= numBlocks)
+            if ((succNum >= numBlocks) && !isCrossingTryCatchExit)
             {
                 continue;
             }
@@ -1422,17 +1441,19 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Non-contiguous, non-subsumed forward branch
+            // Non-contiguous, non-subsumed forward branch. Start the Block at the try
+            // header when crossing a try-catch exit so it encloses the wrapper.
             //
-            WasmInterval* const branch = WasmInterval::NewBlock(this, block, initialLayout[succNum]);
+            BasicBlock* const   blockStart = isCrossingTryCatchExit ? blockTryDsc->ebdTryBeg : block;
+            WasmInterval* const branch     = WasmInterval::NewBlock(this, blockStart, initialLayout[succNum]);
             fgWasmIntervals->push_back(branch);
 
             // Remember an interval end here
             //
             scratch[succNum] = branch;
 
-            JITDUMP("Adding block interval for " FMT_BB "[%u] -> " FMT_BB "[%u]\n", block->bbNum, cursor, succ->bbNum,
-                    succNum);
+            JITDUMP("Adding block interval for " FMT_BB "[%u] -> " FMT_BB "[%u]\n", blockStart->bbNum,
+                    blockStart->bbPreorderNum, succ->bbNum, succNum);
         }
     }
 
@@ -1500,6 +1521,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Since this is only looking at prior intervals it could be
     // merged with (2) above.
     //
+
+    // Cross-try-exit Block intervals are backdated to start at the try
+    // header; sort by Start so resolve sees intervals in non-decreasing
+    // start order.
+    //
+    jitstd::sort(fgWasmIntervals->begin(), fgWasmIntervals->end(), [](WasmInterval* i1, WasmInterval* i2) {
+        return i1->Start() < i2->Start();
+    });
+
     auto resolve = [this](WasmInterval* const current) {
         for (WasmInterval* prior : *fgWasmIntervals)
         {
@@ -1747,6 +1777,25 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Publish the index to block map for use during codegen.
     //
     fgIndexToBlockMap = initialLayout;
+
+    // Verify the physical block order (what codegen walks) agrees with the assigned
+    // preorder numbers (what the wasm intervals / codegen cursor are keyed on).
+    //
+#ifdef DEBUG
+    {
+        unsigned order = 0;
+        for (BasicBlock* const block : Blocks())
+        {
+            if (block->bbPreorderNum != order)
+            {
+                JITDUMP("Blocks out of order: " FMT_BB " has order %u, but bbPreorderNum=%u\n", block->bbNum, order,
+                        block->bbPreorderNum);
+            }
+            assert((block->bbPreorderNum == order) && "block order disagrees with preorder num");
+            order++;
+        }
+    }
+#endif // DEBUG
 
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
@@ -2963,7 +3012,12 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             // block (later we can refine this to something like: blocks that have calls
             // or will inspire calls during codegen).
             //
-            if (!block->isEmpty())
+            // Also refresh BBJ_CALLFINALLY blocks: the implicit call_indirect to the
+            // finally funclet is emitted at codegen time and the runtime EH walker
+            // would otherwise see the stale try-region virtualIP and re-dispatch the
+            // same finally during unwind.
+            //
+            if (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY))
             {
                 updateVirtualIPOnFrame(func, block);
             }
