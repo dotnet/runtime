@@ -2313,21 +2313,18 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     unsigned ilArgNum = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
-        InlArgInfo* argInfo = nullptr;
-        switch (arg.GetWellKnownArg())
+        InlArgInfo* argInfo;
+        if (arg.IsUserArg())
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::AsyncContinuation:
-            case WellKnownArg::AsyncExecutionContext:
-            case WellKnownArg::AsyncSynchronizationContext:
-                continue;
-            case WellKnownArg::InstParam:
-                argInfo = inlineInfo->inlInstParamArgInfo;
-                break;
-            default:
-                assert(ilArgNum < inlineInfo->argCnt);
-                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
-                break;
+            argInfo = &inlArgInfo[ilArgNum++];
+        }
+        else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
+        {
+            argInfo = inlineInfo->inlInstParamArgInfo;
+        }
+        else
+        {
+            continue;
         }
 
         assert(argInfo != nullptr);

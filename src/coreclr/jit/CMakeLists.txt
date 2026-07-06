@@ -433,6 +433,7 @@ set( JIT_HEADERS
   varset.h
   vartype.h
   vartypesdef.h
+  wellknownargs.h
 )
 
 # Arch specific headers
