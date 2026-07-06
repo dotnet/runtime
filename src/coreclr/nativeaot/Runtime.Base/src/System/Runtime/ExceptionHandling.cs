@@ -595,6 +595,13 @@ namespace System.Runtime
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
+
+            // A hardware fault is being translated to a managed exception. Mark the native
+            // signal/exception records captured by the hardware-exception handler as
+            // current, so that if this fault goes unhandled the classlib FailFast can
+            // surface them to the user's fatal error handler. The records are cleared again
+            // if the exception is caught (see RhpCallCatchFunclet) or consumed at FailFast.
+            InternalCalls.RhpActivateHardwareExceptionRecords();
 #endif
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
             bool instructionFault = true;
@@ -935,6 +942,16 @@ namespace System.Runtime
 #if FEATURE_OBJCMARSHAL
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
+#if NATIVEAOT
+                // A hardware fault is being propagated out through an Objective-C reverse
+                // P/Invoke boundary; the callback jumps to the propagation handler and does
+                // not return to the dispatcher. Clear the "current fault" marking here so a
+                // later Environment.FailFast on this thread does not surface stale records.
+                if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
+                {
+                    InternalCalls.RhpDeactivateHardwareExceptionRecords();
+                }
+#endif
                 InternalCalls.RhpCallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
@@ -949,6 +966,17 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
+#if NATIVEAOT
+            // The exception is being handled. If it originated from a hardware fault, clear
+            // the "current fault" marking so a later Environment.FailFast does not surface
+            // the now-handled fault's native records. Only clear for a hardware-fault
+            // exception so that a nested software exception caught while an outer hardware
+            // fault is still in flight does not drop the outer fault's records.
+            if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
+            {
+                InternalCalls.RhpDeactivateHardwareExceptionRecords();
+            }
+#endif
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
             // currently, RhpCallCatchFunclet will resume after the catch

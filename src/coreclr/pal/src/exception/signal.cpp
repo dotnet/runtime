@@ -24,6 +24,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/palinternal.h"
 
 #include <clrconfignocache.h>
+#include <public/FatalErrorHandling.h>
 
 #include <errno.h>
 #include <signal.h>
@@ -117,8 +118,8 @@ struct sigaction g_previous_sigabrt;
 
 // Thread-local stash for the native exception context. These are set in
 // common_signal_handler (signal-based platforms) or the Mach exception path
-// (Apple) before converting to PAL types, and retrieved by
-// PAL_GetNativeExceptionPointers for use in the fatal error handler API.
+// (Apple) before converting to PAL types, and surfaced to the fatal error
+// handler API through PAL_GetFatalErrorPlatformProperty.
 static thread_local void* t_lastSiginfo = NULL;
 static thread_local void* t_lastSigcontext = NULL;
 
@@ -128,12 +129,36 @@ void PAL_SetNativeExceptionPointers(void* info, void* context)
     t_lastSigcontext = context;
 }
 
-PALIMPORT VOID PALAPI PAL_GetNativeExceptionPointers(void** siginfo, void** sigcontext)
+// Serves the platform-specific fatal error properties from the stashed native
+// exception state. Returns a nonzero value when the requested property is
+// available (and *value has been written), or 0 otherwise. On Apple the native
+// state is a Mach thread state; on other Unix platforms it is the POSIX
+// siginfo_t*/ucontext_t* pair.
+PALIMPORT int32_t PALAPI PAL_GetFatalErrorPlatformProperty(int32_t prop, const void** value)
 {
-    _ASSERTE(siginfo != NULL);
-    _ASSERTE(sigcontext != NULL);
-    *siginfo = t_lastSiginfo;
-    *sigcontext = t_lastSigcontext;
+    _ASSERTE(value != NULL);
+
+#if HAVE_MACH_EXCEPTIONS
+    if (prop == FEP_MachExceptionInfo && t_lastSigcontext != NULL)
+    {
+        *value = t_lastSigcontext;
+        return 1;
+    }
+#else // HAVE_MACH_EXCEPTIONS
+    if (prop == FEP_PosixSigInfo && t_lastSiginfo != NULL)
+    {
+        *value = t_lastSiginfo;
+        return 1;
+    }
+
+    if (prop == FEP_UContext && t_lastSigcontext != NULL)
+    {
+        *value = t_lastSigcontext;
+        return 1;
+    }
+#endif // HAVE_MACH_EXCEPTIONS
+
+    return 0;
 }
 
 #if !HAVE_MACH_EXCEPTIONS

@@ -731,16 +731,27 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 // Fatal error handler invocation support.
 //
 
-using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, void* errorData);
+using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPropertyGetter getProperty);
 
 void* s_fatalErrorHandler = NULL;
 
-// Stored crash context for on-demand replay by GetFatalErrorLogCallback.
+// Stored crash context for on-demand replay by GetFatalErrorLogFunc.
 static UINT s_crashExitCode;
 static LPCWSTR s_crashMessage;
 static PEXCEPTION_POINTERS s_crashExceptionInfo;
 static LPCWSTR s_crashErrorSource;
 static LPCWSTR s_crashExceptionString;
+
+// Native exception state surfaced to the handler through the property getter.
+// The crash address is platform-agnostic; the Windows exception records are
+// captured here because there is no PAL to hold them (on other platforms the
+// live signal/Mach state is served directly by the PAL).
+static void* s_crashAddress;
+
+#ifdef TARGET_WINDOWS
+static PEXCEPTION_RECORD s_crashExceptionRecord;
+static PCONTEXT s_crashContextRecord;
+#endif // TARGET_WINDOWS
 
 static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
@@ -752,10 +763,9 @@ static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POIN
     s_crashExceptionString = argExceptionString;
 }
 
-static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, FatalErrorLogAction pfnLogAction, void* userContext)
+static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogAction, void* userContext)
 {
     WRAPPER_NO_CONTRACT;
-    (void)errorData;
 
     if (pfnLogAction == nullptr)
         return;
@@ -766,28 +776,62 @@ static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, 
     EmitCrashInfo(writer, s_crashExitCode, s_crashMessage, s_crashExceptionInfo, s_crashErrorSource, s_crashExceptionString);
 }
 
-// Populates the info and context fields of FatalErrorInfo from exception pointers.
-// On Windows, these are the native EXCEPTION_RECORD*/CONTEXT* directly.
-// On Unix, retrieves the original siginfo_t*/ucontext_t* from the PAL.
-static FatalErrorInfo CreateFatalErrorInfo(UINT_PTR address, PEXCEPTION_POINTERS pExceptionInfo)
+// Serves the platform-specific fatal error properties. On Windows the native
+// exception records were captured from the exception pointers before the handler
+// was invoked.
+static int32_t GetFatalErrorPlatformProperty(FatalErrorProperty prop, const void** value)
 {
-    LIMITED_METHOD_CONTRACT;
-    FatalErrorInfo errorInfo{};
-    errorInfo.size = sizeof(FatalErrorInfo);
-    errorInfo.address = reinterpret_cast<void*>(address);
+    WRAPPER_NO_CONTRACT;
 
 #ifdef TARGET_WINDOWS
-    if (pExceptionInfo != NULL)
+    switch (prop)
     {
-        errorInfo.info = pExceptionInfo->ExceptionRecord;
-        errorInfo.context = pExceptionInfo->ContextRecord;
-    }
-#else
-    PAL_GetNativeExceptionPointers(&errorInfo.info, &errorInfo.context);
-#endif // TARGET_WINDOWS
-    errorInfo.pfnGetFatalErrorLog = GetFatalErrorLogCallback;
+    case FEP_WindowsExceptionRecord:
+        if (s_crashExceptionRecord == nullptr)
+            return 0;
+        *value = s_crashExceptionRecord;
+        return 1;
 
-    return errorInfo;
+    case FEP_WindowsContextRecord:
+        if (s_crashContextRecord == nullptr)
+            return 0;
+        *value = s_crashContextRecord;
+        return 1;
+
+    default:
+        return 0;
+    }
+#else // TARGET_WINDOWS
+    return PAL_GetFatalErrorPlatformProperty(static_cast<int32_t>(prop), value);
+#endif // TARGET_WINDOWS
+}
+
+// Property getter passed to the user's fatal error handler. Surfaces the crash-log
+// entry point and stored crash address directly, and defers all platform-specific
+// native exception state to GetFatalErrorPlatformProperty. Returns a nonzero value
+// when the requested property is available (and *value is written), or 0 otherwise.
+static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty prop, const void** value)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (value == nullptr)
+        return 0;
+
+    switch (prop)
+    {
+    case FEP_FatalErrorLogFunc:
+        *value = reinterpret_cast<void*>(GetFatalErrorLogFunc);
+        return 1;
+
+    case FEP_Address:
+        if (s_crashAddress == nullptr)
+            return 0;
+        *value = s_crashAddress;
+        return 1;
+
+    default:
+        return GetFatalErrorPlatformProperty(prop, value);
+    }
 }
 
 // Invokes the user-registered fatal error handler if one has been set.
@@ -800,10 +844,21 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
     if (pfnHandler == NULL)
         return false;
 
-    FatalErrorInfo errorInfo = CreateFatalErrorInfo(address, pExceptionInfo);
+    // Capture the crash address for the property getter. On Windows the native
+    // exception records are captured here from the exception pointers; on other
+    // platforms the live signal (Linux) or Mach (Apple) state is served on demand
+    // by the PAL, so there is nothing to capture here.
+    s_crashAddress = reinterpret_cast<void*>(address);
+#ifdef TARGET_WINDOWS
+    if (pExceptionInfo != NULL)
+    {
+        s_crashExceptionRecord = pExceptionInfo->ExceptionRecord;
+        s_crashContextRecord = pExceptionInfo->ContextRecord;
+    }
+#endif // TARGET_WINDOWS
 
     // Call user-defined fatal error handler.
-    int result = pfnHandler(static_cast<int>(exitCode), &errorInfo);
+    int result = pfnHandler(static_cast<int>(exitCode), FatalErrorPropertyGetterImpl);
     return result == SkipDefaultHandler;
 }
 

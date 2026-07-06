@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This header defines the native structures and types used by the
+// This header defines the native types used by the
 // ExceptionHandling.SetFatalErrorHandler API. A native fatal error handler
-// receives a pointer to FatalErrorInfo and can query additional crash
-// information through the callback stored in that structure.
+// receives an HRESULT and a property-getter callback through which it can
+// request additional crash information on demand.
 
 #ifndef FATAL_ERROR_HANDLING_H
 #define FATAL_ERROR_HANDLING_H
@@ -35,52 +35,53 @@ enum FatalErrorHandlerResult : int32_t
 // of the crash log.
 typedef void (DOTNET_CALLCONV *FatalErrorLogAction)(const char* logString, void* userContext);
 
-// Callback signature for requesting the crash log. The handler calls this
-// function pointer (stored in FatalErrorInfo) to receive the crash log text
-// via pfnLogAction.
-typedef void (DOTNET_CALLCONV *FatalErrorLogFunc)(
-    struct FatalErrorInfo* errorData,
-    FatalErrorLogAction pfnLogAction,
-    void* userContext);
+// Function pointer retrieved through the property getter as the value of
+// FEP_FatalErrorLogFunc. When called, it invokes pfnLogAction one or more
+// times with UTF-8 encoded crash log fragments. The combined output contains
+// the same information the runtime would print to standard error during its
+// default fatal error handling.
+//
+// The handler may call this function at most once. Calling it after the
+// handler returns produces undefined behavior.
+typedef void (DOTNET_CALLCONV *FatalErrorLogFunc)(FatalErrorLogAction pfnLogAction, void* userContext);
 
-struct FatalErrorInfo
+// Properties that a fatal error handler can request through the property
+// getter passed to it. Each property has a documented value shape. The getter
+// writes the value through its out parameter. New properties may be added over
+// time, so handlers must tolerate the getter reporting a property as
+// unavailable.
+enum FatalErrorProperty : int32_t
 {
-    // Size of this structure in bytes. Consumers should check this field to
-    // determine which subsequent fields are available, enabling forward
-    // compatibility when new fields are added.
-    size_t size;
+    // Value: FatalErrorLogFunc. Entry point for retrieving the crash log.
+    FEP_FatalErrorLogFunc = 0x1,
 
-    // Code location correlated with the failure (for example, the address
-    // where FailFast was called). May be NULL if not available.
-    void* address;
+    // Value: void*. Code location correlated with the failure (for example,
+    // the address where FailFast was called). May be unavailable.
+    FEP_Address,
 
-    // Platform-specific exception/signal information, if available.
-    // On Windows, cast to PEXCEPTION_RECORD.
-    // On Linux and other signal-based Unix platforms, cast to siginfo_t*.
-    // On Apple platforms (macOS, iOS, ...), this is always NULL because the
-    // runtime handles hardware faults through Mach exceptions rather than POSIX
-    // signals; the faulting code location is reported through the address field.
-    // May be NULL.
-    void* info;
+    // Value: PEXCEPTION_RECORD. Windows exception record for the failure.
+    FEP_WindowsExceptionRecord,
 
-    // Platform-specific thread context at the point of failure, if available.
-    // On Windows, cast to PCONTEXT.
-    // On Linux and other signal-based Unix platforms, cast to ucontext_t*.
-    // On Apple platforms (macOS, iOS, ...), cast to the Mach thread state for
-    // the current architecture: arm_thread_state64_t* on arm64 or
-    // x86_thread_state64_t* on x64.
-    // May be NULL.
-    void* context;
+    // Value: PCONTEXT. Windows thread context at the point of failure.
+    FEP_WindowsContextRecord,
 
-    // Entry point for retrieving the crash log. The runtime populates this
-    // field with a function that, when called, invokes pfnLogAction one or
-    // more times with UTF-8 encoded crash log fragments. The combined output
-    // contains the same information the runtime would print to standard error
-    // during its default fatal error handling.
-    //
-    // The handler may call this function at most once. Calling it after the
-    // handler returns produces undefined behavior.
-    FatalErrorLogFunc pfnGetFatalErrorLog;
+    // Value: ucontext_t*. Thread context on signal-based Unix platforms.
+    FEP_UContext,
+
+    // Value: siginfo_t*. Signal information on signal-based Unix platforms.
+    FEP_PosixSigInfo,
+
+    // Value: Mach thread state for the current architecture
+    // (arm_thread_state64_t* on arm64, x86_thread_state64_t* on x64).
+    FEP_MachExceptionInfo,
 };
+
+// Property-getter callback passed to the fatal error handler. The handler
+// calls it with a FatalErrorProperty value and a pointer that receives the
+// property's value. The retrieved value is a pointer to read-only crash state
+// owned by the runtime. The handler must not modify the pointed-to data.
+// Returns a nonzero value if the property is available (and *value has been
+// written), or 0 if the property is not available.
+typedef int32_t (DOTNET_CALLCONV *FatalErrorPropertyGetter)(FatalErrorProperty prop, const void** value);
 
 #endif // FATAL_ERROR_HANDLING_H

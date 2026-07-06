@@ -58,6 +58,35 @@ struct sigaction g_previousSIGFPE;
 // Exception handler for hardware exceptions
 static PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
 
+// Defined in EHHelpers.cpp; records the durable per-thread storage below so the
+// managed fatal error handler can retrieve the native signal records on demand.
+EXTERN_C void RhpSetHardwareExceptionRecords(void* pInfo, void* pContext);
+
+// Durable per-thread copies of the signal records, surfaced to the fatal error
+// handler when a hardware fault goes unhandled. The kernel-provided siginfo_t and
+// ucontext_t are only valid for the duration of the signal handler (the faulting
+// context is redirected to RhpThrowHwEx and resumes on the original stack), so they
+// are copied here before the handler returns.
+static thread_local siginfo_t t_hardwareExceptionSiginfo;
+static thread_local ucontext_t t_hardwareExceptionUContext;
+#if defined(HOST_APPLE)
+// On Apple, ucontext_t::uc_mcontext is a pointer into the transient signal frame, so
+// deep-copy the pointed-to register state and repoint the copied ucontext at it.
+static thread_local __typeof__(*(((ucontext_t*)0)->uc_mcontext)) t_hardwareExceptionMContext;
+#endif
+
+static void CaptureHardwareExceptionRecords(siginfo_t* siginfo, void* context)
+{
+    t_hardwareExceptionSiginfo = *siginfo;
+    ucontext_t* uc = (ucontext_t*)context;
+    t_hardwareExceptionUContext = *uc;
+#if defined(HOST_APPLE)
+    t_hardwareExceptionMContext = *(uc->uc_mcontext);
+    t_hardwareExceptionUContext.uc_mcontext = &t_hardwareExceptionMContext;
+#endif
+    RhpSetHardwareExceptionRecords(&t_hardwareExceptionSiginfo, &t_hardwareExceptionUContext);
+}
+
 #ifdef HOST_AMD64
 
 // Get value of an instruction operand represented by the ModR/M field
@@ -532,6 +561,11 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
         int32_t disposition = g_hardwareExceptionHandler(faultCode, (uintptr_t)faultAddress, &palContext, &arg0Reg, &arg1Reg);
         if (disposition == EXCEPTION_CONTINUE_EXECUTION)
         {
+            // The fault is being translated to a managed exception. Copy the signal
+            // records before redirecting so an unhandled fault can surface them to
+            // the fatal error handler.
+            CaptureHardwareExceptionRecords(siginfo, context);
+
             // TODO: better name
             RedirectNativeContext(context, &palContext, arg0Reg, arg1Reg);
             return true;

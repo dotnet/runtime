@@ -153,7 +153,7 @@ extern int g_hardware_exception_context_locvar_offset;
 extern int g_inject_activation_context_locvar_offset;
 
 // Stash the platform-native exception information for retrieval by
-// PAL_GetNativeExceptionPointers from the fatal error handler API. Used by the
+// PAL_GetFatalErrorPlatformProperty from the fatal error handler API. Used by the
 // Mach exception path (macOS), which does not go through common_signal_handler.
 void PAL_SetNativeExceptionPointers(void* info, void* context);
 

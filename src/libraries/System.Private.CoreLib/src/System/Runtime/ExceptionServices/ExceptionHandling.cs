@@ -51,8 +51,9 @@ namespace System.Runtime.ExceptionServices
         /// <param name="handler">
         /// A pointer to an unmanaged callback invoked when the runtime encounters a fatal
         /// error. The callback receives the HRESULT associated with the failure and a
-        /// pointer to a <c>FatalErrorInfo</c> structure (declared in
-        /// <c>FatalErrorHandling.h</c>). The callback returns <c>0</c> (<c>RunDefaultHandler</c>)
+        /// property-getter callback (<c>FatalErrorPropertyGetter</c>, declared in
+        /// <c>FatalErrorHandling.h</c>) through which it can request additional crash
+        /// information on demand. The callback returns <c>0</c> (<c>RunDefaultHandler</c>)
         /// to allow the runtime to continue with its default fatal-error handling, or
         /// <c>1</c> (<c>SkipDefaultHandler</c>) to suppress it.
         /// </param>

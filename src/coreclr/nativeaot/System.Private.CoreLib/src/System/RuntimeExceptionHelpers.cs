@@ -28,17 +28,24 @@ namespace System
 
     internal static class RuntimeExceptionHelpers
     {
-        // Matches the FatalErrorInfo struct defined in src/native/public/FatalErrorHandling.h.
-        // The layout must be kept in sync with the native header.
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct FatalErrorInfo
+        // Matches the FatalErrorProperty enum defined in src/native/public/FatalErrorHandling.h.
+        // The values must be kept in sync with the native header.
+        private enum FatalErrorProperty
         {
-            internal nuint Size;
-            internal void* Address;
-            internal void* Info;
-            internal void* Context;
-            internal delegate* unmanaged<FatalErrorInfo*, delegate* unmanaged<byte*, void*, void>, void*, void> PfnGetFatalErrorLog;
+            FatalErrorLogFunc = 0x1,
+            Address,
+            WindowsExceptionRecord,
+            WindowsContextRecord,
+            UContext,
+            PosixSigInfo,
+            MachExceptionInfo,
         }
+
+        // Native exception state surfaced to the handler through the property getter,
+        // captured immediately before the handler is invoked.
+        private static unsafe void* s_fatalErrorAddress;
+        private static unsafe void* s_fatalErrorInfo;
+        private static unsafe void* s_fatalErrorContext;
 
         // Pre-allocated array to hold crash log fragments as string references.
         // Each fragment is stored during crash info building and replayed on-demand
@@ -83,11 +90,10 @@ namespace System
         /// <summary>
         /// Callback invoked by the user's fatal error handler to retrieve crash log text.
         /// Iterates stored fragments, encodes each to UTF-8, and calls pfnLogAction
-        /// with null-terminated chunks.
+        /// with null-terminated chunks. Matches the native FatalErrorLogFunc signature.
         /// </summary>
         [UnmanagedCallersOnly]
         private static unsafe void GetFatalErrorLog(
-            FatalErrorInfo* errorData,
             delegate* unmanaged<byte*, void*, void> pfnLogAction,
             void* userContext)
         {
@@ -130,6 +136,66 @@ namespace System
             {
                 // This is called during fatal error handling — swallow any exceptions
                 // (e.g., OOM) to avoid crashing during log retrieval.
+            }
+        }
+
+        /// <summary>
+        /// Property getter passed to the user's fatal error handler. Surfaces the crash
+        /// address, the platform-native signal/exception records, and the crash-log entry
+        /// point on demand. Matches the native FatalErrorPropertyGetter signature: returns a
+        /// nonzero value when the requested property is available (and <paramref name="value"/>
+        /// is written), or 0.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        private static unsafe int GetFatalErrorProperty(int prop, void** value)
+        {
+            if (value == null)
+                return 0;
+
+            switch ((FatalErrorProperty)prop)
+            {
+                case FatalErrorProperty.FatalErrorLogFunc:
+                    *value = (void*)(delegate* unmanaged<delegate* unmanaged<byte*, void*, void>, void*, void>)&GetFatalErrorLog;
+                    return 1;
+
+                case FatalErrorProperty.Address:
+                    if (s_fatalErrorAddress == null)
+                        return 0;
+                    *value = s_fatalErrorAddress;
+                    return 1;
+
+                default:
+                    return GetFatalErrorPlatformProperty((FatalErrorProperty)prop, value);
+            }
+        }
+
+        // Serves the platform-specific fatal error properties. NativeAOT is a single
+        // cross-platform build, so the platform is selected at runtime: the Windows
+        // exception record/context on Windows and POSIX signal info everywhere else
+        // (including Apple, which uses POSIX signals rather than Mach exceptions).
+        private static unsafe int GetFatalErrorPlatformProperty(FatalErrorProperty prop, void** value)
+        {
+            switch (prop)
+            {
+                // The signal/exception record.
+                case FatalErrorProperty.WindowsExceptionRecord when OperatingSystem.IsWindows():
+                case FatalErrorProperty.PosixSigInfo when !OperatingSystem.IsWindows():
+                    if (s_fatalErrorInfo == null)
+                        return 0;
+                    *value = s_fatalErrorInfo;
+                    return 1;
+
+                // The thread context, exposed as a Windows context record on Windows and a
+                // ucontext everywhere else.
+                case FatalErrorProperty.WindowsContextRecord when OperatingSystem.IsWindows():
+                case FatalErrorProperty.UContext when !OperatingSystem.IsWindows():
+                    if (s_fatalErrorContext == null)
+                        return 0;
+                    *value = s_fatalErrorContext;
+                    return 1;
+
+                default:
+                    return 0;
             }
         }
 
@@ -467,14 +533,25 @@ namespace System
             IntPtr fatalHandler = ExceptionHandling.s_fatalErrorHandler;
             if (fatalHandler != IntPtr.Zero)
             {
-                FatalErrorInfo errorInfo;
-                errorInfo.Size = (nuint)sizeof(FatalErrorInfo);
-                errorInfo.Address = (void*)pExAddress;
-                errorInfo.Info = null;
-                errorInfo.Context = (void*)pExContext;
-                errorInfo.PfnGetFatalErrorLog = &GetFatalErrorLog;
+                s_fatalErrorAddress = (void*)pExAddress;
 
-                int handlerResult = ((delegate* unmanaged<int, void*, int>)fatalHandler)(errorCode, &errorInfo);
+                // For a hardware fault, surface the platform-native signal/exception
+                // records captured by the runtime. Otherwise fall back to the context
+                // threaded through the fatal path (if any).
+                void* pNativeInfo = null;
+                void* pNativeContext = null;
+                if (RuntimeImports.RhpGetHardwareExceptionRecords(&pNativeInfo, &pNativeContext))
+                {
+                    s_fatalErrorInfo = pNativeInfo;
+                    s_fatalErrorContext = pNativeContext;
+                }
+                else
+                {
+                    s_fatalErrorInfo = null;
+                    s_fatalErrorContext = (void*)pExContext;
+                }
+
+                int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
                 skipDefault = (handlerResult == 1);
             }
 

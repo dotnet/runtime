@@ -192,26 +192,34 @@ unsafe class FatalErrorHandlerTest
         Console.WriteLine($"=== TestNativeException ({scenario}) ===");
         var (exitCode, stderr) = LaunchChild(scenario);
 
+        bool isNativeAot = TestLibrary.Utilities.IsNativeAot;
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         bool infoReceived = stderr.Contains(InfoMarker);
-        bool contextPopulated = stderr.Contains("context=1");
-        // On Apple platforms the runtime handles hardware faults through Mach
-        // exceptions rather than POSIX signals, so FatalErrorInfo.info is always
-        // NULL there; the thread context is still provided. On signal-based Unix
-        // and Windows both info and context are populated.
-        bool infoExpected = !OperatingSystem.IsMacOS();
-        bool infoPopulated = stderr.Contains(infoExpected ? "info=1" : "info=0");
+
+        // "info" is the platform's signal/exception record.
+        //  - CoreCLR: populated on signal-based Unix and Windows; on Apple platforms the
+        //    runtime uses Mach exceptions, so no such record is provided.
+        //  - NativeAOT: populated on all platforms (Windows exception record on Windows,
+        //    POSIX siginfo everywhere else, including Apple since NativeAOT uses signals).
+        bool infoExpected = isNativeAot || !OperatingSystem.IsMacOS();
+        bool infoPopulated = stderr.Contains(infoExpected ? "info=true" : "info=false");
+
+        // "context" is the thread context at the point of failure. Both runtimes surface
+        // it on every platform (Mach thread state on CoreCLR Apple, ucontext/CONTEXT
+        // elsewhere).
+        bool contextExpected = true;
+        bool contextPopulated = stderr.Contains(contextExpected ? "context=true" : "context=false");
         bool exited = exitCode != 0;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, info expected: {infoExpected}, info ok: {infoPopulated}, context populated: {contextPopulated}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, info expected: {infoExpected}, info ok: {infoPopulated}, context expected: {contextExpected}, context ok: {contextPopulated}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
         if (!infoReceived)
-            Console.WriteLine("  FAIL: Handler did not report native exception fields");
+            Console.WriteLine("  FAIL: Handler did not report native exception properties");
         if (!infoPopulated)
-            Console.WriteLine($"  FAIL: FatalErrorInfo.info was {(infoExpected ? "not populated" : "unexpectedly populated")} for a native exception");
+            Console.WriteLine($"  FAIL: exception record was {(infoExpected ? "not populated" : "unexpectedly populated")} for a native exception");
         if (!contextPopulated)
-            Console.WriteLine("  FAIL: FatalErrorInfo.context was not populated for a native exception");
+            Console.WriteLine($"  FAIL: thread context was {(contextExpected ? "not populated" : "unexpectedly populated")} for a native exception");
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 

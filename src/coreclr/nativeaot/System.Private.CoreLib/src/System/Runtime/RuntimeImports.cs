@@ -38,6 +38,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
         internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
 
+        // Retrieves the native hardware-exception records (siginfo_t*/ucontext_t* on Unix,
+        // EXCEPTION_RECORD*/CONTEXT* on Windows) captured for a fault that is now going
+        // unhandled. Returns true and fills the out pointers only for such a fault, then
+        // clears the captured state.
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpGetHardwareExceptionRecords")]
+        internal static extern unsafe bool RhpGetHardwareExceptionRecords(void** ppInfo, void** ppContext);
+
 #if TARGET_UNIX
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]

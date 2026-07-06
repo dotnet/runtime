@@ -216,6 +216,14 @@ namespace System.Runtime
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 #endif
 
+        [RuntimeImport(RuntimeLibrary, "RhpActivateHardwareExceptionRecords")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void RhpActivateHardwareExceptionRecords();
+
+        [RuntimeImport(RuntimeLibrary, "RhpDeactivateHardwareExceptionRecords")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void RhpDeactivateHardwareExceptionRecords();
+
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr RhCurrentNativeThreadId();

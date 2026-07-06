@@ -31,14 +31,14 @@ static void WriteStdErr(const char* msg)
 }
 
 // Handler that skips the default fatal error handling.
-static int DOTNET_CALLCONV HandlerSkipDefault(int hresult, void* pErrorInfo)
+static int DOTNET_CALLCONV HandlerSkipDefault(int hresult, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
     return SkipDefaultHandler;
 }
 
 // Handler that allows the default fatal error handling to proceed.
-static int DOTNET_CALLCONV HandlerRunDefault(int hresult, void* pErrorInfo)
+static int DOTNET_CALLCONV HandlerRunDefault(int hresult, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
     return RunDefaultHandler;
@@ -53,36 +53,60 @@ static void DOTNET_CALLCONV LogCallback(const char* logString, void* userContext
     WriteStdErr("\n");
 }
 
-static int DOTNET_CALLCONV HandlerWithLog(int hresult, void* pErrorInfo)
+static int DOTNET_CALLCONV HandlerWithLog(int hresult, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
 
-    FatalErrorInfo* info = static_cast<FatalErrorInfo*>(pErrorInfo);
-    if (info->pfnGetFatalErrorLog != NULL)
+    const void* pLogFunc = NULL;
+    if (getProperty(FEP_FatalErrorLogFunc, &pLogFunc) != 0 && pLogFunc != NULL)
     {
-        info->pfnGetFatalErrorLog(info, LogCallback, NULL);
+        FatalErrorLogFunc pfnGetFatalErrorLog = reinterpret_cast<FatalErrorLogFunc>(reinterpret_cast<uintptr_t>(pLogFunc));
+        pfnGetFatalErrorLog(LogCallback, NULL);
     }
 
     return SkipDefaultHandler;
 }
 
-// Handler that reports which native exception fields were populated. Used to
+// Handler that reports which native exception properties were populated. Used to
 // verify that a native exception (for example, an access violation) supplies
 // the platform-specific siginfo/exception-record and thread context pointers.
-static int DOTNET_CALLCONV HandlerCheckInfo(int hresult, void* pErrorInfo)
+static int DOTNET_CALLCONV HandlerCheckInfo(int hresult, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
 
-    FatalErrorInfo* info = static_cast<FatalErrorInfo*>(pErrorInfo);
+    const void* pValue = NULL;
+
+    // "info" corresponds to the platform's exception/signal record. On Apple platforms
+    // CoreCLR uses Mach exceptions (so no signal record is provided), whereas NativeAOT
+    // uses POSIX signals (so a siginfo/ucontext is provided). Query both context shapes.
+#ifdef _WIN32
+    bool infoPopulated = getProperty(FEP_WindowsExceptionRecord, &pValue) != 0 && pValue != NULL;
+    pValue = NULL;
+    bool contextPopulated = getProperty(FEP_WindowsContextRecord, &pValue) != 0 && pValue != NULL;
+#elif defined(__APPLE__)
+    bool infoPopulated = getProperty(FEP_PosixSigInfo, &pValue) != 0 && pValue != NULL;
+    pValue = NULL;
+    bool contextPopulated = getProperty(FEP_MachExceptionInfo, &pValue) != 0 && pValue != NULL;
+    if (!contextPopulated)
+    {
+        pValue = NULL;
+        contextPopulated = getProperty(FEP_UContext, &pValue) != 0 && pValue != NULL;
+    }
+#else
+    bool infoPopulated = getProperty(FEP_PosixSigInfo, &pValue) != 0 && pValue != NULL;
+    pValue = NULL;
+    bool contextPopulated = getProperty(FEP_UContext, &pValue) != 0 && pValue != NULL;
+#endif
+
     WriteStdErr("FATAL_INFO:");
-    WriteStdErr(info->info != NULL ? "info=1," : "info=0,");
-    WriteStdErr(info->context != NULL ? "context=1\n" : "context=0\n");
+    WriteStdErr(infoPopulated ? "info=true," : "info=false,");
+    WriteStdErr(contextPopulated ? "context=true\n" : "context=false\n");
 
     return SkipDefaultHandler;
 }
 
 // Exported accessors — managed code P/Invokes these to get native function pointers.
-using FatalErrorHandler = int (DOTNET_CALLCONV *)(int hresult, void* errorData);
+using FatalErrorHandler = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPropertyGetter getProperty);
 
 extern "C" DLL_EXPORT FatalErrorHandler GetHandlerSkipDefault()
 {

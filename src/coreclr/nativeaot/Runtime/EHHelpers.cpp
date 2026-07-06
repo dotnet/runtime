@@ -31,6 +31,62 @@
 #include <minipal/debugger.h>
 #include "corexcep.h"
 
+// Thread-local pointers to the most recent hardware-exception records, surfaced to
+// the user's fatal error handler. They point at durable per-thread storage owned by
+// the platform hardware-exception handler (siginfo_t/ucontext_t on Unix,
+// EXCEPTION_RECORD/CONTEXT on Windows). The records are only meaningful when a
+// hardware fault goes unhandled and reaches FailFast, which is signalled by the
+// "active" flag below.
+static thread_local void* t_pHardwareExceptionInfo;
+static thread_local void* t_pHardwareExceptionContext;
+static thread_local bool t_hardwareExceptionRecordsActive;
+
+// Records the durable storage captured by the platform hardware-exception handler.
+// Called for every translated hardware fault (handled or not); the records only
+// become observable to the fatal error handler once activated below.
+EXTERN_C void RhpSetHardwareExceptionRecords(void* pInfo, void* pContext)
+{
+    t_pHardwareExceptionInfo = pInfo;
+    t_pHardwareExceptionContext = pContext;
+}
+
+// Marks the captured records as belonging to the fatal error that is about to be
+// reported. Called from the unhandled-exception dispatch path only when the fault
+// is a hardware fault, so a later Environment.FailFast that follows a *handled*
+// hardware exception does not surface stale records.
+FCIMPL0(void, RhpActivateHardwareExceptionRecords)
+{
+    t_hardwareExceptionRecordsActive = true;
+}
+FCIMPLEND
+
+// Clears the "current fault" marking when a hardware-fault exception is caught, so a
+// later Environment.FailFast does not surface the stale records from the handled fault.
+FCIMPL0(void, RhpDeactivateHardwareExceptionRecords)
+{
+    t_hardwareExceptionRecordsActive = false;
+}
+FCIMPLEND
+
+// Consumed once by the classlib FailFast to surface the native records to the
+// fatal error handler. Returns true (and fills the out pointers) only when a fault
+// was activated above, then clears the flag.
+FCIMPL2(FC_BOOL_RET, RhpGetHardwareExceptionRecords, void** ppInfo, void** ppContext)
+{
+    if (!t_hardwareExceptionRecordsActive)
+    {
+        *ppInfo = NULL;
+        *ppContext = NULL;
+        FC_RETURN_BOOL(false);
+    }
+
+    t_hardwareExceptionRecordsActive = false;
+    *ppInfo = t_pHardwareExceptionInfo;
+    *ppContext = t_pHardwareExceptionContext;
+    FC_RETURN_BOOL(true);
+}
+FCIMPLEND
+
 struct MethodRegionInfo
 {
     void* hotStartAddress;
@@ -420,6 +476,26 @@ EXTERN_C void RhpContinueOnFatalErrors()
     g_ContinueOnFatalErrors = true;
 }
 
+// Durable per-thread copies of the Windows exception records, surfaced to the fatal
+// error handler when a hardware fault goes unhandled. The OS-provided records are
+// only valid for the duration of the vectored handler, so they are copied here
+// before the faulting context is redirected to RhpThrowHwEx.
+static thread_local EXCEPTION_RECORD t_hardwareExceptionRecord;
+static thread_local CONTEXT t_hardwareExceptionContext;
+
+static void CaptureHardwareExceptionRecords(PEXCEPTION_POINTERS pExPtrs)
+{
+    t_hardwareExceptionRecord = *pExPtrs->ExceptionRecord;
+    t_hardwareExceptionContext = *pExPtrs->ContextRecord;
+#ifdef CONTEXT_XSTATE
+    // The extended (XSTATE) portion of a CONTEXT is stored after the fixed-size structure,
+    // so a shallow copy does not capture it. Clear the flag so a consumer does not read
+    // extended state that was not copied into the durable thread-local record.
+    t_hardwareExceptionContext.ContextFlags &= ~(DWORD)CONTEXT_XSTATE;
+#endif
+    RhpSetHardwareExceptionRecords(&t_hardwareExceptionRecord, &t_hardwareExceptionContext);
+}
+
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 {
     uintptr_t faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
@@ -533,6 +609,10 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
     if (translateToManagedException)
     {
+        // Copy the OS exception records before redirecting the faulting context so
+        // that an unhandled fault can surface them to the fatal error handler.
+        CaptureHardwareExceptionRecords(pExPtrs);
+
         NATIVE_CONTEXT* pCtx = (NATIVE_CONTEXT*)pExPtrs->ContextRecord;
 
         pCtx->SetIp(PCODEToPINSTR((PCODE)&RhpThrowHwEx));

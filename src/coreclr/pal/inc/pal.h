@@ -3657,11 +3657,11 @@ PAL_SetHardwareExceptionHandler(
     IN PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION exceptionCheckFunction);
 
 PALIMPORT
-VOID
+int32_t
 PALAPI
-PAL_GetNativeExceptionPointers(
-    OUT void** siginfo,
-    OUT void** sigcontext);
+PAL_GetFatalErrorPlatformProperty(
+    IN int32_t prop,
+    OUT const void** value);
 
 PALIMPORT
 VOID
