@@ -13,7 +13,7 @@ namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingDisabled;
 public unsafe class UnmanagedCallersOnly
 {
 
-    // On NativeAOT, this failfasts because the exception escapes the native UnmanagedCallersOnly transition.
+    // On NativeAOT, this fails fast because the exception escapes the native UnmanagedCallersOnly transition.
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     public static void UnmanagedCallersOnly_Defined_InDisabledAssembly_WithNonBlittableParameters_Fails()
     {
