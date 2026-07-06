@@ -1387,18 +1387,23 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
     auto lowerOperand = [this](GenTree* op) {
         bool wasNegated = false;
 
-        if (op->OperIsHWIntrinsic() &&
-            ((op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector64) ||
-             (op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe)))
+        if (op->OperIsHWIntrinsic())
         {
-            GenTreeHWIntrinsic* createVector64 = op->AsHWIntrinsic();
-            GenTree*            valueOp        = createVector64->Op(1);
+            GenTreeHWIntrinsic* opIntrinsic   = op->AsHWIntrinsic();
+            NamedIntrinsic      opIntrinsicId = opIntrinsic->GetHWIntrinsicId();
+            unsigned            opSimdSize    = opIntrinsic->GetSimdSize();
 
-            if (valueOp->OperIs(GT_NEG))
+            if ((opIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector64) ||
+                ((opIntrinsicId == NI_Vector_CreateScalarUnsafe) && (opSimdSize == 8)))
             {
-                createVector64->Op(1) = valueOp->gtGetOp1();
-                BlockRange().Remove(valueOp);
-                wasNegated = true;
+                GenTree* valueOp = opIntrinsic->Op(1);
+
+                if (valueOp->OperIs(GT_NEG))
+                {
+                    opIntrinsic->Op(1) = valueOp->gtGetOp1();
+                    BlockRange().Remove(valueOp);
+                    wasNegated = true;
+                }
             }
         }
 
@@ -1540,10 +1545,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
-        case NI_Vector64_Create:
-        case NI_Vector128_Create:
-        case NI_Vector64_CreateScalar:
-        case NI_Vector128_CreateScalar:
+        case NI_Vector_Create:
+        case NI_Vector_CreateScalar:
         {
             // We don't directly support the Vector64.Create or Vector128.Create methods in codegen
             // and instead lower them to other intrinsic nodes in LowerHWIntrinsicCreate so we expect
@@ -1553,14 +1556,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCreate(node);
         }
 
-        case NI_Vector64_Dot:
-        case NI_Vector128_Dot:
+        case NI_Vector_Dot:
         {
             return LowerHWIntrinsicDot(node);
         }
 
-        case NI_Vector64_GetElement:
-        case NI_Vector128_GetElement:
+        case NI_Vector_GetElement:
         {
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
@@ -1684,14 +1685,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Vector64_op_Equality:
-        case NI_Vector128_op_Equality:
+        case NI_Vector_op_Equality:
         {
             return LowerHWIntrinsicCmpOp(node, GT_EQ);
         }
 
-        case NI_Vector64_op_Inequality:
-        case NI_Vector128_op_Inequality:
+        case NI_Vector_op_Inequality:
         {
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
@@ -1717,15 +1716,15 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return node->gtNext;
         }
 
-        case NI_Vector128_WithLower:
-        case NI_Vector128_WithUpper:
+        case NI_Vector_WithLower:
+        case NI_Vector_WithUpper:
         {
             // Converts to equivalent managed code:
             //   AdvSimd.InsertScalar(vector.AsUInt64(), 0, value.AsUInt64()).As<ulong, T>();
             // -or-
             //   AdvSimd.InsertScalar(vector.AsUInt64(), 1, value.AsUInt64()).As<ulong, T>();
 
-            int index = (intrinsicId == NI_Vector128_WithUpper) ? 1 : 0;
+            int index = (intrinsicId == NI_Vector_WithUpper) ? 1 : 0;
 
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
@@ -1977,8 +1976,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     unsigned       simdSize     = node->GetSimdSize();
     var_types      simdType     = Compiler::getSIMDTypeForSize(simdSize);
 
-    assert((intrinsicId == NI_Vector64_op_Equality) || (intrinsicId == NI_Vector64_op_Inequality) ||
-           (intrinsicId == NI_Vector128_op_Equality) || (intrinsicId == NI_Vector128_op_Inequality));
+    assert((intrinsicId == NI_Vector_op_Equality) || (intrinsicId == NI_Vector_op_Inequality));
 
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
@@ -2333,7 +2331,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     unsigned       simdSize     = node->GetSimdSize();
     var_types      simdType     = Compiler::getSIMDTypeForSize(simdSize);
 
-    assert((intrinsicId == NI_Vector64_Dot) || (intrinsicId == NI_Vector128_Dot));
+    assert(intrinsicId == NI_Vector_Dot);
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
@@ -3871,8 +3869,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_CreateScalarUnsafe:
-            case NI_Vector128_CreateScalarUnsafe:
+            case NI_Vector_CreateScalarUnsafe:
             case NI_AdvSimd_DuplicateToVector64:
             case NI_AdvSimd_DuplicateToVector128:
             case NI_AdvSimd_Arm64_DuplicateToVector64:
@@ -3883,8 +3880,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
-            case NI_Vector64_GetElement:
-            case NI_Vector128_GetElement:
+            case NI_Vector_GetElement:
             {
                 assert(!IsContainableMemoryOp(intrin.op1) || !IsSafeToContainMem(node, intrin.op1));
                 assert(intrin.op2->OperIsConst());

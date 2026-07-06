@@ -3717,12 +3717,19 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
     return swapOps[relop - GT_EQ];
 }
 
-/*****************************************************************************
- *
- *  Reverse the meaning of the given test condition.
- */
-
-GenTree* Compiler::gtReverseCond(GenTree* tree)
+//------------------------------------------------------------------------
+// gtTryReverseCond: Try to reverse the meaning of the given test condition
+//    in-place, without introducing any new IR nodes.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    True if the condition was reversed in-place. False if reversing the
+//    condition would require introducing a new node (e.g. wrapping the tree
+//    in a "tree == 0" comparison); in that case, the tree is not modified.
+//
+bool Compiler::gtTryReverseCond(GenTree* tree)
 {
     if (tree->OperIsCompare())
     {
@@ -3736,23 +3743,45 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         {
             tree->gtFlags ^= GTF_RELOP_NAN_UN;
         }
+        return true;
     }
-    else if (tree->OperIs(GT_JCC, GT_SETCC))
+    if (tree->OperIs(GT_JCC, GT_SETCC))
     {
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
+        return true;
     }
-    else if (tree->OperIs(GT_JCMP, GT_JTEST))
+    if (tree->OperIs(GT_JCMP, GT_JTEST))
     {
         GenTreeOpCC* opCC = tree->AsOpCC();
         opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
+        return true;
     }
-    else if (tree->IsIntegralConst())
+    if (tree->IsIntegralConst())
     {
         GenTreeIntConCommon* con = tree->AsIntConCommon();
         con->SetIntegralValue(con->IsIntegralConst(0) ? 1 : 0);
+        return true;
     }
-    else
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// gtReverseCond: Reverse the meaning of the given test condition.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    The reversed condition tree. This is normally the same node as the
+//    input tree, with its operator (or condition) reversed in-place. If the
+//    tree cannot be reversed in-place, a new GT_EQ node comparing the tree
+//    to zero is returned instead.
+//
+GenTree* Compiler::gtReverseCond(GenTree* tree)
+{
+    if (!gtTryReverseCond(tree))
     {
         tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
     }
@@ -4106,9 +4135,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             {
                 switch (intrinsicId)
                 {
-                    case NI_Vector128_ConditionalSelect:
-                    case NI_Vector256_ConditionalSelect:
-                    case NI_Vector512_ConditionalSelect:
+                    case NI_Vector_ConditionalSelect:
                     {
                         // We either become `(o2 & op1) | (op3 & ~op1)`
                         // or we get optimized into some kind of single
@@ -4119,9 +4146,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector128_Create:
-                    case NI_Vector256_Create:
-                    case NI_Vector512_Create:
+                    case NI_Vector_Create:
                     {
                         // We shouldn't have "all constants" as they get transformed to CNS_VEC
 
@@ -4145,12 +4170,8 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector128_CreateScalar:
-                    case NI_Vector128_CreateScalarUnsafe:
-                    case NI_Vector256_CreateScalar:
-                    case NI_Vector256_CreateScalarUnsafe:
-                    case NI_Vector512_CreateScalar:
-                    case NI_Vector512_CreateScalarUnsafe:
+                    case NI_Vector_CreateScalar:
+                    case NI_Vector_CreateScalarUnsafe:
                     {
                         // We shouldn't have "all constants" as they get transformed to CNS_VEC
 
@@ -4173,9 +4194,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector128_Dot:
-                    case NI_Vector256_Dot:
-                    case NI_Vector512_Dot:
+                    case NI_Vector_Dot:
                     {
                         uint32_t elementCount = static_cast<uint32_t>(16 / genTypeSize(simdBaseType));
 
@@ -4206,9 +4225,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector128_ExtractMostSignificantBits:
-                    case NI_Vector256_ExtractMostSignificantBits:
-                    case NI_Vector512_ExtractMostSignificantBits:
+                    case NI_Vector_ExtractMostSignificantBits:
                     {
                         costEx = 3;
 
@@ -4228,9 +4245,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector128_GetElement:
-                    case NI_Vector256_GetElement:
-                    case NI_Vector512_GetElement:
+                    case NI_Vector_GetElement:
                     {
                         GenTree* op2 = hwTree->Op(2);
 
@@ -4291,33 +4306,34 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector256_GetLower:
-                    case NI_Vector512_GetLower:
-                    case NI_Vector512_GetLower128:
+                    case NI_Vector_GetLower:
                     {
+                        assert((simdSize == 32) || (simdSize == 64));
+                        assert(genTypeSize(retType) == (simdSize / 2));
                         costEx = 1;
                         break;
                     }
 
-                    case NI_Vector256_GetUpper:
-                    case NI_Vector512_GetUpper:
+                    case NI_Vector_GetLower128:
                     {
+                        assert(simdSize == 64);
+                        assert(retType == TYP_SIMD16);
+                        costEx = 1;
+                        break;
+                    }
+
+                    case NI_Vector_GetUpper:
+                    {
+                        assert((simdSize == 32) || (simdSize == 64));
+                        assert(genTypeSize(retType) == (simdSize / 2));
                         costEx = 3;
                         break;
                     }
 
-                    case NI_Vector128_Shuffle:
-                    case NI_Vector128_ShuffleNative:
-                    case NI_Vector128_ShuffleNativeFallback:
-                    case NI_Vector256_Shuffle:
-                    case NI_Vector256_ShuffleNative:
-                    case NI_Vector256_ShuffleNativeFallback:
-                    case NI_Vector512_Shuffle:
-                    case NI_Vector512_ShuffleNative:
-                    case NI_Vector512_ShuffleNativeFallback:
-                    case NI_Vector128_CreateGeometricSequence:
-                    case NI_Vector256_CreateGeometricSequence:
-                    case NI_Vector512_CreateGeometricSequence:
+                    case NI_Vector_Shuffle:
+                    case NI_Vector_ShuffleNative:
+                    case NI_Vector_ShuffleNativeFallback:
+                    case NI_Vector_CreateGeometricSequence:
                     {
                         // These are likely becoming calls
                         costEx = 5 + (3 * IND_COST_EX);
@@ -4325,27 +4341,23 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector128_ToScalar:
-                    case NI_Vector256_ToScalar:
-                    case NI_Vector512_ToScalar:
+                    case NI_Vector_ToScalar:
                     {
                         costEx = varTypeIsIntegral(simdBaseType) ? 3 : 1;
                         break;
                     }
 
-                    case NI_Vector128_ToVector512:
-                    case NI_Vector256_ToVector512:
-                    case NI_Vector128_ToVector256:
-                    case NI_Vector128_ToVector256Unsafe:
-                    case NI_Vector256_ToVector512Unsafe:
+                    case NI_Vector_ToVector256:
+                    case NI_Vector_ToVector256Unsafe:
+                    case NI_Vector_ToVector512:
+                    case NI_Vector_ToVector512Unsafe:
                     {
+                        assert((simdSize == 16) || (simdSize == 32));
                         costEx = 1;
                         break;
                     }
 
-                    case NI_Vector128_WithElement:
-                    case NI_Vector256_WithElement:
-                    case NI_Vector512_WithElement:
+                    case NI_Vector_WithElement:
                     {
                         GenTree* op2 = hwTree->Op(2);
 
@@ -4407,18 +4419,16 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector256_WithLower:
-                    case NI_Vector256_WithUpper:
-                    case NI_Vector512_WithLower:
-                    case NI_Vector512_WithUpper:
+                    case NI_Vector_WithLower:
+                    case NI_Vector_WithUpper:
                     {
+                        assert((simdSize == 32) || (simdSize == 64));
+                        assert(genTypeSize(retType) == simdSize);
                         costEx = 3;
                         break;
                     }
 
-                    case NI_Vector128_op_Division:
-                    case NI_Vector256_op_Division:
-                    case NI_Vector512_op_Division:
+                    case NI_Vector_op_Division:
                     {
                         // We generate a fairly complex sequence involving
                         // comparisons, two branches, conversions, and a fp
@@ -4429,12 +4439,8 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                         break;
                     }
 
-                    case NI_Vector128_op_Equality:
-                    case NI_Vector128_op_Inequality:
-                    case NI_Vector256_op_Equality:
-                    case NI_Vector256_op_Inequality:
-                    case NI_Vector512_op_Equality:
-                    case NI_Vector512_op_Inequality:
+                    case NI_Vector_op_Equality:
+                    case NI_Vector_op_Inequality:
                     {
                         // We emit a simd compare, get mask, integer compare,
                         // and a branch or setcc
@@ -8621,8 +8627,8 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
 #ifdef TARGET_XARCH
             NamedIntrinsic intrinsicId = hwIntrinsicNode->GetHWIntrinsicId();
-            if ((intrinsicId == NI_Vector128_op_Division) || (intrinsicId == NI_Vector256_op_Division) ||
-                (intrinsicId == NI_Vector512_op_Division))
+
+            if (intrinsicId == NI_Vector_op_Division)
             {
                 // We currently don't try to avoid setting these flags and GTF_EXCEPT when
                 // we know that the operation in fact cannot overflow/divide by zero.
@@ -22126,10 +22132,7 @@ bool GenTree::isContainableHWIntrinsic() const
             FALLTHROUGH;
         }
 
-        case NI_Vector128_GetElement:
-        case NI_Vector128_ToScalar:
-        case NI_Vector256_ToScalar:
-        case NI_Vector512_ToScalar:
+        case NI_Vector_ToScalar:
         case NI_X86Base_ConvertToInt32:
         case NI_X86Base_ConvertToUInt32:
         case NI_X86Base_Extract:
@@ -22167,12 +22170,14 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
-        case NI_Vector128_CreateScalar:
-        case NI_Vector256_CreateScalar:
-        case NI_Vector512_CreateScalar:
-        case NI_Vector128_CreateScalarUnsafe:
-        case NI_Vector256_CreateScalarUnsafe:
-        case NI_Vector512_CreateScalarUnsafe:
+        case NI_Vector_GetElement:
+        {
+            // These HWIntrinsic operations are contained as part of a store
+            return node->GetSimdSize() == 16;
+        }
+
+        case NI_Vector_CreateScalar:
+        case NI_Vector_CreateScalarUnsafe:
         {
             // These HWIntrinsic operations are contained as part of scalar ops
             return true;
@@ -22823,8 +22828,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, var_types simd
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdAbsNode");
-    return nullptr;
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_PackedSimd_Abs, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif
@@ -23079,7 +23083,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
             else
             {
-                assert(op2->OperIsHWIntrinsic(NI_Vector128_CreateScalar));
+                assert(op2->OperIsHWIntrinsic(NI_Vector_CreateScalar));
+                assert(op2->AsHWIntrinsic()->GetSimdSize() == 16);
 
                 GenTree* shiftCountDup = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
                 if (op == GT_RSH)
@@ -23186,14 +23191,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512) && simdSize == 32)
                 {
-                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector256_op_Division, simdBaseType, simdSize);
+                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector_op_Division, simdBaseType, simdSize);
                 }
 
                 assert(simdSize == 16);
 
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
-                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector128_op_Division, simdBaseType, simdSize);
+                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector_op_Division, simdBaseType, simdSize);
                 }
 
                 GenTree* op1Dup  = fgMakeMultiUse(&op1);
@@ -23205,9 +23210,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 GenTree* op2Hi =
                     gtNewSimdHWIntrinsicNode(type, op2, op2Dup, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize);
                 GenTree* divLo =
-                    gtNewSimdHWIntrinsicNode(type, op1Dup2, op2Dup2, NI_Vector128_op_Division, simdBaseType, simdSize);
+                    gtNewSimdHWIntrinsicNode(type, op1Dup2, op2Dup2, NI_Vector_op_Division, simdBaseType, simdSize);
                 GenTree* divHi =
-                    gtNewSimdHWIntrinsicNode(type, op1Hi, op2Hi, NI_Vector128_op_Division, simdBaseType, simdSize);
+                    gtNewSimdHWIntrinsicNode(type, op1Hi, op2Hi, NI_Vector_op_Division, simdBaseType, simdSize);
                 GenTree* div =
                     gtNewSimdHWIntrinsicNode(type, divHi, divLo, NI_X86Base_MoveLowToHigh, TYP_FLOAT, simdSize);
                 return gtNewSimdHWIntrinsicNode(type, div, gtNewIconNode(0x4E), NI_X86Base_Shuffle, simdBaseType,
@@ -23219,12 +23224,13 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
         case GT_MUL:
         {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_WASM)
             if (varTypeIsByte(simdBaseType))
             {
                 // If we can widen to the next vector size up, we can get by
                 // with a single multiply, then narrow back down.
 
+#if defined(TARGET_XARCH)
                 if (((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_AVX2)) ||
                     ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512)))
                 {
@@ -23279,6 +23285,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         return gtNewSimdGetLowerNode(type, shuffledProduct, simdBaseType, widenedSimdSize);
                     }
                 }
+#endif
 
                 // Otherwise, we multiply twice and blend the values back together.
                 // This logic depends on the following facts:
@@ -23313,7 +23320,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 // return (evenMasked | oddProduct).AsByte();
                 return gtNewSimdBinOpNode(GT_OR, type, evenMasked, oddProduct, simdBaseType, simdSize);
             }
-            else if (varTypeIsLong(simdBaseType))
+#endif
+
+#if defined(TARGET_XARCH)
+            if (varTypeIsLong(simdBaseType))
             {
                 // This fallback path will be used only if the vpmullq instruction is not available.
                 // The implementation is a simple decomposition using pmuludq, which multiplies
@@ -23403,8 +23413,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 // return Vector128.Create(lower, upper)
                 return gtNewSimdWithElementNode(type, lower, gtNewIconNode(1), upper, simdBaseType, simdSize);
             }
-#elif defined(TARGET_WASM)
-            NYI_WASM_SIMD("gtNewSimdWithElementNode");
 #endif // !TARGET_XARCH && !TARGET_ARM64
             unreached();
         }
@@ -23452,7 +23460,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, var_types sim
         intrinsic = NI_AdvSimd_Ceiling;
     }
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdCeilNode");
+    intrinsic = NI_PackedSimd_Ceiling;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23614,11 +23622,11 @@ GenTree* Compiler::gtNewSimdCvtNode(
 #elif defined(TARGET_ARM64)
     return gtNewSimdCvtNativeNode(type, op1, simdTargetBaseType, simdSourceBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdCvtNativeNode");
+    NYI_WASM_SIMD("gtNewSimdCvtNode");
     return nullptr;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif
 }
 
 GenTree* Compiler::gtNewSimdCvtNativeNode(
@@ -23829,13 +23837,11 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
         default:
             unreached();
     }
-
 #elif defined(TARGET_WASM)
     NYI_WASM_SIMD("gtNewSimdCvtNativeNode");
-    return nullptr;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif
 
     assert(hwIntrinsicID != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdSourceBaseType, simdSize);
@@ -24071,22 +24077,14 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
 
     switch (op)
     {
+        case GT_EQ:
+        {
 #if defined(TARGET_XARCH)
-        case GT_EQ:
-        {
-            if (simdSize == 32)
-            {
-                assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                intrinsic = NI_Vector256_op_Equality;
-            }
-            else if (simdSize == 64)
-            {
-                intrinsic = NI_Vector512_op_Equality;
-            }
-            else
-            {
-                intrinsic = NI_Vector128_op_Equality;
-            }
+            assert((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
+                   compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#endif
+
+            intrinsic = NI_Vector_op_Equality;
             break;
         }
 
@@ -24095,26 +24093,18 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
         case GT_LE:
         case GT_LT:
         {
-            // We want to generate a comparison along the lines of
-            // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
+#if defined(TARGET_XARCH)
+            // TODO-XArch-CQ: It's a non-trivial amount of work to support these
+            // for floating-point while only utilizing AVX. It would require, among
+            // other things, inverting the comparison and potentially support for a
+            // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
+            assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#endif
 
-            if (simdSize == 32)
-            {
-                // TODO-XArch-CQ: It's a non-trivial amount of work to support these
-                // for floating-point while only utilizing AVX. It would require, among
-                // other things, inverting the comparison and potentially support for a
-                // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                intrinsic = NI_Vector256_op_Equality;
-            }
-            else if (simdSize == 64)
-            {
-                intrinsic = NI_Vector512_op_Equality;
-            }
-            else
-            {
-                intrinsic = NI_Vector128_op_Equality;
-            }
+            // We want to generate a comparison along the lines of
+            // GT_XX(op1, op2).As<T, TInteger>() == Vector<TInteger>.AllBitsSet
+
+            intrinsic = NI_Vector_op_Equality;
 
             op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
             op2 = gtNewAllBitsSetConNode(simdType);
@@ -24129,49 +24119,6 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
             }
             break;
         }
-#elif defined(TARGET_ARM64)
-        case GT_EQ:
-        {
-            intrinsic = (simdSize == 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
-            break;
-        }
-
-        case GT_GE:
-        case GT_GT:
-        case GT_LE:
-        case GT_LT:
-        {
-            // We want to generate a comparison along the lines of
-            // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
-
-            if (simdSize == 8)
-            {
-                intrinsic = NI_Vector64_op_Equality;
-            }
-            else
-            {
-                intrinsic = NI_Vector128_op_Equality;
-            }
-
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
-            op2 = gtNewAllBitsSetConNode(simdType);
-
-            if (simdBaseType == TYP_FLOAT)
-            {
-                simdBaseType = TYP_INT;
-            }
-            else if (simdBaseType == TYP_DOUBLE)
-            {
-                simdBaseType = TYP_LONG;
-            }
-            break;
-        }
-#elif defined(TARGET_WASM)
-        NYI_WASM_SIMD("gtNewSimdCmpOpNode");
-        return nullptr;
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
 
         default:
         {
@@ -24203,34 +24150,24 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 
     switch (op)
     {
+        case GT_EQ:
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
 #if defined(TARGET_XARCH)
-        case GT_EQ:
-        case GT_GE:
-        case GT_GT:
-        case GT_LE:
-        case GT_LT:
-        {
+            // TODO-XArch-CQ: It's a non-trivial amount of work to support these
+            // for floating-point while only utilizing AVX. It would require, among
+            // other things, inverting the comparison and potentially support for a
+            // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
+            assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#endif
+
             // We want to generate a comparison along the lines of
             // GT_XX(op1, op2).As<T, TInteger>() != Vector128<TInteger>.Zero
 
-            if (simdSize == 32)
-            {
-                // TODO-XArch-CQ: It's a non-trivial amount of work to support these
-                // for floating-point while only utilizing AVX. It would require, among
-                // other things, inverting the comparison and potentially support for a
-                // new Avx.TestNotZ intrinsic to ensure the codegen remains efficient.
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-
-                intrinsic = NI_Vector256_op_Inequality;
-            }
-            else if (simdSize == 64)
-            {
-                intrinsic = NI_Vector512_op_Inequality;
-            }
-            else
-            {
-                intrinsic = NI_Vector128_op_Inequality;
-            }
+            intrinsic = NI_Vector_op_Inequality;
 
             op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
             op2 = gtNewZeroConNode(simdType);
@@ -24248,72 +24185,14 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 
         case GT_NE:
         {
-            if (simdSize == 64)
-            {
-                intrinsic = NI_Vector512_op_Inequality;
-            }
-            else if (simdSize == 32)
-            {
-                assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#if defined(TARGET_XARCH)
+            assert((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
+                   compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#endif
 
-                intrinsic = NI_Vector256_op_Inequality;
-            }
-            else
-            {
-                intrinsic = NI_Vector128_op_Inequality;
-            }
+            intrinsic = NI_Vector_op_Inequality;
             break;
         }
-#elif defined(TARGET_ARM64)
-        case GT_EQ:
-        case GT_GE:
-        case GT_GT:
-        case GT_LE:
-        case GT_LT:
-        {
-            // We want to generate a comparison along the lines of
-            // GT_XX(op1, op2).As<T, TInteger>() != Vector128<TInteger>.Zero
-
-            intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
-
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseType, simdSize);
-            op2 = gtNewZeroConNode(simdType);
-
-            if (simdBaseType == TYP_FLOAT)
-            {
-                simdBaseType = TYP_INT;
-            }
-            else if (simdBaseType == TYP_DOUBLE)
-            {
-                simdBaseType = TYP_LONG;
-            }
-            break;
-        }
-
-        case GT_NE:
-        {
-            intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
-            break;
-        }
-#elif defined(TARGET_WASM)
-        case GT_EQ:
-        case GT_GE:
-        case GT_GT:
-        case GT_LE:
-        case GT_LT:
-        {
-            NYI_WASM_SIMD("gtNewSimdCmpOpAnyNode");
-            break;
-        }
-
-        case GT_NE:
-        {
-            NYI_WASM_SIMD("gtNewSimdCmpOpAnyNode");
-            break;
-        }
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
 
         default:
         {
@@ -24345,25 +24224,11 @@ GenTree* Compiler::gtNewSimdCndSelNode(
     NamedIntrinsic intrinsic = NI_Illegal;
 
 #if defined(TARGET_XARCH)
-    if (simdSize == 64)
-    {
-        assert(canUseEvexEncodingDebugOnly());
-        intrinsic = NI_Vector512_ConditionalSelect;
-    }
-    else if (simdSize == 32)
-    {
-        intrinsic = NI_Vector256_ConditionalSelect;
-    }
-    else
-    {
-        intrinsic = NI_Vector128_ConditionalSelect;
-    }
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_Vector_ConditionalSelect, simdBaseType, simdSize);
 #elif defined(TARGET_ARM64)
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdCndSelNode");
-    return nullptr;
+    return gtNewSimdHWIntrinsicNode(type, op2, op3, op1, NI_PackedSimd_BitwiseSelect, simdBaseType, simdSize);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -24383,7 +24248,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(
 //
 GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
-    NamedIntrinsic hwIntrinsicID = NI_Vector128_Create;
+    NamedIntrinsic hwIntrinsicID = NI_Vector_Create;
 
     if (op1->IsIntegralConst() || op1->IsCnsFltOrDbl())
     {
@@ -24470,26 +24335,6 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types type, GenTree* op1, va
         return vecCon;
     }
 
-#if defined(TARGET_XARCH)
-    if (simdSize == 64)
-    {
-        hwIntrinsicID = NI_Vector512_Create;
-    }
-    else if (simdSize == 32)
-    {
-        hwIntrinsicID = NI_Vector256_Create;
-    }
-#elif defined(TARGET_ARM64)
-    if (simdSize == 8)
-    {
-        hwIntrinsicID = NI_Vector64_Create;
-    }
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdCreateBroadcastNode");
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
-
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseType, simdSize);
 }
 
@@ -24507,7 +24352,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types type, GenTree* op1, va
 //
 GenTree* Compiler::gtNewSimdCreateScalarNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
-    NamedIntrinsic hwIntrinsicID = NI_Vector128_CreateScalar;
+    NamedIntrinsic hwIntrinsicID = NI_Vector_CreateScalar;
 
     if (op1->IsIntegralConst() || op1->IsCnsFltOrDbl())
     {
@@ -24571,25 +24416,12 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types type, GenTree* op1, var_t
         return vecCon;
     }
 
-#if defined(TARGET_XARCH)
-    if (simdSize == 32)
+#if defined(TARGET_ARM64)
+    if ((simdSize == 8) && (genTypeSize(simdBaseType) == 8))
     {
-        hwIntrinsicID = NI_Vector256_CreateScalar;
+        hwIntrinsicID = NI_Vector_Create;
     }
-    else if (simdSize == 64)
-    {
-        hwIntrinsicID = NI_Vector512_CreateScalar;
-    }
-#elif defined(TARGET_ARM64)
-    if (simdSize == 8)
-    {
-        hwIntrinsicID = (genTypeSize(simdBaseType) == 8) ? NI_Vector64_Create : NI_Vector64_CreateScalar;
-    }
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdCreateScalarNode: Unsupported SIMD size");
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
+#endif // TARGET_ARM64
 
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseType, simdSize);
 }
@@ -24614,7 +24446,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
                                                    var_types simdBaseType,
                                                    unsigned  simdSize)
 {
-    NamedIntrinsic hwIntrinsicID = NI_Vector128_CreateScalarUnsafe;
+    NamedIntrinsic hwIntrinsicID = NI_Vector_CreateScalarUnsafe;
 
     if (op1->IsIntegralConst() || op1->IsCnsFltOrDbl())
     {
@@ -24707,25 +24539,12 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
         return vecCon;
     }
 
-#if defined(TARGET_XARCH)
-    if (simdSize == 32)
+#if defined(TARGET_ARM64)
+    if ((simdSize == 8) && (genTypeSize(simdBaseType) == 8))
     {
-        hwIntrinsicID = NI_Vector256_CreateScalarUnsafe;
+        hwIntrinsicID = NI_Vector_Create;
     }
-    else if (simdSize == 64)
-    {
-        hwIntrinsicID = NI_Vector512_CreateScalarUnsafe;
-    }
-#elif defined(TARGET_ARM64)
-    if (simdSize == 8)
-    {
-        hwIntrinsicID = (genTypeSize(simdBaseType) == 8) ? NI_Vector64_Create : NI_Vector64_CreateScalarUnsafe;
-    }
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdCreateScalarUnsafeNode");
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // TARGET_ARM64
 
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseType, simdSize);
 }
@@ -24939,27 +24758,12 @@ GenTree* Compiler::gtNewSimdDotProdNode(
 #if defined(TARGET_XARCH)
     assert(!varTypeIsByte(simdBaseType) && !varTypeIsLong(simdBaseType));
     assert(simdSize != 64);
-
-    if (simdSize == 32)
-    {
-        assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-        intrinsic = NI_Vector256_Dot;
-    }
-    else
-    {
-        intrinsic = NI_Vector128_Dot;
-    }
+    assert((simdSize != 32) || varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 #elif defined(TARGET_ARM64)
     assert(!varTypeIsLong(simdBaseType));
-    intrinsic = (simdSize == 8) ? NI_Vector64_Dot : NI_Vector128_Dot;
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdDotNode");
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif
 
-    assert(intrinsic != NI_Illegal);
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector_Dot, simdBaseType, simdSize);
 }
 
 GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
@@ -24998,7 +24802,7 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, var_types si
         intrinsic = NI_AdvSimd_Floor;
     }
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdFloorNode");
+    intrinsic = NI_PackedSimd_Floor;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -25063,39 +24867,14 @@ GenTree* Compiler::gtNewSimdFmaNode(
 GenTree* Compiler::gtNewSimdGetElementNode(
     var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
 {
-    NamedIntrinsic intrinsicId = NI_Vector128_GetElement;
+    NamedIntrinsic intrinsicId = NI_Vector_GetElement;
 
     assert(varTypeIsArithmetic(simdBaseType));
 
-#if defined(TARGET_XARCH)
     if (op2->IsIntegralConst(0))
     {
         return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
     }
-
-    if (simdSize == 64)
-    {
-        intrinsicId = NI_Vector512_GetElement;
-    }
-    else if (simdSize == 32)
-    {
-        intrinsicId = NI_Vector256_GetElement;
-    }
-#elif defined(TARGET_ARM64)
-    if (op2->IsIntegralConst(0))
-    {
-        return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
-    }
-
-    if (simdSize == 8)
-    {
-        intrinsicId = NI_Vector64_GetElement;
-    }
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdGetElementNode");
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
 
     int  immUpperBound    = getSIMDVectorLength(simdSize, simdBaseType) - 1;
     bool rangeCheckNeeded = !op2->OperIsConst();
@@ -25204,65 +24983,51 @@ GenTree* Compiler::gtNewSimdGetIndicesNode(var_types type, var_types simdBaseTyp
     return indices;
 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 GenTree* Compiler::gtNewSimdGetLowerNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
     assert(varTypeIsArithmetic(simdBaseType));
-
-    NamedIntrinsic intrinsicId = NI_Illegal;
 
 #if defined(TARGET_XARCH)
     if (simdSize == 32)
     {
         assert(type == TYP_SIMD16);
-        intrinsicId = NI_Vector256_GetLower;
     }
     else
     {
         assert((type == TYP_SIMD32) && (simdSize == 64));
-        intrinsicId = NI_Vector512_GetLower;
     }
 #elif defined(TARGET_ARM64)
     assert((type == TYP_SIMD8) && (simdSize == 16));
-    intrinsicId = NI_Vector128_GetLower;
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdGetLowerNode");
 #else
-#error Unsupported platform
+    unreached();
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-    assert(intrinsicId != NI_Illegal);
-    return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector_GetLower, simdBaseType, simdSize);
 }
 
 GenTree* Compiler::gtNewSimdGetUpperNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsicId = NI_Illegal;
-
 #if defined(TARGET_XARCH)
     if (simdSize == 32)
     {
         assert(type == TYP_SIMD16);
-        intrinsicId = NI_Vector256_GetUpper;
     }
     else
     {
         assert((type == TYP_SIMD32) && (simdSize == 64));
-        intrinsicId = NI_Vector512_GetUpper;
     }
 #elif defined(TARGET_ARM64)
     assert((type == TYP_SIMD8) && (simdSize == 16));
-    intrinsicId = NI_Vector128_GetUpper;
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdGetUpperNode");
 #else
-#error Unsupported platform
+    unreached();
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-    assert(intrinsicId != NI_Illegal);
-    return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector_GetUpper, simdBaseType, simdSize);
 }
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
 //----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdIsEvenIntegerNode: Creates a new simd IsEvenInteger node
@@ -25833,16 +25598,13 @@ GenTree* Compiler::gtNewSimdLoadAlignedNode(var_types type, GenTree* op1, var_ty
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64)
-    // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+    // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
 
     assert(opts.OptimizationEnabled());
     return gtNewSimdLoadNode(type, op1, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdLoadAlignedNode");
-    return nullptr;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -25916,16 +25678,13 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types type, GenTree* op1, va
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64)
-    // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+    // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
 
     assert(opts.OptimizationEnabled());
     return gtNewSimdLoadNode(type, op1, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdLoadNonTemporalNode");
-    return nullptr;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -26885,7 +26644,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
             return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_X86Base_MoveLowToHigh, TYP_FLOAT, simdSize);
         }
 
-        intrinsicId = (simdSize == 64) ? NI_Vector256_ToVector512Unsafe : NI_Vector128_ToVector256Unsafe;
+        intrinsicId = (simdSize == 64) ? NI_Vector_ToVector512Unsafe : NI_Vector_ToVector256Unsafe;
 
         tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsicId, simdBaseType, simdSize / 2);
         return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseType, simdSize);
@@ -27005,7 +26764,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX_ConvertToVector128Single, opBaseType, simdSize);
                 tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_AVX_ConvertToVector128Single, opBaseType, simdSize);
 
-                tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_ToVector256Unsafe, simdBaseType, 16);
+                tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector_ToVector256Unsafe, simdBaseType, 16);
                 return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseType, simdSize);
             }
 
@@ -27161,7 +26920,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
         var_types tmp2BaseType = TYP_DOUBLE;
 
-        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize);
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector_ToVector128Unsafe, simdBaseType, simdSize);
         tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, tmp2BaseType, 16);
 
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseType, simdSize);
@@ -27172,7 +26931,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
         // var tmp2 = tmp1.WithUpper(op2);
         // return AdvSimd.ExtractNarrowingLower(tmp2);
 
-        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize);
+        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector_ToVector128Unsafe, simdBaseType, simdSize);
         tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, simdBaseType, 16);
 
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, simdSize);
@@ -27430,6 +27189,7 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     var_types halfType = getSIMDTypeForSize(simdSize / 2);
     GenTree*  upper;
 
@@ -27460,17 +27220,16 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
 #if defined(TARGET_XARCH)
     GenTree* result =
         (simdSize == 32)
-            ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize / 2)
-            : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector256_ToVector512Unsafe, simdBaseType, simdSize / 2);
+            ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector256Unsafe, simdBaseType, simdSize / 2)
+            : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector512Unsafe, simdBaseType, simdSize / 2);
 #elif defined(TARGET_ARM64)
-    GenTree* result = gtNewSimdHWIntrinsicNode(type, lower, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize / 2);
-#elif defined(TARGET_WASM)
-    GenTree* result = nullptr;
+    GenTree* result = gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector128Unsafe, simdBaseType, simdSize / 2);
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
     return gtNewSimdWithUpperNode(type, result, upper, simdBaseType, simdSize);
+#endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
 //----------------------------------------------------------------------------------------------
@@ -27596,8 +27355,8 @@ GenTree* Compiler::gtNewSimdZipNode(
 
     GenTree* result =
         (simdSize == 32)
-            ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize / 2)
-            : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector256_ToVector512Unsafe, simdBaseType, simdSize / 2);
+            ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector256Unsafe, simdBaseType, simdSize / 2)
+            : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector512Unsafe, simdBaseType, simdSize / 2);
     return gtNewSimdWithUpperNode(type, result, higher, simdBaseType, simdSize);
 #endif // TARGET_XARCH
 }
@@ -27689,10 +27448,9 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 
         assert(IsValidForShuffle(shuffle, wideSimdSize, simdBaseType, nullptr, false));
 
-        GenTree* result =
-            gtNewSimdHWIntrinsicNode(wideType, op1, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize);
-        result = gtNewSimdWithUpperNode(wideType, result, op2, simdBaseType, wideSimdSize);
-        result = gtNewSimdShuffleNode(wideType, result, shuffle, simdBaseType, wideSimdSize, false);
+        GenTree* result = gtNewSimdHWIntrinsicNode(wideType, op1, NI_Vector_ToVector256Unsafe, simdBaseType, simdSize);
+        result          = gtNewSimdWithUpperNode(wideType, result, op2, simdBaseType, wideSimdSize);
+        result          = gtNewSimdShuffleNode(wideType, result, shuffle, simdBaseType, wideSimdSize, false);
 
         return gtNewSimdGetLowerNode(type, result, simdBaseType, wideSimdSize);
     }
@@ -27760,8 +27518,8 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 
     GenTree* result =
         (simdSize == 32)
-            ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize / 2)
-            : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector256_ToVector512Unsafe, simdBaseType, simdSize / 2);
+            ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector256Unsafe, simdBaseType, simdSize / 2)
+            : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector_ToVector512Unsafe, simdBaseType, simdSize / 2);
     return gtNewSimdWithUpperNode(type, result, higher, simdBaseType, simdSize);
 #elif defined(TARGET_WASM)
     NYI_WASM_SIMD("gtNewSimdUnzipNode");
@@ -27870,7 +27628,7 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, var_types si
         intrinsic = NI_AdvSimd_RoundToNearest;
     }
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdRoundNode");
+    intrinsic = NI_PackedSimd_RoundToNearest;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -29122,7 +28880,7 @@ GenTree* Compiler::gtNewSimdSqrtNode(var_types type, GenTree* op1, var_types sim
         intrinsic = NI_AdvSimd_Arm64_Sqrt;
     }
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdSqrtNode");
+    intrinsic = NI_PackedSimd_Sqrt;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -29195,16 +28953,13 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree* op1, GenTree* op2, var_typ
     }
 
     return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64)
-    // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+    // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
 
     assert(opts.OptimizationEnabled());
     return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdStoreAlignedNode");
-    return nullptr;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -29249,16 +29004,13 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree* op1, GenTree* op2, var
     }
 
     return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_ARM64)
-    // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
+    // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
     // aligned when optimizations are disable, so only skip the intrinsic handling
     // if optimizations are enabled
 
     assert(opts.OptimizationEnabled());
     return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdStoreNonTemporalNode");
-    return nullptr;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -29373,7 +29125,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
             GenTree* op1Lane2 = fgMakeMultiUse(&op1);
             GenTree* op1Lane3 = fgMakeMultiUse(&op1);
 
-            GenTree* op1Lane0 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector512_GetLower128, simdBaseType, 64);
+            GenTree* op1Lane0 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector_GetLower128, simdBaseType, 64);
             op1Lane1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane1, gtNewIconNode(1), NI_AVX512_ExtractVector128,
                                                 simdBaseType, 64);
             op1Lane2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lane2, gtNewIconNode(2), NI_AVX512_ExtractVector128,
@@ -29589,38 +29341,7 @@ GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, var_types
 
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsic = NI_Illegal;
-
-#ifdef TARGET_XARCH
-    if (simdSize == 64)
-    {
-        intrinsic = NI_Vector512_ToScalar;
-    }
-    else if (simdSize == 32)
-    {
-        intrinsic = NI_Vector256_ToScalar;
-    }
-    else
-    {
-        intrinsic = NI_Vector128_ToScalar;
-    }
-#elif defined(TARGET_ARM64)
-    if (simdSize == 8)
-    {
-        intrinsic = NI_Vector64_ToScalar;
-    }
-    else
-    {
-        intrinsic = NI_Vector128_ToScalar;
-    }
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdToScalarNode");
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-    assert(intrinsic != NI_Illegal);
-    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector_ToScalar, simdBaseType, simdSize);
 }
 
 //------------------------------------------------------------------------
@@ -29670,7 +29391,7 @@ GenTree* Compiler::gtNewSimdTruncNode(var_types type, GenTree* op1, var_types si
         intrinsic = NI_AdvSimd_RoundToZero;
     }
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdTruncNode");
+    intrinsic = NI_PackedSimd_Truncate;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -30187,22 +29908,13 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
 GenTree* Compiler::gtNewSimdWithElementNode(
     var_types type, GenTree* op1, GenTree* op2, GenTree* op3, var_types simdBaseType, unsigned simdSize)
 {
-    NamedIntrinsic hwIntrinsicID = NI_Vector128_WithElement;
+    NamedIntrinsic hwIntrinsicID = NI_Vector_WithElement;
 
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsArithmetic(op3));
 
 #if defined(TARGET_XARCH)
     assert(!varTypeIsLong(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_X86Base_X64));
-
-    if (simdSize == 64)
-    {
-        hwIntrinsicID = NI_Vector512_WithElement;
-    }
-    else if (simdSize == 32)
-    {
-        hwIntrinsicID = NI_Vector256_WithElement;
-    }
 #elif defined(TARGET_ARM64)
     switch (simdBaseType)
     {
@@ -30211,7 +29923,7 @@ GenTree* Compiler::gtNewSimdWithElementNode(
         case TYP_DOUBLE:
             if (simdSize == 8)
             {
-                return gtNewSimdHWIntrinsicNode(type, op3, NI_Vector64_Create, simdBaseType, simdSize);
+                return gtNewSimdHWIntrinsicNode(type, op3, NI_Vector_Create, simdBaseType, simdSize);
             }
             break;
 
@@ -30321,34 +30033,28 @@ GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned fi
 }
 #endif // TARGET_ARM64
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 GenTree* Compiler::gtNewSimdWithLowerNode(
     var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize)
 {
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsicId = NI_Illegal;
-
 #if defined(TARGET_XARCH)
     if (simdSize == 32)
     {
         assert(type == TYP_SIMD32);
-        intrinsicId = NI_Vector256_WithLower;
     }
     else
     {
         assert((type == TYP_SIMD64) && (simdSize == 64));
-        intrinsicId = NI_Vector512_WithLower;
     }
 #elif defined(TARGET_ARM64)
     assert((type == TYP_SIMD16) && (simdSize == 16));
-    intrinsicId = NI_Vector128_WithLower;
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdWithLowerNode");
 #else
-#error Unsupported platform
+    unreached();
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector_WithLower, simdBaseType, simdSize);
 }
 
 GenTree* Compiler::gtNewSimdWithUpperNode(
@@ -30356,30 +30062,24 @@ GenTree* Compiler::gtNewSimdWithUpperNode(
 {
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsicId = NI_Illegal;
-
 #if defined(TARGET_XARCH)
     if (simdSize == 32)
     {
         assert(type == TYP_SIMD32);
-        intrinsicId = NI_Vector256_WithUpper;
     }
     else
     {
         assert((type == TYP_SIMD64) && (simdSize == 64));
-        intrinsicId = NI_Vector512_WithUpper;
     }
 #elif defined(TARGET_ARM64)
     assert((type == TYP_SIMD16) && (simdSize == 16));
-    intrinsicId = NI_Vector128_WithUpper;
-#elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdWithUpperNode");
 #else
-#error Unsupported platform
+    unreached();
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseType, simdSize);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector_WithUpper, simdBaseType, simdSize);
 }
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID)
 {
@@ -31269,9 +30969,9 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
                 break;
             }
 
-            case NI_Vector128_op_Division:
-            case NI_Vector256_op_Division:
+            case NI_Vector_op_Division:
             {
+                assert((GetSimdSize() == 16) || (GetSimdSize() == 32));
                 gtFlags |= GTF_EXCEPT;
                 break;
             }
@@ -32006,10 +31706,6 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     assert(op1->TypeIs(simdType));
     assert(op2 != nullptr);
 
-#ifdef TARGET_WASM
-    NYI_WASM_SIMD("GetHWIntrinsicIdForBinOp");
-#endif
-
 #if defined(TARGET_XARCH)
     if ((simdSize == 64) || (simdSize == 32))
     {
@@ -32069,7 +31765,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_Add;
             }
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_Add;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32101,7 +31801,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
 #elif defined(TARGET_ARM64)
             id = NI_AdvSimd_And;
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_And;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32144,7 +31848,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             assert(simdSize == 16 || simdSize == 8);
 
             id = NI_AdvSimd_BitwiseClear;
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_AndNot;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32182,7 +31890,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_Arm64_Divide;
             }
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_Divide;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32234,7 +31946,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = op2->IsCnsIntOrI() ? NI_AdvSimd_ShiftLeftLogical : NI_AdvSimd_ShiftLogical;
             }
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_ShiftLeft;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32294,7 +32010,14 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = op2->TypeIs(simdType) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
             }
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            if (!varTypeIsByte(simdBaseType))
+            {
+                id = NI_PackedSimd_Multiply;
+            }
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32325,9 +32048,15 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 id = NI_X86Base_Or;
             }
 #elif defined(TARGET_ARM64)
-
             id = NI_AdvSimd_Or;
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            if (!varTypeIsByte(simdBaseType))
+            {
+                id = NI_PackedSimd_Or;
+            }
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32412,7 +32141,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = op2->IsCnsIntOrI() ? NI_AdvSimd_ShiftRightArithmetic : NI_AdvSimd_ShiftArithmetic;
             }
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_ShiftRightArithmetic;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32464,7 +32197,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = varTypeIsInt(op2) ? NI_AdvSimd_ShiftRightLogical : NI_AdvSimd_ShiftLogical;
             }
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_ShiftRightLogical;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32506,7 +32243,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             {
                 id = NI_AdvSimd_Subtract;
             }
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_Subtract;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32538,7 +32279,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
 #elif defined(TARGET_ARM64)
             id = NI_AdvSimd_Xor;
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#elif defined(TARGET_WASM)
+            id = NI_PackedSimd_Xor;
+#else
+#error Unsupported platform
+#endif
             break;
         }
 
@@ -32960,18 +32705,8 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
 
     switch (gtHWIntrinsicId)
     {
-#if defined(TARGET_ARM64)
-        case NI_Vector64_op_Equality:
-        case NI_Vector64_op_Inequality:
-#endif // TARGET_ARM64
-        case NI_Vector128_op_Equality:
-        case NI_Vector128_op_Inequality:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_op_Equality:
-        case NI_Vector256_op_Inequality:
-        case NI_Vector512_op_Equality:
-        case NI_Vector512_op_Inequality:
-#endif // TARGET_XARCH
+        case NI_Vector_op_Equality:
+        case NI_Vector_op_Inequality:
         {
             // We can optimize when the constant is zero, but only
             // for non floating-point since +0.0 == -0.0.
@@ -33019,21 +32754,9 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
         }
 #endif // TARGET_XARCH
 
-        case NI_Vector128_Shuffle:
-        case NI_Vector128_ShuffleNative:
-        case NI_Vector128_ShuffleNativeFallback:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_Shuffle:
-        case NI_Vector256_ShuffleNative:
-        case NI_Vector256_ShuffleNativeFallback:
-        case NI_Vector512_Shuffle:
-        case NI_Vector512_ShuffleNative:
-        case NI_Vector512_ShuffleNativeFallback:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_Shuffle:
-        case NI_Vector64_ShuffleNative:
-        case NI_Vector64_ShuffleNativeFallback:
-#endif
+        case NI_Vector_Shuffle:
+        case NI_Vector_ShuffleNative:
+        case NI_Vector_ShuffleNativeFallback:
         {
             // The shuffle indices ideally are constant so we can get the best
             // codegen possible. There are also some case/s where it would have
@@ -34601,26 +34324,24 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             switch (ni)
             {
-#if defined(TARGET_ARM64)
-                case NI_Vector64_ExtractMostSignificantBits:
-#elif defined(TARGET_XARCH)
-                case NI_Vector256_ExtractMostSignificantBits:
+                case NI_Vector_ExtractMostSignificantBits:
+#if defined(TARGET_XARCH)
                 case NI_X86Base_MoveMask:
                 case NI_AVX_MoveMask:
                 case NI_AVX2_MoveMask:
 #endif
-                case NI_Vector128_ExtractMostSignificantBits:
                 {
-#ifdef FEATURE_MASKED_HW_INTRINSICS
                     simdmask_t simdMaskVal;
 
                     switch (simdSize)
                     {
+#if defined(TARGET_ARM64)
                         case 8:
                         {
                             EvaluateExtractMSB<simd8_t>(simdBaseType, &simdMaskVal, cnsNode->AsVecCon()->gtSimd8Val);
                             break;
                         }
+#endif // TARGET_ARM64
 
                         case 16:
                         {
@@ -34650,12 +34371,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     resultNode = gtNewIconNode(static_cast<int32_t>(mask));
                     break;
-
-#else
-                    NYI_WASM_SIMD("gtFoldExprHWIntrinsic: Extract MSB");
-                    resultNode = nullptr;
-                    break;
-#endif
                 }
 
 #ifdef TARGET_XARCH
@@ -34726,20 +34441,21 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 #endif
 
-                case NI_Vector128_AsVector3:
-                case NI_Vector128_AsVector128Unsafe:
-#ifdef TARGET_ARM64
-                case NI_Vector64_ToVector128Unsafe:
-                case NI_Vector128_GetLower:
-#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
-                case NI_Vector128_AsVector2:
-#endif
-#ifdef TARGET_XARCH
-                case NI_Vector128_ToVector256Unsafe:
-                case NI_Vector256_GetLower:
-                case NI_Vector256_ToVector512Unsafe:
-                case NI_Vector512_GetLower:
-                case NI_Vector512_GetLower128:
+                case NI_Vector_AsVector3:
+                case NI_Vector_AsVector128Unsafe:
+#if defined(TARGET_XARCH)
+                case NI_Vector_AsVector2:
+                case NI_Vector_GetLower:
+                case NI_Vector_GetLower128:
+                case NI_Vector_ToVector256Unsafe:
+                case NI_Vector_ToVector512Unsafe:
+#elif defined(TARGET_ARM64)
+                case NI_Vector_GetLower:
+                case NI_Vector_ToVector128Unsafe:
+#elif defined(TARGET_WASM)
+                case NI_Vector_AsVector2:
+#else
+#error Unsupported platform
 #endif
                 {
                     // These are all going to a smaller type taking the lowest bits
@@ -34752,7 +34468,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 
 #ifdef TARGET_ARM64
-                case NI_Vector64_ToVector128:
+                case NI_Vector_ToVector128:
                 {
                     assert(retType == TYP_SIMD16);
                     assert(cnsNode->TypeIs(TYP_SIMD8));
@@ -34763,7 +34479,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 #elif defined(TARGET_XARCH)
-                case NI_Vector128_ToVector256:
+                case NI_Vector_ToVector256:
                 {
                     assert(retType == TYP_SIMD32);
                     assert(cnsNode->TypeIs(TYP_SIMD16));
@@ -34774,22 +34490,18 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                case NI_Vector128_ToVector512:
+                case NI_Vector_ToVector512:
                 {
                     assert(retType == TYP_SIMD64);
-                    assert(cnsNode->TypeIs(TYP_SIMD16));
-                    cnsNode->AsVecCon()->gtSimd64Val.v128[1] = {};
-                    cnsNode->AsVecCon()->gtSimd64Val.v256[1] = {};
 
-                    cnsNode->gtType = retType;
-                    resultNode      = cnsNode;
-                    break;
-                }
-
-                case NI_Vector256_ToVector512:
-                {
-                    assert(retType == TYP_SIMD64);
-                    assert(cnsNode->TypeIs(TYP_SIMD32));
+                    if (cnsNode->TypeIs(TYP_SIMD16))
+                    {
+                        cnsNode->AsVecCon()->gtSimd64Val.v128[1] = {};
+                    }
+                    else
+                    {
+                        assert(cnsNode->TypeIs(TYP_SIMD32));
+                    }
                     cnsNode->AsVecCon()->gtSimd64Val.v256[1] = {};
 
                     cnsNode->gtType = retType;
@@ -34799,7 +34511,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif
 
 #ifdef TARGET_ARM64
-                case NI_Vector128_GetUpper:
+                case NI_Vector_GetUpper:
                 {
                     assert(retType == TYP_SIMD8);
                     assert(cnsNode->TypeIs(TYP_SIMD16));
@@ -34810,22 +34522,19 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 #elif defined(TARGET_XARCH)
-                case NI_Vector256_GetUpper:
+                case NI_Vector_GetUpper:
                 {
-                    assert(retType == TYP_SIMD16);
-                    assert(cnsNode->TypeIs(TYP_SIMD32));
-                    cnsNode->AsVecCon()->gtSimd16Val = cnsNode->AsVecCon()->gtSimd32Val.v128[1];
-
-                    cnsNode->gtType = retType;
-                    resultNode      = cnsNode;
-                    break;
-                }
-
-                case NI_Vector512_GetUpper:
-                {
-                    assert(retType == TYP_SIMD32);
-                    assert(cnsNode->TypeIs(TYP_SIMD64));
-                    cnsNode->AsVecCon()->gtSimd32Val = cnsNode->AsVecCon()->gtSimd64Val.v256[1];
+                    if (retType == TYP_SIMD16)
+                    {
+                        assert(cnsNode->TypeIs(TYP_SIMD32));
+                        cnsNode->AsVecCon()->gtSimd16Val = cnsNode->AsVecCon()->gtSimd32Val.v128[1];
+                    }
+                    else
+                    {
+                        assert(retType == TYP_SIMD32);
+                        assert(cnsNode->TypeIs(TYP_SIMD64));
+                        cnsNode->AsVecCon()->gtSimd32Val = cnsNode->AsVecCon()->gtSimd64Val.v256[1];
+                    }
 
                     cnsNode->gtType = retType;
                     resultNode      = cnsNode;
@@ -34833,13 +34542,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 #endif
 
-                case NI_Vector128_ToScalar:
-#ifdef TARGET_ARM64
-                case NI_Vector64_ToScalar:
-#elif defined(TARGET_XARCH)
-                case NI_Vector256_ToScalar:
-                case NI_Vector512_ToScalar:
-#endif
+                case NI_Vector_ToScalar:
                 {
                     var_types simdType = getSIMDTypeForSize(simdSize);
 
@@ -35105,13 +34808,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             {
                 switch (ni)
                 {
-                    case NI_Vector128_GetElement:
-#ifdef TARGET_ARM64
-                    case NI_Vector64_GetElement:
-#elif defined(TARGET_XARCH)
-                    case NI_Vector256_GetElement:
-                    case NI_Vector512_GetElement:
-#endif
+                    case NI_Vector_GetElement:
                     {
                         uint32_t index = static_cast<uint32_t>(otherNode->AsIntConCommon()->IconValue());
 
@@ -35176,7 +34873,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif
 
 #ifdef TARGET_ARM64
-                    case NI_Vector128_WithLower:
+                    case NI_Vector_WithLower:
                     {
                         assert(retType == TYP_SIMD16);
                         assert(cnsNode->TypeIs(TYP_SIMD16));
@@ -35187,37 +34884,29 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         break;
                     }
 #elif defined(TARGET_XARCH)
-                    case NI_Vector256_WithLower:
+                    case NI_Vector_WithLower:
                     {
-                        assert(retType == TYP_SIMD32);
-                        assert(cnsNode->TypeIs(TYP_SIMD32));
-                        assert(otherNode->TypeIs(TYP_SIMD16));
-                        cnsNode->AsVecCon()->gtSimd32Val.v128[0] = otherNode->AsVecCon()->gtSimd16Val;
+                        assert(cnsNode->TypeIs(retType));
+
+                        if (retType == TYP_SIMD32)
+                        {
+                            assert(otherNode->TypeIs(TYP_SIMD16));
+                            cnsNode->AsVecCon()->gtSimd32Val.v128[0] = otherNode->AsVecCon()->gtSimd16Val;
+                        }
+                        else
+                        {
+                            assert(retType == TYP_SIMD64);
+                            assert(otherNode->TypeIs(TYP_SIMD32));
+                            cnsNode->AsVecCon()->gtSimd64Val.v256[0] = otherNode->AsVecCon()->gtSimd32Val;
+                        }
 
                         resultNode = cnsNode;
-                        break;
-                    }
-
-                    case NI_Vector512_WithLower:
-                    {
-                        assert(retType == TYP_SIMD64);
-                        assert(cnsNode->TypeIs(TYP_SIMD64));
-                        assert(otherNode->TypeIs(TYP_SIMD32));
-                        cnsNode->AsVecCon()->gtSimd64Val.v256[0] = otherNode->AsVecCon()->gtSimd32Val;
-
-                        resultNode = cnsNode;
-                        break;
-                    }
-#elif defined(TARGET_WASM)
-                    case NI_Vector128_WithLower:
-                    {
-                        NYI_WASM_SIMD("gtFoldExprHWIntrinsic: WithLower");
                         break;
                     }
 #endif
 
 #ifdef TARGET_ARM64
-                    case NI_Vector128_WithUpper:
+                    case NI_Vector_WithUpper:
                     {
                         assert(retType == TYP_SIMD16);
                         assert(cnsNode->TypeIs(TYP_SIMD16));
@@ -35228,42 +34917,28 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         break;
                     }
 #elif defined(TARGET_XARCH)
-                    case NI_Vector256_WithUpper:
+                    case NI_Vector_WithUpper:
                     {
-                        assert(retType == TYP_SIMD32);
-                        assert(cnsNode->TypeIs(TYP_SIMD32));
-                        assert(otherNode->TypeIs(TYP_SIMD16));
-                        cnsNode->AsVecCon()->gtSimd32Val.v128[1] = otherNode->AsVecCon()->gtSimd16Val;
+                        assert(cnsNode->TypeIs(retType));
+
+                        if (retType == TYP_SIMD32)
+                        {
+                            assert(otherNode->TypeIs(TYP_SIMD16));
+                            cnsNode->AsVecCon()->gtSimd32Val.v128[1] = otherNode->AsVecCon()->gtSimd16Val;
+                        }
+                        else
+                        {
+                            assert(retType == TYP_SIMD64);
+                            assert(otherNode->TypeIs(TYP_SIMD32));
+                            cnsNode->AsVecCon()->gtSimd64Val.v256[1] = otherNode->AsVecCon()->gtSimd32Val;
+                        }
 
                         resultNode = cnsNode;
-                        break;
-                    }
-
-                    case NI_Vector512_WithUpper:
-                    {
-                        assert(retType == TYP_SIMD64);
-                        assert(cnsNode->TypeIs(TYP_SIMD64));
-                        assert(otherNode->TypeIs(TYP_SIMD32));
-                        cnsNode->AsVecCon()->gtSimd64Val.v256[1] = otherNode->AsVecCon()->gtSimd32Val;
-
-                        resultNode = cnsNode;
-                        break;
-                    }
-#elif defined(TARGET_WASM)
-                    case NI_Vector128_WithUpper:
-                    {
-                        NYI_WASM_SIMD("gtFoldExprHWIntrinsic: WithUpper");
                         break;
                     }
 #endif
 
-                    case NI_Vector128_op_Equality:
-#if defined(TARGET_ARM64)
-                    case NI_Vector64_op_Equality:
-#elif defined(TARGET_XARCH)
-                    case NI_Vector256_op_Equality:
-                    case NI_Vector512_op_Equality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+                    case NI_Vector_op_Equality:
                     {
                         cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_EQ, isScalar, simdBaseType,
                                                                    otherNode->AsVecCon());
@@ -35271,13 +34946,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         break;
                     }
 
-                    case NI_Vector128_op_Inequality:
-#if defined(TARGET_ARM64)
-                    case NI_Vector64_op_Inequality:
-#elif defined(TARGET_XARCH)
-                    case NI_Vector256_op_Inequality:
-                    case NI_Vector512_op_Inequality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+                    case NI_Vector_op_Inequality:
                     {
                         cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_NE, isScalar, simdBaseType,
                                                                    otherNode->AsVecCon());
@@ -35885,13 +35554,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 #endif
 
-                case NI_Vector128_op_Equality:
-#if defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-#elif defined(TARGET_XARCH)
-                case NI_Vector256_op_Equality:
-                case NI_Vector512_op_Equality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+                case NI_Vector_op_Equality:
                 {
                     if (varTypeIsFloating(simdBaseType))
                     {
@@ -35906,13 +35569,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                case NI_Vector128_op_Inequality:
-#if defined(TARGET_ARM64)
-                case NI_Vector64_op_Inequality:
-#elif defined(TARGET_XARCH)
-                case NI_Vector256_op_Inequality:
-                case NI_Vector512_op_Inequality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+                case NI_Vector_op_Inequality:
                 {
                     if (varTypeIsFloating(simdBaseType))
                     {
@@ -35942,9 +35599,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         switch (ni)
         {
 #if defined(TARGET_XARCH)
-            case NI_Vector128_ConditionalSelect:
-            case NI_Vector256_ConditionalSelect:
-            case NI_Vector512_ConditionalSelect:
+            case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
             case NI_AdvSimd_BitwiseSelect:
 #endif
@@ -36080,13 +35735,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
 #endif // TARGET_ARM64
 
-            case NI_Vector128_WithElement:
-#ifdef TARGET_ARM64
-            case NI_Vector64_WithElement:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_WithElement:
-            case NI_Vector512_WithElement:
-#endif
+            case NI_Vector_WithElement:
             {
                 if ((cnsNode != op1) || !op2->IsCnsIntOrI() || !op3->OperIsConst())
                 {

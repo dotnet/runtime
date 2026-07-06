@@ -305,7 +305,6 @@ struct simd64_t
 static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
 struct simdmask_t
 {
     union
@@ -376,7 +375,6 @@ struct simdmask_t
     }
 };
 static_assert(sizeof(simdmask_t) == 8);
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
 #if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
@@ -633,6 +631,7 @@ inline void EvaluateUnaryMask(
         }
     }
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 inline void EvaluateExtractMSB(simdmask_t* result, const TSimd& arg0)
@@ -695,7 +694,6 @@ inline void EvaluateExtractMSB(var_types baseType, simdmask_t* result, const TSi
         }
     }
 }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0)
