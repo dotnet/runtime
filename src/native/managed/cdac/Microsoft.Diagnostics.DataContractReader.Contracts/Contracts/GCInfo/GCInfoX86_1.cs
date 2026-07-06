@@ -31,12 +31,6 @@ internal sealed class GCInfoX86_1 : IGCInfo
     uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetCodeLength();
 
-    uint IGCInfo.GetStackBaseRegister(IGCInfoHandle gcInfoHandle)
-        => AssertCorrectHandle(gcInfoHandle).GetStackBaseRegister();
-
-    uint IGCInfo.GetSizeOfStackParameterArea(IGCInfoHandle gcInfoHandle)
-        => AssertCorrectHandle(gcInfoHandle).GetSizeOfStackParameterArea();
-
     uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetCalleePoppedArgumentsSize();
 

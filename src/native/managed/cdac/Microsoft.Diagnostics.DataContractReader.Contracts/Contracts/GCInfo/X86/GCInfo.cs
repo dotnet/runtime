@@ -447,30 +447,8 @@ public record X86GCInfo : IGCInfoDecoder
 
     uint IGCInfoDecoder.GetCodeLength() => MethodSize;
 
-    uint IGCInfoDecoder.GetStackBaseRegister()
-    {
-        // x86 ModRM register encoding: ESP = 4, EBP = 5. EBP is the stack base for
-        // EBP-frames and double-aligned frames; otherwise stack base is ESP.
-        const uint REG_ESP = 4;
-        const uint REG_EBP = 5;
-        return (Header.EbpFrame || Header.DoubleAlign) ? REG_EBP : REG_ESP;
-    }
-
-    uint IGCInfoDecoder.GetSizeOfStackParameterArea()
-    {
-        // x86 GC info does not encode a separate outgoing-argument scratch area; the
-        // per-offset transitions report pushed argument pointers directly at each offset.
-        // Returning 0 disables the GcScanner's scratch-area filter on x86, which is the
-        // correct behaviour: the live state at a given offset (call site or fully-interruptible
-        // point) already excludes any args that have been popped by the time we resume there.
-        return 0;
-    }
-
     uint IGCInfoDecoder.GetCalleePoppedArgumentsSize()
     {
-        // Mirrors native ::GetStackParameterSize(hdrInfo) in gc_unwind_x86.inl: varargs are
-        // caller-popped (return 0); other methods report the argument size from the GC info
-        // header. Used by EECodeManager::GetStackParameterSize on x86.
         return Header.VarArgs ? 0u : Header.ArgCount * (uint)_target.PointerSize;
     }
 
@@ -872,6 +850,124 @@ public record X86GCInfo : IGCInfoDecoder
         yield return RegMask.EDI;
         // ESP is intentionally excluded -- it's never a live GC ref holder.
     }
+
+    GCInfoHeader IGCInfoDecoder.GetHeader()
+    {
+        // x86 GCInfo tracks whether a generics context exists and its kind,
+        // but does not encode the stack slot offset in the header.
+        GenericsContextKind genericsKind = Header.GenericsContext
+            ? (Header.GenericsContextIsMethodDesc ? GenericsContextKind.MethodDesc : GenericsContextKind.MethodHandle)
+            : GenericsContextKind.None;
+
+        SpecialSlot? gsCookie = Header.GsCookieOffset != 0
+            ? new SpecialSlot((int)Header.GsCookieOffset)
+            : null;
+
+        return new GCInfoHeader(
+            Version: 0,
+            CodeSize: MethodSize,
+            PrologSize: Header.PrologSize,
+            StackBaseRegister: Header.EbpFrame ? 5u : 0xFFFFFFFF,
+            SizeOfStackParameterArea: Header.ArgCount * (uint)_target.PointerSize,
+            IsVarArg: Header.VarArgs,
+            WantsReportOnlyLeaf: true,
+            HasTailCalls: false,
+            GSCookie: gsCookie,
+            GSCookieValidRangeStart: gsCookie.HasValue ? (uint)Header.PrologSize : 0,
+            GSCookieValidRangeEnd: gsCookie.HasValue ? MethodSize : 0,
+            PSPSym: null,
+            GenericsInstContext: null,
+            GenericsInstContextKind: genericsKind);
+    }
+
+    IReadOnlyList<uint> IGCInfoDecoder.GetSafePoints()
+    {
+        if (Header.Interruptible)
+            return [];
+
+        List<uint> safePoints = [];
+        foreach (int offset in SortedTransitionOffsets)
+        {
+            if ((uint)offset < Header.PrologSize)
+                continue;
+            foreach (BaseGcTransition transition in Transitions[offset])
+            {
+                if (transition is GcTransitionCall)
+                {
+                    safePoints.Add((uint)offset);
+                    break;
+                }
+            }
+        }
+        return safePoints;
+    }
+
+    IReadOnlyList<GCSlotLifetime> IGCInfoDecoder.GetSlotLifetimes()
+    {
+        List<GCSlotLifetime> lifetimes = [];
+
+        foreach (UntrackedSlot slot in UntrackedSlots)
+        {
+            uint gcFlags = (slot.LowBits & 0x1) != 0 ? 0x1u : 0u;
+            if ((slot.LowBits & 0x2) != 0)
+                gcFlags |= 0x2u;
+            gcFlags |= 0x4u;
+
+            uint baseReg = slot.IsEbpRelative ? 2u : 1u;
+            lifetimes.Add(new GCSlotLifetime(false, 0, slot.StackOffset, baseReg, gcFlags, 0, MethodSize));
+        }
+
+        foreach (VarPtrLifetime varPtr in VarPtrLifetimes)
+        {
+            uint gcFlags = (varPtr.LowBits & 0x1) != 0 ? 0x1u : 0u;
+            if ((varPtr.LowBits & 0x2) != 0)
+                gcFlags |= 0x2u;
+
+            lifetimes.Add(new GCSlotLifetime(false, 0, varPtr.StackOffset, 2u, gcFlags, varPtr.BeginOffset, varPtr.EndOffset));
+        }
+
+        Dictionary<RegMask, uint> activeRegs = [];
+        foreach (int offset in SortedTransitionOffsets)
+        {
+            foreach (BaseGcTransition transition in Transitions[offset])
+            {
+                if (transition is GcTransitionRegister regTransition)
+                {
+                    if (regTransition.IsLive == Action.LIVE)
+                    {
+                        activeRegs.TryAdd(regTransition.Register, (uint)offset);
+                    }
+                    else if (regTransition.IsLive == Action.DEAD)
+                    {
+                        if (activeRegs.TryGetValue(regTransition.Register, out uint beginOffset))
+                        {
+                            uint gcFlags = regTransition.Iptr ? 0x1u : 0u;
+                            lifetimes.Add(new GCSlotLifetime(true, RegMaskToRegNum(regTransition.Register), 0, 0, gcFlags, beginOffset, (uint)offset));
+                            activeRegs.Remove(regTransition.Register);
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ((RegMask reg, uint beginOffset) in activeRegs)
+            lifetimes.Add(new GCSlotLifetime(true, RegMaskToRegNum(reg), 0, 0, 0, beginOffset, MethodSize));
+
+        return lifetimes;
+    }
+
+    private static uint RegMaskToRegNum(RegMask reg) => reg switch
+    {
+        RegMask.EAX => 0,
+        RegMask.ECX => 1,
+        RegMask.EDX => 2,
+        RegMask.EBX => 3,
+        RegMask.ESP => 4,
+        RegMask.EBP => 5,
+        RegMask.ESI => 6,
+        RegMask.EDI => 7,
+        _ => 0,
+    };
 }
 
 /// <summary>
