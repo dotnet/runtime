@@ -143,21 +143,14 @@ namespace Internal.IL.Stubs
                         if (unmanagedCallingConvention == MethodSignatureFlags.None)
                             unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
 
+                        MethodSignature delegateSignature = _invokeMethod.Signature;
                         if (!MarshalHelpers.IsRuntimeMarshallingEnabled(_delegateType.Module))
                         {
                             // When runtime marshalling is disabled, arguments and the return value are passed
-                            // through blittably, so the native signature matches the managed signature. This
-                            // mirrors the Marshaller.CreateDisabledMarshaller path used when emitting the stub IL
-                            // (see PInvokeILEmitter.InitializeMarshallers), and the CoreCLR VM behavior which
-                            // gates runtime marshalling on the delegate type's own module.
-                            MethodSignature disabledDelegateSignature = _invokeMethod.Signature;
-                            TypeDesc[] disabledNativeParameterTypes = new TypeDesc[disabledDelegateSignature.Length];
-                            for (int i = 0; i < disabledDelegateSignature.Length; i++)
-                            {
-                                disabledNativeParameterTypes[i] = disabledDelegateSignature[i];
-                            }
-
-                            _signature = new MethodSignature(MethodSignatureFlags.Static | unmanagedCallingConvention, 0, disabledDelegateSignature.ReturnType, disabledNativeParameterTypes);
+                            // through blittably, so the native signature matches the managed signature.
+                            var builder = new MethodSignatureBuilder(delegateSignature);
+                            builder.Flags = MethodSignatureFlags.Static | unmanagedCallingConvention;
+                            _signature = builder.ToSignature();
                             return _signature;
                         }
 
@@ -170,7 +163,6 @@ namespace Internal.IL.Stubs
                             _ => true
                         };
 
-                        MethodSignature delegateSignature = _invokeMethod.Signature;
                         TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
                         ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
                         int parameterIndex = 0;
