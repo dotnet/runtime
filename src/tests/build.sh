@@ -402,7 +402,7 @@ if [[ "$platform" == "freebsd" || "$platform" == "openbsd" ]]; then
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
 elif [[ "$platform" == "darwin" ]]; then
-  __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+  __NumProc="$(getconf _NPROCESSORS_ONLN)"
 elif command -v nproc > /dev/null 2>&1; then
   __NumProc="$(nproc)"
 elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
