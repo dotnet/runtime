@@ -3017,9 +3017,6 @@ OBJECTREF Thread::GetExposedObject()
     {
         // Allocate the exposed thread object.
         THREADBASEREF attempt = (THREADBASEREF) AllocateObject(g_pThreadClass);
-
-        BOOL fCreatedExposedObject = FALSE;
-
         GCPROTECT_BEGIN(attempt);
 
         // The exposed object keeps us alive until it is GC'ed.  This
@@ -3062,8 +3059,6 @@ OBJECTREF Thread::GetExposedObject()
 
             exposedHolder.SuppressRelease();
             strongHolder.SuppressRelease();
-
-            fCreatedExposedObject = TRUE;
         }
         else
         {
@@ -3071,14 +3066,6 @@ OBJECTREF Thread::GetExposedObject()
         }
 
         GCPROTECT_END();
-
-#ifdef DEBUGGING_SUPPORTED
-        if (fCreatedExposedObject && pCurThread == this && CORDebuggerAttached())
-        {
-            _ASSERTE(g_pDebugInterface != NULL);
-            g_pDebugInterface->NameChangeEvent(NULL, this);
-        }
-#endif // DEBUGGING_SUPPORTED
     }
     return ObjectFromHandle(m_ExposedObject);
 }
