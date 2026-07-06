@@ -13,6 +13,7 @@
 
 #include <utility>
 #include <type_traits>
+#include <memory>
 
 #if defined(FEATURE_COMINTEROP) && !defined(STRIKE)
 #include <Inspectable.h>
@@ -844,63 +845,6 @@ template<typename _TYPE>
 using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
 
 //-----------------------------------------------------------------------------
-// StubHolder : holder for stubs
-//
-// Usage example:
-//
-//  {
-//      StubHolder<Stub> foo;
-//      foo = new Stub();
-//      foo->AddRef();
-//      // Note StubHolder doesn't call AddRef for you.
-//  } // foo->DecRef() on out of scope
-//
-//-----------------------------------------------------------------------------
-
-template<typename _TYPE>
-class ExecutableWriterHolderNoLog;
-
-class ExecutableAllocator;
-
-template <typename TYPE, typename LOGGER=ExecutableAllocator>
-FORCEINLINE void StubRelease(TYPE* value)
-{
-    if (value)
-    {
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-#ifdef HOST_UNIX
-        LOGGER::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
-#else
-        LOGGER::LogUsage(__FILE__, __LINE__, __FUNCTION__);
-#endif
-#endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-        ExecutableWriterHolderNoLog<TYPE> stubWriterHolder(value, sizeof(TYPE));
-        stubWriterHolder.GetRW()->DecRef();
-    }
-}
-
-template<typename _TYPE>
-using StubHolder = SpecializedWrapper<_TYPE, StubRelease<_TYPE>>;
-
-//-----------------------------------------------------------------------------
-// CoTaskMemHolder : CoTaskMemAlloc allocated memory holder
-//
-//  {
-//      CoTaskMemHolder<Foo> foo = (Foo*) CoTaskMemAlloc(sizeof(Foo));
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DeleteCoTaskMem(TYPE *value)
-{
-    if (value)
-        CoTaskMemFree(value);
-}
-
-template<typename _TYPE>
-using CoTaskMemHolder = SpecializedWrapper<_TYPE, DeleteCoTaskMem<_TYPE>>;
-
-//-----------------------------------------------------------------------------
 // NewHolder : New'ed memory holder
 //
 //  {
@@ -998,65 +942,9 @@ protected:
     ULONG32 m_cElements;
 };
 
-
 //-----------------------------------------------------------------------------
-// ResetPointerHolder : pointer which needs to be set to NULL
-//  {
-//      ResetPointerHolder<Foo> holder = &pFoo;
-//  } // "*pFoo=NULL" on out of scope
+// Holders
 //-----------------------------------------------------------------------------
-#ifdef __GNUC__
-// With -fvisibility-inlines-hidden, the Invoke methods below
-// get hidden, which causes warnings when visible classes expose them.
-#define VISIBLE __attribute__ ((visibility("default")))
-#else
-#define VISIBLE
-#endif // __GNUC__
-
-namespace detail
-{
-    template <typename T>
-    struct ZeroMem
-    {
-        static VISIBLE void Invoke(T * pVal)
-        {
-            ZeroMemory(pVal, sizeof(T));
-        }
-    };
-
-    template <typename T>
-    struct ZeroMem<T*>
-    {
-        static VISIBLE void Invoke(T ** pVal)
-        {
-            *pVal = NULL;
-        }
-    };
-
-}
-#undef VISIBLE
-
-template<typename _TYPE>
-using ResetPointerHolder = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Invoke>;
-
-//-----------------------------------------------------------------------------
-// Wrap win32 functions using HANDLE
-//-----------------------------------------------------------------------------
-
-FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
-
-// (UINT_PTR) -1 is INVALID_HANDLE_VALUE
-//@TODO: Dangerous default value. Some Win32 functions return INVALID_HANDLE_VALUE, some return NULL (such as CreatEvent).
-typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
-
-
-//-----------------------------------------------------------------------------
-// Misc holders
-//-----------------------------------------------------------------------------
-
-// A holder for HMODULE.
-FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
-typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
 
 template<typename T>
 class LifetimeHolder final
@@ -1080,7 +968,7 @@ public:
     LifetimeHolder& operator=(LifetimeHolder&& other)
     {
         STATIC_CONTRACT_WRAPPER;
-        if (this != &other)
+        if (this != std::addressof(other))
         {
             Free();
             m_value = other.Detach();
@@ -1134,6 +1022,22 @@ public:
     }
 };
 
+//-----------------------------------------------------------------------------
+// Wrap win32 functions using HANDLE
+//-----------------------------------------------------------------------------
+struct HandleTraits final
+{
+    using Type = HANDLE;
+    static Type Default() { return INVALID_HANDLE_VALUE; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL && h != Default())
+            CloseHandle(h);
+    }
+};
+using HandleHolder = LifetimeHolder<HandleTraits>;
+
 struct MapViewTraits final
 {
     using Type = void*;
@@ -1166,6 +1070,122 @@ struct LocalAllocTraits final
 
 template<typename T>
 using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
+
+// A holder for HMODULE.
+struct HModuleTraits final
+{
+    using Type = HMODULE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL)
+            ::FreeLibrary(h);
+    }
+};
+
+using HModuleHolder = LifetimeHolder<HModuleTraits>;
+
+//-----------------------------------------------------------------------------
+// ResetPointerHolder : pointer which needs to be set to NULL (or zeroed) on
+// scope exit. The holder stores the address of the slot to clear; on Free it
+// nulls the pointer (for pointer T) or zeroes the storage (for non-pointer T).
+//
+//  {
+//      ResetPointerHolder<Foo*> holder{ &pFoo };
+//  } // "pFoo = NULL" on out of scope
+//-----------------------------------------------------------------------------
+template<typename T>
+struct ResetPointerTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type p)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (p == NULL)
+            return;
+
+        // If T is a pointer type, we set the pointer to NULL. If T is a non-pointer type, we zero the memory.
+        if constexpr (std::is_pointer<T>::value)
+            *p = NULL;
+        else
+            ZeroMemory(p, sizeof(T));
+    }
+};
+
+template<typename T>
+using ResetPointerHolder = LifetimeHolder<ResetPointerTraits<T>>;
+
+//-----------------------------------------------------------------------------
+// CoTaskMemHolder : holder for memory allocated by ::CoTaskMemAlloc.
+//
+//  {
+//      CoTaskMemHolder<Foo> foo{ (Foo*)::CoTaskMemAlloc(sizeof(Foo)) };
+//  } // ::CoTaskMemFree(foo) on out of scope
+//-----------------------------------------------------------------------------
+template<typename T>
+struct CoTaskMemTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+            ::CoTaskMemFree(value);
+    }
+};
+
+template<typename T>
+using CoTaskMemHolder = LifetimeHolder<CoTaskMemTraits<T>>;
+
+//-----------------------------------------------------------------------------
+// StubHolder : holder for runtime-emitted Stub-like objects.
+// On scope exit, calls DecRef through the executable-memory
+// writer-holder so the refcount field can be written.
+//
+// Note: StubHolder does NOT call IncRef on assignment - the caller owns
+// matching IncRef/DecRef pairing on the value it hands to the holder.
+//
+// Usage example:
+//
+//  {
+//      StubHolder<Stub> foo;
+//      foo = new Stub();
+//      foo->AddRef();
+//  } // foo->DecRef() on out of scope
+//-----------------------------------------------------------------------------
+template<typename T>
+class ExecutableWriterHolderNoLog;
+
+class ExecutableAllocator;
+
+template<typename T>
+struct StubTraits final
+{
+    using Type = T*;
+    static constexpr Type Default() { return nullptr; }
+    static void Free(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != nullptr)
+        {
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+#ifdef HOST_UNIX
+            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
+#else
+            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__);
+#endif
+#endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+            ExecutableWriterHolderNoLog<T> stubWriterHolder(value, sizeof(T));
+            stubWriterHolder.GetRW()->DecRef();
+        }
+    }
+};
+
+template<typename T>
+using StubHolder = LifetimeHolder<StubTraits<T>>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept

@@ -53,7 +53,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         assert(size->isContained());
         srcCount = 0;
 
-        size_t sizeVal = size->AsIntCon()->gtIconVal;
+        size_t sizeVal = size->AsIntCon()->IconValue();
         if (sizeVal == 0)
         {
             internalIntCount = 0;
@@ -690,6 +690,13 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_MEMORYBARRIER:
         case GT_RETURN_SUSPEND:
             srcCount = BuildSimple(tree);
+            break;
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // NYI on ARM32
+            srcCount = 0;
+            NYI_ARM("GT_PATCHPOINT");
             break;
 
         case GT_JTRUE:

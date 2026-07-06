@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
@@ -20,7 +21,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 {
     int IXCLRDataProcess.Flush()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
 
         // Flush is always propagated — it's cache management, not data retrieval.
         if (_legacyProcess is not null)
@@ -101,7 +102,116 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         uint* nameLen,
         char* nameBuf,
         ClrDataAddress* displacement)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetRuntimeNameByAddress(address, flags, bufLen, nameLen, nameBuf, displacement) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (flags != 0)
+                throw new ArgumentException("Flags are not supported", nameof(flags));
+
+            TargetCodePointer codeAddr = address.ToTargetCodePointer(_target);
+
+            // IsPossibleCodeAddress - validate the address is readable
+            if (!_target.TryRead(codeAddr, out byte _))
+                throw new ArgumentException("Address is not readable", nameof(address));
+
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            string? resultName = null;
+
+            // Try stub classification
+            CodeKind codeKind = eman.GetCodeKind(codeAddr);
+            if (codeKind == CodeKind.StubPrecode || codeKind == CodeKind.FixupPrecode)
+            {
+                IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
+                TargetPointer entryPoint = precodeStubs.GetPrecodeEntryPointFromInteriorAddress(codeAddr, codeKind == CodeKind.FixupPrecode);
+                TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Value));
+                if (methodDesc != TargetPointer.Null)
+                {
+                    if (displacement is not null)
+                        *displacement = codeAddr.ToAddress(_target).Value - entryPoint;
+                    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                    MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+                    StringBuilder sb = new StringBuilder();
+                    TypeNameBuilder.AppendMethodInternal(_target, sb, mdh, TypeNameFormat.FormatSignature
+                        | TypeNameFormat.FormatNamespace
+                        | TypeNameFormat.FormatFullInst);
+                    resultName = sb.ToString();
+                }
+            }
+            if (resultName is null)
+            {
+                resultName = GetStubName(codeKind);
+                if (resultName is not null && displacement is not null)
+                    *displacement = 0;
+            }
+
+            // try aux symbols
+            if (resultName is null && _target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(address.ToTargetPointer(_target), out string? auxSymbolName))
+            {
+                resultName = auxSymbolName;
+                if (displacement is not null)
+                    *displacement = 0;
+            }
+
+            if (resultName is null)
+            {
+                throw new InvalidCastException();
+            }
+
+            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, resultName, out bool truncated);
+
+            if (truncated)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            uint nameLenLocal = 0;
+            char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
+            ClrDataAddress displacementLocal = default;
+            int hrLocal;
+            fixed (char* pNameBufLocal = nameBufLocal)
+            {
+                hrLocal = _legacyProcess.GetRuntimeNameByAddress(
+                    address, flags, bufLen,
+                    nameLen is null ? null : &nameLenLocal,
+                    nameBuf is null ? null : pNameBufLocal,
+                    displacement is null ? null : &displacementLocal);
+            }
+
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(nameLen is null || *nameLen == nameLenLocal);
+                if (nameBuf is not null)
+                {
+                    Debug.Assert(new ReadOnlySpan<char>(nameBuf, (int)nameLenLocal)
+                        .SequenceEqual(nameBufLocal.AsSpan(0, (int)nameLenLocal)));
+                }
+                if (displacement is not null)
+                {
+                    Debug.Assert(*displacement == displacementLocal);
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    private static string? GetStubName(Contracts.CodeKind codeKind)
+    {
+        if (codeKind == Contracts.CodeKind.Unknown || codeKind == Contracts.CodeKind.Jitted || codeKind == Contracts.CodeKind.ReadyToRun)
+            return null;
+        if (codeKind == Contracts.CodeKind.StubPrecode || codeKind == Contracts.CodeKind.FixupPrecode)
+            return "Prestub";
+        return codeKind.ToString();
+    }
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
@@ -145,7 +255,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         private readonly IRuntimeTypeSystem _rts;
         private readonly ICodeVersions _cv;
         public IEnumerator<MethodDescHandle> Enumerator { get; set; } = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
-        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
+        public nuint LegacyHandle { get; set; } = 0;
 
         public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
         {
@@ -153,8 +263,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             _mainMethodDesc = methodDesc;
             if (appDomain == TargetPointer.Null)
             {
-                TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                _appDomain = _target.ReadPointer(appDomainPointer);
+                _appDomain = _target.Contracts.Loader.GetAppDomain();
             }
             else
             {
@@ -359,7 +468,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
             {
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
-                emi.LegacyHandle = handleLocal;
+                emi.LegacyHandle = (nuint)handleLocal;
 
                 hr = emi.Start();
                 if (hr == HResults.S_OK)
@@ -413,7 +522,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
             hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, legacyMethodOut);
             legacyMethod = legacyMethodOut.Interface;
-            emi.LegacyHandle = legacyHandle;
+            emi.LegacyHandle = (nuint)legacyHandle;
         }
 
         try
@@ -472,7 +581,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
         gcHandle.Free();
 
-        if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
+        if (_legacyProcess != null && emi.LegacyHandle != 0)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
             if (hrLocal < 0)
@@ -547,8 +656,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
                 case JitNotificationData jit:
                 {
-                    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                    TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                    TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
                     IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                     MethodDescHandle methodDesc = rts.GetMethodDescHandle(jit.MethodDescAddress);
@@ -609,8 +717,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (notify is IXCLRDataExceptionNotification4 notify4)
                     {
-                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
                         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                         MethodDescHandle methodDesc = rts.GetMethodDescHandle(exceptionCatcherEnter.MethodDescAddress);
                         notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), exceptionCatcherEnter.NativeOffset);
@@ -645,12 +752,18 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 hr = HResults.S_OK;
             }
         }
+        else if (StressTestApi.CdacStressApi.IsStressRequest(reqCode))
+        {
+            hr = StressTestApi.CdacStressApi.HandleRequest(_target, reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
+        }
         else
         {
             return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
         }
 #if DEBUG
-        if (_legacyProcess is not null)
+        // Private DACSTRESSPRIV_REQUEST_* opcodes are cDAC-only and must NOT be
+        // forwarded to the legacy DAC.
+        if (_legacyProcess is not null && !StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
             byte[] localBuffer = new byte[(int)outBufferSize];
             fixed (byte* localOutBuffer = localBuffer)
@@ -682,22 +795,48 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetAllTypeNotifications(mod, flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetAllCodeNotifications(IXCLRDataModule? mod, uint flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetAllCodeNotifications(mod, flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (!CodeNotificationFlagsConverter.IsValid(flags))
+                throw new ArgumentException("Invalid code notification flags");
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (mod is not null)
+            {
+                if (mod is not ClrDataModule cdm)
+                    throw new ArgumentException();
+                moduleAddr = cdm.Address;
+            }
+
+            _target.Contracts.CodeNotifications.SetAllCodeNotifications(moduleAddr, CodeNotificationFlagsConverter.FromCom(flags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetAllCodeNotifications is a write operation.
+        // Both the cDAC and legacy DAC independently write to g_pNotificationTable.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetTypeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.SetTypeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdTypeDef*/ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags)
         => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetTypeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
 
@@ -705,18 +844,115 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[] tokens,
-        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetCodeNotifications(numTokens, mods, singleMod, tokens, flags) : HResults.E_NOTIMPL;
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef*/ uint[]? tokens,
+        [In, Out, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags)
+    {
+        int hr = HResults.S_OK;
+        ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
+
+        try
+        {
+            // Match legacy DAC (daccess.cpp ClrDataAccess::GetCodeNotifications):
+            // tokens and flags are both required; exactly one of mods/singleMod must be non-null.
+            if (tokens is null || flags is null ||
+                (mods is null && singleMod is null) ||
+                (mods is not null && singleMod is not null))
+                throw new ArgumentException();
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (singleMod is not null)
+            {
+                if (singleMod is not ClrDataModule singleCdm)
+                    throw new ArgumentException();
+                moduleAddr = singleCdm.Address;
+            }
+
+            for (uint i = 0; i < numTokens; i++)
+            {
+                if (singleMod is null)
+                    moduleAddr = GetModuleAddress(mods[i]);
+
+                flags[i] = CodeNotificationFlagsConverter.ToCom(codeNotif.GetCodeNotification(moduleAddr, tokens[i]));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: GetCodeNotifications is a read, but both cDAC and
+        // legacy DAC allocate the table on-demand when called, which would cause
+        // dual-allocation. Validation is safe at a higher layer when a dump is used.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.SetCodeNotifications(
         uint numTokens,
         /*IXCLRDataModule*/ void** mods,
         IXCLRDataModule? singleMod,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[] tokens,
-        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[] flags,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] /*mdMethodDef */ uint[]? tokens,
+        [In, MarshalUsing(CountElementName = nameof(numTokens))] uint[]? flags,
         uint singleFlags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
+    {
+        // Behavior difference from the legacy DAC: the legacy DAC performs an upfront
+        // capacity check (numTokens > table size returns E_OUTOFMEMORY with no writes
+        // performed). The cDAC's CodeNotifications contract does not expose a capacity
+        // check, so this batch wrapper writes entries one at a time. If the in-target
+        // table fills up part-way through, entries written before the overflow remain
+        // set and the first failing per-entry SetCodeNotification surfaces a COMException
+        // with HResult == E_FAIL, which is mapped to the returned hr below. Callers that
+        // depend on atomic batch semantics should size their batches conservatively.
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (tokens is null ||
+                (mods is null && singleMod is null) ||
+                (mods is not null && singleMod is not null))
+                throw new ArgumentException();
+
+            // Validate flags.
+            if (flags is not null)
+            {
+                for (uint check = 0; check < numTokens; check++)
+                {
+                    if (!CodeNotificationFlagsConverter.IsValid(flags[check]))
+                        throw new ArgumentException("Invalid code notification flags");
+                }
+            }
+            else if (!CodeNotificationFlagsConverter.IsValid(singleFlags))
+            {
+                throw new ArgumentException("Invalid code notification flags");
+            }
+
+            TargetPointer moduleAddr = TargetPointer.Null;
+            if (singleMod is not null)
+            {
+                if (singleMod is not ClrDataModule singleCdm)
+                    throw new ArgumentException();
+                moduleAddr = singleCdm.Address;
+            }
+
+            for (uint i = 0; i < numTokens; i++)
+            {
+                if (singleMod is null)
+                    moduleAddr = GetModuleAddress(mods[i]);
+
+                uint f = flags is not null ? flags[i] : singleFlags;
+                _target.Contracts.CodeNotifications.SetCodeNotification(moduleAddr, tokens[i], CodeNotificationFlagsConverter.FromCom(f));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        // No #if DEBUG validation: SetCodeNotifications is a write operation.
+        // Both the cDAC and legacy DAC independently write to g_pNotificationTable.
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetOtherNotificationFlags(uint* flags)
     {
@@ -862,5 +1098,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 #endif
         return hr;
+    }
+
+    private static TargetPointer GetModuleAddress(void* comModulePtr)
+    {
+        if (System.Runtime.InteropServices.ComWrappers.TryGetObject((nint)comModulePtr, out object? obj))
+        {
+            if (obj is ClrDataModule cdm)
+                return cdm.Address;
+        }
+        throw new ArgumentException("Could not resolve module address from COM pointer");
     }
 }

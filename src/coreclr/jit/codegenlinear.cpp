@@ -91,6 +91,8 @@ void CodeGen::genInitialize()
     }
 
     initializeVariableLiveKeeper();
+    emittedCallReturnInfo =
+        new (m_compiler, CMK_DebugInfo) jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
 
     genPendingCallLabel = nullptr;
 
@@ -259,7 +261,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     // and before first of the current block is emitted
     genUpdateLife(block->bbLiveIn);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Even if liveness didn't change, we need to update the registers containing GC references.
     // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't
     // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
@@ -353,7 +355,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
             }
         }
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
     /* Start a new code output block */
 
@@ -458,19 +460,9 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
-#ifdef TARGET_WASM
-    // genHomeRegisterParams can generate arbitrary amounts of code on Wasm, so
-    // we have moved it out of the prolog to the first basic block in order to
-    // work around the restriction that the prolog can only be one insGroup.
-    if (block->IsFirst())
-    {
-        genHomeRegisterParamsOutsideProlog();
-    }
-#endif
-
 #ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
     // Emit poisoning into the init BB that comes right after prolog.
-    // We cannot emit this code in the prolog as it might make the prolog too large.
+    // We cannot emit this code in the prolog as it might use a helper call that kills argument regs.
     if (m_compiler->compShouldPoisonFrame() && block->IsFirst())
     {
         genPoisonFrame(newLiveRegSet);
@@ -569,7 +561,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
 
     regSet.rsSpillChk();
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // Make sure we didn't bungle pointer register tracking
     regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
     regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
@@ -618,7 +610,7 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 
     noway_assert(nonVarPtrRegs == RBM_NONE);
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 #endif // DEBUG
 
 #if defined(DEBUG)
@@ -807,6 +799,21 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 
         case BBJ_THROW:
         {
+#if defined(TARGET_WASM)
+            // Wasm validator needs an `unreachable` after the throw so the
+            // fall-through stack is polymorphic.
+            //
+            GetEmitter()->emitIns(INS_unreachable);
+
+            // At function/funclet end, close open intervals and emit `end`
+            // (we've already emitted the terminating `unreachable` above).
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
+            }
+#else  // !TARGET_WASM
+
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
             // We insert an unexecuted breakpoint instruction in several situations
@@ -838,15 +845,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                     }
                 }
             }
-
-#if defined(TARGET_WASM)
-            // For wasm the last instruction in a function or funclet must be end.
-            //
-            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
-            {
-                GetEmitter()->emitIns(INS_end);
-            }
-#endif // defined(TARGET_WASM)
+#endif // !TARGET_WASM
 
             break;
         }
@@ -905,6 +904,18 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 #if FEATURE_LOOP_ALIGN
             SetLoopAlignBackEdge(block, block->GetTarget());
 #endif // FEATURE_LOOP_ALIGN
+
+#if defined(TARGET_WASM)
+            // If this BBJ_ALWAYS is the last block of the function or funclet
+            // (e.g., backedge of an infinite loop), close any still-open
+            // wasm intervals and emit the function-body terminator.
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd();
+            }
+#endif // defined(TARGET_WASM)
+
             break;
 
         case BBJ_COND:
@@ -1601,7 +1612,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     // genUpdateLife() will also spill local var if marked as GTF_SPILL by calling CodeGen::genSpillVar
     genUpdateLife(tree);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     // there are three cases where consuming a reg means clearing the bit in the live mask
     // 1. it was not produced by a local
     // 2. it was produced by a local that is going dead
@@ -1659,7 +1670,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     {
         gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
     }
-#endif // EMIT_GENERATE_GCINFO
+#endif // EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
 
     genCheckConsumeNode(tree);
     return tree->GetRegNum();
@@ -1817,7 +1828,6 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
-#ifndef TARGET_WASM
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
@@ -1838,6 +1848,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -2703,6 +2714,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * Possible values for JitEmitUnitTestsSections:
  * Amd64: all, sse2
  * Arm64: all, general, advsimd, sve
+ * Wasm:  all, simd
  */
 
 #if defined(DEBUG)
@@ -2727,7 +2739,14 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
+#ifndef TARGET_WASM
     inst_JMP(EJ_jmp, skipLabel);
+#else
+    // On Wasm, we skip over the generated emitter test code by nesting it in a block where the
+    // first instruction branches to the end of the block.
+    GetEmitter()->emitIns_BlockTy(INS_block);
+    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, nullptr);
+#endif
 
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
@@ -2751,6 +2770,14 @@ void CodeGen::genEmitterUnitTests()
     {
         genAmd64EmitterUnitTestsCCMP();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "cfcmov") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCFCMOV();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ctest") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCTEST();
+    }
 
 #elif defined(TARGET_ARM64)
     if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
@@ -2769,6 +2796,13 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsPac();
     }
+
+#elif defined(TARGET_WASM)
+    if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
+    {
+        genWasmEmitterUnitTestsSimd();
+    }
+    instGen(INS_end);
 #endif
 
     genDefineTempLabel(skipLabel);

@@ -225,6 +225,7 @@ GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
+GTNODE(BFX              , GenTreeBfm         ,0,0,GTK_UNOP|GTK_EXOP|DBK_NOTHIR) // Bitfield Extract.
 #endif
 
 //-----------------------------------------------------------------------------
@@ -261,17 +262,17 @@ GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 #ifdef TARGET_ARM64
 // Maps to arm64 csinc/cinc instruction. Computes result = condition ? op1 : op2 + 1.
 // If op2 is null, computes result = condition ? op1 + 1 : op1.
-GTNODE(SELECT_INC       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_INC       , GenTreeConditional ,0,0,GTK_SPECIAL|DBK_NOTHIR)
 // Variant of SELECT_INC that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_INCCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to arm64 csinv/cinv instruction. Computes result = condition ? op1 : ~op2.
 // If op2 is null, computes result = condition ? ~op1 : op1.
-GTNODE(SELECT_INV       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_INV       , GenTreeConditional ,0,0,GTK_SPECIAL|DBK_NOTHIR)
 // Variant of SELECT_INV that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to arm64 csneg/cneg instruction.. Computes result = condition ? op1 : -op2.
 // If op2 is null, computes result = condition ? -op1 : op1.
-GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_NEG       , GenTreeConditional ,0,0,GTK_SPECIAL|DBK_NOTHIR)
 // Variant of SELECT_NEG that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
@@ -329,6 +330,15 @@ GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP
 // Lowering then removes all successor nodes and leaves it as the terminator node.
 GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 
+// Transfer control to an OSR method variant via patchpoint helper.
+// Operands are the counter address (op1) and IL offset (op2).
+// Codegen emits the helper call and an unconditional jump to the returned address.
+GTNODE(PATCHPOINT       , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE)
+
+// Forced OSR patchpoint (partial compilation). Operand is the IL offset.
+// Codegen emits the forced patchpoint helper call and a jump to the returned address.
+GTNODE(PATCHPOINT_FORCED, GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
+
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
@@ -361,6 +371,9 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 //-----------------------------------------------------------------------------
 
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,0,GTK_LEAF|DBK_NOTHIR)              // read from a physical register
+#ifdef TARGET_WASM
+GTNODE(FRAME_SIZE       , GenTree            ,0,0,GTK_LEAF|DBK_NOTHIR)              // compLclFrameSize; resolved by wasm codegen
+#endif // TARGET_WASM
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack

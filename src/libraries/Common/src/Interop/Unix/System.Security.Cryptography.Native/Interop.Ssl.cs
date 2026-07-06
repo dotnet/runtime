@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -86,7 +86,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDefaultSignatureAlgorithms")]
         private static unsafe partial int GetDefaultSignatureAlgorithms(Span<ushort> algorithms, ref int algorithmCount);
 
-        internal static ushort[] GetDefaultSignatureAlgorithms()
+        internal static unsafe ushort[] GetDefaultSignatureAlgorithms()
         {
             // 256 algorithms should be more than enough for any use case.
             Span<ushort> algorithms = stackalloc ushort[256];
@@ -117,8 +117,40 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
-        internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
+        internal static unsafe partial int SslHandshake(
+            SafeSslHandle ssl,
+            byte* inputPtr,
+            int inputLen,
+            out int consumed,
+            byte* outputPtr,
+            int outputCap,
+            out int outputWritten,
+            out int outputPending,
+            out SslErrorCode errorCode);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslEncrypt", SetLastError = true)]
+        internal static unsafe partial int SslEncrypt(
+            SafeSslHandle ssl,
+            byte* plaintextPtr,
+            int plaintextLen,
+            byte* outputPtr,
+            int outputCap,
+            out int outputWritten,
+            out int outputPending,
+            out SslErrorCode errorCode);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDecrypt", SetLastError = true)]
+        internal static unsafe partial int SslDecrypt(
+            SafeSslHandle ssl,
+            byte* inputPtr,
+            int inputLen,
+            out int consumed,
+            byte* outputPtr,
+            int outputCap,
+            out int leftoverOffset,
+            out int leftoverLength,
+            out SslErrorCode errorCode);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslStateOK")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -130,6 +162,15 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewManagedSpan")]
+        internal static partial SafeBioHandle BioNewManagedSpan();
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
+        internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioDrainSpill")]
+        internal static unsafe partial int BioDrainSpill(SafeBioHandle bio, byte* dst, int dstLen);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static partial IntPtr SslGetPeerCertificate(SafeSslHandle ssl);
@@ -437,8 +478,8 @@ namespace Microsoft.Win32.SafeHandles
 
         public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
         {
-            SafeBioHandle readBio = Interop.Crypto.CreateMemoryBio();
-            SafeBioHandle writeBio = Interop.Crypto.CreateMemoryBio();
+            SafeBioHandle readBio = Interop.Ssl.BioNewManagedSpan();
+            SafeBioHandle writeBio = Interop.Ssl.BioNewManagedSpan();
             SafeSslHandle handle = Interop.Ssl.SslCreate(context);
             if (readBio.IsInvalid || writeBio.IsInvalid || handle.IsInvalid)
             {

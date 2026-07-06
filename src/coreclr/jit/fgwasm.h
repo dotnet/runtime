@@ -143,6 +143,9 @@ private:
     // kind of interval
     Kind m_kind;
 
+    // True if this is an ExnRef-result wrapper paired with a TRY (Block-kind).
+    bool m_isExnRefWrapper;
+
 public:
 
     WasmInterval(unsigned start, unsigned end, Kind kind)
@@ -151,6 +154,7 @@ public:
         , m_end(end)
         , m_chainEnd(end)
         , m_kind(kind)
+        , m_isExnRefWrapper(false)
     {
         m_chain = this;
     }
@@ -205,6 +209,13 @@ public:
         return m_kind == Kind::Try;
     }
 
+    // True if this Block-kind interval is the [exnref]-result wrapper paired with a TRY.
+    //
+    bool IsExnRefWrapper() const
+    {
+        return m_isExnRefWrapper;
+    }
+
     void SetChain(WasmInterval* c)
     {
         m_chain       = c;
@@ -231,6 +242,16 @@ public:
             new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Try);
         return result;
     }
+
+    // Construct the [exnref]-result wrapper paired with a TRY.
+    //
+    static WasmInterval* NewExnRefWrapper(Compiler* comp, BasicBlock* start, BasicBlock* end)
+    {
+        WasmInterval* result =
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Block);
+        result->m_isExnRefWrapper = true;
+        return result;
+    }
 #ifdef DEBUG
     void Dump(bool chainExtent = false)
     {
@@ -245,6 +266,10 @@ public:
             else if (m_kind == Kind::Try)
             {
                 printf("T");
+            }
+            else if (m_isExnRefWrapper)
+            {
+                printf("X");
             }
         }
 
@@ -264,7 +289,7 @@ public:
         switch (m_kind)
         {
             case Kind::Block:
-                return "Block";
+                return m_isExnRefWrapper ? "ExnRefWrapper" : "Block";
             case Kind::Loop:
                 return "Loop";
             case Kind::Try:
@@ -379,6 +404,33 @@ public:
 template <typename TFunc>
 BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile)
 {
+
+    // True if this block is a try entry or a try side-entry.
+    //
+    auto isGeneralizedTryEntry = [comp](BasicBlock* block) -> bool {
+        EHblkDsc* const ehDsc = comp->ehGetBlockTryDsc(block);
+
+        if (ehDsc == nullptr)
+        {
+            return false;
+        }
+
+        if (comp->bbIsTryBeg(block))
+        {
+            return true;
+        }
+
+        for (BasicBlock* const blockPred : block->PredBlocks())
+        {
+            if (blockPred->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     // Special case throw helper blocks that are not yet connected in the flow graph.
     //
     Compiler::AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
@@ -386,7 +438,7 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
     {
         // Behave as if these blocks have edges from their respective region entry blocks.
         //
-        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || comp->bbIsTryBeg(block))
+        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || isGeneralizedTryEntry(block))
         {
             Compiler::AcdKeyDesignator dsg;
             const unsigned             blockData = comp->bbThrowIndex(block, &dsg);
@@ -408,6 +460,21 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                         RETURN_ON_ABORT(func(acd->acdDstBlk));
                     }
                 }
+            }
+        }
+    }
+
+    // Inject any unreachable in-try blocks as successors of the try entry, so
+    // wasm DFS visits them and the layout pass keeps them inside the try region.
+    //
+    if (comp->bbIsTryBeg(block) && (comp->fgTryRegions != nullptr))
+    {
+        FlowGraphTryRegion* const region = comp->fgTryRegions->GetTryRegionByHeader(block);
+        if (region != nullptr)
+        {
+            for (BasicBlock* const tb : region->UnreachableBlocks())
+            {
+                RETURN_ON_ABORT(func(tb));
             }
         }
     }

@@ -131,6 +131,7 @@ public:
 
     bool isRegCandidate(LclVarDsc* varDsc);
     bool isContainableMemoryOp(GenTree* node);
+    void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
 
 private:
     LIR::Range& CurrentRange();
@@ -154,7 +155,7 @@ private:
     void      CollectReferencesForCall(GenTreeCall* callNode);
     void      CollectReferencesForCast(GenTreeOp* castNode);
     void      CollectReferencesForBinop(GenTreeOp* binOpNode);
-    void      CollectReferencesForStoreInd(GenTreeStoreInd* node);
+    void      CollectReferencesForIndir(GenTreeIndir* node);
     void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
     void      CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode);

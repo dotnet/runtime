@@ -363,7 +363,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         TypeReference linkedTypeRef = null;
                         try
                         {
-                            _linkedTypeNameResolver.TryResolveTypeName(linkedAssembly, expectedTypeName, out linkedTypeRef, out _);
+                            _linkedTypeNameResolver.TryResolveTypeName(linkedAssembly, expectedTypeName, fallbackToCoreLib: true, out linkedTypeRef, out _);
                         }
                         catch (AssemblyResolutionException) { }
                         TypeDefinition linkedType = linkedTypeRef?.Resolve();

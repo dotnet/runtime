@@ -22,6 +22,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "PreAuthenticate is not supported on Wasi")]
         public async Task RefreshesPreAuthCredentialsOnChange()
         {
             CredentialPlugin credentialPlugin = new CredentialPlugin();

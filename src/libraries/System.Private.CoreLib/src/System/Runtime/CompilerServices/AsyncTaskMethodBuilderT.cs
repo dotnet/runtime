@@ -344,7 +344,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
+            internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext(threadPoolThread);
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext() => MoveNext(threadPoolThread: null);
@@ -353,10 +353,18 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
-                bool loggingOn = TplEventSource.Log.IsEnabled();
-                if (loggingOn)
+                AsyncInstrumentation.Flags flags = AsyncInstrumentation.Flags.Disabled;
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out flags))
                 {
-                    TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, flags);
+                    }
+
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                    {
+                        TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                    }
                 }
 
                 ExecutionContext? context = Context;
@@ -382,7 +390,7 @@ namespace System.Runtime.CompilerServices
                     ClearStateUponCompletion();
                 }
 
-                if (loggingOn)
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags))
                 {
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
@@ -421,6 +429,22 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
+
+            bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
+            {
+                if (AsyncStateMachineDispatcherInfo.IsSupported)
+                {
+                    methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
+                    state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);
+                    nextContinuation = this.ContinuationForDiagnostics;
+                    return true;
+                }
+
+                methodId = 0;
+                state = -1;
+                nextContinuation = null;
+                return false;
+            }
         }
 
         /// <summary>Gets the <see cref="Task{TResult}"/> for this builder.</summary>
@@ -486,9 +510,17 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(task != null, "Expected non-null task");
 
-            if (TplEventSource.Log.IsEnabled())
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(task, flags);
+                }
+
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                {
+                    TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                }
             }
 
             if (!task.TrySetResult(result))
@@ -515,6 +547,14 @@ namespace System.Runtime.CompilerServices
 
             // Get the task, forcing initialization if it hasn't already been initialized.
             Task<TResult> task = (taskField ??= new Task<TResult>());
+
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+            {
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(task, flags);
+                }
+            }
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
             bool successfullySet = exception is OperationCanceledException oce ?

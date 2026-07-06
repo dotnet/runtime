@@ -1926,7 +1926,7 @@ namespace System
 
         /// <summary>Tries to create a string representation of an enum as either a single constant name or multiple delimited constant names.</summary>
         /// <returns>The formatted string if the value could be fully represented by enum constants, or else null.</returns>
-        private static string? FormatFlagNames<TStorage>(EnumInfo<TStorage> enumInfo, TStorage resultValue)
+        private static unsafe string? FormatFlagNames<TStorage>(EnumInfo<TStorage> enumInfo, TStorage resultValue)
             where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>
         {
             string[] names = enumInfo.Names;
@@ -1959,7 +1959,7 @@ namespace System
         /// true if the value could be fully represented by enum constants and if the formatted value could fit into the destination span; otherwise, false.
         /// If false, <paramref name="isDestinationTooSmall"/> is used to disambiguate the reason for the failure.
         /// </returns>
-        private static bool TryFormatFlagNames<TStorage>(EnumInfo<TStorage> enumInfo, TStorage resultValue, Span<char> destination, out int charsWritten, ref bool isDestinationTooSmall)
+        private static unsafe bool TryFormatFlagNames<TStorage>(EnumInfo<TStorage> enumInfo, TStorage resultValue, Span<char> destination, out int charsWritten, ref bool isDestinationTooSmall)
             where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>
         {
             Debug.Assert(!isDestinationTooSmall);

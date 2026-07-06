@@ -491,7 +491,7 @@ public:
     inline DWORD GetNumComponents() const;
 
     // Get pointer to elements, handles any number of dimensions
-    PTR_BYTE GetDataPtr(BOOL inGC = FALSE) const {
+    PTR_BYTE GetGCSafeDataPtr() const {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 #ifdef _DEBUG
@@ -500,7 +500,21 @@ public:
 #endif
 #endif
         return dac_cast<PTR_BYTE>(this) +
-                        GetDataPtrOffset(inGC ? GetGCSafeMethodTable() : GetMethodTable());
+                        GetDataPtrOffset(GetGCSafeMethodTable());
+    }
+
+    PTR_BYTE GetDataPtr() const {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+        EnableStressHeapHelper();
+#endif
+#endif
+        PTR_BYTE result = dac_cast<PTR_BYTE>(this) +
+                        GetDataPtrOffset(GetMethodTable());
+        _ASSERTE(result == GetGCSafeDataPtr());
+        return result;
     }
 
     // The component size is actually 16-bit WORD, but this method is returning SIZE_T to ensure
@@ -586,24 +600,14 @@ class Array : public ArrayBase
   public:
 
     typedef DPTR(KIND) PTR_KIND;
-    typedef DPTR(const KIND) PTR_CKIND;
 
     KIND          m_Array[1];
 
-    PTR_KIND        GetDirectPointerToNonObjectElements()
+    PTR_KIND        GetDirectPointerToNonObjectElements() const
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        // return m_Array;
-        return PTR_KIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
-
-    }
-
-    PTR_CKIND  GetDirectConstPointerToNonObjectElements() const
-    {
-        WRAPPER_NO_CONTRACT;
-        // return m_Array;
-        return PTR_CKIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
+        return dac_cast<PTR_KIND>(PTR_HOST_MEMBER_TADDR(Array, this, m_Array));
     }
 };
 
@@ -1739,16 +1743,16 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 
 #endif // FEATURE_COMINTEROP
 
+#define DELEGATE_MARKER_UNMANAGEDFPTR (-1)
 
 // This class corresponds to System.MulticastDelegate on the managed side.
 class DelegateObject : public Object
 {
     friend class CheckAsmOffsets;
     friend class CoreLibBinder;
+    friend struct ::cdac_data<DelegateObject>;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
-
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
     static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
@@ -1769,15 +1773,15 @@ public:
     void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
     static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
 
-    void SetMethodBase(OBJECTREF newMethodBase) { LIMITED_METHOD_CONTRACT; SetObjectReference((OBJECTREF*)&_methodBase, newMethodBase); }
+    void SetHelperObject(OBJECTREF newHelperObject) { LIMITED_METHOD_CONTRACT; SetObjectReference((OBJECTREF*)&_helperObject, newHelperObject); }
 
     // README:
     // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
 private:
     // System.Delegate
+    OBJECTREF   _helperObject;
     OBJECTREF   _target;
-    OBJECTREF   _methodBase;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
     // System.MulticastDelegate
@@ -1785,9 +1789,18 @@ private:
     INT_PTR     _invocationCount;
 };
 
-#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__target          (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _helperObject */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
+
+template<>
+struct cdac_data<DelegateObject>
+{
+    static constexpr size_t Target = offsetof(DelegateObject, _target);
+    static constexpr size_t MethodPtr = offsetof(DelegateObject, _methodPtr);
+    static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _methodPtrAux);
+    static constexpr size_t InvocationCount = offsetof(DelegateObject, _invocationCount);
+};
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<DelegateObject> DELEGATEREF;
@@ -1942,7 +1955,7 @@ private:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(!!m_array);
 
-        return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
+        return m_array->GetDirectPointerToNonObjectElements();
     }
 
     PTR_INT8 GetRaw()
@@ -1977,6 +1990,15 @@ private:
 private:
     // put only things here that can be protected with GCPROTECT
     I1ARRAYREF m_array;
+
+    friend struct ::cdac_data<StackTraceArray>;
+};
+
+template<>
+struct cdac_data<StackTraceArray>
+{
+    static constexpr size_t Size = offsetof(StackTraceArray::ArrayHeader, m_size);
+    static constexpr size_t HeaderSize = sizeof(StackTraceArray::ArrayHeader);
 };
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -2103,6 +2125,7 @@ class GenericCacheStruct
 class ContinuationObject : public Object
 {
     friend class CoreLibBinder;
+    friend struct ::cdac_data<ContinuationObject>;
 
     public:
     CorInfoContinuationFlags GetFlags() const
@@ -2168,6 +2191,20 @@ class ContinuationObject : public Object
         return dac_cast<PTR_OBJECTREF>(dataAddress);
     }
 
+    PTR_OBJECTREF GetExecutionContextObjectStorageOrNull()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        uint32_t mask = (1u << CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS) - 1;
+        uint32_t index = ((uint32_t)Flags >> CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT) & mask;
+        if (index == 0)
+            return NULL;
+
+        uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
+        PTR_BYTE address = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
+        return dac_cast<PTR_OBJECTREF>(address);
+    }
+
     PTR_OBJECTREF GetContinuationContextObjectStorageOrNull()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2199,6 +2236,14 @@ private:
     void* ResumeInfo;
     int32_t Flags;
     int32_t State;
+};
+
+template<>
+struct cdac_data<ContinuationObject>
+{
+    static constexpr size_t Next = offsetof(ContinuationObject, Next);
+    static constexpr size_t ResumeInfo = offsetof(ContinuationObject, ResumeInfo);
+    static constexpr size_t State = offsetof(ContinuationObject, State);
 };
 
 // This class corresponds to Exception on the managed side.

@@ -17,6 +17,8 @@ namespace System.Diagnostics.Metrics
     {
         private readonly object _callback;
 
+        internal override object? Callback => _callback;
+
         internal ObservableUpDownCounter(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : this(meter, name, observeValue, unit, description, tags: null)
         {
         }
@@ -50,6 +52,6 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Observe() fetches the current measurements being tracked by this observable counter.
         /// </summary>
-        protected override IEnumerable<Measurement<T>> Observe() => Observe(_callback);
+        protected override IEnumerable<Measurement<T>> Observe() => ((Func<IEnumerable<Measurement<T>>>)_callback)();
     }
 }

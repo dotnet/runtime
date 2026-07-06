@@ -127,7 +127,7 @@ namespace System.Threading
             }
 
             /// <summary>
-            /// Callers must ensure to clear the array after use. Once <see cref="RegisterWait(int, bool, bool)"/> is called (followed
+            /// Callers must ensure to clear the array after use. Once <see cref="RegisterWait(int, bool)"/> is called (followed
             /// by a call to <see cref="Wait(int, bool, bool, ref LockHolder)"/>, the array will be cleared automatically.
             /// </summary>
             public WaitableObject?[] GetWaitedObjectArray(int requiredCapacity)
@@ -174,7 +174,7 @@ namespace System.Threading
             /// <summary>
             /// The caller is expected to populate <see cref="GetWaitedObjectArray"/> and pass in the number of objects filled
             /// </summary>
-            public void RegisterWait(int waitedCount, bool prioritize, bool isWaitForAll)
+            public void RegisterWait(int waitedCount, bool isWaitForAll)
             {
                 s_lock.VerifyIsLocked();
                 Debug.Assert(_thread == Thread.CurrentThread);
@@ -218,19 +218,9 @@ namespace System.Threading
 
                 _isWaitForAll = isWaitForAll;
                 _waitedCount = waitedCount;
-                if (prioritize)
+                for (int i = 0; i < waitedCount; ++i)
                 {
-                    for (int i = 0; i < waitedCount; ++i)
-                    {
-                        waitedListNodes[i].RegisterPrioritizedWait(waitedObjects[i]!);
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < waitedCount; ++i)
-                    {
-                        waitedListNodes[i].RegisterWait(waitedObjects[i]!);
-                    }
+                    waitedListNodes[i].RegisterWait(waitedObjects[i]!);
                 }
             }
 
@@ -710,29 +700,6 @@ namespace System.Threading
                         waitableObject.WaitersHead = this;
                     }
                     waitableObject.WaitersTail = this;
-                }
-
-                public void RegisterPrioritizedWait(WaitableObject waitableObject)
-                {
-                    s_lock.VerifyIsLocked();
-                    Debug.Assert(_waitInfo.Thread == Thread.CurrentThread);
-
-                    Debug.Assert(waitableObject != null);
-
-                    Debug.Assert(_previous == null);
-                    Debug.Assert(_next == null);
-
-                    WaitedListNode? head = waitableObject.WaitersHead;
-                    if (head != null)
-                    {
-                        _next = head;
-                        head._previous = this;
-                    }
-                    else
-                    {
-                        waitableObject.WaitersTail = this;
-                    }
-                    waitableObject.WaitersHead = this;
                 }
 
                 public void UnregisterWait(WaitableObject waitableObject)

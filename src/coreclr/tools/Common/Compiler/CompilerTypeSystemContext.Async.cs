@@ -207,6 +207,26 @@ namespace ILCompiler
             return result;
         }
 
+        public MethodDesc GetTargetOfReturnDroppingThunk(MethodDesc returnDroppingThunk)
+        {
+            Debug.Assert(returnDroppingThunk.IsReturnDroppingAsyncThunk());
+            var returnDroppingThunkDefinition = (ReturnDroppingAsyncThunk)returnDroppingThunk.GetTypicalMethodDefinition();
+            MethodDesc result = returnDroppingThunkDefinition.AsyncVariantTarget;
+
+            // If there are generics involved, we need to specialize
+            if (returnDroppingThunk != returnDroppingThunkDefinition)
+            {
+                TypeDesc owningType = returnDroppingThunk.OwningType;
+                if (owningType != returnDroppingThunkDefinition.OwningType)
+                    result = GetMethodForInstantiatedType(result, (InstantiatedType)owningType);
+
+                if (returnDroppingThunk.HasInstantiation && !returnDroppingThunk.IsMethodDefinition)
+                    result = GetInstantiatedMethod(result, returnDroppingThunk.Instantiation);
+            }
+
+            return result;
+        }
+
         private sealed class AsyncVariantHashtable : LockFreeReaderHashtable<EcmaMethod, AsyncMethodVariant>
         {
             protected override int GetKeyHashCode(EcmaMethod key) => key.GetHashCode();

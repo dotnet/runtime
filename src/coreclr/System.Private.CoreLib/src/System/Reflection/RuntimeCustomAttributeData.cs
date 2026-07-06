@@ -1835,7 +1835,6 @@ namespace System.Reflection
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_ParseAttributeUsageAttribute")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static partial int ParseAttributeUsageAttribute(
             IntPtr pData,
             int cData,

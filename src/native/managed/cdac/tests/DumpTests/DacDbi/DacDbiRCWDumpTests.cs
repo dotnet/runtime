@@ -3,6 +3,7 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -16,7 +17,6 @@ public class DacDbiRCWDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "RCW";
     protected override string DumpType => "full";
-
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
     [ConditionalTheory]

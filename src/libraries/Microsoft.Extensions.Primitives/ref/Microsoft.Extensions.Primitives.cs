@@ -16,7 +16,9 @@ namespace Microsoft.Extensions.Primitives
     public static partial class ChangeToken
     {
         public static System.IDisposable OnChange(System.Func<Microsoft.Extensions.Primitives.IChangeToken?> changeTokenProducer, System.Action changeTokenConsumer) { throw null; }
+        public static System.IDisposable OnChange(System.Func<Microsoft.Extensions.Primitives.IChangeToken?> changeTokenProducer, System.Func<System.Threading.Tasks.Task> changeTokenConsumer) { throw null; }
         public static System.IDisposable OnChange<TState>(System.Func<Microsoft.Extensions.Primitives.IChangeToken?> changeTokenProducer, System.Action<TState> changeTokenConsumer, TState state) { throw null; }
+        public static System.IDisposable OnChange<TState>(System.Func<Microsoft.Extensions.Primitives.IChangeToken?> changeTokenProducer, System.Func<TState, System.Threading.Tasks.Task> changeTokenConsumer, TState state) { throw null; }
     }
     public partial class CompositeChangeToken : Microsoft.Extensions.Primitives.IChangeToken
     {

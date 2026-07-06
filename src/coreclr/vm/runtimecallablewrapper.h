@@ -272,27 +272,6 @@ struct RCW
         return m_cbRefCount;
     }
 
-    void GetCachedInterfacePointers(BOOL bIInspectableOnly,
-                        SArray<TADDR> * rgItfPtrs)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        CachedInterfaceEntryIterator it = IterateCachedInterfacePointers();
-        while (it.Next())
-        {
-            PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
-            if (pMT != NULL &&
-                (!bIInspectableOnly))
-            {
-                TADDR taUnk = (TADDR)(it.GetEntry()->m_pUnknown.Load());
-                if (taUnk != NULL)
-                {
-                    rgItfPtrs->Append(taUnk);
-                }
-            }
-        }
-    }
-
     LPVOID     GetVTablePtr() { LIMITED_METHOD_CONTRACT; return m_vtablePtr; }
 
     // Remoting aware QI that will attempt to re-unmarshal on object disconnect.
@@ -738,26 +717,31 @@ private:
 };
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-FORCEINLINE void NewRCWHolderRelease(RCW* p)
+struct NewRCWHolderTraits final
 {
-    CONTRACTL
+    using Type = RCW*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type p)
     {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    if (p)
-    {
-        GCX_COOP();
+        if (p)
+        {
+            GCX_COOP();
 
-        p->DecoupleFromObject();
-        p->Cleanup();
+            p->DecoupleFromObject();
+            p->Cleanup();
+        }
     }
 };
 
-using NewRCWHolder = SpecializedWrapper<RCW, NewRCWHolderRelease>;
+using NewRCWHolder = LifetimeHolder<NewRCWHolderTraits>;
 
 #ifndef DACCESS_COMPILE
 class RCWHolder

@@ -427,8 +427,8 @@ BOOL CordbStackWalk::UnwindStackFrame()
     IfFailThrow(pDAC->UnwindStackWalkFrame(m_pSFIHandle, &retVal));
 
     // Now that we have unwound, make sure we update the CONTEXT buffer to reflect the current stack frame.
-    // This call is safe regardless of whether the unwind is successful or not.
-    IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, &m_context));
+    if (retVal)
+        IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, &m_context));
 
     return retVal;
 } // CordbStackWalk::UnwindStackWalkFrame
@@ -575,8 +575,16 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     }
 
     IDacDbiInterface * pDAC = NULL;
-    DebuggerIPCE_STRData frameData;
+    Debugger_STRData frameData;
     ZeroMemory(&frameData, sizeof(frameData));
+
+    // Allocate the DT_CONTEXT buffer on the dbi stack and
+    // hand the address to the DAC via Debugger_STRData. The DAC writes the
+    // populated context through this pointer.
+    DT_CONTEXT          frameCtx;
+    ZeroMemory(&frameCtx, sizeof(frameCtx));
+    frameData.ctx = &frameCtx;
+
     IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 
     pDAC = GetProcess()->GetDAC();
@@ -616,7 +624,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     }
     else if (ft == IDacDbiInterface::kManagedStackFrame)
     {
-        _ASSERTE(frameData.eType == DebuggerIPCE_STRData::cMethodFrame);
+        _ASSERTE(frameData.eType == Debugger_STRData::cMethodFrame);
 
         HRESULT hr = S_OK;
 
@@ -634,15 +642,15 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // currentFuncData contains general information about the method.
         // It has no information about any particular jitted instance of the method.
-        DebuggerIPCE_FuncData * pFuncData = &(frameData.v.funcData);
+        Debugger_FuncData * pFuncData = &(frameData.v.funcData);
 
         // currentJITFuncData contains information about the current jitted instance of the method
         // on the stack.
-        DebuggerIPCE_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
+        Debugger_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
-        CordbAppDomain * pCurrentAppDomain = GetProcess()->LookupOrCreateAppDomain(frameData.vmCurrentAppDomainToken);
+        CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
 
         // Lookup the module
@@ -680,13 +688,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         CordbNativeFrame* pNativeFrame = new CordbNativeFrame(m_pCordbThread,
                                                               frameData.fp,
                                                               pNativeCode,
-                                                              pJITFuncData->nativeOffset,
-                                                              &(frameData.rd),
-                                                              frameData.v.taAmbientESP,
-                                                              !!frameData.quicklyUnwound,
+                                                              (SIZE_T)pJITFuncData->nativeOffset,
+                                                              (TADDR)frameData.v.taAmbientESP,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
-                                                              &(frameData.ctx));
+                                                              &frameCtx);
 
         pResultFrame.Assign(static_cast<CordbFrame *>(pNativeFrame));
         m_pCachedFrame.Assign(static_cast<CordbFrame *>(pNativeFrame));
@@ -803,7 +809,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     } // kManagedStackFrame
     else if (ft == IDacDbiInterface::kNativeRuntimeUnwindableStackFrame)
     {
-        _ASSERTE(frameData.eType == DebuggerIPCE_STRData::cRuntimeNativeFrame);
+        _ASSERTE(frameData.eType == Debugger_STRData::cRuntimeNativeFrame);
 
         // In order to find the FramePointer on x86, we need to unwind to the next frame.
         // Technically, only x86 needs to do this, because the x86 runtime stackwalker doesn't uwnind
@@ -819,14 +825,13 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
-        CordbAppDomain * pCurrentAppDomain =
-            GetProcess()->LookupOrCreateAppDomain(frameData.vmCurrentAppDomainToken);
+        CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
         _ASSERTE(pCurrentAppDomain != NULL);
 
         CordbRuntimeUnwindableFrame * pRuntimeFrame = new CordbRuntimeUnwindableFrame(m_pCordbThread,
                                                                                       frameData.fp,
                                                                                       pCurrentAppDomain,
-                                                                                      &(frameData.ctx));
+                                                                                      &frameCtx);
 
         pResultFrame.Assign(static_cast<CordbFrame *>(pRuntimeFrame));
         m_pCachedFrame.Assign(static_cast<CordbFrame *>(pRuntimeFrame));
@@ -904,6 +909,15 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
             &diagnosticIP,
             &nextContinuation,
             &state));
+
+        // Skip continuations with null DiagnosticIP. These are infrastructure
+        // continuations (e.g. RuntimeAsyncTaskContinuation) that have no user code
+        // associated with them and cannot be represented as a debug frame.
+        if (diagnosticIP == 0)
+        {
+            m_continuationAddress = nextContinuation;
+            continue;
+        }
 
         NativeCodeFunctionData codeData;
         VMPTR_Module pModule;

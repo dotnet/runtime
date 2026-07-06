@@ -3,36 +3,23 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ExceptionInfo : IData<ExceptionInfo>
+[CdacType(nameof(DataType.ExceptionInfo))]
+internal sealed partial class ExceptionInfo : IData<ExceptionInfo>
 {
-    static ExceptionInfo IData<ExceptionInfo>.Create(Target target, TargetPointer address)
-        => new ExceptionInfo(target, address);
+    [Field] public TargetPointer PreviousNestedInfo { get; }
+    [Field] public TargetPointer ThrownObject { get; }
+    [Field] public uint ExceptionFlags { get; }
+    [Field] public TargetPointer StackLowBound { get; }
+    [Field] public TargetPointer StackHighBound { get; }
+    [Field] public TargetPointer ExceptionRecord { get; }
+    [Field] public TargetPointer ContextRecord { get; }
 
-    public ExceptionInfo(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
-
-        PreviousNestedInfo = target.ReadPointerField(address, type, nameof(PreviousNestedInfo));
-        ThrownObjectHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(ThrownObjectHandle));
-        if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
-            ExceptionWatsonBucketTrackerBuckets = target.ReadPointerField(address, type, nameof(ExceptionWatsonBucketTrackerBuckets));
-        ExceptionFlags = target.ReadField<uint>(address, type, nameof(ExceptionFlags));
-        StackLowBound = target.ReadPointerField(address, type, nameof(StackLowBound));
-        StackHighBound = target.ReadPointerField(address, type, nameof(StackHighBound));
-        PassNumber = target.ReadField<byte>(address, type, nameof(PassNumber));
-        CSFEHClause = target.ReadPointerField(address, type, nameof(CSFEHClause));
-        CSFEnclosingClause = target.ReadPointerField(address, type, nameof(CSFEnclosingClause));
-        CallerOfActualHandlerFrame = target.ReadPointerField(address, type, nameof(CallerOfActualHandlerFrame));
-    }
-
-    public TargetPointer PreviousNestedInfo { get; }
-    public ObjectHandle ThrownObjectHandle { get; }
-    public uint ExceptionFlags { get; }
-    public TargetPointer StackLowBound { get; }
-    public TargetPointer StackHighBound { get; }
-    public TargetPointer ExceptionWatsonBucketTrackerBuckets { get; }
-    public byte PassNumber { get; }
-    public TargetPointer CSFEHClause { get; }
-    public TargetPointer CSFEnclosingClause { get; }
-    public TargetPointer CallerOfActualHandlerFrame { get; }
+    // Only present on Windows platforms
+    [Field] public TargetPointer? ExceptionWatsonBucketTrackerBuckets { get; }
+    [Field] public byte PassNumber { get; }
+    [Field] public TargetPointer CSFEHClause { get; }
+    [Field] public TargetPointer CSFEnclosingClause { get; }
+    [Field] public TargetPointer CallerOfActualHandlerFrame { get; }
+    [Field] public uint ClauseForCatchHandlerStartPC { get; }
+    [Field] public uint ClauseForCatchHandlerEndPC { get; }
 }

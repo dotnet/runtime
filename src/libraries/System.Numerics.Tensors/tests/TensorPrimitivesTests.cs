@@ -106,6 +106,11 @@ namespace System.Numerics.Tensors.Tests
 
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
+        protected virtual int? IndexOfSizeExceedingMaxValue() =>
+            (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)) ? Helpers.SizeGreaterThanByte :
+            (typeof(T) == typeof(ushort) || typeof(T) == typeof(short) || typeof(T) == typeof(char)) ? Helpers.SizeGreaterThanInt16 :
+            null;
+
         protected abstract T ConvertFromSingle(float f);
 
         protected abstract IEnumerable<T> GetSpecialValues();
@@ -1134,6 +1139,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(2, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
         }
+
+        [Fact]
+        public void IndexOfMax_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(2);
+            Assert.Equal(size.Value - 1, IndexOfMax(x));
+        }
         #endregion
 
         #region IndexOfMaxMagnitude
@@ -1211,6 +1228,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, IndexOfMaxMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(2, IndexOfMaxMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
         }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(2);
+            Assert.Equal(size.Value - 1, IndexOfMaxMagnitude(x));
+        }
         #endregion
 
         #region IndexOfMin
@@ -1262,6 +1291,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMin([ConvertFromSingle(+0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f)]));
             Assert.Equal(0, IndexOfMin([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(0, IndexOfMin([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+        }
+
+        [Fact]
+        public void IndexOfMin_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(0);
+            Assert.Equal(size.Value - 1, IndexOfMin(x));
         }
         #endregion
 
@@ -1339,6 +1380,18 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(+0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f), ConvertFromSingle(-0f)]));
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(1, IndexOfMinMagnitude([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_IndexAboveMaxValue()
+        {
+            var size = IndexOfSizeExceedingMaxValue();
+            if (size == null) return;
+
+            using BoundedMemory<T> x = CreateTensor(size.Value);
+            x.Span.Fill(ConvertFromSingle(1));
+            x.Span[size.Value - 1] = ConvertFromSingle(0);
+            Assert.Equal(size.Value - 1, IndexOfMinMagnitude(x));
         }
         #endregion
 
@@ -1536,8 +1589,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(max, Max(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMax(x)]), SingleToUInt32(Max(x)));
+                Assert.Equal(x[IndexOfMax(x)], Max(x));
             });
         }
 
@@ -1558,8 +1610,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(max, Max(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMax(x)]), SingleToUInt32(Max(x)));
+                    Assert.Equal(x[IndexOfMax(x)], Max(x));
                 }, x);
             });
         }
@@ -1721,8 +1772,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(maxMagnitude, MaxMagnitude(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMaxMagnitude(x)]), SingleToUInt32(MaxMagnitude(x)));
+                Assert.Equal(x[IndexOfMaxMagnitude(x)], MaxMagnitude(x));
             });
         }
 
@@ -1743,8 +1793,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(maxMagnitude, MaxMagnitude(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMaxMagnitude(x)]), SingleToUInt32(MaxMagnitude(x)));
+                    Assert.Equal(x[IndexOfMaxMagnitude(x)], MaxMagnitude(x));
                 }, x);
             });
         }
@@ -1910,8 +1959,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(min, Min(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMin(x)]), SingleToUInt32(Min(x)));
+                Assert.Equal(x[IndexOfMin(x)], Min(x));
             });
         }
 
@@ -1932,8 +1980,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(min, Min(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMin(x)]), SingleToUInt32(Min(x)));
+                    Assert.Equal(x[IndexOfMin(x)], Min(x));
                 }, x);
             });
         }
@@ -2095,8 +2142,7 @@ namespace System.Numerics.Tensors.Tests
 
                 Assert.Equal(minMagnitude, MinMagnitude(x));
 
-                // TODO: Put a variant of this back once we have IndexOf routines
-                // Assert.Equal(SingleToUInt32(x[IndexOfMinMagnitude(x)]), SingleToUInt32(MinMagnitude(x)));
+                Assert.Equal(x[IndexOfMinMagnitude(x)], MinMagnitude(x));
             });
         }
 
@@ -2117,8 +2163,7 @@ namespace System.Numerics.Tensors.Tests
 
                     Assert.Equal(minMagnitude, MinMagnitude(x));
 
-                    // TODO: Put a variant of this back once we have IndexOf routines
-                    // Assert.Equal(SingleToUInt32(x[IndexOfMinMagnitude(x)]), SingleToUInt32(MinMagnitude(x)));
+                    Assert.Equal(x[IndexOfMinMagnitude(x)], MinMagnitude(x));
                 }, x);
             });
         }

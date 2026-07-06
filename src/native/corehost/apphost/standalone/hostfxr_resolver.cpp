@@ -6,6 +6,8 @@
 #include "pal.h"
 #include "fxr_resolver.h"
 #include "trace.h"
+#include "utils.h"
+#include "error_codes.h"
 #include "hostfxr_resolver.h"
 
 namespace
@@ -14,12 +16,12 @@ namespace
     #define EMBED_DOTNET_SEARCH_HI_PART_UTF8 "19ff3e9c3602ae8e841925bb461a0adb"
     #define EMBED_DOTNET_SEARCH_LO_PART_UTF8 "064a1f1903667a5e0d87e8f608f425ac"
 
-    // <fxr_resolver::search_location_default> \0 <app_relative_dotnet_placeholder>
+    // <fxr_search_location_default> \0 <app_relative_dotnet_placeholder>
     #define EMBED_DOTNET_SEARCH_FULL_UTF8    ("\0\0" EMBED_DOTNET_SEARCH_HI_PART_UTF8 EMBED_DOTNET_SEARCH_LO_PART_UTF8)
 
     // Get the .NET search options that should be used
     // Returns false if options are invalid - for example, app-relative search was specified, but the path is invalid or not embedded
-    bool try_get_dotnet_search_options(fxr_resolver::search_location& out_search_location, pal::string_t& out_app_relative_dotnet)
+    bool try_get_dotnet_search_options(fxr_search_location& out_search_location, pal::string_t& out_app_relative_dotnet)
     {
         constexpr int EMBED_SIZE = 512;
         static_assert(sizeof(EMBED_DOTNET_SEARCH_FULL_UTF8) / sizeof(EMBED_DOTNET_SEARCH_FULL_UTF8[0]) < EMBED_SIZE, "Placeholder value for .NET search options longer than expected");
@@ -27,9 +29,9 @@ namespace
         // Contains the EMBED_DOTNET_SEARCH_FULL_UTF8 value at compile time or app-relative .NET path written by the SDK (dotnet publish).
         static char embed[EMBED_SIZE] = EMBED_DOTNET_SEARCH_FULL_UTF8;
 
-        out_search_location = (fxr_resolver::search_location)embed[0];
+        out_search_location = (fxr_search_location)embed[0];
         assert(embed[1] == 0); // NUL separates the search location and embedded .NET root value
-        if ((out_search_location & fxr_resolver::search_location_app_relative) == 0)
+        if ((out_search_location & fxr_search_location_app_relative) == 0)
             return true;
 
         // Get the embedded app-relative .NET path
@@ -98,7 +100,7 @@ hostfxr_main_fn hostfxr_resolver_t::resolve_main_v1()
 
 hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
 {
-    fxr_resolver::search_location search_location = fxr_resolver::search_location_default;
+    fxr_search_location search_location = fxr_search_location_default;
     pal::string_t app_relative_dotnet;
     pal::string_t app_relative_dotnet_path;
     if (!try_get_dotnet_search_options(search_location, app_relative_dotnet))
@@ -114,7 +116,27 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
         append_path(&app_relative_dotnet_path, app_relative_dotnet.c_str());
     }
 
-    if (!fxr_resolver::try_get_path(app_root, search_location, &app_relative_dotnet_path, &m_dotnet_root, &m_fxr_path))
+    bool resolved;
+    {
+        pal_char_t* dotnet_root = nullptr;
+        pal_char_t* fxr_path = nullptr;
+        resolved = fxr_resolver_try_get_path(
+            app_root.c_str(),
+            search_location,
+            app_relative_dotnet_path.empty() ? nullptr : app_relative_dotnet_path.c_str(),
+            &dotnet_root,
+            &fxr_path);
+        if (resolved)
+        {
+            m_dotnet_root.assign(dotnet_root);
+            m_fxr_path.assign(fxr_path);
+        }
+
+        free(dotnet_root);
+        free(fxr_path);
+    }
+
+    if (!resolved)
     {
         m_status_code = StatusCode::CoreHostLibMissingFailure;
     }

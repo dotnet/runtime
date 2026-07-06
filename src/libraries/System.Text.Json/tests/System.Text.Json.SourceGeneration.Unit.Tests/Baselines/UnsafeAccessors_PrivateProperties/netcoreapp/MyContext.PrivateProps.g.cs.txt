@@ -34,6 +34,8 @@ namespace TestApp
                     ConstructorParameterMetadataInitializer = null,
                     ConstructorAttributeProviderFactory = static () => typeof(global::TestApp.PrivateProps).GetConstructor(InstanceMemberBindingFlags, binder: null, global::System.Array.Empty<global::System.Type>(), modifiers: null),
                     SerializeHandler = PrivatePropsSerializeHandler,
+                    PolymorphismOptions = new global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions(),
+                    TypeClassifierFactory = null,
                 };
                 
                 jsonTypeInfo = global::System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateObjectInfo<global::TestApp.PrivateProps>(options, objectInfo);

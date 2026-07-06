@@ -1576,9 +1576,7 @@ namespace System.Xml.Serialization
             {
                 if (structMapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(structMapping.TypeDesc.Type))
                 {
-                    // https://github.com/dotnet/runtime/issues/1399:
-                    // To Support Serializing XmlSchemaObject
-                    throw new NotImplementedException(nameof(XmlSchemaObject));
+                    DecodeName = false;
                 }
 
                 object? o = ReflectionCreateObject(structMapping.TypeDesc.Type!)!;
@@ -1739,11 +1737,10 @@ namespace System.Xml.Serialization
 
                     if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                     {
+                        var specifiedSetter = GetSetMemberValueDelegate(o!, $"{member.Mapping.Name}Specified");
                         member.CheckSpecifiedSource = (_) =>
                         {
-                            string specifiedMemberName = $"{member.Mapping.Name}Specified";
-                            MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod($"set_{specifiedMemberName}");
-                            specifiedMethodInfo?.Invoke(o, new object[] { true });
+                            specifiedSetter(o, true);
                         };
                     }
 
@@ -1813,10 +1810,24 @@ namespace System.Xml.Serialization
                     {
                         MemberInfo[] memberInfos = o!.GetType().GetMember(member.Mapping.Name);
                         MemberInfo memberInfo = memberInfos[0];
-                        object? collection = null;
-                        SetCollectionObjectWithCollectionMember(ref collection, member.Collection, member.Mapping.TypeDesc!.Type!);
-                        var setMemberValue = GetSetMemberValueDelegate(o, memberInfo.Name);
-                        setMemberValue(o, collection);
+
+                        // For read-only collection properties (no setter), add items directly to the existing
+                        // collection instance returned by the getter. This matches what the IL-based serializer does.
+                        if (memberInfo is PropertyInfo pi && pi.GetSetMethod(nonPublic: true) == null)
+                        {
+                            object? existingCollection = pi.GetValue(o);
+                            if (existingCollection != null)
+                            {
+                                AddObjectsIntoTargetCollection(existingCollection, member.Collection, member.Mapping.TypeDesc!.Type!);
+                            }
+                        }
+                        else
+                        {
+                            object? collection = null;
+                            SetCollectionObjectWithCollectionMember(ref collection, member.Collection, member.Mapping.TypeDesc!.Type!);
+                            var setMemberValue = GetSetMemberValueDelegate(o, memberInfo.Name);
+                            setMemberValue(o, collection);
+                        }
                     }
 
                     member.EnsureCollection?.Invoke(o!);

@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.X509Certificates
         private SafeX509StoreHandle _store;
         private readonly SafeX509StackHandle _untrustedLookup;
         private readonly SafeX509StoreCtxHandle _storeCtx;
-        private readonly DateTime _verificationTime;
+        private readonly DateTimeOffset _verificationTime;
         private readonly TimeSpan _downloadTimeout;
         private WorkingChain? _workingChain;
 
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
             SafeX509StoreHandle store,
             SafeX509StackHandle untrusted,
             SafeX509StoreCtxHandle storeCtx,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan downloadTimeout)
         {
             _leafHandle = leafHandle;
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates
             SafeX509Handle leafHandle,
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan remainingDownloadTime)
         {
             OpenSslCachedSystemStoreProvider.GetNativeCollections(
@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal Interop.Crypto.X509VerifyStatusCode FindChainViaAia(
+        internal unsafe Interop.Crypto.X509VerifyStatusCode FindChainViaAia(
             ref List<X509Certificate2>? downloadedCerts)
         {
             IntPtr lastCert = IntPtr.Zero;
@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.X509Certificates
                                     cert,
                                     _store,
                                     revocationMode,
-                                    _verificationTime,
+                                    _verificationTime.LocalDateTime,
                                     _downloadTimeout);
                             }
                         }

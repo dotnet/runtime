@@ -2460,12 +2460,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     }
 #endif
 
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
-
     /*
         We need to allocate the appropriate instruction descriptor based
         on whether this is a direct/indirect call, and whether we need to
@@ -2827,9 +2821,6 @@ void emitter::emitJumpDistBind()
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjSJ;
     insGroup*      lstIG;
-#ifdef DEBUG
-    insGroup* prologIG = emitPrologIG;
-#endif // DEBUG
 
     // NOTE:
     //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
@@ -2884,8 +2875,7 @@ AGAIN:
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
         lastSJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
-        assert(lastIG == nullptr || lastIG->igNum <= jmp->idjIG->igNum || jmp->idjIG == prologIG ||
-               emitNxtIGnum > unsigned(0xFFFF)); // igNum might overflow
+        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || emitIGisInProlog(jmp->idjIG));
         lastIG = jmp->idjIG;
 #endif // DEBUG
 
@@ -2914,8 +2904,8 @@ AGAIN:
 #ifdef DEBUG
                     if (EMITVERBOSE)
                     {
-                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-                               lstIG->igOffs + adjIG);
+                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(),
+                               lstIG->igOffs, lstIG->igOffs + adjIG);
                     }
 #endif // DEBUG
                     lstIG->igOffs += adjIG;
@@ -2999,7 +2989,7 @@ AGAIN:
 
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 
-        if (jmpIG->igNum < tgtIG->igNum)
+        if (jmpIG->IsBefore(tgtIG))
         {
             /* Forward jump */
 
@@ -3200,7 +3190,7 @@ AGAIN:
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->GetDisplayId(), lstIG->igOffs,
                        lstIG->igOffs + adjIG);
             }
 #endif // DEBUG
@@ -4120,7 +4110,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
             }
-            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 if (offs16 < 0)
                 {
@@ -4141,7 +4132,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             tmp = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             tmp >>= 9;
-            if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 tmp >>= 2;
                 if (tmp < 0)
@@ -4170,7 +4162,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 methodName = m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("# %s\n", methodName);
             }
-            else if ((unsigned)(addr - emitCodeBlock) < emitPrologIG->igSize) // only for prolog
+            // only for prolog
+            else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
             {
                 tmp >>= 2;
                 if (tmp < 0)
@@ -5256,7 +5249,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     result.insThroughput       = PERFSCORE_THROUGHPUT_ILLEGAL;
     result.insLatency          = PERFSCORE_LATENCY_ILLEGAL;
-    result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+    result.insMemoryAccessKind = PerfScoreMemoryAccessKind::None;
 
     // Calculate merge emit instructions cost.
     unsigned CombinedInsCnt = id->idCodeSize() / sizeof(code_t);
@@ -5273,7 +5266,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else // ins == load
             {    // pcaddu12i + load or lu12i.w + lu32i.d + load
-                result.insMemoryAccessKind = PERFSCORE_MEMORY_READ;
+                result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Read;
                 result.insThroughput       = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_4C : PERFSCORE_THROUGHPUT_7C;
                 if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
                 {
@@ -5322,9 +5315,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
         else if (id->idInsOpt() == INS_OPTS_RELOC)
         { // pcalau12i + (addi.d or ld.d)
-            result.insLatency          = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
-            result.insThroughput       = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
-            result.insMemoryAccessKind = id->idIsCnsReloc() ? PERFSCORE_MEMORY_NONE : PERFSCORE_MEMORY_READ;
+            result.insLatency    = id->idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
+            result.insThroughput = id->idIsCnsReloc() ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_4C;
+            result.insMemoryAccessKind =
+                id->idIsCnsReloc() ? PerfScoreMemoryAccessKind::None : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
@@ -5340,12 +5334,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     {
         if (emitInsIsLoad(ins))
         {
-            result.insMemoryAccessKind = emitInsIsStore(ins) ? PERFSCORE_MEMORY_READ_WRITE : PERFSCORE_MEMORY_READ;
+            result.insMemoryAccessKind =
+                emitInsIsStore(ins) ? PerfScoreMemoryAccessKind::ReadWrite : PerfScoreMemoryAccessKind::Read;
         }
         else
         {
             assert(emitInsIsStore(ins));
-            result.insMemoryAccessKind = PERFSCORE_MEMORY_WRITE;
+            result.insMemoryAccessKind = PerfScoreMemoryAccessKind::Write;
         }
     }
 
