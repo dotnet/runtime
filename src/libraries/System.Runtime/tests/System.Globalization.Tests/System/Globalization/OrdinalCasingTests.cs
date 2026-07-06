@@ -20,12 +20,18 @@ namespace System.Globalization.Tests
             yield return new object[] { "", "" };
             yield return new object[] { "abc", "ABC" };
             yield return new object[] { "Hello", "hELLO" };
-            yield return new object[] { "\u00B5", "\u039C" };  // MICRO SIGN folds to GREEK CAPITAL MU
             yield return new object[] { "\u017F", "\u017F" };  // LATIN SMALL LETTER LONG S stays itself (no OIC fold to 'S')
             yield return new object[] { "\u0131", "\u0131" };  // LATIN SMALL LETTER DOTLESS I stays itself (no OIC fold to 'I')
             yield return new object[] { "\u03C3", "\u03A3" };  // GREEK SMALL SIGMA vs GREEK CAPITAL SIGMA
-            yield return new object[] { "\u03C2", "\u03A3" };  // GREEK SMALL FINAL SIGMA vs GREEK CAPITAL SIGMA
             yield return new object[] { "\u0561\u0562", "\u0531\u0532" }; // Armenian small vs capital
+
+            // MICRO SIGN and GREEK SMALL FINAL SIGMA fold to their Greek capitals only under ICU and invariant
+            // casing. NLS does not treat these as OrdinalIgnoreCase-equal, so only include them when not on NLS.
+            if (!PlatformDetection.IsNlsGlobalization)
+            {
+                yield return new object[] { "\u00B5", "\u039C" };  // MICRO SIGN folds to GREEK CAPITAL MU
+                yield return new object[] { "\u03C2", "\u03A3" };  // GREEK SMALL FINAL SIGMA vs GREEK CAPITAL SIGMA
+            }
         }
 
         public static IEnumerable<object[]> OrdinalIgnoreCaseNotEqualPairs()
@@ -180,10 +186,15 @@ namespace System.Globalization.Tests
             yield return new object[] { '\u00E0', '\u00C0' }; // a-grave -> A-grave
             yield return new object[] { '\u03B1', '\u0391' }; // greek small alpha -> capital alpha
             yield return new object[] { '\u0450', '\u0400' }; // cyrillic small ie -> capital
-            yield return new object[] { '\u00B5', '\u039C' }; // MICRO SIGN -> GREEK CAPITAL MU
             yield return new object[] { '\u212A', '\u212A' };  // KELVIN SIGN is not folded by ordinal upper
             yield return new object[] { '\u0131', '\u0131' };  // DOTLESS I unchanged
             yield return new object[] { '\u017F', '\u017F' };  // LONG S unchanged
+
+            // MICRO SIGN folds to GREEK CAPITAL MU only under ICU and invariant casing. NLS leaves it unchanged.
+            if (!PlatformDetection.IsNlsGlobalization)
+            {
+                yield return new object[] { '\u00B5', '\u039C' }; // MICRO SIGN -> GREEK CAPITAL MU
+            }
         }
 
         public static IEnumerable<object[]> CharLowerData()
@@ -361,7 +372,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void OrdinalIgnoreCase_Equivalence_HoldsInInvariantMode()
         {
             var options = new RemoteInvokeOptions();
