@@ -959,7 +959,7 @@ namespace System
         private object? m_h;
 #pragma warning restore CA1823, 414, 169, IDE0044
 
-        private IntPtr m_value;
+        internal IntPtr m_value;
 
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_value);
 

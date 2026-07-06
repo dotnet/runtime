@@ -23,7 +23,7 @@ namespace System
         // 1. Multicast delegate
         // 2. Unmanaged function pointer
         // 3. Open virtual delegate
-        private nint _invocationCount;
+        internal nint _invocationCount;
 
         private bool IsUnmanagedFunctionPtr()
         {

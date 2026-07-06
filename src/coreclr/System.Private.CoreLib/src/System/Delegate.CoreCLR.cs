@@ -400,8 +400,14 @@ namespace System
             Justification = "The parameter 'methodType' is passed by ref to QCallTypeHandle")]
         private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] RuntimeType methodType, string method, DelegateBindingFlags flags)
         {
-            bool ret = BindToMethodName(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
-                new QCallTypeHandle(ref methodType), method, flags, ObjectHandleOnStack.Create(ref target), out BindToMethodDetails bindToMethodDetails);
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                ret = BindToMethodName(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                new QCallTypeHandle(ref methodType), method, flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
 
             if (ret)
             {
@@ -438,8 +444,16 @@ namespace System
 
         private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
         {
-            bool ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
-                method.Value, new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out BindToMethodDetails bindToMethodDetails);
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                // Note the use of Unsafe.As on method. This is not a generally safe operation, but we require in CoreCLR that
+                // all implementors of IRuntimeMethodInfo have the same offset for the m_value field, so this is safe in this context.
+                ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    Unsafe.As<RuntimeMethodInfoStub>(method).m_value, new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
 
             if (ret)
             {
@@ -463,7 +477,7 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
+        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, nint method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private static MulticastDelegate InternalAlloc(RuntimeType type)
         {
@@ -508,8 +522,13 @@ namespace System
                 throw new ArgumentNullException(nameof(method));
             }
 
-            Construct(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
-                method, out BindToMethodDetails bindToMethodDetails);
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                Construct(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    method, out bindToMethodDetails);
+            }
 
             // Apply the results of the QCall to the delegate instance.
             _methodPtr = bindToMethodDetails.methodPtr;
@@ -582,9 +601,12 @@ namespace System
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
         {
-            IntPtr result = AdjustTarget(RuntimeHelpers.GetMethodTable(target), methodPtr);
-            GC.KeepAlive(target);
-            return result;
+            unsafe
+            {
+                IntPtr result = AdjustTarget(RuntimeHelpers.GetMethodTable(target), methodPtr);
+                GC.KeepAlive(target);
+                return result;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
