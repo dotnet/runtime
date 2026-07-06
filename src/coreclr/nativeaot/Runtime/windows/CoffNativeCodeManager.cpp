@@ -859,6 +859,8 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                                                 PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                 uintptr_t *     pSpForArm64PacSign) // out
 {
+    *pSpForArm64PacSign = 0;
+
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
     size_t unwindDataBlobSize;
@@ -888,7 +890,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #endif
 
 #if defined(TARGET_AMD64)
-    *pSpForArm64PacSign = 0;
     context.Rsp = pRegisterSet->GetSP();
     context.Rbp = pRegisterSet->GetFP();
     context.Rip = pRegisterSet->GetIP();
@@ -905,8 +906,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)(context.Rsp - sizeof (PVOID));
     return true;
 #elif defined(TARGET_ARM64)
-    *pSpForArm64PacSign = 0;
-
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
 
@@ -969,7 +968,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)contextPointers.Lr;
     return true;
 #else
-    *pSpForArm64PacSign = 0;
     EstablisherFrame = 0;
     HandlerData = NULL;
     return false;
