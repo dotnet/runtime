@@ -186,7 +186,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
     /// <summary>
-    /// Installs the WASM browser/console templates from the built nugets path
+    /// Installs the WASM browser template from the built nugets path
     /// using <c>dotnet new install</c> if needed. This is a no-op when
     /// the workload is already installed (templates come with the workload).
     /// </summary>

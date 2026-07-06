@@ -253,12 +253,15 @@ bool pal::get_loaded_library(
     /*out*/ dll_t *dll,
     /*out*/ pal::string_t *path)
 {
-    dll_t dll_maybe = ::GetModuleHandleW(library_name);
-    if (dll_maybe == nullptr)
+    pal_dll_t dll_c = nullptr;
+    pal_char_t* path_c = nullptr;
+    if (!::pal_get_loaded_library(library_name, symbol_name, &dll_c, &path_c))
         return false;
 
-    *dll = dll_maybe;
-    return pal::get_module_path(*dll, path);
+    *dll = dll_c;
+    path->assign(path_c);
+    free(path_c);
+    return true;
 }
 
 bool pal::load_library(const string_t* in_path, dll_t* dll)
@@ -391,7 +394,13 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+    pal::char_t* dir = pal_get_default_installation_dir();
+    if (dir == nullptr)
+        return false;
+
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -504,16 +513,14 @@ pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture 
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-    //  ***Used only for testing***
-    pal::string_t environmentOverride;
-    if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environmentOverride))
-    {
-        recv->assign(environmentOverride);
-        return true;
-    }
-    //  ***************************
+    recv->clear();
+    pal::char_t* dir = pal_get_dotnet_self_registered_dir();
+    if (dir == nullptr)
+        return false;
 
-    return get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -962,79 +969,20 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 bool pal::fullpath(string_t* path, bool skip_error_logging)
 {
     if (path->empty())
-    {
         return false;
-    }
 
-    if (LongFile::IsNormalized(*path))
-    {
-        WIN32_FILE_ATTRIBUTE_DATA data;
-        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
-        {
-            return true;
-        }
-    }
-
-    char_t buf[MAX_PATH];
-    size_t size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
-    if (size == 0)
-    {
-        if (!skip_error_logging)
-        {
-            trace::error(_X("Error resolving full path [%s]"), path->c_str());
-        }
+    pal_char_t* resolved = ::pal_fullpath(path->c_str(), skip_error_logging);
+    if (resolved == nullptr)
         return false;
-    }
 
-    string_t str;
-    if (size < MAX_PATH)
-    {
-        str.assign(buf);
-    }
-    else
-    {
-        str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
-
-        size = ::GetFullPathNameW(path->c_str(), static_cast<uint32_t>(size), (LPWSTR)str.data(), nullptr);
-        assert(size <= str.size());
-
-        if (size == 0)
-        {
-            if (!skip_error_logging)
-            {
-                trace::error(_X("Error resolving full path [%s]"), path->c_str());
-            }
-            return false;
-        }
-
-        const string_t* prefix = &LongFile::ExtendedPrefix;
-        //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
-        if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
-        {
-            prefix = &LongFile::UNCExtendedPathPrefix;
-            str.erase(0, LongFile::UNCPathPrefix.length());
-            size = size - LongFile::UNCPathPrefix.length();
-        }
-
-        str.insert(0, *prefix);
-        str.resize(size + prefix->length());
-        str.shrink_to_fit();
-    }
-
-    WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExW(str.c_str(), GetFileExInfoStandard, &data) != 0)
-    {
-        *path = str;
-        return true;
-    }
-
-    return false;
+    path->assign(resolved);
+    free(resolved);
+    return true;
 }
 
 bool pal::file_exists(const string_t& path)
 {
-    string_t tmp(path);
-    return pal::fullpath(&tmp, true);
+    return ::pal_file_exists(path.c_str());
 }
 
 bool pal::is_directory(const pal::string_t& path)
@@ -1098,57 +1046,24 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
-    ::readdir(path, _X("*"), true, list);
+    assert(list != nullptr);
+    ::pal_readdir_onlydirectories(path.c_str(),
+        [](const pal_char_t* name, void* ctx) -> bool
+        {
+            static_cast<std::vector<pal::string_t>*>(ctx)->emplace_back(name);
+            return true;
+        },
+        list);
 }
 
 bool pal::is_running_in_wow64()
 {
-    BOOL fWow64Process = FALSE;
-    if (!IsWow64Process(GetCurrentProcess(), &fWow64Process))
-    {
-        return false;
-    }
-    return (fWow64Process != FALSE);
+    return ::pal_get_process_emulation() == pal_process_emulation_wow64;
 }
-
-typedef BOOL (WINAPI* is_wow64_process2)(
-    HANDLE hProcess,
-    USHORT *pProcessMachine,
-    USHORT *pNativeMachine
-);
 
 bool pal::is_emulating_x64()
 {
-#if defined(TARGET_AMD64)
-    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (kernel32 == nullptr)
-    {
-        // Loading kernel32.dll failed, log the error and continue.
-        trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
-        return false;
-    }
-
-    is_wow64_process2 is_wow64_process2_func = (is_wow64_process2)::GetProcAddress(kernel32, "IsWow64Process2");
-    if (is_wow64_process2_func == nullptr)
-    {
-        // Could not find IsWow64Process2.
-        return false;
-    }
-
-    USHORT process_machine;
-    USHORT native_machine;
-    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
-    {
-        // IsWow64Process2 failed. Log the error and continue.
-        trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
-        return false;
-    }
-
-    // If we are running targeting x64 on a non-x64 machine, we are emulating
-    return native_machine != IMAGE_FILE_MACHINE_AMD64;
-#else
-    return false;
-#endif
+    return ::pal_get_process_emulation() == pal_process_emulation_x64;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

@@ -80,6 +80,7 @@ public enum DataType
     StressMsgHeader,
     Object,
     ContinuationObject,
+    AsyncResumeInfo,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,
@@ -177,6 +178,7 @@ public enum DataType
     ExternalMethodFrame,
     DynamicHelperFrame,
     InterpreterFrame,
+    PInvokeCalliFrame,
 
     ComCallWrapper,
     SimpleComCallWrapper,

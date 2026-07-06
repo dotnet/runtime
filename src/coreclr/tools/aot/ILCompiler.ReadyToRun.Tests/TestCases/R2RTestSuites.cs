@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -429,6 +430,61 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasAsyncVariant(reader, "SimpleAsyncMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncVoidReturn", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "ValueTaskMethod", out diag), diag);
+        }
+    }
+
+    /// <summary>
+    /// #129813 / PR #129884: crossgen2 --strip-il-bodies must preserve the IL of non-async
+    /// Task/ValueTask-returning methods, which is needed to compile the runtime-async variant.
+    /// </summary>
+    [Fact]
+    public void RuntimeAsyncStripILBodiesPreservesTaskReturningIL()
+    {
+        var stripILBodies = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/StripILBodies.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL),
+            [
+                new(nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL), [new CrossgenAssembly(stripILBodies)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            string componentFile = Path.Combine(
+                Path.GetDirectoryName(reader.Filename)!,
+                nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL) + ".dll");
+
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "SyncTaskOfTForwarder", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "SyncValueTaskOfTForwarder", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "SyncTaskForwarder", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "SyncValueTaskForwarder", out diag), diag);
+
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "GenericIdentity", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "GenericHolder`1", "MethodOnGenericType", out diag), diag);
+
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "ComputeTag", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "Root", out diag), diag);
+
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncTaskMethod", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncTaskMethod", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncValueTaskMethod", out diag), diag);
         }
     }
 
@@ -1453,6 +1509,96 @@ public class R2RTestSuites
             // must be read as absolute values, not delta-accumulated, and validates
             // that the resolved method names match the expected inliners.
             Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetValue", ["GenericWrapperA", "GenericWrapperB"], out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void VirtualMethodGenericsNonGVM()
+    {
+        var nonGvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(VirtualMethodGenericsNonGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/NonGVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualMethodGenericsNonGVM),
+            [
+                new(nameof(VirtualMethodGenericsNonGVM), [new CrossgenAssembly(nonGvmLib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            // Test1: Interface impl on generic base type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A`1<int>", "Test1Method", out diag), diag);
+
+            // Test2: Virtual override on generic intermediate type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2C`1<int>", "Test2Method", out diag), diag);
+
+            // Test3: Explicit DIM
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
+
+            // Test4: Explicit interface impl on generic base
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4A`1<int>", "ITest4<T>.Test4Method", out diag), diag);
+
+            // Test5: Interface dispatch resolves to override on intermediate type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test5B`1<int>", "Test5Method", out diag), diag);
+
+            // Test6: Interface reimplementation with new slot
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test6B`1<int>", "Test6Method", out diag), diag);
+
+            // Test7: Non-final DIM
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void VirtualMethodGenericsGVM()
+    {
+        var gvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(VirtualMethodGenericsGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/GVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualMethodGenericsGVM),
+            [
+                new(nameof(VirtualMethodGenericsGVM), [new CrossgenAssembly(gvmLib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            // Test1: Interface GVM on base type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A", "Test1Method", out diag, ["int"]), diag);
+
+            // Test2: Interface GVM override on intermediate type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2B", "Test2Method", out diag, ["int"]), diag);
+
+            // Test3: Explicit interface GVM impl on generic base
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test3A`1<int>", "ITest3<T>.Test3Method", out diag, ["int"]), diag);
+
+            // Test4: Interface GVM reimplementation with new slot
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4B", "Test4Method", out diag, ["int"]), diag);
+
+            // Test5: Non-final default interface GVM
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest5", "Test5Method", out diag, ["int"]), diag);
+
+            // Test6: Explicit DIM with generic method
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest6WithDim`1<int>", "ITest6Base.Test6Method", out diag, ["int"]), diag);
+
+            // Test7: Static virtual generic method
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
         }
     }
 }

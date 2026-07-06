@@ -226,6 +226,7 @@ protected:
     void                       ensureCurrentFuncIsUnwindable();
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
+    void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -341,11 +342,8 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void genEstablishFramePointer(int delta, bool reportUnwindData);
-    void genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
-#ifdef TARGET_WASM
-    void genHomeRegisterParamsOutsideProlog();
-#endif
+    void      genEstablishFramePointer(int delta, bool reportUnwindData);
+    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
@@ -795,6 +793,9 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+#if defined(FEATURE_SIMD)
+    void genCodeForVectorConstant(GenTree* treeNode);
+#endif
     void genCatchArg(GenTree* treeNode);
 #endif
 
@@ -1018,6 +1019,12 @@ protected:
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
+    void genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg);
+
+#ifdef DEBUG
+    void checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg);
+#endif
+
     class HWIntrinsicImmOpHelper final
     {
     public:
