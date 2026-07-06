@@ -310,13 +310,10 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             // For compatibility, we need to allow trailing nulls at the end of a number string
-            var nullsToConsume = value.Slice(index).IndexOfAnyExcept(TChar.CastFrom('\0'));
+            var remainder = value.Slice(index);
 
-            if (nullsToConsume >= 0)
-            {
-                index += nullsToConsume;
-            }
-            return index;
+            var nullsToConsume = remainder.IndexOfAnyExcept(TChar.CastFrom('\0'));
+            return index + ((nullsToConsume >= 0) ? nullsToConsume : remainder.Length);
         }
 
         private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));

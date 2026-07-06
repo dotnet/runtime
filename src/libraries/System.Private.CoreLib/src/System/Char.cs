@@ -1990,6 +1990,7 @@ namespace System
                 !rune.IsBmp)
             {
                 result = '\0';
+                bytesConsumed = 0;
                 return false;
             }
 
