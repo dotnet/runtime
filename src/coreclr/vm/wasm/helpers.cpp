@@ -1445,8 +1445,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
                     break;
                 default:
                     PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
-                    break;
-            }
+                    return nullptr;
         }
 
         thunk = LookupPortableEntryPointThunk(thunkKey);

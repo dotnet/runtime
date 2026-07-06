@@ -3618,7 +3618,10 @@ namespace Internal.JitInterface
                     sig.ReturnType == sig.Context.GetWellKnownType(WellKnownType.Void))
                 {
                     // Detect special case for string ctors
-                    sig = WasmLowering.GetStringCtorActualSignature(sig);
+                    if (sig.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor"u8, sig) is not null)
+                    {
+                        sig = WasmLowering.GetStringCtorActualSignature(sig);
+                    }
                 }
 
                 WasmLowering.LoweringFlags flags = 0;
