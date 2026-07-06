@@ -1588,7 +1588,7 @@ inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
 #endif
 
     assert(methHnd != nullptr);
-    result->gtArgs.PushFront(this, NewCallArg::Primitive(methHnd));
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(methHnd).WellKnown(WellKnownArg::RuntimeMethodHandle));
     result->gtFlags |= methHnd->gtFlags & GTF_ALL_EFFECT;
 
     if (clsHnd != nullptr)
