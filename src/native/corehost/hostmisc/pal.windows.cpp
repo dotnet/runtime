@@ -253,12 +253,15 @@ bool pal::get_loaded_library(
     /*out*/ dll_t *dll,
     /*out*/ pal::string_t *path)
 {
-    dll_t dll_maybe = ::GetModuleHandleW(library_name);
-    if (dll_maybe == nullptr)
+    pal_dll_t dll_c = nullptr;
+    pal_char_t* path_c = nullptr;
+    if (!::pal_get_loaded_library(library_name, symbol_name, &dll_c, &path_c))
         return false;
 
-    *dll = dll_maybe;
-    return pal::get_module_path(*dll, path);
+    *dll = dll_c;
+    path->assign(path_c);
+    free(path_c);
+    return true;
 }
 
 bool pal::load_library(const string_t* in_path, dll_t* dll)

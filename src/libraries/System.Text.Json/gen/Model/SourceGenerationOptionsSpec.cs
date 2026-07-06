@@ -24,6 +24,12 @@ namespace System.Text.Json.SourceGeneration
 
         public required ImmutableEquatableArray<TypeRef>? TypeClassifiers { get; init; }
 
+        /// <summary>
+        /// The <c>[Experimental]</c> diagnostic IDs referenced by the options-level converters and type
+        /// classifiers above. These are suppressed in the aggregate source files that emit the options setup.
+        /// </summary>
+        public required ImmutableEquatableArray<string> ExperimentalDiagnosticIds { get; init; }
+
         public required int? DefaultBufferSize { get; init; }
 
         public required JsonIgnoreCondition? DefaultIgnoreCondition { get; init; }

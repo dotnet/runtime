@@ -1358,7 +1358,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash, /* bAddIfNotFound */ TRUE));
 
     DynamicStringLiteral* pStringLiteral = (DynamicStringLiteral*)m_jitTempData.New(sizeof(DynamicStringLiteral));
-    pStringLiteral->m_pEntry = pEntry.Extract();
+    pStringLiteral->m_pEntry = pEntry.Detach();
 
     // Add to m_DynamicStringLiterals:
     //  we don't need to check for duplicate because the string literal entries in

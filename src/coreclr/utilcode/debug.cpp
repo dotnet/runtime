@@ -163,8 +163,8 @@ VOID LogAssert(
     STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     struct timespec ts;
-#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST) || defined(HOST_ANDROID)
-    // timespec_get is only available on iOS 13.0+ and not supported on Android API levels we target, use gettimeofday instead
+#if defined(HOST_ANDROID)
+    // timespec_get is not supported on Android API levels we target, use gettimeofday instead
     struct timeval tv;
     gettimeofday(&tv, nullptr);
     ts.tv_sec = tv.tv_sec;
