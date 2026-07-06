@@ -16,4 +16,8 @@
     <!-- This assembly has no LibraryImports and is used as a custom corelib, so disable the generator. -->
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.Assets\GvmVariantInterface.cs" Link="GvmVariantInterface.cs" />
+  </ItemGroup>
 </Project>
