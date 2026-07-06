@@ -323,27 +323,36 @@ private:
         FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
         {
-            m_doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
-            m_origCall        = GetCall(stmt);
+        }
+
+        //------------------------------------------------------------------------
+        // Run: transform the statement as described above.
+        //
+        virtual void Run()
+        {
+            m_doesReturnValue = m_stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
+            m_origCall        = GetCall(m_stmt);
 
             if (m_origCall->IsGenericVirtual(m_compiler) && m_origCall->IsFatPointerCandidate())
             {
                 Statement* firstNewStmt    = nullptr;
                 GenTree**  splitPointInUse = nullptr;
 
-                m_compiler->gtSplitTree(block, stmt, m_origCall->gtControlExpr, &firstNewStmt, &splitPointInUse, true);
+                m_compiler->gtSplitTree(m_currBlock, m_stmt, m_origCall->gtControlExpr, &firstNewStmt, &splitPointInUse,
+                                        true);
                 const unsigned   fptrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("fat pointer temp"));
                 GenTree* const   store      = m_compiler->gtNewTempStore(fptrLclNum, m_origCall->gtControlExpr);
-                Statement* const storeStmt  = m_compiler->gtNewStmt(store, stmt->GetDebugInfo());
-                m_compiler->fgInsertStmtBefore(block, stmt, storeStmt);
+                Statement* const storeStmt  = m_compiler->gtNewStmt(store, m_stmt->GetDebugInfo());
+                m_compiler->fgInsertStmtBefore(m_currBlock, m_stmt, storeStmt);
                 m_origCall->gtControlExpr =
                     m_compiler->gtNewLclvNode(fptrLclNum, genActualType(m_origCall->gtControlExpr->TypeGet()));
-                m_compiler->gtUpdateStmtSideEffects(storeStmt);
-                m_compiler->gtUpdateStmtSideEffects(stmt);
+                m_compiler->gtUpdateStmtSideEffects(m_stmt);
             }
 
             m_fptrAddress = m_origCall->gtControlExpr;
             m_pointerType = m_fptrAddress->TypeGet();
+
+            Transform();
         }
 
     protected:
@@ -486,9 +495,9 @@ private:
     private:
         const int FAT_POINTER_MASK = 0x2;
 
-        GenTree*  m_fptrAddress;
-        var_types m_pointerType;
-        bool      m_doesReturnValue;
+        GenTree*  m_fptrAddress     = nullptr;
+        var_types m_pointerType     = TYP_UNDEF;
+        bool      m_doesReturnValue = false;
     };
 
     class GuardedDevirtualizationTransformer final : public Transformer
