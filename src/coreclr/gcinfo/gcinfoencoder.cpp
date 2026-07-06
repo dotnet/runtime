@@ -1068,7 +1068,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
         assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister || 0 == m_StackBaseRegister);
 #elif defined(TARGET_RISCV64)
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
+        // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
+        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister || 0 == m_StackBaseRegister);
 #endif
         GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }
