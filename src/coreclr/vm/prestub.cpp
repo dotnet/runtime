@@ -909,8 +909,12 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #if defined(FEATURE_INTERPRETER)
     if (isInterpreterCode)
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
         InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)pPrecode->GetData()->ByteCodeAddr;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         PCODE irAddress = PINSTRToPCODE((TADDR)interpreterCode);
         PerfMap::LogInterpreterMethod(this, irAddress, sizeOfCode);
     }

@@ -242,7 +242,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -264,7 +264,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
