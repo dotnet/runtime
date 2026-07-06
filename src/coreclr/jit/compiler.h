@@ -7523,7 +7523,6 @@ private:
 public:
     PhaseStatus rangeCheckPhase();
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
-    GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
 
 protected:
@@ -9233,7 +9232,6 @@ public:
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
@@ -13661,6 +13659,10 @@ extern const BYTE genActualTypes[];
 #ifdef DEBUG
 void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars);
 #endif // DEBUG
+
+// Defined in async.cpp. Sets the Ready-to-Run entrypoint on a JIT-synthesized async call so it is marked
+// R2R-relative-indirect. A no-op when not compiling for Ready-to-Run.
+void SetCallEntrypointForR2R(GenTreeCall* call, Compiler* compiler, CORINFO_METHOD_HANDLE handle);
 
 #include "compiler.hpp" // All the shared inline functions
 
