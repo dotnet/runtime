@@ -34,8 +34,17 @@ internal sealed class GCInfoX86_1 : IGCInfo
     uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetCalleePoppedArgumentsSize();
 
+    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetHeader();
+
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetInterruptibleRanges();
+
+    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetSafePoints();
+
+    IReadOnlyList<GCSlotLifetime> IGCInfo.GetSlotLifetimes(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetSlotLifetimes();
 
     IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)
         => AssertCorrectHandle(gcInfoHandle).EnumerateLiveSlots(instructionOffset, options);

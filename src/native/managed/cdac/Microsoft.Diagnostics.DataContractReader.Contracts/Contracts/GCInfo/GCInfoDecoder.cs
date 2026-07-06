@@ -1216,10 +1216,10 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         // TODO(stackref): The native FindSafePoint uses binary search (NarrowSafePointSearch)
         // when numSafePoints > 32. This is a performance optimization only — no correctness impact.
         // Linear scan through safe point offsets from the saved position
-        for (uint i = 0; i < _safePoints.Count; i++)
+        for (int i = 0; i < _safePoints.Count; i++)
         {
             if (_safePoints[i] == codeOffset)
-                return i;
+                return (uint)i;
             if (_safePoints[i] > codeOffset)
                 break;
         }
