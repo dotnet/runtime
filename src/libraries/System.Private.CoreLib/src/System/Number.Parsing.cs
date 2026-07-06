@@ -267,7 +267,7 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            if ((styles & ~NumberStyles.Integer) == 0)
+            if ((styles & ~(NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters)) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
                 return TryParseBinaryIntegerStyle(value, styles, info, out result, out elementsConsumed);
@@ -312,7 +312,7 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
+            Debug.Assert((styles & ~(NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters)) == 0, "Only handles subsets of Integer format");
 
             if (value.IsEmpty)
             {
