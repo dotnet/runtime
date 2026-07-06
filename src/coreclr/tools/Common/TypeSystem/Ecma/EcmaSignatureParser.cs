@@ -248,6 +248,10 @@ namespace Internal.TypeSystem.Ecma
                         return _tsc.GetFunctionPointerType(sig);
                     else
                         return null;
+                case SignatureTypeCode.Sentinel:
+                    // Varargs are not supported
+                    ThrowHelper.ThrowInvalidProgramException();
+                    return null; // unreached
                 default:
                     ThrowHelper.ThrowBadImageFormatException();
                     return null;
