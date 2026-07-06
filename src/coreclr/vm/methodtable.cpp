@@ -6909,25 +6909,32 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
             }
             else
             {
-                pSlotFlags = new bool[nVirtuals];
+                // Use a non-throwing allocation to keep this method within its NOTHROW contract.
+                // If the allocation fails, pBitVector remains NULL and we simply fall back to the
+                // conservative (correct, but potentially slower) behavior below.
+                pSlotFlags = new (nothrow) bool[nVirtuals];
                 pBitVector = pSlotFlags;
-                memset(pBitVector, 0, nVirtuals);
+                if (pBitVector != NULL)
+                    memset(pBitVector, 0, nVirtuals * sizeof(*pBitVector));
             }
 
-            for (unsigned slot = 0; slot < nVirtuals; slot++)
+            if (pBitVector != NULL)
             {
-                PCODE pCode = pCanonMT->GetSlotForVirtualVolatileLoadWithoutBarrier(slot);
-
-                if (pCode == (PCODE)NULL)
+                for (unsigned slot = 0; slot < nVirtuals; slot++)
                 {
-                    pBitVector[slot] = true;
-                    unprocessedNonOverriddenSlots += 1;
-                }
-            }
+                    PCODE pCode = pCanonMT->GetSlotForVirtualVolatileLoadWithoutBarrier(slot);
 
-            if (unprocessedNonOverriddenSlots == 0)
-            {
-                pBitVector = NULL;
+                    if (pCode == (PCODE)NULL)
+                    {
+                        pBitVector[slot] = true;
+                        unprocessedNonOverriddenSlots += 1;
+                    }
+                }
+
+                if (unprocessedNonOverriddenSlots == 0)
+                {
+                    pBitVector = NULL;
+                }
             }
         }
     }
@@ -6957,6 +6964,7 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
                 else
                 {
                     _ASSERTE(unprocessedNonOverriddenSlots > 0);
+                    pBitVector[slot] = false;
                     unprocessedNonOverriddenSlots -= 1;
                 }
             }
@@ -7012,6 +7020,7 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
             else
             {
                 _ASSERTE(unprocessedNonOverriddenSlots > 0);
+                pBitVector[slot] = false;
                 unprocessedNonOverriddenSlots -= 1;
             }
 
