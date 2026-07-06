@@ -59,30 +59,28 @@ namespace AppHost.Bundle.Tests
                     NativeLibrary.Free(handle);
                 }
             }
-            else if (OperatingSystem.IsMacOS())
-            {
-                // Use nm to check for exported defined symbols.
-                // On macOS, -gUj shows external defined symbol names only.
-                CommandResult result = Command.Create("nm", "-gUj", singleFileHostPath)
-                    .CaptureStdOut()
-                    .CaptureStdErr()
-                    .Execute();
-                result.Should().Pass();
-
-                foreach (string exportName in expectedExports)
-                {
-                    Assert.Contains(exportName, result.StdOut);
-                }
-            }
             else
             {
                 // Use nm to check for exported defined symbols.
-                // On Linux, -D --defined-only shows defined dynamic symbols.
-                // Fall back to llvm-nm (e.g., on musl/Alpine environments that have llvm but not binutils).
-                string? nmTool = FindToolInPath("nm") ?? FindToolInPath("llvm-nm");
-                Assert.SkipUnless(nmTool is not null, "nm or llvm-nm is not available");
+                string tool;
+                string[] args;
+                if (OperatingSystem.IsMacOS())
+                {
+                    // On macOS, -gUj shows external defined symbol names only.
+                    tool = "nm";
+                    args = ["-gUj", singleFileHostPath];
+                }
+                else
+                {
+                    // On Linux, -D --defined-only shows defined dynamic symbols.
+                    // Fall back to llvm-nm (e.g., on musl/Alpine environments that have llvm but not binutils).
+                    string? nmTool = FindToolInPath("nm") ?? FindToolInPath("llvm-nm");
+                    Assert.SkipUnless(nmTool is not null, "nm or llvm-nm is not available");
+                    tool = nmTool!;
+                    args = ["-D", "--defined-only", singleFileHostPath];
+                }
 
-                CommandResult result = Command.Create(nmTool!, "-D", "--defined-only", singleFileHostPath)
+                CommandResult result = Command.Create(tool, args)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
