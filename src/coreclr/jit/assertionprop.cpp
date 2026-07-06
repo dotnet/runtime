@@ -3604,14 +3604,9 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
         }
     }
 
-    // Don't propagate a promoted SIMD local into a whole-struct GT_LCL_VAR use.
-    // SIMD locals can be promoted into their lane/element fields (e.g. Quaternion
-    // -> 4 floats); the resulting "fully" promoted SIMD local has no maintained
-    // stack home and Lowering::CheckNode rejects a GT_LCL_VAR of it. Unlike
-    // generic struct copies (which Morph decomposes via MorphCopyBlock at the
-    // use site), substituting a promoted SIMD local can survive Morph and end
-    // up as e.g. a GT_FIELD_LIST entry that no later phase repairs.
-    //
+    // Do not propagate promoted locals if they are not DNER.
+    // This would require DNER'ing for many cases where the consumer
+    // does not support whole-local uses, such as GT_FIELD_LIST.
     if (tree->OperIs(GT_LCL_VAR) && varTypeIsSIMD(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
     {
         return nullptr;
