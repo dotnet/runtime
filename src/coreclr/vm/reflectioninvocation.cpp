@@ -1439,6 +1439,16 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
 }
 FCIMPLEND
 
+FCIMPL2(void, ReflectionInvocation::GetStackBounds, UINT_PTR* stackBase, UINT_PTR* stackLimit)
+{
+    FCALL_CONTRACT;
+
+    Thread* pThread = GetThread();
+    *stackBase      = reinterpret_cast<UINT_PTR>(pThread->GetCachedStackBase());
+    *stackLimit     = reinterpret_cast<UINT_PTR>(pThread->GetCachedStackLimit());
+}
+FCIMPLEND
+
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
     QCall::ObjectHandleOnStack type,

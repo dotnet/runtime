@@ -485,6 +485,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_TAILCALL,              // Perform a tail call
 
     CORINFO_HELP_GETCURRENTMANAGEDTHREADID,
+    CORINFO_HELP_CAN_STACK_ALLOCATE, // decide whether a conditional localloc is safe
 
     CORINFO_HELP_INIT_PINVOKE_FRAME,   // initialize an inlined PInvoke Frame for the JIT-compiler
 

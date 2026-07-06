@@ -236,6 +236,7 @@ DEFINE_METASIG(SM(Long_Long_RetLong, l l, l))
 DEFINE_METASIG(SM(ULong_ULong_RetULong, L L, L))
 DEFINE_METASIG(SM(RefLong_Long_Long_RetLong, r(l) l l, l))
 DEFINE_METASIG(SM(RefInt_Int_Int_RetInt, r(i) i i, i))
+DEFINE_METASIG(SM(UIntPtr_PtrUIntPtr_RetBool, U P(U), F))
 DEFINE_METASIG(SM(ObjIntPtr_RetVoid, j I, v))
 
 DEFINE_METASIG(SM(RefByte_RefByte_UInt_RetVoid, r(b) r(b) K, v))

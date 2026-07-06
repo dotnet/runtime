@@ -1565,6 +1565,11 @@ void HelperCallProperties::init()
                 exceptions = ExceptionSetFlags::None;
                 break;
 
+            case CORINFO_HELP_CAN_STACK_ALLOCATE:
+                exceptions = ExceptionSetFlags::None;
+                isNoEscape = true;
+                break;
+
             // type casting helpers that throw
             case CORINFO_HELP_CHKCASTINTERFACE:
             case CORINFO_HELP_CHKCASTARRAY:
