@@ -10,6 +10,7 @@ using System.Text;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -85,6 +86,15 @@ namespace TypeSystemTests
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(0), methodWithModOpt.GetEmbeddedSignatureData()[0].index);
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(1), methodWithModOpt.GetEmbeddedSignatureData()[1].index);
             Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(2), methodWithModOpt.GetEmbeddedSignatureData()[2].index);
+        }
+
+        [Fact]
+        public void TestCopyConstructedParameterNeedsMarshallingWithEmptyParameterMetadata()
+        {
+            MetadataType modOptTester = _testModule.GetType(""u8, "ModOptTester"u8);
+            MethodSignature methodWithModReq = modOptTester.GetMethods().Single(m => string.Equals(m.GetName(), "MethodWithCopyConstructedParameter")).Signature;
+
+            Assert.True(Marshaller.IsMarshallingRequired(methodWithModReq, _testModule));
         }
 
         [Fact]

@@ -30,6 +30,11 @@
      ret
   }
 
+  .method public hidebysig static int32 MethodWithCopyConstructedParameter(int32*, valuetype CopyConstructedStruct modreq(System.Runtime.CompilerServices.IsCopyConstructed)*) cil managed
+  {
+     ret
+  }
+
   .method public hidebysig instance int32 modopt([CoreTestAssembly]System.Void) [3,1 ... 4] Method4(int32 modopt(FooModifier)[2 ...,0...8], int32 modopt(FooModifier)[0...,...], int32 [,,,]) cil managed
   {
      ret
@@ -139,3 +144,11 @@
 
 .class public FooModifier { }
 .class public BarModifier { }
+
+.class public sequential ansi sealed beforefieldinit CopyConstructedStruct
+       extends [CoreTestAssembly]System.ValueType
+{
+    .field public int32 Value
+}
+
+.class public System.Runtime.CompilerServices.IsCopyConstructed { }
