@@ -71,6 +71,9 @@ public struct X86Context : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
+    // Clears the x86 hardware trace flag (EFLAGS.TF, bit 0x100).
+    public void UnsetSingleStepFlag() => EFlags &= ~0x100u;
+
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("dr0", StringComparison.OrdinalIgnoreCase)) { Dr0 = (uint)value.Value; return true; }

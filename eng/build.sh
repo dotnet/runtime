@@ -86,7 +86,7 @@ usage()
   echo "  --gcc                      Optional argument to build using gcc in PATH (default)."
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
-  echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
+  echo "  --keepnativesymbols        Optional argument: set to keep native symbols/debuginfo in generated binaries."
   echo "  --ninja                    Optional argument: use Ninja instead of Make (default: true, use --ninja false to disable)."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
@@ -506,15 +506,8 @@ while [[ $# -gt 0 ]]; do
       ;;
 
      -keepnativesymbols)
-      if [ -z ${2+x} ]; then
-        echo "No value for keepNativeSymbols is supplied. See help (--help) for supported values." 1>&2
-        exit 1
-      fi
-      passedKeepNativeSymbols="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-      if [ "$passedKeepNativeSymbols" = true ]; then
-        arguments+=("/p:KeepNativeSymbols=true")
-      fi
-      shift 2
+      arguments+=("/p:KeepNativeSymbols=true")
+      shift 1
       ;;
 
 

@@ -731,7 +731,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task CanDeserialize_ObjectWith_Ctor_With_64_Params()
         {
-            async Task RunTestAsync<T>()
+            async Task RunTestAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>()
             {
                 StringBuilder sb = new StringBuilder();
                 sb.Append("{");

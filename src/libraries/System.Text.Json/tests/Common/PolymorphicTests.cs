@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -33,8 +34,7 @@ namespace System.Text.Json.Serialization.Tests
             json = await Serializer.SerializeWrapper(value, typeof(object));
             Assert.Equal(expectedJson, json);
 
-            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
-            JsonTypeInfo<object> objectTypeInfo = options.GetTypeInfo<object>();
+            JsonTypeInfo<object> objectTypeInfo = Serializer.DefaultOptions.GetTypeInfo<object>();
             json = await Serializer.SerializeWrapper(value, objectTypeInfo);
             Assert.Equal(expectedJson, json);
         }
@@ -573,23 +573,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task CustomResolverWithFailingAncestorType_DoesNotSurfaceException()
         {
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static typeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(MyThing) ||
+                    typeInfo.Type == typeof(IList))
                 {
-                    Modifiers =
-                    {
-                        static typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(MyThing) ||
-                                typeInfo.Type == typeof(IList))
-                            {
-                                throw new InvalidOperationException("some latent custom resolution bug");
-                            }
-                        }
-                    }
+                    throw new InvalidOperationException("some latent custom resolution bug");
                 }
-            };
+            });
 
             object value = new MyDerivedThing { Number = 42 };
             string json = await Serializer.SerializeWrapper(value, options);
@@ -627,7 +618,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(PolymorphicTypeWithConflictingPropertyNameAtBase), typeof(PolymorphicTypeWithConflictingPropertyNameAtBase.Derived))]
         [InlineData(typeof(PolymorphicTypeWithConflictingPropertyNameAtDerived), typeof(PolymorphicTypeWithConflictingPropertyNameAtDerived.Derived))]
-        public async Task PolymorphicTypesWithConflictingPropertyNames_ThrowsInvalidOperationException(Type baseType, Type derivedType)
+        public async Task PolymorphicTypesWithConflictingPropertyNames_ThrowsInvalidOperationException(Type baseType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type derivedType)
         {
             InvalidOperationException ex;
             object value = Activator.CreateInstance(derivedType);

@@ -365,7 +365,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             TState state,
-            KeyWrapEcbTransform<TState> decryptEcb)
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> decryptEcb)
         {
             ulong iv;
 
@@ -429,17 +429,11 @@ namespace System.Security.Cryptography
                 this,
                 static (instance, source, destination) => instance.EncryptEcb(source, destination, PaddingMode.None));
         }
-
-        private protected delegate int KeyWrapEcbTransform<TState>(
-            TState state,
-            ReadOnlySpan<byte> source,
-            Span<byte> destination);
-
         private protected void EncryptKeyWrapPaddedCore<TState>(
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             TState state,
-            KeyWrapEcbTransform<TState> encryptEcb)
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> encryptEcb)
         {
             Debug.Assert(destination.Length == GetKeyWrapPaddedLength(source.Length));
 
@@ -491,7 +485,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             TState state,
-            KeyWrapEcbTransform<TState> encryptEcb)
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> encryptEcb)
         {
             Debug.Assert(source.Length % 8 == 0);
             Debug.Assert(source.Length >= 16);
@@ -530,7 +524,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             TState state,
-            KeyWrapEcbTransform<TState> decryptEcb)
+            Func<TState, ReadOnlySpan<byte>, Span<byte>, int> decryptEcb)
         {
             Span<byte> B = stackalloc byte[16];
             Span<byte> A = B.Slice(0, 8);

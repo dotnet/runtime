@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -28,7 +29,7 @@ namespace System.Text.Json.Serialization.Tests
             await Verify<NodeWithNodeProperty>();
             await Verify<NodeWithObjectProperty>();
 
-            async Task Verify<T>() where T : class, new()
+            async Task Verify<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>() where T : class, new()
             {
                 T root = new T();
                 SetNextProperty(typeof(T), root, root);
@@ -48,7 +49,7 @@ namespace System.Text.Json.Serialization.Tests
             await Verify<NodeWithNodeProperty>();
             await Verify<NodeWithObjectProperty>();
 
-            async Task Verify<T>() where T : class, new()
+            async Task Verify<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>() where T : class, new()
             {
                 var node = new T();
                 SetNextProperty(typeof(T), node, node);
@@ -77,7 +78,7 @@ namespace System.Text.Json.Serialization.Tests
             await Verify<ValueNodeWithIValueNodeProperty>();
             await Verify<ValueNodeWithObjectProperty>();
 
-            async Task Verify<T>() where T : new()
+            async Task Verify<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>() where T : new()
             {
                 object root = new T();
                 SetNextProperty(typeof(T), root, root);
@@ -107,7 +108,7 @@ namespace System.Text.Json.Serialization.Tests
             await Verify<ValueNodeWithIValueNodeProperty>();
             await Verify<ValueNodeWithObjectProperty>();
 
-            async Task Verify<T>() where T : new()
+            async Task Verify<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>() where T : new()
             {
                 object node = new T();
                 SetNextProperty(typeof(T), node, node);
@@ -125,7 +126,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(Dictionary<string, object>))]
         [InlineData(typeof(GenericIDictionaryWrapper<string, object>))]
-        public async Task IgnoreCycles_OnDictionary(Type typeToSerialize)
+        public async Task IgnoreCycles_OnDictionary([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type typeToSerialize)
         {
             var root = (IDictionary<string, object>)Activator.CreateInstance(typeToSerialize);
             root.Add("self", root);
@@ -172,7 +173,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(List<object>))]
         [InlineData(typeof(GenericIListWrapper<object>))]
-        public async Task IgnoreCycles_OnList(Type typeToSerialize)
+        public async Task IgnoreCycles_OnList([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type typeToSerialize)
         {
             var root = (IList<object>)Activator.CreateInstance(typeToSerialize);
             root.Add(root);
@@ -190,7 +191,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(GenericISetWrapper<object>))]
         [InlineData(typeof(GenericICollectionWrapper<object>))]
-        public async Task IgnoreCycles_OnCollections(Type typeToSerialize)
+        public async Task IgnoreCycles_OnCollections([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type typeToSerialize)
         {
             var root = (ICollection<object>)Activator.CreateInstance(typeToSerialize);
             root.Add(root);
@@ -531,12 +532,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         private const string Next = nameof(Next);
-        private void SetNextProperty(Type type, object obj, object value)
+        private void SetNextProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, object obj, object value)
         {
             type.GetProperty(Next).SetValue(obj, value);
         }
 
-        private object GetNextProperty(Type type, object obj)
+        private object GetNextProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, object obj)
         {
             return type.GetProperty(Next).GetValue(obj);
         }
