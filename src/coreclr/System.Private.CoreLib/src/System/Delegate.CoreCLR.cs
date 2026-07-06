@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -218,9 +219,6 @@ namespace System
             return (MethodInfo)_helperObject;
         }
 
-        public object? Target => GetTarget();
-
-        // V1 API.
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
@@ -256,7 +254,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -292,7 +289,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -327,7 +323,6 @@ namespace System
             return d;
         }
 
-        // V2 API.
         public static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -359,12 +354,8 @@ namespace System
             return d;
         }
 
-        //
-        // internal implementation details (FCALLS and utilities)
-        //
-
-        // V2 internal API.
-        internal static Delegate CreateDelegateNoSecurityCheck(Type type, object? target, RuntimeMethodHandle method)
+        internal static Delegate CreateDelegateForDynamicMethod(Type type, object? target, RuntimeMethodHandle method,
+            DynamicMethod dynamicMethod)
         {
             ArgumentNullException.ThrowIfNull(type);
 
@@ -377,10 +368,7 @@ namespace System
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            // Initialize the method...
             Delegate d = InternalAlloc(rtType);
-            // This is a new internal API added in Whidbey. Currently it's only
-            // used by the dynamic method code to generate a wrapper delegate.
             // Allow flexible binding options since the target method is
             // unambiguously provided to us.
 
@@ -389,6 +377,8 @@ namespace System
                                     RuntimeMethodHandle.GetDeclaringType(method.GetMethodInfo()),
                                     DelegateBindingFlags.RelaxedSignature))
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
+
+            d._helperObject = dynamicMethod;
             return d;
         }
 
@@ -608,11 +598,6 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
-
-        internal virtual object? GetTarget()
-        {
-            return (_methodPtrAux == IntPtr.Zero) ? _target : null;
-        }
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their

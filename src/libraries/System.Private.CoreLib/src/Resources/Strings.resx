@@ -537,6 +537,15 @@
   <data name="Arg_MustBeDecimal" xml:space="preserve">
     <value>Object must be of type Decimal.</value>
   </data>
+  <data name="Arg_MustBeDecimal32" xml:space="preserve">
+    <value>Object must be of type Decimal32.</value>
+  </data>
+  <data name="Arg_MustBeDecimal64" xml:space="preserve">
+    <value>Object must be of type Decimal64.</value>
+  </data>
+  <data name="Arg_MustBeDecimal128" xml:space="preserve">
+    <value>Object must be of type Decimal128.</value>
+  </data>
   <data name="Arg_MustBeDelegate" xml:space="preserve">
     <value>Type must derive from Delegate.</value>
   </data>
@@ -3067,6 +3076,9 @@
   </data>
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
+  </data>
+  <data name="NotSupported_StackTraceSupportDisabled" xml:space="preserve">
+    <value>Unable to retrieve stack trace information when StackTraceSupport feature switch is set to false.</value>
   </data>
   <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
     <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>

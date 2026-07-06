@@ -21,6 +21,7 @@ internal static partial class Interop
         internal static partial SafeJobHandle CreateJobObjectW(IntPtr lpJobAttributes, IntPtr lpName);
 
         internal const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
+        internal const uint JOB_OBJECT_LIMIT_BREAKAWAY_OK = 0x00000800;
 
         internal enum JOBOBJECTINFOCLASS
         {

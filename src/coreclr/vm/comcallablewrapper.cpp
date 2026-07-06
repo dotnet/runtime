@@ -1727,7 +1727,7 @@ void ComCallWrapper::Cleanup()
             // Check for an associated RCW
             RCWHolder pRCW(GetThread());
             pRCW.InitNoCheck(pSyncBlock);
-            NewRCWHolder pNewRCW = pRCW.GetRawRCWUnsafe();
+            NewRCWHolder pNewRCW{ pRCW.GetRawRCWUnsafe() };
 
             if (!pRCW.IsNull())
             {

@@ -463,7 +463,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                   pGenericMDescInRepMT->GetMemberDef(),
                                                   methodInst,
                                                   getWrappedCode,
-                                                  pGenericMDescInRepMT->IsAsyncVariantMethod());
+                                                  pGenericMDescInRepMT->GetMatchingAsyncVariantLookup());
 
         if (pNewMD == NULL)
         {
@@ -608,7 +608,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                          mdMethodDef methodDef,
                                                          Instantiation methodInst,
                                                          BOOL getWrappedCode,
-                                                         BOOL asyncThunk)
+                                                         AsyncVariantLookup variantLookup)
 {
     CONTRACT(InstantiatedMethodDesc *)
     {
@@ -644,7 +644,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                   FALSE /* not forceBoxedEntryPoint */,
                                                   methodInst,
                                                   getWrappedCode,
-                                                  asyncThunk);
+                                                  variantLookup);
 
     if (resultMD != NULL)
        RETURN((InstantiatedMethodDesc*) resultMD);
@@ -923,7 +923,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                TRUE /* forceBoxedEntryPoint */,
                                                Instantiation(),
                                                FALSE /* no inst param */,
-                                               pMDescInCanonMT->IsAsyncVariantMethod());
+                                               pMDescInCanonMT->GetMatchingAsyncVariantLookup());
 
             // If we didn't find it then create it...
             if (!pResultMD)
@@ -943,7 +943,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    TRUE,
                                                    Instantiation(),
                                                    FALSE,
-                                                   pMDescInCanonMT->IsAsyncVariantMethod());
+                                                   pMDescInCanonMT->GetMatchingAsyncVariantLookup());
                 if (pResultMD == NULL)
                 {
                     AllocMemTracker amt;
@@ -991,7 +991,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                TRUE, /* forceBoxedEntryPoint */
                                                methodInst,
                                                FALSE /* no inst param */,
-                                               pMDescInCanonMT->IsAsyncVariantMethod());
+                                               pMDescInCanonMT->GetMatchingAsyncVariantLookup());
 
             if (!pResultMD)
             {
@@ -1017,7 +1017,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
                 _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
                 _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
-                _ASSERTE(pNonUnboxingStub->IsAsyncVariantMethod() == pMDescInCanonMT->IsAsyncVariantMethod());
+                _ASSERTE(pNonUnboxingStub->GetMatchingAsyncVariantLookup() == pMDescInCanonMT->GetMatchingAsyncVariantLookup());
 
                 // Enter the critical section *after* we've found or created the non-unboxing instantiating stub (else we'd have a race,
                 // and its possible that the non-unboxing instantiating stub may be in a different loader module than pLoaderModule
@@ -1030,7 +1030,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    TRUE, /* forceBoxedEntryPoint */
                                                    methodInst,
                                                    FALSE /* no inst param */,
-                                                   pNonUnboxingStub->IsAsyncVariantMethod());
+                                                   pNonUnboxingStub->GetMatchingAsyncVariantLookup());
 
                 if (pResultMD == NULL)
                 {
@@ -1175,7 +1175,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                          methodDef,
                                                                          Instantiation(repInst, methodInst.GetNumArgs()),
                                                                          TRUE,
-                                                                         pMDescInCanonMT->IsAsyncVariantMethod());
+                                                                         asyncVariantLookup);
 
             // No - so create one.
             if (pInstMD == NULL)
@@ -1202,7 +1202,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                          methodDef,
                                                                          methodInst,
                                                                          FALSE,
-                                                                         pMDescInCanonMT->IsAsyncVariantMethod());
+                                                                         asyncVariantLookup);
 
             // No - so create one.  Go fetch the shared one first
             if (pInstMD == NULL)
@@ -1245,7 +1245,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                          methodDef,
                                                                          methodInst,
                                                                          FALSE,
-                                                                         pMDescInCanonMT->IsAsyncVariantMethod());
+                                                                         asyncVariantLookup);
 
             // No - so create one.
             if (pInstMD == NULL)

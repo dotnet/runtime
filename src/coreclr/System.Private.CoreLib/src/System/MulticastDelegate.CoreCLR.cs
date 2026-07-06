@@ -17,21 +17,17 @@ namespace System
     [ComVisible(true)]
     public abstract partial class MulticastDelegate : Delegate
     {
+        private object? _invocationList;
+
         // This is set under 3 circumstances
         // 1. Multicast delegate
         // 2. Unmanaged function pointer
         // 3. Open virtual delegate
-        private object? _invocationList; // Initialized by VM as needed
-        internal nint _invocationCount;
+        private nint _invocationCount;
 
-        internal bool IsUnmanagedFunctionPtr()
+        private bool IsUnmanagedFunctionPtr()
         {
             return _invocationCount == -1;
-        }
-
-        internal bool InvocationListLogicallyNull()
-        {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -63,9 +59,9 @@ namespace System
                 // there are 3 kind of delegate kinds that fall into this bucket
                 // 1- Multicast (_invocationList is Object[])
                 // 2- Unmanaged FntPtr (_invocationList == null)
-                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
+                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null)
 
-                if (InvocationListLogicallyNull())
+                if (HasSingleTarget)
                 {
                     if (IsUnmanagedFunctionPtr())
                     {
@@ -162,12 +158,6 @@ namespace System
         internal MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount)
         {
             return NewMulticastDelegate(invocationList, invocationCount, false);
-        }
-
-        internal void StoreDynamicMethod(MethodInfo dynamicMethod)
-        {
-            Debug.Assert(_invocationCount == 0);
-            _helperObject = dynamicMethod;
         }
 
         // This method will combine this delegate with the passed delegate
@@ -382,7 +372,7 @@ namespace System
             return del;
         }
 
-        internal new bool HasSingleTarget => _invocationList is not object[];
+        internal new bool HasSingleTarget => _invocationList is null;
 
         // Used by delegate invocation list enumerator
         internal object? /* Delegate? */ TryGetAt(int index)
@@ -418,29 +408,19 @@ namespace System
             }
         }
 
-        internal override object? GetTarget()
+        internal new object? Target
         {
-            if (_invocationCount != 0)
+            get
             {
-                // _invocationCount != 0 we are in one of these cases:
-                // - Multicast -> return the target of the last delegate in the list
-                // - unmanaged function pointer - return null
-                // - virtual open delegate - return null
-                if (InvocationListLogicallyNull())
+                Delegate instance = this;
+                if (_invocationList is object[] invocationList)
                 {
-                    // both open virtual and ftn pointer return null for the target
-                    return null;
+                    // Multicast -> return the target of the last delegate in the list
+                    int invocationCount = (int)_invocationCount;
+                    instance = (Delegate)invocationList[invocationCount - 1];
                 }
-                else
-                {
-                    if (_invocationList is object[] invocationList)
-                    {
-                        int invocationCount = (int)_invocationCount;
-                        return ((Delegate)invocationList[invocationCount - 1]).GetTarget();
-                    }
-                }
+                return instance._methodPtrAux == 0 ? instance._target : null;
             }
-            return base.GetTarget();
         }
 
         protected override MethodInfo GetMethodImpl()

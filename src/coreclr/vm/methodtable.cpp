@@ -7840,7 +7840,7 @@ namespace
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncVariantMethod() == pDefMD->IsAsyncVariantMethod())
+                && pMD->MatchesAsyncVariantLookup(pDefMD->GetMatchingAsyncVariantLookup()))
             {
                 return pMD;
             }
