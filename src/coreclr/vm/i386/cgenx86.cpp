@@ -594,7 +594,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        STANDARD_VM_CHECK;
         PRECONDITION(p != NULL && target != NULL);
     }
     CONTRACTL_END;
@@ -612,6 +612,8 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 
 PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(10);
 
     EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
@@ -621,6 +623,8 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
     *p++ = 0xB9; // mov ecx, XXXXXX
@@ -640,6 +644,8 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
 
 PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(12);
 
     SET_UNALIGNED_16(p, 0xD18B); // mov edx, ecx
@@ -658,6 +664,8 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 
 PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(1);
 
     *p++ = 0xC3; // ret
@@ -667,6 +675,8 @@ PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 
 PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(6);
 
     *p++ = 0xB8; // mov eax, XXXXXX
@@ -680,6 +690,8 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
 PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR arg, INT8 offset)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT((offset != 0) ? 9 : 6);
 
     *p++ = 0xA1; // mov eax, [XXXXXX]
@@ -703,6 +715,8 @@ EXTERN_C VOID DynamicHelperArgsStub();
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
 #ifdef UNIX_X86_ABI
     BEGIN_DYNAMIC_HELPER_EMIT(18);
 #else
@@ -747,6 +761,8 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
 #ifdef UNIX_X86_ABI
     BEGIN_DYNAMIC_HELPER_EMIT(23);
 #else

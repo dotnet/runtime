@@ -6294,7 +6294,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     CONTRACT(PCODE) {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(pLoaderAllocator != NULL || pMD != NULL);
         PRECONDITION(loAddr < hiAddr);
         POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
@@ -6382,6 +6382,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
                                         bool throwOnOutOfMemoryWithinRange)
 {
     CONTRACT(PCODE) {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(pLoaderAllocator != NULL);
