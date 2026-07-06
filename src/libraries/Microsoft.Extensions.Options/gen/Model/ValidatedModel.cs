@@ -9,5 +9,7 @@ namespace Microsoft.Extensions.Options.Generators
         string Name,
         string SimpleName,
         bool SelfValidates,
+        bool SelfValidatesAsync,
+        bool GenerateAsyncValidateMethod,
         List<ValidatedMember> MembersToValidate);
 }

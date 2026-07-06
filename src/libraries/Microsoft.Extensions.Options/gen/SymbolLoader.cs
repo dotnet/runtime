@@ -24,6 +24,8 @@ namespace Microsoft.Extensions.Options.Generators
         internal const string ValidateEnumeratedItemsAttribute = "Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute";
         internal const string GenericIEnumerableType = "System.Collections.Generic.IEnumerable`1";
         internal const string UnconditionalSuppressMessageAttributeType = "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute";
+        internal const string IAsyncValidatableObjectType = "System.ComponentModel.DataAnnotations.IAsyncValidatableObject";
+        internal const string IAsyncValidateOptionsType = "Microsoft.Extensions.Options.IAsyncValidateOptions`1";
 
         public static bool TryLoad(Compilation compilation, out SymbolHolder? symbolHolder)
         {
@@ -81,6 +83,11 @@ namespace Microsoft.Extensions.Options.Generators
             }
     #pragma warning restore S1067 // Expressions should not be too complex
 
+            // Optional async validation symbols (available in .NET 11+).
+            // When absent (e.g. downlevel targets), the generator degrades to emitting only the synchronous Validate method.
+            var iAsyncValidatableObjectSymbol = GetSymbol(IAsyncValidatableObjectType);
+            var asyncValidateOptionsSymbol = GetSymbol(IAsyncValidateOptionsType);
+
             symbolHolder = new(
                 optionsValidatorSymbol,
                 validationAttributeSymbol,
@@ -98,7 +105,9 @@ namespace Microsoft.Extensions.Options.Generators
                 typeSymbol,
                 timeSpanSymbol,
                 validateObjectMembersAttribute,
-                validateEnumeratedItemsAttribute);
+                validateEnumeratedItemsAttribute,
+                iAsyncValidatableObjectSymbol,
+                asyncValidateOptionsSymbol);
 
             return true;
         }

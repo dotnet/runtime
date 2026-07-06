@@ -97,14 +97,24 @@ namespace Microsoft.Extensions.Options.Generators
                                 continue;
                             }
 
+                            // Decide, per model, whether we additionally emit a ValidateAsync method. We do so when the
+                            // validator type explicitly implements IAsyncValidateOptions<T> for this specific model (and the
+                            // async symbols are available). A multi-model validator therefore only gets async validation for
+                            // the models it opted into. If the user already hand-wrote a matching ValidateAsync, we skip
+                            // generation to avoid emitting a duplicate member. The async requirement is propagated to any
+                            // synthesized child validators reached from this model.
+                            bool generateAsync = ValidatorImplementsAsyncInterfaceFor(validatorType, modelType)
+                                && !AlreadyImplementsValidateAsyncMethod(validatorType, modelType);
+
                             Location? modelTypeLocation = modelType.GetLocation();
                             Location lowerLocationInCompilation = modelTypeLocation is not null && modelTypeLocation.SourceTree is not null && _compilation.ContainsSyntaxTree(modelTypeLocation.SourceTree)
                                 ? modelTypeLocation
                                 : syntax.GetLocation();
 
-                            var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation, validatorType);
+                            var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation, validatorType, generateAsync);
                             bool selfValidate = ModelSelfValidates(modelType);
-                            if (membersToValidate.Count == 0 && !selfValidate)
+                            bool selfValidateAsync = generateAsync && ModelSelfValidatesAsync(modelType);
+                            if (membersToValidate.Count == 0 && !selfValidate && !selfValidateAsync)
                             {
                                 // this type lacks any eligible members
                                 Diag(DiagDescriptors.NoEligibleMembersFromValidator, syntax.GetLocation(), modelType.ToString(), validatorType.ToString());
@@ -115,6 +125,8 @@ namespace Microsoft.Extensions.Options.Generators
                                 GetFQN(modelType),
                                 modelType.Name,
                                 selfValidate,
+                                selfValidateAsync,
+                                generateAsync,
                                 membersToValidate));
                         }
 
@@ -204,6 +216,17 @@ namespace Microsoft.Extensions.Options.Generators
                     && m.Parameters[0].Type.SpecialType == SpecialType.System_String
                     && SymbolEqualityComparer.Default.Equals(m.Parameters[1].Type, modelType));
 
+        // Detects a user-supplied ValidateAsync(string, TModel, CancellationToken) overload so the generator doesn't emit
+        // a duplicate member for a validator that already provides its own asynchronous implementation.
+        private static bool AlreadyImplementsValidateAsyncMethod(INamespaceOrTypeSymbol validatorType, ISymbol modelType)
+            => validatorType
+                .GetMembers("ValidateAsync")
+                .Where(m => m.Kind == SymbolKind.Method)
+                .Select(m => (IMethodSymbol)m)
+                .Any(m => m.Parameters.Length == NumValidationMethodArgs + 1
+                    && m.Parameters[0].Type.SpecialType == SpecialType.System_String
+                    && SymbolEqualityComparer.Default.Equals(m.Parameters[1].Type, modelType));
+
         /// <summary>
         /// Checks whether the given type contain any unbound generic type arguments.
         /// </summary>
@@ -263,7 +286,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
-        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate, Location lowerLocationInCompilation, ITypeSymbol validatorType)
+        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate, Location lowerLocationInCompilation, ITypeSymbol validatorType, bool isAsync)
         {
             // make a list of the most derived members in the model type
 
@@ -297,7 +320,7 @@ namespace Microsoft.Extensions.Options.Generators
                     ? memberLocation
                     : lowerLocationInCompilation;
 
-                var memberInfo = GetMemberInfo(member, speculate, location, modelType, validatorType);
+                var memberInfo = GetMemberInfo(member, speculate, location, modelType, validatorType, isAsync);
                 if (memberInfo is not null)
                 {
                     if (member.DeclaredAccessibility != Accessibility.Public)
@@ -313,7 +336,7 @@ namespace Microsoft.Extensions.Options.Generators
             return membersToValidate;
         }
 
-        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location, ITypeSymbol modelType, ITypeSymbol validatorType)
+        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location, ITypeSymbol modelType, ITypeSymbol validatorType, bool isAsync)
         {
             ITypeSymbol memberType;
             switch (member)
@@ -346,6 +369,8 @@ namespace Microsoft.Extensions.Options.Generators
             var enumeratedMayBeNull = false;
             var transValidatorIsSynthetic = false;
             var enumerationValidatorIsSynthetic = false;
+            var transValidatorEmitsAsync = false;
+            var enumerationValidatorEmitsAsync = false;
 
             foreach (var attribute in member.GetAttributes().Where(a => a.AttributeClass is not null))
             {
@@ -399,7 +424,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (transValidatorTypeName == null)
                     {
                         transValidatorIsSynthetic = true;
-                        transValidatorTypeName = AddSynthesizedValidator(memberType, member, location, validatorType);
+                        transValidatorTypeName = AddSynthesizedValidator(memberType, member, location, validatorType, isAsync, out transValidatorEmitsAsync);
                     }
 
                     // pop the stack
@@ -462,7 +487,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (enumerationValidatorTypeName == null)
                     {
                         enumerationValidatorIsSynthetic = true;
-                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member, location, validatorType);
+                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member, location, validatorType, isAsync, out enumerationValidatorEmitsAsync);
                     }
 
                     // pop the stack
@@ -551,7 +576,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 if (!HasOpenGenerics(memberType, out var genericType))
                 {
-                    var membersToValidate = GetMembersToValidate(memberType, false, location, validatorType);
+                    var membersToValidate = GetMembersToValidate(memberType, false, location, validatorType, isAsync);
                     if (membersToValidate.Count > 0)
                     {
                         Diag(DiagDescriptors.PotentiallyMissingTransitiveValidation, location, memberType.Name, member.Name);
@@ -567,7 +592,7 @@ namespace Microsoft.Extensions.Options.Generators
                 {
                     if (!HasOpenGenerics(enumeratedType, out var genericType))
                     {
-                        var membersToValidate = GetMembersToValidate(enumeratedType, false, location, validatorType);
+                        var membersToValidate = GetMembersToValidate(enumeratedType, false, location, validatorType, isAsync);
                         if (membersToValidate.Count > 0)
                         {
                             Diag(DiagDescriptors.PotentiallyMissingEnumerableValidation, location, enumeratedType.Name, member.Name);
@@ -589,7 +614,9 @@ namespace Microsoft.Extensions.Options.Generators
                     memberType.IsValueType,
                     enumeratedIsNullable,
                     enumeratedIsValueType,
-                    enumeratedMayBeNull);
+                    enumeratedMayBeNull,
+                    transValidatorEmitsAsync,
+                    enumerationValidatorEmitsAsync);
             }
 
             return null;
@@ -681,8 +708,9 @@ namespace Microsoft.Extensions.Options.Generators
             }
         }
 
-        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member, Location location, ITypeSymbol validatorType)
+        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member, Location location, ITypeSymbol validatorType, bool isAsync, out bool emitsAsync)
         {
+            emitsAsync = false;
             var mt = modelType.WithNullableAnnotation(NullableAnnotation.None);
             if (mt.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
             {
@@ -692,12 +720,17 @@ namespace Microsoft.Extensions.Options.Generators
 
             if (_synthesizedValidators.TryGetValue(mt, out var validator))
             {
+                // A synthesized validator is cached by model type only, so a validator synthesized for a synchronous
+                // parent may be reused by an asynchronous one. Report the capability of the cached validator (rather than
+                // the current request) so the caller only awaits a ValidateAsync method that will actually be emitted.
+                emitsAsync = validator.ModelsToValidate.Count > 0 && validator.ModelsToValidate[0].GenerateAsyncValidateMethod;
                 return "global::" + validator.Namespace + "." + validator.Name;
             }
 
             bool selfValidate = ModelSelfValidates(mt);
-            var membersToValidate = GetMembersToValidate(mt, true, location, validatorType);
-            if (membersToValidate.Count == 0 && !selfValidate)
+            bool selfValidateAsync = isAsync && ModelSelfValidatesAsync(mt);
+            var membersToValidate = GetMembersToValidate(mt, true, location, validatorType, isAsync);
+            if (membersToValidate.Count == 0 && !selfValidate && !selfValidateAsync)
             {
                 // this type lacks any eligible members
                 Diag(DiagDescriptors.NoEligibleMember, location, mt.ToString(), member.ToString());
@@ -708,6 +741,8 @@ namespace Microsoft.Extensions.Options.Generators
                 GetFQN(mt),
                 mt.Name,
                 selfValidate,
+                selfValidateAsync,
+                isAsync,
                 membersToValidate);
 
             var validatorTypeName = "__" + mt.Name + "Validator__";
@@ -722,6 +757,7 @@ namespace Microsoft.Extensions.Options.Generators
                 new[] { model });
 
             _synthesizedValidators[mt] = result;
+            emitsAsync = isAsync;
             return "global::" + (result.Namespace.Length > 0 ? result.Namespace + "." + result.Name : result.Name);
         }
 
@@ -736,6 +772,43 @@ namespace Microsoft.Extensions.Options.Generators
             foreach (var implementingInterface in modelType.AllInterfaces)
             {
                 if (SymbolEqualityComparer.Default.Equals(implementingInterface.OriginalDefinition, _symbolHolder.IValidatableObjectSymbol))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool ModelSelfValidatesAsync(ITypeSymbol modelType)
+        {
+            if (_symbolHolder.IAsyncValidatableObjectSymbol is null)
+            {
+                return false;
+            }
+
+            foreach (var implementingInterface in modelType.AllInterfaces)
+            {
+                if (SymbolEqualityComparer.Default.Equals(implementingInterface.OriginalDefinition, _symbolHolder.IAsyncValidatableObjectSymbol))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool ValidatorImplementsAsyncInterfaceFor(ITypeSymbol validatorType, ITypeSymbol modelType)
+        {
+            if (_symbolHolder.AsyncValidateOptionsSymbol is null)
+            {
+                return false;
+            }
+
+            foreach (var implementingInterface in validatorType.AllInterfaces)
+            {
+                if (SymbolEqualityComparer.Default.Equals(implementingInterface.OriginalDefinition, _symbolHolder.AsyncValidateOptionsSymbol)
+                    && SymbolEqualityComparer.Default.Equals(implementingInterface.TypeArguments.First(), modelType))
                 {
                     return true;
                 }
