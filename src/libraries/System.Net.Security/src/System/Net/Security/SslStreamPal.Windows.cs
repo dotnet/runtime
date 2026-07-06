@@ -734,7 +734,7 @@ namespace System.Net.Security
             return protocolFlags;
         }
 
-        private static Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
+        private static unsafe Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
             Interop.SspiCli.SCHANNEL_CRED.Flags flags,
             int protocols, EncryptionPolicy policy)
         {

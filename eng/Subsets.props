@@ -610,10 +610,6 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;" Category="mono" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+mono.workloads+'))">
-    <ProjectToBuild Include="$(WorkloadsProjectRoot)\workloads.csproj" Category="mono" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmworkload+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)\wasm\workloads.proj" Category="mono" />
   </ItemGroup>
