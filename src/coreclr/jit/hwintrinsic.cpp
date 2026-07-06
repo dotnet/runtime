@@ -3993,7 +3993,12 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(varTypeIsFloating(simdBaseType));
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+#elif defined(TARGET_ARM64)
             impSpillSideEffect(true,
                                stackState.esStackDepth - 3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
 
