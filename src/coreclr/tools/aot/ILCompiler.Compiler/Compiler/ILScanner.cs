@@ -320,19 +320,6 @@ namespace ILCompiler
             {
                 if (!_vtableSlices.TryGetValue(type, out MethodDesc[] slots))
                 {
-                    TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if ((canonicalType != type) && _vtableSlices.TryGetValue(canonicalType, out slots))
-                    {
-                        MethodDesc[] instantiatedSlots = new MethodDesc[slots.Length];
-                        for (int i = 0; i < slots.Length; i++)
-                        {
-                            instantiatedSlots[i] = type.FindMethodOnTypeWithMatchingTypicalMethod(slots[i]);
-                            Debug.Assert(instantiatedSlots[i] != null);
-                        }
-
-                        return new LazilyBuiltVTableSliceNode(type, instantiatedSlots);
-                    }
-
                     // If we couldn't find the vtable slice information for this type, it's because the scanner
                     // didn't correctly predict what will be needed.
                     // To troubleshoot, compare the dependency graph of the scanner and the compiler.
