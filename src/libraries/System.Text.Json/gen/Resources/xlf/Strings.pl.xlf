@@ -52,16 +52,6 @@
         <target state="translated">Atrybut „JsonDerivedTypeAttribute” nie jest obsługiwany w elemecie „JsonSourceGenerationMode.Serialization”.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
-        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="translated">Składowa "{0}. {1}" jest adnotowana za pomocą atrybutu JsonIncludeAttribute, ale nie jest widoczna dla generatora źródła.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
-        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="translated">Niedostępne właściwości adnotowane za pomocą atrybutu JsonIncludeAttribute nie są obsługiwane w trybie generowania źródła.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">Typ „{0}” „JsonConverterAttribute” określony w przypadku składowej „{1}” nie jest typem konwertera lub nie zawiera dostępnego konstruktora bez parametrów.</target>
