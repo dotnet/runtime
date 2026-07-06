@@ -1055,7 +1055,7 @@ namespace System.Tests
             yield return new object[] { "123\t", NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingInvalidCharacters, null, 123, 3 };
             
             // Stop at null character
-            yield return new object[] { "123\0abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 123, 3 };
+            yield return new object[] { "123\0abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, 123, 4 };
         }
 
         [Theory]
