@@ -1023,7 +1023,7 @@ namespace ILCompiler
                 continuation.GetKnownField("State"u8),
                 continuation.GetKnownField("Flags"u8),
             ];
-            // The signature types for the TransparentAwaitWithResult overloads used by
+            // The signature types for the TransparentAwait overloads used by
             // CorInfoImpl.getAwaitReturnCall (kept in sync with that method).
             TypeDesc voidType = TypeSystemContext.GetWellKnownType(WellKnownType.Void);
             TypeDesc taskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
@@ -1049,10 +1049,10 @@ namespace ILCompiler
 
                 // For CorInfoImpl.getAwaitReturnCall. The JIT synthesizes calls to these overloads, so they
                 // have no IL token in the caller and their manifest tokens must be pre-seeded here.
-                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [taskType])),
-                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
-                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
-                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [taskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);

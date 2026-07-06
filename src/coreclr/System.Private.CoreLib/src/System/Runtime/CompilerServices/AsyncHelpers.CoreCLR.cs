@@ -1019,7 +1019,7 @@ namespace System.Runtime.CompilerServices
                         {
                             SetContinuationState(asyncDispatcherInfo.NextContinuation);
 
-							contexts.Pop(awaitState.CurrentThread!);
+                            contexts.Pop(awaitState.CurrentThread!);
                             awaitState.Pop();
                             refDispatcherInfo = asyncDispatcherInfo.Next;
 
