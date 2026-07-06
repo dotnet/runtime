@@ -28,14 +28,14 @@ internal sealed class GCInfoX86_1 : IGCInfo
     IGCInfoHandle IGCInfo.DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
         => new GcInfoDecoder<InterpreterGCInfoTraits>(_target, gcInfoAddress, gcVersion);
 
+    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetHeader();
+
     uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetCodeLength();
 
     uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetCalleePoppedArgumentsSize();
-
-    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
-        => AssertCorrectHandle(gcInfoHandle).GetHeader();
 
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetInterruptibleRanges();
