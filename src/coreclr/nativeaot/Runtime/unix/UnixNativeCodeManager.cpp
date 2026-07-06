@@ -1072,6 +1072,9 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 #define RET_BITS 0xD65F0000
 #define RET_MASK 0xFFFFFC1F
 
+#define AUTIASP_INSTR 0xD50323BF
+#define AUTIBSP_INSTR 0xD50323FF
+
 // ldr with unsigned immediate
 // 1x11 1001 x1xx xxxx xxxx xxxx xxxx xxxx
 #define LDR_BITS1 0xB9400000
@@ -1132,6 +1135,13 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
     {
         uint32_t instr = *pInstr;
+
+        // Pointer authentication instructions are part of the epilog. Keep scanning
+        // backwards to find the LR restore or SP adjustment that precedes them.
+        if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
+        {
+            continue;
+        }
 
         // check for Branches, Exception Generating and System instruction group.
         // If we see such instruction before seeing FP or LR restored, we are not in an epilog.
