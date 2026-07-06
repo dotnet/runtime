@@ -544,8 +544,13 @@ namespace System.Formats.Tar.Tests
 
             if (OperatingSystem.IsWindows())
             {
-                // Windows only creates file symlinks and trying to process a directory symlink will throw UnauthorizedAccessException instead of IOException
-                Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+                // Windows only creates file symlinks. Processing the chained directory symlink usually
+                // surfaces as UnauthorizedAccessException, but depending on the order in which the entries
+                // are extracted the colliding directory creation can instead surface as IOException
+                // ("a file or directory with the same name already exists"). Either way the traversal is
+                // rejected before anything escapes the destination, which the assertions below verify.
+                Exception ex = Assert.ThrowsAny<Exception>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+                Assert.True(ex is UnauthorizedAccessException or IOException, $"Unexpected exception type: {ex.GetType()}");
             }
             else
             {
