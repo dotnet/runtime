@@ -736,58 +736,34 @@ namespace System.Globalization
             return source.Length;
         }
 
+        // The only BMP scalars whose simple invariant/NLS lower mapping moves them out of their ordinal
+        // upper-casing class. Each one is its own ordinal upper-casing (ToUpperOrdinal(c) == c) yet lowers to a
+        // different letter, so simple lowering would break OrdinalIgnoreCase consistency for them. The ICU ordinal
+        // table already keeps them unchanged; invariant and NLS lowering do not, so they must be restored.
+        // U+03F4 GREEK CAPITAL THETA SYMBOL, U+1E9E LATIN CAPITAL LETTER SHARP S, U+2126 OHM SIGN,
+        // U+212A KELVIN SIGN, U+212B ANGSTROM SIGN. The ToLowerOrdinal_EveryBmpChar tests would fail if this set
+        // ever became incomplete.
+        private static readonly SearchValues<char> s_ordinalLowerCasingClassRestoreChars =
+            SearchValues.Create("\u03F4\u1E9E\u2126\u212A\u212B");
+
         // Ordinal lower casing must never move a character out of its ordinal upper-casing class, otherwise it
-        // would stop being consistent with OrdinalIgnoreCase (for example the Kelvin, Ohm and Angstrom signs). The
-        // ICU ordinal table encodes this directly, but invariant and NLS simple lowering do not, so restore any
-        // BMP character whose simple lower mapping changed its ordinal upper-casing form.
+        // would stop being consistent with OrdinalIgnoreCase (for example the Kelvin, Ohm and Angstrom signs).
+        // Only the fixed set above is ever affected, so skip the pass entirely unless one of them is present.
         private static void PreserveOrdinalLowerCasingClass(ReadOnlySpan<char> source, Span<char> destination)
         {
-            // Upper-case the original text and the lowered result once over the whole span instead of calling
-            // TextInfo.ToUpperOrdinal per character. Per-character upper-casing is expensive under NLS, where each
-            // non-ASCII character would otherwise route through a separate invariant ChangeCase call.
-            const int StackAllocThreshold = 256;
-
-            char[]? sourceUpperRented = null;
-            char[]? loweredUpperRented = null;
-
-            Span<char> sourceUpper = source.Length <= StackAllocThreshold
-                ? stackalloc char[StackAllocThreshold]
-                : (sourceUpperRented = ArrayPool<char>.Shared.Rent(source.Length));
-            sourceUpper = sourceUpper.Slice(0, source.Length);
-
-            Span<char> loweredUpper = source.Length <= StackAllocThreshold
-                ? stackalloc char[StackAllocThreshold]
-                : (loweredUpperRented = ArrayPool<char>.Shared.Rent(source.Length));
-            loweredUpper = loweredUpper.Slice(0, source.Length);
-
-            ToUpperOrdinal(source, sourceUpper);
-            ToUpperOrdinal(destination.Slice(0, source.Length), loweredUpper);
-
-            for (int i = 0; i < source.Length; i++)
+            int i = source.IndexOfAny(s_ordinalLowerCasingClassRestoreChars);
+            if (i < 0)
             {
-                char c = source[i];
-
-                // The special characters are all single BMP scalars, so surrogate pairs never need adjustment.
-                if (char.IsHighSurrogate(c) && i + 1 < source.Length && char.IsLowSurrogate(source[i + 1]))
-                {
-                    i++;
-                    continue;
-                }
-
-                if (destination[i] != c && !char.IsAscii(c) && sourceUpper[i] != loweredUpper[i])
-                {
-                    destination[i] = c;
-                }
+                return;
             }
 
-            if (sourceUpperRented is not null)
+            // Restore each affected character to its original form; its ordinal lower casing is itself.
+            for (; i < source.Length; i++)
             {
-                ArrayPool<char>.Shared.Return(sourceUpperRented);
-            }
-
-            if (loweredUpperRented is not null)
-            {
-                ArrayPool<char>.Shared.Return(loweredUpperRented);
+                if (s_ordinalLowerCasingClassRestoreChars.Contains(source[i]))
+                {
+                    destination[i] = source[i];
+                }
             }
         }
     }
