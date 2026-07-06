@@ -792,10 +792,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Heuristic: don't forward substitute a whole read of a promoted SIMD local.
     // Forward substitution can place the use in a context where a whole-local use
     // is not supported (e.g. under a GT_FIELD_LIST), which would then require
-    // marking the local do-not-enregister, undoing its promotion. Conservatively
-    // skip these locals to avoid that. (Whole-local uses that do end up under a
-    // GT_FIELD_LIST are handled by DNER in fgMorphSmpOp, mirroring fgMorphHWIntrinsic.)
-    //
+    // marking the local do-not-enregister, undoing its independent promotion.
+    // Conservatively skip these locals to avoid that. (Whole-local uses that do
+    // end up under a GT_FIELD_LIST are handled by do-not-enregister marking in
+    // fgMorphTree, mirroring fgMorphHWIntrinsic.)
     if (fwdSubNode->OperIs(GT_LCL_VAR) && varTypeIsSIMD(fwdSubNode))
     {
         LclVarDsc* const fwdSubVarDsc = lvaGetDesc(fwdSubNode->AsLclVar());
