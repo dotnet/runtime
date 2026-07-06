@@ -470,3 +470,5 @@ DispatchGenericWitnessCall(methodof(Program::Bar<>), null, [u]);
 ```
 
 For fully instantiated code, the JIT can also try to fold `TryMatchType`. For example `Foo<List<int>>()` can fold the match to true, bind `U = int`, and import the call like a normal `Bar<int>()` call.
+
+There're also areas like using `WitnessParam` as the type of local variables (just like how we are using `GenericParam` as the type of loval variables), which are not explored yet. 
