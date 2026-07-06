@@ -291,6 +291,7 @@ static const Entry s_QCall[] =
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
+    DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -320,7 +321,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(Monitor_GetOrCreateLockObject)
+    DllImportEntry(ObjectHeader_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832

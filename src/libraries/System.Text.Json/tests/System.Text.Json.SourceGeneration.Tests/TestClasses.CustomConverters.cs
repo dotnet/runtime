@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
@@ -336,7 +337,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 return default;
             }
 
-            return new(JsonSerializer.Deserialize<T>(ref reader, options)!);
+            return new(JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<T>())!);
         }
 
         public override void Write(Utf8JsonWriter writer, Option<T> value, JsonSerializerOptions options)
@@ -347,7 +348,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 return;
             }
 
-            JsonSerializer.Serialize(writer, value.Value, options);
+            JsonSerializer.Serialize(writer, value.Value, options.GetTypeInfo<T>());
         }
     }
 
@@ -380,13 +381,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         public override GenericWrapper<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            T value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+            T value = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<T>())!;
             return new GenericWrapper<T>(value);
         }
 
         public override void Write(Utf8JsonWriter writer, GenericWrapper<T> value, JsonSerializerOptions options)
         {
-            JsonSerializer.Serialize(writer, value.WrappedValue, options);
+            JsonSerializer.Serialize(writer, value.WrappedValue, options.GetTypeInfo<T>());
         }
     }
 
@@ -430,9 +431,9 @@ namespace System.Text.Json.SourceGeneration.Tests
                     reader.Read();
 
                     if (propertyName == "Value1")
-                        result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                        result.Value1 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<T>())!;
                     else if (propertyName == "Value2")
-                        result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options)!;
+                        result.Value2 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<U>())!;
                 }
 
                 return result;
@@ -442,9 +443,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("Value1");
-                JsonSerializer.Serialize(writer, value.Value1, options);
+                JsonSerializer.Serialize(writer, value.Value1, options.GetTypeInfo<T>());
                 writer.WritePropertyName("Value2");
-                JsonSerializer.Serialize(writer, value.Value2, options);
+                JsonSerializer.Serialize(writer, value.Value2, options.GetTypeInfo<U>());
                 writer.WriteEndObject();
             }
         }
@@ -477,7 +478,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 reader.Read();
 
                 if (propertyName == "Value")
-                    result.Value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                    result.Value = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<T>())!;
             }
 
             return result;
@@ -487,7 +488,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             writer.WriteStartObject();
             writer.WritePropertyName("Value");
-            JsonSerializer.Serialize(writer, value.Value, options);
+            JsonSerializer.Serialize(writer, value.Value, options.GetTypeInfo<T>());
             writer.WriteEndObject();
         }
     }
@@ -524,9 +525,9 @@ namespace System.Text.Json.SourceGeneration.Tests
                         reader.Read();
 
                         if (propertyName == "Value1")
-                            result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                            result.Value1 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<T>())!;
                         else if (propertyName == "Value2")
-                            result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options)!;
+                            result.Value2 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<U>())!;
                     }
 
                     return result;
@@ -536,9 +537,9 @@ namespace System.Text.Json.SourceGeneration.Tests
                 {
                     writer.WriteStartObject();
                     writer.WritePropertyName("Value1");
-                    JsonSerializer.Serialize(writer, value.Value1, options);
+                    JsonSerializer.Serialize(writer, value.Value1, options.GetTypeInfo<T>());
                     writer.WritePropertyName("Value2");
-                    JsonSerializer.Serialize(writer, value.Value2, options);
+                    JsonSerializer.Serialize(writer, value.Value2, options.GetTypeInfo<U>());
                     writer.WriteEndObject();
                 }
             }
@@ -581,11 +582,11 @@ namespace System.Text.Json.SourceGeneration.Tests
 
                         switch (propertyName)
                         {
-                            case "Value1": result.Value1 = JsonSerializer.Deserialize<A>(ref reader, options)!; break;
-                            case "Value2": result.Value2 = JsonSerializer.Deserialize<B>(ref reader, options)!; break;
-                            case "Value3": result.Value3 = JsonSerializer.Deserialize<C>(ref reader, options)!; break;
-                            case "Value4": result.Value4 = JsonSerializer.Deserialize<D>(ref reader, options)!; break;
-                            case "Value5": result.Value5 = JsonSerializer.Deserialize<E>(ref reader, options)!; break;
+                            case "Value1": result.Value1 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<A>())!; break;
+                            case "Value2": result.Value2 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<B>())!; break;
+                            case "Value3": result.Value3 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<C>())!; break;
+                            case "Value4": result.Value4 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<D>())!; break;
+                            case "Value5": result.Value5 = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<E>())!; break;
                         }
                     }
 
@@ -596,15 +597,15 @@ namespace System.Text.Json.SourceGeneration.Tests
                 {
                     writer.WriteStartObject();
                     writer.WritePropertyName("Value1");
-                    JsonSerializer.Serialize(writer, value.Value1, options);
+                    JsonSerializer.Serialize(writer, value.Value1, options.GetTypeInfo<A>());
                     writer.WritePropertyName("Value2");
-                    JsonSerializer.Serialize(writer, value.Value2, options);
+                    JsonSerializer.Serialize(writer, value.Value2, options.GetTypeInfo<B>());
                     writer.WritePropertyName("Value3");
-                    JsonSerializer.Serialize(writer, value.Value3, options);
+                    JsonSerializer.Serialize(writer, value.Value3, options.GetTypeInfo<C>());
                     writer.WritePropertyName("Value4");
-                    JsonSerializer.Serialize(writer, value.Value4, options);
+                    JsonSerializer.Serialize(writer, value.Value4, options.GetTypeInfo<D>());
                     writer.WritePropertyName("Value5");
-                    JsonSerializer.Serialize(writer, value.Value5, options);
+                    JsonSerializer.Serialize(writer, value.Value5, options.GetTypeInfo<E>());
                     writer.WriteEndObject();
                 }
             }
@@ -640,7 +641,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                     reader.Read();
 
                     if (propertyName == "Value")
-                        result.Value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                        result.Value = JsonSerializer.Deserialize(ref reader, options.GetTypeInfo<T>())!;
                 }
 
                 return result;
@@ -650,7 +651,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("Value");
-                JsonSerializer.Serialize(writer, value.Value, options);
+                JsonSerializer.Serialize(writer, value.Value, options.GetTypeInfo<T>());
                 writer.WriteEndObject();
             }
         }

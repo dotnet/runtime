@@ -11362,6 +11362,129 @@ namespace System.Net
 }
 namespace System.Numerics
 {
+    public readonly struct Decimal32
+        : System.IComparable,
+          System.IComparable<Decimal32>,
+          System.IEquatable<Decimal32>,
+          System.ISpanParsable<Decimal32>,
+          System.Numerics.IMinMaxValue<Decimal32>
+    {
+        public int CompareTo(object? value) { throw null; }
+        public int CompareTo(Decimal32 other) { throw null; }
+        public bool Equals(Decimal32 other) { throw null; }
+
+        public static Decimal32 Parse(string s) { throw null; }
+        public static Decimal32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        public static Decimal32 Parse(string s, IFormatProvider? provider) { throw null; }
+        public static Decimal32 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, IFormatProvider? provider = null) { throw null; }
+        public static Decimal32 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+
+        public static Decimal32 NaN { get { throw null; } }
+        public static Decimal32 NegativeInfinity { get { throw null; } }
+        public static Decimal32 PositiveInfinity { get { throw null; } }
+        public static Decimal32 NegativeZero { get { throw null; } }
+        public static Decimal32 Zero { get { throw null; } }
+        public static Decimal32 MaxValue { get { throw null; } }
+        public static Decimal32 MinValue { get { throw null; } }
+
+        public static Decimal32 Epsilon { get { throw null; } }
+
+        public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat)] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat)] string? format, System.IFormatProvider? provider) { throw null; }
+
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, out Decimal32 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal32 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal32 result) { throw null; }
+    }
+
+    public readonly struct Decimal64
+        : System.IComparable,
+          System.IComparable<Decimal64>,
+          System.IEquatable<Decimal64>,
+          System.ISpanParsable<Decimal64>,
+          System.Numerics.IMinMaxValue<Decimal64>
+    {
+        public int CompareTo(object? value) { throw null; }
+        public int CompareTo(Decimal64 other) { throw null; }
+        public bool Equals(Decimal64 other) { throw null; }
+
+        public static Decimal64 Parse(string s) { throw null; }
+        public static Decimal64 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static Decimal64 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        public static Decimal64 Parse(string s, IFormatProvider? provider) { throw null; }
+        public static Decimal64 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, IFormatProvider? provider = null) { throw null; }
+        public static Decimal64 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+
+        public static Decimal64 NaN { get { throw null; } }
+        public static Decimal64 NegativeInfinity { get { throw null; } }
+        public static Decimal64 PositiveInfinity { get { throw null; } }
+        public static Decimal64 NegativeZero { get { throw null; } }
+        public static Decimal64 Zero { get { throw null; } }
+        public static Decimal64 MaxValue { get { throw null; } }
+        public static Decimal64 MinValue { get { throw null; } }
+
+        public static Decimal64 Epsilon { get { throw null; } }
+
+        public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat)] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat)] string? format, System.IFormatProvider? provider) { throw null; }
+
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, out Decimal64 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal64 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
+    }
+
+    public readonly struct Decimal128
+        : System.IComparable,
+          System.IComparable<Decimal128>,
+          System.IEquatable<Decimal128>,
+          System.ISpanParsable<Decimal128>,
+          System.Numerics.IMinMaxValue<Decimal128>
+    {
+        public int CompareTo(object? value) { throw null; }
+        public int CompareTo(Decimal128 other) { throw null; }
+        public bool Equals(Decimal128 other) { throw null; }
+
+        public static Decimal128 Parse(string s) { throw null; }
+        public static Decimal128 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static Decimal128 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        public static Decimal128 Parse(string s, IFormatProvider? provider) { throw null; }
+        public static Decimal128 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, IFormatProvider? provider = null) { throw null; }
+        public static Decimal128 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+
+        public static Decimal128 NaN { get { throw null; } }
+        public static Decimal128 NegativeInfinity { get { throw null; } }
+        public static Decimal128 PositiveInfinity { get { throw null; } }
+        public static Decimal128 NegativeZero { get { throw null; } }
+        public static Decimal128 Zero { get { throw null; } }
+        public static Decimal128 MaxValue { get { throw null; } }
+        public static Decimal128 MinValue { get { throw null; } }
+
+        public static Decimal128 Epsilon { get { throw null; } }
+
+        public override string ToString() { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat)] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat)] string? format, System.IFormatProvider? provider) { throw null; }
+
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, out Decimal128 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal128 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal128 result) { throw null; }
+    }
+
     public readonly partial struct BFloat16 : System.IComparable, System.IComparable<System.Numerics.BFloat16>, System.IEquatable<System.Numerics.BFloat16>, System.IFormattable, System.IParsable<System.Numerics.BFloat16>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.BFloat16>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.BFloat16>, System.Numerics.IAdditionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IBinaryFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IBinaryNumber<System.Numerics.BFloat16>, System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IComparisonOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IDecrementOperators<System.Numerics.BFloat16>, System.Numerics.IDivisionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IEqualityOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IExponentialFunctions<System.Numerics.BFloat16>, System.Numerics.IFloatingPoint<System.Numerics.BFloat16>, System.Numerics.IFloatingPointConstants<System.Numerics.BFloat16>, System.Numerics.IFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IHyperbolicFunctions<System.Numerics.BFloat16>, System.Numerics.IIncrementOperators<System.Numerics.BFloat16>, System.Numerics.ILogarithmicFunctions<System.Numerics.BFloat16>, System.Numerics.IMinMaxValue<System.Numerics.BFloat16>, System.Numerics.IModulusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplicativeIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplyOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.INumber<System.Numerics.BFloat16>, System.Numerics.INumberBase<System.Numerics.BFloat16>, System.Numerics.IPowerFunctions<System.Numerics.BFloat16>, System.Numerics.IRootFunctions<System.Numerics.BFloat16>, System.Numerics.ISignedNumber<System.Numerics.BFloat16>, System.Numerics.ISubtractionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.ITrigonometricFunctions<System.Numerics.BFloat16>, System.Numerics.IUnaryNegationOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IUnaryPlusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>
     {
         private readonly int _dummyPrimitive;
@@ -11601,6 +11724,7 @@ namespace System.Numerics
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Numerics.BFloat16 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Numerics.BFloat16 result) { throw null; }
     }
+
     public static partial class BitOperations
     {
         [System.CLSCompliantAttribute(false)]
@@ -16109,7 +16233,7 @@ namespace System.Text
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         FormKD = 6,
     }
-    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Text.Rune>
+    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.IFormattable, System.IParsable<System.Text.Rune>, System.ISpanFormattable, System.ISpanParsable<System.Text.Rune>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Text.Rune>
     {
         private readonly int _dummyPrimitive;
         public Rune(char ch) { throw null; }
@@ -16164,7 +16288,11 @@ namespace System.Text
         public static bool operator <=(System.Text.Rune left, System.Text.Rune right) { throw null; }
         int System.IComparable.CompareTo(object? obj) { throw null; }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        static System.Text.Rune System.IParsable<System.Text.Rune>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<System.Text.Rune>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Text.Rune result) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static System.Text.Rune System.ISpanParsable<System.Text.Rune>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<System.Text.Rune>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Text.Rune result) { throw null; }
         bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         static System.Text.Rune System.IUtf8SpanParsable<System.Text.Rune>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         static bool System.IUtf8SpanParsable<System.Text.Rune>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Text.Rune result) { throw null; }

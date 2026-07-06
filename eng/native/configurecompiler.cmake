@@ -759,6 +759,9 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
   elseif(NOT LD_SOLARIS)
     add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+    if (NOT LD_GNU AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+      add_linker_flag(-Wl,--icf=all RELEASE RELWITHDEBINFO)
+    endif()
   endif()
 
   # Specify the minimum supported version of macOS
@@ -1133,7 +1136,14 @@ if (CLR_CMAKE_HOST_WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-elseif (NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
+elseif (CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
+    # The wasm toolchains (emscripten / wasi-sdk) use clang, which can assemble
+    # preprocessed (.S) wasm assembly files directly.
+    set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+
+    enable_language(ASM)
+
+else()
     # This is a workaround for upstream issue: https://gitlab.kitware.com/cmake/cmake/-/issues/22995.
     #
     # In Clang.cmake, the decision to use single or double hyphen for target and gcc-toolchain
