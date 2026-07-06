@@ -518,8 +518,25 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a reference to the first element of the String. If the string is null, an access will throw a NullReferenceException.
+        /// Returns a read-only reference to the first element of the String. If the string is null, an access will throw a NullReferenceException.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="string"/> type is immutable: the value of a <see cref="string"/> object
+        /// cannot be changed after the object is created. The reference returned by this method is
+        /// <c>ref readonly</c> and must only be used for reading characters; writing to
+        /// the referenced memory is not permitted and results in undefined behavior, including
+        /// potential corruption of the managed heap.
+        /// </para>
+        /// <para>
+        /// When using this method (or the equivalent C++/CLI <c>PtrToStringChars</c> function) to
+        /// obtain a pinned interior pointer to the string's character data, the resulting pointer
+        /// must be treated as read-only. In C++/CLI, <c>PtrToStringChars</c> exposes the pointer
+        /// as <c>const wchar_t*</c> to reflect this constraint. Casting away <c>const</c>
+        /// and writing through the pointer will silently corrupt the CLR heap and may cause
+        /// crashes or incorrect behavior at an unrelated location later in program execution.
+        /// </para>
+        /// </remarks>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [NonVersionable]
         public ref readonly char GetPinnableReference() => ref _firstChar;
