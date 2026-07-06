@@ -498,10 +498,13 @@ namespace Internal.JitInterface
 
         private uint getAddressAlignment(void* address)
         {
-            // In R2R, relocatable direct loads only target pointer-aligned data (RVA blobs and
-            // indirection cells); statics and other data are reached through helpers. Report
-            // pointer-size alignment, matching how such targets are laid out.
-            return address == null ? 1 : (uint)_compilation.NodeFactory.Target.PointerSize;
+            if (address != null && HandleToObject(address) is IObjectNodeWithAlignment node)
+            {
+                return (uint)node.GetAlignment(_compilation.NodeFactory);
+            }
+
+            // Null or unknown target: report unaligned so the JIT avoids alignment-sensitive relocations.
+            return 1;
         }
 
         private void AddPrecodeFixup(ISymbolNode node)
