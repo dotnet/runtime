@@ -723,7 +723,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetStack
     // Note that the regNum == 0 only occurs under interpreter.
     assert(regNum == 3 || 22 == regNum || 0 == regNum);
 #elif defined(TARGET_RISCV64)
-    assert(regNum == 2 || 8 == regNum);
+    // Note that the regNum == 0 only occurs under interpreter.
+    assert(regNum == 2 || 8 == regNum || 0 == regNum);
 #endif
     m_StackBaseRegister = regNum;
 }
