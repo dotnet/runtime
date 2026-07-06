@@ -872,7 +872,7 @@ public record X86GCInfo : IGCInfoDecoder
             Version: _gcInfoVersion,
             CodeSize: MethodSize,
             PrologSize: Header.PrologSize,
-            StackBaseRegister: (Header.EbpFrame || Header.DoubleAlign) ? 5u : 4u, // EBP=5, ESP=4
+            StackBaseRegister: RegMaskToRegisterNumber((Header.EbpFrame || Header.DoubleAlign) ? RegMask.EBP : RegMask.ESP),
             SizeOfStackParameterArea: 0, // x86 doesn't encode an outgoing scratch area
             IsVarArg: Header.VarArgs,
             WantsReportOnlyLeaf: true,

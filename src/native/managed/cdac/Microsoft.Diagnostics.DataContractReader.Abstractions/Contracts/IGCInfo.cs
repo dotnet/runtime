@@ -41,7 +41,7 @@ public readonly record struct GCInfoHeader(
 /// <param name="IsRegister">True if the slot is a CPU register; false if it is a stack location.</param>
 /// <param name="RegisterNumber">Register number (meaningful only when IsRegister is true).</param>
 /// <param name="SpOffset">Stack offset from the base (meaningful only when IsRegister is false).</param>
-/// <param name="BaseRegister">Stack base register (meaningful only when IsRegister is false).</param>
+/// <param name="BaseRegister">Stack base kind: 0 = CALLER_SP_REL, 1 = SP_REL, 2 = FRAMEREG_REL (meaningful only when IsRegister is false).</param>
 /// <param name="GcFlags">GC slot flags: 0x1 = interior pointer, 0x2 = pinned, 0x4 = untracked.</param>
 /// <param name="BeginOffset">Code offset where the slot becomes live.</param>
 /// <param name="EndOffset">Code offset where the slot becomes dead (exclusive).</param>

@@ -555,18 +555,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _codeLength;
     }
 
-    public uint GetStackBaseRegister()
-    {
-        EnsureDecodedTo(DecodePoints.ReversePInvoke);
-        return _stackBaseRegister;
-    }
-
-    public uint GetSizeOfStackParameterArea()
-    {
-        EnsureDecodedTo(DecodePoints.ReversePInvoke);
-        return _fixedStackParameterScratchArea;
-    }
-
     public IReadOnlyList<InterruptibleRange> GetInterruptibleRanges()
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);
