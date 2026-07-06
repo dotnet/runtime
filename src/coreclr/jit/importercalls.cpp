@@ -7641,11 +7641,11 @@ void Compiler::pickGDV(GenTreeCall*           call,
         const char* baseMethName = eeGetMethodFullName(call->gtCallMethHnd);
         JITDUMP("Likely methods for call [%06u] to method %s\n", dspTreeID(call), baseMethName);
 
-         for (UINT32 i = 0; i < numberOfMethods; i++)
+        for (UINT32 i = 0; i < numberOfMethods; i++)
         {
-             CORINFO_CONST_LOOKUP lookup = {};
-             info.compCompHnd->getFunctionFixedEntryPoint((CORINFO_METHOD_HANDLE)likelyMethods[i].handle, false,
-                                                          &lookup);
+            CORINFO_CONST_LOOKUP lookup = {};
+            info.compCompHnd->getFunctionFixedEntryPoint((CORINFO_METHOD_HANDLE)likelyMethods[i].handle, false,
+                                                         &lookup);
 
             const char* methName = eeGetMethodFullName((CORINFO_METHOD_HANDLE)likelyMethods[i].handle);
             switch (lookup.accessType)
