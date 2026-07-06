@@ -112,17 +112,20 @@ namespace Microsoft.Extensions.Options
         private readonly IServiceProvider _serviceProvider;
         private readonly IServiceScopeFactory? _scopeFactory;
         private readonly IValidateOptions<TOptions>[] _validations;
+        private readonly bool _isRootProvider;
 
         public OptionsFactoryWithAsyncValidation(
             IEnumerable<IConfigureOptions<TOptions>> setups,
             IEnumerable<IPostConfigureOptions<TOptions>> postConfigures,
             IEnumerable<IValidateOptions<TOptions>> validations,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            OptionsRootServiceProvider rootServiceProvider)
         {
             _validations = validations as IValidateOptions<TOptions>[] ?? new List<IValidateOptions<TOptions>>(validations).ToArray();
             _factory = new OptionsFactory<TOptions>(setups, postConfigures, _validations);
             _serviceProvider = serviceProvider;
             _scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
+            _isRootProvider = ReferenceEquals(serviceProvider, rootServiceProvider.ServiceProvider);
         }
 
         public TOptions Create(string name)
@@ -146,9 +149,21 @@ namespace Microsoft.Extensions.Options
                 return;
             }
 
+            if (_isRootProvider)
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                ValidateAsyncValidators(name, options, scope.ServiceProvider);
+
+                return;
+            }
+
+            ValidateAsyncValidators(name, options, _serviceProvider);
+        }
+
+        private void ValidateAsyncValidators(string name, TOptions options, IServiceProvider serviceProvider)
+        {
             List<string>? failures = null;
-            using IServiceScope scope = scopeFactory.CreateScope();
-            IEnumerable<IAsyncValidateOptions<TOptions>> asyncValidations = scope.ServiceProvider.GetServices<IAsyncValidateOptions<TOptions>>();
+            IEnumerable<IAsyncValidateOptions<TOptions>> asyncValidations = serviceProvider.GetServices<IAsyncValidateOptions<TOptions>>();
             foreach (IAsyncValidateOptions<TOptions> validate in asyncValidations)
             {
                 if (IsAlreadyValidated(validate))
@@ -182,5 +197,15 @@ namespace Microsoft.Extensions.Options
 
             return false;
         }
+    }
+
+    internal sealed class OptionsRootServiceProvider
+    {
+        public OptionsRootServiceProvider(IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+        }
+
+        public IServiceProvider ServiceProvider { get; }
     }
 }

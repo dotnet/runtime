@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsMonitor<>), typeof(OptionsMonitorWithAsyncValidation<>)));
             services.TryAdd(ServiceDescriptor.Transient(typeof(IOptionsFactory<>), typeof(OptionsFactoryWithAsyncValidation<>)));
             services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsMonitorCache<>), typeof(OptionsCache<>)));
+            services.TryAddSingleton<OptionsRootServiceProvider>();
             services.TryAdd(ServiceDescriptor.Singleton(typeof(OptionsAsyncValidationCoordinator<>), typeof(OptionsAsyncValidationCoordinator<>)));
             return services;
         }

@@ -481,6 +481,28 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void ScopedValidatorWithSyncPath_DoesNotRunSyncValidationTwice()
+        {
+            var services = new ServiceCollection();
+            var observer = new AsyncValidationObserver();
+
+            services.AddSingleton(observer);
+            services.Configure<FakeOptions>(o => o.Message = "test");
+            services.AddScoped<ScopedSyncAndAsyncValidator>();
+            services.AddScoped<IValidateOptions<FakeOptions>>(sp => sp.GetRequiredService<ScopedSyncAndAsyncValidator>());
+            services.AddScoped<IAsyncValidateOptions<FakeOptions>>(sp => sp.GetRequiredService<ScopedSyncAndAsyncValidator>());
+            services.AddOptions<FakeOptions>();
+
+            using ServiceProvider sp = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+            using IServiceScope scope = sp.CreateScope();
+
+            Assert.Equal("test", scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value.Message);
+            Assert.Equal(1, observer.ConstructorCount);
+            Assert.Equal(1, observer.SyncValidationCount);
+            Assert.Equal(0, observer.AsyncValidationCount);
+        }
+
+        [Fact]
         public void SyncGuardSuppression_DoesNotSuppressUnrelatedOptionsType()
         {
             var services = new ServiceCollection();
@@ -586,6 +608,29 @@ namespace Microsoft.Extensions.Options.Tests
         {
         }
 
+        private sealed class ScopedSyncAndAsyncValidator : IValidateOptions<FakeOptions>, IAsyncValidateOptions<FakeOptions>
+        {
+            private readonly AsyncValidationObserver _observer;
+
+            public ScopedSyncAndAsyncValidator(AsyncValidationObserver observer)
+            {
+                _observer = observer;
+                _observer.ConstructorCount++;
+            }
+
+            public ValidateOptionsResult Validate(string? name, FakeOptions options)
+            {
+                _observer.SyncValidationCount++;
+                return ValidateOptionsResult.Success;
+            }
+
+            public Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
+            {
+                _observer.AsyncValidationCount++;
+                return Task.FromResult(ValidateOptionsResult.Success);
+            }
+        }
+
         private sealed class AsyncValidationDependency : IDisposable
         {
             private readonly AsyncValidationObserver _observer;
@@ -602,6 +647,12 @@ namespace Microsoft.Extensions.Options.Tests
 
         private sealed class AsyncValidationObserver
         {
+            public int ConstructorCount { get; set; }
+
+            public int SyncValidationCount { get; set; }
+
+            public int AsyncValidationCount { get; set; }
+
             public int ValidationCount { get; set; }
 
             public int DisposeCount { get; set; }
