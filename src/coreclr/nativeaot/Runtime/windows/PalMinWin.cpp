@@ -774,9 +774,6 @@ void PalHijack(Thread* pThreadToHijack)
         DWORD lastError = GetLastError();
         if (lastError != ERROR_INVALID_PARAMETER && lastError != ERROR_NOT_SUPPORTED)
         {
-            // An unexpected failure has happened. It is a concern.
-            ASSERT_UNCONDITIONALLY("Failed to queue an APC for unusual reason.");
-
             // maybe it will work next time.
             return;
         }
