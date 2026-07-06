@@ -922,12 +922,8 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
     BasicBlock* initBlock = preheader;
     // Prefer to initialize the widened IV in the same block as the reaching def
-    // of the narrow IV, but only if that block is still reachable. Earlier phases
-    // (e.g. redundant branch opts jump threading) can leave the def in a block
-    // that is now unreachable while its SSA def still reaches the loop. Emitting
-    // the initialization there would place it in dead code that is subsequently
-    // removed, leaving the widened IV uninitialized. Fall back to the preheader
-    // in that case.
+    // of the narrow IV, but only if that block is still reachable. RBO's jump threading
+    // can leave stale SSA with the once-containing block being unreachable.
     if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr) &&
         m_dfsTree->Contains(startSsaDsc->GetBlock()))
     {
