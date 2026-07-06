@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
@@ -169,7 +170,7 @@ namespace System.Text.Json.Serialization.Tests
         public virtual async Task HonorCustomConverter_UsingPrivateSetter()
         {
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter());
+            options.Converters.Add(new JsonStringEnumConverter<MySmallEnum>());
 
             string json = """{"MyEnum":"AnotherValue","MyInt":2}""";
 
@@ -360,7 +361,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty), false)]
         [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty), true)]
         [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty), false)]
-        public virtual async Task NonPublicProperty_JsonInclude_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
+        public virtual async Task NonPublicProperty_JsonInclude_WorksAsExpected([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, bool isAccessibleBySourceGen)
         {
             if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
             {
