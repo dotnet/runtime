@@ -196,6 +196,15 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioReadTlsFrame")]
         internal static unsafe partial int BioReadTlsFrame(SafeBioHandle bio, out byte* framePtr, out int frameLen);
 
+        // Returns the socket-replay BIO's retained peek buffer (bytes captured by
+        // BioReadTlsFrame). Valid until the BIO is destroyed, even after OpenSSL has
+        // drained it during handshake.
+        //   1  = prefix present; prefixPtr / prefixLen wrap the internal buffer.
+        //   0  = BIO has no captured prefix.
+        //  -1  = error (invalid args).
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetPrefix")]
+        internal static unsafe partial int BioGetPrefix(SafeBioHandle bio, out byte* prefixPtr, out int prefixLen);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGetWriteResult")]
         internal static partial void BioGetWriteResult(SafeBioHandle bio, out int writtenToWindow, out int spillLen);
 

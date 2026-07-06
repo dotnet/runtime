@@ -16,6 +16,13 @@ namespace System
             get => GetCachedSwitchValue("System.Net.Security.DisableTlsResume", "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME", ref s_disableTlsResume);
         }
 
+        private static int s_captureClientHello;
+        internal static bool CaptureClientHello
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Net.Security.CaptureClientHello", "DOTNET_SYSTEM_NET_SECURITY_CAPTURECLIENTHELLO", ref s_captureClientHello, defaultValue: true);
+        }
+
         private static int s_enableServerAiaDownloads;
         internal static bool EnableServerAiaDownloads
         {

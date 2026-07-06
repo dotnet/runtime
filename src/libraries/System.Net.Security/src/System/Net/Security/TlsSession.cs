@@ -76,6 +76,7 @@ namespace System.Net.Security
         private X509Certificate2? _externalPendingCert;
         private Exception? _externalValidationFault;
         private SslClientHelloInfo? _clientHelloInfo;
+        private byte[]? _clientHelloBytesBuffered;
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
         private X509Certificate2? _remoteCertificate;
@@ -400,12 +401,12 @@ namespace System.Net.Security
 #endif
 
         /// <summary>
-        /// Server-side only. The parsed ClientHello information, populated when
-        /// <see cref="ProcessHandshake"/> returns
-        /// <see cref="TlsOperationStatus.NeedsServerOptions"/> after the context was
-        /// created with null server options. Returns <see langword="null"/> at all
-        /// other times. The value is cleared after <see cref="SetServerContext"/> is
-        /// called.
+        /// Server-side only. The parsed ClientHello information, populated once the
+        /// ClientHello has been received and stays populated for the lifetime of the
+        /// session. Returns <see langword="null"/> before the ClientHello arrives,
+        /// on client-side sessions, and on server sessions where ClientHello capture
+        /// was disabled via the <c>System.Net.Security.CaptureClientHello</c> AppContext
+        /// switch AND options were supplied at <see cref="TlsContext"/> creation time.
         /// </summary>
         public SslClientHelloInfo? ClientHelloInfo
         {
@@ -414,6 +415,43 @@ namespace System.Net.Security
                 ThrowIfDisposed();
                 return _clientHelloInfo;
             }
+        }
+
+        /// <summary>
+        /// Server-side only. Returns a <see cref="ReadOnlySpan{Byte}"/> over the raw
+        /// ClientHello record bytes (5-byte TLS record header plus the ClientHello
+        /// handshake message). The returned span is valid until <see cref="Dispose"/>
+        /// and never escapes the calling frame - callers who need to persist the bytes
+        /// should call <c>ToArray()</c>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the ClientHello bytes are not available: on client-side sessions,
+        /// before the ClientHello has been received, or on server sessions where
+        /// ClientHello capture was disabled via the
+        /// <c>System.Net.Security.CaptureClientHello</c> AppContext switch AND options
+        /// were supplied at <see cref="TlsContext"/> creation time.
+        /// </exception>
+        public ReadOnlySpan<byte> GetClientHelloBytes()
+        {
+            ThrowIfDisposed();
+
+            // Native/fd-mode path: bytes are retained inside the socket-replay BIO's
+            // peek buffer until the SSL* holding it is freed.
+            ReadOnlySpan<byte> native = default;
+            TryGetNativeClientHelloBytes(ref native);
+            if (!native.IsEmpty)
+            {
+                return native;
+            }
+
+            // Buffered / managed path: bytes copied into a session-owned array at parse
+            // time.
+            if (_clientHelloBytesBuffered is not null)
+            {
+                return _clientHelloBytesBuffered;
+            }
+
+            throw new InvalidOperationException(SR.net_ssl_client_hello_bytes_unavailable);
         }
 
         /// <summary>
@@ -466,7 +504,6 @@ namespace System.Net.Security
 #endif
 
             _hasServerOptions = true;
-            _clientHelloInfo = null;
 
             OnServerContextSet();
         }
@@ -622,7 +659,7 @@ namespace System.Net.Security
                 return TlsOperationStatus.NeedsCertificateValidation;
             }
 
-            if (_clientHelloInfo is not null)
+            if (_clientHelloInfo is not null && !_hasServerOptions)
             {
                 // The caller previously saw NeedsServerOptions but hasn't supplied options yet.
                 return TlsOperationStatus.NeedsServerOptions;
@@ -692,18 +729,33 @@ namespace System.Net.Security
                     // server certificate from it before AllocateSslHandle runs.
                     if (_securityContext is null)
                     {
-                        // Deferred options: parse ClientHello and suspend so the caller can
-                        // supply server options via SetServerContext. Leave input unconsumed
-                        // (consumed = 0); the caller re-feeds the same bytes after resuming.
-                        if (!_hasServerOptions)
+                        // Parse the ClientHello once and capture it managed-side so the
+                        // ClientHelloInfo / TargetHostName / GetClientHelloBytes surface is
+                        // consistent across paths. Deferred flow: suspend for SetServerContext.
+                        // Options-up-front flow: capture and continue.
+                        if (_clientHelloInfo is null && _clientHelloBytesBuffered is null)
                         {
-                            SslClientHelloInfo? parsed = TryParseClientHello(input);
+                            SslClientHelloInfo? parsed = TryParseClientHello(input, out int frameLength);
                             if (parsed is null)
                             {
                                 return TlsOperationStatus.WantRead;
                             }
 
                             _clientHelloInfo = parsed;
+                            if (!string.IsNullOrEmpty(parsed.Value.ServerName))
+                            {
+                                _options.TargetHost = parsed.Value.ServerName;
+                            }
+                            if (frameLength > 0 && frameLength <= input.Length)
+                            {
+                                _clientHelloBytesBuffered = input.Slice(0, frameLength).ToArray();
+                            }
+                        }
+
+                        if (!_hasServerOptions)
+                        {
+                            // Deferred / SNI-callback flow: caller resolves via SetServerContext.
+                            // Leave input unconsumed; the caller re-feeds the same bytes on resume.
                             return TlsOperationStatus.NeedsServerOptions;
                         }
 
@@ -1368,8 +1420,9 @@ namespace System.Net.Security
         // SslClientHelloInfo (SNI + supported versions), or null if more bytes
         // are needed or the record is not a ClientHello. Used by the
         // deferred-options path; does not mutate session state.
-        private static SslClientHelloInfo? TryParseClientHello(ReadOnlySpan<byte> input)
+        private static SslClientHelloInfo? TryParseClientHello(ReadOnlySpan<byte> input, out int frameLength)
         {
+            frameLength = 0;
             TlsFrameHelper.TlsFrameInfo frameInfo = default;
             if (!TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo))
             {
@@ -1381,6 +1434,7 @@ namespace System.Net.Security
                 return null;
             }
 
+            frameLength = TlsFrameHelper.HeaderSize + frameInfo.Header.Length;
             return new SslClientHelloInfo(frameInfo.TargetName ?? string.Empty, frameInfo.SupportedVersions);
         }
 
@@ -2000,6 +2054,11 @@ namespace System.Net.Security
         // Fires from Dispose so the OpenSSL partial can release the peek BIO if the
         // session is disposed before its ownership is transferred to an SSL* handle.
         partial void OnDispose();
+
+        // Fires from GetClientHelloBytes so the OpenSSL partial can return a span
+        // over the socket-replay BIO's retained peek buffer. No-op on the buffered
+        // path; the getter falls back to the managed byte[] copy.
+        partial void TryGetNativeClientHelloBytes(ref ReadOnlySpan<byte> bytes);
 
         public void Dispose()
         {

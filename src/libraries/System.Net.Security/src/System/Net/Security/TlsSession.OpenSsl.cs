@@ -40,7 +40,12 @@ namespace System.Net.Security
         // OnServerContextSet runs; until then the session uses the managed loop.
         partial void EnableNativeSocketBinding(SafeSocketHandle socket, ref bool nativeBindingEnabled)
         {
-            if (_context.IsServer && !_hasServerOptions)
+            // Defer binding to fd-mode whenever we need to see the ClientHello managed-side
+            // first: either because options aren't set yet (SNI-driven callback flow) or
+            // because ClientHello capture is on (the default). Callers can disable capture
+            // via the System.Net.Security.CaptureClientHello AppContext switch to skip the
+            // peek and take the SSL_set_fd fast path when options are already supplied.
+            if (_context.IsServer && (!_hasServerOptions || LocalAppContextSwitches.CaptureClientHello))
             {
                 _pendingFdSocket = socket;
                 nativeBindingEnabled = false;
@@ -67,9 +72,12 @@ namespace System.Net.Security
             {
                 // Native-peek path (TryPeekClientHello ran): hand the pre-populated
                 // BIO to the options bag; SafeSslHandle.Create adopts it as the read
-                // BIO. No managed byte[] copy, no ReplayPrefix.
+                // BIO. No managed byte[] copy, no ReplayPrefix. We keep _peekBio
+                // referenced after transfer so GetClientHelloBytes can span the
+                // retained peek buffer via BioGetPrefix; the SafeBioHandle stays
+                // valid (SSL* is the real owner, our reference DangerousReleases
+                // the parent on session Dispose()).
                 _options.PreallocatedReadBio = _peekBio;
-                _peekBio = null;
             }
             else if (_socketInUsed > 0)
             {
@@ -96,24 +104,26 @@ namespace System.Net.Security
             _useFdMode = true;
         }
 
-        // Native-only ClientHello peek for the deferred socket-bound flow. Skips the
-        // managed pre-fetch loop entirely: creates a socket-replay BIO on the fd,
-        // has BioReadTlsFrame buffer a full TLS record, spans the native buffer for
-        // TlsFrameHelper, and surfaces NeedsServerOptions with a populated
-        // ClientHelloInfo. The same BIO is later handed to the SSL* as its read BIO
-        // via _options.PreallocatedReadBio.
+        // Native ClientHello peek for the deferred socket-bound flow AND the always-capture
+        // path (server session with options up front + CaptureClientHello switch on).
+        // Creates a socket-replay BIO on the fd, buffers a full TLS record via
+        // BioReadTlsFrame, parses via TlsFrameHelper, and populates ClientHelloInfo /
+        // TargetHostName from the SNI extension. In the deferred flow returns
+        // NeedsServerOptions so the caller resolves via SetServerContext; in the capture
+        // flow transfers the peek BIO to the pending SSL* and falls through to fd-mode.
+        // Either way the BIO stays alive so GetClientHelloBytes can span its retained
+        // prefix until Dispose().
         partial void TryPeekClientHello(ref TlsOperationStatus? result)
         {
-            // Only for the deferred-fd flow: socket-bound, server-side, options
-            // not yet supplied.
-            if (_pendingFdSocket is null || _hasServerOptions)
+            if (_pendingFdSocket is null)
             {
                 return;
             }
 
-            // Prior Handshake() already peeked and returned NeedsServerOptions but
-            // the caller hasn't resolved yet. Re-surface without re-reading the fd.
-            if (_clientHelloInfo is not null)
+            // Deferred flow: caller hasn't resolved NeedsServerOptions yet - re-surface
+            // without re-reading the fd. Not reached on the capture-only path because we
+            // transition to fd-mode on the same TryPeekClientHello call that populates it.
+            if (_clientHelloInfo is not null && !_hasServerOptions)
             {
                 result = TlsOperationStatus.NeedsServerOptions;
                 return;
@@ -145,18 +155,39 @@ namespace System.Net.Security
                 }
 
                 ReadOnlySpan<byte> frame = new ReadOnlySpan<byte>(framePtr, frameLen);
-                SslClientHelloInfo? parsed = TryParseClientHello(frame);
+                SslClientHelloInfo? parsed = TryParseClientHello(frame, out _);
                 if (parsed is null)
                 {
                     // TlsFrameHelper couldn't parse the record as a ClientHello.
-                    // Surface a decrypt-style IOException; treat identically to a
-                    // malformed frame on the buffered path.
                     throw new IOException(SR.net_io_decrypt);
                 }
 
                 _clientHelloInfo = parsed;
-                result = TlsOperationStatus.NeedsServerOptions;
+                if (!string.IsNullOrEmpty(parsed.Value.ServerName))
+                {
+                    _options.TargetHost = parsed.Value.ServerName;
+                }
             }
+
+            if (!_hasServerOptions)
+            {
+                // Deferred / SNI-callback flow: caller inspects ClientHelloInfo and
+                // resolves via SetServerContext; OnServerContextSet then transfers the
+                // peek BIO to _options.PreallocatedReadBio.
+                result = TlsOperationStatus.NeedsServerOptions;
+                return;
+            }
+
+            // Always-capture flow: options are already supplied. Transfer the peek BIO
+            // to the pending SSL* now and drive the fast-path handshake step so the
+            // caller sees the same behavior as the pre-capture SSL_set_fd path.
+            // See OnServerContextSet: _peekBio stays referenced after transfer.
+            _options.PreallocatedReadBio = _peekBio;
+            _options.SocketHandle = _pendingFdSocket;
+            _pendingFdSocket = null;
+            _useFdMode = true;
+
+            TryFastHandshake(ref result);
         }
 
         // Called from TlsSession.Dispose. If the caller disposed the session before
@@ -166,6 +197,25 @@ namespace System.Net.Security
         {
             _peekBio?.Dispose();
             _peekBio = null;
+        }
+
+        // Returns a ReadOnlySpan over the socket-replay BIO's retained peek buffer.
+        // Valid as long as the SafeBioHandle is open. Consumers reach here through
+        // GetClientHelloBytes, which does ThrowIfDisposed() first.
+        partial void TryGetNativeClientHelloBytes(ref ReadOnlySpan<byte> bytes)
+        {
+            if (_peekBio is null || _peekBio.IsInvalid)
+            {
+                return;
+            }
+
+            unsafe
+            {
+                if (Interop.Ssl.BioGetPrefix(_peekBio, out byte* ptr, out int len) == 1 && len > 0)
+                {
+                    bytes = new ReadOnlySpan<byte>(ptr, len);
+                }
+            }
         }
 
         partial void TryFastHandshake(ref TlsOperationStatus? result)

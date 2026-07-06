@@ -714,6 +714,7 @@ namespace System.Net.Security
         public bool HasPendingOutput { get { throw null; } }
         public string? TargetHostName { get { throw null; } set { } }
         public System.Net.Security.SslClientHelloInfo? ClientHelloInfo { get { throw null; } }
+        public System.ReadOnlySpan<byte> GetClientHelloBytes() { throw null; }
         public System.Security.Authentication.SslProtocols NegotiatedProtocol { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }

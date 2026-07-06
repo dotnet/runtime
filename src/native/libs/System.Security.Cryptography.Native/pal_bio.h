@@ -123,3 +123,15 @@ Returns:
 */
 PALEXPORT int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen);
 
+/*
+Returns a pointer + length to the socket-replay BIO's peek buffer (the ClientHello
+bytes captured by CryptoNative_BioReadTlsFrame). The buffer remains valid until
+the BIO is destroyed, even after OpenSSL has consumed it during the handshake.
+
+Returns:
+   1  = prefix present; *outPtr / *outLen wrap the internal buffer.
+   0  = no captured prefix (never peeked, or created without one).
+  -1  = error (invalid args).
+*/
+PALEXPORT int32_t CryptoNative_BioGetPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen);
+

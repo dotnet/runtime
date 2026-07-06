@@ -544,15 +544,10 @@ static int SocketReplayBioRead(BIO* bio, char* buf, int len)
         memcpy(buf, ctx->prefix + ctx->prefixPos, (size_t)toCopy);
         ctx->prefixPos += toCopy;
 
-        // Free the prefix eagerly once fully drained; the BIO becomes a pure
-        // socket BIO from this point on.
-        if (ctx->prefixPos == ctx->prefixLen)
-        {
-            free(ctx->prefix);
-            ctx->prefix = NULL;
-            ctx->prefixLen = 0;
-            ctx->prefixPos = 0;
-        }
+        // The prefix buffer is retained for the BIO's lifetime so managed code can
+        // observe the original ClientHello bytes via CryptoNative_BioGetPrefix.
+        // It's freed when the BIO is destroyed (SocketReplayBioDestroy). Once drained,
+        // subsequent reads fall through to recv() below.
         return toCopy;
     }
 
@@ -850,6 +845,40 @@ int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen
         }
 
         return -1;
+    }
+
+    *outPtr = ctx->prefix;
+    *outLen = ctx->prefixLen;
+    return 1;
+}
+
+// Returns the socket-replay BIO's peek buffer (the bytes captured by
+// BioReadTlsFrame). The buffer stays valid until the BIO is freed, even after
+// OpenSSL has drained it during handshake — SocketReplayBioRead advances an
+// internal read cursor without releasing the underlying allocation.
+//
+// Returns:
+//   1  = pointer + length valid; *outPtr / *outLen wrap the internal buffer.
+//   0  = BIO has no captured prefix (never peeked, or created without one).
+//  -1  = error (invalid args).
+int32_t CryptoNative_BioGetPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen)
+{
+    if (bio == NULL || outPtr == NULL || outLen == NULL)
+    {
+        return -1;
+    }
+
+    SocketReplayBioCtx* ctx = GetSocketReplayBioCtx(bio);
+    if (ctx == NULL)
+    {
+        return -1;
+    }
+
+    if (ctx->prefix == NULL || ctx->prefixLen <= 0)
+    {
+        *outPtr = NULL;
+        *outLen = 0;
+        return 0;
     }
 
     *outPtr = ctx->prefix;

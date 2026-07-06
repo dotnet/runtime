@@ -27,6 +27,7 @@ namespace System.Net.Security
             set => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         }
         public SslClientHelloInfo? ClientHelloInfo => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+        public ReadOnlySpan<byte> GetClientHelloBytes() => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public SslProtocols NegotiatedProtocol => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         [System.CLSCompliant(false)]
         public TlsCipherSuite NegotiatedCipherSuite => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
