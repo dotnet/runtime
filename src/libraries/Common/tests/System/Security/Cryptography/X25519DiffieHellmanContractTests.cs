@@ -463,8 +463,9 @@ namespace System.Security.Cryptography.Tests
             // Test with various inputs of different sizes from TryExportPkcs8PrivateKeyCore that it reports
             // as-is to the public APIs. Invalid behavior like reporting more byte written than possible is handled
             // elsewhere.
-            int bufferSize = Random.Shared.Next(50, 1024);
-            int writtenSize = Random.Shared.Next(48, bufferSize);
+            Random random = new();
+            int bufferSize = random.Next(50, 1024);
+            int writtenSize = random.Next(48, bufferSize);
             bool success = (writtenSize & 1) == 1;
             byte[] buffer = new byte[bufferSize];
             X25519DiffieHellmanContract xdh = new()

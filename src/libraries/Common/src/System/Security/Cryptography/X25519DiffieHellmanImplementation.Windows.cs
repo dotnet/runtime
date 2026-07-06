@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Internal.Cryptography;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
 
@@ -11,7 +12,7 @@ using NTSTATUS = Interop.BCrypt.NTSTATUS;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class X25519DiffieHellmanImplementation : X25519DiffieHellman
+    internal sealed partial class X25519DiffieHellmanImplementation : X25519DiffieHellman
     {
         private static readonly SafeBCryptAlgorithmHandle? s_algHandle = OpenAlgorithmHandle();
 
@@ -106,6 +107,7 @@ namespace System.Security.Cryptography
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
         {
+            ThrowIfPrivateNeeded();
             ExportKey(true, destination);
             X25519WindowsHelpers.RefixPrivateScalar(destination, _privatePreservation);
         }

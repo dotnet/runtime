@@ -9,12 +9,14 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class X25519DiffieHellmanExportableCngTests : X25519DiffieHellmanCngTests
     {
         protected override CngExportPolicies ExportPolicy => CngExportPolicies.AllowExport;
     }
 
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class X25519DiffieHellmanPlaintextExportableCngTests : X25519DiffieHellmanCngTests
     {
         protected override CngExportPolicies ExportPolicy =>
@@ -23,6 +25,7 @@ namespace System.Security.Cryptography.Tests
     }
 
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public static class X25519DiffieHellmanCngContractTests
     {
         [Fact]
@@ -75,6 +78,7 @@ namespace System.Security.Cryptography.Tests
     }
 
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public static class X25519DiffieHellmanCngNonExportableTests
     {
         [Fact]
@@ -82,7 +86,7 @@ namespace System.Security.Cryptography.Tests
         {
             using CngKey key = X25519DiffieHellmanCngTests.GenerateCngKey(exportPolicy: CngExportPolicies.None);
             using X25519DiffieHellmanCng xdh = new(key);
-            Assert.Throws<CryptographicException>(() => xdh.ExportPrivateKey());
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportPrivateKey());
         }
 
         [Fact]
@@ -109,13 +113,13 @@ namespace System.Security.Cryptography.Tests
 
         protected abstract CngExportPolicies ExportPolicy { get; }
 
-        public override X25519DiffieHellmanCng GenerateKey()
+        public override X25519DiffieHellman GenerateKey()
         {
             using CngKey key = GenerateCngKey(exportPolicy: ExportPolicy);
             return new X25519DiffieHellmanCng(key);
         }
 
-        public override X25519DiffieHellmanCng ImportPrivateKey(ReadOnlySpan<byte> source)
+        public override X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source)
         {
             using CryptoPoolLease lease = X25519WindowsHelpers.CreateCngBlob(source, true, out _);
             using SafeNCryptKeyHandle keyHandle = ECCng.ImportKeyBlob(
@@ -136,7 +140,7 @@ namespace System.Security.Cryptography.Tests
             return new X25519DiffieHellmanCng(cngKey);
         }
 
-        public override X25519DiffieHellmanCng ImportPublicKey(ReadOnlySpan<byte> source)
+        public override X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source)
         {
             Span<byte> reducedPublicKey = stackalloc byte[X25519DiffieHellman.PublicKeySizeInBytes];
             X25519WindowsHelpers.ReducePublicKey(source, reducedPublicKey);
