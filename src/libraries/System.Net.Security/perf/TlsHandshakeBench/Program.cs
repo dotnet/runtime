@@ -99,10 +99,24 @@ public class TlsHandshakeBench
     [Params(false, true)]
     public bool AllowResume { get; set; }
 
+    // Toggles the internal LocalAppContextSwitches.s_captureClientHello field via
+    // reflection so we exercise both code paths. When true (default), the server takes
+    // the peek + parse + BIO-handoff path even with options up front. When false, the
+    // Fd path uses the pre-capture SSL_set_fd shortcut.
+    [Params(true, false)]
+    public bool CaptureClientHello { get; set; }
+
     [GlobalSetup]
     public void Setup()
     {
         s_current = this;
+        // The switch value is cached on first read into LocalAppContextSwitches.s_captureClientHello
+        // (tri-state int: 0 = unread, 1 = true, -1 = false). Flip it via reflection so the bench
+        // can measure both code paths without launching separate processes.
+        System.Reflection.FieldInfo? switchField = typeof(TlsSession).Assembly
+            .GetType("System.LocalAppContextSwitches", throwOnError: false)
+            ?.GetField("s_captureClientHello", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        switchField?.SetValue(null, CaptureClientHello ? 1 : -1);
         _cert = CreateSelfSignedCert();
 
         _serverOptions = new SslServerAuthenticationOptions
