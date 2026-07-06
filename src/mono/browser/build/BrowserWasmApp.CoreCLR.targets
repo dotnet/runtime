@@ -708,6 +708,7 @@
       <_EmccLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
       <_EmccLinkStepArgs Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" />
       <_EmccLinkStepArgs Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkStepArgs Include="-s GROWABLE_ARRAYBUFFERS=0" />
       <_EmccLinkStepArgs Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccLinkStepArgs Include="-s WASM_BIGINT=1" />
 

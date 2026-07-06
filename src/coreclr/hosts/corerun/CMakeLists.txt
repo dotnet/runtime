@@ -101,6 +101,7 @@ else()
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
+                -sGROWABLE_ARRAYBUFFERS=0
                 -sALLOW_TABLE_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1

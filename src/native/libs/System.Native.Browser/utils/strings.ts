@@ -22,7 +22,8 @@ export function stringsInit(): void {
             }
             const originalUTF8DecoderDecode = _ems_.UTF8Decoder.decode;
             _ems_.UTF8Decoder.decode = function (input: Uint8Array): string {
-                const view = isSharedArrayBuffer(input.buffer) ? input.slice() : input;
+                const needsCopy = isSharedArrayBuffer(input.buffer) || input.buffer.resizable;
+                const view = needsCopy ? input.slice() : input;
                 return originalUTF8DecoderDecode.call(this, view);
             };
         }

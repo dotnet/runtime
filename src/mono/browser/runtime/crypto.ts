@@ -21,7 +21,7 @@ export function SystemJS_RandomBytes (bufferPtr: number, bufferLength: number): 
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
     // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-    const needsCopy = isSharedArrayBuffer(memoryView.buffer);
+    const needsCopy = isSharedArrayBuffer(memoryView.buffer) || memoryView.buffer.resizable;
     const targetBuffer = needsCopy
         ? new Uint8Array(bufferLength)
         : targetView;
