@@ -789,16 +789,12 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         dstVarDsc->SetIsMultiRegDest();
     }
 
-    // Don't forward sub a read of a promoted (non-DNER) SIMD local. Such a
-    // local has no maintained stack home, so a plain GT_LCL_VAR use of it only
-    // satisfies the post-lowering invariant in Lowering::CheckNode when it sits
-    // in a context that the lowering phase repairs (e.g. a multi-reg-dest
-    // STORE_LCL_VAR or directly under a GT_RETURN). Forward substitution can
-    // place the use in other contexts (e.g. under a GT_FIELD_LIST) that no
-    // later phase repairs, so just skip these locals. Dependently promoted
-    // (DNER) locals are fine since they keep a stack home (see also the
-    // promoted-struct handling in fgMorphHWIntrinsic and fgMorphSmpOp's
-    // GT_FIELD_LIST case).
+    // Heuristic: don't forward substitute a whole read of a promoted SIMD local.
+    // Forward substitution can place the use in a context where a whole-local use
+    // is not supported (e.g. under a GT_FIELD_LIST), which would then require
+    // marking the local do-not-enregister, undoing its promotion. Conservatively
+    // skip these locals to avoid that. (Whole-local uses that do end up under a
+    // GT_FIELD_LIST are handled by DNER in fgMorphSmpOp, mirroring fgMorphHWIntrinsic.)
     //
     if (fwdSubNode->OperIs(GT_LCL_VAR) && varTypeIsSIMD(fwdSubNode))
     {
