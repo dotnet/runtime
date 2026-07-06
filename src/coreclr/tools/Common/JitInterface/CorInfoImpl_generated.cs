@@ -92,6 +92,7 @@ namespace Internal.JitInterface
                 s_callbacks.getObjectType = &_getObjectType;
                 s_callbacks.getReadyToRunHelper = &_getReadyToRunHelper;
                 s_callbacks.getReadyToRunDelegateCtorHelper = &_getReadyToRunDelegateCtorHelper;
+                s_callbacks.getParameterlessCtor = &_getParameterlessCtor;
                 s_callbacks.initClass = &_initClass;
                 s_callbacks.classMustBeLoadedBeforeCodeIsRun = &_classMustBeLoadedBeforeCodeIsRun;
                 s_callbacks.getBuiltinClass = &_getBuiltinClass;
@@ -274,6 +275,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, CORINFO_CLASS_STRUCT_*> getObjectType;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CorInfoHelpFunc, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, byte> getReadyToRunHelper;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_**, byte> getParameterlessCtor;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult> initClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void> classMustBeLoadedBeforeCodeIsRun;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoClassId, CORINFO_CLASS_STRUCT_*> getBuiltinClass;
@@ -1450,6 +1452,21 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _getParameterlessCtor(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* targetType, CORINFO_METHOD_STRUCT_** ctor)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getParameterlessCtor(targetType, ctor) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
             }
         }
 

@@ -13,6 +13,14 @@ namespace System.Reflection
     /// </summary>
     internal static unsafe class InstanceCalliHelper
     {
+        // Constructors:
+
+        [Intrinsic]
+        internal static void Call(delegate*<ref byte, void> fn, ref byte b) => fn(ref b);
+
+        [Intrinsic]
+        internal static void Call(delegate*<object, void> fn, object o) => fn(o);
+
         // Zero parameter methods such as property getters:
 
         [Intrinsic]
@@ -71,9 +79,6 @@ namespace System.Reflection
 
         [Intrinsic]
         internal static ulong Call(delegate*<object, ulong> fn, object o) => fn(o);
-
-        [Intrinsic]
-        internal static void Call(delegate*<object, void> fn, object o) => fn(o);
 
         // One parameter methods with no return such as property setters:
 

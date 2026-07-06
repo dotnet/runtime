@@ -590,6 +590,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+    CORINFO_HELP_CALLCONSTRUCTORSTRUCT,
+    CORINFO_HELP_CALLCONSTRUCTOR,
+
     CORINFO_HELP_COUNT,
 };
 
@@ -2727,6 +2730,11 @@ public:
             CORINFO_CLASS_HANDLE        delegateType,
             CORINFO_METHOD_HANDLE       callerHandle,
             CORINFO_LOOKUP *            pLookup
+            ) = 0;
+
+    virtual bool getParameterlessCtor(
+            CORINFO_CLASS_HANDLE        targetType,
+            CORINFO_METHOD_HANDLE*      ctor
             ) = 0;
 
     // This function tries to initialize the class (run the class constructor).

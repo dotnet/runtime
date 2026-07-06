@@ -277,6 +277,7 @@ namespace System.Runtime.CompilerServices
         {
         }
 
+        [Intrinsic]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Constructed MethodTable of a Nullable forces a constructed MethodTable of the element type")]
         public static unsafe object GetUninitializedObject(

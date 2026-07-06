@@ -2862,7 +2862,7 @@ namespace Internal.JitInterface
                 !_compilation.HasLazyStaticConstructor(type)
                 )
             {
-                return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                return CorInfoInitClassResult.CORINFO_INITCLASS_INITIALIZED;
             }
 #endif
 
