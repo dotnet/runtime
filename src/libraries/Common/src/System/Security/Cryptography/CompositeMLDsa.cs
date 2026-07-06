@@ -1931,9 +1931,7 @@ namespace System.Security.Cryptography
             return writer;
         }
 
-        private delegate TResult ProcessExportedContent<TResult>(ReadOnlySpan<byte> exportedContent);
-
-        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ProcessExportedContent<TResult> func)
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
         {
             int size = Algorithm.MaxPrivateKeySizeInBytes;
             byte[] buffer = CryptoPool.Rent(size);

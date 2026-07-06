@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    public abstract class X25519DiffieHellman : IDisposable
+    public abstract partial class X25519DiffieHellman : IDisposable
     {
         private protected static readonly string[] s_knownOids = [Oids.X25519];
 
@@ -1433,9 +1433,11 @@ namespace System.Security.Cryptography
         private protected static bool TryWriteSubjectPublicKeyInfo<TState>(
             Span<byte> destination,
             TState state,
-            Action<TState, Span<byte>> writer,
+            WriteKeyFunc<TState> writer,
             out int bytesWritten)
+#if NET
             where TState : allows ref struct
+#endif
         {
             // Pre-encoded SubjectPublicKeyInfo for X25519 (RFC 8410):
             ReadOnlySpan<byte> spkiPreamble =
@@ -1468,7 +1470,7 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
-        private TResult ExportPkcs8PrivateKeyCallback<TResult>(Func<ReadOnlySpan<byte>, TResult> func)
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
         {
             // A PKCS#8 X25519 PrivateKeyInfo has an ASN.1 overhead of 16 bytes, assuming no attributes.
             // Make it an even 32 and that should give a good starting point for a buffer size.
@@ -1507,9 +1509,11 @@ namespace System.Security.Cryptography
         private protected static bool TryWritePkcs8PrivateKey<TState>(
             Span<byte> destination,
             TState state,
-            Action<TState, Span<byte>> writer,
+            WriteKeyFunc<TState> writer,
             out int bytesWritten)
+#if NET
             where TState : allows ref struct
+#endif
         {
             // Pre-encoded PKCS#8 PrivateKeyInfo for X25519 (RFC 8410):
             ReadOnlySpan<byte> pkcs8Preamble =
@@ -1548,7 +1552,7 @@ namespace System.Security.Cryptography
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore<TChar>(
             ReadOnlySpan<TChar> password,
             PbeParameters pbeParameters,
-            Func<ReadOnlySpan<TChar>, AsnWriter, PbeParameters, AsnWriter> encryptor)
+            WriteEncryptedPkcs8Func<TChar> encryptor)
         {
             // A PKCS#8 X25519 PrivateKeyInfo has an ASN.1 overhead of 16 bytes, assuming no attributes.
             // Make it an even 32 and that should give a good starting point for a buffer size.
@@ -1618,5 +1622,13 @@ namespace System.Security.Cryptography
                     nameof(X25519DiffieHellman)));
             }
         }
+
+        private protected delegate void WriteKeyFunc<TState>(TState state, Span<byte> destination)
+#if NET
+            where TState : allows ref struct;
+#else
+            ;
+#endif
+
     }
 }
