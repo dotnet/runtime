@@ -7327,23 +7327,8 @@ public sealed unsafe partial class SOSDacImpl
             if (!stressLogContract.HasStressLog())
                 return HResults.S_FALSE;
 
-            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
-
-            // Find the matching thread
-            Contracts.ThreadStressLogData? matchedThread = null;
-            foreach (var thread in stressLogContract.GetThreadStressLogs(logData.Logs))
-            {
-                if (thread.Address == threadStressLogAddress.ToTargetPointer(_target))
-                {
-                    matchedThread = thread;
-                    break;
-                }
-            }
-
-            if (matchedThread is null)
-                return HResults.E_INVALIDARG;
-
-            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(matchedThread.Value);
+            TargetPointer address = threadStressLogAddress.ToTargetPointer(_target);
+            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(address);
             ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
         }
         catch (System.Exception ex)

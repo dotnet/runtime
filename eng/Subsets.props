@@ -545,7 +545,6 @@
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\ref\Mono.Linker.csproj" Category="tools" />
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\tlens\tlens.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" Category="tools" />
   </ItemGroup>
 
@@ -608,10 +607,6 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.tools+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;" Category="mono" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+mono.workloads+'))">
-    <ProjectToBuild Include="$(WorkloadsProjectRoot)\workloads.csproj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmworkload+'))">

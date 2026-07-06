@@ -352,43 +352,26 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(ClassWithPrivateProperty_WithJsonIncludeProperty), false)]
-        [InlineData(typeof(ClassWithInternalProperty_WithJsonIncludeProperty), true)]
-        [InlineData(typeof(ClassWithProtectedProperty_WithJsonIncludeProperty), false)]
-        [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty), false)]
-        [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty), true)]
-        [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty), false)]
-        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty), false)]
-        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty), true)]
-        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty), false)]
-        public virtual async Task NonPublicProperty_JsonInclude_WorksAsExpected([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, bool isAccessibleBySourceGen)
+        [InlineData(typeof(ClassWithPrivateProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternalProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtectedProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
+        public virtual async Task NonPublicProperty_JsonInclude_WorksAsExpected([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
-            if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
-            {
-                string json = """{"MyString":"value"}""";
-                MemberInfo memberInfo = type.GetMember("MyString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)[0];
+            string json = """{"MyString":"value"}""";
+            MemberInfo memberInfo = type.GetMember("MyString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)[0];
 
-                object result = await Serializer.DeserializeWrapper("""{"MyString":"value"}""", type);
-                Assert.IsType(type, result);
-                Assert.Equal(memberInfo is PropertyInfo p ? p.GetValue(result) : ((FieldInfo)memberInfo).GetValue(result), "value");
+            object result = await Serializer.DeserializeWrapper(json, type);
+            Assert.IsType(type, result);
+            Assert.Equal("value", memberInfo is PropertyInfo p ? p.GetValue(result) : ((FieldInfo)memberInfo).GetValue(result));
 
-                string actualJson = await Serializer.SerializeWrapper(result, type);
-                Assert.Equal(json, actualJson);
-            }
-            else
-            {
-                InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
-                string exAsStr = ex.ToString();
-                Assert.Contains("MyString", exAsStr);
-                Assert.Contains(type.ToString(), exAsStr);
-                Assert.Contains("JsonIncludeAttribute", exAsStr);
-
-                ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
-                exAsStr = ex.ToString();
-                Assert.Contains("MyString", exAsStr);
-                Assert.Contains(type.ToString(), exAsStr);
-                Assert.Contains("JsonIncludeAttribute", exAsStr);
-            }
+            string actualJson = await Serializer.SerializeWrapper(result, type);
+            Assert.Equal(json, actualJson);
         }
 
         public class ClassWithPrivateProperty_WithJsonIncludeProperty
