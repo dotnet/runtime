@@ -12,8 +12,6 @@
 #if defined(_WIN32)
 #include "apphost.windows.h"
 #include <_version.h>
-#else
-#include <_version.c>
 #endif
 
 #include <string.h>
@@ -368,12 +366,7 @@ int main(const int argc, const pal_char_t* argv[])
 #if defined(_WIN32)
         pal_str_printf(version_desc, ARRAY_SIZE(version_desc), _X("%s"), _STRINGIFY(VER_PRODUCTVERSION_STR));
 #else
-        // sccsid is @(#)Version <file_version> [@Commit: <commit_hash>]
-        const char* commit_maybe = strchr(&sccsid[STRING_LENGTH("@(#)Version ")], '@');
-        if (commit_maybe != NULL)
-            pal_str_printf(version_desc, ARRAY_SIZE(version_desc), _X("%s %s"), _STRINGIFY(HOST_VERSION), commit_maybe);
-        else
-            pal_str_printf(version_desc, ARRAY_SIZE(version_desc), _X("%s"), _STRINGIFY(HOST_VERSION));
+        pal_str_printf(version_desc, ARRAY_SIZE(version_desc), _X("%s @Commit: %s"), _STRINGIFY(HOST_VERSION), _STRINGIFY(REPO_COMMIT_HASH));
 #endif
         trace_info(_X("--- Invoked apphost [version: %s] main = {"), version_desc);
         for (int i = 0; i < argc; ++i)
