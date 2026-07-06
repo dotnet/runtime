@@ -1211,7 +1211,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
             return false;
         }
 
-        if (length < 0)
+        if ((length < 0) || (length > CORINFO_String_MaxLength))
         {
             *reason = "[invalid string length]";
             return false;
