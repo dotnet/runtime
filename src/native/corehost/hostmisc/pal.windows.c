@@ -22,7 +22,9 @@
 #define ALT_DIR_SEPARATOR L'/'
 #define VOLUME_SEPARATOR  L':'
 
-pal_char_t* pal_get_own_executable_path(void)
+// Returns the full path of `module` (or the current executable when `module`
+// is NULL) as a heap-allocated string, or NULL on failure. Caller must free().
+static pal_char_t* get_module_file_name(HMODULE module)
 {
     // GetModuleFileNameW returns 0 on failure, the number of characters
     // written (not including the terminating null) on success, and the buffer
@@ -42,7 +44,7 @@ pal_char_t* pal_get_own_executable_path(void)
         }
         buf = new_buf;
 
-        size_written = GetModuleFileNameW(NULL, buf, size);
+        size_written = GetModuleFileNameW(module, buf, size);
     } while (size_written == size);
 
     if (size_written == 0)
@@ -52,6 +54,11 @@ pal_char_t* pal_get_own_executable_path(void)
     }
 
     return buf;
+}
+
+pal_char_t* pal_get_own_executable_path(void)
+{
+    return get_module_file_name(NULL);
 }
 
 bool pal_directory_exists(const pal_char_t* path)
@@ -509,4 +516,27 @@ pal_char_t* pal_get_default_installation_dir(void)
     result[total - 1] = L'\0';
 
     return result;
+}
+
+bool pal_get_loaded_library(
+    const pal_char_t* library_name,
+    const char* symbol_name,
+    pal_dll_t* dll,
+    pal_char_t** out_path)
+{
+    (void)symbol_name;
+    *dll = NULL;
+    *out_path = NULL;
+
+    HMODULE dll_maybe = GetModuleHandleW(library_name);
+    if (dll_maybe == NULL)
+        return false;
+
+    pal_char_t* path = get_module_file_name(dll_maybe);
+    if (path == NULL)
+        return false;
+
+    *dll = dll_maybe;
+    *out_path = path;
+    return true;
 }

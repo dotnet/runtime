@@ -1342,6 +1342,19 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
     // small subset of frames high.
     pFrame->ip = ip;
     pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Resolve .override before compilation: if a MethodImpl has remapped
+    // targetMethod's vtable slot, switch to the overriding method so we
+    // compile the correct body. Cache the result on the original MethodDesc
+    // so callers that check IsInterpreterCodeInitialized don't re-resolve.
+    MethodDesc* pOriginalMethod = targetMethod;
+    if (targetMethod->IsVtableSlot())
+    {
+        targetMethod = MethodTable::MapMethodDeclToMethodImpl(targetMethod);
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     {
         GCX_PREEMP();
         if (targetMethod->ShouldCallPrestub())
@@ -1353,11 +1366,22 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
         }
     }
     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
+
     if (targetIp == NULL)
     {
         // The prestub wasn't able to setup an interpreter code, so it will never be able to.
         targetMethod->PoisonInterpreterCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        if (pOriginalMethod != targetMethod)
+            pOriginalMethod->PoisonInterpreterCode();
+#endif
     }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    else if (pOriginalMethod != targetMethod)
+    {
+        pOriginalMethod->SetInterpreterCode(targetIp);
+    }
+#endif
 
     return targetIp;
 }

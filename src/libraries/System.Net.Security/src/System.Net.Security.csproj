@@ -104,8 +104,8 @@
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
     <!-- Common -->
-    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
-             Link="Common\System\Net\ReadWriteAdapter.cs" />
+    <Compile Include="$(CommonPath)System\ReadWriteAdapter.cs"
+             Link="Common\System\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"

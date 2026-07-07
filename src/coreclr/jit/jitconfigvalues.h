@@ -134,6 +134,8 @@ RELEASE_CONFIG_INTEGER(JitInlineBudget, "JitInlineBudget", DEFAULT_INLINE_BUDGET
 CONFIG_INTEGER(JitForceInlineDepth, "JitForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
 RELEASE_CONFIG_INTEGER(JitInlineMethodsWithEH, "JitInlineMethodsWithEH", 1)
 CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
+CONFIG_STRING(JitOptimizeAwaitRange, "JitOptimizeAwaitRange") // Optimize awaits in this hash range
+CONFIG_INTEGER(JitAwaitHashBreak, "JitAwaitHashBreak", -1)    // Break on jitting await with specified hash
 
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
@@ -573,10 +575,6 @@ RELEASE_CONFIG_INTEGER(JitInlineSIMDMultiplier, "JitInlineSIMDMultiplier", 3)
 
 // Ex lclMAX_TRACKED constant.
 RELEASE_CONFIG_INTEGER(JitMaxLocalsToTrack, "JitMaxLocalsToTrack", 0x400)
-
-#if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
-RELEASE_CONFIG_INTEGER(JitNoRngChks, "JitNoRngChks", 0) // If 1, don't generate range checks
-#endif
 
 OPT_CONFIG_INTEGER(JitDoAssertionProp, "JitDoAssertionProp", 1) // Perform assertion propagation optimization
 OPT_CONFIG_INTEGER(JitDoCopyProp, "JitDoCopyProp", 1) // Perform copy propagation on variables that appear redundant

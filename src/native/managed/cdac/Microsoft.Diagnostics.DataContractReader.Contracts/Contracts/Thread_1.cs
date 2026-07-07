@@ -151,7 +151,10 @@ internal readonly struct Thread_1 : IThread
             thread.ThreadHandle,
             thread.InteropDebuggingHijacked != 0,
             thread.DebuggerFilterContext,
-            thread.GCFrame);
+            thread.GCFrame,
+            address != TargetPointer.Null,
+            exceptionInfo?.ExceptionRecord ?? TargetPointer.Null,
+            exceptionInfo?.ContextRecord ?? TargetPointer.Null);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)

@@ -190,7 +190,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // to see any imperative security.
     // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
     // at the end, so tailcalls should be disabled.
-    // Async methods need to restore contexts, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
@@ -200,11 +199,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is Reverse P/Invoke";
-    }
-    else if (compIsAsync())
-    {
-        canTailCall             = false;
-        szCanTailCallFailReason = "Caller is async method";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -1134,8 +1128,7 @@ DEVIRT:
                 INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
-                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                       compInlineContext);
+                impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
             }
 
             // append the call node.
@@ -1210,6 +1203,18 @@ DONE:
         if (isExplicitTailCall && (stackState.esStackDepth != 0))
         {
             BADCODE("Stack should be empty after tailcall");
+        }
+
+        // Async methods need to restore contexts, so in general tailcalls
+        // should be disabled. The exception is a tail await: for those the JIT
+        // directly returns the callee's continuation to the caller and no
+        // context needs to be restored, so the async call can be turned into a
+        // real tail call. Any other tail call candidate in an async method
+        // must be disqualified.
+        if (canTailCall && compIsAsync() && (!call->AsCall()->IsAsync() || !call->AsCall()->GetAsyncInfo().IsTailAwait))
+        {
+            canTailCall             = false;
+            szCanTailCallFailReason = "Caller is async method and call is not a tail await";
         }
 
         // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
@@ -1350,7 +1355,7 @@ DONE:
         INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext);
+        impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
 
         // If the call is virtual, extra information for possible use during late devirt inlining.
         //
@@ -3374,26 +3379,22 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
         if (!isIntrinsic)
         {
+            // We can't guarantee that all overloads for the xplat intrinsics can be
+            // handled by the AltJit, so limit only the platform specific intrinsics
+
 #if defined(TARGET_XARCH)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((LAST_NI_Vector512 + 1) == FIRST_NI_X86Base);
-
-            if (ni < LAST_NI_Vector512)
+            assert((LAST_NI_Vector + 1) == FIRST_NI_X86Base);
 #elif defined(TARGET_ARM64)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
-
-            if (ni < LAST_NI_Vector128)
+            assert((LAST_NI_Vector + 1) == FIRST_NI_AdvSimd);
 #elif defined(TARGET_WASM)
-            NYI_WASM_SIMD("impHWIntrinsic");
-            if (ni < LAST_NI_Vector128)
+            assert((LAST_NI_Vector + 1) == FIRST_NI_PackedSimd);
 #else
 #error Unsupported platform
 #endif
+
+            if (ni <= LAST_NI_Vector)
             {
-                // Several of the NI_Vector64/128/256 APIs do not have
+                // Several of the NI_Vector APIs do not have
                 // all overloads as intrinsic today so they will assert
                 return nullptr;
             }
@@ -4315,7 +4316,21 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             // drop get_CurrentThread() call
                             impPopStack();
                             call->ReplaceWith(gtNewNothingNode(), this);
-                            retNode = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
+                            GenTreeCall* tidCall = gtNewHelperCallNode(CORINFO_HELP_GETCURRENTMANAGEDTHREADID, TYP_INT);
+                            impConvertToUserCallAndMarkForInlining(tidCall);
+                            if (tidCall->IsInlineCandidate())
+                            {
+                                // The helper was converted into an inlinable user call; spill it to its own
+                                // statement and hand back a GT_RET_EXPR so the inliner can fold the property.
+                                impAppendTree(tidCall, CHECK_SPILL_ALL, impCurStmtDI, false);
+                                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(tidCall, TYP_INT);
+                                tidCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                                retNode                                          = retExpr;
+                            }
+                            else
+                            {
+                                retNode = tidCall;
+                            }
                         }
                     }
                 }
@@ -7275,7 +7290,7 @@ void Compiler::impSetupAsyncCall(
     }
     else
     {
-        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+        if (opts.Tier0OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
             (call->gtReturnType == info.compRetType))
         {
             CORINFO_METHOD_HANDLE exactCalleeHnd =
@@ -8418,7 +8433,7 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
         CORINFO_CALL_INFO hCallInfo = {};
         hCallInfo.hMethod           = managedCallHnd;
         hCallInfo.methodFlags       = info.compCompHnd->getMethodAttribs(hCallInfo.hMethod);
-        impMarkInlineCandidate(call, nullptr, false, &hCallInfo, compInlineContext);
+        impMarkInlineCandidate(call, nullptr, &hCallInfo, compInlineContext);
 
 #if DEBUG
         CORINFO_METHOD_HANDLE existingValue = NO_METHOD_HANDLE;
@@ -8441,7 +8456,6 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 // Arguments:
 //    callNode -- call under scrutiny
 //    exactContextHnd -- context handle for inlining
-//    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
 //
@@ -8452,7 +8466,6 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext)
 {
@@ -8476,8 +8489,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
             // Do the actual evaluation
-            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                         inlinersContext, &inlineResult);
+            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, &inlineResult);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -8500,8 +8512,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
-        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                     inlinersContext, &inlineResult);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, callInfo, inlinersContext, &inlineResult);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -8532,7 +8543,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    callNode -- call under scrutiny
 //    candidateIndex -- index of the inline candidate to evaluate
 //    exactContextHnd -- context handle for inlining
-//    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
 //
@@ -8549,7 +8559,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             uint8_t                candidateIndex,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                            bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
                                             InlineContext*         inlinersContext,
                                             InlineResult*          inlineResult)
@@ -8789,7 +8798,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
-    inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
 
     // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
     // is also a tail call candidate, it can use the same return spill temp.
@@ -10275,17 +10283,16 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->likelihood                        = 0;
         }
 
-        pInfo->methInfo                       = methInfo;
-        pInfo->ilCallerHandle                 = pParam->pThis->info.compMethodHnd;
-        pInfo->clsHandle                      = clsHandle;
-        pInfo->exactContextHandle             = pParam->exactContextHnd;
-        pInfo->retExpr                        = nullptr;
-        pInfo->preexistingSpillTemp           = BAD_VAR_NUM;
-        pInfo->clsAttr                        = clsAttr;
-        pInfo->methAttr                       = pParam->methAttr;
-        pInfo->initClassResult                = initClassResult;
-        pInfo->exactContextNeedsRuntimeLookup = false;
-        pInfo->inlinersContext                = pParam->inlinersContext;
+        pInfo->methInfo             = methInfo;
+        pInfo->ilCallerHandle       = pParam->pThis->info.compMethodHnd;
+        pInfo->clsHandle            = clsHandle;
+        pInfo->exactContextHandle   = pParam->exactContextHnd;
+        pInfo->retExpr              = nullptr;
+        pInfo->preexistingSpillTemp = BAD_VAR_NUM;
+        pInfo->clsAttr              = clsAttr;
+        pInfo->methAttr             = pParam->methAttr;
+        pInfo->initClassResult      = initClassResult;
+        pInfo->inlinersContext      = pParam->inlinersContext;
 
         // Note exactContextNeedsRuntimeLookup is reset later on,
         // over in impMarkInlineCandidate.

@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <linux_ChromeVersion>149.0.7827.53</linux_ChromeVersion>
+    <linux_ChromeVersion>149.0.7827.200</linux_ChromeVersion>
     <linux_ChromeRevision>1625079</linux_ChromeRevision>
     <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1625084</linux_ChromeBaseSnapshotUrl>
     <linux_V8Version>15.1.103</linux_V8Version>
@@ -8,9 +8,9 @@
     <macos_ChromeRevision>1536371</macos_ChromeRevision>
     <macos_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Mac_Arm/1536376</macos_ChromeBaseSnapshotUrl>
     <macos_V8Version>15.1.103</macos_V8Version>
-    <win_ChromeVersion>150.0.7871.24</win_ChromeVersion>
-    <win_ChromeRevision>1639810</win_ChromeRevision>
-    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1639827</win_ChromeBaseSnapshotUrl>
+    <win_ChromeVersion>149.0.7827.201</win_ChromeVersion>
+    <win_ChromeRevision>1625079</win_ChromeRevision>
+    <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1625123</win_ChromeBaseSnapshotUrl>
     <win_V8Version>15.1.103</win_V8Version>
     <linux_FirefoxRevision>140.11.0esr</linux_FirefoxRevision>
     <linux_GeckoDriverRevision>0.37.0</linux_GeckoDriverRevision>

@@ -19318,7 +19318,10 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         assert(firstId->idReg2() == secondId->idReg2());
 
         // "predicated using the same governing predicate register and source element size as this instruction."
-        assert(firstId->idInsOpt() == secondId->idInsOpt());
+        emitAttr dstSize1 = optGetSveElemsize(firstId->idInsOpt());
+        emitAttr dstSize2 = insOptsScalableStandard(secondId->idInsOpt()) ? optGetSveElemsize(secondId->idInsOpt())
+                                                                          : optGetDstsize(secondId->idInsOpt());
+        assert(dstSize1 == dstSize2);
     }
 
     // The following instructions cannot use predicated movprfx, else the behaviour will be unpredictable.

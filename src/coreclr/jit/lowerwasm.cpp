@@ -825,8 +825,17 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
-    return node;
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->GetHWIntrinsicId());
+    switch (category)
+    {
+        case HWIntrinsicCategory::HW_Category_SIMD:
+        {
+            break;
+        }
+        default:
+            NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
+    }
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -837,5 +846,5 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_WASM_SIMD("Lowering::ContainCheckHWIntrinsic");
+    // TODO-WASM: implement containment for hardware intrinsics, currently a no-op
 }

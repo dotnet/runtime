@@ -4,7 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks.Sources;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -114,21 +116,45 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_Level1()
+        private static async ValueTask StateMachineAsync_ValueTask_Level1()
         {
-            await ValueStateMachineAsync_Level2();
+            await StateMachineAsync_ValueTask_Level2();
         }
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_Level2()
+        private static async ValueTask StateMachineAsync_ValueTask_Level2()
         {
-            await ValueStateMachineAsync_Level3();
+            await StateMachineAsync_ValueTask_Level3();
         }
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_Level3()
+        private static async ValueTask StateMachineAsync_ValueTask_Level3()
+        {
+            await Task.Delay(100);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_Level1()
+        {
+            await StateMachineAsync_PoolingValueTask_Level2();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_Level2()
+        {
+            await StateMachineAsync_PoolingValueTask_Level3();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_Level3()
         {
             await Task.Delay(100);
         }
@@ -1674,24 +1700,24 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_EventSequenceOrder_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_EventSequenceOrder_Marker()
         {
-            await ValueStateMachineAsync_Level1();
+            await StateMachineAsync_ValueTask_Level1();
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
-        public void ValueStateMachineAsync_EventSequenceOrder()
+        public void StateMachineAsync_ValueTask_EventSequenceOrder()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
             {
-                RunScenarioAndFlush(() => ValueStateMachineAsync_EventSequenceOrder_Marker().AsTask());
+                RunScenarioAndFlush(() => StateMachineAsync_ValueTask_EventSequenceOrder_Marker().AsTask());
             });
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(ValueStateMachineAsync_EventSequenceOrder_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_ValueTask_EventSequenceOrder_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
@@ -1709,17 +1735,17 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_MethodEventsEmitted_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_MethodEventsEmitted_Marker()
         {
-            await ValueStateMachineAsync_Level1();
+            await StateMachineAsync_ValueTask_Level1();
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
-        public void ValueStateMachineAsync_MethodEventsEmitted()
+        public void StateMachineAsync_ValueTask_MethodEventsEmitted()
         {
             var events = CollectEvents(StateMachineAsyncMethodKeywords | StateMachineAsyncCoreKeywords, () =>
             {
-                RunScenarioAndFlush(() => ValueStateMachineAsync_MethodEventsEmitted_Marker().AsTask());
+                RunScenarioAndFlush(() => StateMachineAsync_ValueTask_MethodEventsEmitted_Marker().AsTask());
             });
 
             // DumpAllEvents(events);
@@ -1742,24 +1768,24 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_CallstackDepthMatchesChainDepth_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker()
         {
-            await ValueStateMachineAsync_Level1();
+            await StateMachineAsync_ValueTask_Level1();
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
-        public void ValueStateMachineAsync_CallstackDepthMatchesChainDepth()
+        public void StateMachineAsync_ValueTask_CallstackDepthMatchesChainDepth()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
             {
-                RunScenarioAndFlush(() => ValueStateMachineAsync_CallstackDepthMatchesChainDepth_Marker().AsTask());
+                RunScenarioAndFlush(() => StateMachineAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker().AsTask());
             });
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(ValueStateMachineAsync_CallstackDepthMatchesChainDepth_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             // Marker -> Level1 -> Level2 -> Level3
@@ -1768,24 +1794,24 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_CallstackFramesHaveDistinctMethodIds_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker()
         {
-            await ValueStateMachineAsync_Level1();
+            await StateMachineAsync_ValueTask_Level1();
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
-        public void ValueStateMachineAsync_CallstackFramesHaveDistinctMethodIds()
+        public void StateMachineAsync_ValueTask_CallstackFramesHaveDistinctMethodIds()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
             {
-                RunScenarioAndFlush(() => ValueStateMachineAsync_CallstackFramesHaveDistinctMethodIds_Marker().AsTask());
+                RunScenarioAndFlush(() => StateMachineAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker().AsTask());
             });
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(ValueStateMachineAsync_CallstackFramesHaveDistinctMethodIds_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             var methodIds = markerCallstacks[0].Frames.Select(f => f.MethodId).ToList();
@@ -1794,7 +1820,7 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_InnerThrows_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete_InnerThrows_Marker()
         {
             await Task.Delay(100);
             throw new InvalidOperationException("valuetask inner throw");
@@ -1802,11 +1828,11 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_Handled_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Handled_Marker()
         {
             try
             {
-                await ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_InnerThrows_Marker();
+                await StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete_InnerThrows_Marker();
             }
             catch (InvalidOperationException)
             {
@@ -1815,24 +1841,24 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker()
         {
-            await ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_Handled_Marker();
+            await StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Handled_Marker();
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
-        public void ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete()
+        public void StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
             {
-                RunScenarioAndFlush(() => ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_Marker().AsTask());
+                RunScenarioAndFlush(() => StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker().AsTask());
             });
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
@@ -1854,14 +1880,14 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker()
         {
-            await ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_UnhandledInner_Marker();
+            await StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledInner_Marker();
         }
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_UnhandledInner_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledInner_Marker()
         {
             await Task.Delay(100);
             throw new InvalidOperationException("valuetask unhandled inner");
@@ -1869,19 +1895,19 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async ValueTask ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_Marker()
+        private static async ValueTask StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker()
         {
-            await ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker();
+            await StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker();
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
-        public void ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete()
+        public void StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
             {
                 try
                 {
-                    RunScenarioAndFlush(() => ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_Marker().AsTask());
+                    RunScenarioAndFlush(() => StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker().AsTask());
                 }
                 catch (InvalidOperationException)
                 {
@@ -1892,7 +1918,7 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
@@ -1912,6 +1938,601 @@ namespace System.Threading.Tasks.Tests
 
             int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, unwindIdx2 + 1);
             AssertTrue(stream, completeIdx > unwindIdx2, "Expected CompleteStateMachineAsyncContext after second Unwind");
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_UsesPoolingBox()
+        {
+            ValueTask pending = StateMachineAsync_PoolingValueTask_Level3();
+
+            try
+            {
+                Assert.False(pending.IsCompleted, "Expected a pending ValueTask so a pooling box was rented");
+
+                object? backing = typeof(ValueTask).GetField("_obj", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(pending);
+                Assert.True(backing is IValueTaskSource, $"Expected the pending ValueTask to be backed by an IValueTaskSource pooling box, got {backing?.GetType().Name ?? "null"}");
+                Assert.False(backing is Task, "A pending ValueTask backed by a Task means the default (non-pooling) builder was used");
+            }
+            finally
+            {
+                pending.AsTask().GetAwaiter().GetResult();
+            }
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_EventSequenceOrder_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_EventSequenceOrder()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_EventSequenceOrder_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_EventSequenceOrder_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateStateMachineAsyncContext);
+            AssertTrue(stream, createIdx >= 0, "Expected CreateStateMachineAsyncContext");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, createIdx + 1);
+            AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeStateMachineAsyncContext after Create");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
+            AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteStateMachineAsyncContext after Resume");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_MethodEventsEmitted_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_MethodEventsEmitted()
+        {
+            var events = CollectEvents(StateMachineAsyncMethodKeywords | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_MethodEventsEmitted_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var methodEvents = stream.All
+                .Where(e => e.EventId is AsyncEventID.ResumeStateMachineAsyncMethod or AsyncEventID.CompleteStateMachineAsyncMethod)
+                .Select(e => e.EventId)
+                .ToList();
+
+            int resumeCount = methodEvents.Count(id => id == AsyncEventID.ResumeStateMachineAsyncMethod);
+            int completeCount = methodEvents.Count(id => id == AsyncEventID.CompleteStateMachineAsyncMethod);
+
+            // Marker -> Level1 -> Level2 -> Level3
+            AssertTrue(stream, resumeCount >= 4, $"Expected at least 4 ResumeStateMachineAsyncMethod events for pooling ValueTask chain, got {resumeCount}");
+            AssertTrue(stream, completeCount >= 4, $"Expected at least 4 CompleteStateMachineAsyncMethod events for pooling ValueTask chain, got {completeCount}");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_SuspendResumeCompleteEvents_Marker()
+        {
+            await Task.Delay(100);
+            await Task.Delay(100);
+            await Task.Delay(100);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_SuspendResumeCompleteEvents()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_SuspendResumeCompleteEvents_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_SuspendResumeCompleteEvents_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
+
+            int resumeCount = ids.Count(id => id == AsyncEventID.ResumeStateMachineAsyncContext);
+            int suspendCount = ids.Count(id => id == AsyncEventID.SuspendStateMachineAsyncContext);
+            int completeCount = ids.Count(id => id == AsyncEventID.CompleteStateMachineAsyncContext);
+
+            AssertTrue(stream, suspendCount >= 1, "Expected at least one SuspendStateMachineAsyncContext for the re-suspending pooling method");
+
+            // Each resume ends in exactly one suspend (yielded) or one complete (finished).
+            AssertEqual(stream, resumeCount, completeCount + suspendCount);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_CallstackDepthMatchesChainDepth_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_CallstackDepthMatchesChainDepth()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_CallstackDepthMatchesChainDepth_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_CallstackDepthMatchesChainDepth_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            // Marker -> Level1 -> Level2 -> Level3.
+            AssertEqual(stream, 4, markerCallstacks[0].FrameCount);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_CallstackFramesHaveDistinctMethodIds_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_CallstackFramesHaveDistinctMethodIds()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_CallstackFramesHaveDistinctMethodIds_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_CallstackFramesHaveDistinctMethodIds_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            var methodIds = markerCallstacks[0].Frames.Select(f => f.MethodId).ToList();
+            AssertEqual(stream, methodIds.Count, methodIds.Distinct().Count());
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete_InnerThrows_Marker()
+        {
+            await Task.Delay(100);
+            throw new InvalidOperationException("pooling valuetask inner throw");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete_Handled_Marker()
+        {
+            try
+            {
+                await StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete_InnerThrows_Marker();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete_Handled_Marker();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_HandledException_EmitsUnwindAndComplete_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateStateMachineAsyncContext);
+            AssertTrue(stream, createIdx >= 0, "Expected CreateStateMachineAsyncContext");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, createIdx + 1);
+            AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeStateMachineAsyncContext after Create");
+
+            int unwindIdx = ids.IndexOf(AsyncEventID.UnwindStateMachineAsyncException, resumeIdx + 1);
+            AssertTrue(stream, unwindIdx > resumeIdx, "Expected UnwindStateMachineAsyncException after Resume");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, unwindIdx + 1);
+            AssertTrue(stream, completeIdx > unwindIdx, "Expected CompleteStateMachineAsyncContext after Unwind");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledInner_Marker();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledInner_Marker()
+        {
+            await Task.Delay(100);
+            throw new InvalidOperationException("pooling valuetask unhandled inner");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
+            {
+                try
+                {
+                    RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete_Marker().AsTask());
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_UnhandledException_EmitsUnwindAndComplete_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateStateMachineAsyncContext);
+            AssertTrue(stream, createIdx >= 0, "Expected CreateStateMachineAsyncContext");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, createIdx + 1);
+            AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeStateMachineAsyncContext after Create");
+
+            int unwindIdx1 = ids.IndexOf(AsyncEventID.UnwindStateMachineAsyncException, resumeIdx + 1);
+            AssertTrue(stream, unwindIdx1 > resumeIdx, "Expected first UnwindStateMachineAsyncException after Resume");
+
+            int unwindIdx2 = ids.IndexOf(AsyncEventID.UnwindStateMachineAsyncException, unwindIdx1 + 1);
+            AssertTrue(stream, unwindIdx2 > unwindIdx1, "Expected second UnwindStateMachineAsyncException after first Unwind");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, unwindIdx2 + 1);
+            AssertTrue(stream, completeIdx > unwindIdx2, "Expected CompleteStateMachineAsyncContext after second Unwind");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Leaf_Marker()
+        {
+            await Task.Delay(100).ConfigureAwait(false);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Mid_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Leaf_Marker().ConfigureAwait(false);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Marker()
+        {
+            await StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Mid_Marker().ConfigureAwait(false);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            var frameNames = markerCallstacks[0].Frames
+                .Select(f => GetMethodNameFromMethodId(markerCallstacks[0].CallstackType, f.MethodId))
+                .Where(n => n is not null)
+                .ToList();
+
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Leaf_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Mid_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Marker), frameNames);
+
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_PoolingValueTask_ConfigureAwaitFalse_Marker));
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private static async ValueTask<int> StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Leaf_Marker()
+        {
+            await Task.Delay(100).ConfigureAwait(false);
+            return 1;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private static async ValueTask<int> StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Mid_Marker()
+        {
+            return await StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Leaf_Marker().ConfigureAwait(false) + 1;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private static async ValueTask<int> StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Marker()
+        {
+            return await StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Mid_Marker().ConfigureAwait(false) + 1;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            var frameNames = markerCallstacks[0].Frames
+                .Select(f => GetMethodNameFromMethodId(markerCallstacks[0].CallstackType, f.MethodId))
+                .Where(n => n is not null)
+                .ToList();
+
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Leaf_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Mid_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Marker), frameNames);
+
+            AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_PoolingValueTaskOfT_ConfigureAwaitFalse_Marker));
+        }
+
+        private static SemaphoreSlim s_poolingAppendRace_proceed;
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_AppendCallstack_FiresOnLateParentRegistration_Child_Marker()
+        {
+            await Task.Yield();
+            s_poolingAppendRace_proceed.Release();
+            Thread.Sleep(200);
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_AppendCallstack_FiresOnLateParentRegistration_Parent_Marker()
+        {
+            ValueTask t = StateMachineAsync_PoolingValueTask_AppendCallstack_FiresOnLateParentRegistration_Child_Marker();
+            Assert.True(s_poolingAppendRace_proceed.Wait(TimeSpan.FromSeconds(20)), "Timed out waiting for child to reach append-race checkpoint");
+            await t;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_AppendCallstack_FiresOnLateParentRegistration()
+        {
+            s_poolingAppendRace_proceed = new SemaphoreSlim(0, 1);
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTask_AppendCallstack_FiresOnLateParentRegistration_Parent_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var childOnlyResumes = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_AppendCallstack_FiresOnLateParentRegistration_Child_Marker));
+            AssertNotEmpty(stream, childOnlyResumes);
+
+            var appendsWithParent = stream.CallstacksWithMarker(AsyncEventID.AppendStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_AppendCallstack_FiresOnLateParentRegistration_Parent_Marker));
+            AssertNotEmpty(stream, appendsWithParent);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private static async ValueTask<int> StateMachineAsync_PoolingValueTaskOfT_Level3()
+        {
+            await Task.Delay(100);
+            return 1;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private static async ValueTask<int> StateMachineAsync_PoolingValueTaskOfT_Level2()
+        {
+            return await StateMachineAsync_PoolingValueTaskOfT_Level3() + 1;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private static async ValueTask<int> StateMachineAsync_PoolingValueTaskOfT_Level1()
+        {
+            return await StateMachineAsync_PoolingValueTaskOfT_Level2() + 1;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private static async ValueTask<int> StateMachineAsync_PoolingValueTaskOfT_CallstackDepthMatchesChainDepth_Marker()
+        {
+            return await StateMachineAsync_PoolingValueTaskOfT_Level1();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTaskOfT_CallstackDepthMatchesChainDepth()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(() => StateMachineAsync_PoolingValueTaskOfT_CallstackDepthMatchesChainDepth_Marker().AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTaskOfT_CallstackDepthMatchesChainDepth_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            // Marker -> Level1 -> Level2 -> Level3.
+            AssertEqual(stream, 4, markerCallstacks[0].FrameCount);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Inner_Marker(Task innerGate)
+        {
+            await innerGate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Outer_Marker(
+            TaskCompletionSource innerGate, StrongBox<int> resumedThreadId, Task resumeGate, Task finalGate)
+        {
+            await resumeGate;
+            resumedThreadId.Value = Environment.CurrentManagedThreadId;
+            innerGate.SetResult();
+            await finalGate;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_InlineReentrantCompletion()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var resumedThreadId = new StrongBox<int>();
+                    var innerGate = new TaskCompletionSource();
+                    var resumeGate = new TaskCompletionSource();
+                    var finalGate = new TaskCompletionSource();
+
+                    // Inner suspends on innerGate (pending pooling box + registered continuation).
+                    ValueTask inner = StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Inner_Marker(innerGate.Task);
+
+                    // Outer suspends on resumeGate.
+                    ValueTask outer = StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Outer_Marker(
+                        innerGate, resumedThreadId, resumeGate.Task, finalGate.Task);
+
+                    // Resume Outer inline; during its resume it completes Inner inline (the re-entrant
+                    // completion under test), then re-suspends on finalGate.
+                    int setResultThreadId = Environment.CurrentManagedThreadId;
+                    resumeGate.SetResult();
+
+                    Assert.True(resumedThreadId.Value == setResultThreadId,
+                        $"Expected inline resume on thread {setResultThreadId}, got {resumedThreadId.Value} (0 = no sync resume)");
+
+                    finalGate.SetResult();
+                    await outer;
+                    await inner;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(
+                AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Outer_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            // The Outer frame resumes after resumeGate and then RE-SUSPENDS on finalGate, so its dispatcher must
+            // emit a Suspend and must NOT emit a Complete at that point. A mis-attributed inline completion of
+            // Inner flips CurrentContinuationCompleted on this frame and produces a (wrong) Complete instead.
+            var markerDispatcherIds = markerCallstacks.Select(c => c.DispatcherId).Distinct().ToList();
+
+            bool foundReSuspend = false;
+            foreach (ulong id in markerDispatcherIds)
+            {
+                var ids = stream.All.Where(e => e.DispatcherId == id).OrderBy(e => e.Timestamp).Select(e => e.EventId).ToList();
+                int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext);
+                if (resumeIdx < 0)
+                {
+                    continue;
+                }
+
+                int suspendIdx = ids.IndexOf(AsyncEventID.SuspendStateMachineAsyncContext, resumeIdx + 1);
+                if (suspendIdx > resumeIdx)
+                {
+                    foundReSuspend = true;
+                    int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
+                    AssertTrue(stream, completeIdx < 0,
+                        "Outer re-suspending frame emitted a Complete; inline inner completion was mis-attributed to it");
+                }
+            }
+
+            AssertTrue(stream, foundReSuspend, "Expected the Outer frame to re-suspend on finalGate (Suspend event)");
         }
 
         [RuntimeAsyncMethodGeneration(false)]
@@ -2212,10 +2833,6 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            // The marker frame must appear in a Resume callstack -- proves the chain was walkable.
-            // This is the deterministic, scheduling-independent core of the test: when the chain
-            // first resumes (gate set), StateMachine emits a ResumeAsyncCallstack carrying the remaining chain,
-            // which at first resume is all three frames.
             var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_SingleThread_ChainEventsAndCallstack_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
@@ -2228,14 +2845,155 @@ namespace System.Threading.Tasks.Tests
             AssertContains(stream, nameof(StateMachineAsync_SingleThread_ChainEventsAndCallstack_Mid_Marker), frameNames);
             AssertContains(stream, nameof(StateMachineAsync_SingleThread_ChainEventsAndCallstack_Marker), frameNames);
 
-            // Lifecycle ORDERING (not counting). We deliberately do not assert global Create/Complete
-            // balance or an exact dispatcher count: depending on whether the resume cascade inlines,
-            // the chain may collapse into one dispatcher or split into several across scheduling
-            // boundaries, and a scheduled/nested resume can push a dispatcher's CompleteAsyncContext
-            // (or its method-complete events) outside the captured trace window. Those counts are
-            // therefore not invariants. What IS invariant is the per-dispatcher ordering of whatever
-            // events were captured: a dispatcher is created before it resumes, and completes (if its
-            // Complete is in-window) after it resumes.
+            foreach (ulong dispatcherId in markerCallstacks.Select(c => c.DispatcherId).Distinct())
+            {
+                var dispatcherEvents = stream.All
+                    .Where(e => e.DispatcherId == dispatcherId)
+                    .OrderBy(e => e.Timestamp)
+                    .ToList();
+
+                ParsedEvent? createEvt = dispatcherEvents.FirstOrDefault(e => e.EventId == AsyncEventID.CreateStateMachineAsyncContext);
+                ParsedEvent? resumeEvt = dispatcherEvents.FirstOrDefault(e => e.EventId == AsyncEventID.ResumeStateMachineAsyncContext);
+                ParsedEvent? completeEvt = dispatcherEvents.FirstOrDefault(e => e.EventId == AsyncEventID.CompleteStateMachineAsyncContext);
+
+                if (createEvt is not null && resumeEvt is not null)
+                {
+                    AssertTrue(stream, createEvt.Timestamp <= resumeEvt.Timestamp,
+                        $"Dispatcher {dispatcherId}: CreateStateMachineAsyncContext must precede ResumeStateMachineAsyncContext.");
+                }
+
+                if (resumeEvt is not null && completeEvt is not null)
+                {
+                    AssertTrue(stream, resumeEvt.Timestamp <= completeEvt.Timestamp,
+                        $"Dispatcher {dispatcherId}: CompleteStateMachineAsyncContext must follow ResumeStateMachineAsyncContext.");
+                }
+            }
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async ValueTask StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Inner_Marker(Task gate)
+        {
+            await gate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async ValueTask StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Mid_Marker(Task gate)
+        {
+            await StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Inner_Marker(gate);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async ValueTask StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Marker(Task gate)
+        {
+            await StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Mid_Marker(gate);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        public async Task StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack()
+        {
+            var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
+            {
+                var tcs = new TaskCompletionSource();
+                ValueTask chain = StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Marker(tcs.Task);
+                tcs.SetResult();
+                await chain;
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            var deepest = markerCallstacks.MaxBy(cs => cs.FrameCount)!;
+            var frameNames = deepest.Frames
+                .Select(f => GetMethodNameFromMethodId(deepest.CallstackType, f.MethodId))
+                .Where(n => n is not null)
+                .ToList();
+            AssertContains(stream, nameof(StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Inner_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Mid_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack_Marker), frameNames);
+
+            foreach (ulong dispatcherId in markerCallstacks.Select(c => c.DispatcherId).Distinct())
+            {
+                var dispatcherEvents = stream.All
+                    .Where(e => e.DispatcherId == dispatcherId)
+                    .OrderBy(e => e.Timestamp)
+                    .ToList();
+
+                ParsedEvent? createEvt = dispatcherEvents.FirstOrDefault(e => e.EventId == AsyncEventID.CreateStateMachineAsyncContext);
+                ParsedEvent? resumeEvt = dispatcherEvents.FirstOrDefault(e => e.EventId == AsyncEventID.ResumeStateMachineAsyncContext);
+                ParsedEvent? completeEvt = dispatcherEvents.FirstOrDefault(e => e.EventId == AsyncEventID.CompleteStateMachineAsyncContext);
+
+                if (createEvt is not null && resumeEvt is not null)
+                {
+                    AssertTrue(stream, createEvt.Timestamp <= resumeEvt.Timestamp,
+                        $"Dispatcher {dispatcherId}: CreateStateMachineAsyncContext must precede ResumeStateMachineAsyncContext.");
+                }
+
+                if (resumeEvt is not null && completeEvt is not null)
+                {
+                    AssertTrue(stream, resumeEvt.Timestamp <= completeEvt.Timestamp,
+                        $"Dispatcher {dispatcherId}: CompleteStateMachineAsyncContext must follow ResumeStateMachineAsyncContext.");
+                }
+            }
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Inner_Marker(Task gate)
+        {
+            await gate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Mid_Marker(Task gate)
+        {
+            await StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Inner_Marker(gate);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Marker(Task gate)
+        {
+            await StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Mid_Marker(gate);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        public async Task StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack()
+        {
+            var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
+            {
+                var tcs = new TaskCompletionSource();
+                ValueTask chain = StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Marker(tcs.Task);
+                tcs.SetResult();
+                await chain;
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            var deepest = markerCallstacks.MaxBy(cs => cs.FrameCount)!;
+            var frameNames = deepest.Frames
+                .Select(f => GetMethodNameFromMethodId(deepest.CallstackType, f.MethodId))
+                .Where(n => n is not null)
+                .ToList();
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Inner_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Mid_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack_Marker), frameNames);
+
             foreach (ulong dispatcherId in markerCallstacks.Select(c => c.DispatcherId).Distinct())
             {
                 var dispatcherEvents = stream.All
