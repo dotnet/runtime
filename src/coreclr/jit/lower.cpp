@@ -10746,6 +10746,17 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
             data->lclNum = base->AsLclVar()->GetLclNum();
         }
     }
+    else if (ind->Addr()->IsCnsIntOrI() && !ind->Addr()->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+    {
+        // Absolute constant address (e.g. the address of a non-GC static field). We treat the
+        // constant value itself as the offset from a common (null) base so that adjacent
+        // constant-address stores can be recognized and coalesced. Relocatable constants are
+        // excluded because their runtime value isn't known at compile time.
+        data->baseAddr = nullptr;
+        data->index    = nullptr;
+        data->scale    = 1;
+        data->offset   = ind->Addr()->AsIntCon()->IconValue();
+    }
     else if (IsStoreCoalescingInvariantNode(m_compiler, ind->Addr(), true))
     {
         // Address is just a local, no offset, scale is 1
@@ -10851,9 +10862,9 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
     // IND<byte> is always fine (and all IND<X> created here from such)
     // IND<simd> is not required to be atomic per our Memory Model
     bool     allowsNonAtomic = currData.AllowsNonAtomic() && prevData.AllowsNonAtomic();
-    int      minOffset       = min(prevData.offset, currData.offset);
-    int      maxEndOffset    = max(prevData.offset + static_cast<int>(prevData.accessSize),
-                                   currData.offset + static_cast<int>(currData.accessSize));
+    ssize_t  minOffset       = min(prevData.offset, currData.offset);
+    ssize_t  maxEndOffset    = max(prevData.offset + static_cast<ssize_t>(prevData.accessSize),
+                                   currData.offset + static_cast<ssize_t>(currData.accessSize));
     unsigned combinedSize    = static_cast<unsigned>(maxEndOffset - minOffset);
 
     if (!allowsNonAtomic && (m_compiler->info.compRetBuffArg != BAD_VAR_NUM) &&
@@ -10897,15 +10908,17 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
             return false;
         }
 
-        // Base address being TYP_REF gives us a hint that data is pointer-aligned.
-        if (!currData.baseAddr->TypeIs(TYP_REF))
+        // A null base address means the store targets a known absolute constant address, so its
+        // alignment is fully determined by minOffset (the absolute address) below. Otherwise, a
+        // TYP_REF base gives us a hint that data is pointer-aligned.
+        if ((currData.baseAddr != nullptr) && !currData.baseAddr->TypeIs(TYP_REF))
         {
             return false;
         }
 
         // Check whether the combined indir is still aligned.
         bool isCombinedIndirAtomic =
-            (combinedSize <= TARGET_POINTER_SIZE) && ((minOffset % static_cast<int>(combinedSize)) == 0);
+            (combinedSize <= TARGET_POINTER_SIZE) && ((minOffset % static_cast<ssize_t>(combinedSize)) == 0);
 
         if (combinedSize == 2 * TARGET_POINTER_SIZE)
         {
@@ -10916,8 +10929,9 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
             //
             // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null), and assume TYP_LONG/TYP_REF
             // are already 64-bit aligned. Otherwise the existing load/store sequence would not have atomicity
-            // guarantees either.
-            isCombinedIndirAtomic = true;
+            // guarantees either. For a known constant address we must verify the 64-bit alignment explicitly.
+            isCombinedIndirAtomic =
+                (currData.baseAddr != nullptr) || ((minOffset % static_cast<ssize_t>(TARGET_POINTER_SIZE)) == 0);
 #endif
         }
         else if (combinedSize > TARGET_POINTER_SIZE)
@@ -11004,11 +11018,11 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
-        bool const allowOverlapOptimization = node->OperIs(GT_STORE_LCL_FLD);
-        int const  prevEndOffset            = prevData.offset + static_cast<int>(prevData.accessSize);
-        int const  currEndOffset            = currData.offset + static_cast<int>(currData.accessSize);
-        bool const storesOverlap            = (currData.offset < prevEndOffset) && (prevData.offset < currEndOffset);
-        bool const sameLocation =
+        bool const    allowOverlapOptimization = node->OperIs(GT_STORE_LCL_FLD);
+        ssize_t const prevEndOffset            = prevData.offset + static_cast<ssize_t>(prevData.accessSize);
+        ssize_t const currEndOffset            = currData.offset + static_cast<ssize_t>(currData.accessSize);
+        bool const    storesOverlap            = (currData.offset < prevEndOffset) && (prevData.offset < currEndOffset);
+        bool const    sameLocation =
             currData.IsAddressEqual(prevData, /*ignoreOffset*/ true, allowOverlapOptimization && storesOverlap);
 
         if (!sameLocation)
@@ -11059,21 +11073,31 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
-        if (node->OperIs(GT_STOREIND, GT_STORE_BLK) && !node->AsIndir()->Addr()->OperIs(GT_LEA))
+        if (node->OperIs(GT_STOREIND, GT_STORE_BLK) && !node->AsIndir()->Addr()->OperIs(GT_LEA) &&
+            !(node->AsIndir()->Addr()->IsCnsIntOrI() &&
+              !node->AsIndir()->Addr()->AsIntCon()->ImmedValNeedsReloc(m_compiler)))
         {
             return;
         }
 
-        var_types  oldType             = node->TypeGet();
-        var_types  newType             = TYP_UNDEF;
-        bool       tryReusingPrevValue = false;
-        int const  minOffset           = min(prevData.offset, currData.offset);
-        int const  maxEndOffset        = max(prevEndOffset, currEndOffset);
-        int const  combinedSize        = maxEndOffset - minOffset;
-        bool const prevContainsCurr    = (prevData.offset <= currData.offset) && (prevEndOffset >= currEndOffset);
-        bool const currContainsPrev    = (currData.offset <= prevData.offset) && (currEndOffset >= prevEndOffset);
-        bool const storesAreAdjacent   = (prevEndOffset == currData.offset) || (currEndOffset == prevData.offset);
-        bool const storesHaveSameSize  = prevData.accessSize == currData.accessSize;
+        var_types     oldType             = node->TypeGet();
+        var_types     newType             = TYP_UNDEF;
+        bool          tryReusingPrevValue = false;
+        ssize_t const minOffset           = min(prevData.offset, currData.offset);
+        ssize_t const maxEndOffset        = max(prevEndOffset, currEndOffset);
+
+        ssize_t const combinedSpan = maxEndOffset - minOffset;
+        if (!FitsIn<int>(combinedSpan))
+        {
+            // Offsets are too far apart (e.g. unrelated constant-address stores).
+            return;
+        }
+
+        int const  combinedSize       = static_cast<int>(combinedSpan);
+        bool const prevContainsCurr   = (prevData.offset <= currData.offset) && (prevEndOffset >= currEndOffset);
+        bool const currContainsPrev   = (currData.offset <= prevData.offset) && (currEndOffset >= prevEndOffset);
+        bool const storesAreAdjacent  = (prevEndOffset == currData.offset) || (currEndOffset == prevData.offset);
+        bool const storesHaveSameSize = prevData.accessSize == currData.accessSize;
 
         if (allowOverlapOptimization && currContainsPrev)
         {
@@ -11117,7 +11141,12 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
                 return;
             }
 
-            if (abs(prevData.offset - currData.offset) != static_cast<int>(prevData.accessSize))
+            // accessSize is a small store width (1..16 bytes), so casting it to ssize_t is
+            // value-preserving and negating the result cannot overflow.
+            assert(FitsIn<ssize_t>(prevData.accessSize));
+            ssize_t const offsetDelta = prevData.offset - currData.offset;
+            if ((offsetDelta != static_cast<ssize_t>(prevData.accessSize)) &&
+                (offsetDelta != -static_cast<ssize_t>(prevData.accessSize)))
             {
                 return;
             }
@@ -11236,8 +11265,22 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
 
             ind->Data()->ClearContained();
-            GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
-            addr->SetOffset(min(prevData.offset, currData.offset));
+            if (ind->Addr()->OperIs(GT_LEA))
+            {
+                // In the LEA path both offsets come from GenTreeAddrMode::Offset() (an int), and a
+                // constant-address store never shares a location with a LEA store (their base nodes
+                // differ), so the min is guaranteed to be within int range.
+                GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+                assert(FitsIn<int>(min(prevData.offset, currData.offset)));
+                addr->SetOffset(static_cast<int>(min(prevData.offset, currData.offset)));
+            }
+            else
+            {
+                // Constant absolute address: keep the lower of the two addresses. offset is ssize_t
+                // and SetIconValue takes ssize_t, so no truncation occurs here.
+                assert(ind->Addr()->IsCnsIntOrI());
+                ind->Addr()->AsIntCon()->SetIconValue(min(prevData.offset, currData.offset));
+            }
 
             ind->gtType         = newType;
             ind->Data()->gtType = newType;
@@ -11252,7 +11295,10 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             lclStore->Data()->gtType = newType;
             if (lclStore->OperIs(GT_STORE_LCL_FLD))
             {
-                lclStore->AsLclFld()->SetLclOffs(min(prevData.offset, currData.offset));
+                // Local field offsets are non-negative and uint16_t-range (see SetLclOffs), so the
+                // min fits in unsigned without truncation.
+                assert(FitsIn<unsigned>(min(prevData.offset, currData.offset)));
+                lclStore->AsLclFld()->SetLclOffs(static_cast<unsigned>(min(prevData.offset, currData.offset)));
             }
         }
 
