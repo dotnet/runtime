@@ -585,7 +585,7 @@ static int RunDump(PFN_CLRDataCreateInstance pfnCreate, LiveDataTarget* target, 
     return (regionsOk && dacFree) ? 0 : 7;
 }
 
-int wmain(int argc, wchar_t** argv)
+int __cdecl wmain(int argc, wchar_t** argv)
 {
     if (argc < 2)
     {
