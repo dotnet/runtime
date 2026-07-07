@@ -1404,21 +1404,83 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
         }
         else
         {
-            // Here we may have a GT_RELOAD.
-            // The spill temp allocated for it is associated with the original tree that defined the
-            // register that it was spilled from.
-            // So we use 'unspillTree' to recover that spill temp.
-            TempDsc* t        = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
-            emitAttr emitType = emitActualTypeSize(unspillTree->TypeGet());
-            // Reload into the register specified by 'tree' which may be a GT_RELOAD.
             regNumber dstReg = tree->GetRegNum();
-            GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitType, dstReg, t->tdTempNum(), 0);
-            regSet.tmpRlsTemp(t);
 
-            unspillTree->gtFlags &= ~GTF_SPILLED;
-            gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+#ifdef TARGET_XARCH
+            // A floating-point, SIMD, or mask constant is not spilled to the stack (see
+            // genProduceReg); rematerialize it directly into the reload target register rather
+            // than loading it from a spill temp that was never created. Note that the GT_CNS_VEC
+            // and GT_CNS_MSK GenTree* overloads of genSetRegToConst materialize into the node's own
+            // register, so the explicit-register overloads are used to honor 'dstReg' (which may be
+            // a GT_RELOAD target register that differs from the original definition's register).
+            if (isRematerializableConstant(unspillTree) && ((unspillTree->gtFlags & GTF_NOREG_AT_USE) == 0))
+            {
+                switch (unspillTree->OperGet())
+                {
+                    case GT_CNS_DBL:
+                        genSetRegToConst(dstReg, unspillTree->TypeGet(), unspillTree);
+                        break;
+                    case GT_CNS_VEC:
+                        genSetRegToConst(dstReg, unspillTree->TypeGet(), &unspillTree->AsVecCon()->gtSimdVal);
+                        break;
+                    case GT_CNS_MSK:
+                        genSetRegToConst(dstReg, unspillTree->TypeGet(), &unspillTree->AsMskCon()->gtSimdMaskVal);
+                        break;
+                    default:
+                        unreached();
+                }
+
+                unspillTree->gtFlags &= ~GTF_SPILLED;
+            }
+            else
+#endif // TARGET_XARCH
+            {
+                // Here we may have a GT_RELOAD.
+                // The spill temp allocated for it is associated with the original tree that defined the
+                // register that it was spilled from.
+                // So we use 'unspillTree' to recover that spill temp.
+                TempDsc* t        = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
+                emitAttr emitType = emitActualTypeSize(unspillTree->TypeGet());
+                // Reload into the register specified by 'tree' which may be a GT_RELOAD.
+                GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitType, dstReg, t->tdTempNum(), 0);
+                regSet.tmpRlsTemp(t);
+
+                unspillTree->gtFlags &= ~GTF_SPILLED;
+                gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+            }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// isRematerializableConstant: Determine whether a spilled constant tree temp can be
+//    rematerialized at its reload point instead of being spilled to and reloaded
+//    from the stack.
+//
+// Arguments:
+//    tree - the node that defines the value
+//
+// Return Value:
+//    True if 'tree' is a floating-point, SIMD, or mask constant that this target can
+//    rematerialize without requiring a scratch register or GC bookkeeping.
+//
+// Notes:
+//    These constants have no GC liveness. On xarch every such constant can be
+//    rematerialized without a scratch register (zero via `xorps`, all-bits-set via
+//    `pcmpeqd`/`vpternlogd`, or a RIP-relative load from the constant's memory home),
+//    so all of them are eligible. Other targets can be enabled later for the subset of
+//    values that likewise need no scratch register (for example, zero or fmov-immediate
+//    floating-point constants on arm64); loading arbitrary constants from the constant
+//    pool there requires a scratch address register that is not available at the reload
+//    point, so those remain spilled for now.
+//
+bool CodeGen::isRematerializableConstant(GenTree* tree)
+{
+#ifdef TARGET_XARCH
+    return tree->OperIs(GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK);
+#else
+    return false;
+#endif // TARGET_XARCH
 }
 
 //------------------------------------------------------------------------
@@ -2242,6 +2304,20 @@ void CodeGen::genProduceReg(GenTree* tree)
             }
             else
             {
+                // Floating-point, SIMD, and mask constants have no GC liveness and (on the targets
+                // for which isRematerializableConstant is enabled) can be rematerialized cheaply
+                // without a scratch register. Rather than spilling such a value to the stack and
+                // reloading it, skip creating the spill temp and emitting the store;
+                // genUnspillRegIfNeeded will rematerialize it at the reload point. If the value will
+                // instead be consumed directly from the spill temp as a contained memory operand
+                // (GTF_NOREG_AT_USE), it must still be spilled normally.
+                if (isRematerializableConstant(tree) && ((tree->gtFlags & GTF_NOREG_AT_USE) == 0))
+                {
+                    tree->gtFlags |= GTF_SPILLED;
+                    tree->gtFlags &= ~GTF_SPILL;
+                    return;
+                }
+
                 regSet.rsSpillTree(tree->GetRegNum(), tree);
                 gcInfo.gcMarkRegSetNpt(genRegMask(tree->GetRegNum()));
             }

@@ -1121,6 +1121,7 @@ protected:
         unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum, bool reSpill, bool isLastUse);
     void      genUnspillRegIfNeeded(GenTree* tree);
     void      genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex);
+    bool      isRematerializableConstant(GenTree* tree);
     regNumber genConsumeReg(GenTree* tree);
     regNumber genConsumeReg(GenTree* tree, unsigned multiRegIndex);
     void      genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
