@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Remoting;
 
 namespace System
@@ -37,6 +38,7 @@ namespace System
 
         [DebuggerHidden]
         [DebuggerStepThrough]
+        [Intrinsic]
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) =>
             CreateInstance(type, nonPublic: false);
 

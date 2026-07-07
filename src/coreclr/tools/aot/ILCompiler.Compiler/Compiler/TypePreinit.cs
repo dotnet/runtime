@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -223,12 +225,19 @@ namespace ILCompiler
 
             while (reader.HasNext)
             {
-                if (instructionCounter == 100000)
+                const int MaxInstructionCounter = 100000;
+
+                if (instructionCounter == MaxInstructionCounter)
                     return Status.Fail(methodIL.OwningMethod, "Instruction limit");
 
                 instructionCounter++;
 
                 TypeDesc constrainedType = null;
+
+                static bool IsSystemType(TypeDesc type)
+                    => type is MetadataType typeType
+                            && typeType.Name == "Type"u8 && typeType.Namespace == "System"u8
+                            && typeType.Module == typeType.Context.SystemModule;
 
             again:
                 ILOpcode opcode = reader.ReadILOpcode();
@@ -289,6 +298,184 @@ namespace ILCompiler
                         const int MaximumInterpretedArraySize = 8192;
 
                         TypeDesc elementType = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+
+                        bool TryImportMakeGenericTypeSequence(ref ILReader reader, ref int instructionCounter)
+                        {
+                            // Check for if we have a setup like so: ..., Type (generic type definition), int32 (element count - already popped)
+                            if (stack.Count < 1)
+                                return false;
+                            var typeDefStackEntry = stack.Peek();
+                            if (typeDefStackEntry.ValueKind != StackValueKind.ObjRef || typeDefStackEntry.Value is not RuntimeTypeValue rtv)
+                                return false;
+                            if (rtv.TypeRepresented is not MetadataType { IsGenericDefinition: true } uninstantiated)
+                                return false;
+
+                            // Check if arity of the type does not match the arity of our array:
+                            if (rtv.TypeRepresented.Instantiation.Length != elementCount)
+                                return false;
+
+                            // We will now pattern match what roslyn produces for t.MakeGenericType([typeof(...), ...]) on a copy of the reader:
+                            var readerCopy = reader;
+                            TypeDesc[] args = new TypeDesc[elementCount];
+                            int extraRead = 0;
+                            for (int i = 0; i < elementCount; i++)
+                            {
+                                // Check we have a 'dup'
+
+                                extraRead++;
+                                if (instructionCounter + extraRead == MaxInstructionCounter)
+                                    return false;
+
+                                if (!readerCopy.HasNext)
+                                    return false;
+                                if (readerCopy.ReadILOpcode() != ILOpcode.dup)
+                                    return false;
+
+                                // Check we have a 'ldc.i4 index'
+
+                                extraRead++;
+                                if (instructionCounter + extraRead == MaxInstructionCounter)
+                                    return false;
+
+                                var integralValue = -1;
+                                if (!readerCopy.HasNext)
+                                    return false;
+
+                                var opcode2 = readerCopy.ReadILOpcode();
+                                switch (opcode2)
+                                {
+                                    case ILOpcode.ldc_i4_s:
+                                    case ILOpcode.ldc_i4:
+                                    case ILOpcode.ldc_i4_0:
+                                    case ILOpcode.ldc_i4_1:
+                                    case ILOpcode.ldc_i4_2:
+                                    case ILOpcode.ldc_i4_3:
+                                    case ILOpcode.ldc_i4_4:
+                                    case ILOpcode.ldc_i4_5:
+                                    case ILOpcode.ldc_i4_6:
+                                    case ILOpcode.ldc_i4_7:
+                                    case ILOpcode.ldc_i4_8:
+                                    {
+                                        integralValue = opcode2 switch
+                                        {
+                                            ILOpcode.ldc_i4_s => (sbyte)readerCopy.ReadILByte(),
+                                            ILOpcode.ldc_i4 => (int)readerCopy.ReadILUInt32(),
+                                            _ => opcode2 - ILOpcode.ldc_i4_0,
+                                        };
+                                        break;
+                                    }
+                                }
+
+                                if (integralValue != i)
+                                    return false;
+
+                                // Check we have a 'ldtoken type'
+
+                                extraRead++;
+                                if (instructionCounter + extraRead == MaxInstructionCounter)
+                                    return false;
+
+                                if (!readerCopy.HasNext)
+                                    return false;
+                                if (readerCopy.ReadILOpcode() != ILOpcode.ldtoken)
+                                    return false;
+                                var token = methodIL.GetObject(readerCopy.ReadILToken());
+                                if (token is not TypeDesc type)
+                                    return false;
+
+                                // Check type is not a generic type definition, pointer type, or void
+
+                                if (type.IsGenericDefinition)
+                                    return false;
+                                if (type.IsPointer)
+                                    return false;
+                                if (type.IsFunctionPointer)
+                                    return false;
+                                if (type.IsByRef)
+                                    return false;
+                                if (type.IsVoid)
+                                    return false;
+
+                                // Check we have a 'call Type.GetTypeFromHandle'
+                                // TODO: do we need to add this to _internedTypes like if it were imported normally?
+
+                                extraRead++;
+                                if (instructionCounter + extraRead == MaxInstructionCounter)
+                                    return false;
+
+                                if (!readerCopy.HasNext)
+                                    return false;
+                                if (readerCopy.ReadILOpcode() != ILOpcode.call)
+                                    return false;
+                                MethodDesc method = (MethodDesc)methodIL.GetObject(readerCopy.ReadILToken());
+
+                                if (method.GetName() != "GetTypeFromHandle" || !IsSystemType(method.OwningType) || !method.IsIntrinsic)
+                                    return false;
+
+                                // Check we have a 'stelem.ref'
+
+                                extraRead++;
+                                if (instructionCounter + extraRead == MaxInstructionCounter)
+                                    return false;
+
+                                if (!readerCopy.HasNext)
+                                    return false;
+                                if (readerCopy.ReadILOpcode() != ILOpcode.stelem_ref)
+                                    return false;
+
+                                // Save the type
+
+                                args[i] = type;
+                            }
+
+                            // Check if we have a 'callvirt Type.MakeGenericType'
+
+                            extraRead++;
+                            if (instructionCounter + extraRead == MaxInstructionCounter)
+                                return false;
+
+                            if (!readerCopy.HasNext)
+                                return false;
+                            if (readerCopy.ReadILOpcode() != ILOpcode.callvirt)
+                                return false;
+                            MethodDesc mgtMethod = (MethodDesc)methodIL.GetObject(readerCopy.ReadILToken());
+
+                            if (mgtMethod.GetName() != "MakeGenericType"
+                                || !IsSystemType(mgtMethod.OwningType)
+                                || !mgtMethod.IsIntrinsic)
+                            {
+                                return false;
+                            }
+
+                            // Instantiate and check constraints
+                            TypeDesc instantiatedType = context.GetInstantiatedType(uninstantiated, new Instantiation(args));
+                            if (!instantiatedType.CheckConstraints())
+                                return false;
+
+                            // Put our instantiated type on the stack
+                            if (!_internedTypes.TryGetValue(instantiatedType, out RuntimeTypeValue runtimeType))
+                            {
+                                _internedTypes.Add(instantiatedType, runtimeType = new RuntimeTypeValue(instantiatedType));
+                            }
+                            stack.Pop();
+                            stack.Push(runtimeType);
+
+                            // Update the il reader & return
+                            reader = readerCopy;
+                            instructionCounter += extraRead;
+                            return true;
+                        }
+
+                        if (elementCount <= MaximumInterpretedArraySize && IsSystemType(elementType))
+                        {
+                            if (!TryImportMakeGenericTypeSequence(ref reader, ref instructionCounter))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "General Type[] instantiations are not recognized - only the basic pattern for MakeGenericType is supported");
+                            }
+
+                            break;
+                        }
+
                         if (elementCount > 0
                             && (elementType.IsGCPointer
                             || (elementType.IsValueType && ((DefType)elementType).ContainsGCPointers)))
@@ -483,6 +670,49 @@ namespace ILCompiler
                         int paramOffset = methodSig.IsStatic ? 0 : 1;
                         int numParams = methodSig.Length + paramOffset;
 
+                        // Check if it's a call to IsAssignableTo/From:
+                        if (constrainedType == null
+                            && method.GetName() is "IsAssignableTo" or "IsAssignableFrom"
+                            && (opcode != ILOpcode.call || method.GetName() == "IsAssignableTo")
+                            && IsSystemType(method.OwningType)
+                            && method.Signature.Length == 1
+                            && IsSystemType(method.Signature[0])
+                            && stack.Count >= 2
+                            && method.IsIntrinsic
+                            && method.Instantiation.Length == 0
+                            && !method.Signature.IsStatic)
+                        {
+                            // Check if we have two RuntimeTypeValue's on the stack
+                            var tmp = stack.Pop();
+                            var tmp2 = stack.Peek();
+                            stack.Push(tmp);
+                            if (tmp.ValueKind == StackValueKind.ObjRef
+                                && tmp.Value is RuntimeTypeValue rtv1
+                                && tmp2.ValueKind == StackValueKind.ObjRef
+                                && tmp2.Value is RuntimeTypeValue rtv2)
+                            {
+                                // Determine which is the type we're treating as the derived vs base type
+                                TypeDesc derivedType = method.GetName() == "IsAssignableFrom" ? rtv1.TypeRepresented : rtv2.TypeRepresented;
+                                TypeDesc baseType = method.GetName() == "IsAssignableFrom" ? rtv2.TypeRepresented : rtv1.TypeRepresented;
+
+                                // Use the IsAssignableFrom castability helper to check (if we can recognise this case)
+                                if (CheckAssignable(baseType, derivedType, out var reason) is not { } result)
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, method.GetName() + ": " + reason);
+                                }
+
+                                // Push the result to the stack
+                                stack.Pop();
+                                stack.Pop();
+                                stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(result ? 1 : 0));
+                                break;
+                            }
+                            else
+                            {
+                                return Status.Fail(methodIL.OwningMethod, "Unrecognized " + method.GetName() + " arguments (e.g., null).");
+                            }
+                        }
+
                         if (constrainedType != null)
                         {
                             DefaultInterfaceMethodResolution staticResolution = default;
@@ -511,9 +741,16 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
                         }
 
-                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
+                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method) && (
+                                !method.IsIntrinsic
+                                || method.GetName() != "CreateInstance"
+                                || method.OwningType is not MetadataType createInstanceType
+                                || createInstanceType.Name != "Activator"u8
+                                || createInstanceType.Namespace != "System"u8
+                                || createInstanceType.Module != method.Context.SystemModule))
                         {
-                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                            // Note: we handle this for Activator.CreateInstance calls that are successfully handled by TryHandleIntrinsicCall
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis for " + method.GetName());
                         }
 
                         Value[] methodParams = new Value[numParams];
@@ -530,7 +767,7 @@ namespace ILCompiler
                         }
 
                         Value retVal;
-                        if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, out retVal))
+                        if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, methodIL, recursionProtect, ref instructionCounter, out retVal))
                         {
                             recursionProtect ??= new Stack<MethodDesc>();
                             recursionProtect.Push(methodIL.OwningMethod);
@@ -1834,6 +2071,68 @@ namespace ILCompiler
                     }
                     break;
 
+                    case ILOpcode.castclass:
+                    {
+                        // We only support castclass for reference types <-> reference types
+                        var tmp = stack.Peek();
+                        if (tmp.ValueKind == StackValueKind.ObjRef && tmp.Value is ReferenceTypeValue { Type: { } type })
+                        {
+                            var typeToken = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
+
+                            // See if we can handle this case by doing nothing (otherwise we'll be getting an exception & so can't pre-init anyway)
+                            if (typeToken is null)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, "castclass not handled: null type token");
+                            }
+                            else if (CheckCastability(typeToken, type, out var reason) is { } result)
+                            {
+                                if (!result)
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, "castclass would throw");
+                                }
+
+                                break;
+                            }
+                            else
+                            {
+                                return Status.Fail(methodIL.OwningMethod, "castclass not handled: " + reason);
+                            }
+                        }
+
+                        return Status.Fail(methodIL.OwningMethod, "castclass only handled for reference types");
+                    }
+
+                    case ILOpcode.isinst:
+                    {
+                        // We only support isinst for reference types <-> reference types
+                        var tmp = stack.Peek();
+                        if (tmp.ValueKind == StackValueKind.ObjRef && tmp.Value is ReferenceTypeValue { Type: { } type })
+                        {
+                            var typeToken = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
+
+                            // See if we can handle this case by doing nothing, else we pop & push null, or if we can't handle it, fall through
+                            if (typeToken is null)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, "isinst not handled: null type token");
+                            }
+                            else if (CheckCastability(typeToken, type, out var reason) is { } result)
+                            {
+                                if (!result)
+                                {
+                                    stack.Pop();
+                                    stack.Push((ReferenceTypeValue)null);
+                                }
+                                break;
+                            }
+                            else
+                            {
+                                return Status.Fail(methodIL.OwningMethod, "isinst not handled: " + reason);
+                            }
+                        }
+
+                        return Status.Fail(methodIL.OwningMethod, "isinst only handled for reference types");
+                    }
+
                     default:
                         return Status.Fail(methodIL.OwningMethod, opcode);
                 }
@@ -1841,6 +2140,136 @@ namespace ILCompiler
             }
 
             return Status.Fail(methodIL.OwningMethod, "Control fell through");
+        }
+
+        // Checks castability in the sense of castclass / isinst.
+        // Returns true or false if it knows the answer, otherwise null with a reason for why it couldn't get an answer.
+        private static bool? CheckCastability(TypeDesc baseType, TypeDesc derivedType, out string reason)
+        {
+            // For now, we just call to CheckAssignable, and exclude non-reference-type cases, as they are not fully equivalent.
+
+            if (!baseType.IsGCPointer || !derivedType.IsGCPointer)
+            {
+                reason = "Only supported for reference types.";
+                return null;
+            }
+
+            return CheckAssignable(baseType, derivedType, out reason);
+        }
+
+        // Checks castability in the sense of IsAssignableFrom.
+        // Returns true or false if it knows the answer, otherwise null with a reason for why it couldn't get an answer.
+        private static bool? CheckAssignable(TypeDesc baseType, TypeDesc derivedType, out string reason)
+        {
+            // Only proceed with cases that we have implemented the handling for:
+            // We exclude generic parameter types so we don't have to check constraints, we exclude IDIC as it can add types at runtime,
+            // we exclude pointer / byref / etc. types, as they aren't relevant here, and we exclude array types so we don't have to worry
+            // about array variance (e.g., IsAssignableTo(int[], uint[]) is true).
+            // Note: IsAssignableTo/From(int, uint) and IsAssignableTo/From(int, ConsoleColor) all give false.
+            // Note: we must be careful with our checks, since we could still have something like IEnumerable<int[]> vs IEnumerable<IList<uint>>
+            // Note: delegates also have a similar problem as arrays. We manually handle interface generic parameter variance.
+            // Note: we similarly don't try handling canonical types.
+
+            reason = null;
+
+            if (derivedType.IsGenericParameter || baseType.IsGenericParameter)
+            {
+                reason = "Cannot determine relationship to generic parameter.";
+                return null;
+            }
+
+            if (derivedType.RuntimeInterfaces.Any((x) => x.IsIDynamicInterfaceCastable) && !baseType.IsIDynamicInterfaceCastable)
+            {
+                reason = "Cannot determine relationship to a type implementing IDynamicInterfaceCastable.";
+                return null;
+            }
+
+            if (!(derivedType.IsGCPointer || derivedType.IsValueType) || !(baseType.IsGCPointer || baseType.IsValueType))
+            {
+                reason = "Only supported for reference types and value types.";
+                return null;
+            }
+
+            if (derivedType.IsArray || derivedType.IsDelegate || baseType.IsArray || baseType.IsDelegate)
+            {
+                reason = "Not supported for array or delegate types.";
+                return null;
+            }
+
+            if (derivedType.IsCanonicalSubtype(CanonicalFormKind.Any) || baseType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                reason = "Not supported for canonical types.";
+                return null;
+            }
+
+            // If equal, return true
+            if (derivedType == baseType)
+                return true;
+
+            // If derivedType is Nullable<baseType>, then we return true
+            if (derivedType.IsNullable && derivedType.Instantiation[0] == baseType)
+                return true;
+
+            // If derived type is an interface and base type is not, return false, unless object
+            if (derivedType.IsInterface && !baseType.IsInterface)
+                return baseType.IsObject;
+
+            // If base type is ValueType or Enum, and derived type is not valid, return false
+            if (baseType.IsWellKnownType(WellKnownType.ValueType))
+                return baseType.IsValueType || baseType.IsWellKnownType(WellKnownType.Enum) || baseType.IsWellKnownType(WellKnownType.ValueType);
+            else if (baseType.IsWellKnownType(WellKnownType.Enum))
+                return baseType.IsEnum || baseType.IsWellKnownType(WellKnownType.Enum);
+
+            // If base type is not an interface, and derived type is valuetype, return false (unless base type is object)
+            if (!baseType.IsInterface && derivedType.IsValueType)
+            {
+                Debug.Assert(!baseType.IsWellKnownType(WellKnownType.ValueType) && !baseType.IsWellKnownType(WellKnownType.Enum));
+                return baseType.IsObject;
+            }
+
+            // If base type is not an interface, and derived type is a reference type, check if it's one of its base types
+            if (!baseType.IsInterface && !derivedType.IsValueType)
+            {
+                var derivedTypeBaseType = derivedType.BaseType;
+                var isCastable = derivedTypeBaseType == baseType;
+                while (!isCastable && derivedTypeBaseType != null)
+                {
+                    derivedTypeBaseType = derivedTypeBaseType.BaseType;
+                    isCastable = derivedTypeBaseType == baseType;
+                }
+
+                return isCastable;
+            }
+
+            // Handle base type being an interface
+            if (baseType.IsInterface)
+            {
+                // If derived type is an interface, check if it implements base type.
+                // Note: if the interface is variant, we assume there may be false positives if there's any implementations of it,
+                // unless there's no instantiations of that interface type at all.
+                var isCastable = derivedType.RuntimeInterfaces.Contains(baseType);
+                if (isCastable)
+                {
+                    return true;
+                }
+                else if (!baseType.GetTypeDefinition().HasVariance)
+                {
+                    return false;
+                }
+                else if (!derivedType.RuntimeInterfaces.Any((x) => x.GetTypeDefinition() == baseType.GetTypeDefinition()))
+                {
+                    return false;
+                }
+                else
+                {
+                    reason = "Cannot determine relationship to variant interface.";
+                    return null;
+                }
+            }
+
+            // Everything else is not implemented
+            reason = "Unhandled type relationship case.";
+            return null;
         }
 
         private static bool TryGetSpanElementType(TypeDesc type, bool isReadOnlySpan, out MetadataType elementType)
@@ -1888,7 +2317,7 @@ namespace ILCompiler
             }
         }
 
-        private bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
+        private bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, MethodIL methodIL, Stack<MethodDesc> recursionProtect, ref int instructionCounter, out Value retVal)
         {
             retVal = default;
 
@@ -1965,6 +2394,74 @@ namespace ILCompiler
                 {
                     retVal = arrayData.GetArrayData();
                     return true;
+                }
+                case "CreateInstance" when method.Instantiation.Length <= 1
+                        && method.OwningType is MetadataType createInstanceType
+                        && createInstanceType.Name == "Activator"u8 && createInstanceType.Namespace == "System"u8
+                        && createInstanceType.Module == method.Context.SystemModule
+                        && ((method.Instantiation.Length == 1 && parameters.Length == 0) || (method.Instantiation.Length == 0 && parameters.Length == 1))
+                        && (parameters.Length == 1 ? (parameters[0] as RuntimeTypeValue)?.TypeRepresented : method.Instantiation[0]) is { IsGCPointer: true, IsArray: false, IsDelegate: false, IsInterface: false, IsVoid: false, HasFinalizer: false, IsDefType: true } typeValue
+                        && !typeValue.IsCanonicalDefinitionType(CanonicalFormKind.Any)
+                        && typeValue.GetTypeDefinition() is not MetadataType { IsAbstract: true }
+                        && !typeValue.RequiresAlign8()
+                        && _compilationGroup.ContainsType(typeValue):
+                {
+                    // Attempt to lookup a constructor to call. If we don't find one we will fail the analysis.
+                    // Additionally, we do not need to handle wrapping any exceptions, as the pre-init doesn't support exceptions at all.
+                    // We only attempt to find the public parameterless constructor on normal class types - no other cases are implemented.
+                    var ctor = typeValue.GetDefaultConstructor();
+                    if (ctor is not null)
+                    {
+                        // We need to match the behaviour of newobj - we have already run all of the checks on the type, but we still have some on the method itself left & stuff like cctor handling.
+                        if (!_compilationGroup.CanInline(methodIL.OwningMethod, ctor))
+                        {
+                            return false;
+                        }
+
+                        if (typeValue.HasStaticConstructor
+                                && typeValue != methodIL.OwningMethod.OwningType
+                                && !((MetadataType)typeValue).IsBeforeFieldInit)
+                        {
+                            // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
+                            // otherwise there might be side effects we'd miss by letting this through.
+                            if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)typeValue, recursionProtect, ref instructionCounter, out _))
+                                return false;
+                        }
+
+                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
+                        {
+                            return false;
+                        }
+
+                        Value[] ctorParameters = new Value[1];
+
+                        AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+
+                        Value instance = new ObjectInstance((DefType)typeValue, allocSite);
+                        ctorParameters[0] = instance;
+
+                        if (((DefType)typeValue).ContainsGCPointers)
+                        {
+                            // We could make this work in some cases, like with newobj, but it is unneeded today
+                            return false;
+                        }
+
+                        recursionProtect ??= new Stack<MethodDesc>();
+                        recursionProtect.Push(methodIL.OwningMethod);
+                        Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, ref instructionCounter, out _);
+                        if (!ctorCallResult.IsSuccessful)
+                        {
+                            recursionProtect.Pop();
+                            return false;
+                        }
+
+                        recursionProtect.Pop();
+
+                        retVal = instance;
+                        return true;
+                    }
+
+                    return false;
                 }
             }
 

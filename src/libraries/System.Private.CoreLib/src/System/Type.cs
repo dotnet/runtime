@@ -767,6 +767,7 @@ namespace System
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        [Intrinsic]
         public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         /// <summary>
