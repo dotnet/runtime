@@ -281,11 +281,36 @@ namespace System.Net
 
         // ---- Core DnsQueryEx wrapper ----
 
+        // Windows 10 and earlier have a DnsQueryEx bug: an asynchronous query that the OS can
+        // satisfy synchronously (most notably "localhost") completes inline reporting success but
+        // returns no records. The behavior is fixed in Windows 11 / Windows Server 2025 (build
+        // 22000+). See https://dblohm7.ca/blog/2022/05/06/dnsqueryex-needs-love/.
+        private static readonly bool s_asyncSyncCompletionBug = !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+
+        private static bool IsLocalhostName(string name) =>
+            string.Equals(name, "localhost", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(name, "localhost.", StringComparison.OrdinalIgnoreCase);
+
         private static Task<DnsQueryRawResult> DnsQueryEx(IPEndPoint[] servers, bool async, string name, ushort queryType, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<DnsQueryRawResult>(cancellationToken);
+            }
+
+            if (async && s_asyncSyncCompletionBug)
+            {
+                // On affected Windows versions "localhost" always trips the synchronous-completion
+                // bug, so resolve it on the synchronous path up front and route every other
+                // asynchronous query through a wrapper that retries synchronously if it hits the bug.
+                if (IsLocalhostName(name))
+                {
+                    async = false;
+                }
+                else
+                {
+                    return DnsQueryExAsyncWithSyncFallback(servers, name, queryType, cancellationToken);
+                }
             }
 
             if (async)
@@ -297,6 +322,23 @@ namespace System.Net
             // Synchronous: the result is produced inline, so the returned Task is
             // already completed and the sync entry points unwrap it without blocking.
             return Task.FromResult(DnsQueryExSync(servers, name, queryType, cancellationToken));
+        }
+
+        // Works around the Windows 10 DnsQueryEx bug (see s_asyncSyncCompletionBug): if the
+        // asynchronous call completes synchronously reporting success but without any records,
+        // re-issue the query on the synchronous code path, which returns the records correctly.
+        private static async Task<DnsQueryRawResult> DnsQueryExAsyncWithSyncFallback(IPEndPoint[] servers, string name, ushort queryType, CancellationToken cancellationToken)
+        {
+            DnsQueryAsyncState state = new DnsQueryAsyncState(servers, name, queryType, cancellationToken);
+            DnsQueryRawResult result = await state.StartAsync().ConfigureAwait(false);
+
+            if (state.CompletedSynchronously && result.ResponseCode == DnsResponseCode.NoError && result.RecordsHead == IntPtr.Zero)
+            {
+                result.Dispose();
+                return DnsQueryExSync(servers, name, queryType, cancellationToken);
+            }
+
+            return result;
         }
 
         private static string? PtrToString(IntPtr p) =>
@@ -400,6 +442,10 @@ namespace System.Net
             private CancellationTokenRegistration _ctReg;
             private bool _completed;
 
+            // Set when DnsQueryEx returned a result inline instead of going pending. Read after the
+            // returned task completes to detect the Windows 10 synchronous-completion bug.
+            public bool CompletedSynchronously { get; private set; }
+
             public DnsQueryAsyncState(IPEndPoint[] servers, string name, ushort queryType, CancellationToken cancellationToken)
             {
                 _servers = servers;
@@ -458,6 +504,7 @@ namespace System.Net
                 else
                 {
                     // Synchronous completion: the callback was NOT invoked; we complete inline.
+                    CompletedSynchronously = true;
                     CompleteFromResult(status);
                 }
 
