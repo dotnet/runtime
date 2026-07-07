@@ -5127,6 +5127,28 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     ArrayStack<PredInfo>    matchedPredInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<BasicBlock*> retryBlocks(getAllocator(CMK_ArrayStack));
 
+    auto sameEHRegionForTailMerge = [this](BasicBlock* block1, BasicBlock* block2) -> bool {
+        if (!BasicBlock::sameEHRegion(block1, block2))
+        {
+            return false;
+        }
+
+        if (!block1->hasHndIndex())
+        {
+            assert(!block2->hasHndIndex());
+            return true;
+        }
+
+        assert(block2->hasHndIndex());
+        EHblkDsc* const hndDsc = ehGetDsc(block1->getHndIndex());
+        if (!hndDsc->HasFilter())
+        {
+            return true;
+        }
+
+        return hndDsc->InFilterRegionBBRange(block1) == hndDsc->InFilterRegionBBRange(block2);
+    };
+
     auto tryRemoveAndFixFlow = [&](BasicBlock* emptyBlock, BasicBlock* newTarget) -> bool {
         assert(emptyBlock->isEmpty());
         assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
@@ -5198,7 +5220,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Consider: bypass this for statements that can't cause exceptions.
                 //
-                if (!BasicBlock::sameEHRegion(baseBlock, otherBlock))
+                if (!sameEHRegionForTailMerge(baseBlock, otherBlock))
                 {
                     continue;
                 }
@@ -5224,7 +5246,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // and all preds have matching last statements, and we're not changing EH behavior.
             //
             bool const hasCommSucc               = (commSucc != nullptr);
-            bool const predsInSameEHRegionAsSucc = hasCommSucc && BasicBlock::sameEHRegion(baseBlock, commSucc);
+            bool const predsInSameEHRegionAsSucc = hasCommSucc && sameEHRegionForTailMerge(baseBlock, commSucc);
             bool const canMergeAllPreds = hasCommSucc && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges());
             bool const canMergeIntoSucc = predsInSameEHRegionAsSucc && canMergeAllPreds;
 

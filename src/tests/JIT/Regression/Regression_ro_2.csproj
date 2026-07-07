@@ -110,6 +110,7 @@
     <Compile Include="JitBlue\Runtime_129971\Runtime_129971.cs" />
     <Compile Include="JitBlue\Runtime_129972\Runtime_129972.cs" />
     <Compile Include="JitBlue\Runtime_130216\Runtime_130216.cs" />
+    <Compile Include="JitBlue\Runtime_130248\Runtime_130248.cs" />
     <Compile Include="JitBlue\Runtime_10337\Runtime_10337.cs" />
     <Compile Include="JitBlue\Runtime_125160\Runtime_125160.cs" />
   </ItemGroup>
