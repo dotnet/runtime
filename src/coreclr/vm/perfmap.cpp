@@ -416,6 +416,47 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
     EX_CATCH{} EX_END_CATCH
 }
 
+#ifdef FEATURE_INTERPRETER
+// Log an interpreter IR bytecode range to the perfmap.
+// This allows symbolication from perf scripts, when the interpreter IP is allocated to a fixed
+// register in InterpExecMethod
+void PerfMap::LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pMethod != nullptr);
+        PRECONDITION(irAddress != nullptr);
+        PRECONDITION(irSize > 0);
+    } CONTRACTL_END;
+
+    if (!s_enabled)
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+        SString name;
+        pMethod->GetFullMethodInfo(name);
+
+        SString line;
+        line.Printf(FMT_CODE_ADDR " %x [Interpreter] %s\n", irAddress, irSize, name.GetUTF8());
+
+        {
+            CrstHolder ch(&(s_csPerfMap));
+
+            if (s_Current != nullptr)
+            {
+                s_Current->WriteLine(line);
+            }
+        }
+    }
+    EX_CATCH{} EX_END_CATCH
+}
+#endif // FEATURE_INTERPRETER
+
 // Log a set of stub to the map.
 void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
 {

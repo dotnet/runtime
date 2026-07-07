@@ -353,15 +353,18 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
-                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                AsyncInstrumentation.Flags flags = AsyncInstrumentation.Flags.Disabled;
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out flags))
                 {
-                    AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
-                }
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, flags);
+                    }
 
-                bool loggingOn = TplEventSource.Log.IsEnabled();
-                if (loggingOn)
-                {
-                    TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                    {
+                        TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                    }
                 }
 
                 ExecutionContext? context = Context;
@@ -387,7 +390,7 @@ namespace System.Runtime.CompilerServices
                     ClearStateUponCompletion();
                 }
 
-                if (loggingOn)
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags))
                 {
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
@@ -429,7 +432,7 @@ namespace System.Runtime.CompilerServices
 
             bool IAsyncStateMachineBox.GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
             {
-                if (AsyncStateMachineDispatcherInfo.InstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.IsSupported)
                 {
                     methodId = AsyncStateMachineDiagnostics<TStateMachine>.MethodId;
                     state = AsyncStateMachineDiagnostics<TStateMachine>.GetState(ref StateMachine);
@@ -442,7 +445,6 @@ namespace System.Runtime.CompilerServices
                 nextContinuation = null;
                 return false;
             }
-
         }
 
         /// <summary>Gets the <see cref="Task{TResult}"/> for this builder.</summary>
@@ -508,17 +510,17 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(task != null, "Expected non-null task");
 
-            if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(AsyncInstrumentation.ActiveFlags))
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                 {
-                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod();
+                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(task, flags);
                 }
-            }
 
-            if (TplEventSource.Log.IsEnabled())
-            {
-                TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                {
+                    TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                }
             }
 
             if (!task.TrySetResult(result))
@@ -546,11 +548,11 @@ namespace System.Runtime.CompilerServices
             // Get the task, forcing initialization if it hasn't already been initialized.
             Task<TResult> task = (taskField ??= new Task<TResult>());
 
-            if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(AsyncInstrumentation.ActiveFlags))
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                 {
-                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame();
+                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(task, flags);
                 }
             }
 

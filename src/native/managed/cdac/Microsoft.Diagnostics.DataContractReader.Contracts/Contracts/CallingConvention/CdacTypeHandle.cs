@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using Internal.CallingConvention;
 using Internal.JitInterface;
 
@@ -110,22 +111,12 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     }
 
     public bool IsHomogeneousAggregate()
-    {
-        if (Arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
-            return false;
-
-        // TODO(hfa): Implement HFA detection for ARM/ARM64.
-        // See crossgen2 TypeHandle.IsHomogeneousAggregate().
-        throw new NotImplementedException("HFA detection for ARM/ARM64 is not yet implemented.");
-    }
+        => !_typeHandle.IsNull && Rts.TryGetHFAElementSize(_typeHandle, out _);
 
     public int GetHomogeneousAggregateElementSize()
     {
-        if (Arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
-            return 0;
-
-        // TODO(hfa): Return 4 for float HFA, 8 for double HFA, 16 for Vector128 HFA.
-        throw new NotImplementedException("HFA element size for ARM/ARM64 is not yet implemented.");
+        Debug.Assert(IsHomogeneousAggregate());
+        return Rts.TryGetHFAElementSize(_typeHandle, out int size) ? size : 0;
     }
 
     public void GetSystemVAmd64PassStructInRegisterDescriptor(out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor)
