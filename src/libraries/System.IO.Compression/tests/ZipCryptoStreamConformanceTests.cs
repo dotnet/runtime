@@ -11,14 +11,9 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for ZipCryptoStream.
     /// </summary>
-    [ConditionalClass(typeof(ZipCryptoStreamConformanceTests), nameof(IsSupported))]
+    [ConditionalClass(typeof(ZipCryptoStreamTestsSupport), nameof(ZipCryptoStreamTestsSupport.IsSupported))]
     public class ZipCryptoStreamConformanceTests : StandaloneStreamConformanceTests
     {
-        // Reflection emit (DynamicMethod) is unsupported on platforms without dynamic code generation
-        // (e.g. NativeAOT and Mono AOT), and the stream conformance tests exercise concurrent blocking
-        // read/write, which requires multithreading (not available on single-threaded wasm or wasi).
-        public static bool IsSupported => PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsMultithreadingSupported;
-
         private const string TestPassword = "PLACEHOLDER";
         private const ushort PasswordVerifier = 0x1234;
 
@@ -120,5 +115,16 @@ namespace System.IO.Compression.Tests
 
             return Task.FromResult<Stream?>(decryptStream);
         }
+    }
+
+    // The ZipCryptoStream conformance test classes have a static constructor that uses DynamicMethod to
+    // invoke internal members. Accessing any static member of those classes (including an IsSupported gate
+    // property) would trigger that static constructor, which throws PlatformNotSupportedException on
+    // platforms without dynamic code generation (NativeAOT, Mono AOT). Hosting the gate on this separate
+    // type ensures the ConditionalClass check can be evaluated without initializing the test classes, so
+    // the tests are correctly skipped instead of failing during type initialization.
+    internal static class ZipCryptoStreamTestsSupport
+    {
+        public static bool IsSupported => PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsMultithreadingSupported;
     }
 }
