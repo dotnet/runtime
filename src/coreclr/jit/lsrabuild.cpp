@@ -468,19 +468,25 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
             {
                 checkConflictingDefUse(rp);
                 rp->lastUse = true;
+            }
 
-                if (theInterval->isConstant)
+            if (theInterval->isConstant)
+            {
+                // This may be a coalesced constant interval, where several identical
+                // floating-point/SIMD/mask constants share a single interval. Once another
+                // reference (a later use, or a later definition coalesced into the interval via
+                // getConstantIntervalForReuse) is added, any earlier use is no longer the last
+                // use, so clear its lastUse flag (mirroring the localVar handling above) to keep
+                // the interval a single continuous live range rather than freeing and re-using its
+                // register mid-range.
+                //
+                // This is checked for every reference (not just uses) because a RefTypeDef can
+                // follow a RefTypeUse when a third occurrence is coalesced after an earlier one has
+                // already been consumed.
+                RefPosition* const prevRP = theInterval->recentRefPosition;
+                if ((prevRP != nullptr) && RefTypeIsUse(prevRP->refType) && (prevRP->bbNum == rp->bbNum))
                 {
-                    // This may be a coalesced constant interval, where several identical
-                    // floating-point/SIMD/mask constants share a single interval. In that case an
-                    // earlier use is no longer the last use, so clear its lastUse flag (mirroring
-                    // the localVar handling above) to keep the interval a single continuous live
-                    // range rather than freeing and re-using its register mid-range.
-                    RefPosition* const prevRP = theInterval->recentRefPosition;
-                    if ((prevRP != nullptr) && RefTypeIsUse(prevRP->refType) && (prevRP->bbNum == rp->bbNum))
-                    {
-                        prevRP->lastUse = false;
-                    }
+                    prevRP->lastUse = false;
                 }
             }
         }
