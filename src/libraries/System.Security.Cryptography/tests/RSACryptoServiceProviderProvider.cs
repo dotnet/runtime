@@ -10,8 +10,8 @@ namespace System.Security.Cryptography.Rsa.Tests
     {
         public static readonly RSACryptoServiceProviderProvider Instance = new RSACryptoServiceProviderProvider();
 
-        private bool? _supportsSha1Signatures;
-        private bool? _supportsMd5Signatures;
+        private LazyBool _supportsSha1Signatures;
+        private LazyBool _supportsMd5Signatures;
 
         private RSACryptoServiceProviderProvider() { }
 
@@ -27,8 +27,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public override bool SupportsPss => false;
 
-        public override bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
-        public override bool SupportsMd5Signatures => _supportsMd5Signatures ??= SignatureSupport.CanProduceMd5Signature(Create());
+        public override bool SupportsSha1Signatures => _supportsSha1Signatures.GetOrInit(() => SignatureSupport.CanProduceSha1Signature(Create()));
+        public override bool SupportsMd5Signatures => _supportsMd5Signatures.GetOrInit(() => SignatureSupport.CanProduceMd5Signature(Create()));
 
         public override bool SupportsSha3 => false;
     }

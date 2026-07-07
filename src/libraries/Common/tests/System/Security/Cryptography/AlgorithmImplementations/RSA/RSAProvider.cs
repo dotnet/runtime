@@ -5,7 +5,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public abstract class RSAProvider
     {
-        private bool? _supports16384;
+        private LazyBool _supports16384;
 
         public abstract RSA Create();
         public abstract RSA Create(int keySize);
@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public bool NoSupportsSha3 => !SupportsSha3;
 
-        public bool Supports16384 => _supports16384 ??= TestRsa16384();
+        public bool Supports16384 => _supports16384.GetOrInit(TestRsa16384);
 
         public RSA Create(RSAParameters rsaParameters)
         {
@@ -50,6 +50,21 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 // The key is too big for this platform or the platform is not supported.
                 return false;
+            }
+        }
+
+        protected struct LazyBool
+        {
+            private byte _value;
+
+            internal bool GetOrInit(Func<bool> valueFactory)
+            {
+                if (_value == 0)
+                {
+                    _value = (byte)(valueFactory() ? 1 : 2);
+                }
+
+                return _value == 1;
             }
         }
     }
