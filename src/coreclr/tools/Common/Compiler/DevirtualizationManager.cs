@@ -100,7 +100,9 @@ namespace ILCompiler
                     return null;
                 }
 
-                impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod);
+                // Strip the method instantation as interface slot resolution works on method definitions.
+                // Method instantiation will be applied again after resolution.
+                impl = implType.ResolveInterfaceMethodTargetWithVariance(declMethod.GetMethodDefinition());
 
                 if (impl != null)
                 {
