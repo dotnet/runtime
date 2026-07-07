@@ -3499,7 +3499,7 @@ mono_marshal_decode_blob_size (const char **p, const char *end, guint32 *size)
 		if (!mono_marshal_check_blob (*p, 4, end))
 			return FALSE;
 
-		*size = ((guint32)(first & 0x1F) << 24) | ((guint32)(guint8)(*p) [1] << 16) | ((guint32)(guint8)(*p) [2] << 8) | (guint8)(*p) [3];
+		*size = ((guint32)(first & 0x1F) << 24) | ((guint32)(guint8)(*p)[1] << 16) | ((guint32)(guint8)(*p)[2] << 8) | (guint8)(*p)[3];
 		*p += 4;
 		return TRUE;
 	}
@@ -3657,7 +3657,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute_data (MonoCustom
 			continue;
 
 		if (callconv_count > 1)
-			g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute field CallConvs, specified for method %s. Only the first calling convention will be taken into account", method->name);
+			g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute field %s, specified for method %s. Only the first calling convention will be taken into account", MONO_MARSHAL_CALLCONVS_NAME, method->name);
 
 		for (guint32 callconv_index = 0; callconv_index < callconv_count; ++callconv_index) {
 			if (!mono_marshal_check_blob (p, 1, end))
@@ -3725,7 +3725,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 
 	if (attr != NULL) {
 		if (!mono_marshal_set_callconv_from_unmanaged_callers_only_attribute_data (attr, method, csig, error) && is_ok (error))
-			mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
+			mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of UnmanagedCallersOnlyAttribute on method %s was invalid.", method->name);
 		mono_error_assert_ok (error);
 	}
 
