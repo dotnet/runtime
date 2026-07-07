@@ -952,8 +952,9 @@ namespace System.Net.Security
             token.ReleasePayload();
 
             ProtocolToken alertToken = default;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
                 alertToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.CertValidationFailed, CreateCertificateValidationException(_sslAuthenticationOptions, sslPolicyErrors, chainStatus));
                 return alertToken;

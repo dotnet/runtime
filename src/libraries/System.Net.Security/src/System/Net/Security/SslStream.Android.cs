@@ -23,7 +23,7 @@ namespace System.Net.Security
                 // string marshalling until we know a listener is attached.
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    var validationError = Marshal.PtrToStringUTF8(platformValidationError);
+                    string? validationError = Interop.AndroidCrypto.GetPlatformValidationError(platformValidationError);
                     NetEventSource.Error(this, $"The Android platform trust manager rejected the remote certificate chain: {validationError}");
                 }
             }

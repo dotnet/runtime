@@ -14,6 +14,48 @@ ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCa
     atomic_store(&verifyRemoteCertificate, callback);
 }
 
+ARGS_NON_NULL(2, 3) int32_t AndroidCryptoNative_GetPlatformValidationError(jstring platformValidationError, const uint16_t** out, int32_t* outLen)
+{
+    abort_if_invalid_pointer_argument (out);
+    abort_if_invalid_pointer_argument (outLen);
+
+    *out = NULL;
+    *outLen = 0;
+    if (platformValidationError == NULL)
+    {
+        return SUCCESS;
+    }
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t len = (*env)->GetStringLength(env, platformValidationError);
+    if (CheckJNIExceptions(env))
+    {
+        return FAIL;
+    }
+
+    const jchar* chars = (*env)->GetStringChars(env, platformValidationError, NULL);
+    if (chars == NULL)
+    {
+        CheckJNIExceptions(env);
+        return FAIL;
+    }
+
+    *out = (const uint16_t*)chars;
+    *outLen = len;
+    return SUCCESS;
+}
+
+void AndroidCryptoNative_ReleasePlatformValidationError(jstring platformValidationError, const uint16_t* chars)
+{
+    if (platformValidationError == NULL || chars == NULL)
+    {
+        return;
+    }
+
+    JNIEnv* env = GetJNIEnv();
+    (*env)->ReleaseStringChars(env, platformValidationError, (const jchar*)chars);
+}
+
 // Gets the default platform X509TrustManager from TrustManagerFactory.
 // The result is cached because TrustManagerFactory.init(null) may read the
 // system keystore from disk.
@@ -122,18 +164,17 @@ ARGS_NON_NULL(1, 2) jboolean DotnetProxyTrustManager_VerifyRemoteCertificate(
     RemoteCertificateValidationCallback verify = atomic_load(&verifyRemoteCertificate);
     abort_unless(verify, "verifyRemoteCertificate callback has not been registered");
 
-    const char* validationError = NULL;
+    jstring validationError = NULL;
     if (platformValidationError != NULL)
     {
-        validationError = (*env)->GetStringUTFChars(env, platformValidationError, NULL);
+        validationError = (jstring)(*env)->NewGlobalRef(env, platformValidationError);
+        if (validationError == NULL)
+        {
+            return JNI_FALSE;
+        }
     }
 
     jboolean result = verify((intptr_t)sslStreamProxyHandle, validationError);
-
-    if (validationError != NULL)
-    {
-        (*env)->ReleaseStringUTFChars(env, platformValidationError, validationError);
-    }
-
+    ReleaseGRef(env, validationError);
     return result;
 }

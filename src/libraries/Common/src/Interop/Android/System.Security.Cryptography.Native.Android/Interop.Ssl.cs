@@ -64,6 +64,31 @@ internal static partial class Interop
         internal static unsafe partial void RegisterRemoteCertificateValidationCallback(
             delegate* unmanaged<IntPtr, IntPtr, bool> verifyRemoteCertificate);
 
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_GetPlatformValidationError")]
+        private static partial int GetPlatformValidationError(
+            IntPtr platformValidationError,
+            out IntPtr platformValidationErrorChars,
+            out int platformValidationErrorLength);
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_ReleasePlatformValidationError")]
+        private static partial void ReleasePlatformValidationError(IntPtr platformValidationError, IntPtr platformValidationErrorChars);
+        internal static string? GetPlatformValidationError(IntPtr platformValidationError)
+        {
+            int ret = GetPlatformValidationError(platformValidationError, out IntPtr platformValidationErrorChars, out int platformValidationErrorLength);
+            if (ret != SUCCESS || platformValidationErrorChars == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            try
+            {
+                return Marshal.PtrToStringUni(platformValidationErrorChars, platformValidationErrorLength);
+            }
+            finally
+            {
+                ReleasePlatformValidationError(platformValidationError, platformValidationErrorChars);
+            }
+        }
+
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamInitialize")]
         private static unsafe partial int SSLStreamInitializeImpl(
             SafeSslHandle sslHandle,
