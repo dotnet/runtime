@@ -3041,6 +3041,42 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
 }
 
 //------------------------------------------------------------------------
+// getConsumingNode: Find the non-contained node that ultimately consumes the
+//                   value produced by 'node' within the current block.
+//
+// Arguments:
+//    node - The node whose consumer is sought
+//
+// Return Value:
+//    The first non-contained user of 'node', walking through any contained
+//    intermediate users (e.g. a contained FIELD_LIST), or nullptr if no such
+//    user exists.
+//
+// Notes:
+//    The returned node identifies the LSRA location at which 'node' is used,
+//    since uses are built when the consuming (non-contained) node is processed.
+//    This is used to detect when two constants would be used at the same location.
+//
+GenTree* LinearScan::getConsumingNode(GenTree* node)
+{
+    LIR::Range& blockRange = LIR::AsRange(m_compiler->compCurBB);
+
+    LIR::Use use;
+    while (blockRange.TryGetUse(node, &use))
+    {
+        GenTree* user = use.User();
+
+        if ((user == nullptr) || !user->isContained())
+        {
+            return user;
+        }
+
+        node = user;
+    }
+
+    return nullptr;
+}
+//------------------------------------------------------------------------
 // getConstantIntervalForReuse: If an identical floating-point/SIMD/mask constant
 //                              is still pending in the defList, return its interval
 //                              so the new definition can be coalesced into it.
@@ -3056,6 +3092,10 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
 //    not yet been consumed and therefore overlaps this definition. Coalescing the
 //    two into a single interval lets the allocator keep the value in one register
 //    and elide the redundant re-materialization.
+//
+//    Constants that are consumed by the same node are not coalesced, since that
+//    would require the shared interval to be in multiple registers at a single
+//    location (see below).
 //
 //    Only applied when optimizing (enregisterLocalVars). Constant nodes are
 //    single-use in LIR and the defList is per-block, so any match is guaranteed to
@@ -3098,6 +3138,12 @@ Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
         return nullptr;
     }
 
+    // The consumer of 'tree' is computed lazily on the first matching candidate, since most
+    // definitions will not find one and we want to avoid the range walk otherwise.
+    GenTree*  treeConsumer    = nullptr;
+    bool      gotTreeConsumer = false;
+    Interval* candidate       = nullptr;
+
     for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
          listNode = listNode->Next())
     {
@@ -3124,10 +3170,39 @@ Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-        return interval;
+        // Two constants that are consumed by the same node must not be coalesced: doing so
+        // would force the single resulting interval to satisfy multiple uses at the same
+        // location, each of which may require a distinct fixed register (for example the
+        // operands of a FIELD_LIST feeding a multi-register return or call argument). A single
+        // interval cannot occupy several registers at once. Because an interval may already
+        // have earlier definitions coalesced into it, every matching pending definition is
+        // checked, and any conflict (or an undeterminable consumer) disables coalescing for
+        // this constant entirely so it is materialized independently.
+        if (!gotTreeConsumer)
+        {
+            treeConsumer    = getConsumingNode(tree);
+            gotTreeConsumer = true;
+
+            if (treeConsumer == nullptr)
+            {
+                return nullptr;
+            }
+        }
+
+        GenTree* defConsumer = getConsumingNode(defNode);
+
+        if ((defConsumer == nullptr) || (defConsumer == treeConsumer))
+        {
+            return nullptr;
+        }
+
+        if (candidate == nullptr)
+        {
+            candidate = interval;
+        }
     }
 
-    return nullptr;
+    return candidate;
 }
 
 //------------------------------------------------------------------------

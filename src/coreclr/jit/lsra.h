@@ -2011,6 +2011,7 @@ private:
     // Constant reuse: coalesce an overlapping, identical floating-point/SIMD/mask constant
     // into a single interval so the allocator can keep the value in one register.
     Interval*   getConstantIntervalForReuse(GenTree* tree);
+    GenTree*    getConsumingNode(GenTree* node);
     static bool areSameConstantNodes(GenTree* tree1, GenTree* tree2);
 
     void BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);
