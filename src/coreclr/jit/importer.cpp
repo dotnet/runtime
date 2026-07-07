@@ -11750,10 +11750,6 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     var_types callRetType = JITtype2varType(awaitSig.retType);
 
-    // The await-return call is synthesized here and never goes through impImportCall, so use gtNewUserCallNode to
-    // give it its Ready-to-Run entrypoint explicitly (as the other synthesized async calls do). Without this the call
-    // is not marked R2R-relative-indirect, so on arm64 fgMorphCall omits the indirection-cell (x11) argument the
-    // ReadyToRun DelayLoad helpers require, tripping a GetDataRva assert at runtime.
     GenTreeCall* awaitCall = gtNewUserCallNode(awaitMethod, callRetType);
 
     CORINFO_CLASS_HANDLE taskTypeHnd;
