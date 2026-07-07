@@ -3452,6 +3452,8 @@ mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, Mon
 
 #define MONO_MARSHAL_CATTR_TYPE_SYSTEM_TYPE 0x50
 #define MONO_MARSHAL_CATTR_TYPE_FIELD 0x53
+#define MONO_MARSHAL_CALLCONVS_NAME "CallConvs"
+#define MONO_MARSHAL_CALLCONVS_NAME_LEN (sizeof (MONO_MARSHAL_CALLCONVS_NAME) - 1)
 
 static guint16
 mono_marshal_read16 (const char *p)
@@ -3488,7 +3490,7 @@ mono_marshal_decode_blob_size (const char **p, const char *end, guint32 *size)
 		if (!mono_marshal_check_blob (*p, 2, end))
 			return FALSE;
 
-		*size = ((guint32)(first & 0x3F) << 8) | (guint8)(*p) [1];
+		*size = ((guint32)(first & 0x3F) << 8) | (guint8)(*p)[1];
 		*p += 2;
 		return TRUE;
 	}
@@ -3638,7 +3640,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute_data (MonoCustom
 		const char *name = p;
 		p += name_len;
 
-		if (name_len != strlen ("CallConvs") || strncmp (name, "CallConvs", name_len) != 0) {
+		if (name_len != MONO_MARSHAL_CALLCONVS_NAME_LEN || strncmp (name, MONO_MARSHAL_CALLCONVS_NAME, name_len) != 0) {
 			if (!mono_marshal_skip_cattr_named_arg_value (&p, end, data_type, array_type))
 				return FALSE;
 			continue;
@@ -3655,7 +3657,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute_data (MonoCustom
 			continue;
 
 		if (callconv_count > 1)
-			g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter CallConvs, specified for method %s. Only the first calling convention will be taken into account", method->name);
+			g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute field CallConvs, specified for method %s. Only the first calling convention will be taken into account", method->name);
 
 		for (guint32 callconv_index = 0; callconv_index < callconv_count; ++callconv_index) {
 			if (!mono_marshal_check_blob (p, 1, end))
@@ -3695,6 +3697,8 @@ MONO_RESTORE_WARNING
 
 #undef MONO_MARSHAL_CATTR_TYPE_FIELD
 #undef MONO_MARSHAL_CATTR_TYPE_SYSTEM_TYPE
+#undef MONO_MARSHAL_CALLCONVS_NAME
+#undef MONO_MARSHAL_CALLCONVS_NAME_LEN
 
 static void
 mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *method, MonoMethodSignature *csig)
