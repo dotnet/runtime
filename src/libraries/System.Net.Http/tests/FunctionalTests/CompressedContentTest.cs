@@ -20,10 +20,13 @@ namespace System.Net.Http.Functional.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("content", () => new GZipCompressedContent(null));
             AssertExtensions.Throws<ArgumentNullException>("content", () => new GZipCompressedContent(null, new ZLibCompressionOptions()));
+            AssertExtensions.Throws<ArgumentNullException>("content", () => new GZipCompressedContent(null, CompressionLevel.SmallestSize));
             AssertExtensions.Throws<ArgumentNullException>("content", () => new BrotliCompressedContent(null));
             AssertExtensions.Throws<ArgumentNullException>("content", () => new BrotliCompressedContent(null, new BrotliCompressionOptions()));
+            AssertExtensions.Throws<ArgumentNullException>("content", () => new BrotliCompressedContent(null, CompressionLevel.SmallestSize));
             AssertExtensions.Throws<ArgumentNullException>("content", () => new ZstandardCompressedContent(null));
             AssertExtensions.Throws<ArgumentNullException>("content", () => new ZstandardCompressedContent(null, new ZstandardCompressionOptions()));
+            AssertExtensions.Throws<ArgumentNullException>("content", () => new ZstandardCompressedContent(null, CompressionLevel.SmallestSize));
         }
 
         [Fact]
@@ -117,6 +120,22 @@ namespace System.Net.Http.Functional.Tests
                 var zstd = new ZstandardCompressedContent(new ByteArrayContent(original), new ZstandardCompressionOptions { Quality = 5 });
                 Assert.Equal(original, Decompress(await SerializeAsync(zstd, async: true), "zstd"));
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(Encodings))]
+        public async Task SerializeToStream_WithCompressionLevel_RoundTrips(string encoding)
+        {
+            byte[] original = Encoding.UTF8.GetBytes(new string('a', 4096));
+            HttpContent content = encoding switch
+            {
+                "gzip" => new GZipCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize),
+                "br" => new BrotliCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize),
+                "zstd" => new ZstandardCompressedContent(new ByteArrayContent(original), CompressionLevel.SmallestSize),
+                _ => throw new ArgumentOutOfRangeException(nameof(encoding))
+            };
+
+            Assert.Equal(original, Decompress(await SerializeAsync(content, async: true), encoding));
         }
 
         [Theory]

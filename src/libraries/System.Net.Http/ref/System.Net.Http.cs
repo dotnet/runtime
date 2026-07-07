@@ -23,6 +23,7 @@ namespace System.Net.Http
     {
         public BrotliCompressedContent(System.Net.Http.HttpContent content) { }
         public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.BrotliCompressionOptions compressionOptions) { }
+        public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
@@ -33,6 +34,7 @@ namespace System.Net.Http
     {
         public GZipCompressedContent(System.Net.Http.HttpContent content) { }
         public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZLibCompressionOptions compressionOptions) { }
+        public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
@@ -45,6 +47,7 @@ namespace System.Net.Http
     {
         public ZstandardCompressedContent(System.Net.Http.HttpContent content) { }
         public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
+        public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
         protected override void Dispose(bool disposing) { }
         protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }

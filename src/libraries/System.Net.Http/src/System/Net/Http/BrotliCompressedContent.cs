@@ -20,6 +20,7 @@ namespace System.Net.Http
 
         private readonly CompressedContentCore _core;
         private readonly BrotliCompressionOptions? _compressionOptions;
+        private readonly CompressionLevel _compressionLevel;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BrotliCompressedContent"/> class that compresses the
@@ -30,6 +31,21 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(content);
 
+            _core = new CompressedContentCore(content, CreateCompressionStream);
+            CompressedContentCore.InitializeHeaders(this, content, Encoding);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BrotliCompressedContent"/> class that compresses the
+        /// provided content using the Brotli content coding at the specified compression level.
+        /// </summary>
+        /// <param name="content">The HTTP content to compress.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency.</param>
+        public BrotliCompressedContent(HttpContent content, CompressionLevel compressionLevel = CompressionLevel.Optimal)
+        {
+            ArgumentNullException.ThrowIfNull(content);
+
+            _compressionLevel = compressionLevel;
             _core = new CompressedContentCore(content, CreateCompressionStream);
             CompressedContentCore.InitializeHeaders(this, content, Encoding);
         }
@@ -86,7 +102,7 @@ namespace System.Net.Http
             }
 
             return _compressionOptions is null
-                ? new BrotliStream(outputStream, CompressionLevel.Optimal, leaveOpen: true)
+                ? new BrotliStream(outputStream, _compressionLevel, leaveOpen: true)
                 : new BrotliStream(outputStream, _compressionOptions, leaveOpen: true);
         }
     }
