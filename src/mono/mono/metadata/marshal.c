@@ -3459,7 +3459,8 @@ mono_marshal_unmanaged_callers_only_has_only_associated_source_type (MonoCustomA
 	const guint32 associated_source_type_name_len = sizeof ("AssociatedSourceType") - 1;
 	/* Prolog, named argument count, named argument kind, data type, and single-byte name length. */
 	const guint32 minimum_data_size = 2 + 2 + 1 + 1 + 1 + associated_source_type_name_len;
-	const char *value;
+	const char *value_start;
+	const char *value_after_size;
 	const char *end;
 	guint32 value_len;
 
@@ -3476,30 +3477,30 @@ mono_marshal_unmanaged_callers_only_has_only_associated_source_type (MonoCustomA
 	if (memcmp (&data [7], "AssociatedSourceType", associated_source_type_name_len))
 		return FALSE;
 
-	value = (const char *)&data [7 + associated_source_type_name_len];
+	value_start = (const char *)&data [7 + associated_source_type_name_len];
 	end = (const char *)data + attr->data_size;
-	if (value >= end)
+	if (value_start >= end)
 		return FALSE;
 MONO_DISABLE_WARNING (4310) // cast truncates constant value
-	if (*value == (char)0xFF)
-		return value + 1 == end;
+	if (*value_start == (char)0xFF)
+		return value_start + 1 == end;
 MONO_RESTORE_WARNING
 
-	if ((*value & 0x80) == 0) {
-		if (value + 1 > end)
+	if ((*value_start & 0x80) == 0) {
+		if (value_start + 1 > end)
 			return FALSE;
-	} else if ((*value & 0xC0) == 0x80) {
-		if (value + 2 > end)
+	} else if ((*value_start & 0xC0) == 0x80) {
+		if (value_start + 2 > end)
 			return FALSE;
-	} else if ((*value & 0xE0) == 0xC0) {
-		if (value + 4 > end)
+	} else if ((*value_start & 0xE0) == 0xC0) {
+		if (value_start + 4 > end)
 			return FALSE;
 	} else {
 		return FALSE;
 	}
 
-	value_len = mono_metadata_decode_blob_size (value, &value);
-	return value <= end && value_len <= (guint32)(end - value) && value + value_len == end;
+	value_len = mono_metadata_decode_blob_size (value_start, &value_after_size);
+	return value_after_size <= end && value_len <= (guint32)(end - value_after_size) && value_after_size + value_len == end;
 }
 
 static void
@@ -3533,12 +3534,13 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		mono_error_assert_ok (error);
 		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
-				g_assertf(decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
+				g_assertf (decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
 				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
 				if (calling_conventions->len > 0) {
 					if (calling_conventions->len > 1)
 						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
 					// TODO: Support multiple conventions?
+					// System.Type values are stored in the primitive union member by load_cattr_value_noalloc.
 					MonoType *calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
 					mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
 				}
