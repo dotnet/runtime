@@ -1525,6 +1525,7 @@ struct HWIntrinsic final
         , op3(nullptr)
         , numOperands(0)
         , baseType(TYP_UNDEF)
+        , m_node(node)
     {
         assert(node != nullptr);
 
@@ -1546,12 +1547,14 @@ struct HWIntrinsic final
 
     inline bool needsJumpTableFallback() const
     {
-        GenTree* immOp = getImmOp();
-        assert(immOp != nullptr);
-        return !immOp->IsCnsIntOrI();
+        // Set during Lowering when the immediate operand is not a constant.
+        assert(m_node != nullptr);
+        bool needs = m_node->NeedsJumpTableFallback();
+        assert(needs == !getImmOp()->IsCnsIntOrI());
+        return needs;
     }
 
-    GenTree* getImmOp(NamedIntrinsic id) const
+    GenTree* getImmOp() const
     {
         int imm1Pos = -1;
         int imm2Pos = -1;
@@ -1590,6 +1593,7 @@ struct HWIntrinsic final
     var_types           baseType;
 
 private:
+    const GenTreeHWIntrinsic* m_node;
     void InitializeOperands(const GenTreeHWIntrinsic* node)
     {
         numOperands = node->GetOperandCount();

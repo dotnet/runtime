@@ -868,9 +868,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* immOp = getImmOp(node);
             if (!immOp->IsCnsIntOrI()) // this instruction will need a jump table fallback
             {
-                for (int i = 0; i < node->GetOperandCount(); i++)
+                node->SetNeedsJumpTableFallback();
+                for (int i = 1; i <= node->GetOperandCount(); i++)
                 {
                     GenTree* op = node->Op(i);
+                    JITDUMP(
+                        "Lowering: Marking operand [%06u] as multiply-used for HWIntrinsic with non-constant immediate\n",
+                        Compiler::dspTreeID(op));
+                    m_compiler->gtDispTree(op);
                     SetMultiplyUsed(op DEBUGARG("Non-constant imm op needs jump table fallback"));
                 }
             }
@@ -915,10 +920,16 @@ GenTree* Lowering::LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node)
     signMaskB->gtSimdVal.u64[0]   = 0x8000000000000000ULL;
     signMaskB->gtSimdVal.u64[1]   = 0x8000000000000000ULL;
 
+    LowerNode(signMaskA);
+    LowerNode(signMaskB);
+
     GenTreeHWIntrinsic* xorA =
         m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, signMaskA, NI_PackedSimd_Xor, TYP_LONG, 16);
+    LowerNode(xorA);
+
     GenTreeHWIntrinsic* xorB =
         m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, signMaskB, NI_PackedSimd_Xor, TYP_LONG, 16);
+    LowerNode(xorB);
 
     // The original LIR execution order is:  ... op1 ... op2 ... node ...
     // After rewrite we need:                ... op1 ... signMaskA xorA op2 ... signMaskB xorB node ...
@@ -929,8 +940,7 @@ GenTree* Lowering::LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node)
     node->Op(2) = xorB;
     node->SetSimdBaseType(TYP_LONG);
 
-    // no containment possible for operands
-    return node->gtNext;
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -953,7 +963,5 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
         }
-        default:
-            unreached();
     }
 }

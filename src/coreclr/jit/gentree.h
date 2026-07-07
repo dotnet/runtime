@@ -541,6 +541,10 @@ enum GenTreeFlags : unsigned
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
+#ifdef TARGET_WASM
+    GTF_HW_NEEDS_JUMP_TABLE       = 0x40000000, // GT_HWINTRINSIC -- (WASM) intrinsic has a non-constant immediate
+                                                //                   operand and requires a jump-table fallback at codegen
+#endif // TARGET_WASM
 #endif // FEATURE_HW_INTRINSICS
 };
 
@@ -2457,6 +2461,19 @@ public:
         assert(!IsEmbMaskOp());
         gtFlags |= GTF_HW_EM_OP;
     }
+
+#ifdef TARGET_WASM
+    bool NeedsJumpTableFallback() const
+    {
+        return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_NEEDS_JUMP_TABLE) != 0);
+    }
+
+    void SetNeedsJumpTableFallback()
+    {
+        assert(OperIsHWIntrinsic());
+        gtFlags |= GTF_HW_NEEDS_JUMP_TABLE;
+    }
+#endif // TARGET_WASM
 
 #endif // FEATURE_HW_INTRINSICS
 

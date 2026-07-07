@@ -503,6 +503,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("ckfinite finiteness check"));
             break;
 
+        case GT_HWINTRINSIC:
+            CollectReferencesForHardwareIntrinsic(node->AsHWIntrinsic());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -698,6 +702,17 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
 
 void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
 {
+    // Only intrinsics that need a jump-table fallback have operands marked
+    // MultiplyUsed during Lowering (see Lowering::LowerHWIntrinsic in lowerwasm.cpp).
+    if (!node->NeedsJumpTableFallback())
+    {
+        return;
+    }
+
+    for (GenTree* op : node->Operands())
+    {
+        ConsumeTemporaryRegForOperand(op DEBUGARG("hardware intrinsic jump-table operand"));
+    }
 }
 
 //------------------------------------------------------------------------

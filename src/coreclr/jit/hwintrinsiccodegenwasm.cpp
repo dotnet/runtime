@@ -69,25 +69,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     WasmProduceReg(node);
 }
 
-/* The jump table here looks like the following:
-    (block $outer
-      (block $inner
-         (block $N-1 
-            ...
-            (block $1
-                (block $0
-                    (br_table $0 $1 ... $N-1 $inner)
+// genHWIntrinsicJumpTableFallback: Generates a jump table for a given hardware intrinsic node.
+// Arguments:
+//   node - The hardware intrinsic node
+//   info - Hardware intrinsic info about the node
+//
+// Notes:
+/* This isn't a true jump table like on Native ISAs, it's just a series of nested blocks that looks like the following:
+        (block $outer
+          (block $inner
+             (block $(N-1)
+                ...
+                (block $1
+                    (block $0
+                        (br_table $0 $1 ... $N-1 $inner)
+                    )
+                    <case imm=0>
+                    br $outer
                 )
-                <case imm=0>
-                br $outer
-            )
-              ...
-         )
-         <case imm=N-1>
-         br $outer
-      )
-      unreachable
-    )
+                  ...
+             )
+             <case imm=N-1>
+             br $outer
+          )
+          unreachable
+        )
+   Essentially, we create a block for each possible value of the immediate, and dispatch according to the immediate value.
+   Note that it is safe to emit these blocks mid-instruction stream, since we can logically think of them as one macro "instruction", whose
+   result is the same as the underlying instruction. There aren't any GC safepoints in any of the generated cases here,
+   so GC info shouldn't need to be touched at any point.
 */
 void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info)
 {
@@ -103,20 +113,24 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
     regNumber immReg = GetMultiUseOperandReg(immOp);
 
     // Drop all incoming operands to actually consume them, they
-    // will be unusable in the jump table
+    // will be unusable in the jump table and we will need to re-materialize them
+    // on the value stack for each case in the table.
     for (int i = 0; i < node->GetOperandCount(); i++)
     {
         GetEmitter()->emitIns(INS_drop);
     }
 
-    auto teeNonImmediateOperands = [=]() {
+    auto getNonImmediateOperands = [=]() {
         for (int i = 1; i <= node->GetOperandCount(); i++)
         {
             GenTree* op = node->Op(i);
             if (op != immOp)
             {
+                // All of the operands should have been marked MultiplyUsed in lower,
+                // and so RA should have assigned them locals which prior codegen should
+                // have local.tee'd them into.
                 regNumber reg = GetMultiUseOperandReg(op);
-                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(op), reg);
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(op), WasmRegToIndex(reg));
             }
         }
     };
@@ -131,7 +145,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
         }
 
         // Load the immediate value to branch to the appropriate case block
-        GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(immOp), immReg);
+        GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(immOp), WasmRegToIndex(immReg));
 
         // cases are 0 ... immUpperBound, default, where the last case is the default which branches to the unreachable inner block.
         int caseCount = immUpperBound + 1;
@@ -148,7 +162,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
         {
             genEmitEndBlock(); // end block for case i, the handling of case i follows
 
-            teeNonImmediateOperands();
+            getNonImmediateOperands();
             switch (info.category)
             {
                 case HW_Category_IMM:
