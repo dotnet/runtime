@@ -53,6 +53,19 @@ internal readonly struct Object_1 : IObject
         return new string(MemoryMarshal.Cast<byte, char>(span));
     }
 
+    public void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a set-free object");
+        if (mt != _stringMethodTable)
+            throw new ArgumentException("Address does not represent a string object", nameof(address));
+
+        Data.String str = _target.ProcessedData.GetOrAdd<Data.String>(address);
+        length = str.StringLength;
+        offsetToFirstChar = (uint)(str.FirstChar.Value - address.Value);
+    }
+
     public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
     {
         TargetPointer mt = GetMethodTableAddress(address);
@@ -150,10 +163,8 @@ internal readonly struct Object_1 : IObject
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
 
-        // Classify by invocation count first:
-        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
-        // that this API does not interpret further. Only when invocationCount==0
-        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
+        // Classify by invocation count first to handle multicast and unmanaged.
+        // This does not handle open virtual delegates correctly.
         DelegateType delegateType = DelegateType.Unknown;
         if (del.InvocationCount.Value == 0)
         {
@@ -174,5 +185,37 @@ internal readonly struct Object_1 : IObject
             TargetObject: targetObject,
             TargetMethodPtr: targetMethodPtr,
             DelegateType: delegateType);
+    }
+
+    public ContinuationInfo GetContinuationInfo(TargetPointer address)
+    {
+        Data.ContinuationObject cont = _target.ProcessedData.GetOrAdd<Data.ContinuationObject>(address);
+        TargetPointer diagnosticIP = cont.ResumeInfo != TargetPointer.Null
+            ? _target.ProcessedData.GetOrAdd<Data.AsyncResumeInfo>(cont.ResumeInfo).DiagnosticIP
+            : TargetPointer.Null;
+        return new ContinuationInfo(
+            Next: cont.Next,
+            DiagnosticIP: diagnosticIP,
+            State: (uint)cont.State);
+    }
+
+    public ulong GetSize(TargetPointer address)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a free object");
+        Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+
+        ulong size = typeSystemContract.GetBaseSize(typeHandle);
+        uint componentSize = typeSystemContract.GetComponentSize(typeHandle);
+        if (componentSize > 0)
+        {
+            // Variable-size object (array or string): add the component data size.
+            // Both Array and String share the m_NumComponents/m_StringLength field layout.
+            Data.Array arr = _target.ProcessedData.GetOrAdd<Data.Array>(address);
+            size += (ulong)arr.NumComponents * componentSize;
+        }
+        return size;
     }
 }

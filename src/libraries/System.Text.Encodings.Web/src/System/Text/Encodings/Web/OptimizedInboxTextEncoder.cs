@@ -392,7 +392,7 @@ namespace System.Text.Encodings.Web
             return (data.IsEmpty) ? -1 : dataOriginalLength - data.Length;
         }
 
-        public unsafe int GetIndexOfFirstCharToEncode(ReadOnlySpan<char> data)
+        public int GetIndexOfFirstCharToEncode(ReadOnlySpan<char> data)
         {
             int asciiCharsSkipped = 0;
 
@@ -411,53 +411,44 @@ namespace System.Text.Encodings.Web
             }
 #endif
 
-            fixed (char* pData = data)
+            int idx = asciiCharsSkipped;
+
+            // If there's any leftover data, try consuming it now.
+
+            if ((uint)idx < (uint)data.Length)
             {
-                nuint lengthInChars = (uint)data.Length;
-                nuint idx = (uint)asciiCharsSkipped;
+                _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
 
-                // If there's any leftover data, try consuming it now.
+                // Slicing keeps the indexed accesses below provably in-bounds, so the JIT
+                // elides the bounds checks just as the previous pointer-based loop did.
+                ReadOnlySpan<char> remaining = data.Slice(idx);
 
-                if (idx < lengthInChars)
+                // unroll the loop 8x
+                while (remaining.Length >= 8)
                 {
-                    _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
-
-                    // unroll the loop 8x
-                    nint loopIter = 0;
-                    for (; lengthInChars - idx >= 8; idx += 8)
-                    {
-                        loopIter = -1;
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                    }
-
-                    for (; idx < lengthInChars; idx++)
-                    {
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx])) { break; }
-                    }
-
-                    goto Return;
-
-                BrokeInUnrolledLoop:
-                    idx += (nuint)loopIter;
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[0])) { goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[1])) { idx += 1; goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[2])) { idx += 2; goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[3])) { idx += 3; goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[4])) { idx += 4; goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[5])) { idx += 5; goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[6])) { idx += 6; goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[7])) { idx += 7; goto Return; }
+                    idx += 8;
+                    remaining = remaining.Slice(8);
                 }
 
-            Return:
-
-                Debug.Assert(0 <= idx && idx <= lengthInChars);
-                int idx32 = (int)idx;
-                if (idx32 == (int)lengthInChars)
+                foreach (char c in remaining)
                 {
-                    idx32 = -1;
+                    if (!_allowedBmpCodePoints.IsCharAllowed(c)) { goto Return; }
+                    idx++;
                 }
-                return idx32;
             }
+
+        Return:
+
+            Debug.Assert(0 <= idx && idx <= data.Length);
+            return (idx == data.Length) ? -1 : idx;
         }
 
         /// <summary>

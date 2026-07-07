@@ -76,4 +76,45 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>(() => options.TargetBlockSize = targetBlockSize);
         }
     }
+
+    public class ZstandardDecompressionOptionsTests
+    {
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(23)]
+        [InlineData(30)]
+        public void MaxWindowLog_SetToValidRange_Succeeds(int maxWindowLog)
+        {
+            ZstandardDecompressionOptions options = new();
+            options.MaxWindowLog = maxWindowLog;
+            Assert.Equal(maxWindowLog, options.MaxWindowLog);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(9)]
+        [InlineData(32)]
+        public void MaxWindowLog_SetOutOfRange_ThrowsArgumentOutOfRangeException(int maxWindowLog)
+        {
+            ZstandardDecompressionOptions options = new();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxWindowLog = maxWindowLog);
+        }
+
+        [Fact]
+        public void Dictionary_SetAndGet_RoundTrips()
+        {
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary());
+            ZstandardDecompressionOptions options = new();
+            options.Dictionary = dictionary;
+            Assert.Same(dictionary, options.Dictionary);
+        }
+
+        [Fact]
+        public void Dictionary_DefaultValue_IsNull()
+        {
+            ZstandardDecompressionOptions options = new();
+            Assert.Null(options.Dictionary);
+        }
+    }
 }

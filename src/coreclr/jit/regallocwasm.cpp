@@ -486,8 +486,9 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForBinop(node->AsOp());
             break;
 
+        case GT_IND:
         case GT_STOREIND:
-            CollectReferencesForStoreInd(node->AsStoreInd());
+            CollectReferencesForIndir(node->AsIndir());
             break;
 
         case GT_STORE_BLK:
@@ -496,6 +497,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 
         case GT_INDEX_ADDR:
             CollectReferencesForIndexAddr(node->AsIndexAddr());
+            break;
+
+        case GT_CKFINITE:
+            ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("ckfinite finiteness check"));
             break;
 
         default:
@@ -571,6 +576,29 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
     {
         ConsumeTemporaryRegForOperand(thisArg->GetNode() DEBUGARG("call this argument"));
     }
+
+    // For a fast tail call, wrap the SP arg with ADD(SP, FRAME_SIZE) so codegen
+    // undoes the prolog's SP adjustment and the callee sees the incoming SP.
+    // The arg has been rewritten to GT_PHYSREG above (args are visited before the call).
+    if (callNode->IsFastTailCall())
+    {
+        CallArg* const spArg = callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmShadowStackPointer);
+        if (spArg != nullptr)
+        {
+            GenTree* const physReg = spArg->GetNode();
+            assert(physReg != nullptr);
+            assert(physReg->OperIs(GT_PHYSREG));
+            assert(physReg->AsPhysReg()->gtSrcReg == m_perFuncletData[m_currentFunclet]->m_spReg);
+            // Fast tail calls from funclets are not supported.
+            assert(m_currentFunclet == ROOT_FUNC_IDX);
+
+            GenTree* const frameSize = new (m_compiler, GT_FRAME_SIZE) GenTree(GT_FRAME_SIZE, TYP_I_IMPL);
+            GenTree* const spAdjust  = m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, physReg, frameSize);
+
+            CurrentRange().InsertAfter(physReg, frameSize, spAdjust);
+            spArg->NodeRef() = spAdjust;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -621,15 +649,15 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 }
 
 //------------------------------------------------------------------------
-// CollectReferencesForStoreInd: Collect virtual register references for an indirect store
+// CollectReferencesForIndir: Collect virtual register references for an indirection.
 //
 // Arguments:
-//    node - The GT_STOREIND node
+//    node - The indirection node.
 //
-void WasmRegAlloc::CollectReferencesForStoreInd(GenTreeStoreInd* node)
+void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
     GenTree* const addr = node->Addr();
-    ConsumeTemporaryRegForOperand(addr DEBUGARG("storeind null check"));
+    ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
 }
 
 //------------------------------------------------------------------------
@@ -1165,6 +1193,16 @@ void WasmRegAlloc::ResolveReferences()
             {
                 decls->push_back({type, physRegs.DeclaredCount});
             }
+        }
+
+        // Allocate the per-funclet exnref local used to relay caught exceptions
+        // from the catch_ref landing to any throw_ref rethrow site in this function.
+        //
+        if (m_compiler->lvaWasmResumeIP != BAD_VAR_NUM)
+        {
+            assert(funcInfo->funWasmExnRefLocalIndex == UINT_MAX);
+            funcInfo->funWasmExnRefLocalIndex = indexBase;
+            decls->push_back({WasmValueType::ExnRef, 1});
         }
     }
 

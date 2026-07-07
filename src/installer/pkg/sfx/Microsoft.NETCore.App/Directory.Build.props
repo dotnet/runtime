@@ -75,6 +75,7 @@
     <PlatformManifestFileEntry Include="System.Private.Xml.Linq.dll" />
     <!-- Platform-Native Composite R2R images -->
     <PlatformManifestFileEntry Include="Microsoft.NETCore.App.r2r.dylib" />
+    <PlatformManifestFileEntry Include="Microsoft.NETCore.App.Runtime.CoreCLR.r2r.dylib" />
     <!-- Native libraries -->
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.dylib" IsNative="true" />
@@ -236,7 +237,6 @@
     <PlatformManifestFileEntry Include="dotnet.diagnostics.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.diagnostics.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.native.worker.mjs" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.wasm" IsNative="true" />

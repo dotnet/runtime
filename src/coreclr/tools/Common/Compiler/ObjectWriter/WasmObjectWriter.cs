@@ -368,17 +368,7 @@ namespace ILCompiler.ObjectWriter
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
         private void RegisterStubIndexAndSignature(WasmFuncType signature)
         {
-            Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
-            if (!_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
-            {
-                signatureIndex = _uniqueSignatures.Count;
-                _uniqueSignatures.Add(signatureKey, signatureIndex);
-
-                SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
-                byte[] encodedSignature = new byte[signature.EncodeSize()];
-                signature.Encode(encodedSignature);
-                typeSectionWriter.EmitData(encodedSignature);
-            }
+            int signatureIndex = RegisterSignature(signature);
 
             SectionWriter functionSectionWriter = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
             functionSectionWriter.WriteULEB128((ulong)signatureIndex);
@@ -1011,6 +1001,11 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
+                        case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, RtlRestoreContextTagIndex + addend);
+                            break;
+                        }
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
@@ -1040,19 +1035,49 @@ namespace ILCompiler.ObjectWriter
         public const int StackPointerGlobalIndex = 0;
         public const int ImageBaseGlobalIndex = 1;
         public const int TableBaseGlobalIndex = 2;
+        public const int RtlRestoreContextTagIndex = 0;
 
-        private WasmImport[] _defaultGlobalImports = new[]
+        private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
+            new([]),
+            new([]));
+
+        private WasmImport[] CreateDefaultGlobalImports()
         {
-            new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-            new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-            new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
-            new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
-        };
+            int rtlRestoreContextTagTypeIndex = RegisterSignature(RtlRestoreContextTagSignature);
+
+            return
+            [
+                new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+                new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+                new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
+                new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
+                new WasmImport("webcil", "rtlRestoreContextTag", import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
+            ];
+        }
+
+        private int RegisterSignature(WasmFuncType signature)
+        {
+            Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
+            if (_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
+            {
+                return signatureIndex;
+            }
+
+            signatureIndex = _uniqueSignatures.Count;
+            _uniqueSignatures.Add(signatureKey, signatureIndex);
+
+            SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
+            byte[] encodedSignature = new byte[signature.EncodeSize()];
+            signature.Encode(encodedSignature);
+            typeSectionWriter.EmitData(encodedSignature);
+
+            return signatureIndex;
+        }
 
         private void WriteImports()
         {
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
-            foreach (WasmImport import in _defaultGlobalImports)
+            foreach (WasmImport import in CreateDefaultGlobalImports())
             {
                 if (import.Index.HasValue)
                 {

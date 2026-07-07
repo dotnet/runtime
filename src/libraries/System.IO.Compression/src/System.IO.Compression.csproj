@@ -92,6 +92,7 @@
     <Compile Include="$(CommonPath)Interop\Interop.Zstd.cs" />
     <Compile Include="System\IO\Compression\Zstandard\ZstandardCompressionOptions.cs" />
     <Compile Include="System\IO\Compression\Zstandard\ZstandardDecoder.cs" />
+    <Compile Include="System\IO\Compression\Zstandard\ZstandardDecompressionOptions.cs" />
     <Compile Include="System\IO\Compression\Zstandard\ZstandardDictionary.cs" />
     <Compile Include="System\IO\Compression\Zstandard\ZstandardEncoder.cs" />
     <Compile Include="System\IO\Compression\Zstandard\ZstandardStream.Compress.cs" />

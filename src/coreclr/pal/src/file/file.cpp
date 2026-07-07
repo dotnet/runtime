@@ -420,6 +420,7 @@ CorUnix::InternalCreateFile(
     int   filed = -1;
     int   create_flags = (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     int   open_flags = 0;
+    int   open_flags_for_syscall = 0;
 
     // track whether we've created the file with the intended name,
     // so that it can be removed on failure exit
@@ -575,7 +576,22 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    filed = InternalOpen(lpUnixPath, open_flags, create_flags);
+
+    open_flags_for_syscall = open_flags;
+#if defined(__OpenBSD__)
+    /* On OpenBSD, open() requires O_RDWR or O_WRONLY to be specified along with
+       O_TRUNC, otherwise it fails with EINVAL. Windows allows truncating a file
+       that is opened for read-only access (e.g. GENERIC_READ with CREATE_ALWAYS).
+       Upgrade only the flags passed to open() so the truncation succeeds, while
+       leaving open_flags (used later for access checks such as file mappings)
+       unchanged to preserve the caller's requested access. */
+    if ((open_flags_for_syscall & O_TRUNC) && (open_flags_for_syscall & O_ACCMODE) == O_RDONLY)
+    {
+        open_flags_for_syscall = (open_flags_for_syscall & ~O_ACCMODE) | O_RDWR;
+    }
+#endif // __OpenBSD__
+
+    filed = InternalOpen(lpUnixPath, open_flags_for_syscall, create_flags);
     TRACE("Allocated file descriptor [%d]\n", filed);
 
     if ( filed < 0 )

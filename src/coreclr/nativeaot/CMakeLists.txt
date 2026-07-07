@@ -28,6 +28,12 @@ if(CLR_CMAKE_TARGET_ANDROID)
     set(FEATURE_JAVAMARSHAL 1)
 endif()
 
+if(CLR_CMAKE_TARGET_OPENBSD)
+    # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
+    # __tls_get_addr, so the runtime must use emulated TLS (like Android).
+    add_definitions(-DFEATURE_EMULATED_TLS)
+endif()
+
 if(NOT DEFINED FEATURE_JAVAMARSHAL)
   set(FEATURE_JAVAMARSHAL $<IF:$<CONFIG:Debug,Checked>,1,0>)
 endif()

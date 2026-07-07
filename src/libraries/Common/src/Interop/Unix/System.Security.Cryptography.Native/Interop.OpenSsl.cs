@@ -670,7 +670,16 @@ internal static partial class Interop
             outputBuffer = Array.Empty<byte>();
             if (ret != 1)
             {
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, GetSslError(ret, errorCode));
+                Exception? ex = GetSslError(ret, errorCode);
+
+                SecurityStatusPalErrorCode palErrorCode = (ex?.HResult & 0X7FFFFF) switch
+                {
+                    279 /*SSL_R_EXTENSION_NOT_RECEIVED*/ or
+                    339 /*SSL_R_NO_RENEGOTIATION*/ => SecurityStatusPalErrorCode.NoRenegotiation,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
+
+                return new SecurityStatusPal(palErrorCode, ex);
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }

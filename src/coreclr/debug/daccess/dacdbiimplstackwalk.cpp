@@ -727,30 +727,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread
     return hr;
 }
 
-// This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-// inside DDI because the RS has no notion of REGDISPLAY.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        // This is a bit cumbersome.  First we need to convert the CONTEXT into a REGDISPLAY.  Then we need
-        // to convert the REGDISPLAY to a DebuggerREGDISPLAY.
-        T_CONTEXT tmpContext = { };
-        CopyMemory(&tmpContext, pInContext, sizeof(*pInContext));
-
-        REGDISPLAY rd;
-        FillRegDisplay(&rd, &tmpContext);
-
-        SetDebuggerREGDISPLAYFromREGDISPLAY(pOutDRD, &rd);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Fill in the structure with information about the current frame at which the stackwalker is stopped.
@@ -808,9 +784,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         //
 
         pFrameData->eType = Debugger_STRData::cMethodFrame;
-
-        _ASSERTE(pFrameData->rd != NULL);
-        SetDebuggerREGDISPLAYFromREGDISPLAY(pFrameData->rd, pCF->GetRegisterSet());
 
         _ASSERTE(pFrameData->ctx != NULL);
         GetStackWalkCurrentContext(pIter, pFrameData->ctx);

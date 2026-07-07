@@ -15,4 +15,5 @@ public static class CorDbgHResults
     public const int CORDBG_S_NOT_ALL_BITS_SET = unchecked((int)0x00131c13);
     public const int CORDBG_E_NON_MATCHING_CONTEXT = unchecked((int)0x80131327);
     public const int CORDBG_E_UNSUPPORTED_DELEGATE = unchecked((int)0x80131c68);
+    public const int CORDBG_E_ENC_HANGING_FIELD = unchecked((int)0x80131342);
 }

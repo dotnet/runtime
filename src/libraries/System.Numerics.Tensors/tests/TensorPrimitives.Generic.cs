@@ -455,7 +455,10 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
-            T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+            // Even with FMA, ARM64 vectorized trig can diverge a few tens of ULPs from scalar.
+            T? trigTolerance = IsFmaSupported
+                ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f)
+                : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);

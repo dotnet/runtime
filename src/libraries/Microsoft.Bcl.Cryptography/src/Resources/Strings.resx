@@ -147,6 +147,9 @@
   <data name="Cryptography_ArgMLKemRequiresMLKemKey" xml:space="preserve">
     <value>Keys used with the MLKemCng algorithm must have an algorithm group of MLKem.</value>
   </data>
+  <data name="Cryptography_ArgX25519RequiresX25519Key" xml:space="preserve">
+    <value>Keys used with the X25519DiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman using curve25519.</value>
+  </data>
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
   </data>
@@ -155,6 +158,9 @@
   </data>
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>
+  </data>
+  <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
+    <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>

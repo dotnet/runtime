@@ -54,6 +54,10 @@
 #include <pthread_np.h>
 #endif
 
+#if defined(__OpenBSD__)
+#include <pthread_np.h>
+#endif
+
 #if HAVE_LWP_SELF
 #include <lwp.h>
 #endif
@@ -1193,6 +1197,15 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+#elif defined(__OpenBSD__)
+    // OpenBSD provides the stack segment of the current thread via pthread_stackseg_np.
+    // ss_sp points to the top (highest address) of the stack.
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    pStackHighOut = stack.ss_sp;
+    pStackLowOut = (uint8_t*)stack.ss_sp - stack.ss_size;
 #else // __APPLE__
     pthread_attr_t attr;
     size_t stackSize;
