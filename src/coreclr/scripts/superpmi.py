@@ -2006,6 +2006,11 @@ def aggregate_diff_metrics(details_file):
     diffs_fields = ["Context", "Method full name", "Context size", "Base ActualCodeBytes", "Diff ActualCodeBytes", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
+    # Per-context throughput diffs (rows where PIN measured base != diff
+    # instruction count). Used by tpdiff to surface specific method examples.
+    tp_diffs_fields = ["Context", "MinOpts", "Base instructions", "Diff instructions"]
+    tp_diffs = []
+
     for row in read_csv(details_file):
         base_result = row["Base result"]
 
@@ -2043,6 +2048,9 @@ def aggregate_diff_metrics(details_file):
             diff_insts = int(row["Diff instructions"])
             base_dict["Diff executed instructions"] += base_insts
             diff_dict["Diff executed instructions"] += diff_insts
+
+            if base_insts > 0 and base_insts != diff_insts:
+                tp_diffs.append({f: row[f] for f in tp_diffs_fields})
 
             base_perfscore = float(row["Base PerfScore"])
             diff_perfscore = float(row["Diff PerfScore"])
@@ -2083,7 +2091,8 @@ def aggregate_diff_metrics(details_file):
 
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
             {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts},
-            diffs)
+            diffs,
+            tp_diffs)
 
 
 class SuperPMIReplayAsmDiffs:
@@ -2323,7 +2332,7 @@ class SuperPMIReplayAsmDiffs:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
-                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(details_info_file)
+                (base_metrics, diff_metrics, diffs, _) = aggregate_diff_metrics(details_info_file)
                 print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
@@ -2404,6 +2413,21 @@ class SuperPMIReplayAsmDiffs:
                                 if proc.returncode != 0:
                                     # No miss/replay failure is expected in contexts that were reported as having diffs since then they succeeded during the diffs run.
                                     raise create_exception()
+
+                                # A Wasm JIT may exit successfully without writing any disassembly to DOTNET_JitStdOutFile. For example, the wasm JIT
+                                # with JitWasmSimdNyiToR2RUnsupported=1 exits via
+                                # implReadyToRunUnsupported() (CORJIT_R2R_UNSUPPORTED) for NYI_WASM_SIMD during import, so no code is produced. This is an expected behavior.
+                                # TODO-WASM: This check can potentially be removed once we no longer have any NYI's in the import stage.
+                                if not os.path.exists(item_path) and self.coreclr_args.target_arch == "wasm":
+                                    # Log a warning so that unexpected misses (vs the expected JitWasmSimdNyiToR2RUnsupported path) remain diagnosable
+                                    # rather than being silently masked as empty diffs.
+                                    stderr_snippet = stderr.decode(errors='replace').strip().splitlines()
+                                    stderr_first_line = stderr_snippet[0] if stderr_snippet else ""
+                                    logging.warning(
+                                        "%sNo JitStdOutFile produced for wasm context %s at %s (exit=%d, stderr first line: %r). "
+                                        "Treating as empty diff; verify this is the expected JitWasmSimdNyiToR2RUnsupported path.",
+                                        print_prefix, context_index, item_path, proc.returncode, stderr_first_line)
+                                    return ""
 
                                 try:
                                     with open(item_path, 'r') as file_handle:
@@ -3193,7 +3217,7 @@ class SuperPMIReplayThroughputDiff:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
-                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(details_info_file)
+                (base_metrics, diff_metrics, _, tp_per_context) = aggregate_diff_metrics(details_info_file)
                 print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
@@ -3205,7 +3229,7 @@ class SuperPMIReplayThroughputDiff:
                     if base_instructions != 0 and diff_instructions != 0:
                         delta_instructions = diff_instructions - base_instructions
                         logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
-                        tp_diffs.append((os.path.basename(mch_file), base_metrics, diff_metrics))
+                        tp_diffs.append((os.path.basename(mch_file), base_metrics, diff_metrics, tp_per_context))
                     else:
                         logging.warning("One compilation failed to produce any results")
                 else:
@@ -3291,12 +3315,12 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
     def is_significant(row, base, diff):
         return is_significant_pct(base[row]["Diff executed instructions"], diff[row]["Diff executed instructions"])
 
-    if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
+    if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff, _) in tp_diffs):
         def write_pivot_section(row):
-            if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
+            if not any(is_significant(row, base, diff) for (_, base, diff, _) in tp_diffs):
                 return
 
-            pcts = [compute_pct(base_metrics[row]["Diff executed instructions"], diff_metrics[row]["Diff executed instructions"]) for (_, base_metrics, diff_metrics) in tp_diffs]
+            pcts = [compute_pct(base_metrics[row]["Diff executed instructions"], diff_metrics[row]["Diff executed instructions"]) for (_, base_metrics, diff_metrics, _) in tp_diffs]
             min_pct_str = format_pct(min(pcts))
             max_pct_str = format_pct(max(pcts))
             if min_pct_str == max_pct_str:
@@ -3307,7 +3331,7 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
             with DetailsSection(write_fh, tp_summary):
                 write_fh.write("|Collection|PDIFF|\n")
                 write_fh.write("|---|--:|\n")
-                for mch_file, base, diff in tp_diffs:
+                for mch_file, base, diff, _ in tp_diffs:
                     base_instructions = base[row]["Diff executed instructions"]
                     diff_instructions = diff[row]["Diff executed instructions"]
 
@@ -3320,6 +3344,8 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
         write_pivot_section("Overall")
         write_pivot_section("MinOpts")
         write_pivot_section("FullOpts")
+        if include_details:
+            write_tpdiff_context_examples(write_fh, tp_diffs)
     elif include_details:
         write_top_context_section()
         write_fh.write("No significant throughput differences found\n")
@@ -3330,13 +3356,82 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
                 write_fh.write("{} contexts:\n\n".format(disp))
                 write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                 write_fh.write("|---|--:|--:|--:|\n")
-                for mch_file, base, diff in tp_diffs:
+                for mch_file, base, diff, _ in tp_diffs:
                     base_instructions = base[row]["Diff executed instructions"]
                     diff_instructions = diff[row]["Diff executed instructions"]
                     write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
                         mch_file, base_instructions, diff_instructions,
                         compute_and_format_pct(base_instructions, diff_instructions)))
                 write_fh.write("\n")
+
+
+def write_tpdiff_context_examples(write_fh, tp_diffs):
+    """ Write top per-context throughput regression/improvement examples.
+
+    Args:
+        write_fh : file handle for file to output to
+        tp_diffs : list of (mch_file, base_metrics, diff_metrics, tp_per_context)
+                   where tp_per_context is a list of dicts with keys
+                   "Context", "MinOpts", "Base instructions", "Diff instructions".
+    """
+
+    # Flatten per-context rows; tag each with its originating collection.
+    flat = []
+    for (mch_file, _, _, tp_per_context) in tp_diffs:
+        for row in tp_per_context:
+            base_insts = int(row["Base instructions"])
+            diff_insts = int(row["Diff instructions"])
+            pct = (diff_insts - base_insts) / base_insts * 100
+            flat.append({
+                "Collection": mch_file,
+                "Context": row["Context"],
+                "MinOpts": row["MinOpts"] == "True",
+                "Base instructions": base_insts,
+                "Diff instructions": diff_insts,
+                "PDIFF pct": pct,
+            })
+
+    if not flat:
+        return
+
+    # Suppress tiny absolute deltas that show up as big percentages but are noise.
+    MIN_ABS_DELTA = 50
+    significant = [r for r in flat if abs(r["Diff instructions"] - r["Base instructions"]) >= MIN_ABS_DELTA]
+
+    if not significant:
+        return
+
+    def write_examples(title, rows):
+        if not rows:
+            return
+        with DetailsSection(write_fh, title):
+            write_fh.write("|Collection|Context|Base|Diff|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|--:|\n")
+            for r in rows:
+                write_fh.write("|{}|{}|{:,d}|{:,d}|{}|\n".format(
+                    r["Collection"],
+                    r["Context"],
+                    r["Base instructions"],
+                    r["Diff instructions"],
+                    compute_and_format_pct(r["Base instructions"], r["Diff instructions"])))
+
+    TOP_N = 20
+
+    def split_and_emit(label, rows):
+        regressions = sorted([r for r in rows if r["PDIFF pct"] > 0],
+                             key=lambda r: r["PDIFF pct"], reverse=True)[:TOP_N]
+        improvements = sorted([r for r in rows if r["PDIFF pct"] < 0],
+                              key=lambda r: r["PDIFF pct"])[:TOP_N]
+        write_examples("Top method regressions ({}, by PDIFF %)".format(label), regressions)
+        write_examples("Top method improvements ({}, by PDIFF %)".format(label), improvements)
+
+    fullopts = [r for r in significant if not r["MinOpts"]]
+    minopts = [r for r in significant if r["MinOpts"]]
+
+    if fullopts:
+        split_and_emit("FullOpts", fullopts)
+    if minopts:
+        split_and_emit("MinOpts", minopts)
 
 ################################################################################
 # SuperPMI Metric Diff

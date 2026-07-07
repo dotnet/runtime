@@ -31,7 +31,7 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
-  model: claude-opus-4.6
+  model: claude-opus-4.8
   env:
     COPILOT_GITHUB_TOKEN: |
       ${{ case(
@@ -160,7 +160,7 @@ For each result, read the body + latest comments through the `github` MCP (NOT `
 
 ### Step 3 — Existing-artifact dedup (search live GitHub, every KBE)
 
-Before doing any analysis work, confirm nothing already handles this KBE. Use the `github` MCP search tools:
+Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing each `Linked KBE:` marker, then resolve checks 1–3 against that map. Use the `github` MCP search tools:
 
 1. **Open fix PR already exists** — `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
 2. **Merged fix PR exists** — `repo:dotnet/runtime is:pr is:merged "Linked KBE: #<kbe>"`. If found, the KBE is likely already fixed -> `-> skipped: fix PR #<n> already merged; KBE may be stale`.
@@ -196,12 +196,24 @@ Apply these fixer-specific bounds on top of the skill's guidance:
 
 | KBE pipeline / area | Fix policy |
 |---|---|
-| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. |
+| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. For trimming/AOT reflection failures, do **not** root a type in the test assembly itself via `ILLink.Descriptors.xml`/`TrimmerRootDescriptor` — test assemblies are rooted whole, so this is a no-op; only root a separate owning assembly confirmed from source, else loop in with a comment. |
 | JIT / GC / PGO stress (codegen) | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. Workarounds in unrelated code (e.g. changing library buffer sizes or API call patterns to sidestep a codegen bug) are equally OUT of bounds — go straight to the loop-in comment instead of opening a workaround PR. |
 | `System.Net.*` | In bounds only if it satisfies Step 5.2. |
 | `Microsoft.Extensions.*` | In bounds only if it satisfies Step 5.2. |
 | NativeAOT outer loop | In bounds only if it satisfies Step 5.2. |
 | Generic | In bounds only if it satisfies Step 5.2. |
+
+#### Step 5.1.1 — Pipeline-category gate (mandatory, before any fix attempt)
+
+Before Step 5.2, resolve the KBE's pipeline and short-circuit JIT/GC/PGO
+codegen-stress failures. No fix or workaround PR is in bounds for them.
+
+1. Read the build definition name and id from the KBE's `Build:` link and the
+   `Build error leg or test failing:` leg name.
+2. Treat as codegen-stress when the name or leg matches (case-insensitive)
+   `jitstress`, `gcstress`, `pgo`, `superpmi`, `jit-cfg`, or `jit-experimental`.
+3. If matched, skip Steps 5.2–5.4 and go to Step 5.5 (Branch COMMENT), recording
+   `-> routed to loop-in: codegen-stress pipeline (<name>)`. Otherwise continue.
 
 #### Step 5.2 — Attempt a fix, then classify confidence
 

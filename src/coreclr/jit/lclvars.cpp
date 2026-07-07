@@ -6049,14 +6049,32 @@ void Compiler::lvaAlignFrame()
     }
 #elif defined(TARGET_WASM)
     // Keep the stack aligned to STACK_ALIGN.
+    unsigned pad = 0;
     if ((compLclFrameSize % STACK_ALIGN) != 0)
     {
-        lvaIncrementFrameSize(STACK_ALIGN - (compLclFrameSize % STACK_ALIGN));
+        pad = STACK_ALIGN - (compLclFrameSize % STACK_ALIGN);
     }
     else if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
     {
         // Reserve a full STACK_ALIGN so the offsets computed now are upper bounds.
-        lvaIncrementFrameSize(STACK_ALIGN);
+        pad = STACK_ALIGN;
+    }
+
+    if (pad != 0)
+    {
+        lvaIncrementFrameSize(pad);
+
+        // The Wasm EH slots are read at fixed offsets and must stay at the frame bottom,
+        // so shift them down past the padding.
+        unsigned const ehSlots[] = {lvaWasmFunctionIndex, lvaWasmVirtualIP, lvaWasmResumeIP};
+        for (unsigned ehSlot : ehSlots)
+        {
+            if (ehSlot != BAD_VAR_NUM)
+            {
+                LclVarDsc* const ehSlotDsc = lvaGetDesc(ehSlot);
+                ehSlotDsc->SetStackOffset(ehSlotDsc->GetStackOffset() - (int)pad);
+            }
+        }
     }
     assert((compLclFrameSize % STACK_ALIGN) == 0);
 #else

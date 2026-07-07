@@ -45,10 +45,6 @@ typedef void* * RefWalkHandle;
 
 #include "dacdbistructures.h"
 
-// This is the current format of code:DbiVersion.   It needs to be rev'ed when we decide to store something
-// else other than the product version of the DBI in DbiVersion (e.g. a timestamp).  See
-// code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDbiVersionFormat = 1;
 
 //-----------------------------------------------------------------------------
 // This is a low-level interface between DAC and DBI.
@@ -177,20 +173,6 @@ public:
     //-----------------------------------------------------------------------------
     // Functions to control the behavior of the DacDbi implementation itself.
     //-----------------------------------------------------------------------------
-
-    //
-    // Check whether the version of the DBI matches the version of the runtime.
-    // This is only called when we are remote debugging.  On Windows, we should have checked all the
-    // versions before we call any API on the IDacDbiInterface.  See
-    // code:CordbProcess::CordbProcess#DBIVersionChecking for more information on version checks.
-    //
-    // Return Value:
-    //    S_OK on success.
-    //
-    // Notes:
-    //    THIS MUST BE THE FIRST API ON THE INTERFACE!
-    //
-    virtual HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion) = 0;
 
     //
     // Flush the DAC cache. This should be called when target memory changes.
@@ -1280,21 +1262,6 @@ public:
     //                              The memory for this belongs to the caller. It must not be NULL.
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer) = 0;
-
-    //
-    // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-    // inside DDI because the RS has no notion of REGDISPLAY.
-    //
-    // Arguments:
-    //    pInContext - the CONTEXT to be converted
-    //    pOutDRD    - the converted DebuggerREGDISPLAY
-    //    fActive    - Indicate whether the CONTEXT is active or not.  An active CONTEXT means that the
-    //                 IP is the next instruction to be executed, not the return address of a function call.
-    //                 The opposite of an active CONTEXT is an unwind CONTEXT, which is obtained from
-    //                 unwinding.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive) = 0;
 
     typedef enum
     {

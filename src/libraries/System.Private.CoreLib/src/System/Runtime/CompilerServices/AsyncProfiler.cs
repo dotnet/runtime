@@ -155,6 +155,7 @@ namespace System.Runtime.CompilerServices
         {
             public object? Context;
             public object? CurrentContinuation;
+            public bool CurrentContinuationCompleted;
             public ref nint ContinuationTable;
             public uint ContinuationIndex;
         }
@@ -163,6 +164,7 @@ namespace System.Runtime.CompilerServices
         {
             info.Context = null;
             info.CurrentContinuation = null;
+            info.CurrentContinuationCompleted = false;
             ContinuationWrapper.InitInfo(ref info);
         }
 
@@ -1015,7 +1017,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(context.ActiveEventKeywords) && dispatcher.ContinuationChainChanged)
                 {
-                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.LastContinuation?.ContinuationForDiagnostics, currentTimestamp, AsyncEventID.AppendStateMachineAsyncCallstack, DispatcherIds.GetDispatcherId(dispatcher));
+                    AsyncCallstack.EmitEvent(dispatcher, context, dispatcher.NextContinuationForDiagnostics, currentTimestamp, AsyncEventID.AppendStateMachineAsyncCallstack, DispatcherIds.GetDispatcherId(dispatcher));
                 }
             }
 
@@ -1607,17 +1609,7 @@ namespace System.Runtime.CompilerServices
 
                 EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.ResumeStateMachineAsyncCallstack, 0, dispatcherId, ref state);
 
-                IAsyncStateMachineBox? last = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
-                if (last != null)
-                {
-                    Debug.Assert(last is Task);
-                    info.Dispatcher.LastContinuation = Unsafe.As<Task>(last);
-                }
-                else
-                {
-                    info.Dispatcher.LastContinuation = null;
-                }
-
+                info.Dispatcher.LastContinuation = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
                 info.Dispatcher.ReachedLastContinuation = false;
             }
 
@@ -1635,16 +1627,7 @@ namespace System.Runtime.CompilerServices
 
                         EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, 0, dispatcherId, ref state);
 
-                        box = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
-                        if (box != null)
-                        {
-                            Debug.Assert(box is Task);
-                            dispatcher.LastContinuation = Unsafe.As<Task>(box);
-                        }
-                        else
-                        {
-                            dispatcher.LastContinuation = null;
-                        }
+                        dispatcher.LastContinuation = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
                     }
                     else
                     {

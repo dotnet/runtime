@@ -804,13 +804,13 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         // If the timestamp and size don't match, then this is the wrong file!
         // Map the file and check them.
-        HandleHolder hMDFile = WszCreateFile(pszFullPathName,
+        HandleHolder hMDFile{ WszCreateFile(pszFullPathName,
                                               GENERIC_READ,
                                               FILE_SHARE_READ,
                                               NULL,                 // default security descriptor
                                               OPEN_EXISTING,
                                               FILE_ATTRIBUTE_NORMAL,
-                                              NULL);
+                                              NULL) };
 
         if (hMDFile == INVALID_HANDLE_VALUE)
         {
@@ -828,7 +828,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(dwFileHigh == 0);
 
-        HandleHolder hMap = CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
+        HandleHolder hMap{ CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL) };
         if (hMap == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't create mapping of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
