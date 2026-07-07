@@ -2532,8 +2532,8 @@ namespace System.Threading.Tasks.Tests
                 {
                     foundReSuspend = true;
                     int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
-                    AssertTrue(stream, completeIdx < 0 || suspendIdx < completeIdx,
-                        "Outer completed before it re-suspended; inline inner completion was mis-attributed to it");
+                    AssertTrue(stream, completeIdx > suspendIdx,
+                        "Outer did not complete after it re-suspended; inline inner completion was mis-attributed to it");
                 }
             }
 
