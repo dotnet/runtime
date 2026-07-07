@@ -496,17 +496,6 @@ namespace Internal.JitInterface
             _compilation = compilation;
         }
 
-        private uint getAddressAlignment(void* address)
-        {
-            if (address != null && HandleToObject(address) is IObjectNodeWithAlignment node)
-            {
-                return (uint)node.GetAlignment(_compilation.NodeFactory);
-            }
-
-            // Null or unknown target: report unaligned so the JIT avoids alignment-sensitive relocations.
-            return 1;
-        }
-
         private void AddPrecodeFixup(ISymbolNode node)
         {
             _precodeFixups = _precodeFixups ?? new List<ISymbolNode>();
