@@ -123,7 +123,7 @@ namespace System.Threading.Tasks
         // The delegate to invoke for a delegate-backed Task.
         // This field also may be used by async state machines to cache an Action.
         internal Delegate? m_action;
-        internal object? m_stateObject; // A state object that can be optionally supplied, passed to action.
+        private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
