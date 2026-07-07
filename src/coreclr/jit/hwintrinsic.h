@@ -1564,7 +1564,7 @@ struct HWIntrinsic final
 
         GenTree* ops[] = {op1, op2, op3};
 
-        int      opIdx = (int)numOperands - 1 - imm1Pos;
+        int opIdx = (int)numOperands - 1 - imm1Pos;
         assert(opIdx >= 0);
 
         GenTree* immOp = ops[opIdx];
@@ -1573,8 +1573,8 @@ struct HWIntrinsic final
 
     uint8_t GetImmediateLaneOperand() const
     {
-        assert(category == HW_Category_IMM || category == HW_Category_MemoryLoad || \
-            category == HW_Category_MemoryStore);
+        assert(category == HW_Category_IMM || category == HW_Category_MemoryLoad ||
+               category == HW_Category_MemoryStore);
 
         GenTree* immOp = getImmOp();
         assert(immOp->IsCnsIntOrI());
@@ -1594,7 +1594,7 @@ struct HWIntrinsic final
 
 private:
     const GenTreeHWIntrinsic* m_node;
-    void InitializeOperands(const GenTreeHWIntrinsic* node)
+    void                      InitializeOperands(const GenTreeHWIntrinsic* node)
     {
         numOperands = node->GetOperandCount();
 
@@ -1647,7 +1647,7 @@ private:
             }
         }
     }
-  };
+};
 
 #endif // TARGET_WASM
 

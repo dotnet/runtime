@@ -468,10 +468,10 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t bytes[16])
 //
 void emitter::emitIns_Lane(instruction ins, uint8_t laneIdx)
 {
-    uint8_t    elemSize = CodeGenInterface::instSimdElemSize(ins);
+    uint8_t elemSize = CodeGenInterface::instSimdElemSize(ins);
 
     // Add element width as an emit attribute
-    emitAttr attr     = EA_UNKNOWN;
+    emitAttr attr = EA_UNKNOWN;
     switch (elemSize)
     {
         case 1:
@@ -490,8 +490,8 @@ void emitter::emitIns_Lane(instruction ins, uint8_t laneIdx)
             unreached();
     }
 
-    instrDesc* id       = emitNewInstrSC(attr, laneIdx);
-    insFormat  fmt      = emitInsFormat(ins);
+    instrDesc* id  = emitNewInstrSC(attr, laneIdx);
+    insFormat  fmt = emitInsFormat(ins);
     assert(fmt == IF_LANE);
     assert(isValidVectorIndex(elemSize, laneIdx));
 

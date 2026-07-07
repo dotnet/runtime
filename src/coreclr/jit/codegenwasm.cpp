@@ -2823,7 +2823,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 // Passing a 16-byte SIMD value by value through a call is not yet correctly
                 // implemented: the argument is materialized as an i32 (by-ref) while the call
                 // signature requires v128, producing an invalid module. Bail for now.
-                //NYI_WASM_SIMD("SIMD16 call argument");
+                NYI_WASM_SIMD("SIMD16 call argument");
             }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }

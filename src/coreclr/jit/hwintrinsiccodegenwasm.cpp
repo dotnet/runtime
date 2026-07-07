@@ -94,20 +94,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
           )
           unreachable
         )
-   Essentially, we create a block for each possible value of the immediate, and dispatch according to the immediate value.
-   Note that it is safe to emit these blocks mid-instruction stream, since we can logically think of them as one macro "instruction", whose
-   result is the same as the underlying instruction. There aren't any GC safepoints in any of the generated cases here,
-   so GC info shouldn't need to be touched at any point.
+   Essentially, we create a block for each possible value of the immediate, and dispatch according to the immediate
+   value. Note that it is safe to emit these blocks mid-instruction stream, since we can logically think of them as one
+   macro "instruction", whose result is the same as the underlying instruction. There aren't any GC safepoints in any of
+   the generated cases here, so GC info shouldn't need to be touched at any point.
 */
 void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info)
 {
     assert(info.category == HW_Category_IMM || info.category == HW_Category_MemoryLoad ||
-        info.category == HW_Category_MemoryStore);
+           info.category == HW_Category_MemoryStore);
 
-    int simdSize = node->GetSimdSize();
-    instruction const ins = HWIntrinsicInfo::lookupIns(info.id, info.baseType, m_compiler);
+    int               simdSize      = node->GetSimdSize();
+    instruction const ins           = HWIntrinsicInfo::lookupIns(info.id, info.baseType, m_compiler);
     int               immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(info.id, simdSize, info.baseType);
-    WasmValueType     resultType = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
+    WasmValueType     resultType    = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
 
     GenTree*  immOp  = info.getImmOp();
     regNumber immReg = GetMultiUseOperandReg(immOp);
@@ -136,7 +136,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
     };
 
     genEmitBeginBlock(resultType); // emit $outer block
-    genEmitBeginBlock(); // emit unreachable $inner block
+    genEmitBeginBlock();           // emit unreachable $inner block
     {
         for (int i = 0; i <= immUpperBound; i++)
         {
@@ -147,7 +147,8 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
         // Load the immediate value to branch to the appropriate case block
         GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(immOp), WasmRegToIndex(immReg));
 
-        // cases are 0 ... immUpperBound, default, where the last case is the default which branches to the unreachable inner block.
+        // cases are 0 ... immUpperBound, default, where the last case is the default which branches to the unreachable
+        // inner block.
         int caseCount = immUpperBound + 1;
         GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
         for (int caseNum = 0; caseNum <= immUpperBound; caseNum++)
