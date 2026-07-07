@@ -67,10 +67,10 @@ namespace System.Net.Http
             _core.SerializeToStream(stream, context, cancellationToken);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            _core.SerializeToStreamAsync(stream, CancellationToken.None);
+            _core.SerializeToStreamAsync(stream, context, CancellationToken.None);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
-            _core.SerializeToStreamAsync(stream, cancellationToken);
+            _core.SerializeToStreamAsync(stream, context, cancellationToken);
 
         protected internal override bool TryComputeLength(out long length)
         {

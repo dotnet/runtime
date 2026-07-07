@@ -50,12 +50,12 @@ namespace System.Net.Http
             _originalContent.CopyTo(compressionStream, context, cancellationToken);
         }
 
-        public async Task SerializeToStreamAsync(Stream stream, CancellationToken cancellationToken)
+        public async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             Stream compressionStream = _createCompressionStream(stream);
             await using (compressionStream.ConfigureAwait(false))
             {
-                await _originalContent.CopyToAsync(compressionStream, cancellationToken).ConfigureAwait(false);
+                await _originalContent.CopyToAsync(compressionStream, context, cancellationToken).ConfigureAwait(false);
             }
         }
 
