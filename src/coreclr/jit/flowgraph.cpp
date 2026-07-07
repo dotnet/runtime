@@ -1614,9 +1614,11 @@ void Compiler::fgAddSyncMethodEnterExit()
     // For EnC this is part of the frame header. Furthermore, this is allocated above PSP on ARM64.
     // To avoid complicated reasoning about alignment we always allocate a full pointer sized slot for this.
     var_types typeMonAcquired = TYP_I_IMPL;
-    this->lvaMonAcquired      = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
-
-    lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
+    if (lvaMonAcquired == BAD_VAR_NUM)
+    {
+        lvaMonAcquired                  = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+        lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
+    }
 
     if (opts.IsOSR())
     {
@@ -1670,11 +1672,15 @@ void Compiler::fgAddSyncMethodEnterExit()
                         false /*exit*/);
 
     // non-exceptional cases
-    for (BasicBlock* const block : Blocks())
+    // For async versions we created these directly in import
+    if (!compIsAsyncVersion())
     {
-        if (block->KindIs(BBJ_RETURN))
+        for (BasicBlock* const block : Blocks())
         {
-            fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
+            if (block->KindIs(BBJ_RETURN))
+            {
+                fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
+            }
         }
     }
 }
@@ -7769,6 +7775,7 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_ehDsc(ehDsc)
     , m_blocks(BitVecOps::UninitVal())
     , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
+    , m_unreachableBlocks(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_requiresRuntimeResumption(false)
     , m_hasSideEntry(false)
 {
@@ -7857,6 +7864,20 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         {
             FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
             assert(region != nullptr);
+
+            // In-try blocks that won't be reached by the DFS need to be tracked
+            // so wasm codegen can attach them as fake successors of the try
+            // entry. Use DFS membership when available; otherwise fall back to
+            // pred-less as a conservative heuristic. When truly unreachable,
+            // skip the rest of the per-block work (the block's DFS index is
+            // meaningless and would corrupt the region's bit set).
+            //
+            bool isUnreachable = (dfsTree != nullptr) ? !dfsTree->Contains(block) : (block->bbPreds == nullptr);
+            if (isUnreachable && (block != dsc->ebdTryBeg) && !block->HasFlag(BBF_THROW_HELPER))
+            {
+                region->m_unreachableBlocks.push_back(block);
+                continue;
+            }
 
             // A block may be in more than one region, so walk up the ancestor chain
             // adding the postorder number to each.
@@ -7982,6 +8003,27 @@ void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edg
                 // And an edge from method entry to dest.
                 FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
                 edges.Push(entryDestEdge);
+
+                // If the dest is not reachable within the try, then we need to also add
+                // a temporary edge from the try header to the dest to create the SCC.
+                // Since we've pruned away dead blocks, any other pred edge suffices to
+                // establish reachability.
+                //
+                bool isReachableInTry = false;
+                for (FlowEdge* const predEdge : destBlock->PredEdges())
+                {
+                    if (predEdge != edge)
+                    {
+                        isReachableInTry = true;
+                        break;
+                    }
+                }
+
+                if (!isReachableInTry)
+                {
+                    FlowEdge* const headerDestEdge = m_compiler->fgAddRefPred(destBlock, headerBlock);
+                    edges.Push(headerDestEdge);
+                }
             }
         }
     }

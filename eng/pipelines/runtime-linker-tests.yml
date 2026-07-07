@@ -63,7 +63,7 @@ extends:
     - stage: Build
       jobs:
       #
-      # Build and Test ILLink with Debug tools in Release config vertical for Windows, Linux and OSX
+      # Build and Test ILLink with Debug tools in Release config vertical for Windows and Linux
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -71,13 +71,12 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - osx_x64
           - linux_x64
           jobParameters:
             testGroup: innerloop
             enablePublishTestResults: true
             timeoutInMinutes: 120
-            nameSuffix: ILLink_Runtime_Testing
+            nameSuffix: ILLink_Tests
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
@@ -89,7 +88,7 @@ extends:
               displayName: Run ILLink Tests
 
       #
-      # Build Release config vertical for Windows, Linux, and OSX
+      # Build Release config vertical for Windows and Linux
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -97,7 +96,6 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - osx_x64
           - linux_x64
           jobParameters:
             testGroup: innerloop
@@ -137,5 +135,11 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
                 parameters:
-                    extraTestArgs: '/p:WasmBuildNative=false /p:RuntimeFlavor=Mono /p:ToolsConfiguration=Debug'
+                    # Publish the trimmed browser apps, but don't run them on V8: the V8 baked into
+                    # the helix-webassembly container doesn't support --experimental-wasm-exnref yet,
+                    # so run-v8.sh aborts at startup. SkipTrimmingTestsRun keeps the build/publish
+                    # coverage and only skips ExecuteApplications. Re-enable the run once the new V8
+                    # image is available. See
+                    # ActiveIssue https://github.com/dotnet/runtime/issues/129849
+                    extraTestArgs: '/p:WasmBuildNative=false /p:RuntimeFlavor=Mono /p:ToolsConfiguration=Debug /p:SkipTrimmingTestsRun=true'
                     runAotTests: false

@@ -655,13 +655,14 @@ namespace ILCompiler
                 if (CompilationModuleGroup.TypeLayoutCompilationUnits(type).HasMultipleInexactCompilationUnits)
                     return false;
 
-                while (!type.IsObject && type != null)
+                while (!type.IsObject)
                 {
                     if (!IsLayoutFixedInCurrentVersionBubble(type))
                     {
                         return false;
                     }
                     type = type.BaseType;
+                    Debug.Assert(type != null);
                 }
             }
 
@@ -1022,6 +1023,14 @@ namespace ILCompiler
                 continuation.GetKnownField("State"u8),
                 continuation.GetKnownField("Flags"u8),
             ];
+            // The signature types for the TransparentAwaitWithResult overloads used by
+            // CorInfoImpl.getAwaitReturnCall (kept in sync with that method).
+            TypeDesc voidType = TypeSystemContext.GetWellKnownType(WellKnownType.Void);
+            TypeDesc taskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+            TypeDesc valueTaskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8);
+            MetadataType taskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8);
+            MetadataType valueTaskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8);
+            TypeDesc methodVar = TypeSystemContext.GetSignatureVariable(0, method: true);
             MethodDesc[] requiredMethods =
             [
                 // For CorInfoImpl.getAsyncInfo
@@ -1037,6 +1046,13 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
+
+                // For CorInfoImpl.getAwaitReturnCall. The JIT synthesizes calls to these overloads, so they
+                // have no IL token in the caller and their manifest tokens must be pre-seeded here.
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [taskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);

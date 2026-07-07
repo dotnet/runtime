@@ -16,6 +16,9 @@ namespace Microsoft.Win32.SafeHandles
         public void Kill() { }
         public int ProcessId { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+        public void Resume() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -354,6 +357,9 @@ namespace System.Diagnostics
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
         public bool StartDetached { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+        public bool StartSuspended { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string UserName { get { throw null; } set { } }
@@ -464,5 +470,39 @@ namespace System.Diagnostics
         VirtualMemory = 11,
         PageOut = 12,
         Unknown = 13,
+    }
+}
+namespace System.Runtime.InteropServices
+{
+    public readonly ref struct WindowsProcessStartArguments
+    {
+        [System.CLSCompliantAttribute(false)]
+        public unsafe char* Arguments { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe char* EnvironmentVariables { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
+        public System.IntPtr StandardError { get { throw null; } }
+        public System.IntPtr StandardInput { get { throw null; } }
+        public System.IntPtr StandardOutput { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, System.IntPtr> callback) { throw null; }
+    }
+    public readonly ref struct UnixProcessStartArguments
+    {
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte* ResolvedPath { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte** Arguments { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte** EnvironmentVariables { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
+        public System.IntPtr StandardError { get { throw null; } }
+        public System.IntPtr StandardInput { get { throw null; } }
+        public System.IntPtr StandardOutput { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, int> callback) { throw null; }
     }
 }

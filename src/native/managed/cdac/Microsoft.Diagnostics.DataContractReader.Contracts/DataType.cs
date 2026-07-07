@@ -45,6 +45,7 @@ public enum DataType
     AppDomain,
     Debugger,
     DebuggerRCThread,
+    MemoryRange,
     SystemDomain,
     Assembly,
     LoaderAllocator,
@@ -79,6 +80,7 @@ public enum DataType
     StressMsgHeader,
     Object,
     ContinuationObject,
+    AsyncResumeInfo,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,
@@ -176,6 +178,7 @@ public enum DataType
     ExternalMethodFrame,
     DynamicHelperFrame,
     InterpreterFrame,
+    PInvokeCalliFrame,
 
     ComCallWrapper,
     SimpleComCallWrapper,
@@ -206,6 +209,10 @@ public enum DataType
 
     EnCEEClassData,
     EnCAddedFieldElement,
+    EnCFieldDesc,
+    EnCAddedField,
+    EnCAddedStaticField,
+    EnCSyncBlockInfo,
     UnorderedArrayBase,
 }
 

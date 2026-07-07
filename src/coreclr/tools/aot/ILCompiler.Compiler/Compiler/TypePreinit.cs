@@ -3249,13 +3249,13 @@ namespace ILCompiler
         private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly MethodDesc _methodPointed;
-            private readonly ReferenceTypeValue _firstParameter;
+            private readonly ReferenceTypeValue _target;
 
             public DelegateInstance(TypeDesc delegateType, MethodDesc methodPointed, ReferenceTypeValue firstParameter, AllocationSite allocationSite)
                 : base(delegateType, allocationSite)
             {
                 _methodPointed = methodPointed;
-                _firstParameter = firstParameter;
+                _target = firstParameter;
             }
 
             private DelegateCreationInfo GetDelegateCreationInfo(NodeFactory factory)
@@ -3280,7 +3280,7 @@ namespace ILCompiler
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
-                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_target == null));
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
@@ -3298,10 +3298,10 @@ namespace ILCompiler
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _firstParameter
+                    // _target
                     builder.EmitPointerReloc(thisNode);
 
-                    // _functionPointer
+                    // _methodPtr
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
 
@@ -3315,10 +3315,10 @@ namespace ILCompiler
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _firstParameter
-                    _firstParameter.WriteFieldData(ref builder, factory);
+                    // _target
+                    _target.WriteFieldData(ref builder, factory);
 
-                    // _functionPointer
+                    // _methodPtr
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
 
                     // _extraFunctionPointerOrData

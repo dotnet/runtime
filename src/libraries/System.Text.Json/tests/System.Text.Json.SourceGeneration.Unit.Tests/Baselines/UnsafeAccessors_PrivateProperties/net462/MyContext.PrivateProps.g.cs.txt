@@ -57,10 +57,10 @@ namespace TestApp
                 IsVirtual = false,
                 DeclaringType = typeof(global::TestApp.PrivateProps),
                 Converter = null,
-                Getter = null,
-                Setter = null,
+                Getter = static obj => __get_PrivateProps_Name((global::TestApp.PrivateProps)obj),
+                Setter = static (obj, value) => __set_PrivateProps_Name((global::TestApp.PrivateProps)obj, value!),
                 IgnoreCondition = null,
-                HasJsonInclude = false,
+                HasJsonInclude = true,
                 IsExtensionData = false,
                 NumberHandling = null,
                 PropertyName = "Name",
@@ -77,10 +77,10 @@ namespace TestApp
                 IsVirtual = false,
                 DeclaringType = typeof(global::TestApp.PrivateProps),
                 Converter = null,
-                Getter = null,
-                Setter = null,
+                Getter = static obj => __get_PrivateProps_Age((global::TestApp.PrivateProps)obj),
+                Setter = static (obj, value) => __set_PrivateProps_Age((global::TestApp.PrivateProps)obj, value!),
                 IgnoreCondition = null,
-                HasJsonInclude = false,
+                HasJsonInclude = true,
                 IsExtensionData = false,
                 NumberHandling = null,
                 PropertyName = "Age",
@@ -105,8 +105,19 @@ namespace TestApp
             
             writer.WriteStartObject();
 
+            writer.WriteString(PropName_Name, __get_PrivateProps_Name(((global::TestApp.PrivateProps)value)));
+            writer.WriteNumber(PropName_Age, __get_PrivateProps_Age(((global::TestApp.PrivateProps)value)));
 
             writer.WriteEndObject();
         }
+
+        private static global::System.Func<global::TestApp.PrivateProps, string>? s_get_PrivateProps_Name;
+        private static string __get_PrivateProps_Name(global::TestApp.PrivateProps obj) => (s_get_PrivateProps_Name ??= (global::System.Func<global::TestApp.PrivateProps, string>)global::System.Delegate.CreateDelegate(typeof(global::System.Func<global::TestApp.PrivateProps, string>), typeof(global::TestApp.PrivateProps).GetProperty("Name", InstanceMemberBindingFlags, null, typeof(string), global::System.Array.Empty<global::System.Type>(), null)!.GetGetMethod(true)!))(obj);
+        private static global::System.Action<global::TestApp.PrivateProps, string>? s_set_PrivateProps_Name;
+        private static void __set_PrivateProps_Name(global::TestApp.PrivateProps obj, string value) => (s_set_PrivateProps_Name ??= (global::System.Action<global::TestApp.PrivateProps, string>)global::System.Delegate.CreateDelegate(typeof(global::System.Action<global::TestApp.PrivateProps, string>), typeof(global::TestApp.PrivateProps).GetProperty("Name", InstanceMemberBindingFlags, null, typeof(string), global::System.Array.Empty<global::System.Type>(), null)!.GetSetMethod(true)!))(obj, value);
+        private static global::System.Func<global::TestApp.PrivateProps, int>? s_get_PrivateProps_Age;
+        private static int __get_PrivateProps_Age(global::TestApp.PrivateProps obj) => (s_get_PrivateProps_Age ??= (global::System.Func<global::TestApp.PrivateProps, int>)global::System.Delegate.CreateDelegate(typeof(global::System.Func<global::TestApp.PrivateProps, int>), typeof(global::TestApp.PrivateProps).GetProperty("Age", InstanceMemberBindingFlags, null, typeof(int), global::System.Array.Empty<global::System.Type>(), null)!.GetGetMethod(true)!))(obj);
+        private static global::System.Action<global::TestApp.PrivateProps, int>? s_set_PrivateProps_Age;
+        private static void __set_PrivateProps_Age(global::TestApp.PrivateProps obj, int value) => (s_set_PrivateProps_Age ??= (global::System.Action<global::TestApp.PrivateProps, int>)global::System.Delegate.CreateDelegate(typeof(global::System.Action<global::TestApp.PrivateProps, int>), typeof(global::TestApp.PrivateProps).GetProperty("Age", InstanceMemberBindingFlags, null, typeof(int), global::System.Array.Empty<global::System.Type>(), null)!.GetSetMethod(true)!))(obj, value);
     }
 }

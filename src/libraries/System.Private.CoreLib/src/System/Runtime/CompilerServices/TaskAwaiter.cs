@@ -177,9 +177,12 @@ namespace System.Runtime.CompilerServices
 
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
-            if (TplEventSource.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                continuation = OutputWaitEtwEvents(task, continuation);
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags) || AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
+                {
+                    continuation = OutputWaitEtwEvents(task, continuation);
+                }
             }
 
             // Set the continuation onto the awaited task.
@@ -194,16 +197,35 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(stateMachineBox != null);
 
-            // If TaskWait* ETW events are enabled, trace a beginning event for this await
-            // and set up an ending event to be traced when the asynchronous await completes.
-            if (TplEventSource.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                task.SetContinuationForAwait(OutputWaitEtwEvents(task, stateMachineBox.MoveNextAction), continueOnCapturedContext, flowExecutionContext: false);
+                if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                {
+                    if (task is not IAsyncStateMachineBox)
+                    {
+                        stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox, flags);
+                    }
+                    else if (continueOnCapturedContext)
+                    {
+                        bool customSyncContext = SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext);
+                        bool customTaskScheduler = TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default;
+                        if (customSyncContext || customTaskScheduler)
+                        {
+                            stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox, flags);
+                        }
+                    }
+                }
+
+                // If TaskWait* ETW events are enabled, trace a beginning event for this await
+                // and set up an ending event to be traced when the asynchronous await completes.
+                if (AsyncInstrumentation.IsEnabled.Tpl(flags) || AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
+                {
+                    task.SetContinuationForAwait(OutputWaitEtwEvents(task, stateMachineBox.MoveNextAction), continueOnCapturedContext, flowExecutionContext: false);
+                    return;
+                }
             }
-            else
-            {
-                task.UnsafeSetContinuationForAwait(stateMachineBox, continueOnCapturedContext);
-            }
+
+            task.UnsafeSetContinuationForAwait(stateMachineBox, continueOnCapturedContext);
         }
 
         /// <summary>

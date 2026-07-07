@@ -35,6 +35,12 @@
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
+    <!-- Outerloop wasm/CoreCLR runs the slow [OuterLoop] suites; give each suite a much larger
+         per-suite xharness timeout so a long suite is not killed mid-run (xharness exit code 71).
+         Innerloop keeps the existing 01:30:00 (CoreCLR) / 00:30:00 budgets. Keep this in sync with
+         the per-batch and AzDO job timeouts in src/libraries/sendtohelix-browser.targets and
+         eng/pipelines/libraries/outerloop.yml (suite <= batch <= job). -->
+    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">04:00:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">00:30:00</WasmXHarnessTestsTimeout>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>

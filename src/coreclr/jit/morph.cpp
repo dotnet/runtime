@@ -601,8 +601,6 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
             return "PInvokeFrame";
-        case WellKnownArg::WrapperDelegateCell:
-            return "WrapperDelegateCell";
         case WellKnownArg::ShiftLow:
             return "ShiftLow";
         case WellKnownArg::ShiftHigh:
@@ -1654,40 +1652,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // The logic here must remain in sync with GetNonStandardAddedArgCount(), which is used to map arguments
     // in the implementation of fast tail call.
     // *********** END NOTE *********
-
-#if defined(TARGET_ARM)
-    // A non-standard calling convention using wrapper delegate invoke is used on ARM, only, for wrapper
-    // delegates. It is used for VSD delegate calls where the VSD custom calling convention ABI requires passing
-    // R4, a callee-saved register, with a special value. Since R4 is a callee-saved register, its value needs
-    // to be preserved. Thus, the VM uses a wrapper delegate IL stub, which preserves R4 and also sets up R4
-    // correctly for the VSD call. The VM is simply reusing an existing mechanism (wrapper delegate IL stub)
-    // to achieve its goal for delegate VSD call. See COMDelegate::NeedsWrapperDelegate() in the VM for details.
-    if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
-    {
-        CallArg* thisArg = GetThisArg();
-        assert((thisArg != nullptr) && (thisArg->GetEarlyNode() != nullptr));
-
-        GenTree* cloned;
-        if (thisArg->GetEarlyNode()->OperIsLocal())
-        {
-            cloned = comp->gtClone(thisArg->GetEarlyNode(), true);
-        }
-        else
-        {
-            cloned = comp->fgInsertCommaFormTemp(&thisArg->EarlyNodeRef());
-            call->gtFlags |= GTF_ASG;
-        }
-        noway_assert(cloned != nullptr);
-
-        GenTree* offsetNode = comp->gtNewIconNode(comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell, TYP_I_IMPL);
-        GenTree* newArg     = comp->gtNewOperNode(GT_ADD, TYP_BYREF, cloned, offsetNode);
-
-        newArg->SetMorphed(comp, /* doChildren */ true);
-
-        // Append newArg as the last arg
-        PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
-    }
-#endif // defined(TARGET_ARM)
 
     bool addStubCellArg = true;
 
@@ -4457,14 +4421,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
-#ifdef TARGET_ARM
-    if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
-    {
-        failTailCall("Non-standard calling convention");
-        return nullptr;
-    }
-#endif
-
     if (call->IsNoReturn() && !call->IsTailPrefixedCall())
     {
         // Such tail calls always throw an exception and we won't be able to see current
@@ -5401,7 +5357,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     call->gtControlExpr = nullptr;
     call->gtCallMethHnd = help.hStoreArgs;
     call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
-    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_DELEGATE_INV);
 
     // The store-args stub returns no value.
     call->gtRetClsHnd  = nullptr;
@@ -9373,11 +9329,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
-#if defined(TARGET_ARM64)
-        case NI_Vector64_Create:
-#endif // TARGET_ARM64
-        case NI_Vector128_Create:
+        case NI_Vector_Create:
         {
+            if ((simdSize != 8) && (simdSize != 16))
+            {
+                break;
+            }
+
             // The managed `Dot` API returns a scalar. However, many common usages require
             // it to be then immediately broadcast back to a vector so that it can be used
             // in a subsequent operation. One of the most common is normalizing a vector
@@ -9433,12 +9391,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTreeHWIntrinsic* hwop1 = op1->AsHWIntrinsic();
 
-#if defined(TARGET_ARM64)
-            if ((hwop1->GetHWIntrinsicId() == NI_Vector64_ToScalar) ||
-                (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar))
-#else
-            if (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar)
-#endif
+            if (hwop1->GetHWIntrinsicId() == NI_Vector_ToScalar)
             {
                 op1 = hwop1->Op(1);
 
@@ -9451,11 +9404,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 hwop1    = op1->AsHWIntrinsic();
             }
 
-#if defined(TARGET_ARM64)
-            if ((hwop1->GetHWIntrinsicId() != NI_Vector64_Dot) && (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot))
-#else
-            if (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot)
-#endif
+            if (hwop1->GetHWIntrinsicId() != NI_Vector_Dot)
             {
                 break;
             }
@@ -11396,6 +11345,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 DEBUG_DESTROY_NODE(tree);
                 return op1;
             }
+            tree->AsOp()->CheckDivideByConstOptimized(this);
             break;
 
         case GT_UDIV:
@@ -11874,6 +11824,42 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
         }
     }
 #endif // TARGET_XARCH
+
+    switch (intrinsic)
+    {
+#if !defined(TARGET_WASM)
+        case NI_Vector_CreateGeometricSequence:
+        {
+            assert(tree->GetOperandCount() == 2);
+
+            GenTree* op1 = tree->Op(1);
+            GenTree* op2 = tree->Op(2);
+
+            if (op2->OperIsConst())
+            {
+#if defined(TARGET_ARM64)
+                bool canGenerate = !varTypeIsLong(simdBaseType) || op1->OperIsConst() || (simdSize == 8);
+#elif defined(TARGET_XARCH)
+                bool canGenerate = op1->OperIsConst() || (simdSize != 32) || !varTypeIsIntegral(simdBaseType) ||
+                                   compOpportunisticallyDependsOn(InstructionSet_AVX2);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                if (canGenerate)
+                {
+                    return fgMorphTree(gtNewSimdCreateGeometricSequenceNode(retType, op1, op2, simdBaseType, simdSize));
+                }
+            }
+            break;
+        }
+#endif // !TARGET_WASM
+
+        default:
+        {
+            break;
+        }
+    }
 
     switch (oper)
     {
@@ -15154,10 +15140,9 @@ PhaseStatus Compiler::fgPromoteStructs()
         bool       promotedVar = false;
         LclVarDsc* varDsc      = lvaGetDesc(lclNum);
 
-        // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
-        // its fields.  Instead, we will attempt to enregister the entire struct.
-        if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || isOpaqueSIMDLclVar(varDsc)))
+        if (varTypeIsSIMDOrMask(varDsc) || varDsc->IsBitcastToSimd())
         {
+            // Attempt to enregister the entire struct.
             varDsc->lvRegStruct = true;
         }
         // Don't promote if we have reached the tracking limit.

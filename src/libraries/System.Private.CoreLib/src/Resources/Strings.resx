@@ -537,6 +537,15 @@
   <data name="Arg_MustBeDecimal" xml:space="preserve">
     <value>Object must be of type Decimal.</value>
   </data>
+  <data name="Arg_MustBeDecimal32" xml:space="preserve">
+    <value>Object must be of type Decimal32.</value>
+  </data>
+  <data name="Arg_MustBeDecimal64" xml:space="preserve">
+    <value>Object must be of type Decimal64.</value>
+  </data>
+  <data name="Arg_MustBeDecimal128" xml:space="preserve">
+    <value>Object must be of type Decimal128.</value>
+  </data>
   <data name="Arg_MustBeDelegate" xml:space="preserve">
     <value>Type must derive from Delegate.</value>
   </data>
@@ -2990,9 +2999,6 @@
   <data name="MissingSatelliteAssembly_Default" xml:space="preserve">
     <value>Resource lookup fell back to the ultimate fallback resources in a satellite assembly, but that satellite either was not found or could not be loaded. Please consider reinstalling or repairing the application.</value>
   </data>
-  <data name="Multicast_Combine" xml:space="preserve">
-    <value>Delegates that are not of type MulticastDelegate may not be combined.</value>
-  </data>
   <data name="MustUseCCRewrite" xml:space="preserve">
     <value>An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from https://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.</value>
   </data>
@@ -3070,6 +3076,9 @@
   </data>
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
+  </data>
+  <data name="NotSupported_StackTraceSupportDisabled" xml:space="preserve">
+    <value>Unable to retrieve stack trace information when StackTraceSupport feature switch is set to false.</value>
   </data>
   <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
     <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>
@@ -4485,5 +4494,8 @@
   </data>
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on the decimal type.</value>
+  </data>
+  <data name="InvalidOperation_NoElements" xml:space="preserve">
+    <value>Sequence contains no elements.</value>
   </data>
 </root>

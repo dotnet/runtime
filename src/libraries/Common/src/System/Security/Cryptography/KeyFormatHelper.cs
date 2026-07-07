@@ -9,6 +9,13 @@ using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
+    internal delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
+
+    internal delegate AsnWriter WriteEncryptedPkcs8Func<TChar>(
+        ReadOnlySpan<TChar> password,
+        AsnWriter writer,
+        PbeParameters pbeParameters);
+
     internal static partial class KeyFormatHelper
     {
         internal delegate void KeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
