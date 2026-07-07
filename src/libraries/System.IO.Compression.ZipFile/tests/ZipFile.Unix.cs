@@ -246,7 +246,7 @@ namespace System.IO.Compression.Tests
         private static void SetFirstEntryVersionMadeByPlatform(string archivePath, byte windowsPlatform)
         {
             byte[] archiveBytes = File.ReadAllBytes(archivePath);
-            int centralDirectoryHeaderIndex = archiveBytes.AsSpan().IndexOf([0x50, 0x4B, 0x01, 0x02]);
+            int centralDirectoryHeaderIndex = archiveBytes.AsSpan().IndexOf(new byte[] { 0x50, 0x4B, 0x01, 0x02 });
             Assert.True(centralDirectoryHeaderIndex >= 0);
 
             // version made by is a little-endian ushort; upper byte is the platform.
