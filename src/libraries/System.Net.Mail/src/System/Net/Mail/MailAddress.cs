@@ -141,6 +141,20 @@ namespace System.Net.Mail
                     return false;
                 }
 
+                // Reject CR/LF in caller-supplied display names. Such characters would corrupt
+                // the encoded mail header when the address is serialized into a message
+                // (e.g. From/To headers written by SmtpClient).
+                if (MailBnfHelper.HasCROrLF(displayName))
+                {
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.MailAddressInvalidFormat);
+                    }
+
+                    parsedData = default;
+                    return false;
+                }
+
                 if (displayName.Length >= 2 && displayName.StartsWith('\"') && displayName.EndsWith('\"'))
                 {
                     // Peel bounding quotes, they'll get re-added later.
