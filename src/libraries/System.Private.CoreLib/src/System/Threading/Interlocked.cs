@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if TARGET_LOONGARCH64
 using System.Runtime.Intrinsics.LoongArch;
+#endif
 
 namespace System.Threading
 {
@@ -86,10 +88,12 @@ namespace System.Threading
 #if (MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
+#if TARGET_LOONGARCH64
             if (LAM.BH.IsSupported)
             {
                 return LAM.BH.Exchange(ref location1, value); // Must expand intrinsic
             }
+#endif
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
             nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<byte, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
@@ -129,10 +133,12 @@ namespace System.Threading
 #if ((MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
+#if TARGET_LOONGARCH64
             if (LAM.BH.IsSupported)
             {
                 return LAM.BH.Exchange(ref location1, value); // Must expand intrinsic
             }
+#endif
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
             nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<ushort, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
@@ -330,10 +336,12 @@ namespace System.Threading
 #if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
+#if TARGET_LOONGARCH64
             if (LAM.CAS.IsSupported)
             {
                 return LAM.CAS.CompareExchange(ref location1, value, comparand); // Must expand intrinsic
             }
+#endif
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
             nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<byte, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
@@ -377,10 +385,12 @@ namespace System.Threading
 #if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
+#if TARGET_LOONGARCH64
             if (LAM.CAS.IsSupported)
             {
                 return LAM.CAS.CompareExchange(ref location1, value, comparand); // Must expand intrinsic
             }
+#endif
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
             nuint offset = Unsafe.OpportunisticMisalignment(ref location1, sizeof(uint));
             ref uint alignedRef = ref Unsafe.As<ushort, uint>(ref Unsafe.SubtractByteOffset(ref location1, offset));
