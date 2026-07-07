@@ -333,10 +333,10 @@ public class TlsHandshakeBench
                 }
                 switch (s)
                 {
-                    case TlsOperationStatus.WantRead:
+                    case TlsOperationStatus.NeedMoreData:
                         inUsed += NonBlockingReceiveSome(socket, netIn, inUsed);
                         continue;
-                    case TlsOperationStatus.WantWrite:
+                    case TlsOperationStatus.DestinationTooSmall:
                         DrainPending(session, socket, netOut);
                         continue;
                     case TlsOperationStatus.Closed:
@@ -351,7 +351,7 @@ public class TlsHandshakeBench
                 TlsOperationStatus s = session.Encrypt(pong.AsSpan(sent), netOut, out int consumed, out int produced);
                 sent += consumed;
                 if (produced > 0) NonBlockingSendAll(socket, netOut, 0, produced);
-                if (s == TlsOperationStatus.WantWrite) DrainPending(session, socket, netOut);
+                if (s == TlsOperationStatus.DestinationTooSmall) DrainPending(session, socket, netOut);
             }
         }
         finally
@@ -374,8 +374,8 @@ public class TlsHandshakeBench
             if (produced == 1) { if (rx[0] != 0xAB) throw new IOException("fd ping mismatch"); break; }
             switch (s)
             {
-                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
-                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                case TlsOperationStatus.NeedMoreData: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.DestinationTooSmall: socket.Poll(-1, SelectMode.SelectWrite); continue;
                 default: throw new IOException($"fd read status {s}");
             }
         }
@@ -389,8 +389,8 @@ public class TlsHandshakeBench
             if (sent == 1) break;
             switch (s)
             {
-                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
-                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                case TlsOperationStatus.NeedMoreData: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.DestinationTooSmall: socket.Poll(-1, SelectMode.SelectWrite); continue;
                 default: throw new IOException($"fd write status {s}");
             }
         }
@@ -429,10 +429,10 @@ public class TlsHandshakeBench
                     case TlsOperationStatus.NeedsCertificateValidation:
                         session.AcceptWithDefaultValidation();
                         continue;
-                    case TlsOperationStatus.WantWrite:
+                    case TlsOperationStatus.DestinationTooSmall:
                         DrainPending(session, socket, netOut);
                         continue;
-                    case TlsOperationStatus.WantRead:
+                    case TlsOperationStatus.NeedMoreData:
                         inUsed += NonBlockingReceiveSome(socket, netIn, inUsed);
                         continue;
                     case TlsOperationStatus.Closed:
@@ -461,11 +461,11 @@ public class TlsHandshakeBench
                 case TlsOperationStatus.NeedsCertificateValidation:
                     session.AcceptWithDefaultValidation();
                     continue;
-                case TlsOperationStatus.WantRead:
+                case TlsOperationStatus.NeedMoreData:
                     Probe.PollRead++;
                     socket.Poll(-1, SelectMode.SelectRead);
                     continue;
-                case TlsOperationStatus.WantWrite:
+                case TlsOperationStatus.DestinationTooSmall:
                     Probe.PollWrite++;
                     socket.Poll(-1, SelectMode.SelectWrite);
                     continue;
@@ -488,17 +488,17 @@ public class TlsHandshakeBench
             if (s == TlsOperationStatus.Complete) break;
             switch (s)
             {
-                case TlsOperationStatus.NeedsServerOptions:
+                case TlsOperationStatus.NeedsTlsContext:
                     session.SetServerContext(bench._ctxFd);
                     continue;
                 case TlsOperationStatus.NeedsCertificateValidation:
                     session.AcceptWithDefaultValidation();
                     continue;
-                case TlsOperationStatus.WantRead:
+                case TlsOperationStatus.NeedMoreData:
                     Probe.PollRead++;
                     socket.Poll(-1, SelectMode.SelectRead);
                     continue;
-                case TlsOperationStatus.WantWrite:
+                case TlsOperationStatus.DestinationTooSmall:
                     Probe.PollWrite++;
                     socket.Poll(-1, SelectMode.SelectWrite);
                     continue;
@@ -515,8 +515,8 @@ public class TlsHandshakeBench
             if (produced == 1) { if (rx[0] != 0xAB) throw new IOException("fd deferred ping mismatch"); break; }
             switch (s)
             {
-                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
-                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                case TlsOperationStatus.NeedMoreData: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.DestinationTooSmall: socket.Poll(-1, SelectMode.SelectWrite); continue;
                 default: throw new IOException($"fd deferred read status {s}");
             }
         }
@@ -529,8 +529,8 @@ public class TlsHandshakeBench
             if (sent == 1) break;
             switch (s)
             {
-                case TlsOperationStatus.WantRead: socket.Poll(-1, SelectMode.SelectRead); continue;
-                case TlsOperationStatus.WantWrite: socket.Poll(-1, SelectMode.SelectWrite); continue;
+                case TlsOperationStatus.NeedMoreData: socket.Poll(-1, SelectMode.SelectRead); continue;
+                case TlsOperationStatus.DestinationTooSmall: socket.Poll(-1, SelectMode.SelectWrite); continue;
                 default: throw new IOException($"fd deferred write status {s}");
             }
         }
@@ -712,8 +712,8 @@ internal static class TraceHarness
                 Console.WriteLine($"[i{iter}][S] Handshake -> {s} complete={session.IsHandshakeComplete}");
                 if (s == TlsOperationStatus.Complete) break;
                 if (s == TlsOperationStatus.NeedsCertificateValidation) { session.AcceptWithDefaultValidation(); continue; }
-                if (s == TlsOperationStatus.WantRead) { socket.Poll(-1, SelectMode.SelectRead); continue; }
-                if (s == TlsOperationStatus.WantWrite) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
+                if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
+                if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
                 throw new IOException($"unexpected {s}");
             }
         }
@@ -738,11 +738,11 @@ internal static class TraceHarness
                 {
                     case TlsOperationStatus.Complete: continue;
                     case TlsOperationStatus.NeedsCertificateValidation: session.AcceptWithDefaultValidation(); continue;
-                    case TlsOperationStatus.WantWrite:
+                    case TlsOperationStatus.DestinationTooSmall:
                         Console.WriteLine($"[i{iter}][S]   draining pending");
                         DrainTraced(session, socket, netOut, iter);
                         continue;
-                    case TlsOperationStatus.WantRead:
+                    case TlsOperationStatus.NeedMoreData:
                         inUsed += TraceRecv(socket, netIn, inUsed, iter, "hs");
                         continue;
                     case TlsOperationStatus.Closed:
@@ -763,8 +763,8 @@ internal static class TraceHarness
                 TlsOperationStatus s = session.Read(rx, out int produced);
                 Console.WriteLine($"[i{iter}][S] Read -> {s} produced={produced}");
                 if (produced == 1) break;
-                if (s == TlsOperationStatus.WantRead) { socket.Poll(-1, SelectMode.SelectRead); continue; }
-                if (s == TlsOperationStatus.WantWrite) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
+                if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
+                if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
                 throw new IOException($"read {s}");
             }
         }
@@ -783,10 +783,10 @@ internal static class TraceHarness
                 if (produced > 0) break;
                 switch (s)
                 {
-                    case TlsOperationStatus.WantRead:
+                    case TlsOperationStatus.NeedMoreData:
                         inUsed += TraceRecv(socket, netIn, inUsed, iter, "ping");
                         continue;
-                    case TlsOperationStatus.WantWrite:
+                    case TlsOperationStatus.DestinationTooSmall:
                         DrainTraced(session, socket, netOut, iter);
                         continue;
                     case TlsOperationStatus.Closed:
@@ -807,8 +807,8 @@ internal static class TraceHarness
                 written += consumed;
                 Console.WriteLine($"[i{iter}][S] Write -> {s} consumed={consumed}");
                 if (written == 1) break;
-                if (s == TlsOperationStatus.WantWrite) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
-                if (s == TlsOperationStatus.WantRead) { socket.Poll(-1, SelectMode.SelectRead); continue; }
+                if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
+                if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
                 throw new IOException($"write {s}");
             }
         }
@@ -822,7 +822,7 @@ internal static class TraceHarness
                 written += consumed;
                 Console.WriteLine($"[i{iter}][S] Encrypt -> {s} consumed={consumed} produced={produced}");
                 if (produced > 0) TraceSend(socket, netOut, 0, produced, iter, "pong");
-                if (s == TlsOperationStatus.WantWrite) DrainTraced(session, socket, netOut, iter);
+                if (s == TlsOperationStatus.DestinationTooSmall) DrainTraced(session, socket, netOut, iter);
             }
         }
         Console.WriteLine($"[i{iter}][S] done");

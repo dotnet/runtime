@@ -307,7 +307,7 @@ namespace System.Net.Security.Tests
                             await serverStream.FlushAsync();
                         }
                     }
-                    while (status == TlsOperationStatus.WantWrite);
+                    while (status == TlsOperationStatus.DestinationTooSmall);
 
                     Assert.Equal(TlsOperationStatus.Closed, status);
                 }
@@ -670,7 +670,7 @@ namespace System.Net.Security.Tests
                                     session.AcceptWithDefaultValidation();
                                     continue;
 
-                                case TlsOperationStatus.WantCredentials:
+                                case TlsOperationStatus.CertificateRequested:
                                     wantCredentialsCount++;
                                     // GetAcceptableIssuers should not throw while suspended on WantCredentials.
                                     // The server in this test does not configure SslCertificateTrust, so the
@@ -682,11 +682,11 @@ namespace System.Net.Security.Tests
                                         SslStreamCertificateContext.Create(clientCert, additionalCertificates: null));
                                     continue;
 
-                                case TlsOperationStatus.WantWrite:
+                                case TlsOperationStatus.DestinationTooSmall:
                                     await DrainAsync(session, clientStream, netOut);
                                     continue;
 
-                                case TlsOperationStatus.WantRead:
+                                case TlsOperationStatus.NeedMoreData:
                                     int r = await clientStream.ReadAsync(netIn.AsMemory(inUsed));
                                     if (r == 0)
                                     {
@@ -1010,10 +1010,10 @@ namespace System.Net.Security.Tests
                     case TlsOperationStatus.NeedsCertificateValidation:
                         session.AcceptWithDefaultValidation();
                         continue;
-                    case TlsOperationStatus.WantWrite:
+                    case TlsOperationStatus.DestinationTooSmall:
                         DrainPending(session, socket, netOut);
                         continue;
-                    case TlsOperationStatus.WantRead:
+                    case TlsOperationStatus.NeedMoreData:
                         inUsed += NonBlockingReceiveSome(socket, netIn, inUsed);
                         continue;
                     case TlsOperationStatus.Closed:
@@ -1052,10 +1052,10 @@ namespace System.Net.Security.Tests
                 {
                     case TlsOperationStatus.Complete:
                         continue;
-                    case TlsOperationStatus.WantRead:
+                    case TlsOperationStatus.NeedMoreData:
                         inUsed += NonBlockingReceiveSome(socket, netIn, inUsed);
                         continue;
-                    case TlsOperationStatus.WantWrite:
+                    case TlsOperationStatus.DestinationTooSmall:
                         DrainPending(session, socket, new byte[CipherBufSize]);
                         continue;
                     case TlsOperationStatus.Closed:
@@ -1077,7 +1077,7 @@ namespace System.Net.Security.Tests
                 {
                     NonBlockingSendAll(socket, outBuf, 0, produced);
                 }
-                if (status == TlsOperationStatus.WantWrite)
+                if (status == TlsOperationStatus.DestinationTooSmall)
                 {
                     DrainPending(session, socket, outBuf);
                 }
@@ -1515,11 +1515,11 @@ namespace System.Net.Security.Tests
                         case TlsOperationStatus.Complete:
                             continue;
 
-                        case TlsOperationStatus.WantWrite:
+                        case TlsOperationStatus.DestinationTooSmall:
                             await DrainAsync(session, transport, netOut);
                             continue;
 
-                        case TlsOperationStatus.WantRead:
+                        case TlsOperationStatus.NeedMoreData:
                             int r = await transport.ReadAsync(netIn.AsMemory(inUsed));
                             if (r == 0)
                             {
@@ -1543,7 +1543,7 @@ namespace System.Net.Security.Tests
                         await transport.WriteAsync(netOut.AsMemory(0, n));
                         await transport.FlushAsync();
                     }
-                    if (drain != TlsOperationStatus.WantWrite)
+                    if (drain != TlsOperationStatus.DestinationTooSmall)
                     {
                         break;
                     }
@@ -1811,7 +1811,7 @@ namespace System.Net.Security.Tests
                         case TlsOperationStatus.Complete:
                             continue;
 
-                        case TlsOperationStatus.NeedsServerOptions:
+                        case TlsOperationStatus.NeedsTlsContext:
                             if (serverContextFactory is null)
                             {
                                 throw new InvalidOperationException(
@@ -1824,11 +1824,11 @@ namespace System.Net.Security.Tests
                             session.AcceptWithDefaultValidation();
                             continue;
 
-                        case TlsOperationStatus.WantWrite:
+                        case TlsOperationStatus.DestinationTooSmall:
                             await DrainAsync(session, transport, netOut);
                             continue;
 
-                        case TlsOperationStatus.WantRead:
+                        case TlsOperationStatus.NeedMoreData:
                             int r = await transport.ReadAsync(netIn.AsMemory(inUsed));
                             if (r == 0)
                             {
@@ -1887,7 +1887,7 @@ namespace System.Net.Security.Tests
                         case TlsOperationStatus.Complete:
                             continue;
 
-                        case TlsOperationStatus.WantRead:
+                        case TlsOperationStatus.NeedMoreData:
                             int r = await transport.ReadAsync(netIn.AsMemory(inUsed));
                             if (r == 0)
                             {
@@ -1896,7 +1896,7 @@ namespace System.Net.Security.Tests
                             inUsed += r;
                             continue;
 
-                        case TlsOperationStatus.WantWrite:
+                        case TlsOperationStatus.DestinationTooSmall:
                             byte[] outBuf = ArrayPool<byte>.Shared.Rent(CipherBufSize);
                             try { await DrainAsync(session, transport, outBuf); }
                             finally { ArrayPool<byte>.Shared.Return(outBuf); }
@@ -1936,7 +1936,7 @@ namespace System.Net.Security.Tests
                         await transport.FlushAsync();
                     }
 
-                    if (status == TlsOperationStatus.WantWrite)
+                    if (status == TlsOperationStatus.DestinationTooSmall)
                     {
                         await DrainAsync(session, transport, outBuf);
                     }
@@ -1958,7 +1958,7 @@ namespace System.Net.Security.Tests
                     await transport.WriteAsync(scratch.AsMemory(0, n));
                     await transport.FlushAsync();
                 }
-                if (s != TlsOperationStatus.WantWrite)
+                if (s != TlsOperationStatus.DestinationTooSmall)
                 {
                     break;
                 }
@@ -2018,7 +2018,7 @@ namespace System.Net.Security.Tests
                         session.AcceptWithDefaultValidation();
                         continue;
                     }
-                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    if (s == TlsOperationStatus.NeedMoreData || s == TlsOperationStatus.DestinationTooSmall)
                     {
                         // Simple poll-based scheduler; tests run on loopback so this is cheap.
                         await Task.Delay(5);
@@ -2044,7 +2044,7 @@ namespace System.Net.Security.Tests
                     got += n;
                     continue;
                 }
-                if (rs == TlsOperationStatus.WantRead)
+                if (rs == TlsOperationStatus.NeedMoreData)
                 {
                     await Task.Delay(5);
                     continue;
@@ -2065,7 +2065,7 @@ namespace System.Net.Security.Tests
                 {
                     continue;
                 }
-                if (ws == TlsOperationStatus.WantWrite)
+                if (ws == TlsOperationStatus.DestinationTooSmall)
                 {
                     await Task.Delay(5);
                     continue;
@@ -2139,7 +2139,7 @@ namespace System.Net.Security.Tests
                     {
                         return;
                     }
-                    if (s == TlsOperationStatus.NeedsServerOptions)
+                    if (s == TlsOperationStatus.NeedsTlsContext)
                     {
                         factoryCalls++;
                         observedSni = session.ClientHelloInfo!.Value.ServerName;
@@ -2151,7 +2151,7 @@ namespace System.Net.Security.Tests
                         session.AcceptWithDefaultValidation();
                         continue;
                     }
-                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    if (s == TlsOperationStatus.NeedMoreData || s == TlsOperationStatus.DestinationTooSmall)
                     {
                         await Task.Delay(5);
                         continue;
@@ -2239,7 +2239,7 @@ namespace System.Net.Security.Tests
                         {
                             return;
                         }
-                        if (s == TlsOperationStatus.NeedsServerOptions)
+                        if (s == TlsOperationStatus.NeedsTlsContext)
                         {
                             sniSeenByServer = session.ClientHelloInfo!.Value.ServerName;
                             TlsContext pickCtx = string.Equals(sniSeenByServer, nameB, StringComparison.OrdinalIgnoreCase) ? hostCtxB : hostCtxA;
@@ -2251,7 +2251,7 @@ namespace System.Net.Security.Tests
                             session.AcceptWithDefaultValidation();
                             continue;
                         }
-                        if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                        if (s == TlsOperationStatus.NeedMoreData || s == TlsOperationStatus.DestinationTooSmall)
                         {
                             await Task.Delay(5);
                             continue;
@@ -2319,7 +2319,7 @@ namespace System.Net.Security.Tests
                     {
                         return;
                     }
-                    if (s == TlsOperationStatus.NeedsServerOptions)
+                    if (s == TlsOperationStatus.NeedsTlsContext)
                     {
                         session.SetServerContext(hostCtx);
                         continue;
@@ -2329,7 +2329,7 @@ namespace System.Net.Security.Tests
                         session.AcceptWithDefaultValidation();
                         continue;
                     }
-                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    if (s == TlsOperationStatus.NeedMoreData || s == TlsOperationStatus.DestinationTooSmall)
                     {
                         await Task.Delay(5);
                         continue;
@@ -2390,7 +2390,7 @@ namespace System.Net.Security.Tests
                     {
                         return;
                     }
-                    if (s == TlsOperationStatus.NeedsServerOptions)
+                    if (s == TlsOperationStatus.NeedsTlsContext)
                     {
                         session.SetServerContext(hostCtx);
                         continue;
@@ -2400,7 +2400,7 @@ namespace System.Net.Security.Tests
                         session.AcceptWithDefaultValidation();
                         continue;
                     }
-                    if (s == TlsOperationStatus.WantRead || s == TlsOperationStatus.WantWrite)
+                    if (s == TlsOperationStatus.NeedMoreData || s == TlsOperationStatus.DestinationTooSmall)
                     {
                         await Task.Delay(5);
                         continue;
@@ -2571,8 +2571,8 @@ namespace System.Net.Security.Tests
                     TlsOperationStatus s = session.Handshake();
                     if (s == TlsOperationStatus.Complete) return;
                     if (s == TlsOperationStatus.NeedsCertificateValidation) { session.AcceptWithDefaultValidation(); continue; }
-                    if (s == TlsOperationStatus.WantRead) { serverSocket.Poll(-1, SelectMode.SelectRead); continue; }
-                    if (s == TlsOperationStatus.WantWrite) { serverSocket.Poll(-1, SelectMode.SelectWrite); continue; }
+                    if (s == TlsOperationStatus.NeedMoreData) { serverSocket.Poll(-1, SelectMode.SelectRead); continue; }
+                    if (s == TlsOperationStatus.DestinationTooSmall) { serverSocket.Poll(-1, SelectMode.SelectWrite); continue; }
                     throw new IOException($"Unexpected handshake status {s}");
                 }
             });
@@ -2796,14 +2796,14 @@ namespace System.Net.Security.Tests
                                 case TlsOperationStatus.NeedsCertificateValidation:
                                     session.AcceptWithDefaultValidation();
                                     continue;
-                                case TlsOperationStatus.WantCredentials:
+                                case TlsOperationStatus.CertificateRequested:
                                     session.SetClientCertificateContext(
                                         SslStreamCertificateContext.Create(clientCert, additionalCertificates: null));
                                     continue;
-                                case TlsOperationStatus.WantWrite:
+                                case TlsOperationStatus.DestinationTooSmall:
                                     await DrainAsync(session, clientStream, netOut);
                                     continue;
-                                case TlsOperationStatus.WantRead:
+                                case TlsOperationStatus.NeedMoreData:
                                     int r = await clientStream.ReadAsync(netIn.AsMemory(inUsed));
                                     if (r == 0) throw new IOException("EOF during handshake");
                                     inUsed += r;

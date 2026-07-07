@@ -687,15 +687,16 @@ namespace System.Net.Security
         TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 = (ushort)53251,
         TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 = (ushort)53253,
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum TlsOperationStatus
     {
         Complete = 0,
-        WantRead = 1,
-        WantWrite = 2,
+        DestinationTooSmall = 1,
+        NeedMoreData = 2,
         Closed = 3,
-        WantCredentials = 4,
+        CertificateRequested = 4,
         NeedsCertificateValidation = 5,
-        NeedsServerOptions = 6,
+        NeedsTlsContext = 6,
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class TlsContext : System.IDisposable

@@ -37,7 +37,7 @@ namespace System.Net.Security
     /// pending-output buffer and drained via <see cref="DrainPendingOutput"/>.
     /// </para>
     /// <para>
-    /// Contract: any operation may return <see cref="TlsOperationStatus.WantWrite"/>
+    /// Contract: any operation may return <see cref="TlsOperationStatus.DestinationTooSmall"/>
     /// to indicate the caller must drain pending output before further progress
     /// is possible. The session does not consume new input while pending output
     /// is non-empty.
@@ -461,7 +461,7 @@ namespace System.Net.Security
 
         /// <summary>
         /// Server-side only. Resolves a session suspended on
-        /// <see cref="TlsOperationStatus.NeedsServerOptions"/> by supplying an
+        /// <see cref="TlsOperationStatus.NeedsTlsContext"/> by supplying an
         /// already-configured <see cref="TlsContext"/> whose SSL_CTX (and TLS
         /// session-ticket cache) will back this session. Callers that maintain a
         /// pool of virtual-host contexts (typically keyed by SNI + options fingerprint)
@@ -528,7 +528,7 @@ namespace System.Net.Security
         /// <summary>
         /// Client-side only. Supplies the certificate context the session should send
         /// in response to the server's CertificateRequest. Intended to resolve a session
-        /// suspended on <see cref="TlsOperationStatus.WantCredentials"/>: callers that need
+        /// suspended on <see cref="TlsOperationStatus.CertificateRequested"/>: callers that need
         /// to fetch a certificate from an out-of-process source (e.g. a key vault) do so
         /// outside the session, then resume the handshake with another call to
         /// <see cref="ProcessHandshake"/> (with empty input). May also be called before
@@ -561,7 +561,7 @@ namespace System.Net.Security
         /// Client-side only. Returns the distinguished names of the certificate authorities
         /// the server listed in its TLS 1.2 <c>CertificateRequest</c> or TLS 1.3
         /// <c>certificate_authorities</c> extension. Intended to be called while the session
-        /// is suspended on <see cref="TlsOperationStatus.WantCredentials"/> so the caller can
+        /// is suspended on <see cref="TlsOperationStatus.CertificateRequested"/> so the caller can
         /// pick a client certificate that chains to one of the listed CAs. Returns
         /// <see langword="null"/> when no security context exists yet, when the peer sent no
         /// hints, or on a server-side session.
@@ -679,7 +679,7 @@ namespace System.Net.Security
             if (_clientHelloInfo is not null && !_hasServerOptions)
             {
                 // The caller previously saw NeedsServerOptions but hasn't supplied options yet.
-                return TlsOperationStatus.NeedsServerOptions;
+                return TlsOperationStatus.NeedsTlsContext;
             }
 
             if (_isHandshakeComplete)
@@ -699,7 +699,7 @@ namespace System.Net.Security
             if (_pendingLength > 0)
             {
                 bytesWritten = DrainTo(output);
-                return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
+                return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
             }
 
             // The PAL state machine — SChannel in particular — must only be handed
@@ -719,7 +719,7 @@ namespace System.Net.Security
             {
                 if (input.Length < TlsFrameHelper.HeaderSize)
                 {
-                    return TlsOperationStatus.WantRead;
+                    return TlsOperationStatus.NeedMoreData;
                 }
 
                 TlsFrameHeader frameHeader = default;
@@ -730,7 +730,7 @@ namespace System.Net.Security
 
                 if (input.Length < frameHeader.Length)
                 {
-                    return TlsOperationStatus.WantRead;
+                    return TlsOperationStatus.NeedMoreData;
                 }
             }
 
@@ -768,7 +768,7 @@ namespace System.Net.Security
                         else if (_securityContext is null)
                         {
                             // No CH parse-able yet and no PAL context yet - wait for more bytes.
-                            return TlsOperationStatus.WantRead;
+                            return TlsOperationStatus.NeedMoreData;
                         }
                     }
 
@@ -782,7 +782,7 @@ namespace System.Net.Security
                         {
                             // Deferred / SNI-callback flow: caller resolves via SetServerContext.
                             // Leave input unconsumed; the caller re-feeds the same bytes on resume.
-                            return TlsOperationStatus.NeedsServerOptions;
+                            return TlsOperationStatus.NeedsTlsContext;
                         }
 
                         bool needsCertResolution =
@@ -793,7 +793,7 @@ namespace System.Net.Security
                         {
                             // Need more bytes to parse the ClientHello (and run the
                             // ServerCertificateSelectionCallback).
-                            return TlsOperationStatus.WantRead;
+                            return TlsOperationStatus.NeedMoreData;
                         }
                     }
 
@@ -902,7 +902,7 @@ namespace System.Net.Security
                     {
                         bytesWritten = DrainTo(output);
                         _externalValidationFault = authExc;
-                        return TlsOperationStatus.WantWrite;
+                        return TlsOperationStatus.DestinationTooSmall;
                     }
 
                     throw authExc;
@@ -930,7 +930,7 @@ namespace System.Net.Security
                     bytesWritten = DrainTo(output);
                     if (_pendingLength > 0)
                     {
-                        return TlsOperationStatus.WantWrite;
+                        return TlsOperationStatus.DestinationTooSmall;
                     }
                 }
 
@@ -948,7 +948,7 @@ namespace System.Net.Security
 
                 if (needsCredentials)
                 {
-                    return TlsOperationStatus.WantCredentials;
+                    return TlsOperationStatus.CertificateRequested;
                 }
 
                 // SChannel consumes one TLS record per AcceptSecurityContext/
@@ -963,7 +963,7 @@ namespace System.Net.Security
                     return TlsOperationStatus.Complete;
                 }
 
-                return TlsOperationStatus.WantRead;
+                return TlsOperationStatus.NeedMoreData;
             }
             finally
             {
@@ -990,7 +990,7 @@ namespace System.Net.Security
             if (_pendingLength > 0)
             {
                 bytesWritten = DrainTo(ciphertext);
-                return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
+                return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
             }
 
             if (plaintext.IsEmpty)
@@ -1036,7 +1036,7 @@ namespace System.Net.Security
             }
 
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
+            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
         }
 
         // ── Decrypt ───────────────────────────────────────────────────────
@@ -1060,7 +1060,7 @@ namespace System.Net.Security
             if (_pendingLength > 0)
             {
                 // Caller must drain before we accept new input.
-                return TlsOperationStatus.WantWrite;
+                return TlsOperationStatus.DestinationTooSmall;
             }
 
             // Need at least a frame header. If the caller didn't provide a full frame, the PAL
@@ -1167,7 +1167,7 @@ namespace System.Net.Security
 
             if (!OperatingSystem.IsLinux() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsAndroid())
             {
-                return TlsOperationStatus.WantRead;
+                return TlsOperationStatus.NeedMoreData;
             }
 
             SecurityStatusPal status = SslStreamPal.DecryptMessage(
@@ -1183,13 +1183,13 @@ namespace System.Net.Security
                 // Anything other than success here means there's nothing to drain — the PAL
                 // is genuinely waiting on wire bytes. Surface as WantRead; fatal errors will
                 // resurface on the next regular Decrypt call with real ciphertext.
-                return TlsOperationStatus.WantRead;
+                return TlsOperationStatus.NeedMoreData;
             }
 
             int produced = decBytesWritten + decLeftoverLength;
             if (produced == 0)
             {
-                return TlsOperationStatus.WantRead;
+                return TlsOperationStatus.NeedMoreData;
             }
 
             if (produced > plaintext.Length)
@@ -1276,7 +1276,7 @@ namespace System.Net.Security
             }
 
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
+            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
 #endif
         }
 
@@ -1290,7 +1290,7 @@ namespace System.Net.Security
         /// Subsequent calls drain any remaining shutdown output.
         /// </summary>
         /// <remarks>
-        /// Returns <see cref="TlsOperationStatus.WantWrite"/> if the caller must
+        /// Returns <see cref="TlsOperationStatus.DestinationTooSmall"/> if the caller must
         /// drain more output before the shutdown record is fully written;
         /// otherwise <see cref="TlsOperationStatus.Closed"/> once all bytes have
         /// been handed to the caller.
@@ -1356,7 +1356,7 @@ namespace System.Net.Security
             }
 
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Closed;
+            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Closed;
         }
 
         // ── Pending output ────────────────────────────────────────────────
@@ -1365,7 +1365,7 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.WantWrite : TlsOperationStatus.Complete;
+            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
         }
 
         // ── Internals ─────────────────────────────────────────────────────
@@ -1802,7 +1802,7 @@ namespace System.Net.Security
                         {
                             if (drainErr == SocketError.WouldBlock)
                             {
-                                return TlsOperationStatus.WantWrite;
+                                return TlsOperationStatus.DestinationTooSmall;
                             }
                             throw new SocketException((int)drainErr);
                         }
@@ -1842,7 +1842,7 @@ namespace System.Net.Security
                             {
                                 // Stash the unsent tail so the next call resumes the drain.
                                 AppendPending(new ReadOnlySpan<byte>(scratch, offset, produced - offset));
-                                return TlsOperationStatus.WantWrite;
+                                return TlsOperationStatus.DestinationTooSmall;
                             }
                             throw new SocketException((int)sendErr);
                         }
@@ -1853,7 +1853,7 @@ namespace System.Net.Security
                         case TlsOperationStatus.Complete:
                             return TlsOperationStatus.Complete;
 
-                        case TlsOperationStatus.WantRead:
+                        case TlsOperationStatus.NeedMoreData:
                             if (_socketInUsed >= _socketInBuf.Length)
                             {
                                 // Should not happen with conservative scratch sizing, but guard.
@@ -1870,7 +1870,7 @@ namespace System.Net.Security
                             }
                             if (recvErr == SocketError.WouldBlock)
                             {
-                                return TlsOperationStatus.WantRead;
+                                return TlsOperationStatus.NeedMoreData;
                             }
                             if (received == 0)
                             {
@@ -1878,7 +1878,7 @@ namespace System.Net.Security
                             }
                             throw new SocketException((int)recvErr);
 
-                        case TlsOperationStatus.WantWrite:
+                        case TlsOperationStatus.DestinationTooSmall:
                             // Output is staged; loop drains it on next iteration.
                             continue;
 
@@ -1948,7 +1948,7 @@ namespace System.Net.Security
                         // Post-handshake message consumed; loop to try more.
                         continue;
                     }
-                    if (status != TlsOperationStatus.WantRead)
+                    if (status != TlsOperationStatus.NeedMoreData)
                     {
                         return status;
                     }
@@ -1970,7 +1970,7 @@ namespace System.Net.Security
                 }
                 if (recvErr == SocketError.WouldBlock)
                 {
-                    return TlsOperationStatus.WantRead;
+                    return TlsOperationStatus.NeedMoreData;
                 }
                 if (received == 0)
                 {
@@ -2005,7 +2005,7 @@ namespace System.Net.Security
                 {
                     if (drainErr == SocketError.WouldBlock)
                     {
-                        return TlsOperationStatus.WantWrite;
+                        return TlsOperationStatus.DestinationTooSmall;
                     }
                     throw new SocketException((int)drainErr);
                 }
@@ -2048,17 +2048,17 @@ namespace System.Net.Security
                             {
                                 AppendPending(new ReadOnlySpan<byte>(scratch, offset, produced - offset));
                                 bytesWritten = totalConsumed;
-                                return TlsOperationStatus.WantWrite;
+                                return TlsOperationStatus.DestinationTooSmall;
                             }
                             throw new SocketException((int)sendErr);
                         }
                     }
 
-                    if (encStatus == TlsOperationStatus.WantWrite)
+                    if (encStatus == TlsOperationStatus.DestinationTooSmall)
                     {
                         // Pending output owed; resume next call.
                         bytesWritten = totalConsumed;
-                        return TlsOperationStatus.WantWrite;
+                        return TlsOperationStatus.DestinationTooSmall;
                     }
                     if (encStatus != TlsOperationStatus.Complete)
                     {

@@ -125,7 +125,7 @@ namespace System.Net.Security
             // transition to fd-mode on the same TryPeekClientHello call that populates it.
             if (_clientHelloInfo is not null && !_hasServerOptions)
             {
-                result = TlsOperationStatus.NeedsServerOptions;
+                result = TlsOperationStatus.NeedsTlsContext;
                 return;
             }
 
@@ -146,7 +146,7 @@ namespace System.Net.Security
                 if (rc == 0)
                 {
                     // Need more bytes off the socket. Caller polls SelectRead and retries.
-                    result = TlsOperationStatus.WantRead;
+                    result = TlsOperationStatus.NeedMoreData;
                     return;
                 }
                 if (rc < 0)
@@ -174,7 +174,7 @@ namespace System.Net.Security
                 // Deferred / SNI-callback flow: caller inspects ClientHelloInfo and
                 // resolves via SetServerContext; OnServerContextSet then transfers the
                 // peek BIO to _options.PreallocatedReadBio.
-                result = TlsOperationStatus.NeedsServerOptions;
+                result = TlsOperationStatus.NeedsTlsContext;
                 return;
             }
 
@@ -299,8 +299,8 @@ namespace System.Net.Security
         {
             return error switch
             {
-                Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ => TlsOperationStatus.WantRead,
-                Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE => TlsOperationStatus.WantWrite,
+                Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ => TlsOperationStatus.NeedMoreData,
+                Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE => TlsOperationStatus.DestinationTooSmall,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN => TlsOperationStatus.Closed,
                 _ => throw new AuthenticationException($"OpenSSL {op} failed: {error}"),
             };

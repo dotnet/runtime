@@ -89,7 +89,7 @@ namespace System.Net.Security
         /// The server authentication options, or <see langword="null"/> to defer
         /// configuration. When null, the first <see cref="TlsSession.ProcessHandshake"/>
         /// call on a session built from this context returns
-        /// <see cref="TlsOperationStatus.NeedsServerOptions"/> with
+        /// <see cref="TlsOperationStatus.NeedsTlsContext"/> with
         /// <see cref="TlsSession.ClientHelloInfo"/> populated; the caller must then
         /// invoke <see cref="TlsSession.SetServerContext"/> before continuing the
         /// handshake. Useful for SNI-based options selection that involves I/O.
