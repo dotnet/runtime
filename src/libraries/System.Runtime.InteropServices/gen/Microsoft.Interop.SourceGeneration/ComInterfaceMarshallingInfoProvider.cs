@@ -46,8 +46,7 @@ namespace Microsoft.Interop
                     // Extract the ComInterfaceOptions from the GeneratedComInterface attribute on the interface type
                     // to determine which marshalling directions are supported. This is stored as a set of boolean
                     // flags on the resulting marshalling info so that shared consumers (such as
-                    // AttributedMarshallingModelGeneratorResolver) can validate direction without depending on the
-                    // ComInterfaceOptions enum type.
+                    // AttributedMarshallingModelGeneratorResolver) can validate direction.
                     GetComInterfaceWrapperSupport(interfaceType, out bool supportsManagedObjectWrapper, out bool supportsComObjectWrapper);
 
                     if (iidParameterIndexInfo is not null)
@@ -75,16 +74,10 @@ namespace Microsoft.Interop
             return NoMarshallingInfo.Instance;
         }
 
-        // Values from ComInterfaceOptions in
-        // src/libraries/System.Runtime.InteropServices/src/System/Runtime/InteropServices/Marshalling/ComInterfaceOptions.cs.
-        // Duplicated here to avoid a shared-project dependency on the ComInterfaceGenerator-defined enum type.
-        private const int ManagedObjectWrapperOption = 0x1;
-        private const int ComObjectWrapperOption = 0x2;
-
         private static void GetComInterfaceWrapperSupport(ITypeSymbol interfaceType, out bool supportsManagedObjectWrapper, out bool supportsComObjectWrapper)
         {
-            // Default when the attribute is absent or the Options property is not set matches
-            // GeneratedComInterfaceCompilationData.Options: both wrappers are generated.
+            // Default when the attribute is absent, Options is not set, or Options is None (0)
+            // matches GeneratedComInterfaceCompilationData.Options: both wrappers are generated.
             supportsManagedObjectWrapper = true;
             supportsComObjectWrapper = true;
 
@@ -97,10 +90,11 @@ namespace Microsoft.Interop
 
                 foreach (KeyValuePair<string, TypedConstant> namedArg in attr.NamedArguments)
                 {
-                    if (namedArg.Key == "Options" && namedArg.Value.Value is int options)
+                    if (namedArg.Key == "Options" && namedArg.Value.Value is int rawOptions && rawOptions != 0)
                     {
-                        supportsManagedObjectWrapper = (options & ManagedObjectWrapperOption) != 0;
-                        supportsComObjectWrapper = (options & ComObjectWrapperOption) != 0;
+                        ComInterfaceOptions options = (ComInterfaceOptions)rawOptions;
+                        supportsManagedObjectWrapper = options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper);
+                        supportsComObjectWrapper = options.HasFlag(ComInterfaceOptions.ComObjectWrapper);
                     }
                 }
 
