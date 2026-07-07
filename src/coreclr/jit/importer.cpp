@@ -4602,7 +4602,8 @@ bool Compiler::impIsImplicitTailCallCandidate(
 #endif // !FEATURE_TAILCALL_OPT_SHARED_RETURN
 
     // must be call+ret or call+pop+ret
-    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive))
+    if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive) &&
+        ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0))
     {
         return false;
     }
@@ -9052,7 +9053,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (compIsAsyncVersion())
                     {
-                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET))
+                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET) &&
+                            ((info.compFlags & CORINFO_FLG_SYNCH) == 0))
                         {
                             JITDUMP("\nRecognized tail-call in async version\n");
                             awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
@@ -9119,28 +9121,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
                                   &callInfo);
-
-                    // TODO: crossgen2 cannot handle us removing this
-                    if (isAwait && IsReadyToRun() && (callInfo.kind == CORINFO_CALL))
-                    {
-                        assert(callInfo.sig.isAsyncCall());
-                        bool isSyncCallThunk;
-                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
-                        if (!isSyncCallThunk)
-                        {
-                            // The async variant that we got is a thunk. Switch
-                            // back to the non-async task-returning call. There
-                            // is no reason to go through the thunk.
-                            _impResolveToken(CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
-                                             PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
-                            isAwait = false;
-
-                            eeGetCallInfo(&resolvedToken,
-                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                          flags, &callInfo);
-                        }
-                    }
 
                     if (isAwait)
                     {
@@ -9331,6 +9311,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
+                    prefixFlags &= ~PREFIX_TAILCALL;
                     goto RET;
                 }
 
@@ -11720,7 +11701,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //------------------------------------------------------------------------
 // impWrapTopOfStackInAwait:
 //   Wrap the value on the top of the stack in
-//   AsyncHelpers.TransparentAwaitWithResult.
+//   AsyncHelpers.TransparentAwait.
 //
 // Returns:
 //   True if successful. False if the EE could not create the call (only during
@@ -11732,11 +11713,28 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //   mistyped; the original IL returns a Task or ValueTask, but the runtime
 //   async version expects to return the unwrapped result. This function
 //   accomplishes the unwrapping by inserting an async call to
-//   AsyncHelpers.TransparentAwaitWithResult around the value on the top of the
+//   AsyncHelpers.TransparentAwait around the value on the top of the
 //   stack.
 //
 bool Compiler::impWrapTopOfStackInAwait()
 {
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    {
+        assert(!compIsForInlining());
+
+        if (lvaMonAcquired == BAD_VAR_NUM)
+        {
+            lvaMonAcquired = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+            lvaGetDesc(lvaMonAcquired)->lvType = TYP_I_IMPL;
+        }
+
+        GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
+        GenTree* lockObject =
+            info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(info.compThisArg, TYP_REF);
+        GenTree* exitMon = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, lockObject, varAddrNode);
+        impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+
     if (impFoldAwaitedTopOfStack())
     {
         return true;
@@ -11750,8 +11748,15 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     assert(awaitSig.isAsyncCall());
 
-    var_types            callRetType = JITtype2varType(awaitSig.retType);
-    GenTreeCall*         awaitCall   = gtNewCallNode(CT_USER_FUNC, awaitMethod, callRetType);
+    var_types    callRetType = JITtype2varType(awaitSig.retType);
+    GenTreeCall* awaitCall   = gtNewCallNode(CT_USER_FUNC, awaitMethod, callRetType);
+
+    // The await-return call is synthesized here and never goes through impImportCall, so give it its
+    // Ready-to-Run entrypoint explicitly (as the other synthesized async calls do). Without this the call is
+    // not marked R2R-relative-indirect, so on arm64 fgMorphCall omits the indirection-cell (x11) argument the
+    // ReadyToRun DelayLoad helpers require, tripping a GetDataRva assert at runtime.
+    SetCallEntrypointForR2R(awaitCall, this, awaitMethod);
+
     CORINFO_CLASS_HANDLE taskTypeHnd;
     CorInfoType          taskType = strip(info.compCompHnd->getArgType(&awaitSig, awaitSig.args, &taskTypeHnd));
 
@@ -11815,6 +11820,16 @@ bool Compiler::impWrapTopOfStackInAwait()
     if (impInlineRoot()->compIsAsyncVersion())
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
+
+#if FEATURE_TAILCALL_OPT
+        // We intentionally do not consult with the EE and canTailCall because
+        // this is us introducing a call as an implementation detail and not a
+        // user-introduced call.
+        if (asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
+        {
+            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+        }
+#endif
     }
     else
     {
@@ -11845,7 +11860,7 @@ bool Compiler::impWrapTopOfStackInAwait()
 //------------------------------------------------------------------------
 // impFoldAwaitedTopOfStack:
 //   Fold a few patterns where introducing a call to
-//   AsyncHelpers.TransparentAwaitWithResult is unnecessary.
+//   AsyncHelpers.TransparentAwait is unnecessary.
 //
 // Returns:
 //   True if the top of stack was folded and the importer stack was updated
@@ -13857,24 +13872,23 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
-    unsigned ilArgCnt = 0;
+    pInlineInfo->argCnt = pInlineInfo->inlineCandidateInfo->methInfo.args.totalILArgs();
+    unsigned ilArgCnt   = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         InlArgInfo* argInfo;
-        switch (arg.GetWellKnownArg())
+        if (arg.IsUserArg())
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::AsyncContinuation:
-            case WellKnownArg::AsyncExecutionContext:
-            case WellKnownArg::AsyncSynchronizationContext:
-                // These do not appear in the table of inline arg info; do not include them
-                continue;
-            case WellKnownArg::InstParam:
-                pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
-                break;
-            default:
-                argInfo = &inlArgInfo[ilArgCnt++];
-                break;
+            assert(ilArgCnt < pInlineInfo->argCnt);
+            argInfo = &inlArgInfo[ilArgCnt++];
+        }
+        else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
+        {
+            pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
+        }
+        else
+        {
+            continue;
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
@@ -13885,6 +13899,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             return;
         }
     }
+
+    assert(ilArgCnt == pInlineInfo->argCnt);
 
 #ifdef FEATURE_SIMD
     bool foundSIMDType = pInlineInfo->hasSIMDTypeArgLocalOrReturn;

@@ -130,7 +130,9 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false;
+                    // A CONNECT tunnel to the origin server behaves like a direct connection once established,
+                    // so cleartext HTTP/2 (h2c) can be used over it. HTTP/1.1 WebSockets keep working because
+                    // the WebSocket upgrade request uses HTTP/1.1 and never attempts HTTP/2.
                     _http3Enabled = false;
                     break;
 

@@ -70,6 +70,9 @@ internal struct ARM64Context : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
+    // Clears the AArch64 hardware single-step flag (CPSR.SS, bit 0x00200000).
+    public void UnsetSingleStepFlag() => Cpsr &= ~0x00200000u;
+
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("cpsr", StringComparison.OrdinalIgnoreCase)) { Cpsr = (uint)value.Value; return true; }

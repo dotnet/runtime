@@ -976,6 +976,18 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_mac
+          alwaysRun: ${{ variables.isRollingBuild }}
+          runOnlyOnChromeVersionUpdate: true
+          shouldRunSmokeOnly: 'true'
+          nameSuffix: _SmokeMac
+          extraBuildArgs: /p:AotHostArchitecture=arm64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnChrome
+
       # WebAssembly CoreCLR
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
         parameters:
@@ -1121,10 +1133,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using Native AOT and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1133,7 +1143,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1166,10 +1176,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using CoreCLR and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1178,7 +1186,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
