@@ -172,32 +172,11 @@ namespace System.Net.Mail
             if (string.IsNullOrEmpty(displayName))
             {
                 displayName = info.DisplayName;
-
-                // The display name parsed out of 'address' may contain folding white space
-                // (CRLF inside a quoted string, RFC 5322 §3.2.4). Unfold by stripping any
-                // CR/LF characters so re-encoding into a header does not corrupt the output.
-                if (!string.IsNullOrEmpty(displayName) && MailBnfHelper.HasCROrLF(displayName))
-                {
-                    displayName = StripCRLF(displayName);
-                }
             }
 
             parsedData = (displayName, info.User, info.Host, displayNameEncoding);
 
             return true;
-        }
-
-        private static string StripCRLF(string value)
-        {
-            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[256]);
-            foreach (char c in value)
-            {
-                if (c != '\r' && c != '\n')
-                {
-                    sb.Append(c);
-                }
-            }
-            return sb.ToString();
         }
 
         public string DisplayName
