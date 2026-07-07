@@ -3454,6 +3454,8 @@ static gboolean
 mono_marshal_unmanaged_callers_only_attribute_has_only_associated_source_type (MonoCustomAttrEntry *attr)
 {
 	const guint8 *data = attr->data;
+	const guint8 custom_attribute_prolog = 0x01;
+	const guint8 named_arg_count = 0x01;
 	const guint8 field_named_arg = 0x53;
 	const guint8 system_type = 0x50;
 	const guint32 associated_source_type_name_len = sizeof ("AssociatedSourceType") - 1;
@@ -3466,9 +3468,9 @@ mono_marshal_unmanaged_callers_only_attribute_has_only_associated_source_type (M
 
 	if (attr->data_size < minimum_data_size)
 		return FALSE;
-	if (data [0] != 0x01 || data [1] != 0x00)
+	if (data [0] != custom_attribute_prolog || data [1] != 0x00)
 		return FALSE;
-	if (data [2] != 0x01 || data [3] != 0x00)
+	if (data [2] != named_arg_count || data [3] != 0x00)
 		return FALSE;
 	if (data [4] != field_named_arg || data [5] != system_type)
 		return FALSE;
@@ -3500,7 +3502,7 @@ MONO_RESTORE_WARNING
 	}
 
 	value_len = mono_metadata_decode_blob_size (value_start, &value_after_size);
-	return value_after_size <= end && value_len <= (guint32)(end - value_after_size) && value_after_size + value_len <= end;
+	return value_after_size <= end && value_len <= (guint32)(end - value_after_size);
 }
 
 static void
@@ -3534,7 +3536,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		mono_error_assert_ok (error);
 		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
-				g_assertf (decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "Expected UnmanagedCallersOnlyAttribute field %s to be SZARRAY type, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
+				g_assertf (decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "Expected UnmanagedCallersOnlyAttribute field %s to be SZARRAY type, specified for method %s. This indicates a malformed attribute or incorrect usage pattern.", decoded_args->named_args_info [i].field->name, method->name);
 				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
 				if (calling_conventions->len > 0) {
 					if (calling_conventions->len > 1)
