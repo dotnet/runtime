@@ -452,6 +452,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	           noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
 	           genConsumeReg(treeNode);
 	           break;
+
+	case GT_JMPTABLE:
+	    genJumpTable(treeNode);
+	    break;
+
+	case GT_SWITCH_TABLE:
+	    genTableBasedSwitch(treeNode);
+	    break;
+
 	default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
 	                  GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
@@ -2022,6 +2031,28 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 
     genProduceReg(lclAddrNode);
 
+}
+
+//------------------------------------------------------------------------
+// genTableBasedSwitch: Generate code for a switch statement based on a table of ip-relative offsets
+//
+// Arguments:
+//    treeNode - the GT_SWITCH_TABLE node
+//
+void CodeGen::genTableBasedSwitch(GenTree* treeNode)
+{
+    NYI_POWERPC64("genTableBasedSwitch - requires emitIns_R_L and emitIns_R_C implementation for address resolution");
+}
+
+//------------------------------------------------------------------------
+// genJumpTable: Emits the jump table and an instruction to get the address of the first element
+//
+// Arguments:
+//    treeNode - the GT_JMPTABLE node
+//
+void CodeGen::genJumpTable(GenTree* treeNode)
+{
+    NYI_POWERPC64("genJumpTable - requires emitIns_R_C implementation for address resolution");
 }
 
 //------------------------------------------------------------------------
