@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Xunit.Sdk;
-using static System.Security.Cryptography.Tests.CompositeMLDsaTestData;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -41,11 +40,11 @@ namespace System.Security.Cryptography.Tests
 
     [ConditionalClass(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
     [PlatformSpecific(TestPlatforms.Windows)]
-    public sealed class CompositeMLDsaCngTests
+    public static class CompositeMLDsaCngTests
     {
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
-        public void ImportPrivateKey_NoExportFlag(CompositeMLDsaTestVector info)
+        public static void ImportPrivateKey_NoExportFlag(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
             using (CompositeMLDsa dsa = CompositeMLDsaTestHelpers.ImportPrivateKey(info.Algorithm, info.SecretKey, CngExportPolicies.None))
             {
@@ -63,9 +62,10 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(CompositeMLDsa), nameof(CompositeMLDsa.IsSupported))]
-        public void ImportPrivateKey_Persisted()
+        public static void ImportPrivateKey_Persisted()
         {
-            CompositeMLDsaTestVector testVector = GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256);
+            CompositeMLDsaTestData.CompositeMLDsaTestVector testVector =
+                CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256);
 
             CngKey key = PqcBlobHelpers.EncodeCompositeMLDsaBlob(
                 PqcBlobHelpers.TryGetCompositeMLDsaParameterSet(CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256, out var parameterSet)
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void CompositeMLDsaCng_WrongAlgorithm()
+        public static void CompositeMLDsaCng_WrongAlgorithm()
         {
             using RSACng rsa = new RSACng();
             using CngKey key = rsa.Key;
@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.Tests
         [Theory]
         [InlineData(default(string))]
         [InlineData($"CompositeMLDsaCngTests_{nameof(CompositeMLDsaCng_DuplicateHandle)}")]
-        public void CompositeMLDsaCng_DuplicateHandle(string? name)
+        public static void CompositeMLDsaCng_DuplicateHandle(string? name)
         {
             CngProperty parameterSet = CompositeMLDsaTestHelpers.GetCngProperty(CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256);
             CngKeyCreationParameters creationParams = new();
@@ -134,17 +134,20 @@ namespace System.Security.Cryptography.Tests
                 IEnumerable<CompositeMLDsaCng> generateFive = Enumerable.Range(0, 5).Select(_ => new CompositeMLDsaCng(key));
                 List<CompositeMLDsaCng> disposables = new List<CompositeMLDsaCng>(10);
                 disposables.AddRange(generateFive);
-                CompositeMLDsaCng dsa = new CompositeMLDsaCng(key);
-                disposables.AddRange(generateFive);
 
-                foreach (CompositeMLDsaCng disposable in disposables)
+                using (CompositeMLDsaCng dsa = new CompositeMLDsaCng(key))
                 {
-                    disposable.Dispose();
-                }
+                    disposables.AddRange(generateFive);
 
-                byte[] signature = new byte[CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256.MaxSignatureSizeInBytes];
-                int written = dsa.SignData("test"u8, signature);
-                AssertExtensions.TrueExpression(dsa.VerifyData("test"u8, signature.AsSpan(0, written)));
+                    foreach (CompositeMLDsaCng disposable in disposables)
+                    {
+                        disposable.Dispose();
+                    }
+
+                    byte[] signature = new byte[CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256.MaxSignatureSizeInBytes];
+                    int written = dsa.SignData("test"u8, signature);
+                    AssertExtensions.TrueExpression(dsa.VerifyData("test"u8, signature.AsSpan(0, written)));
+                }
             }
             finally
             {

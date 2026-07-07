@@ -25,16 +25,16 @@ namespace System.Security.Cryptography.Tests
             private readonly byte[] _signatureWithContext;
             private byte[] _spki;
 
-            internal byte[] Message => _message.AsSpan().ToArray();
-            internal byte[] Context => _context.AsSpan().ToArray();
-            internal byte[] PublicKey => _publicKey.AsSpan().ToArray();
-            internal byte[] Certificate => _certificate.AsSpan().ToArray();
-            internal byte[] SecretKey => _secretKey.AsSpan().ToArray();
-            internal byte[] Pkcs8 => _pkcs8.AsSpan().ToArray();
-            internal byte[] Signature => _signature.AsSpan().ToArray();
-            internal byte[] SignatureWithContext => _signatureWithContext.AsSpan().ToArray();
+            internal ReadOnlySpan<byte> Message => _message;
+            internal ReadOnlySpan<byte> Context => _context;
+            internal ReadOnlySpan<byte> PublicKey => _publicKey;
+            internal ReadOnlySpan<byte> Certificate => _certificate;
+            internal ReadOnlySpan<byte> SecretKey => _secretKey;
+            internal ReadOnlySpan<byte> Pkcs8 => _pkcs8;
+            internal ReadOnlySpan<byte> Signature => _signature;
+            internal ReadOnlySpan<byte> SignatureWithContext => _signatureWithContext;
 
-            internal byte[] Spki => _spki.AsSpan().ToArray();
+            internal ReadOnlySpan<byte> Spki => _spki;
 
             internal CompositeMLDsaTestVector(string tcId, CompositeMLDsaAlgorithm algo, string pk, string x5c, string sk, string sk_pkcs8, string m, string ctx, string s, string sWithContext)
             {

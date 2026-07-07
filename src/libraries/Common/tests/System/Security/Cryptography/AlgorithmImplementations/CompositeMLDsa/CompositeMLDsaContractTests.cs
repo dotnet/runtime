@@ -705,7 +705,7 @@ namespace System.Security.Cryptography.Tests
                 return testSignatureSize;
             };
 
-            byte[] signature = dsa.SignData(vector.Message);
+            byte[] signature = dsa.SignData(vector.Message.ToArray());
             Assert.Equal(testSignatureSize, signature.Length);
 
             signature = new byte[vector.Algorithm.MaxSignatureSizeInBytes];
@@ -810,8 +810,8 @@ namespace System.Security.Cryptography.Tests
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
 
-            byte[] message = vector.Message;
-            byte[] expectedSignature = vector.Signature;
+            byte[] message = vector.Message.ToArray();
+            byte[] expectedSignature = vector.Signature.ToArray();
 
             dsa.SignDataCoreHook = (_, _, _) => { return -1; };
             dsa.AddFillDestination(expectedSignature);
@@ -841,8 +841,8 @@ namespace System.Security.Cryptography.Tests
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(vector.Algorithm);
 
-            byte[] message = vector.Message;
-            byte[] expectedSignature = vector.Signature;
+            byte[] message = vector.Message.ToArray();
+            byte[] expectedSignature = vector.Signature.ToArray();
 
             dsa.VerifyDataCoreHook = (_, _, _) => true;
             dsa.AddDataBufferIsSameAssertion(message);

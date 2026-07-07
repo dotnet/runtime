@@ -6,7 +6,6 @@ using System.Formats.Asn1;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
-using static Interop.BCrypt;
 
 namespace System.Security.Cryptography
 {
@@ -30,12 +29,7 @@ namespace System.Security.Cryptography
 
             CompositeMLDsaAlgorithm algorithm = AlgorithmFromHandleImpl(key);
 
-#if SYSTEM_SECURITY_CRYPTOGRAPHY
-            duplicateKey = CngHelpers.Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
-#else
             duplicateKey = key.Duplicate();
-#endif
-
             return algorithm;
         }
 
@@ -68,13 +62,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-#if SYSTEM_SECURITY_CRYPTOGRAPHY
-            return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
-#else
-#pragma warning disable CA1416 // only supported on: 'windows'
             return _key.Duplicate();
-#pragma warning restore CA1416 // only supported on: 'windows'
-#endif
         }
 
         /// <inheritdoc/>
@@ -86,16 +74,21 @@ namespace System.Security.Cryptography
             {
                 fixed (void* pContext = context)
                 {
-                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    Interop.BCrypt.BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
                     paddingInfo.pbCtx = (IntPtr)pContext;
                     paddingInfo.cbCtx = context.Length;
 
-                    bool result = duplicatedHandle.TrySignHash(
-                        data,
-                        destination,
-                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
-                        &paddingInfo,
-                        out bytesWritten);
+                    bool result = false;
+
+                    unsafe
+                    {
+                        result = duplicatedHandle.TrySignHash(
+                            data,
+                            destination,
+                            Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                            &paddingInfo,
+                            out bytesWritten);
+                    }
 
                     if (!result)
                     {
@@ -115,15 +108,18 @@ namespace System.Security.Cryptography
             {
                 fixed (void* pContext = context)
                 {
-                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    Interop.BCrypt.BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
                     paddingInfo.pbCtx = (IntPtr)pContext;
                     paddingInfo.cbCtx = context.Length;
 
-                    return duplicatedHandle.VerifyHash(
-                        data,
-                        signature,
-                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
-                        &paddingInfo);
+                    unsafe
+                    {
+                        return duplicatedHandle.VerifyHash(
+                            data,
+                            signature,
+                            Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                            &paddingInfo);
+                    }
                 }
             }
         }

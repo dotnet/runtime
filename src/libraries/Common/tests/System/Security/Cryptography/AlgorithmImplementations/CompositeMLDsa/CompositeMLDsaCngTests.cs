@@ -6,10 +6,10 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public sealed class CompositeMLDsaCngTests_AllPlatforms
+    public static class CompositeMLDsaCngTests_AllPlatforms
     {
         [Fact]
-        public void CompositeMLDsaCng_Ctor_ArgValidation()
+        public static void CompositeMLDsaCng_Ctor_ArgValidation()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

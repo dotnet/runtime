@@ -130,9 +130,9 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(SupportedIetfVectorsWithContextFlagTestData))]
         public void ImportExportVerify(CompositeMLDsaTestData.CompositeMLDsaTestVector vector, bool useContext)
         {
-            byte[] message = vector.Message;
-            byte[] context = useContext ? vector.Context : Array.Empty<byte>();
-            byte[] expectedSignature = useContext ? vector.SignatureWithContext : vector.Signature;
+            byte[] message = vector.Message.ToArray();
+            byte[] context = useContext ? vector.Context.ToArray() : Array.Empty<byte>();
+            byte[] expectedSignature = (useContext ? vector.SignatureWithContext : vector.Signature).ToArray();
 
             using (CompositeMLDsa privateKey = ImportPrivateKey(vector.Algorithm, vector.SecretKey))
             {
@@ -163,9 +163,9 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(SupportedIetfVectorsWithContextFlagTestData))]
         public void ImportSignVerify(CompositeMLDsaTestData.CompositeMLDsaTestVector vector, bool useContext)
         {
-            byte[] message = vector.Message;
-            byte[] context = useContext ? vector.Context : Array.Empty<byte>();
-            byte[] expectedSignature = useContext ? vector.SignatureWithContext : vector.Signature;
+            byte[] message = vector.Message.ToArray();
+            byte[] context = useContext ? vector.Context.ToArray() : Array.Empty<byte>();
+            byte[] expectedSignature = (useContext ? vector.SignatureWithContext : vector.Signature).ToArray();
 
             byte[] signature;
 
@@ -296,8 +296,8 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void ImportPrivateKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            byte[] secretKeyWithTrailingData = vector.SecretKey;
-            Array.Resize(ref secretKeyWithTrailingData, vector.SecretKey.Length + 1);
+            byte[] secretKeyWithTrailingData = new byte[vector.SecretKey.Length + 1];
+            vector.SecretKey.CopyTo(secretKeyWithTrailingData);
             Assert.Throws<CryptographicException>(() => ImportPrivateKey(vector.Algorithm, secretKeyWithTrailingData));
         }
 
@@ -305,8 +305,8 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void ImportPublicKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            byte[] publicKeyWithTrailingData = vector.PublicKey;
-            Array.Resize(ref publicKeyWithTrailingData, vector.PublicKey.Length + 1);
+            byte[] publicKeyWithTrailingData = new byte[vector.PublicKey.Length + 1];
+            vector.PublicKey.CopyTo(publicKeyWithTrailingData);
             Assert.Throws<CryptographicException>(() => ImportPublicKey(vector.Algorithm, publicKeyWithTrailingData));
         }
 
