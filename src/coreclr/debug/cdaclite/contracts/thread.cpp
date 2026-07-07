@@ -21,6 +21,11 @@ namespace contracts
         const char* const GlobalThreadStore = "ThreadStore";
 
         const int MaxThreads = 100000; // guard against corrupt thread lists
+
+        // The reader's Data.Thread eagerly reads the Thread's RuntimeThreadLocals (which embeds
+        // EEAllocContext -> GCAllocContext). Emit a blob at that pointer covering the embedded
+        // alloc-context chain (the descriptor field-span logic under-covers embedded structs).
+        const uint32_t RuntimeThreadLocalsEmit = 512;
     }
 
     int EnumerateThreadRegions(const Target& target, RegionCallback sink, void* sinkContext)
@@ -53,6 +58,14 @@ namespace contracts
             if (!target.TryRead(threadAddr, thread))
             {
                 break;
+            }
+
+            // The reader's Data.Thread ctor dereferences RuntimeThreadLocals; emit it so
+            // GetThreadData succeeds from the dump without the legacy DAC.
+            uint64_t rtlPtr = 0;
+            if (target.TryReadFieldPointer(threadAddr, "Thread", "RuntimeThreadLocals", rtlPtr) && rtlPtr != 0)
+            {
+                sink(sinkContext, "thread-locals", rtlPtr, RuntimeThreadLocalsEmit);
             }
 
             // Stack grows down: CachedStackLimit is the low address, CachedStackBase

@@ -23,7 +23,7 @@ namespace contracts
     // contract can re-read them from the dump. Memory is captured via the Target's EnumMem
     // sink. Returns the number of RCWs captured, 0 if the cleanup list is empty, or -1 if
     // the list global could not be located.
-    int EnumerateInteropRegions(const Target& target);
+    int EnumerateInteropRegions(const Target& target, RegionCallback sink, void* sinkContext);
 }
 } // namespace contracts
 

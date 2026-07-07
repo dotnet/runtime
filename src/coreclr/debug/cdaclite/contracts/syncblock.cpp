@@ -22,8 +22,12 @@ namespace contracts
         const uint32_t MaxSyncBlocks = 4u * 1024 * 1024;
     }
 
-    int EnumerateSyncBlockRegions(const Target& target)
+    int EnumerateSyncBlockRegions(const Target& target, RegionCallback, void*)
     {
+        if (target.Tier() != DumpTier::Heap)
+        {
+            return 0;
+        }
         // The sync-block cache holds the number of used entries (FreeSyncTableIndex).
         uint64_t cacheAddr = 0;
         if (!target.TryReadGlobalPointer(GlobalSyncBlockCache, cacheAddr) || cacheAddr == 0)

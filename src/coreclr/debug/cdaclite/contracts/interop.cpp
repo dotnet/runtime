@@ -24,8 +24,12 @@ namespace contracts
         const int MaxRCWsPerBucket = 1000000;
     }
 
-    int EnumerateInteropRegions(const Target& target)
+    int EnumerateInteropRegions(const Target& target, RegionCallback, void*)
     {
+        if (target.Tier() != DumpTier::Heap)
+        {
+            return 0;
+        }
         // The cleanup list head: ReadPointer(ReadGlobalPointer(RCWCleanupList)).
         uint64_t listAddr = 0;
         if (!target.TryReadGlobalPointer(GlobalRCWCleanupList, listAddr))

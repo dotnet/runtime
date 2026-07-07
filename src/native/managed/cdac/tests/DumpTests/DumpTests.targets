@@ -64,6 +64,27 @@
     <_DebuggeePublishProps Condition="'$(BuildArchitecture)' != ''">$(_DebuggeePublishProps) /p:BuildArchitecture=$(BuildArchitecture)</_DebuggeePublishProps>
   </PropertyGroup>
 
+  <!--
+    cdac-lite mode (opt-in via /p:UseCdacLite=true). Generates the crash dumps with cdac-lite doing
+    the managed-memory selection instead of the legacy DAC: createdump honors DOTNET_DbgUseCdacLite
+    and loads the cdac-lite DLL from DOTNET_DbgCdacLitePath (the coreclr build output). The cDAC
+    DumpTests then run unchanged against these cdac-lite-generated dumps.
+
+    Currently wired for Windows only (the createdump cdac-lite path is Windows-only). Use a clean
+    dump directory when switching modes (the tests key off the dump directory, not how it was made).
+  -->
+  <PropertyGroup>
+    <UseCdacLite Condition="'$(UseCdacLite)' == ''">false</UseCdacLite>
+    <_CdacLiteConfig>$(_DebuggeeRuntimeConfig)</_CdacLiteConfig>
+    <_CdacLiteConfig Condition="'$(_CdacLiteConfig)' == ''">Release</_CdacLiteConfig>
+    <_CdacLiteArch>$(TargetArchitecture)</_CdacLiteArch>
+    <_CdacLiteArch Condition="'$(_CdacLiteArch)' == ''">x64</_CdacLiteArch>
+    <CdacLitePath Condition="'$(UseCdacLite)' == 'true' AND '$(CdacLitePath)' == ''">$([MSBuild]::NormalizePath('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(_CdacLiteArch).$(_CdacLiteConfig)', 'cdaclite.dll'))</CdacLitePath>
+    <!-- Extra env vars appended to the dump-generation command when cdac-lite mode is enabled. -->
+    <_CdacLiteEnvVars Condition="'$(UseCdacLite)' == 'true'">;DOTNET_DbgUseCdacLite=1;DOTNET_DbgCdacLitePath=$(CdacLitePath)</_CdacLiteEnvVars>
+  </PropertyGroup>
+
+
   <!-- Auto-detect testhost from repo artifacts (used for "local" runtime version). -->
   <PropertyGroup Condition="'$(TestHostDir)' == ''">
     <_TestHostConfig Condition="'$(TestHostConfiguration)' == ''">Release</_TestHostConfig>
@@ -303,7 +324,7 @@
     <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue);$([MSBuild]::Unescape('$(_DebuggeeEnvVars)'))" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue);$([MSBuild]::Unescape('$(_DebuggeeEnvVars)'))$(_CdacLiteEnvVars)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>

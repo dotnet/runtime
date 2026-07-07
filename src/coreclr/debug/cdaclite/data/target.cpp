@@ -105,29 +105,24 @@ namespace cdac
         return true;
     }
 
-    void Target::EmitStructMemory(const char* typeName, uint64_t address) const
+    bool Target::TryGetStructSpan(const std::string& typeName, uint32_t& span) const
     {
-        if (m_enumMemSink == nullptr || typeName == nullptr || m_descriptor == nullptr)
+        if (m_descriptor == nullptr)
         {
-            return;
+            return false;
         }
-
         // Prefer the descriptor's exact type size (the analog of the DAC's sizeof(type)).
         uint32_t size = 0;
         if (TryGetTypeSize(typeName, size) && size > 0)
         {
-            m_enumMemSink(m_enumMemContext, address, size);
-            return;
+            span = size;
+            return true;
         }
-
-        // Most runtime types are CDAC_TYPE_INDETERMINATE (offsets only, no size). Approximate
-        // the footprint from the largest declared field: max(offset) + 8 covers every
-        // scalar/pointer field (8 == largest primitive on this 64-bit build). This mirrors the
-        // set of bytes any cDAC consumer can read via the descriptor's field offsets.
+        // Indeterminate types (offsets only): max(field offset) + 8 covers every scalar/pointer.
         const TypeInfo* type = m_descriptor->FindType(typeName);
         if (type == nullptr || type->fields.empty())
         {
-            return;
+            return false;
         }
         uint32_t maxEnd = 0;
         for (std::map<std::string, FieldInfo>::const_iterator it = type->fields.begin(); it != type->fields.end(); ++it)
@@ -138,9 +133,24 @@ namespace cdac
                 maxEnd = end;
             }
         }
-        if (maxEnd > 0)
+        if (maxEnd == 0)
         {
-            m_enumMemSink(m_enumMemContext, address, maxEnd);
+            return false;
+        }
+        span = maxEnd;
+        return true;
+    }
+
+    void Target::EmitStructMemory(const char* typeName, uint64_t address) const
+    {
+        if (m_enumMemSink == nullptr || typeName == nullptr)
+        {
+            return;
+        }
+        uint32_t span = 0;
+        if (TryGetStructSpan(typeName, span) && span > 0)
+        {
+            m_enumMemSink(m_enumMemContext, address, span);
         }
     }
 

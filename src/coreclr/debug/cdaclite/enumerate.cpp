@@ -13,6 +13,7 @@
 #include "datatarget.h"
 
 #include <string>
+#include <cstring>
 
 #include "data/datadescriptor.h"
 #include "data/target.h"
@@ -27,6 +28,7 @@
 #include "contracts/stresslog.h"
 #include "contracts/interop.h"
 #include "contracts/stackscan.h"
+#include "contracts/bootstrap.h"
 
 namespace cdac
 {
@@ -51,6 +53,54 @@ namespace cdac
         state->count++;
     }
 
+    // Memory-enumerator dispatch: a uniform table of subsystem enumerators, each of which decides
+    // what to emit based on the Target's dump tier. The driver (EnumMemoryRegions) just runs them
+    // all in order.
+    namespace
+    {
+        // Execution/code enumerator: one entry point that chooses its strategy by dump tier. A Heap
+        // dump captures the whole process, so bulk-emit every JIT code heap + loader heap. A Normal
+        // dump captures only what a stack walk reaches, so do the conservative stack scan instead
+        // (which scales to large programs where the code/loader heaps are huge).
+        int EnumerateCodeRegions(const cdac::Target& target, cdac::contracts::RegionCallback sink, void* sinkContext)
+        {
+            if (target.Tier() == cdac::DumpTier::Heap)
+            {
+                int jit = cdac::contracts::EnumerateJitCodeRegions(target, sink, sinkContext);
+                int loaderHeaps = cdac::contracts::EnumerateLoaderHeapRegions(target, sink, sinkContext);
+                if (jit < 0 || loaderHeaps < 0)
+                {
+                    return -1;
+                }
+                return jit + loaderHeaps;
+            }
+            return cdac::contracts::EnumerateStackScanRegions(target, sink, sinkContext);
+        }
+
+        // The memory enumerators, run in order for every dump. Each is uniform -- it takes the
+        // Target (which carries the dump tier, the runtime base, and the contract-descriptor
+        // address) plus the region sink -- and decides internally what to do for the current tier
+        // (heap-only enumerators return 0 in a Normal dump). Adding a subsystem is one table entry.
+        struct MemoryEnumerator
+        {
+            const char* name;
+            int (*enumerate)(const cdac::Target&, cdac::contracts::RegionCallback, void*);
+        };
+
+        const MemoryEnumerator s_enumerators[] = {
+            { "bootstrap",  cdac::contracts::EnumerateBootstrapRegions },
+            { "thread",     cdac::contracts::EnumerateThreadRegions },
+            { "module",     cdac::contracts::EnumerateModuleRegions },
+            { "code",       EnumerateCodeRegions },
+            { "gc",         cdac::contracts::EnumerateGCHeapRegions },
+            { "handle",     cdac::contracts::EnumerateHandleRegions },
+            { "syncblock",  cdac::contracts::EnumerateSyncBlockRegions },
+            { "stresslog",  cdac::contracts::EnumerateStressLogRegions },
+            { "interop",    cdac::contracts::EnumerateInteropRegions },
+            { "descriptor", cdac::contracts::EnumerateStaticRegions },
+        };
+    }
+
     HRESULT STDMETHODCALLTYPE CDacLite::EnumMemoryRegions(
         ICLRDataEnumMemoryRegionsCallback* callback, ULONG32 miniDumpFlags, CLRDataEnumMemoryFlags clrFlags)
     {
@@ -72,155 +122,43 @@ namespace cdac
         Log(callback, "EnumMemoryRegions: loaded %zu types, %zu globals, %zu contracts",
             descriptor.Types().size(), descriptor.Globals().size(), descriptor.Contracts().size());
 
-        // Build the Target (globals are all resolved to absolute values).
+        // Build the Target (globals are all resolved to absolute values). It carries the dump tier,
+        // the runtime module base, and the contract-descriptor address so every enumerator has the
+        // same (Target, sink) signature and can self-select its behavior for the current tier.
         cdac::Target target(&descriptor, &cdac::ReadFromDataTarget, m_target);
-
-        RegionSinkState sinkState = { this, callback, 0 };
-
-        // Enable implicit metadata enumeration: every structure the walks read is now captured
-        // (the cdac-lite analog of the DAC recording each DPTR it dereferences).
-        target.SetEnumMemSink(&CDacLite::EnumMemThunk, &sinkState);
+        target.SetContractDescriptorAddr(m_contractDescriptorAddr);
+        target.SetClrBase(m_clrBase);
 
         // Dump tier: HEAP2 (MiniDumpWithPrivateReadWriteMemory) requests the full GC heap +
-        // heap-side structures. A Normal dump (no HEAP2 flag) needs only what a stack walk
-        // reaches -- stacks, code, and method metadata -- so the GC heap and the heap-only
-        // contracts (handles, sync blocks, stress log, COM interop) are skipped.
+        // heap-side structures. A Normal dump (no HEAP2 flag) needs only what a stack walk reaches
+        // -- stacks, code, and method metadata -- so the heap-only enumerators return 0.
         cdac::DumpTier tier = (miniDumpFlags & 0x200 /*MiniDumpWithPrivateReadWriteMemory*/) != 0
             ? cdac::DumpTier::Heap
             : cdac::DumpTier::Normal;
         target.SetTier(tier);
-        bool heapTier = (tier == cdac::DumpTier::Heap);
-        Log(callback, "EnumMemoryRegions: tier = %s", heapTier ? "heap" : "normal (stack walk)");
+        Log(callback, "EnumMemoryRegions: tier = %s",
+            tier == cdac::DumpTier::Heap ? "heap" : "normal (stack walk)");
 
-        if (heapTier)
+        RegionSinkState sinkState = { this, callback, 0 };
+
+        // Enable implicit metadata enumeration: every structure an enumerator reads via TryRead is
+        // captured (the cdac-lite analog of the DAC recording each DPTR it dereferences).
+        target.SetEnumMemSink(&CDacLite::EnumMemThunk, &sinkState);
+
+        // Run every enumerator in order. Each decides -- from the Target's tier -- what to emit
+        // (heap-only enumerators return 0 in a Normal dump); adding a subsystem is one table entry.
+        for (const MemoryEnumerator& e : s_enumerators)
         {
-            int gcRegions = cdac::contracts::EnumerateGCHeapRegions(target, &CDacLite::RegionSinkThunk, &sinkState);
-            if (gcRegions < 0)
+            int n = e.enumerate(target, &CDacLite::RegionSinkThunk, &sinkState);
+            if (n < 0)
             {
-                Log(callback, "EnumMemoryRegions: GC walk skipped (GC type unknown)");
+                Log(callback, "EnumMemoryRegions: %s enumerator skipped (root not found)", e.name);
             }
             else
             {
-                Log(callback, "EnumMemoryRegions: GC walk reported %d region(s)", gcRegions);
+                Log(callback, "EnumMemoryRegions: %s enumerator reported %d region(s)", e.name, n);
             }
         }
-
-        // Walk the managed threads and report their stack ranges.
-        int threadRegions = cdac::contracts::EnumerateThreadRegions(target, &CDacLite::RegionSinkThunk, &sinkState);
-        if (threadRegions < 0)
-        {
-            Log(callback, "EnumMemoryRegions: thread walk skipped (ThreadStore not found)");
-        }
-        else
-        {
-            Log(callback, "EnumMemoryRegions: thread walk reported %d region(s)", threadRegions);
-        }
-
-        // Walk loaded modules and capture in-memory symbol streams (file-backed images come from disk).
-        int moduleRegions = cdac::contracts::EnumerateModuleRegions(target, &CDacLite::RegionSinkThunk, &sinkState);
-        if (moduleRegions < 0)
-        {
-            Log(callback, "EnumMemoryRegions: module walk skipped (AppDomain not found)");
-        }
-        else
-        {
-            Log(callback, "EnumMemoryRegions: module walk reported %d region(s)", moduleRegions);
-        }
-
-        // Walk the GC handle table and report its segments (roots storage). Heap tier only.
-        if (heapTier)
-        {
-            int handleRegions = cdac::contracts::EnumerateHandleRegions(target, &CDacLite::RegionSinkThunk, &sinkState);
-            if (handleRegions < 0)
-            {
-                Log(callback, "EnumMemoryRegions: handle walk skipped (handle table not found)");
-            }
-            else
-            {
-                Log(callback, "EnumMemoryRegions: handle walk reported %d region(s)", handleRegions);
-            }
-        }
-
-        // Code + method metadata for stack walks. Heap tier bulk-emits every JIT code heap and
-        // loader heap (fine when the whole heap is captured anyway). Normal tier instead does a
-        // conservative stack scan, capturing only the code + MethodDesc reachable from pointers on
-        // the thread stacks -- this scales to large programs where the code/loader heaps are huge.
-        if (heapTier)
-        {
-            int jitRegions = cdac::contracts::EnumerateJitCodeRegions(target, &CDacLite::RegionSinkThunk, &sinkState);
-            if (jitRegions < 0)
-            {
-                Log(callback, "EnumMemoryRegions: JIT walk skipped (EEJitManager not found)");
-            }
-            else
-            {
-                Log(callback, "EnumMemoryRegions: JIT walk reported %d region(s)", jitRegions);
-            }
-
-            int loaderHeapRegions = cdac::contracts::EnumerateLoaderHeapRegions(target, &CDacLite::RegionSinkThunk, &sinkState);
-            if (loaderHeapRegions < 0)
-            {
-                Log(callback, "EnumMemoryRegions: loader-heap walk skipped (allocators not found)");
-            }
-            else
-            {
-                Log(callback, "EnumMemoryRegions: loader-heap walk reported %d region(s)", loaderHeapRegions);
-            }
-        }
-        else
-        {
-            int scannedMethods = cdac::contracts::EnumerateStackScanRegions(target, &CDacLite::RegionSinkThunk, &sinkState);
-            if (scannedMethods < 0)
-            {
-                Log(callback, "EnumMemoryRegions: stack scan skipped (code range map not found)");
-            }
-            else
-            {
-                Log(callback, "EnumMemoryRegions: stack scan captured %d method(s)", scannedMethods);
-            }
-        }
-
-        // Heap-only structures: sync-block table, stress log, and COM interop. A Normal
-        // (stack-walk) dump does not need these.
-        if (heapTier)
-        {
-            int syncBlockRegions = cdac::contracts::EnumerateSyncBlockRegions(target);
-            if (syncBlockRegions < 0)
-            {
-                Log(callback, "EnumMemoryRegions: sync-block walk skipped (sync table not found)");
-            }
-            else
-            {
-                Log(callback, "EnumMemoryRegions: sync-block walk captured %d in-use block(s)", syncBlockRegions);
-            }
-
-            int stressLogChunks = cdac::contracts::EnumerateStressLogRegions(target);
-            if (stressLogChunks < 0)
-            {
-                Log(callback, "EnumMemoryRegions: stress-log walk skipped (stress log not found)");
-            }
-            else
-            {
-                Log(callback, "EnumMemoryRegions: stress-log walk captured %d chunk(s)", stressLogChunks);
-            }
-
-            int interopRegions = cdac::contracts::EnumerateInteropRegions(target);
-            if (interopRegions < 0)
-            {
-                Log(callback, "EnumMemoryRegions: interop walk skipped (RCW cleanup list not found)");
-            }
-            else
-            {
-                Log(callback, "EnumMemoryRegions: interop walk captured %d RCW(s)", interopRegions);
-            }
-        }
-
-        // Report the contract self-description (descriptor + JSON + pointer_data + the global
-        // storage it references) so a contract tool can bootstrap from the dump alone. cdac-lite
-        // is a DAC replacement, so no DAC globals table.
-        int staticRegions = cdac::contracts::EnumerateStaticRegions(target, m_contractDescriptorAddr,
-            &CDacLite::RegionSinkThunk, &sinkState);
-        Log(callback, "EnumMemoryRegions: contract-bootstrap reported %d region(s)", staticRegions);
 
         return S_OK;
     }

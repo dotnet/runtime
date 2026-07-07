@@ -34,6 +34,10 @@ namespace contracts
 
     int EnumerateHandleRegions(const Target& target, RegionCallback sink, void* sinkContext)
     {
+        if (target.Tier() != DumpTier::Heap)
+        {
+            return 0;
+        }
         uint64_t mapAddr = 0;
         if (!target.TryGetGlobalValue(GlobalHandleTableMap, mapAddr) || mapAddr == 0)
         {

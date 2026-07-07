@@ -26,8 +26,8 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 
 namespace cdac
 {
-    CDacLite::CDacLite(ICLRDataTarget* target, uint64_t contractDescriptorAddr)
-        : m_ref(1), m_target(target), m_contractDescriptorAddr(contractDescriptorAddr)
+    CDacLite::CDacLite(ICLRDataTarget* target, uint64_t contractDescriptorAddr, uint64_t clrBase)
+        : m_ref(1), m_target(target), m_contractDescriptorAddr(contractDescriptorAddr), m_clrBase(clrBase)
     {
         m_target->AddRef();
     }
@@ -142,7 +142,7 @@ STDAPI CLRDataCreateInstance(REFIID iid, ICLRDataTarget* pLegacyTarget, void** i
         return E_FAIL;
     }
 
-    cdac::CDacLite* instance = new (std::nothrow) cdac::CDacLite(pLegacyTarget, contractDescriptorAddr);
+    cdac::CDacLite* instance = new (std::nothrow) cdac::CDacLite(pLegacyTarget, contractDescriptorAddr, (uint64_t)base);
     if (instance == nullptr)
     {
         return E_OUTOFMEMORY;

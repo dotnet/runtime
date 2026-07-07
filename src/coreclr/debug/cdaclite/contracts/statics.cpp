@@ -60,9 +60,9 @@ namespace contracts
         }
     }
 
-    int EnumerateStaticRegions(const Target& target, uint64_t contractDescriptorAddr,
-                               RegionCallback sink, void* sinkContext)
+    int EnumerateStaticRegions(const Target& target, RegionCallback sink, void* sinkContext)
     {
+        uint64_t contractDescriptorAddr = target.ContractDescriptorAddr();
         if (contractDescriptorAddr == 0)
         {
             return 0;

@@ -12,6 +12,7 @@ add_library_clr(cdacgc STATIC
     stresslog.cpp
     interop.cpp
     stackscan.cpp
+    bootstrap.cpp
 )
 
 target_include_directories(cdacgc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

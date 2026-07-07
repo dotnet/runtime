@@ -58,6 +58,14 @@ namespace cdac
         DumpTier Tier() const { return m_tier; }
         void SetTier(DumpTier tier) { m_tier = tier; }
 
+        // The runtime module base and root contract-descriptor address, carried on the Target so
+        // that every memory enumerator has a uniform (const Target&, sink, ctx) signature and can
+        // reach the bootstrap/self-description state without a separate context object.
+        uint64_t ClrBase() const { return m_clrBase; }
+        void SetClrBase(uint64_t clrBase) { m_clrBase = clrBase; }
+        uint64_t ContractDescriptorAddr() const { return m_contractDescriptorAddr; }
+        void SetContractDescriptorAddr(uint64_t addr) { m_contractDescriptorAddr = addr; }
+
         // --- Typed struct reads (Data-type layer) ---------------------------
 
         // Reads a Data type (any struct with `bool Load(const Target&, uint64_t)`)
@@ -131,6 +139,12 @@ namespace cdac
         // Returns the size of a type, if known.
         bool TryGetTypeSize(const std::string& typeName, uint32_t& size) const;
 
+        // Returns the descriptor-driven memory footprint of a struct type: the exact type size if
+        // the descriptor provides one, else max(field offset) + 8 (the bytes any cDAC consumer can
+        // read via the descriptor's field offsets). Lets callers emit a struct through their own
+        // sink using descriptor sizes rather than hardcoded constants.
+        bool TryGetStructSpan(const std::string& typeName, uint32_t& span) const;
+
         // --- Globals ---------------------------------------------------------
 
         // Returns the resolved value stored for a global. For a global that points at a
@@ -147,6 +161,11 @@ namespace cdac
         // Reads a string global's value, if present.
         bool TryGetGlobalString(const std::string& name, std::string& value) const;
 
+        // Emits a descriptor-defined struct's memory (public wrapper over EmitStructMemory) for
+        // contract walks that must capture a structure the reader will read but this component
+        // doesn't otherwise dereference (e.g. the Debugger object).
+        void EmitStruct(const char* typeName, uint64_t address) const { EmitStructMemory(typeName, address); }
+
     private:
         // Records a Data-type struct's own memory through the EnumMem sink. Uses the
         // descriptor type size (the analog of the DAC's sizeof(type)).
@@ -156,6 +175,8 @@ namespace cdac
         ReadMemoryCallback m_readMemory;
         void* m_readContext;
         DumpTier m_tier = DumpTier::Heap;
+        uint64_t m_clrBase = 0;
+        uint64_t m_contractDescriptorAddr = 0;
         mutable EnumMemCallback m_enumMemSink = nullptr;
         mutable void* m_enumMemContext = nullptr;
     };

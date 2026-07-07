@@ -29,7 +29,7 @@ namespace cdac
     class CDacLite : public ICLRDataEnumMemoryRegions
     {
     public:
-        CDacLite(ICLRDataTarget* target, uint64_t contractDescriptorAddr);
+        CDacLite(ICLRDataTarget* target, uint64_t contractDescriptorAddr, uint64_t clrBase);
 
         // IUnknown
         STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject) override;
@@ -60,6 +60,7 @@ namespace cdac
         LONG m_ref;
         ICLRDataTarget* m_target;
         uint64_t m_contractDescriptorAddr;
+        uint64_t m_clrBase;
     };
 }
 

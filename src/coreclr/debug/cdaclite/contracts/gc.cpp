@@ -340,6 +340,10 @@ namespace contracts
 
     int EnumerateGCHeapRegions(const Target& target, RegionCallback sink, void* sinkContext)
     {
+        if (target.Tier() != DumpTier::Heap)
+        {
+            return 0;
+        }
         std::string identifiers;
         if (!target.TryGetGlobalString(GlobalGCIdentifiers, identifiers))
         {

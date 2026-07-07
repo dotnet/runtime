@@ -26,8 +26,12 @@ namespace contracts
         const int MaxChunksPerThread = 1000000;
     }
 
-    int EnumerateStressLogRegions(const Target& target)
+    int EnumerateStressLogRegions(const Target& target, RegionCallback, void*)
     {
+        if (target.Tier() != DumpTier::Heap)
+        {
+            return 0;
+        }
         // Stress log is opt-in; if disabled there is nothing to capture.
         // COPILOT TODO: We shouldn't need this fallback for different sized things. Either it is pointer sized or a set size.
         uint64_t enabled = 0;

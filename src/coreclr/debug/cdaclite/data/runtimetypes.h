@@ -89,6 +89,39 @@ namespace data
         CDAC_PTR(Frame)
     };
 
+    // --- Frame chain (Thread.m_pFrame -> Frame.Next) ----------------------
+    // Transition frames carry a MethodDesc in the on-stack Frame object rather than as a code
+    // return address; the reader resolves them during the stack walk (FrameHelpers.GetMethodDescPtr).
+
+    struct Frame : Struct
+    {
+        Frame() : Struct("Frame") {}
+        CDAC_PTR(Next) // next Frame* (chain terminates at ~0)
+    };
+
+    // FramedMethodFrame and its subclasses (DynamicHelper/ExternalMethod/PrestubMethod/
+    // CallCountingHelper) share this layout; the MethodDesc is read from MethodDescPtr.
+    struct FramedMethodFrame : Struct
+    {
+        FramedMethodFrame() : Struct("FramedMethodFrame") {}
+        CDAC_PTR(MethodDescPtr)
+    };
+
+    struct StubDispatchFrame : Struct
+    {
+        StubDispatchFrame() : Struct("StubDispatchFrame") {}
+        CDAC_PTR(MethodDescPtr)
+    };
+
+    // P/Invoke transition frame: MethodDesc lives in Datum (when the frame has an active call
+    // to a known function). This is the common case that carries a JIT'd P/Invoke stub MethodDesc.
+    struct InlinedCallFrame : Struct
+    {
+        InlinedCallFrame() : Struct("InlinedCallFrame") {}
+        CDAC_PTR(CallerReturnAddress)
+        CDAC_PTR(Datum)
+    };
+
     // --- Loader / modules -------------------------------------------------
 
     struct AppDomain : Struct
@@ -127,6 +160,34 @@ namespace data
         CDAC_PTR(PEAssembly)
         CDAC_PTR(LoaderAllocator)
         CDAC_OPT_PTR(GrowableSymbolStream) // in-memory symbol (PDB) stream, if any
+        CDAC_OPT_PTR(ReadyToRunInfo)       // ReadyToRun modules: the R2R runtime info
+    };
+
+    // ReadyToRun runtime info for an R2R module (needed to resolve R2R frames on the stack).
+    struct ReadyToRunInfo : Struct
+    {
+        ReadyToRunInfo() : Struct("ReadyToRunInfo") {}
+        CDAC_OPT_PTR(CompositeInfo)
+        CDAC_OPT_PTR(ReadyToRunHeader)
+        CDAC_OPT_PTR(DebugInfoSection)
+        CDAC_OPT_PTR(RuntimeFunctions)      // RUNTIME_FUNCTION[] table (in the R2R image)
+        CDAC_U32(NumRuntimeFunctions)
+    };
+
+    // A single RUNTIME_FUNCTION table entry (BeginAddress is the method-start RVA).
+    struct RuntimeFunction : Struct
+    {
+        RuntimeFunction() : Struct("RuntimeFunction") {}
+        CDAC_U32(BeginAddress)
+    };
+
+    // Open-addressing pointer hash map (HashMap/PtrHashMap). Buckets points at an array whose
+    // first slot holds the bucket count; real buckets follow. Each bucket is 64 bytes (4 key +
+    // 4 value pointer slots).
+    struct HashMap : Struct
+    {
+        HashMap() : Struct("HashMap") {}
+        CDAC_PTR(Buckets)
     };
 
     // In-memory symbol stream (module's growable PDB buffer).
@@ -209,7 +270,7 @@ namespace data
     struct RangeSectionMap : Struct
     {
         RangeSectionMap() : Struct("RangeSectionMap") {}
-        CDAC_PTR(TopLevelData)
+        CDAC_ADDR(TopLevelData) // managed [FieldAddress]: the inline radix root lives AT this field's address
     };
 
     struct RangeSectionFragment : Struct
@@ -237,6 +298,9 @@ namespace data
     {
         RealCodeHeader() : Struct("RealCodeHeader") {}
         CDAC_PTR(MethodDesc)
+        CDAC_PTR(GCInfo)         // -> GC info blob (decoded for MethodSize / GC roots)
+        CDAC_U32(NumUnwindInfos) // count of trailing RuntimeFunction (unwind) entries
+        // UnwindInfos is a [FieldAddress] inline array read via TryGetFieldAddress.
     };
 
     // Code heap base type; HeapType selects LoaderCodeHeap vs HostCodeHeap.

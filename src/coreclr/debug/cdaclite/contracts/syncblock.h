@@ -24,7 +24,7 @@ namespace contracts
     // cDAC's SyncBlock contract can re-read them from the dump. Memory is captured via the
     // Target's EnumMem sink (no explicit region kind). Returns the number of in-use sync
     // blocks captured, or -1 if the sync table could not be located.
-    int EnumerateSyncBlockRegions(const Target& target);
+    int EnumerateSyncBlockRegions(const Target& target, RegionCallback sink, void* sinkContext);
 }
 } // namespace contracts
 

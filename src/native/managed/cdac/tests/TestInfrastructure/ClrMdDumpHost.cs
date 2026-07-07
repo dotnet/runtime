@@ -77,23 +77,52 @@ public sealed class ClrMdDumpHost : IDisposable
             using FileStream fs = File.OpenRead(foundFile);
             using PEReader peReader = new PEReader(fs);
 
+            int sizeOfHeaders = peReader.PEHeaders.PEHeader?.SizeOfHeaders ?? 0;
+            PEMemoryBlock wholeImage = default;
+            bool wholeImageLoaded = false;
+
             int filled = bytesRead;
             ulong current = address + (ulong)bytesRead;
             while (filled < buffer.Length)
             {
-                PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
-                if (block.Length == 0)
+                int rva = (int)(current - info.ImageBase);
+                PEMemoryBlock block = peReader.GetSectionData(rva);
+                if (block.Length > 0)
+                {
+                    int toCopy = Math.Min(block.Length, buffer.Length - filled);
+                    unsafe
+                    {
+                        new ReadOnlySpan<byte>(block.Pointer, toCopy).CopyTo(buffer.Slice(filled));
+                    }
+                    filled += toCopy;
+                    current += (ulong)toCopy;
+                }
+                else if (rva >= 0 && rva < sizeOfHeaders)
+                {
+                    // PE header region (before the first section): GetSectionData doesn't cover it.
+                    // For a loaded image the headers sit at file offset == RVA, so serve them from
+                    // the raw file image (needed to read a module's PE/COR headers when the dump
+                    // doesn't capture them, e.g. cdac-lite Normal dumps without the legacy DAC).
+                    if (!wholeImageLoaded)
+                    {
+                        wholeImage = peReader.GetEntireImage();
+                        wholeImageLoaded = true;
+                    }
+                    int available = Math.Min(sizeOfHeaders, wholeImage.Length) - rva;
+                    int toCopy = Math.Min(available, buffer.Length - filled);
+                    if (toCopy <= 0)
+                        return -1;
+                    unsafe
+                    {
+                        new ReadOnlySpan<byte>(wholeImage.Pointer + rva, toCopy).CopyTo(buffer.Slice(filled));
+                    }
+                    filled += toCopy;
+                    current += (ulong)toCopy;
+                }
+                else
                 {
                     return -1;
                 }
-
-                int toCopy = Math.Min(block.Length, buffer.Length - filled);
-                unsafe
-                {
-                    new ReadOnlySpan<byte>(block.Pointer, toCopy).CopyTo(buffer.Slice(filled));
-                }
-                filled += toCopy;
-                current += (ulong)toCopy;
             }
 
             return 0;

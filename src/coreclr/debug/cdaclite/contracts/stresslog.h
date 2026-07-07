@@ -24,7 +24,7 @@ namespace contracts
     // message buffer) so the cDAC can re-read them from the dump. Memory is captured via the
     // Target's EnumMem sink. Returns the number of chunks captured, 0 if the stress log is
     // disabled, or -1 if the stress log could not be located.
-    int EnumerateStressLogRegions(const Target& target);
+    int EnumerateStressLogRegions(const Target& target, RegionCallback sink, void* sinkContext);
 }
 } // namespace contracts
 

@@ -302,13 +302,14 @@ TryCreateDumpWithCdacLite(HANDLE hProcess, DWORD pid, HANDLE hFile, bool heapTie
     // (MiniDumpWithPrivateReadWriteMemory) to capture the GC/loader/handle heaps -- object bytes
     // included -- the same way the DAC path relies on that sweep. cdac-lite's memory callback adds
     // the memory the sweep misses (executable JIT/stub RX pages, image-backed contract descriptor).
-    // Normal tier: MiniDumpNormal (stacks + module headers); cdac-lite supplies the stack-walk
-    // code + method metadata via the callback, no R/W heap sweep.
-    // (MiniDumpWithoutAuxiliaryState is intentionally NOT set: it breaks ClrMD's module export
-    // directory lookup for the contract descriptor. dbghelp does not load the legacy DAC anyway.)
+    // Normal tier: MiniDumpNormal + MiniDumpWithoutAuxiliaryState. The latter stops dbghelp from
+    // loading the legacy DAC (mscordaccore) as an auxiliary provider -- otherwise, when the DAC is
+    // present, dbghelp runs the DAC's OWN enumeration and its memory would mask whether cdac-lite
+    // is self-sufficient (and adds ~350ms). cdac-lite explicitly emits the module export directory
+    // (EmitModuleExportDirectory) that the DAC would otherwise have supplied for descriptor lookup.
     MINIDUMP_TYPE dumpType = heapTier
         ? (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithPrivateReadWriteMemory)
-        : MiniDumpNormal;
+        : (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithoutAuxiliaryState);
 
     CdacMemoryCallbackState state = { &collector.m_regions, 0 };
     MINIDUMP_CALLBACK_INFORMATION callbackInfo = {};

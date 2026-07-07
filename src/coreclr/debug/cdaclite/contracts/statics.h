@@ -29,8 +29,7 @@ namespace contracts
     // Reports the contract descriptor (kinds "contract-descriptor", "descriptor-json",
     // "pointer-data") and the global variable storage referenced by pointer_data
     // (kind "global-var"). Returns the number of regions reported.
-    int EnumerateStaticRegions(const Target& target, uint64_t contractDescriptorAddr,
-                               RegionCallback sink, void* sinkContext);
+    int EnumerateStaticRegions(const Target& target, RegionCallback sink, void* sinkContext);
 }
 } // namespace contracts
 

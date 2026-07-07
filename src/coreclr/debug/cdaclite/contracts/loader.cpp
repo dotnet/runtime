@@ -64,6 +64,11 @@ namespace contracts
                 break;
             }
 
+            // The block's inline Assembly* array (ArrayStart, Size pointers) extends past the fixed
+            // ArrayListBlock struct, so emit it explicitly -- the reader re-reads it to enumerate the
+            // domain's assemblies (ISOSDacInterface.GetAppDomainData / SOS dumpdomain).
+            target.EmitMemory(block.ArrayStart, (uint32_t)(block.Size * target.PointerSize()));
+
             for (uint32_t i = 0; i < block.Size && seen < total; i++)
             {
                 seen++;
@@ -116,6 +121,25 @@ namespace contracts
                 return;
             }
 
+            // Emit the module's metadata-locator chain: Module -> PEAssembly -> PEImage ->
+            // PEImageLayout. The reader follows this (EcmaMetadata.GetMetadata ->
+            // Loader.TryGetPEImage -> TryGetLoadedImageContents) to find where a module's ECMA
+            // metadata lives; the metadata bytes themselves come from the on-disk image, but these
+            // small locator structs are not otherwise captured in a Normal dump.
+            if (module.PEAssembly != 0)
+            {
+                data::PEAssembly peAssembly;
+                if (target.TryRead(module.PEAssembly, peAssembly) && peAssembly.PEImage != 0)
+                {
+                    data::PEImage peImage;
+                    if (target.TryRead(peAssembly.PEImage, peImage) && peImage.LoadedImageLayout != 0)
+                    {
+                        data::PEImageLayout layout;
+                        target.TryRead(peImage.LoadedImageLayout, layout); // struct read -> auto-emitted
+                    }
+                }
+            }
+
             // If the module has an in-memory symbol stream, capture its buffer (ILoader.TryGetSymbolStream).
             // In-memory PDBs have no on-disk backing, so they must be in the dump.
             if (module.GrowableSymbolStream != 0)
@@ -125,6 +149,31 @@ namespace contracts
                     symStream.Buffer != 0 && (uint32_t)symStream.Size != 0)
                 {
                     target.EmitMemory(symStream.Buffer, (uint32_t)symStream.Size);
+                    state->emitted++;
+                }
+            }
+
+            // ReadyToRun modules: resolving an R2R frame (ExecutionManager.GetCodeBlockHandle ->
+            // ReadyToRunJitManager) reads ReadyToRunInfo -> ReadyToRunHeader / DebugInfoSection.
+            // The RuntimeFunctions table it indexes lives in the on-disk image, but these runtime
+            // locator structs must be in the dump.
+            if (module.ReadyToRunInfo != 0)
+            {
+                data::ReadyToRunInfo r2r;
+                if (target.TryRead(module.ReadyToRunInfo, r2r))
+                {
+                    if (r2r.ReadyToRunHeader != 0)
+                    {
+                        target.EmitStruct("ReadyToRunHeader", r2r.ReadyToRunHeader);
+                    }
+                    if (r2r.DebugInfoSection != 0)
+                    {
+                        target.EmitStruct("ImageDataDirectory", r2r.DebugInfoSection);
+                    }
+                    if (r2r.CompositeInfo != 0 && r2r.CompositeInfo != module.ReadyToRunInfo)
+                    {
+                        target.EmitStruct("ReadyToRunInfo", r2r.CompositeInfo);
+                    }
                     state->emitted++;
                 }
             }
