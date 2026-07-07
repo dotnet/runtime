@@ -50,19 +50,16 @@ public class CdacStressTests : CdacStressTestBase
     [MemberData(nameof(Debuggees))]
     public async Task GCRefStress_AllVerificationsPass(Debuggee debuggee)
     {
-        GetTargetPlatform(out OSPlatform os, out Architecture arch);
+        GetTargetPlatform(out OSPlatform os, out _);
 
+        // TODO(https://github.com/dotnet/runtime/issues/130008): extend GCREFS stress coverage to non-Windows / ARM
+        // targets once ICallingConvention.TryComputeArgGCRefMapBlob supports them (SystemV-AMD64 / ARM64
+        // struct-in-register classification, ARM32 ABI port).
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
 
         if (debuggee.SkipGCRefs)
             throw new SkipTestException($"{debuggee.Name} is excluded from GCREFS pending follow-up work.");
-
-        // The GCREFS sub-check has only been validated on architectures where
-        // the cDAC GC root enumeration is at parity with the runtime. x86 has
-        // not been brought up yet (a separate effort); skip there until it is.
-        if (arch == Architecture.X86)
-            throw new SkipTestException("GCREFS stress is not yet validated on x86 (ARGITER stress runs there instead)");
 
         CdacStressResults results = await RunGCRefStressAsync(debuggee.Name);
         AssertAllPassed(results, debuggee.Name);
@@ -77,14 +74,24 @@ public class CdacStressTests : CdacStressTestBase
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
 
-        // Scope of this PR: ARGITER is validated on Windows x86 / x64
-        // only. Other architectures hit known gaps that need follow-up
-        // work (SystemV-AMD64 / ARM64 struct-in-register classification,
-        // arm32 ABI port). Skip there until those land.
-        if (os != OSPlatform.Windows || arch is not (Architecture.X86 or Architecture.X64))
+        // ARGITER stress requires a CdacTypeHandle whose calling-convention
+        // helpers are filled in for the target ABI. Currently validated:
+        //   - Windows x86 / x64        (TransitionBlock + IsTrivialPointerSizedStruct)
+        //   - Windows ARM64            (HFA via MethodTable enum_flag_IsHFA)
+        //   - Linux ARM / ARM64        (HFA, same path)
+        // Still skipped:
+        //   - Linux / macOS x64        (SystemV-AMD64 eightbyte classifier not ported)
+        //   - RISC-V / LoongArch64     (FP struct classifier not ported)
+        //   - WASM32                   (GetFieldAlignment not ported)
+        bool argIterSupported =
+               (os == OSPlatform.Windows && arch is Architecture.X86 or Architecture.X64 or Architecture.Arm64)
+            || (os == OSPlatform.Linux && arch is Architecture.Arm or Architecture.Arm64);
+        if (!argIterSupported)
             throw new SkipTestException(
-                "ARGITER stress is validated for windows-x86 / windows-x64 in this PR; " +
-                "other targets need follow-up work (SystemV / ARM64 struct-in-registers, ARM32 ABI port).");
+                "ARGITER stress: needs follow-up work for this platform " +
+                "(SystemV-AMD64 struct classifier for linux/macOS x64, " +
+                "Windows ARM32 ABI port, RISC-V / LoongArch FP struct classifier, " +
+                "or WASM GetFieldAlignment).");
 
         CdacStressResults results = await RunArgIterStressAsync(debuggee.Name);
         AssertAllArgIterPassed(results, debuggee.Name);

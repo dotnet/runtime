@@ -65,9 +65,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         _legacy = legacyObj as IDacDbiInterface;
     }
 
-    public int CheckDbiVersion(DbiVersion* pVersion)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CheckDbiVersion(pVersion) : HResults.E_NOTIMPL;
-
     public int FlushCache()
     {
         _target.Flush(FlushScope.All);
@@ -698,8 +695,69 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
+    // EXCEPTION_MAXIMUM_PARAMETERS from the Windows SDK.
+    private const int ExceptionMaximumParameters = 15;
+
+    // Full size of a native EXCEPTION_RECORD for the target's pointer size: the header
+    // (two DWORDs + two pointers + NumberParameters DWORD, aligned up to the pointer size)
+    // followed by the fixed ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS] array.
+    private static int ExceptionRecordFullSize(int ptrSize)
+    {
+        int unaligned = sizeof(uint) + sizeof(uint) + ptrSize + ptrSize + sizeof(uint);
+        int header = (unaligned + (ptrSize - 1)) & ~(ptrSize - 1);
+        return header + (ExceptionMaximumParameters * ptrSize);
+    }
+
     public int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.Hijack(vmThread, dwThreadId, pRecord, pOriginalContext, cbSizeContext, reason, pUserData, pRemoteContextAddr) : HResults.E_NOTIMPL;
+    {
+        // Hijack mutates live target state (it writes to the thread's stack and sets the thread context).
+        // It therefore cannot be cross-checked against the legacy implementation in DEBUG builds.
+        // See https://github.com/dotnet/runtime/blob/0d1a20fb14109f277df06ebee3f83c964f9dcc61/src/coreclr/debug/daccess/dacdbiimpl.cpp#L4907 for more algorithm detail.
+        int hr = HResults.S_OK;
+        try
+        {
+            // Read the thread's current context.
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            byte[] contextBuffer = new byte[ctx.Size];
+            if (!_target.TryGetThreadContext(dwThreadId, ctx.AllContextFlags, contextBuffer))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            // If the caller requested it, copy back the original (pre-hijack) context.
+            if (pOriginalContext != 0)
+            {
+                if (cbSizeContext != contextBuffer.Length)
+                    throw Marshal.GetExceptionForHR(HResults.E_INVALIDARG)!;
+                contextBuffer.AsSpan().CopyTo(new Span<byte>((void*)pOriginalContext, (int)cbSizeContext));
+            }
+
+            byte[]? recordBytes = null;
+            if (pRecord != 0)
+            {
+                int recordSize = ExceptionRecordFullSize(_target.PointerSize);
+                recordBytes = new byte[recordSize];
+                new ReadOnlySpan<byte>((void*)pRecord, recordSize).CopyTo(recordBytes);
+            }
+
+            TargetPointer espContext = _target.Contracts.Debugger.PrepareExceptionHijack(
+                contextBuffer,
+                new TargetPointer(vmThread),
+                recordBytes,
+                reason,
+                new TargetPointer((ulong)pUserData));
+
+            if (pRemoteContextAddr is not null)
+                *pRemoteContextAddr = espContext.Value;
+
+            // Commit the modified context to the thread.
+            if (!_target.TrySetThreadContext(dwThreadId, contextBuffer))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
 
     public int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
     {

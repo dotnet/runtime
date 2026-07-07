@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.BindingFlagSupport;
@@ -431,24 +432,55 @@ namespace Internal.Reflection.Augments
 
         public static Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        public static EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create)
+        internal static unsafe EnumInfo CreateAndCacheEnumInfo(RuntimeTypeInfo runtimeTypeInfo)
         {
-            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
+            Debug.Assert(runtimeTypeInfo.IsActualEnum);
 
-            var info = runtimeType.GenericCache as EnumInfo;
-            if (info != null)
-                return info;
+            EnumInfo enumInfo;
+            if (runtimeTypeInfo.IsConstructedGenericType)
+            {
+                // Constructed generic instantiations may be missing MethodTable that we need to get
+                // the underlying type. Delegate them to generic type definitions that have it.
+                enumInfo = Enum.GetEnumInfo((RuntimeType)runtimeTypeInfo.GetGenericTypeDefinition());
+            }
+            else
+            {
+                runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
 
-            ReflectionCoreExecution.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+                // Sort by unsigned storage type to match Enum ordering semantics.
+                // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
+                // That codepath would bring functionality to compare everything that was ever allocated in the program.
+                ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
 
-            // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
-            // That codepath would bring functionality to compare everything that was ever allocated in the program.
-            ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
+                // Generic enums are guaranteed to have generic type definition MethodTable,
+                // so we can get the underlying type directly from it.
+                MethodTable* methodTable = runtimeTypeInfo.TypeHandle.ToMethodTable();
+                Debug.Assert(methodTable->IsEnum);
+                enumInfo = methodTable->ElementType switch
+                {
+                    EETypeElementType.SByte => CreateEnumInfoTyped<byte>(typeof(sbyte), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Byte => CreateEnumInfoTyped<byte>(typeof(byte), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Int16 => CreateEnumInfoTyped<ushort>(typeof(short), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.UInt16 => CreateEnumInfoTyped<ushort>(typeof(ushort), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Int32 => CreateEnumInfoTyped<uint>(typeof(int), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.UInt32 => CreateEnumInfoTyped<uint>(typeof(uint), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Int64 => CreateEnumInfoTyped<ulong>(typeof(long), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.UInt64 => CreateEnumInfoTyped<ulong>(typeof(ulong), unsortedNames, unsortedValues, isFlags),
+                    _ => throw new NotSupportedException()
+                };
+            }
 
-            info = create(RuntimeAugments.GetEnumUnderlyingType(type.TypeHandle), unsortedNames, unsortedValues, isFlags);
+            runtimeTypeInfo.GenericCache = enumInfo;
+            return enumInfo;
+        }
 
-            runtimeType.GenericCache = info;
-            return info;
+        private static EnumInfo<TStorage> CreateEnumInfoTyped<TStorage>(Type underlyingType, string[] names, object[] valuesAsObject, bool isFlags)
+            where TStorage : struct, INumber<TStorage>
+        {
+            var values = new TStorage[valuesAsObject.Length];
+            for (int i = 0; i < valuesAsObject.Length; i++)
+                values[i] = (TStorage)valuesAsObject[i];
+            return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
         }
 
         private sealed class EnumUnderlyingTypeComparer : IComparer<object>

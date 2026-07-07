@@ -167,6 +167,8 @@ namespace System.IO.Compression
         public System.DateTimeOffset LastWriteTime { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string Name { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ushort VersionMadeBy { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
         public System.IO.Stream Open(FileAccess access) { throw null; }

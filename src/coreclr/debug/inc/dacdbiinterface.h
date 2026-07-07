@@ -45,10 +45,6 @@ typedef void* * RefWalkHandle;
 
 #include "dacdbistructures.h"
 
-// This is the current format of code:DbiVersion.   It needs to be rev'ed when we decide to store something
-// else other than the product version of the DBI in DbiVersion (e.g. a timestamp).  See
-// code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDbiVersionFormat = 1;
 
 //-----------------------------------------------------------------------------
 // This is a low-level interface between DAC and DBI.
@@ -177,20 +173,6 @@ public:
     //-----------------------------------------------------------------------------
     // Functions to control the behavior of the DacDbi implementation itself.
     //-----------------------------------------------------------------------------
-
-    //
-    // Check whether the version of the DBI matches the version of the runtime.
-    // This is only called when we are remote debugging.  On Windows, we should have checked all the
-    // versions before we call any API on the IDacDbiInterface.  See
-    // code:CordbProcess::CordbProcess#DBIVersionChecking for more information on version checks.
-    //
-    // Return Value:
-    //    S_OK on success.
-    //
-    // Notes:
-    //    THIS MUST BE THE FIRST API ON THE INTERFACE!
-    //
-    virtual HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion) = 0;
 
     //
     // Flush the DAC cache. This should be called when target memory changes.

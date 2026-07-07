@@ -1202,15 +1202,6 @@ void JIT_RareDisableHelper()
     }
 }
 
-FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
-{
-    FCALL_CONTRACT;
-
-    Thread * pThread = GetThread();
-    return pThread->GetThreadId();
-}
-FCIMPLEND
-
 /*********************************************************************/
 /* we don't use HCIMPL macros because we don't want the overhead even in debug mode */
 

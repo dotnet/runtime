@@ -79,6 +79,21 @@ namespace
         return S_OK;
     }
 
+    int WriteThreadContext(uint32_t threadId, uint32_t contextSize, const uint8_t* contextBuffer, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICorDebugMutableDataTarget* mutableTarget = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICorDebugMutableDataTarget), (void**)&mutableTarget);
+        if (FAILED(hr))
+            return hr;
+        hr = mutableTarget->SetThreadContext(threadId, contextSize, contextBuffer);
+        mutableTarget->Release();
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
+    }
+
     int AllocVirtualCallback(uint32_t size, uint64_t* allocatedAddress, void* context)
     {
         ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
@@ -119,7 +134,7 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
         target2->Release();
 
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, allocCallback, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, &WriteThreadContext, allocCallback, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};

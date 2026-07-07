@@ -156,6 +156,14 @@ namespace System.IO.Compression
         /// <param name="bytesConsumed">When this method returns, contains the number of bytes consumed from the source.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
+        /// <remarks>
+        /// The method returns <see cref="OperationStatus.Done"/> after all
+        /// contents of a single Zstandard frame are decoded and returned. However,
+        /// Zstandard data streams may consist of multiple concatenated frames
+        /// (some of which may even be empty). To allow processing further
+        /// frames on the same <see cref="ZstandardDecoder" /> instance, call
+        /// <see cref="Reset" /> before calling <see cref="Decompress" /> on the rest of the data.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">An error occurred during decompression.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
@@ -344,7 +352,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Resets the decoder session, allowing reuse for the next decompression operation.</summary>
+        /// <summary>Resets the decoder session, allowing reuse for decompressing the next Zstandard frame.</summary>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the decoder session.</exception>
         public void Reset()
