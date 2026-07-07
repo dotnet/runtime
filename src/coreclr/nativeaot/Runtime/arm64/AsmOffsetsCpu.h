@@ -7,7 +7,7 @@
 //
 // NOTE: the offsets MUST be in hex notation WITHOUT the 0x prefix
 
-PLAT_ASM_SIZEOF(278, ExInfo)
+PLAT_ASM_SIZEOF(280, ExInfo)
 PLAT_ASM_OFFSET(0, ExInfo, m_pPrevExInfo)
 PLAT_ASM_OFFSET(8, ExInfo, m_pExContext)
 PLAT_ASM_OFFSET(10, ExInfo, m_exception)
@@ -16,6 +16,7 @@ PLAT_ASM_OFFSET(19, ExInfo, m_passNumber)
 PLAT_ASM_OFFSET(1c, ExInfo, m_idxCurClause)
 PLAT_ASM_OFFSET(20, ExInfo, m_frameIter)
 PLAT_ASM_OFFSET(270, ExInfo, m_notifyDebuggerSP)
+PLAT_ASM_OFFSET(278, ExInfo, m_pHwExceptionRecords)
 
 PLAT_ASM_OFFSET(0, PInvokeTransitionFrame, m_FramePointer)
 PLAT_ASM_OFFSET(8, PInvokeTransitionFrame, m_RIP)

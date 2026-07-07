@@ -227,6 +227,15 @@ namespace System.Runtime
             void* pContext = null; // Fatal crash handler does not use the context on non-Windows
 #endif
 
+            // If this unhandled exception originated from a hardware fault, hand its per-fault
+            // native records (siginfo/ucontext or EXCEPTION_RECORD/CONTEXT) to the classlib
+            // FailFast so they can be surfaced to the user's fatal error handler. This is the
+            // single genuinely-unhandled point, so there is no nested-fault window here.
+            if (exInfo._pHwExceptionRecords != null)
+            {
+                InternalCalls.RhpSetUnhandledHardwareExceptionRecords(exInfo._pHwExceptionRecords);
+            }
+
             try
             {
                 ((delegate*<RhFailFastReason, object, IntPtr, void*, void>)pFailFastFunction)
@@ -500,6 +509,9 @@ namespace System.Runtime
                 if (instructionFault)
                     _kind |= ExKind.InstructionFaultFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
+#if NATIVEAOT
+                _pHwExceptionRecords = null;
+#endif
             }
 
             internal void Init(object exceptionObj, ref ExInfo rethrownExInfo)
@@ -513,6 +525,9 @@ namespace System.Runtime
                 _exception = exceptionObj;
                 _kind = rethrownExInfo._kind | ExKind.RethrowFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
+#if NATIVEAOT
+                _pHwExceptionRecords = null;
+#endif
             }
 
             internal object ThrownException
@@ -549,7 +564,14 @@ namespace System.Runtime
 
             [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_notifyDebuggerSP)]
             internal volatile UIntPtr _notifyDebuggerSP;
-#if !NATIVEAOT
+#if NATIVEAOT
+            // Per-fault copy of the native hardware-exception records (siginfo/ucontext on Unix,
+            // EXCEPTION_RECORD/CONTEXT on Windows). Set by RhThrowHwEx when a hardware fault is
+            // translated to a managed exception; surfaced to the fatal error handler if the fault
+            // goes unhandled. Stored per-ExInfo so nested faults do not clobber each other.
+            [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_pHwExceptionRecords)]
+            internal void* _pHwExceptionRecords;
+#else
             [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_pCatchHandler)]
             internal volatile byte* _pCatchHandler;
 
@@ -572,7 +594,7 @@ namespace System.Runtime
             internal volatile IntPtr _pReversePInvokePropagationContext;
 #endif // TARGET_UNIX
 
-#endif // !NATIVEAOT
+#endif // NATIVEAOT
         }
 
         //
@@ -595,13 +617,6 @@ namespace System.Runtime
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-
-            // A hardware fault is being translated to a managed exception. Mark the native
-            // signal/exception records captured by the hardware-exception handler as
-            // current, so that if this fault goes unhandled the classlib FailFast can
-            // surface them to the user's fatal error handler. The records are cleared again
-            // if the exception is caught (see RhpCallCatchFunclet) or consumed at FailFast.
-            InternalCalls.RhpActivateHardwareExceptionRecords();
 #endif
             IntPtr faultingCodeAddress = exInfo._pExContext->IP;
             bool instructionFault = true;
@@ -660,12 +675,34 @@ namespace System.Runtime
                     break;
             }
 
+#if NATIVEAOT
+            // Take a per-fault copy of the native hardware-exception records captured by the
+            // signal/vectored handler *before* resolving the classlib exception below. For an
+            // uncatchable fault (access violation, illegal instruction, ...) the classlib's
+            // GetRuntimeException calls FailFast directly and never returns here, so both the copy
+            // and the unhandled hand-off must already be in place by then.
+            //
+            // Storing the records on this fault's ExInfo (rather than in a single shared
+            // thread-local) ensures a nested hardware fault handled while this fault is still in
+            // flight cannot clobber this fault's records.
+            int cbHwRecords = InternalCalls.RhpGetHardwareExceptionRecordsBufferSize();
+            Debug.Assert(cbHwRecords > 0);
+            byte* pHwRecords = stackalloc byte[cbHwRecords];
+            InternalCalls.RhpCaptureHardwareExceptionRecordsToBuffer(pHwRecords, cbHwRecords);
+            InternalCalls.RhpSetUnhandledHardwareExceptionRecords(pHwRecords);
+#endif
+
             if (exceptionId != default(ExceptionIDs))
             {
                 exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
+#if NATIVEAOT
+            // Init cleared _pHwExceptionRecords above; restore this fault's captured records so the
+            // unhandled dispatch path (UnhandledExceptionFailFastViaClasslib) can re-publish them.
+            exInfo._pHwExceptionRecords = pHwRecords;
+#endif
             DispatchEx(ref exInfo._frameIter, ref exInfo);
 #if NATIVEAOT
             FallbackFailFast(RhFailFastReason.InternalError, null);
@@ -939,19 +976,20 @@ namespace System.Runtime
                 InvokeSecondPass(ref exInfo, startIdx);
             }
 
+            // This hardware fault is being handled (caught here or propagated to native code), so
+            // it will not reach the unhandled fatal-error path. Drop its pending unhandled records
+            // so a later FailFast cannot surface stale records backed by this fault's now-unwound
+            // RhThrowHwEx stack frame. Non-hardware exceptions never publish records, but an
+            // in-flight *outer* hardware fault may have: only clear when the fault being handled
+            // here is itself the hardware fault whose records are pending.
+            if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
+            {
+                InternalCalls.RhpSetUnhandledHardwareExceptionRecords(null);
+            }
+
 #if FEATURE_OBJCMARSHAL
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
-#if NATIVEAOT
-                // A hardware fault is being propagated out through an Objective-C reverse
-                // P/Invoke boundary; the callback jumps to the propagation handler and does
-                // not return to the dispatcher. Clear the "current fault" marking here so a
-                // later Environment.FailFast on this thread does not surface stale records.
-                if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
-                {
-                    InternalCalls.RhpDeactivateHardwareExceptionRecords();
-                }
-#endif
                 InternalCalls.RhpCallPropagateExceptionCallback(
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
@@ -966,17 +1004,6 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-#if NATIVEAOT
-            // The exception is being handled. If it originated from a hardware fault, clear
-            // the "current fault" marking so a later Environment.FailFast does not surface
-            // the now-handled fault's native records. Only clear for a hardware-fault
-            // exception so that a nested software exception caught while an outer hardware
-            // fault is still in flight does not drop the outer fault's records.
-            if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
-            {
-                InternalCalls.RhpDeactivateHardwareExceptionRecords();
-            }
-#endif
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
             // currently, RhpCallCatchFunclet will resume after the catch

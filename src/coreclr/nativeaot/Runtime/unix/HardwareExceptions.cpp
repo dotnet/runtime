@@ -58,10 +58,6 @@ struct sigaction g_previousSIGFPE;
 // Exception handler for hardware exceptions
 static PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
 
-// Defined in EHHelpers.cpp; records the durable per-thread storage below so the
-// managed fatal error handler can retrieve the native signal records on demand.
-EXTERN_C void RhpSetHardwareExceptionRecords(void* pInfo, void* pContext);
-
 // Durable per-thread copies of the signal records, surfaced to the fatal error
 // handler when a hardware fault goes unhandled. The kernel-provided siginfo_t and
 // ucontext_t are only valid for the duration of the signal handler (the faulting
@@ -84,8 +80,55 @@ static void CaptureHardwareExceptionRecords(siginfo_t* siginfo, void* context)
     t_hardwareExceptionMContext = *(uc->uc_mcontext);
     t_hardwareExceptionUContext.uc_mcontext = &t_hardwareExceptionMContext;
 #endif
-    RhpSetHardwareExceptionRecords(&t_hardwareExceptionSiginfo, &t_hardwareExceptionUContext);
 }
+
+static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*) + sizeof(siginfo_t) + sizeof(ucontext_t)
+#if defined(HOST_APPLE)
+        + sizeof(t_hardwareExceptionMContext)
+#endif
+        );
+
+// Size of the per-fault buffer RhThrowHwEx stackallocs to hold a private copy of the
+// hardware-exception records: a two-pointer header {pInfo, pContext} followed by the
+// siginfo_t and ucontext_t bytes (plus the mcontext bytes on Apple).
+FCIMPL0(int32_t, RhpGetHardwareExceptionRecordsBufferSize)
+{
+    return ExceptionRecordBufferSize;
+}
+FCIMPLEND
+
+// Copies the most recently captured signal records into the caller-provided per-fault
+// buffer and writes the header pointers. Called synchronously from RhThrowHwEx right
+// after the signal handler captured the records, so the durable thread-local copies are
+// still those of the current fault.
+FCIMPL2(void, RhpCaptureHardwareExceptionRecordsToBuffer, void* pBuffer, int32_t cbBuffer)
+{
+    ASSERT(cbBuffer >= ExceptionRecordBufferSize);
+
+    uint8_t* p = (uint8_t*)pBuffer;
+    void** pHeader = (void**)p;
+    p += 2 * sizeof(void*);
+
+    siginfo_t* pInfo = (siginfo_t*)p;
+    *pInfo = t_hardwareExceptionSiginfo;
+    p += sizeof(siginfo_t);
+
+    ucontext_t* pContext = (ucontext_t*)p;
+    *pContext = t_hardwareExceptionUContext;
+    p += sizeof(ucontext_t);
+
+#if defined(HOST_APPLE)
+    // Repoint uc_mcontext at the copy stored in the caller's buffer so the surfaced
+    // ucontext remains valid after the throwing thread's transient copy is overwritten.
+    __typeof__(t_hardwareExceptionMContext)* pMContext = (__typeof__(t_hardwareExceptionMContext)*)p;
+    *pMContext = t_hardwareExceptionMContext;
+    pContext->uc_mcontext = pMContext;
+#endif
+
+    pHeader[0] = pInfo;
+    pHeader[1] = pContext;
+}
+FCIMPLEND
 
 #ifdef HOST_AMD64
 

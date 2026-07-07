@@ -31,58 +31,38 @@
 #include <minipal/debugger.h>
 #include "corexcep.h"
 
-// Thread-local pointers to the most recent hardware-exception records, surfaced to
-// the user's fatal error handler. They point at durable per-thread storage owned by
-// the platform hardware-exception handler (siginfo_t/ucontext_t on Unix,
-// EXCEPTION_RECORD/CONTEXT on Windows). The records are only meaningful when a
-// hardware fault goes unhandled and reaches FailFast, which is signalled by the
-// "active" flag below.
-static thread_local void* t_pHardwareExceptionInfo;
-static thread_local void* t_pHardwareExceptionContext;
-static thread_local bool t_hardwareExceptionRecordsActive;
+// Per-fault hardware-exception records buffer, handed to the classlib FailFast when a
+// hardware fault goes unhandled. The buffer is a managed stackalloc owned by the
+// unhandled fault's ExInfo and begins with a two-pointer header {pInfo, pContext} that
+// points into the record bytes that follow (siginfo_t/ucontext_t on Unix,
+// EXCEPTION_RECORD/CONTEXT on Windows). It is only set at the single genuinely-unhandled
+// point (see UnhandledExceptionFailFastViaClasslib), so there is no nested-fault window.
+static thread_local void* t_pUnhandledHwRecordsBuffer;
 
-// Records the durable storage captured by the platform hardware-exception handler.
-// Called for every translated hardware fault (handled or not); the records only
-// become observable to the fatal error handler once activated below.
-EXTERN_C void RhpSetHardwareExceptionRecords(void* pInfo, void* pContext)
+// Set by the unhandled-exception dispatch path when the fault is a hardware fault, just
+// before the classlib FailFast runs. The buffer stays valid until FailFast completes.
+FCIMPL1(void, RhpSetUnhandledHardwareExceptionRecords, void* pBuffer)
 {
-    t_pHardwareExceptionInfo = pInfo;
-    t_pHardwareExceptionContext = pContext;
-}
-
-// Marks the captured records as belonging to the fatal error that is about to be
-// reported. Called from the unhandled-exception dispatch path only when the fault
-// is a hardware fault, so a later Environment.FailFast that follows a *handled*
-// hardware exception does not surface stale records.
-FCIMPL0(void, RhpActivateHardwareExceptionRecords)
-{
-    t_hardwareExceptionRecordsActive = true;
+    t_pUnhandledHwRecordsBuffer = pBuffer;
 }
 FCIMPLEND
 
-// Clears the "current fault" marking when a hardware-fault exception is caught, so a
-// later Environment.FailFast does not surface the stale records from the handled fault.
-FCIMPL0(void, RhpDeactivateHardwareExceptionRecords)
-{
-    t_hardwareExceptionRecordsActive = false;
-}
-FCIMPLEND
-
-// Consumed once by the classlib FailFast to surface the native records to the
-// fatal error handler. Returns true (and fills the out pointers) only when a fault
-// was activated above, then clears the flag.
+// Consumed once by the classlib FailFast to surface the native records to the fatal
+// error handler. Returns true (and fills the out pointers from the buffer header) only
+// when an unhandled hardware fault set the buffer above, then clears it.
 FCIMPL2(FC_BOOL_RET, RhpGetHardwareExceptionRecords, void** ppInfo, void** ppContext)
 {
-    if (!t_hardwareExceptionRecordsActive)
+    void* pBuffer = t_pUnhandledHwRecordsBuffer;
+    if (pBuffer == NULL)
     {
         *ppInfo = NULL;
         *ppContext = NULL;
         FC_RETURN_BOOL(false);
     }
 
-    t_hardwareExceptionRecordsActive = false;
-    *ppInfo = t_pHardwareExceptionInfo;
-    *ppContext = t_pHardwareExceptionContext;
+    t_pUnhandledHwRecordsBuffer = NULL;
+    *ppInfo = ((void**)pBuffer)[0];
+    *ppContext = ((void**)pBuffer)[1];
     FC_RETURN_BOOL(true);
 }
 FCIMPLEND
@@ -493,8 +473,42 @@ static void CaptureHardwareExceptionRecords(PEXCEPTION_POINTERS pExPtrs)
     // extended state that was not copied into the durable thread-local record.
     t_hardwareExceptionContext.ContextFlags &= ~(DWORD)CONTEXT_XSTATE;
 #endif
-    RhpSetHardwareExceptionRecords(&t_hardwareExceptionRecord, &t_hardwareExceptionContext);
 }
+
+static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*) + sizeof(EXCEPTION_RECORD) + sizeof(CONTEXT));
+
+// Size of the per-fault buffer RhThrowHwEx stackallocs to hold a private copy of the
+// hardware-exception records: a two-pointer header {pInfo, pContext} followed by the
+// EXCEPTION_RECORD and CONTEXT bytes.
+FCIMPL0(int32_t, RhpGetHardwareExceptionRecordsBufferSize)
+{
+    return ExceptionRecordBufferSize;
+}
+FCIMPLEND
+
+// Copies the most recently captured hardware-exception records into the caller-provided
+// per-fault buffer and writes the header pointers. Called synchronously from RhThrowHwEx
+// right after the vectored handler captured the records, so the durable thread-local
+// copies are still those of the current fault.
+FCIMPL2(void, RhpCaptureHardwareExceptionRecordsToBuffer, void* pBuffer, int32_t cbBuffer)
+{
+    ASSERT(cbBuffer >= ExceptionRecordBufferSize);
+
+    uint8_t* p = (uint8_t*)pBuffer;
+    void** pHeader = (void**)p;
+    p += 2 * sizeof(void*);
+
+    EXCEPTION_RECORD* pRecord = (EXCEPTION_RECORD*)p;
+    *pRecord = t_hardwareExceptionRecord;
+    p += sizeof(EXCEPTION_RECORD);
+
+    CONTEXT* pContext = (CONTEXT*)p;
+    *pContext = t_hardwareExceptionContext;
+
+    pHeader[0] = pRecord;
+    pHeader[1] = pContext;
+}
+FCIMPLEND
 
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 {

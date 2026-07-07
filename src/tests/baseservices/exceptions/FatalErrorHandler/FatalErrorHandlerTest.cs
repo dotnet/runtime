@@ -62,6 +62,12 @@ unsafe class FatalErrorHandlerTest
     // (a corrupted-state exception) rather than a NullReferenceException.
     static volatile nint s_badAddress = unchecked((nint)0xDEADBEEF);
 
+    // A null address, held in a volatile static so the JIT emits a real faulting
+    // store. A write here faults in the null page and is reported as a catchable
+    // NullReferenceException hardware fault (unlike s_badAddress, which yields an
+    // uncatchable access violation).
+    static volatile nint s_nullAddress = 0;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void RunChildNativeException()
     {
@@ -70,6 +76,53 @@ unsafe class FatalErrorHandlerTest
         // corrupted-state exception that reaches the handler with the
         // platform-specific exception info and thread context populated.
         *(int*)s_badAddress = 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildNestedNativeException()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckInfo());
+
+        // Trigger an outer hardware fault (A) whose catch clause runs an exception
+        // filter. The filter itself triggers and swallows a *nested* hardware fault
+        // (B) during A's first pass — before A is determined to be unhandled — and
+        // then returns false so A remains unhandled and reaches FailFast.
+        //
+        // This is the nested-exception case where "multiple exceptions get handled
+        // before the original exception becomes unhandled": handling B must not
+        // discard the native signal/exception records captured for the still-in-flight
+        // outer fault A. When A finally reaches the fatal error handler, its own
+        // platform records must still be surfaced.
+        //
+        // Uses null (catchable NullReferenceException) hardware faults rather than an
+        // access violation so the outer fault dispatches through managed EH (running
+        // the filter) instead of being treated as an uncatchable corrupted state. This
+        // path is meaningful only on NativeAOT, where every unhandled exception is
+        // routed through the classlib FailFast (and thus the fatal error handler).
+        try
+        {
+            *(int*)s_nullAddress = 0; // fault A
+        }
+        catch (Exception) when (TriggerAndSwallowNestedFault())
+        {
+            // Unreached: the filter always returns false.
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool TriggerAndSwallowNestedFault()
+    {
+        try
+        {
+            *(int*)s_nullAddress = 0; // fault B, nested within A's first pass
+        }
+        catch
+        {
+            // Swallow B. Catching a hardware fault clears the "current fault"
+            // record tracking, which under single-slot storage also loses A's records.
+        }
+
+        return false;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -153,17 +206,28 @@ unsafe class FatalErrorHandlerTest
         var (exitCode, stderr) = LaunchChild("run-handler");
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        // RunDefaultHandler lets the runtime proceed with its default fatal handling.
-        // The exit code varies by runtime and platform, so only verify the handler ran.
+        // RunDefaultHandler lets the runtime proceed with its default fatal handling,
+        // which must print the standard crash log to stderr: the FailFast header
+        // ("Process terminated.") followed by the FailFast message.
+        bool defaultOutput = stderr.Contains("Process terminated.") && stderr.Contains("test fatal error");
+        // Regression guard: the runtime must emit the default crash log exactly once.
+        // A second emission re-enters the crashing-thread guard in the fatal error
+        // logging path, which prints this marker instead of a second crash log.
+        bool singleEmission = !stderr.Contains("Fatal error while logging another fatal error.");
+        // The exit code varies by runtime and platform, so only verify the process exited.
         bool exited = exitCode != 0;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, exited: {exited}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, default output: {defaultOutput}, single emission: {singleEmission}, exited: {exited}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
+        if (!defaultOutput)
+            Console.WriteLine("  FAIL: Default crash log (header + message) was not emitted");
+        if (!singleEmission)
+            Console.WriteLine("  FAIL: Default crash log was emitted more than once");
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && exited;
+        return handlerInvoked && defaultOutput && singleEmission && exited;
     }
 
     static bool TestLogHandler()
@@ -226,6 +290,44 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && infoReceived && infoPopulated && contextPopulated && exited;
     }
 
+    static bool TestNestedHardwareFault()
+    {
+        Console.WriteLine("=== TestNestedHardwareFault ===");
+
+        // This scenario only reaches the fatal error handler on NativeAOT, where every
+        // unhandled exception is routed through the classlib FailFast.
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            Console.WriteLine("  SKIP: not applicable outside NativeAOT");
+            return true;
+        }
+
+        var (exitCode, stderr) = LaunchChild("nested-native-exception");
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        bool infoReceived = stderr.Contains(InfoMarker);
+        // The outer fault A is a hardware fault, so its native signal record and thread
+        // context must still be surfaced even though a nested fault B was handled while A
+        // was in flight. NativeAOT provides both on every platform.
+        bool infoPopulated = stderr.Contains("info=true");
+        bool contextPopulated = stderr.Contains("context=true");
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, info ok: {infoPopulated}, context ok: {contextPopulated}, exited: {exited}");
+        if (!handlerInvoked)
+            Console.WriteLine("  FAIL: Handler was not invoked");
+        if (!infoReceived)
+            Console.WriteLine("  FAIL: Handler did not report native exception properties");
+        if (!infoPopulated)
+            Console.WriteLine("  FAIL: exception record was lost for the outer fault after a nested fault was handled");
+        if (!contextPopulated)
+            Console.WriteLine("  FAIL: thread context was lost for the outer fault after a nested fault was handled");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        return handlerInvoked && infoReceived && infoPopulated && contextPopulated && exited;
+    }
+
     static bool TestSetNull()
     {
         Console.WriteLine("=== TestSetNull ===");
@@ -264,6 +366,7 @@ unsafe class FatalErrorHandlerTest
                 case "run-handler":  RunChildRunHandler();  return 1;
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
+                case "nested-native-exception": RunChildNestedNativeException();   return 1;
                 case "set-null":     return RunChildSetNull();
                 case "set-twice":    return RunChildSetTwice();
                 default:
@@ -277,6 +380,7 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestRunHandler();
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
+        allPassed &= TestNestedHardwareFault();
         allPassed &= TestSetNull();
         allPassed &= TestSetTwice();
 
