@@ -1410,7 +1410,7 @@ struct HWIntrinsicInfo
             }
         }
     }
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_WASM
 };
 
 #ifdef TARGET_ARM64
