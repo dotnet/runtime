@@ -3,6 +3,7 @@
 
 #if ROSLYN4_8_OR_GREATER
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -17,6 +18,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AddingNewUnrelatedType_DoesNotRegenerateSource()
         {
             string source = """
@@ -55,6 +57,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AppendingUnrelatedSource_DoesNotRegenerateSource()
         {
             string source = """
@@ -100,6 +103,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AddingNewLoggerMessageMethod_DoesNotRegenerateExistingMethod()
         {
             string source1 = """
@@ -154,6 +158,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangingLoggerMessageAttribute_RegeneratesMethod()
         {
             string source1 = """
@@ -203,6 +208,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangingUnrelatedMethodBody_DoesNotRegenerateLoggerMessage()
         {
             string source1 = """

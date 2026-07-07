@@ -12,9 +12,6 @@
 
 #define GC_CONFIG_DRIVEN
 
-// define this to test data safety for the DAC. See code:DataTest::TestDataSafety.
-#define TEST_DATA_CONSISTENCY
-
 #if !defined(STRESS_LOG) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #define STRESS_LOG
 #endif
@@ -87,6 +84,10 @@
 #define HAVE_GCCOVER
 #endif
 
+#if defined(_DEBUG)
+#define CDAC_STRESS
+#endif
+
 // Some platforms may see spurious AVs when GcCoverage is enabled because of races.
 // Enable further processing to see if they recur.
 #if defined(HAVE_GCCOVER) && (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
@@ -117,10 +118,6 @@
 #endif // PROFILING_SUPPORTED
 
 #endif // _DEBUG
-
-// MUST NEVER CHECK IN WITH THIS ENABLED.
-// This is just for convenience in doing performance investigations in a checked-out enlistment.
-// #define FEATURE_ENABLE_NO_RANGE_CHECKS
 
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled

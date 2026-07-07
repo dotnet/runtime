@@ -13,7 +13,6 @@ namespace System.Runtime.InteropServices
         private const int DispatchExPropertyCanWrite = 2;
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe int GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, Exception* pException)
         {
             try
@@ -40,7 +39,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchParameterInfoName(ParameterInfo* pParameterInfo, string* pResult, Exception* pException)
         {
             try
@@ -54,7 +52,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchMemberInfoName(MemberInfo* pMemberInfo, string* pResult, Exception* pException)
         {
             try
@@ -68,7 +65,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe int GetDispatchMemberInfoType(MemberInfo* pMemberInfo, Exception* pException)
         {
             try
@@ -83,7 +79,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void HasDispatchCustomAttribute(MemberInfo* pMemberInfo, Type* pAttributeType, bool* pResult, Exception* pException)
         {
             try
@@ -97,7 +92,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchMemberParameters(MemberInfo* pMemberInfo, ParameterInfo[]* pResult, Exception* pException)
         {
             try
@@ -118,7 +112,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchPropertyTokenAndModule(PropertyInfo* pPropertyInfo, int* pToken, RuntimeModule* pModule, Exception* pException)
         {
             try
@@ -133,7 +126,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchPropertyAccessor(PropertyInfo* pPropertyInfo, bool getter, bool nonPublic, IntPtr* pResult, Exception* pException)
         {
             try
@@ -148,7 +140,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchFieldValue(FieldInfo* pFieldInfo, object* pTarget, object* pResult, Exception* pException)
         {
             try
@@ -162,7 +153,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void SetDispatchFieldValue(FieldInfo* pFieldInfo, object* pTarget, object* pValue, int invokeAttr, Binder* pBinder, Globalization.CultureInfo* pCulture, Exception* pException)
         {
             try
@@ -181,7 +171,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchPropertyValue(PropertyInfo* pPropertyInfo, object* pTarget, int invokeAttr, Binder* pBinder, object[]* pIndexArgs, Globalization.CultureInfo* pCulture, object* pResult, Exception* pException)
         {
             try
@@ -200,7 +189,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void SetDispatchPropertyValue(PropertyInfo* pPropertyInfo, object* pTarget, object* pValue, int invokeAttr, Binder* pBinder, object[]* pIndexArgs, Globalization.CultureInfo* pCulture, Exception* pException)
         {
             try
@@ -220,7 +208,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InvokeDispatchMethodInfo(MethodInfo* pMemberInfo, object* pTarget, int invokeAttr, Binder* pBinder, object[]* pArgs, Globalization.CultureInfo* pCulture, object* pResult, Exception* pException)
         {
             try
@@ -240,7 +227,6 @@ namespace System.Runtime.InteropServices
 
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InvokeDispatchReflectMember(IReflect* pReflectionObject, string* pName, int invokeAttr, Binder* pBinder, object* pTarget, object[]* pArgs, ParameterModifier[]* pModifiers, Globalization.CultureInfo* pCulture, string[]* pNamedParams, object* pResult, Exception* pException)
         {
             try
@@ -263,7 +249,6 @@ namespace System.Runtime.InteropServices
 
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchProperties(IReflect* pReflectionObject, int bindingFlags, PropertyInfo[]* pResult, Exception* pException)
         {
             try
@@ -278,7 +263,6 @@ namespace System.Runtime.InteropServices
 
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchFields(IReflect* pReflectionObject, int bindingFlags, FieldInfo[]* pResult, Exception* pException)
         {
             try
@@ -293,7 +277,6 @@ namespace System.Runtime.InteropServices
 
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchMethods(IReflect* pReflectionObject, int bindingFlags, MethodInfo[]* pResult, Exception* pException)
         {
             try
@@ -307,7 +290,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetDispatchInnerException(Exception* pExceptionObject, Exception* pResult, Exception* pException)
         {
             try

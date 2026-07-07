@@ -297,7 +297,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static PingReply CreatePingReplyForUnreachableHost(IPAddress address, Socket socket)
+        private static unsafe PingReply CreatePingReplyForUnreachableHost(IPAddress address, Socket socket)
         {
             Span<byte> socketAddress = stackalloc byte[SocketAddress.GetMaximumAddressSize(address.AddressFamily)];
             unsafe

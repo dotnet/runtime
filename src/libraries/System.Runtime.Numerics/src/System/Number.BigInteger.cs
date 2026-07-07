@@ -568,7 +568,7 @@ namespace System
             }
         }
 
-        private static string? FormatBigIntegerToHex<TChar>(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<TChar> destination, out int charsWritten, out bool spanSuccess)
+        private static unsafe string? FormatBigIntegerToHex<TChar>(bool targetSpan, BigInteger value, char format, int digits, NumberFormatInfo info, Span<TChar> destination, out int charsWritten, out bool spanSuccess)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(format is 'x' or 'X');
@@ -654,7 +654,7 @@ namespace System
             }
         }
 
-        private static string? FormatBigIntegerToBinary<TChar>(bool targetSpan, BigInteger value, int digits, Span<TChar> destination, out int charsWritten, out bool spanSuccess)
+        private static unsafe string? FormatBigIntegerToBinary<TChar>(bool targetSpan, BigInteger value, int digits, Span<TChar> destination, out int charsWritten, out bool spanSuccess)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             // Get the bytes that make up the BigInteger.

@@ -34,10 +34,10 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetTypeInstance(DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
-        => _legacyImpl is not null ? _legacyImpl.GetTypeInstance(typeInstance) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetTypeInstance(typeInstance) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetDefinition(DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
-        => _legacyImpl is not null ? _legacyImpl.GetDefinition(methodDefinition) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDefinition(methodDefinition) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
     {
@@ -174,19 +174,19 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetFlags(uint* flags)
-        => _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.IsSameObject(IXCLRDataMethodInstance* method)
-        => _legacyImpl is not null ? _legacyImpl.IsSameObject(method) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameObject(method) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetEnCVersion(uint* version)
-        => _legacyImpl is not null ? _legacyImpl.GetEnCVersion(version) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetEnCVersion(version) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetNumTypeArguments(uint* numTypeArgs)
-        => _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
-        => _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetILOffsetsByAddress(ClrDataAddress address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
     {
@@ -255,9 +255,10 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                     validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
-            Debug.ValidateHResult(hr, hrLocal);
+            // AllowCdacSuccess: the DAC fails on interpreted code.
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
 
-            if (hr == HResults.S_OK)
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
             {
                 if (validateOffsetsNeeded)
                 {
@@ -279,7 +280,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
-        => _legacyImpl is not null ? _legacyImpl.GetAddressRangesByILOffset(ilOffset, rangesLen, rangesNeeded, addressRanges) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetAddressRangesByILOffset(ilOffset, rangesLen, rangesNeeded, addressRanges) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, [In, Out, MarshalUsing(CountElementName = "mapLen")] ClrDataILAddressMap[]? maps)
     {
@@ -287,7 +288,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
         try
         {
-            TargetCodePointer pCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
             TargetPointer codeStart = pCode.ToAddress(_target);
 
             // No debug info exists at all (e.g. ILStubs).
@@ -371,16 +373,16 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     }
 
     int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
-        => _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.EnumExtent(ulong* handle, void* extent)
-        => _legacyImpl is not null ? _legacyImpl.EnumExtent(handle, extent) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumExtent(handle, extent) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.EndEnumExtents(ulong handle)
-        => _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {

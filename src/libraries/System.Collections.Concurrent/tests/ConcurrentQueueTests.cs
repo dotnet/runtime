@@ -212,6 +212,7 @@ namespace System.Collections.Concurrent.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/16413", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ReferenceTypes_NulledAfterDequeue()
         {
             int iterations = 10; // any number <32 will do
@@ -277,6 +278,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ManySegments_ConcurrentEnqueues_RemainsConsistent()
         {
             var cq = new ConcurrentQueue<int>();

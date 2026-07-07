@@ -16,23 +16,12 @@ enum
 };
 
 // javax/net/ssl/SSLEngineResult$Status
-// Android API 24+
 enum
 {
     STATUS__BUFFER_UNDERFLOW = 0,
     STATUS__BUFFER_OVERFLOW = 1,
     STATUS__OK = 2,
     STATUS__CLOSED = 3,
-};
-
-// javax/net/ssl/SSLEngineResult$Status
-// Android API 21-23
-enum
-{
-    LEGACY__STATUS__BUFFER_OVERFLOW = 0,
-    LEGACY__STATUS__BUFFER_UNDERFLOW = 1,
-    LEGACY__STATUS__OK = 3,
-    LEGACY__STATUS__CLOSED = 2,
 };
 
 struct ApplicationProtocolData_t
@@ -64,39 +53,13 @@ static bool IsHandshaking(int handshakeStatus)
 
 ARGS_NON_NULL(1, 2) static jobject GetSslSession(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
 {
-    // During the initial handshake our sslStream->sslSession doesn't have access to the peer certificates
-    // which we need for hostname verification. There are different ways to access the handshake session
-    // in different Android API levels.
-    // SSLEngine.getHandshakeSession() is available since API 24.
-    // In older Android versions (API 21-23) we need to access the handshake session by accessing
-    // a private field instead.
-
-    if (g_SSLEngineGetHandshakeSession != NULL)
-    {
-        jobject sslSession = IsHandshaking(handshakeStatus)
-            ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
-            : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
-        if (CheckJNIExceptions(env))
-            return NULL;
-
-        return sslSession;
-    }
-    else if (g_ConscryptOpenSSLEngineImplHandshakeSessionField != NULL)
-    {
-        jobject sslSession = IsHandshaking(handshakeStatus)
-            ? (*env)->GetObjectField(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplHandshakeSessionField)
-            : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
-        if (CheckJNIExceptions(env))
-            return NULL;
-
-        return sslSession;
-    }
-    else
-    {
-        LOG_ERROR("Unable to get the current SSLSession from SSLEngine.");
-        assert(false && "Unable to get the current SSLSession from SSLEngine.");
+    jobject sslSession = IsHandshaking(handshakeStatus)
+        ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
+        : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
+    if (CheckJNIExceptions(env))
         return NULL;
-    }
+
+    return sslSession;
 }
 
 ARGS_NON_NULL_ALL static jobject GetCurrentSslSession(JNIEnv* env, SSLStream* sslStream)
@@ -187,27 +150,6 @@ ARGS_NON_NULL_ALL static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer,
     }
 }
 
-// There has been a change in the SSLEngineResult.Status enum between API 23 and 24 that changed
-// the order/interger values of the enum options.
-static int MapLegacySSLEngineResultStatus(int legacyStatus)
-{
-    switch (legacyStatus)
-    {
-        case LEGACY__STATUS__BUFFER_OVERFLOW:
-            return STATUS__BUFFER_OVERFLOW;
-        case LEGACY__STATUS__BUFFER_UNDERFLOW:
-            return STATUS__BUFFER_UNDERFLOW;
-        case LEGACY__STATUS__CLOSED:
-            return STATUS__CLOSED;
-        case LEGACY__STATUS__OK:
-            return STATUS__OK;
-        default:
-            LOG_ERROR("Unknown legacy SSLEngineResult status: %d", legacyStatus);
-            assert(false && "Unknown SSLEngineResult status");
-            return -1;
-    }
-}
-
 ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, SSLStream* sslStream, int* handshakeStatus, int* bytesConsumed, bool* repeat)
 {
     // SSLEngineResult result = sslEngine.wrap(appOutBuffer, netOutBuffer);
@@ -223,11 +165,6 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, S
     *bytesConsumed = (*env)->CallIntMethod(env, result, g_SSLEngineResultBytesConsumed);
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus));
     (*env)->DeleteLocalRef(env, result);
-
-    if (g_SSLEngineResultStatusLegacyOrder)
-    {
-        status = MapLegacySSLEngineResultStatus(status);
-    }
 
     switch (status)
     {
@@ -331,11 +268,6 @@ cleanup:
     *handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetHandshakeStatus));
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus));
     (*env)->DeleteLocalRef(env, result);
-
-    if (g_SSLEngineResultStatusLegacyOrder)
-    {
-        status = MapLegacySSLEngineResultStatus(status);
-    }
 
     switch (status)
     {
@@ -717,48 +649,12 @@ exit:
     return ret;
 }
 
-// This method calls internal Android APIs that are specific to Android API 21-23 and it won't work
-// on newer API levels. By calling the sslEngine.sslParameters.useSni(true) method, the SSLEngine
-// will include the peerHost that was passed in to the SSLEngine factory method in the client hello
-// message.
-ARGS_NON_NULL_ALL static int32_t ApplyLegacyAndroidSNIWorkaround(JNIEnv* env, SSLStream* sslStream)
-{
-    if (g_ConscryptOpenSSLEngineImplClass == NULL || !(*env)->IsInstanceOf(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplClass))
-        return FAIL;
-
-    int32_t ret = FAIL;
-    INIT_LOCALS(loc, sslParameters);
-
-    loc[sslParameters] = (*env)->GetObjectField(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplSslParametersField);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    if (!loc[sslParameters])
-        goto cleanup;
-
-    (*env)->CallVoidMethod(env, loc[sslParameters], g_ConscryptSSLParametersImplSetUseSni, true);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    ret = SUCCESS;
-
-cleanup:
-    RELEASE_LOCALS(loc, env);
-    return ret;
-}
-
 int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost)
 {
     abort_if_invalid_pointer_argument (sslStream);
     abort_if_invalid_pointer_argument (targetHost);
 
     JNIEnv* env = GetJNIEnv();
-
-    if (g_SNIHostName == NULL || g_SSLParametersSetServerNames == NULL)
-    {
-        // SNIHostName is only available since API 24
-        // on APIs 21-23 we use a workaround to force the SSLEngine to use SNI
-        return ApplyLegacyAndroidSNIWorkaround(env, sslStream);
-    }
-
     int32_t ret = FAIL;
     INIT_LOCALS(loc, hostStr, nameList, hostName, params);
 

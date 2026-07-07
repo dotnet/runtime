@@ -145,7 +145,7 @@ languishing unnoticed.
 #### 2a: Check the `area-*` label
 
 1. Read the issue content carefully -- what namespace, type, or component does it concern?
-2. Cross-reference with `docs/area-owners.md`, which maps
+2. Cross-reference with [`docs/area-owners.md`](../../../docs/area-owners.md), which maps
    `area-*` labels to specific assemblies, namespaces, and teams.
 3. If the current `area-*` label doesn't match the issue's actual subject, flag it
    and suggest the correct label with a rationale.

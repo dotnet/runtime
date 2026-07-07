@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class DllImportTests : PInvokeTableGeneratorTestsBase
     {
         public DllImportTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -24,6 +23,9 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        // The "warning ... native function ... varargs" check is emitted by Mono's PInvokeTableGenerator.
+        // CoreCLR's PInvokeTableGenerator does not emit that warning, so this test is Mono-only.
+        [TestCategory("mono")]
         public async Task NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "variadic");
@@ -118,6 +120,7 @@ namespace Wasm.Build.Tests
                 "with.per.iod",
                 "with🚀unicode#"
             } })]
+        [TestCategory("native-mono")]
         public async Task CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
         {
             var extraItems = @"<NativeFileReference Include=""*.c"" />";
@@ -176,6 +179,11 @@ namespace Wasm.Build.Tests
             string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraItems: extraItems, extraProperties: extraProperties);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
+
+            // The variadic-function test program does not use JS interop, so the JS interop
+            // assembly would be linked away by the trimmer (CoreCLR-Wasm) and the template
+            // main.js (which calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
             return info;
         }
     }

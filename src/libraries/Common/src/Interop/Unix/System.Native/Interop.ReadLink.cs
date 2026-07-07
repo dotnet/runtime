@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -29,7 +29,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="path">The path to the symlink.</param>
         /// <returns>Returns the link to the target path on success; and null otherwise.</returns>
-        internal static string? ReadLink(ReadOnlySpan<char> path)
+        internal static unsafe string? ReadLink(ReadOnlySpan<char> path)
         {
             const int StackBufferSize = 256;
 

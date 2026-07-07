@@ -493,9 +493,13 @@ namespace Mono.Linker.Steps
                 Collection<Instruction> instrs = body.Instructions;
 #pragma warning restore RS0030
 
+                int offset = 0;
+
                 for (int i = 0; i < instrs.Count; ++i)
                 {
                     Instruction instr = instrs[i];
+                    instr.Offset = offset;
+
                     switch (instr.OpCode.Code)
                     {
 
@@ -503,10 +507,10 @@ namespace Mono.Linker.Steps
                         case Code.Callvirt:
                             MethodDefinition? md = optimizer._context.TryResolve((MethodReference)instr.Operand);
                             if (md == null)
-                                continue;
+                                break;
 
                             if (md.IsVirtual)
-                                continue;
+                                break;
 
                             if (md.CallingConvention == MethodCallingConvention.VarArg)
                                 break;
@@ -529,40 +533,63 @@ namespace Mono.Linker.Steps
                             {
                                 if (!md.HasMetadataParameters() && CanInlineInstanceCall(instrs, i))
                                 {
-                                    processor.Replace(i - 1, Instruction.Create(OpCodes.Nop));
-                                    processor.Replace(i, result.GetPrototype());
+                                    offset -= instrs[i - 1].GetSize();
+
+                                    var nop = Instruction.Create(OpCodes.Nop);
+                                    nop.Offset = offset;
+                                    processor.Replace(i - 1, nop);
+                                    offset += nop.GetSize();
+
+                                    instr = result.GetPrototype();
+                                    instr.Offset = offset;
+                                    processor.Replace(i, instr);
                                     changed = true;
                                 }
 
-                                continue;
+                                break;
                             }
 
                             if (md.HasMetadataParameters())
                             {
                                 if (!IsCalledWithoutSideEffects(md, instrs, i))
-                                    continue;
+                                    break;
 
                                 for (int p = 1; p <= md.GetMetadataParametersCount(); ++p)
                                 {
-                                    processor.Replace(i - p, Instruction.Create(OpCodes.Nop));
+                                    offset -= instrs[i - p].GetSize();
+                                }
+
+                                for (int p = 1; p <= md.GetMetadataParametersCount(); ++p)
+                                {
+                                    var nop = Instruction.Create(OpCodes.Nop);
+                                    nop.Offset = offset;
+                                    processor.Replace(i - p, nop);
+                                    offset += nop.GetSize();
                                 }
                             }
 
-                            processor.Replace(i, result.GetPrototype());
+                            instr = result.GetPrototype();
+                            instr.Offset = offset;
+                            processor.Replace(i, instr);
                             changed = true;
-                            continue;
+                            break;
 
                         case Code.Sizeof:
                             var operand = (TypeReference)instr.Operand;
                             Instruction? value = optimizer.GetSizeOfResult(operand);
                             if (value != null)
                             {
-                                processor.Replace(i, value.GetPrototype());
+                                instr = value.GetPrototype();
+                                instr.Offset = offset;
+                                processor.Replace(i, instr);
                                 changed = true;
                             }
 
-                            continue;
+                            break;
+                        default:
+                            break;
                     }
+                    offset += instr.GetSize();
                 }
 
                 return changed;

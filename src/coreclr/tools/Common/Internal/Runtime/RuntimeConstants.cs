@@ -86,5 +86,6 @@ namespace Internal.Runtime
     internal static class GenericMethodsHashtableConstants
     {
         public const int IsAsyncVariant = unchecked((int)0x80000000);
+        public const int IsReturnDroppingAsyncThunk = unchecked((int)0x40000000);
     }
 }

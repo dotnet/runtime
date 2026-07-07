@@ -3,10 +3,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+
+using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
-using Debug = System.Diagnostics.Debug;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -218,7 +221,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private ReadOnlySpan<byte> NamePrefix
+        private Utf8Span NamePrefix
         {
             get
             {
@@ -232,12 +235,12 @@ namespace Internal.IL.Stubs
                         return "ForwardNativeFunctionWrapper"u8;
                     default:
                         Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
-                        return [];
+                        return Array.Empty<byte>();
                 }
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

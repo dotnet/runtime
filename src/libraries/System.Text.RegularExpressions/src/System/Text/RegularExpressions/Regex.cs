@@ -19,19 +19,54 @@ namespace System.Text.RegularExpressions
     /// Represents an immutable regular expression. Also contains static methods that
     /// allow use of regular expressions without instantiating a Regex explicitly.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The <see cref="Regex"/> class represents the .NET regular expression engine.
+    /// It can be used to quickly parse large amounts of text to find specific character patterns;
+    /// to extract, edit, replace, or delete text substrings; and to add the extracted strings to a
+    /// collection to generate a report.
+    /// </para>
+    /// </remarks>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference">.NET Regular Expression Language</related>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-options">Regular Expression Options</related>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/best-practices">Best Practices for Regular Expressions</related>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions">Backtracking</related>
     public partial class Regex : ISerializable
     {
+        /// <summary>The regular expression pattern that was passed to the constructor.</summary>
         [StringSyntax(StringSyntaxAttribute.Regex)]
-        protected internal string? pattern;                   // The string pattern provided
-        protected internal RegexOptions roptions;             // the top-level options from the options string
-        protected internal RegexRunnerFactory? factory;       // Factory used to create runner instances for executing the regex
-        protected internal Hashtable? caps;                   // if captures are sparse, this is the hashtable capnum->index
-        protected internal Hashtable? capnames;               // if named captures are used, this maps names->index
-        protected internal string[]? capslist;                // if captures are sparse or named captures are used, this is the sorted list of names
-        protected internal int capsize;                       // the size of the capture array
+        protected internal string? pattern;
+
+        /// <summary>The regular expression options that were passed to the constructor.</summary>
+        protected internal RegexOptions roptions;
+
+        /// <summary>A factory used to create <see cref="RegexRunner"/> instances for executing the regular expression.</summary>
+        protected internal RegexRunnerFactory? factory;
+
+        /// <summary>
+        /// When captures are sparse, maps capture numbers to their corresponding index
+        /// in the capture array. Otherwise, <see langword="null"/>.
+        /// </summary>
+        protected internal Hashtable? caps;
+
+        /// <summary>
+        /// When named captures are used, maps capture names to their corresponding index.
+        /// Otherwise, <see langword="null"/>.
+        /// </summary>
+        protected internal Hashtable? capnames;
+
+        /// <summary>
+        /// When captures are sparse or named captures are used, contains the sorted list of capture names.
+        /// Otherwise, <see langword="null"/>.
+        /// </summary>
+        protected internal string[]? capslist;
+
+        /// <summary>The number of capturing groups defined in the regular expression pattern.</summary>
+        protected internal int capsize;
 
         private volatile RegexRunner? _runner;                // cached runner
 
+        /// <summary>Initializes a new instance of the <see cref="Regex" /> class.</summary>
 #if DEBUG
         // These members aren't used from Regex(), but we want to keep them in debug builds for now,
         // so this is a convenient place to include them rather than needing a debug-only illink file.
@@ -46,21 +81,48 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Creates a regular expression object for the specified regular expression.
+        /// Initializes a new instance of the <see cref="Regex" /> class for the specified regular expression.
         /// </summary>
+        /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
         public Regex([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) :
             this(pattern, culture: null)
         {
         }
 
         /// <summary>
-        /// Creates a regular expression object for the specified regular expression, with options that modify the pattern.
+        /// Initializes a new instance of the <see cref="Regex" /> class for the specified regular expression,
+        /// with options that modify the pattern.
         /// </summary>
+        /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
+        /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="options" /> is not a valid <see cref="RegexOptions" /> value.
+        /// </exception>
         public Regex([StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options) :
             this(pattern, options, s_defaultMatchTimeout, culture: null)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Regex" /> class for the specified regular expression,
+        /// with options that modify the pattern and a value that specifies how long a pattern matching method
+        /// should attempt a match before it times out.
+        /// </summary>
+        /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
+        /// <param name="matchTimeout">
+        /// A time-out interval, or <see cref="InfiniteMatchTimeout" /> to indicate that the method should not time out.
+        /// </param>
+        /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="options" /> is not a valid <see cref="RegexOptions" /> value, or
+        /// <paramref name="matchTimeout" /> is negative, zero, or greater than approximately 24 days.
+        /// </exception>
         public Regex([StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options, TimeSpan matchTimeout) :
             this(pattern, options, matchTimeout, culture: null)
         {
@@ -169,6 +231,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Initializes a new instance of the <see cref="Regex" /> class by using serialized data.</summary>
+        /// <param name="info">The object that contains a serialized pattern and <see cref="RegexOptions" /> information.</param>
+        /// <param name="context">The destination for this serialization. (This parameter is not used; specify <see langword="null" />.)</param>
+        /// <exception cref="PlatformNotSupportedException">Serialization of <see cref="Regex" /> objects is not supported.</exception>
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected Regex(SerializationInfo info, StreamingContext context) =>
@@ -177,6 +243,7 @@ namespace System.Text.RegularExpressions
         void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context) =>
             throw new PlatformNotSupportedException();
 
+        /// <summary>Gets or sets a dictionary that maps numbered capturing groups to their index values.</summary>
         [CLSCompliant(false), DisallowNull]
         protected IDictionary? Caps
         {
@@ -192,6 +259,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Gets or sets a dictionary that maps named capturing groups to their index values.</summary>
         [CLSCompliant(false), DisallowNull]
         protected IDictionary? CapNames
         {
@@ -217,14 +285,33 @@ namespace System.Text.RegularExpressions
         private static RegexRunnerFactory? Compile(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, regexTree, options, hasTimeout);
 
+        /// <summary>
+        /// Compiles one or more specified <see cref="Regex" /> objects to a named assembly.
+        /// </summary>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Creating an assembly of compiled regular expressions is not supported.
+        /// </exception>
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
             CompileToAssembly(regexinfos, assemblyname, null, null);
 
+        /// <summary>
+        /// Compiles one or more specified <see cref="Regex" /> objects to a named assembly with the specified attributes.
+        /// </summary>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Creating an assembly of compiled regular expressions is not supported.
+        /// </exception>
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes) =>
             CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
+        /// <summary>
+        /// Compiles one or more specified <see cref="Regex" /> objects and a specified resource file
+        /// to a named assembly with the specified attributes.
+        /// </summary>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Creating an assembly of compiled regular expressions is not supported.
+        /// </exception>
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
         {
@@ -263,14 +350,25 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and
-        /// whitespace) by replacing them with their \ codes. This converts a string so that
-        /// it can be used as a constant within a regular expression safely. (Note that the
-        /// reason # and whitespace must be escaped is so the string can be used safely
-        /// within an expression parsed with x mode. If future Regex features add
-        /// additional metacharacters, developers should depend on Escape to escape those
-        /// characters as well.)
+        /// Escapes a minimal set of characters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and white space)
+        /// by replacing them with their escape codes. This instructs the regular expression engine to interpret
+        /// these characters literally rather than as metacharacters.
         /// </summary>
+        /// <param name="str">The input string that contains the text to convert.</param>
+        /// <returns>A string of characters with metacharacters converted to their escaped form.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="str" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        /// <para>
+        /// <see cref="Escape" /> converts a string so that the regular expression engine will interpret any
+        /// metacharacters that it may contain as character literals. It is particularly important for strings
+        /// that are defined dynamically using characters not known at design time.
+        /// </para>
+        /// <para>
+        /// While this method escapes the straight opening bracket ([) and opening brace ({) characters,
+        /// it does not escape their corresponding closing characters (] and }). In most cases, escaping
+        /// these is not necessary.
+        /// </para>
+        /// </remarks>
         public static string Escape(string str)
         {
             if (str is null)
@@ -281,9 +379,21 @@ namespace System.Text.RegularExpressions
             return RegexParser.Escape(str);
         }
 
-        /// <summary>
-        /// Unescapes any escaped characters in the input string.
-        /// </summary>
+        /// <summary>Converts any escaped characters in the input string.</summary>
+        /// <param name="str">The input string containing the text to convert.</param>
+        /// <returns>A string of characters with any escaped characters converted to their unescaped form.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="str" /> includes an unrecognized escape sequence.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="str" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Unescape" /> method reverses the transformation performed by the
+        /// <see cref="Escape" /> method by removing the escape character ("\") from each escaped character.
+        /// It also unescapes hexadecimal values in verbatim string literals, converting them to the actual
+        /// printable characters (for example, <c>\x07</c> becomes <c>\a</c>).
+        /// </para>
+        /// </remarks>
         public static string Unescape(string str)
         {
             if (str is null)
@@ -294,25 +404,39 @@ namespace System.Text.RegularExpressions
             return RegexParser.Unescape(str);
         }
 
-        /// <summary>
-        /// Returns the options passed into the constructor
-        /// </summary>
+        /// <summary>Gets the options that were passed into the <see cref="Regex" /> constructor.</summary>
+        /// <value>
+        /// One or more members of the <see cref="RegexOptions" /> enumeration that represent options that were passed
+        /// to the <see cref="Regex" /> constructor.
+        /// </value>
+        /// <remarks>
+        /// The value of the <see cref="Options" /> property consists of one or more members of the
+        /// <see cref="RegexOptions" /> enumeration. If no options were defined in the constructor,
+        /// its value is <see cref="RegexOptions.None" />. The <see cref="Options" /> property does
+        /// not reflect inline options defined in the regular expression pattern itself.
+        /// </remarks>
         public RegexOptions Options => roptions;
 
-        /// <summary>
-        /// Indicates whether the regular expression matches from right to left.
-        /// </summary>
+        /// <summary>Gets a value that indicates whether the regular expression searches from right to left.</summary>
+        /// <value>
+        /// <see langword="true" /> if the regular expression searches from right to left; otherwise,
+        /// <see langword="false" />.
+        /// </value>
         public bool RightToLeft => (roptions & RegexOptions.RightToLeft) != 0;
 
-        /// <summary>
-        /// Returns the regular expression pattern passed into the constructor
-        /// </summary>
+        /// <summary>Returns the regular expression pattern that was passed into the <see cref="Regex" /> constructor.</summary>
+        /// <returns>
+        /// The pattern that was passed into the <see cref="Regex" /> constructor.
+        /// </returns>
         public override string ToString() => pattern!;
 
-        /// <summary>
-        /// Returns the GroupNameCollection for the regular expression. This collection contains the
-        /// set of strings used to name capturing groups in the expression.
-        /// </summary>
+        /// <summary>Returns an array of capturing group names for the regular expression.</summary>
+        /// <returns>A string array of group names.</returns>
+        /// <remarks>
+        /// The collection of group names contains the set of strings used to name capturing groups in the
+        /// expression. Even if capturing groups are not explicitly named, they are automatically assigned
+        /// numerical names ("0", "1", "2", and so on). Group "0" always designates the entire match.
+        /// </remarks>
         public string[] GetGroupNames()
         {
             string[] result;
@@ -333,9 +457,13 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        /// <summary>
-        /// Returns the integer group number corresponding to a group name.
-        /// </summary>
+        /// <summary>Returns an array of capturing group numbers that correspond to group names in an array.</summary>
+        /// <returns>An integer array of group numbers.</returns>
+        /// <remarks>
+        /// Groups can be referred to using both their assigned number and their name (if one was provided).
+        /// The returned array is ordered so that each number maps to the same group name returned by
+        /// <see cref="GetGroupNames" /> at the corresponding index.
+        /// </remarks>
         public int[] GetGroupNumbers()
         {
             int[] result;
@@ -363,17 +491,37 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        /// <summary>
-        /// Retrieves a group name that corresponds to a group number.
-        /// </summary>
+        /// <summary>Gets the group name that corresponds to the specified group number.</summary>
+        /// <param name="i">The group number to convert to the corresponding group name.</param>
+        /// <returns>
+        /// A string that contains the group name associated with the specified group number. If there is no
+        /// group name that corresponds to the specified group number, the method returns <see cref="string.Empty" />.
+        /// </returns>
+        /// <remarks>
+        /// A regular expression pattern may contain either named or numbered capturing groups. Numbered groups
+        /// are delimited by the syntax <c>(subexpression)</c> and are assigned numbers based on their order in
+        /// the regular expression. Named groups are delimited by the syntax <c>(?&lt;name&gt;subexpression)</c>.
+        /// The <see cref="GroupNameFromNumber" /> method identifies both named groups and numbered groups by
+        /// their ordinal positions in the regular expression.
+        /// </remarks>
         public string GroupNameFromNumber(int i)
         {
             return RegexParser.GroupNameFromNumber(caps, capslist, capsize, i);
         }
 
-        /// <summary>
-        /// Returns a group number that corresponds to a group name, or -1 if the name is not a recognized group name.
-        /// </summary>
+        /// <summary>Returns the group number that corresponds to the specified group name.</summary>
+        /// <param name="name">The group name to convert to the corresponding group number.</param>
+        /// <returns>
+        /// The group number that corresponds to the specified group name, or -1 if
+        /// <paramref name="name" /> is not a valid group name.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="name" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        /// The <see cref="GroupNumberFromName" /> method identifies both named groups and numbered groups by
+        /// their ordinal positions in the regular expression. Ordinal position zero always represents the
+        /// entire regular expression. All numbered groups are then counted before named groups, regardless
+        /// of their actual position in the regular expression pattern.
+        /// </remarks>
         public int GroupNumberFromName(string name)
         {
             if (name is null)
@@ -399,6 +547,11 @@ namespace System.Text.RegularExpressions
             Interlocked.CompareExchange(ref field, new WeakReference<RegexReplacement?>(null), null) ??
             field;
 
+        /// <summary>
+        /// Used by a <see cref="Regex" /> object generated by the
+        /// <see cref="CompileToAssembly(RegexCompilationInfo[], AssemblyName)" /> method. This method is obsolete.
+        /// </summary>
+        /// <exception cref="NotSupportedException">References have already been initialized.</exception>
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected void InitializeReferences()

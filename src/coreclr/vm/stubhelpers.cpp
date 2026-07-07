@@ -21,6 +21,7 @@
 #ifdef FEATURE_COMINTEROP
 #include <oletls.h>
 #include "olecontexthelpers.h"
+#include "olevariant.h"
 #include "runtimecallablewrapper.h"
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"

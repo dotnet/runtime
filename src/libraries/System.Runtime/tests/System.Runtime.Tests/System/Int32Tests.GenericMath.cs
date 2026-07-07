@@ -1054,7 +1054,12 @@ namespace System.Tests
             Assert.Equal((int)0x00000000, BinaryNumberHelper<int>.Log2((int)0x00000001));
             Assert.Equal((int)0x0000001E, BinaryNumberHelper<int>.Log2((int)0x7FFFFFFF));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<int>.Log2(unchecked((int)0x80000000)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<int>.Log2(unchecked((int)0xFFFFFFFF)));
+
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<int>.Log2(unchecked((int)0xFFFFFFFF)));
+
+            // We assert these to ensure intrinsification preserves the information.
+            Assert.Equal("value", exception.ParamName);
+            Assert.Equal("Non-negative number required. (Parameter 'value')", exception.Message);
         }
 
         //

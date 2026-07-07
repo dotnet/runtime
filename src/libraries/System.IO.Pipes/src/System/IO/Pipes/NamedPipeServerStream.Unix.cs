@@ -244,6 +244,8 @@ namespace System.IO.Pipes
             private readonly int _maxCount;
             /// <summary>The concurrent number of concurrent streams using this instance.</summary>
             private int _currentCount;
+            /// <summary>Whether the socket file mode has been tightened to current-user-only (0600).</summary>
+            private bool _isCurrentUserOnly;
 
             internal static SharedServer Get(string path, int maxCount, PipeOptions pipeOptions)
             {
@@ -252,9 +254,9 @@ namespace System.IO.Pipes
 
                 lock (s_servers)
                 {
-                    SharedServer? server;
                     bool isFirstPipeInstance = (pipeOptions & PipeOptions.FirstPipeInstance) != 0;
-                    if (s_servers.TryGetValue(path, out server))
+                    bool isCurrentUserOnly = (pipeOptions & PipeOptions.CurrentUserOnly) != 0;
+                    if (s_servers.TryGetValue(path, out SharedServer? server))
                     {
                         // On Windows, if a subsequent server stream is created for the same pipe and with a different
                         // max count, the subsequent count is largely ignored in that it doesn't change the number of
@@ -269,11 +271,21 @@ namespace System.IO.Pipes
                         {
                             throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
                         }
+
+                        // Ratchet to current-user-only if requested. We never loosen, even if a later
+                        // instance for the same path does not request CurrentUserOnly: silently downgrading
+                        // a security choice another caller made would be worse than the order-dependent
+                        // surprise of a non-CurrentUserOnly server inheriting a 0600 socket.
+                        if (isCurrentUserOnly && !server._isCurrentUserOnly)
+                        {
+                            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+                            server._isCurrentUserOnly = true;
+                        }
                     }
                     else
                     {
                         // No instance exists yet for this path. Create one a new.
-                        server = new SharedServer(path, maxCount, isFirstPipeInstance);
+                        server = new SharedServer(path, maxCount, isFirstPipeInstance, isCurrentUserOnly);
                         s_servers.Add(path, server);
                     }
 
@@ -308,7 +320,7 @@ namespace System.IO.Pipes
                 }
             }
 
-            private SharedServer(string path, int maxCount, bool isFirstPipeInstance)
+            private SharedServer(string path, int maxCount, bool isFirstPipeInstance, bool isCurrentUserOnly)
             {
                 if (!isFirstPipeInstance)
                 {
@@ -325,6 +337,13 @@ namespace System.IO.Pipes
                 {
                     socket.Bind(new UnixDomainSocketEndPoint(path));
                     isSocketBound = true;
+
+                    _isCurrentUserOnly = isCurrentUserOnly;
+                    if (_isCurrentUserOnly)
+                    {
+                        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+                    }
+
                     socket.Listen(int.MaxValue);
                 }
                 catch (SocketException) when (isFirstPipeInstance && !isSocketBound)
@@ -334,6 +353,10 @@ namespace System.IO.Pipes
                 }
                 catch
                 {
+                    if (isSocketBound)
+                    {
+                        Interop.Sys.Unlink(path); // ignore any failures
+                    }
                     socket.Dispose();
                     throw;
                 }

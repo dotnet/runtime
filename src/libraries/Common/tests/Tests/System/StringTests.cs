@@ -2666,6 +2666,9 @@ namespace System.Tests
             yield return new object[] { null, "Foo {{{0}", new object[] { 1 }, "Foo {1" }; // Escaped open curly braces
             yield return new object[] { null, "Foo }}{0}", new object[] { 1 }, "Foo }1" }; // Escaped closed curly braces
             yield return new object[] { null, "Foo {0} {{0}}", new object[] { 1 }, "Foo 1 {0}" }; // Escaped placeholder
+            yield return new object[] { null, "{{", new object[0], "{" }; // Escaped open curly brace only
+            yield return new object[] { null, "}}", new object[0], "}" }; // Escaped close curly brace only
+            yield return new object[] { null, "{{text}}", new object[0], "{text}" }; // Escaped braces around text
 
             yield return new object[] { null, "Foo {0}", new object[] { null }, "Foo " }; // Values has null only
             yield return new object[] { null, "Foo {0} {1} {2}", new object[] { "Bar", null, "Baz" }, "Foo Bar  Baz" }; // Values has null

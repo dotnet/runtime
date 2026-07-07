@@ -337,6 +337,11 @@ def is_managed_exe_assembly(file):
 print("")
 print("ILASM RoundTrips")
 
+if os.environ.get("IlasmRoundTripUseManagedIlasm") == "1":
+  ilasm_path = os.path.join(os.environ["CORE_ROOT"], "managed-ilasm", "ilasm")
+else:
+  ilasm_path = os.path.join(os.environ["CORE_ROOT"], "ilasm")
+
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
@@ -367,7 +372,11 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+      if proc.returncode != 0:
+          print(f"ILDASM failed with exit code {proc.returncode}")
+          sys.exit(1)
+
+      ilasm_args = f'{ilasm_path} -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
       print(ilasm_args)
       proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -377,63 +386,76 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      test_det = proc.returncode == 0
+      if proc.returncode != 0:
+          print(f"ILASM failed with exit code {proc.returncode}")
+          sys.exit(1)
 
       # Test determinism
-      if test_det:
 
-        hash = hash_file(inputAssemblyName)
+      hash = hash_file(inputAssemblyName)
 
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
-        print(ilasm_args)
-        proc = subprocess.Popen(ilasm_args, shell=True)
+      ilasm_args = f'{ilasm_path} -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+      print(ilasm_args)
+      proc = subprocess.Popen(ilasm_args, shell=True)
 
-        try:
-            proc.communicate()
-        except:
-            proc.kill()
-            sys.exit(1)
-
-        if hash != hash_file(inputAssemblyName):
-          print("ILASM determinism failed")
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
           sys.exit(1)
-        else:
-          print("ILASM determinism succeeded")
 
-        # Test PDB determinism
-
-        if not is_managed_debug_assembly(inputAssemblyName):
-          ilasmSwitches = ilasmSwitches + " -DEBUG"
-
-        pdbName = inputAssemblyName.replace('.dll', '.pdb')
-
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
-        print(ilasm_args)
-        proc = subprocess.Popen(ilasm_args, shell=True)
-
-        try:
-            proc.communicate()
-        except:
-            proc.kill()
-            sys.exit(1)
-
-        hash = hash_file(pdbName)
-
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
-        print(ilasm_args)
-        proc = subprocess.Popen(ilasm_args, shell=True)
-
-        try:
-            proc.communicate()
-        except:
-            proc.kill()
-            sys.exit(1)
-
-        if hash != hash_file(pdbName):
-          print("ILASM PDB determinism failed")
+      if proc.returncode != 0:
+          print(f"ILASM failed with exit code {proc.returncode}")
           sys.exit(1)
-        else:
-          print("ILASM PDB determinism succeeded")
+
+      if hash != hash_file(inputAssemblyName):
+        print("ILASM determinism failed")
+        sys.exit(1)
+      else:
+        print("ILASM determinism succeeded")
+
+      # Test PDB determinism
+
+      if not is_managed_debug_assembly(inputAssemblyName):
+        ilasmSwitches = ilasmSwitches + " -DEBUG"
+
+      pdbName = inputAssemblyName.replace('.dll', '.pdb')
+
+      ilasm_args = f'{ilasm_path} -output={pdbName} {ilasmSwitches} {disassemblyName}'
+      print(ilasm_args)
+      proc = subprocess.Popen(ilasm_args, shell=True)
+
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      if proc.returncode != 0:
+          print(f"ILASM failed with exit code {proc.returncode}")
+          sys.exit(1)
+
+      hash = hash_file(pdbName)
+
+      ilasm_args = f'{ilasm_path} -output={pdbName} {ilasmSwitches} {disassemblyName}'
+      print(ilasm_args)
+      proc = subprocess.Popen(ilasm_args, shell=True)
+
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      if proc.returncode != 0:
+          print(f"ILASM failed with exit code {proc.returncode}")
+          sys.exit(1)
+
+      if hash != hash_file(pdbName):
+        print("ILASM PDB determinism failed")
+        sys.exit(1)
+      else:
+        print("ILASM PDB determinism succeeded")
 
       print("")
 

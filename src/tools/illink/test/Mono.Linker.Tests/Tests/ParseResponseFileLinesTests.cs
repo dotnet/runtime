@@ -3,105 +3,105 @@
 
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
+using Xunit;
 
 namespace Mono.Linker.Tests
 {
-    [TestClass]
     public class ParseResponseFileLinesTests
     {
-        [TestMethod]
+        [Fact]
         public void TestOneArg()
         {
             TestParseResponseFileLines(@"abc", new string[] { @"abc" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestTwoArgsOnOneLine()
         {
             TestParseResponseFileLines(@"abc def", new string[] { @"abc", @"def" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestTwoArgsOnTwoLine()
         {
             TestParseResponseFileLines(@"abc
 def", new string[] { @"abc", @"def" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestOneSlashWithoutQuote()
         {
             TestParseResponseFileLines(@"\", new string[] { @"\" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestTwoSlashesWithoutQuote()
         {
             TestParseResponseFileLines(@"\\", new string[] { @"\\" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestOneSlashWithQuote()
         {
             TestParseResponseFileLines(@"""x \"" y""", new string[] { @"x "" y" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestTwoSlashesWithQuote()
         {
             TestParseResponseFileLines(@"""Slashes \\ In Quote""", new string[] { @"Slashes \\ In Quote" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestTwoSlashesAtEndOfQuote()
         {
             TestParseResponseFileLines(@"""Trailing Slash\\""", new string[] { @"Trailing Slash\" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestWindowsPath()
         {
             TestParseResponseFileLines(@"C:\temp\test.txt", new string[] { @"C:\temp\test.txt" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestLinuxPath()
         {
             TestParseResponseFileLines(@"/tmp/test.txt", new string[] { @"/tmp/test.txt" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestEqualsArguments()
         {
             TestParseResponseFileLines(@"a=b", new string[] { @"a=b" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestEqualsArgumentsSpaces()
         {
             TestParseResponseFileLines(@"a=""b c""", new string[] { @"a=b c" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestEqualsKeySpaces()
         {
             TestParseResponseFileLines(@"""a b""=c", new string[] { @"a b=c" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestEscapedQuoteWithBackslash()
         {
             TestParseResponseFileLines(@"""a \"" b""", new string[] { @"a "" b" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestEscapedQuoteSequence()
         {
             TestParseResponseFileLines(@"""a """" b""", new string[] { @"a "" b" });
         }
 
-        [TestMethod]
+        [Fact]
         public void TestQuotedNewline()
         {
             TestParseResponseFileLines(@"""a
@@ -114,7 +114,7 @@ b" });
             var result = new Queue<string>();
             using (var reader = new StringReader(v1))
                 Driver.ParseResponseFile(reader, result);
-            CollectionAssert.AreEquivalent(result.ToArray(), v2);
+            Assert.Equal(v2.OrderBy(x => x), result.ToArray().OrderBy(x => x));
         }
     }
 }

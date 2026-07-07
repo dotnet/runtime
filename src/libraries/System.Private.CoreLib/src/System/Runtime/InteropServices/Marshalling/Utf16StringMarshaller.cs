@@ -26,7 +26,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="unmanaged">The unmanaged string to convert.</param>
         /// <returns>A managed string.</returns>
-        [RequiresUnsafe]
         public static string? ConvertToManaged(ushort* unmanaged)
             => Marshal.PtrToStringUni((IntPtr)unmanaged);
 
@@ -34,7 +33,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Frees the memory for the unmanaged string.
         /// </summary>
         /// <param name="unmanaged">The memory allocated for the unmanaged string.</param>
-        [RequiresUnsafe]
         public static void Free(ushort* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 

@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 void gc_heap::add_to_history_per_heap()
 {
 #if defined(GC_HISTORY) && defined(BACKGROUND_GC)
@@ -1785,3 +1795,5 @@ void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_
 }
 
 #endif //FEATURE_BASICFREEZE
+
+} // namespace WKS/SVR

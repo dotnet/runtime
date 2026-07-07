@@ -32,8 +32,6 @@
 
 #ifndef DACCESS_COMPILE
 
-extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
-
 //
 // Notes:
 //    If a managed debugger is attached, this should send the managed UserBreak event.
@@ -882,11 +880,11 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     StrongHandleHolder objHandle(pAppDomain->CreateStrongHandle(data.Get()));
     MethodTable* pMT = data.Get()->GetGCSafeMethodTable();
     Module* pModule = pMT->GetModule();
-    DomainAssembly* pDomainAssembly = pModule->GetDomainAssembly();
+    Assembly* pAssembly = pModule->GetAssembly();
     mdTypeDef classToken = pMT->GetCl();
 
     pThread->SetThreadCurrNotification(objHandle);
-    g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainAssembly, classToken);
+    g_pDebugInterface->SendCustomDebuggerNotification(pThread, pAssembly, classToken);
     pThread->ClearThreadCurrNotification();
 
     if (pThread->IsAbortRequested())

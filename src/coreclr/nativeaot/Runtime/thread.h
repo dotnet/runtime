@@ -5,7 +5,7 @@
 #define __thread_h__
 
 #include "StackFrameIterator.h"
-#include "slist.h" // DefaultSListTraits
+#include "slist.h" // SListTraits
 #include <minipal/xoshiro128pp.h>
 
 struct gc_alloc_context;
@@ -179,7 +179,7 @@ struct ReversePInvokeFrame
 class Thread : private RuntimeThreadLocals
 {
     friend class AsmOffsets;
-    friend struct DefaultSListTraits<Thread>;
+    friend struct SListTraits<Thread>;
     friend class ThreadStore;
     IN_DAC(friend class ClrDataAccess;)
 

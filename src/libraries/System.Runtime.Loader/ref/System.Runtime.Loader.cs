@@ -9,7 +9,6 @@ namespace System.Reflection.Metadata
     public static partial class AssemblyExtensions
     {
         [System.CLSCompliantAttribute(false)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true)]

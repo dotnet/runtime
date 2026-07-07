@@ -60,8 +60,6 @@ FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExcept
 
     OBJECTREF pException = (OBJECTREF) pExceptionUNSAFE;
 
-    // The preallocated exception objects may be used from multiple AppDomains
-    // and therefore must remain immutable from the application's perspective.
     FC_RETURN_BOOL(CLRException::IsPreallocatedExceptionObject(pException));
 }
 FCIMPLEND
@@ -1920,8 +1918,11 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             else
             {
                 // got another value type. Get the type
-                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                // The type itself may be generic. We need to get the instantiated
+                // type for the field to properly call its method.
+                TypeHandle fieldTH = field->GetExactFieldType(TypeHandle(mt));
                 _ASSERTE(!fieldTH.IsNull());
+                _ASSERTE(!fieldTH.IsSharedByGenericInstantiations());
                 MethodTable* fieldMT = fieldTH.GetMethodTable();
                 if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
@@ -1979,7 +1980,7 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 {
     FCALL_CONTRACT;
 
-    _ASSERTE(mt->IsTruePrimitive() || mt->IsEnum());
+    _ASSERTE(mt->IsPrimitive());
 
     // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
     // Call EEClass::GetInternalCorElementType directly to avoid it

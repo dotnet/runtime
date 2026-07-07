@@ -436,7 +436,6 @@ void ShimStackWalk::Populate()
                                 // These frame types are tracked specially.
                                 break;
 
-                            case STUBFRAME_APPDOMAIN_TRANSITION:    // fall through
                             case STUBFRAME_LIGHTWEIGHT_FUNCTION:    // fall through
                             case STUBFRAME_INTERNALCALL:
                                 // These frame types don't correspond to chains.
@@ -957,7 +956,7 @@ void ShimStackWalk::GetCalleeForFrame(ICorDebugFrame * pFrame, ICorDebugFrame **
 
 FramePointer ShimStackWalk::GetFramePointerForChain(DT_CONTEXT * pContext)
 {
-    return FramePointer::MakeFramePointer(CORDbgGetSP(pContext));
+    return FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(CORDbgGetSP(pContext)));
 }
 
 FramePointer ShimStackWalk::GetFramePointerForChain(ICorDebugInternalFrame2 * pInternalFrame2)
@@ -1119,7 +1118,7 @@ void ShimStackWalk::AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWa
         {
             // We need to send an extra enter-managed chain.
             _ASSERTE(pChainInfo->m_fLeafNativeContextIsValid);
-            BYTE * sp = reinterpret_cast<BYTE *>(CORDbgGetSP(&(pChainInfo->m_leafNativeContext)));
+            BYTE * sp = reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(CORDbgGetSP(&(pChainInfo->m_leafNativeContext))));
 #if !defined(TARGET_ARM) &&  !defined(TARGET_ARM64)
             // Dev11 324806: on ARM we use the caller's SP for a frame's ending delimiter so we cannot
             // subtract 4 bytes from the chain's ending delimiter else the frame might never be in range.
@@ -1230,7 +1229,7 @@ BOOL ShimStackWalk::CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
         IfFailThrow(hr);
 
         // Get the SP from the CONTEXT.  This is the caller SP.
-        CORDB_ADDRESS sp = PTR_TO_CORDB_ADDRESS(CORDbgGetSP(&ctx));
+        CORDB_ADDRESS sp = CORDbgGetSP(&ctx);
 
         // get the frame address
         CORDB_ADDRESS frameAddr = 0;
@@ -1399,8 +1398,7 @@ void ShimStackWalk::TrackUMChain(ChainInfo * pChainInfo, StackWalkInfo * pStackW
             // Sometimes we may not want to show an UM chain b/c we know it's just
             // code inside of mscorwks. (Eg: Funcevals & AD transitions both fall into this category).
             // These are perfectly valid UM chains and we could give them if we wanted to.
-            if ((pStackWalkInfo->m_internalFrameType == STUBFRAME_APPDOMAIN_TRANSITION) ||
-                (pStackWalkInfo->m_internalFrameType == STUBFRAME_FUNC_EVAL))
+            if (pStackWalkInfo->m_internalFrameType == STUBFRAME_FUNC_EVAL)
             {
                 pChainInfo->CancelUMChain();
             }
@@ -1679,7 +1677,7 @@ HRESULT ShimChain::GetStackRange(CORDB_ADDRESS * pStart, CORDB_ADDRESS * pEnd)
         // The leafmost end is represented by the register set.
         if (pStart)
         {
-            *pStart = PTR_TO_CORDB_ADDRESS(CORDbgGetSP(&m_context));
+            *pStart = CORDbgGetSP(&m_context);
         }
 
         // Return the rootmost end of the stack range.  It is represented by the frame pointer of the chain.

@@ -192,7 +192,13 @@ function(find_unwind_libs UnwindLibs)
     find_library(UNWIND NAMES unwind)
 
     if(UNWIND STREQUAL UNWIND-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
+      if(CLR_CMAKE_TARGET_OPENBSD)
+        # On OpenBSD the libunwind symbols are provided by the C++ ABI library
+        # (libc++abi), so a standalone libunwind is not expected.
+        set(UNWIND "")
+      else()
+        message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev or libunwind-devel.")
+      endif()
     endif()
 
     set(${UnwindLibs} ${UNWIND_LIBS} ${UNWIND} PARENT_SCOPE)

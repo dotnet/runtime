@@ -79,6 +79,12 @@ public:
 #endif // !HAS_FIXED_REGISTER_SET
 };
 
+struct EHClauseInfo
+{
+    CORINFO_EH_CLAUSE clause;
+    EHblkDsc*         HBtab;
+};
+
 class CodeGenInterface
 {
     friend class emitter;
@@ -206,6 +212,12 @@ public:
 
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
+#if defined(TARGET_WASM)
+    // On wasm, we store the simd element size in the upper 7 bits of the instruction info.
+    // The lower bit is reserved as an FP flag.
+    static constexpr unsigned InstInfoElemSizeShift = 1;
+    static uint8_t            instSimdElemSize(instruction ins);
+#endif
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
 public:
@@ -640,8 +652,15 @@ public:
             const LclVarDsc* varDsc, var_types type, regNumber baseReg, int offset, bool isFramePointerUsed);
     };
 
+    struct EmittedCallReturnInfo
+    {
+        IL_OFFSET    callILOffset;
+        emitLocation returnLocation;
+        siVarLoc     returnValueLoc;
+    };
+
 public:
-    siVarLoc getSiVarLoc(const LclVarDsc* varDsc, unsigned int stackLevel) const;
+    siVarLoc getSiVarLoc(const LclVarDsc* varDsc, int offset, int stackLevel) const;
 
 #ifdef DEBUG
     void dumpSiVarLoc(const siVarLoc* varLoc) const;
@@ -851,6 +870,8 @@ public:
 
 protected:
     VariableLiveKeeper* varLiveKeeper; // Used to manage VariableLiveRanges of variables
+
+    jitstd::vector<EmittedCallReturnInfo>* emittedCallReturnInfo;
 
 #ifdef LATE_DISASM
 public:

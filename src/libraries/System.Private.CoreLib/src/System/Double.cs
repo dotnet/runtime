@@ -721,10 +721,27 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
         int IFloatingPoint<double>.GetSignificandBitLength() => 53;
 
+        internal bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt16BigEndian(destination, Exponent))
+            {
+                bytesWritten = sizeof(short);
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteInt16BigEndian(destination, Exponent))
+            return TryWriteExponentBigEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt16LittleEndian(destination, Exponent))
             {
                 bytesWritten = sizeof(short);
                 return true;
@@ -737,9 +754,14 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteInt16LittleEndian(destination, Exponent))
+            return TryWriteExponentLittleEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Significand))
             {
-                bytesWritten = sizeof(short);
+                bytesWritten = sizeof(ulong);
                 return true;
             }
 
@@ -750,7 +772,12 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Significand))
+            return TryWriteSignificandBigEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Significand))
             {
                 bytesWritten = sizeof(ulong);
                 return true;
@@ -763,14 +790,7 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Significand))
-            {
-                bytesWritten = sizeof(ulong);
-                return true;
-            }
-
-            bytesWritten = 0;
-            return false;
+            return TryWriteSignificandLittleEndian(destination, out bytesWritten);
         }
 
         //

@@ -498,8 +498,6 @@ bool Compiler::gsCreateShadowingLocals()
         shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
         shadowVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
-        // The old variable will not be used in handlers anymore, allow it to stay enregistered
-        varDsc->lvLiveInOutOfHndlr = false;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
         shadowVarDsc->SetDefinedViaAddress(varDsc->IsDefinedViaAddress());

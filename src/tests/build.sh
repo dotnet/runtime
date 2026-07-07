@@ -136,6 +136,14 @@ build_Tests()
 usage_list=()
 usage_list+=("All arguments are optional and the '-' prefix is optional. The options are:")
 usage_list+=("")
+usage_list+=("Build target OS: Use '-os <value>' (handled by the common build framework) to specify the")
+usage_list+=("    target OS. Common values: linux (default on Linux), osx (default on macOS), android,")
+usage_list+=("    ios, iossimulator, tvos, tvossimulator, maccatalyst, browser, wasi.")
+usage_list+=("    For mobile/device targets (android, ios, iossimulator, tvos, tvossimulator), this script")
+usage_list+=("    automatically skips building native test components.")
+usage_list+=("-browser - Shorthand for '-os browser' (also sets architecture to wasm).")
+usage_list+=("-wasi - Shorthand for '-os wasi' (also sets architecture to wasm).")
+usage_list+=("")
 usage_list+=("-rebuild - Clean up all test artifacts prior to building tests.")
 usage_list+=("-skiprestorepackages - Skip package restore.")
 usage_list+=("-skipmanaged - Skip the managed tests build.")
@@ -151,15 +159,17 @@ usage_list+=("-nativeaot - Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1 - Include priority=1 tests in the build.")
 usage_list+=("-perfmap - Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
 usage_list+=("-allTargets - Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
+usage_list+=("-use-bootstrap - Use artifacts produced by the bootstrap subset for local targeting, runtime, and apphost packs.")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
 usage_list+=("-mono, -excludemonofailures - Build the tests for the Mono runtime honoring mono-specific issues.")
+usage_list+=("-coreclr - Build tests targeting the CoreCLR runtime (default; opposite of -mono/-excludemonofailures).")
 usage_list+=("-mono_aot - Use Mono AOT mode.")
 usage_list+=("-mono_fullaot - Use Mono Full AOT mode.")
 usage_list+=("")
-usage_list+=("-test:xxx - Only build the specified test project ^(relative or absolute project path under src\tests^).");
-usage_list+=("-dir:xxx - Build all test projects in the given directory ^(relative or absolute directory under src\tests^).");
-usage_list+=("-tree:xxx - Build all test projects in the given subtree ^(relative or absolute directory under src\tests^).");
+usage_list+=("-test:xxx - Only build the specified test project (relative or absolute project path under src/tests).")
+usage_list+=("-dir:xxx - Build all test projects in the given directory (relative or absolute directory under src/tests).")
+usage_list+=("-tree:xxx - Build all test projects in the given subtree (relative or absolute directory under src/tests).")
 usage_list+=("-log:xxx - Base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step).")
 usage_list+=("")
 usage_list+=("Any unrecognized arguments will be passed directly to MSBuild.")
@@ -216,6 +226,10 @@ handle_arguments_local() {
 
         alltargets|-alltargets)
             __UnprocessedBuildArgs+=("/p:CLRTestBuildAllTargets=allTargets")
+            ;;
+
+        use-bootstrap|-use-bootstrap)
+            __UnprocessedBuildArgs+=("/p:UseBootstrap=true")
             ;;
 
         rebuild|-rebuild)
@@ -291,6 +305,16 @@ handle_arguments_local() {
             __Mono=0
             __MonoAot=0
             __MonoFullAot=0
+            ;;
+
+        browser|-browser)
+            __TargetOS=browser
+            __TargetArch=wasm
+            ;;
+
+        wasi|-wasi)
+            __TargetOS=wasi
+            __TargetArch=wasm
             ;;
 
         log*|-log*)
@@ -373,7 +397,7 @@ fi
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
-if [[ "$platform" == "freebsd" ]]; then
+if [[ "$platform" == "freebsd" || "$platform" == "openbsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"

@@ -1242,39 +1242,6 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
         return res;
     }
 
-    // invocationList is not null, so it can be one of the following:
-    // Multicast, Static closed (special sig), Secure
-
-    // rule out the static with special sig
-    BYTE *pbCount = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationCount());
-    if (pbCount == NULL)
-    {
-        // it's a static closed, the target lives in _methodAuxPtr
-        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
-
-        if (*ppbDest == NULL)
-        {
-            // it's not looking good, bail out
-            LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: can't trace into it\n"));
-            return FALSE;
-        }
-
-        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: ppbDest: %p *ppbDest:%p\n", ppbDest, *ppbDest));
-
-        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
-
-        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %d, result type: %d\n", (res ? "true" : "false"), trace->GetTraceType()));
-
-        return res;
-    }
-
-    MethodTable *pType = *(MethodTable**)pbDelInvocationList;
-    if (pType->IsDelegate())
-    {
-        // this is a secure delegate. The target is hidden inside this field, so recurse.
-        return TraceDelegateObject(pbDelInvocationList, trace);
-    }
-
     // Otherwise, we're going for the first invoke of the multi case.
     // In order to go to the correct spot, we have just have to fish out
     // slot 0 of the invocation list, and figure out where that's going to,
@@ -1466,7 +1433,6 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     switch (GetStubKind(stubStartAddress))
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
-    case STUB_CODE_BLOCK_STUBLINK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef FEATURE_TIERED_COMPILATION
     case STUB_CODE_BLOCK_CALLCOUNTING:
@@ -1507,9 +1473,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
         return TRUE;
     }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
-
-    case STUB_CODE_BLOCK_STUBLINK:
-        return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 #ifdef FEATURE_TIERED_COMPILATION
     case STUB_CODE_BLOCK_CALLCOUNTING:
     {
@@ -1550,10 +1513,6 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
-
-    case STUB_CODE_BLOCK_STUBLINK:
-        return W("StubLinkStub");
-
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
 #ifdef FEATURE_TIERED_COMPILATION

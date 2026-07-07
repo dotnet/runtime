@@ -515,8 +515,4 @@ __inline BOOL IsOwnerOfCrst(LPVOID lock)
 #endif
 }
 
-#ifdef TEST_DATA_CONSISTENCY
-// used for test purposes. Determines if a crst is held.
-void DebugTryCrst(CrstBase * pLock);
-#endif
 #endif // __crst_h__

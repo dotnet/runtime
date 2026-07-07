@@ -34,13 +34,8 @@ public:
     static void Init();
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
-    static PCODE GetWrapperInvoke(MethodDesc* pMD);
-    // determines where the delegate needs to be wrapped for non-security reason
-    static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
-    // on entry delegate points to the delegate to wrap
-    static DELEGATEREF CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD);
+    FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
 
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
@@ -60,16 +55,11 @@ public:
     // Decides if pcls derives from Delegate.
     static BOOL IsDelegate(MethodTable *pMT);
 
-    // Decides if this is a wrapper delegate
-    static BOOL IsWrapperDelegate(DELEGATEREF dRef);
-
     // Get the cpu stub for a delegate invoke.
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
     static MethodDesc* GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate);
-    static OBJECTREF GetTargetObject(OBJECTREF obj);
-
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
 
     // Throw if the method violates any usage restrictions

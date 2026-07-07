@@ -1175,19 +1175,8 @@ namespace System
         {
             if (destination.Length >= (sizeof(uint) + sizeof(ulong)))
             {
-                uint hi32 = _hi32;
-                ulong lo64 = _lo64;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
-                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, hi32);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(uint)), lo64);
+                BinaryPrimitives.WriteUInt32BigEndian(destination, _hi32);
+                BinaryPrimitives.WriteUInt64BigEndian(destination.Slice(sizeof(uint)), _lo64);
 
                 bytesWritten = sizeof(uint) + sizeof(ulong);
                 return true;
@@ -1204,19 +1193,8 @@ namespace System
         {
             if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
             {
-                ulong lo64 = _lo64;
-                uint hi32 = _hi32;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
-                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, lo64);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), hi32);
+                BinaryPrimitives.WriteUInt64LittleEndian(destination, _lo64);
+                BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(sizeof(ulong)), _hi32);
 
                 bytesWritten = sizeof(ulong) + sizeof(uint);
                 return true;

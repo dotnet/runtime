@@ -16,6 +16,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "jitstd/algorithm.h"
+#ifdef TARGET_WASM
+#include "fgwasm.h" // for WasmInterval, used in CanRemoveJumpToNext
+#endif
 
 #if MEASURE_BLOCK_SIZE
 /* static  */
@@ -404,7 +407,27 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !IsLastHotBlock(compiler);
+    if (!JumpsToNext() || IsLastHotBlock(compiler))
+    {
+        return false;
+    }
+#ifdef TARGET_WASM
+    // Fall-through across a Try/ExnRefWrapper end injects an `unreachable`
+    // or an exnref `local.set` that would trap or fail validation.
+    //
+    if (compiler->fgWasmIntervals != nullptr)
+    {
+        unsigned const targetIndex = GetTarget()->bbPreorderNum;
+        for (WasmInterval* const interval : *compiler->fgWasmIntervals)
+        {
+            if ((interval->IsTry() || interval->IsExnRefWrapper()) && (interval->End() == targetIndex))
+            {
+                return false;
+            }
+        }
+    }
+#endif
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -506,7 +529,7 @@ void BasicBlock::dspFlags() const
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
         {BBF_BACKWARD_JUMP_SOURCE, "bwd-src"},
-        {BBF_PATCHPOINT, "ppoint"},
+        {BBF_OSR_PATCHPOINT, "osr-ppoint"},
         {BBF_PARTIAL_COMPILATION_PATCHPOINT, "pc-ppoint"},
         {BBF_HAS_HISTOGRAM_PROFILE, "hist"},
         {BBF_TAILCALL_SUCCESSOR, "tail-succ"},

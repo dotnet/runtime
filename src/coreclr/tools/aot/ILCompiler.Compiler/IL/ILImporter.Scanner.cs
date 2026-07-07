@@ -3,6 +3,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
@@ -69,7 +70,9 @@ namespace Internal.IL
         private DependencyList _dependencies;
         private BasicBlock _lateBasicBlocks;
 
+        private int _prevMatchedAwaitTailCallRetPostOffset;
         private bool _asyncDependenciesReported;
+        private bool _wrappingAwaitReported;
 
         private sealed class ExceptionRegion
         {
@@ -179,7 +182,7 @@ namespace Internal.IL
                 }
             }
 
-            if (_canonMethod.IsAsyncCall())
+            if (_canonMethod.RequiresSaveRestoreOfAsyncContexts())
             {
                 const string reason = "Async state machine";
                 DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
@@ -205,6 +208,18 @@ namespace Internal.IL
             CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref conditionalDependencies, _factory, _canonMethod);
 
             return (_unconditionalDependencies, conditionalDependencies);
+        }
+
+        private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, TypeDesc type)
+        {
+            _compilation.TypeSystemContext.EnsureLoadableType(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            return GetGenericLookupHelper(helperId, (object)type);
+        }
+
+        private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, MethodDesc method)
+        {
+            _compilation.TypeSystemContext.EnsureLoadableMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            return GetGenericLookupHelper(helperId, (object)method);
         }
 
         private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, object helperArgument)
@@ -341,12 +356,7 @@ namespace Internal.IL
             //    call       <Await>
 
             // Find where this basic block ends
-            int nextBBOffset = _currentOffset;
-            while (nextBBOffset < _basicBlocks.Length && _basicBlocks[nextBBOffset] == null)
-                nextBBOffset++;
-
-            // Create ILReader for what's left in the basic block
-            var reader = new ILReader(new ReadOnlySpan<byte>(_ilBytes, _currentOffset, nextBBOffset - _currentOffset));
+            ILReader reader = GetRemainingBlockIL();
 
             if (!reader.HasNext)
                 return false;
@@ -413,6 +423,34 @@ namespace Internal.IL
                 && IsAsyncHelpersAwait((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
         }
 
+        private ILReader GetRemainingBlockIL()
+        {
+            int nextBBOffset = _currentOffset;
+            while (nextBBOffset < _basicBlocks.Length && _basicBlocks[nextBBOffset] == null)
+                nextBBOffset++;
+
+            // Create ILReader for what's left in the basic block
+            return new ILReader(new ReadOnlySpan<byte>(_ilBytes, _currentOffset, nextBBOffset - _currentOffset));
+        }
+
+        private bool MatchTailCallAwait(MethodDesc method)
+        {
+            // Create ILReader for what's left in the basic block
+            var reader = GetRemainingBlockIL();
+
+            if (!reader.HasNext)
+                return false;
+
+            ILOpcode opcode = reader.ReadILOpcode();
+            if (opcode == ILOpcode.ret && method.Signature.ReturnsTaskOrValueTask())
+            {
+                _prevMatchedAwaitTailCallRetPostOffset = _currentOffset + reader.Offset;
+                return true;
+            }
+
+            return false;
+        }
+
         private void ImportCall(ILOpcode opcode, int token)
         {
             // We get both the canonical and runtime determined form - JitInterface mostly operates
@@ -432,6 +470,40 @@ namespace Internal.IL
                 return;
             }
 
+            // Are we scanning a call within a state machine?
+            if (opcode is ILOpcode.call or ILOpcode.callvirt && _canonMethod.IsAsyncCall())
+            {
+                // If this is the task await pattern, the JIT will first resolve the call to the
+                // async variant, then may switch back to the original if the async variant is just
+                // a thunk (for non-runtime-async methods). Report both variants as dependencies such
+                // that the JIT can pick either one.
+
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+                if (allowAsyncVariant && (_canonMethod.SupportsAsyncVersionCodegen() ? MatchTailCallAwait(method) : MatchTaskAwaitPattern()))
+                {
+                    MethodDesc asyncVariantMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                    MethodDesc asyncVariantRuntimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                    ImportCall(opcode, asyncVariantMethod, asyncVariantRuntimeDeterminedMethod);
+                }
+            }
+
+            ImportCall(opcode, method, runtimeDeterminedMethod);
+        }
+
+        private void ImportCall(ILOpcode opcode, MethodDesc method, MethodDesc runtimeDeterminedMethod)
+        {
+            // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
+            if (!_asyncDependenciesReported && _canonMethod.IsAsyncCall() && method.IsAsyncCall())
+            {
+                RegisterDependenciesOnAsyncCall();
+            }
+
             string reason = null;
             switch (opcode)
             {
@@ -447,48 +519,6 @@ namespace Internal.IL
                     reason = "ldvirtftn"; break;
                 default:
                     Debug.Assert(false); break;
-            }
-
-            // Are we scanning a call within a state machine?
-            if (opcode is ILOpcode.call or ILOpcode.callvirt
-                && _canonMethod.IsAsyncCall())
-            {
-                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
-                if (!_asyncDependenciesReported && method.IsAsync)
-                {
-                    _asyncDependenciesReported = true;
-
-                    const string asyncReason = "Async state machine";
-
-                    AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
-
-                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
-
-                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
-                }
-
-                // If this is the task await pattern, we're actually going to call the variant
-                // so switch our focus to the variant.
-
-                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-                // we cannot resolve to an Async variant in such case.
-                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
-
-                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-                if (allowAsyncVariant && MatchTaskAwaitPattern())
-                {
-                    runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
-                    method = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
-                }
             }
 
             if (opcode == ILOpcode.newobj)
@@ -526,7 +556,7 @@ namespace Internal.IL
                 }
             }
 
-            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8) &&
+            if (method.OwningType.IsDelegate && method.Name == "Invoke"u8 &&
                 opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn)
             {
                 // This call is expanded as an intrinsic; it's not an actual function call.
@@ -621,7 +651,7 @@ namespace Internal.IL
                     // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
                     // We can't do this for any other method since ToString and Equals have different semantics for enums
                     // and their underlying type.
-                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    if (method.OwningType.IsObject && method.Name == "GetHashCode"u8)
                     {
                         constrained = constrained.UnderlyingType;
                     }
@@ -944,6 +974,28 @@ namespace Internal.IL
             }
         }
 
+        private void RegisterDependenciesOnAsyncCall()
+        {
+            Debug.Assert(!_asyncDependenciesReported);
+            _asyncDependenciesReported = true;
+
+            const string asyncReason = "Async state machine";
+
+            AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
+
+            _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
+
+            DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+            _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
+        }
+
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
             ImportCall(opCode, token);
@@ -1145,7 +1197,7 @@ namespace Internal.IL
                 {
                     if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                     {
-                        Debug.Assert(_methodIL.OwningMethod.Name.SequenceEqual("GetCanonType"u8));
+                        Debug.Assert(_methodIL.OwningMethod.Name == "GetCanonType"u8);
                         helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                     }
 
@@ -1614,14 +1666,19 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
+        private static void ReportInvalidExceptionRegion()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
         private static bool IsTypeGetTypeFromHandle(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("GetTypeFromHandle"u8))
+            if (method.IsIntrinsic && method.Name == "GetTypeFromHandle"u8)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name.SequenceEqual("Type"u8) && owningType.Namespace.SequenceEqual("System"u8);
+                    return owningType.Name == "Type"u8 && owningType.Namespace == "System"u8;
                 }
             }
 
@@ -1630,12 +1687,12 @@ namespace Internal.IL
 
         private static bool IsActivatorDefaultConstructorOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("DefaultConstructorOf"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "DefaultConstructorOf"u8 && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name.SequenceEqual("Activator"u8) && owningType.Namespace.SequenceEqual("System"u8);
+                    return owningType.Name == "Activator"u8 && owningType.Namespace == "System"u8;
                 }
             }
 
@@ -1644,12 +1701,12 @@ namespace Internal.IL
 
         private static bool IsActivatorAllocatorOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("AllocatorOf"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "AllocatorOf"u8 && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name.SequenceEqual("Activator"u8) && owningType.Namespace.SequenceEqual("System"u8);
+                    return owningType.Name == "Activator"u8 && owningType.Namespace == "System"u8;
                 }
             }
 
@@ -1658,12 +1715,12 @@ namespace Internal.IL
 
         private static bool IsEETypePtrOf(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("Of"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "Of"u8 && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name.SequenceEqual("MethodTable"u8) && owningType.Namespace.SequenceEqual("Internal.Runtime"u8);
+                    return owningType.Name == "MethodTable"u8 && owningType.Namespace == "Internal.Runtime"u8;
                 }
             }
 
@@ -1672,12 +1729,12 @@ namespace Internal.IL
 
         private static bool IsRuntimeHelpersIsReferenceOrContainsReferences(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("IsReferenceOrContainsReferences"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "IsReferenceOrContainsReferences"u8 && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name.SequenceEqual("RuntimeHelpers"u8) && owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
+                    return owningType.Name == "RuntimeHelpers"u8 && owningType.Namespace == "System.Runtime.CompilerServices"u8;
                 }
             }
 
@@ -1686,12 +1743,12 @@ namespace Internal.IL
 
         private static bool IsMemoryMarshalGetArrayDataReference(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("GetArrayDataReference"u8) && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "GetArrayDataReference"u8 && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    return owningType.Name.SequenceEqual("MemoryMarshal"u8) && owningType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8);
+                    return owningType.Name == "MemoryMarshal"u8 && owningType.Namespace == "System.Runtime.InteropServices"u8;
                 }
             }
 
@@ -1700,14 +1757,14 @@ namespace Internal.IL
 
         private static bool IsAsyncHelpersAwait(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("Await"u8))
+            if (method.IsIntrinsic && method.Name == "Await"u8)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
                     return owningType.Module == method.Context.SystemModule
-                        && owningType.Name.SequenceEqual("AsyncHelpers"u8)
-                        && owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
+                        && owningType.Name == "AsyncHelpers"u8
+                        && owningType.Namespace == "System.Runtime.CompilerServices"u8;
                 }
             }
 
@@ -1716,18 +1773,18 @@ namespace Internal.IL
 
         private static bool IsTaskConfigureAwait(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name.SequenceEqual("ConfigureAwait"u8))
+            if (method.IsIntrinsic && method.Name == "ConfigureAwait"u8)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
                 {
-                    ReadOnlySpan<byte> typeName = owningType.Name;
+                    Utf8Span typeName = owningType.Name;
                     return owningType.Module == method.Context.SystemModule
-                        && owningType.Namespace.SequenceEqual("System.Threading.Tasks"u8)
-                        && (typeName.SequenceEqual("Task"u8)
-                            || typeName.SequenceEqual("Task`1"u8)
-                            || typeName.SequenceEqual("ValueTask"u8)
-                            || typeName.SequenceEqual("ValueTask`1"u8));
+                        && owningType.Namespace == "System.Threading.Tasks"u8
+                        && (typeName == "Task"u8
+                            || typeName == "Task`1"u8
+                            || typeName == "ValueTask"u8
+                            || typeName == "ValueTask`1"u8);
                 }
             }
 
@@ -1739,6 +1796,69 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
+        private void ImportReturn()
+        {
+            if (_wrappingAwaitReported || !_canonMethod.SupportsAsyncVersionCodegen() || _prevMatchedAwaitTailCallRetPostOffset == _currentOffset)
+            {
+                return;
+            }
+
+            _wrappingAwaitReported = true;
+
+            MethodDesc taskReturningMethod = _canonMethod.GetTargetOfAsyncVariant();
+            TypeDesc taskReturnType = taskReturningMethod.Signature.ReturnType;
+            bool isValueTask = taskReturnType.IsValueType;
+
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+            MethodDesc runtimeDeterminedCaller = _canonMethod.GetSharedRuntimeFormMethodTarget();
+
+            TypeDesc returnType = runtimeDeterminedCaller.Signature.ReturnType;
+            MethodDesc runtimeDeterminedResult;
+            if (returnType.IsVoid)
+            {
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Void), [parameterType]);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature);
+            }
+            else
+            {
+                TypeDesc signatureVariable = context.GetSignatureVariable(0, method: true);
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(signatureVariable)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(signatureVariable);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 1, signatureVariable, [parameterType]);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature).MakeInstantiatedMethod(returnType);
+            }
+
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            const string reason = "Wrapped Task return";
+
+            if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
+            {
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedResult), reason);
+                _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
+            }
+            else
+            {
+                if (targetMethod.RequiresInstArg())
+                {
+                    _dependencies.Add(_compilation.NodeFactory.MethodGenericDictionary(runtimeDeterminedResult), reason);
+                }
+
+                _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
+            }
+
+            if (!_asyncDependenciesReported)
+            {
+                RegisterDependenciesOnAsyncCall();
+            }
+        }
+
         private static void ImportNop() { }
         private static void ImportBreak() { }
         private static void ImportLoadVar(int index, bool argument) { }
@@ -1747,7 +1867,6 @@ namespace Internal.IL
         private static void ImportDup() { }
         private static void ImportPop() { }
         private static void ImportLoadNull() { }
-        private static void ImportReturn() { }
         private static void ImportLoadInt(long value, StackValueKind kind) { }
         private static void ImportLoadFloat(double value) { }
         private static void ImportLoadIndirect(int token) { }

@@ -198,7 +198,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ThreadInfo from the data read from a /proc/pid/lwp/lwpsinfo file.
         /// </summary>
-        internal static ThreadInfo CreateThreadInfo(ref Interop.procfs.ProcessInfo processInfo,
+        internal static unsafe ThreadInfo CreateThreadInfo(ref Interop.procfs.ProcessInfo processInfo,
                                                      ref Interop.procfs.ThreadInfo threadInfo)
         {
 

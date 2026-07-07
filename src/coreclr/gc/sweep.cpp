@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 #ifdef FEATURE_BASICFREEZE
 
 inline
@@ -442,7 +452,7 @@ void gc_heap::clear_unused_array (uint8_t* x, size_t size)
 
 void gc_heap::reset_memory (uint8_t* o, size_t sizeo)
 {
-    if (gc_heap::use_large_pages_p)
+    if (gc_heap::never_decommit_p)
         return;
 
     if (sizeo > 128 * 1024)
@@ -601,4 +611,6 @@ void gc_heap::sweep_uoh_objects (int gen_num)
 
     _ASSERTE(generation_allocation_segment(gen) != NULL);
 }
+
+} // namespace WKS/SVR
 
