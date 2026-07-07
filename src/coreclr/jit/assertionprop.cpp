@@ -5622,13 +5622,13 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
 
                     if (curAssertion.GetOp1().GetVN() == vnCurLen && curAssertion.GetOp2().GetVN() == idxOp1)
                     {
-                        if (curAssertion.KindIs(OAK_GT))
+                        if (curAssertion.KindIs(OAK_GT_UN))
                         {
                             // when length > index, length % index has the range [0..length - 1]
                             return dropBoundsCheck(INDEBUG(
                                 "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and a.Length > X"));
                         }
-                        else if (curAssertion.KindIs(OAK_GE))
+                        else if (curAssertion.KindIs(OAK_GE_UN))
                         {
                             // when length >= index, length % index has the range [0..length - 1]
                             return dropBoundsCheck(INDEBUG(
@@ -5637,13 +5637,13 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
                     }
                     else if (curAssertion.GetOp1().GetVN() == idxOp1 && curAssertion.GetOp2().GetVN() == vnCurLen)
                     {
-                        if (curAssertion.KindIs(OAK_LT))
+                        if (curAssertion.KindIs(OAK_LT_UN))
                         {
                             // when index < length, length % index has the range [0..length - 1]
                             return dropBoundsCheck(INDEBUG(
                                 "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and X < a.Length"));
                         }
-                        else if (curAssertion.KindIs(OAK_LE))
+                        else if (curAssertion.KindIs(OAK_LE_UN))
                         {
                             // when index <= length, length % index has the range [0..length - 1]
                             return dropBoundsCheck(INDEBUG(
