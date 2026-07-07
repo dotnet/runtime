@@ -16,7 +16,6 @@ namespace System.Net.Http
     {
         private readonly HttpContent _originalContent;
         private readonly Func<Stream, Stream> _createCompressionStream;
-        private bool _contentConsumed;
 
         public CompressedContentCore(HttpContent originalContent, Func<Stream, Stream> createCompressionStream)
         {
@@ -41,16 +40,12 @@ namespace System.Net.Http
 
         public void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            ThrowIfContentConsumed();
-
             using Stream compressionStream = _createCompressionStream(stream);
             _originalContent.CopyTo(compressionStream, context, cancellationToken);
         }
 
         public async Task SerializeToStreamAsync(Stream stream, CancellationToken cancellationToken)
         {
-            ThrowIfContentConsumed();
-
             Stream compressionStream = _createCompressionStream(stream);
             await using (compressionStream.ConfigureAwait(false))
             {
@@ -59,15 +54,5 @@ namespace System.Net.Http
         }
 
         public void Dispose() => _originalContent.Dispose();
-
-        private void ThrowIfContentConsumed()
-        {
-            if (_contentConsumed)
-            {
-                throw new InvalidOperationException(SR.net_http_content_stream_already_read);
-            }
-
-            _contentConsumed = true;
-        }
     }
 }
