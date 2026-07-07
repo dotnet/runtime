@@ -130,7 +130,6 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "\"test\r\n test\"@mail.com" };
             yield return new object[] { "testuser@[mail\u3069.com]" }; // No unicode allowed in square brackets
             yield return new object[] { "invalid@unicode\uD800.com" }; // D800 is a high surrogate
-            yield return new object[] { "invalid@unicode\uD800.com" }; // D800 is a high surrogate
             yield return new object[] { "invalid\uD800@unicode.com" }; // D800 is a high surrogate
             yield return new object[] { "\uD800 invalid@unicode.com" }; // D800 is a high surrogate
             yield return new object[] { null };

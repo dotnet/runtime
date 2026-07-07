@@ -70,17 +70,20 @@ namespace System.Net.Mail
             Debug.Assert(index >= 0 && index < data.Length, $"Index out of range: {index}, {data.Length}");
 
             // Reverse parsing starts from the last character of the input in the public entry points.
-            // Only scan for CR/LF on that initial reverse-parse call to avoid repeated O(n) scans
-            // when parsing multiple addresses from the same string.
-            if (index == data.Length - 1 && MailBnfHelper.HasCROrLF(data))
+            // ParseMultipleAddresses decrements index after each parsed address, so only this initial
+            // reverse-parse call performs the O(n) CR/LF scan for the full input string.
+            if (index == data.Length - 1)
             {
-                if (throwExceptionIfFail)
+                if (MailBnfHelper.HasCROrLF(data))
                 {
-                    throw new FormatException(SR.MailAddressInvalidFormat);
-                }
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.MailAddressInvalidFormat);
+                    }
 
-                parseAddressInfo = default;
-                return false;
+                    parseAddressInfo = default;
+                    return false;
+                }
             }
 
             // Parsed components to be assembled as a MailAddress later
