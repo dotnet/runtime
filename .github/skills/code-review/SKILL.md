@@ -114,7 +114,7 @@ When presenting the final review (whether as a PR comment or as output to the us
 ### Structure
 
 ```
-## Copilot Code Review
+## Holistic Runtime Review
 
 ### Holistic Assessment
 
