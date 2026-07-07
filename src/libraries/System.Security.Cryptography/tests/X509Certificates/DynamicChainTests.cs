@@ -1156,7 +1156,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
-                        yield return ChainPolicyTestCase.Build(
+                    yield return ChainPolicyTestCase.Build(
                         caseId++,
                         keys,
                         rootInhibitMapping,
@@ -1176,7 +1176,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
-                        yield return ChainPolicyTestCase.Build(
+                    yield return ChainPolicyTestCase.Build(
                         caseId++,
                         keys,
                         rootInhibitMapping,
@@ -1196,7 +1196,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // the mapping was disallowed (inhibit<2).
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
-                        yield return ChainPolicyTestCase.Build(
+                    yield return ChainPolicyTestCase.Build(
                         caseId++,
                         keys,
                         rootInhibitMapping,
