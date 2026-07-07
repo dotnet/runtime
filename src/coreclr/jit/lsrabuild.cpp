@@ -3102,37 +3102,12 @@ GenTree* LinearScan::getConsumingNode(GenTree* node)
 //
 Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
 {
-    if (!enregisterLocalVars || !m_compiler->opts.OptimizationEnabled())
-    {
-        return nullptr;
-    }
-
-    bool canHandle = false;
-
-    if (tree->OperIs(GT_CNS_DBL))
-    {
-        canHandle = true;
-    }
-#if defined(FEATURE_HW_INTRINSICS)
-    else if (tree->OperIs(GT_CNS_VEC))
-    {
-        canHandle = true;
-    }
-#endif
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-    else if (tree->OperIs(GT_CNS_MSK))
-    {
-        canHandle = true;
-    }
-#endif
-
-    if (!canHandle)
-    {
-        return nullptr;
-    }
+    assert(m_compiler->opts.OptimizationEnabled());
+    assert(!tree->IsMultiRegNode());
+    assert(tree->IsCnsFltOrDbl() || tree->IsCnsVec() || tree->IsCnsMsk());
 
     // Only coalesce a plain, single-register definition that feeds a parent use.
-    if (tree->IsMultiRegNode() || tree->IsUnusedValue() || (tree->GetRegNum() != REG_NA))
+    if (!enregisterLocalVars || tree->IsUnusedValue() || (tree->GetRegNum() != REG_NA))
     {
         return nullptr;
     }
@@ -3239,17 +3214,27 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         type = tree->GetRegTypeByIndex(multiRegIdx);
     }
 
+    Interval* interval = nullptr;
+
     if (!varTypeUsesIntReg(type))
     {
         m_compiler->compFloatingPointUsed = true;
         needToKillFloatRegs               = true;
+
+        if (m_compiler->opts.OptimizationEnabled())
+        {
+            if (tree->IsCnsFltOrDbl() || tree->IsCnsVec() || tree->IsCnsMsk())
+            {
+                interval = getConstantIntervalForReuse(tree);
+            }
+        }
     }
 
-    Interval* interval = getConstantIntervalForReuse(tree);
     if (interval == nullptr)
     {
         interval = newInterval(type);
     }
+
     if (tree->GetRegNum() != REG_NA)
     {
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
@@ -3273,6 +3258,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         assert(dstCandidates != RBM_NONE);
     }
 #endif // TARGET_X86
+
     if (pendingDelayFree)
     {
         interval->hasInterferingUses = true;
