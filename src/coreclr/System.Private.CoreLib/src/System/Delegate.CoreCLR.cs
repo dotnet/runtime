@@ -452,7 +452,7 @@ namespace System
                 // Note the use of Unsafe.As on method. This is not a generally safe operation, but we require in CoreCLR that
                 // all implementors of IRuntimeMethodInfo have the same offset for the m_value field, so this is safe in this context.
                 ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
-                    Unsafe.As<RuntimeMethodInfoStub>(method).m_value, new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+                    IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
             }
 
             if (ret)
@@ -477,7 +477,7 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, nint method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
+        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private static MulticastDelegate InternalAlloc(RuntimeType type)
         {
