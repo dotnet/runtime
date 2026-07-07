@@ -115,7 +115,9 @@ add_library(Runtime.WorkstationGC STATIC
     ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
     ${RUNTIME_ARCH_ASM_OBJECTS}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>)
-add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+endif()
 target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor)
 
 add_library(Runtime.ServerGC STATIC
@@ -125,7 +127,9 @@ add_library(Runtime.ServerGC STATIC
     ${RUNTIME_ARCH_ASM_OBJECTS}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>
     $<TARGET_OBJECTS:Runtime.GC.Server>)
-add_dependencies(Runtime.ServerGC aot_eventing_headers)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.ServerGC aot_eventing_headers)
+endif()
 target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor nativeaot_gc_svr_descriptor)
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 if(FEATURE_PERFTRACING)
