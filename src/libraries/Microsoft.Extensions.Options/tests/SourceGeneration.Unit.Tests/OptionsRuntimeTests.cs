@@ -512,6 +512,29 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
             ValidateOptionsResult syncResult = new SyncRootReusingNestedOptionsValidator().Validate("SyncRoot", syncOptions);
             Assert.True(syncResult.Succeeded);
+
+            // Finding 3 regression: AsyncNestedOptions self-validates asynchronously. The async root must run that
+            // nested async self-validation, while the synchronous root sharing the same nested model type must not.
+            // Keying synthesized validators by model type alone would let the async root reuse a synchronous-only
+            // child (depending on discovery order) and silently skip nested async self-validation.
+            AsyncOptions asyncSelfValidating = new()
+            {
+                Name = "Valid",
+                Age = 30,
+                Nested = new() { Level = 5, Id = "trigger-async", Children = new() { new AsyncChildOptions { Name = "C1" } } }
+            };
+
+            ValidateOptionsResult nestedAsyncResult = await new AsyncOptionsValidator().ValidateAsync("AsyncOptions", asyncSelfValidating, default);
+            Assert.True(nestedAsyncResult.Failed);
+            Assert.Contains("Nested async self-validation failed.", nestedAsyncResult.Failures);
+
+            SyncRootReusingNestedOptions syncSelfValidating = new()
+            {
+                Nested = new() { Level = 5, Id = "trigger-async", Children = new() { new AsyncChildOptions { Name = "C1" } } }
+            };
+
+            ValidateOptionsResult syncNestedResult = new SyncRootReusingNestedOptionsValidator().Validate("SyncRoot", syncSelfValidating);
+            Assert.True(syncNestedResult.Succeeded);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -752,7 +775,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
         public string? Name { get; set; }
     }
 
-    public class AsyncNestedOptions
+    public class AsyncNestedOptions : IAsyncValidatableObject
     {
         [Range(0, 10)]
         public int Level { get; set; }
@@ -762,6 +785,22 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
         [ValidateEnumeratedItems]
         public List<AsyncChildOptions>? Children { get; set; }
+
+        public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+            ValidationContext validationContext,
+            [global::System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            if (Id == "trigger-async")
+            {
+                yield return new ValidationResult("Nested async self-validation failed.");
+            }
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
     }
 
     public class AsyncOptions : IAsyncValidatableObject
@@ -801,10 +840,11 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     }
 
     // Regression: a synchronous validator that nests the same type (AsyncNestedOptions) as the async
-    // AsyncOptionsValidator. A synthesized child validator is cached by model type only, so the same
-    // AsyncNestedOptions validator is shared between the synchronous and asynchronous roots. This guards against the
-    // async root emitting "await child.ValidateAsync(...)" against a synthesized child that was generated without a
-    // ValidateAsync method; the whole test assembly failing to compile is the regression signal.
+    // AsyncOptionsValidator. Synthesized child validators are cached per model type and per capability
+    // (synchronous vs asynchronous), so the async root gets an async-capable child and the synchronous root gets a
+    // synchronous one regardless of discovery order. This guards against the async root emitting
+    // "await child.ValidateAsync(...)" against a synthesized child generated without a ValidateAsync method, and
+    // against the async root silently falling back to the synchronous child's Validate path.
     public class SyncRootReusingNestedOptions
     {
         [ValidateObjectMembers]

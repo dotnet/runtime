@@ -26,7 +26,12 @@ namespace Microsoft.Extensions.Options.Generators
         private readonly Action<Diagnostic> _reportDiagnostic;
         private readonly SymbolHolder _symbolHolder;
         private readonly OptionsSourceGenContext _optionsSourceGenContext;
-        private readonly Dictionary<ITypeSymbol, ValidatorType> _synthesizedValidators = new(SymbolEqualityComparer.Default);
+        // Synthesized validators are cached per model type. A model reached from a synchronous root and a model
+        // reached from an asynchronous root produce different generated types (the latter also emits ValidateAsync),
+        // so each model caches its synchronous and asynchronous validators separately. Keying by model type alone
+        // would let an asynchronous root reuse a synchronous-only validator (or vice versa) depending on discovery
+        // order, which would silently drop nested async validation.
+        private readonly Dictionary<ITypeSymbol, (ValidatorType? Sync, ValidatorType? Async)> _synthesizedValidators = new(SymbolEqualityComparer.Default);
         private readonly HashSet<ITypeSymbol> _visitedModelTypes = new(SymbolEqualityComparer.Default);
 
         public Parser(
@@ -157,7 +162,19 @@ namespace Microsoft.Extensions.Options.Generators
                 }
             }
 
-            results.AddRange(_synthesizedValidators.Values);
+            foreach (var entry in _synthesizedValidators.Values)
+            {
+                if (entry.Sync is not null)
+                {
+                    results.Add(entry.Sync);
+                }
+
+                if (entry.Async is not null)
+                {
+                    results.Add(entry.Async);
+                }
+            }
+
             _synthesizedValidators.Clear();
 
             if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
@@ -718,13 +735,13 @@ namespace Microsoft.Extensions.Options.Generators
                 mt = ((INamedTypeSymbol)mt).TypeArguments[0];
             }
 
-            if (_synthesizedValidators.TryGetValue(mt, out var validator))
+            _synthesizedValidators.TryGetValue(mt, out var cached);
+            ValidatorType? reusable = isAsync ? cached.Async : cached.Sync;
+            if (reusable is not null)
             {
-                // A synthesized validator is cached by model type only, so a validator synthesized for a synchronous
-                // parent may be reused by an asynchronous one. Report the capability of the cached validator (rather than
-                // the current request) so the caller only awaits a ValidateAsync method that will actually be emitted.
-                emitsAsync = validator.ModelsToValidate.Count > 0 && validator.ModelsToValidate[0].GenerateAsyncValidateMethod;
-                return "global::" + validator.Namespace + "." + validator.Name;
+                // A validator matching the requested capability was already synthesized for this model, so reuse it.
+                emitsAsync = isAsync;
+                return "global::" + (reusable.Namespace.Length > 0 ? reusable.Namespace + "." + reusable.Name : reusable.Name);
             }
 
             bool selfValidate = ModelSelfValidates(mt);
@@ -745,7 +762,9 @@ namespace Microsoft.Extensions.Options.Generators
                 isAsync,
                 membersToValidate);
 
-            var validatorTypeName = "__" + mt.Name + "Validator__";
+            // Asynchronous validators get a distinct name so a model reached from both a synchronous and an
+            // asynchronous root can emit two non-conflicting synthesized types. Synchronous naming is unchanged.
+            var validatorTypeName = "__" + mt.Name + (isAsync ? "AsyncValidator__" : "Validator__");
 
             var result = new ValidatorType(
                 mt.ContainingNamespace.IsGlobalNamespace ? string.Empty : mt.ContainingNamespace.ToString()!,
@@ -756,7 +775,7 @@ namespace Microsoft.Extensions.Options.Generators
                 true,
                 new[] { model });
 
-            _synthesizedValidators[mt] = result;
+            _synthesizedValidators[mt] = isAsync ? (cached.Sync, result) : (result, cached.Async);
             emitsAsync = isAsync;
             return "global::" + (result.Namespace.Length > 0 ? result.Namespace + "." + result.Name : result.Name);
         }
