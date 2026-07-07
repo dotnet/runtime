@@ -3163,6 +3163,21 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
         newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
 
+#if defined(TARGET_POWERPC64)
+        // Check if this is an HFA struct - if so, all fields should use the HFA element type
+        var_types hfaElementType = TYP_UNDEF;
+        if (layout != nullptr && arg->NewAbiInfo.HasAnyFloatingRegisterSegment())
+        {
+            CORINFO_CLASS_HANDLE classHnd = layout->GetClassHandle();
+            var_types hfaType;
+            unsigned hfaSlots;
+            if (IsPpc64leHfaLikeStruct(this, classHnd, &hfaType, &hfaSlots))
+            {
+                hfaElementType = hfaType;
+            }
+        }
+#endif
+
         for (unsigned i = 0; i < arg->NewAbiInfo.NumSegments; i++)
         {
             const ABIPassingSegment& seg = arg->NewAbiInfo.Segment(i);
@@ -3177,11 +3192,27 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             }
             else
             {
-                for (unsigned slotOffset = 0; slotOffset < seg.Size; slotOffset += TARGET_POINTER_SIZE)
+#if defined(TARGET_POWERPC64)
+                // For HFA structs on PPC64LE, stack segments should also use the HFA element type
+                if (hfaElementType != TYP_UNDEF)
                 {
-                    unsigned layoutOffset = seg.Offset + slotOffset;
-                    GenTree* access       = createSlotAccess(layoutOffset, TYP_UNDEF);
-                    newArg->AddField(this, access, layoutOffset, access->TypeGet());
+                    unsigned fieldSize = (hfaElementType == TYP_FLOAT) ? 4 : 8;
+                    for (unsigned slotOffset = 0; slotOffset < seg.Size; slotOffset += fieldSize)
+                    {
+                        unsigned layoutOffset = seg.Offset + slotOffset;
+                        GenTree* access       = createSlotAccess(layoutOffset, hfaElementType);
+                        newArg->AddField(this, access, layoutOffset, access->TypeGet());
+                    }
+                }
+                else
+#endif
+                {
+                    for (unsigned slotOffset = 0; slotOffset < seg.Size; slotOffset += TARGET_POINTER_SIZE)
+                    {
+                        unsigned layoutOffset = seg.Offset + slotOffset;
+                        GenTree* access       = createSlotAccess(layoutOffset, TYP_UNDEF);
+                        newArg->AddField(this, access, layoutOffset, access->TypeGet());
+                    }
                 }
             }
         }

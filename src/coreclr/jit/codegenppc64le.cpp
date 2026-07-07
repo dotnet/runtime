@@ -1284,11 +1284,65 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             firstRegToPlace = 0;
             valueReg        = treeNode->GetRegNumByIdx(0);
         }
-        else // we must have a GT_BLK
+        else if (source->OperIs(GT_BLK))
         {
             layout   = source->AsBlk()->GetLayout();
             addrReg  = genConsumeReg(source->AsBlk()->Addr());
             addrType = source->AsBlk()->Addr()->TypeGet();
+
+            // Check if this is an HFA struct from GT_BLK source
+            if (isHfaStruct)
+            {
+                CORINFO_CLASS_HANDLE classHnd = layout->GetClassHandle();
+                
+                var_types hfaType;
+                unsigned hfaSlots;
+                IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots);
+                
+                unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+                instruction loadIns = (hfaType == TYP_FLOAT) ? INS_lfs : INS_lfd;
+                instruction storeIns = (hfaType == TYP_FLOAT) ? INS_stfs : INS_stfd;
+                
+                JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - HFA struct from GT_BLK (type=%s, slots=%u, gtNumRegs=%u)\n",
+                       varTypeName(hfaType), hfaSlots, treeNode->gtNumRegs);
+                
+                // Load fields into registers
+                for (unsigned i = 0; i < treeNode->gtNumRegs; i++)
+                {
+                    regNumber targetReg = treeNode->GetRegNumByIdx(i);
+                    unsigned fieldOffset = i * fieldSize;
+                    
+                    GetEmitter()->emitIns_R_R_I(loadIns, emitActualTypeSize(hfaType), targetReg, addrReg, fieldOffset);
+                    
+                    JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - Loaded HFA field %d from [%s+%u] to %s\n",
+                           i, getRegName(addrReg), fieldOffset, getRegName(targetReg));
+                }
+                
+                // Store remaining fields to stack
+                unsigned stackFields = hfaSlots - treeNode->gtNumRegs;
+                if (stackFields > 0)
+                {
+                    unsigned argOffsetOut = treeNode->getArgOffset();
+                    
+                    // Use first target register as temporary (it's already been placed)
+                    regNumber tempReg = treeNode->GetRegNumByIdx(0);
+                    
+                    for (unsigned i = 0; i < stackFields; i++)
+                    {
+                        unsigned fieldOffset = (treeNode->gtNumRegs + i) * fieldSize;
+                        unsigned stackOffset = argOffsetOut + (i * fieldSize);
+                        
+                        GetEmitter()->emitIns_R_R_I(loadIns, emitActualTypeSize(hfaType), tempReg, addrReg, fieldOffset);
+                        GetEmitter()->emitIns_S_R(storeIns, emitActualTypeSize(hfaType), tempReg, varNumOut, stackOffset);
+                        
+                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - Stored HFA field %d from [%s+%u] to stack+%u\n",
+                               treeNode->gtNumRegs + i, getRegName(addrReg), fieldOffset, stackOffset);
+                    }
+                }
+                
+                genProduceReg(treeNode);
+                return;
+            }
 
             regNumber allocatedValueReg = REG_NA;
             if (treeNode->gtNumRegs == 1)
@@ -1329,6 +1383,116 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                     break;
                 }
             }
+        }
+        else if (source->OperIs(GT_FIELD_LIST))
+        {
+            // For FIELD_LIST sources (created by fgMorphMultiregStructArg), the fields are already
+            // loaded into registers. We just need to handle HFA structs specially.
+            if (isHfaStruct)
+            {
+                JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - HFA struct from GT_FIELD_LIST\n");
+                
+                // Get the FIELD_LIST
+                GenTreeFieldList* fieldList = source->AsFieldList();
+                
+                // Determine HFA element type from the first field
+                GenTreeFieldList::Use* firstUse = fieldList->Uses().GetHead();
+                var_types hfaType = firstUse->GetNode()->TypeGet();
+                assert(varTypeIsFloating(hfaType));
+                
+                unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+                instruction loadIns = (hfaType == TYP_FLOAT) ? INS_lfs : INS_lfd;
+                instruction storeIns = (hfaType == TYP_FLOAT) ? INS_stfs : INS_stfd;
+                
+                // Fields within gtNumRegs are already in registers.
+                // Fields beyond gtNumRegs need to be loaded from source and stored to stack.
+                unsigned fieldIndex = 0;
+                unsigned stackFieldIndex = 0;
+                unsigned argOffsetOut = treeNode->getArgOffset();
+                
+                // Count total fields first
+                unsigned totalFieldCount = 0;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    totalFieldCount++;
+                }
+                
+                // Find the source local variable to load stack fields from
+                GenTree* firstFieldNode = firstUse->GetNode();
+                unsigned srcLclNum = BAD_VAR_NUM;
+                if (firstFieldNode->OperIs(GT_LCL_FLD))
+                {
+                    srcLclNum = firstFieldNode->AsLclFld()->GetLclNum();
+                }
+                else if (firstFieldNode->OperIs(GT_LCL_VAR))
+                {
+                    srcLclNum = firstFieldNode->AsLclVar()->GetLclNum();
+                }
+                
+                // Get temp register if we have stack fields
+                regNumber tempReg = REG_NA;
+                if (totalFieldCount > treeNode->gtNumRegs && srcLclNum != BAD_VAR_NUM)
+                {
+                    tempReg = internalRegisters.GetSingle(treeNode, RBM_ALLFLOAT);
+                }
+                
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    GenTree* fieldNode = use.GetNode();
+                    
+                    if (fieldIndex >= treeNode->gtNumRegs)
+                    {
+                        // This field goes to stack
+                        unsigned stackOffset = argOffsetOut + (stackFieldIndex * fieldSize);
+                        
+                        // Load from source local variable and store to stack
+                        if (srcLclNum != BAD_VAR_NUM && tempReg != REG_NA)
+                        {
+                            unsigned srcOffset = fieldIndex * fieldSize;
+                            GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), tempReg, srcLclNum, srcOffset);
+                            GetEmitter()->emitIns_S_R(storeIns, emitActualTypeSize(hfaType), tempReg, varNumOut, stackOffset);
+                            
+                            JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - Loaded FIELD_LIST field %d from V%02u+%u to %s, stored to stack+%u\n",
+                                   fieldIndex, srcLclNum, srcOffset, getRegName(tempReg), stackOffset);
+                        }
+                        else
+                        {
+                            // Fallback: use the register allocated to this field (if any)
+                            regNumber fieldReg = fieldNode->GetRegNum();
+                            if (fieldReg != REG_NA)
+                            {
+                                GetEmitter()->emitIns_S_R(storeIns, emitActualTypeSize(hfaType), fieldReg, varNumOut, stackOffset);
+                                JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - Stored FIELD_LIST field %d from %s to stack+%u\n",
+                                       fieldIndex, getRegName(fieldReg), stackOffset);
+                            }
+                            else
+                            {
+                                assert(!"Stack field has no register and no source local");
+                            }
+                        }
+                        stackFieldIndex++;
+                    }
+                    else
+                    {
+                        // This field goes to a register - it's already there from the FIELD_LIST
+                        regNumber fieldReg = fieldNode->GetRegNum();
+                        JITDUMP("[PPC64LE HFA DEBUG] genPutArgSplit - FIELD_LIST field %d already in register %s\n",
+                               fieldIndex, getRegName(fieldReg));
+                    }
+                    
+                    fieldIndex++;
+                }
+                
+                genProduceReg(treeNode);
+                return;
+            }
+            
+            // For non-HFA FIELD_LIST, fall through to common handling below
+            assert(!"GT_FIELD_LIST for non-HFA struct in genPutArgSplit not yet implemented");
+        }
+        else
+        {
+            assert(!"Unexpected source type in genPutArgSplit");
         }
 
         // Put on stack first
