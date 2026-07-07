@@ -3371,6 +3371,7 @@ protected:
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
         void FillEntryDataForAncestor(MethodTable *pMT);
+        void SetEntryDataForSlotIfNotYetSet(UINT32 i, MethodDesc *pMD);
 
         //
         // At the end of this object is an array
