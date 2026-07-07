@@ -45,6 +45,7 @@ namespace System.IO.Compression
             {
                 throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
             }
+
             return WinZipAesKeyMaterial.GetSaltSize(keySizeBits);
         }
 
