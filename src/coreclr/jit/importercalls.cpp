@@ -7290,7 +7290,7 @@ void Compiler::impSetupAsyncCall(
     }
     else
     {
-        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+        if (opts.Tier0OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
             (call->gtReturnType == info.compRetType))
         {
             CORINFO_METHOD_HANDLE exactCalleeHnd =

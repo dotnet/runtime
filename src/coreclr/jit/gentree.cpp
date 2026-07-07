@@ -3717,12 +3717,19 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
     return swapOps[relop - GT_EQ];
 }
 
-/*****************************************************************************
- *
- *  Reverse the meaning of the given test condition.
- */
-
-GenTree* Compiler::gtReverseCond(GenTree* tree)
+//------------------------------------------------------------------------
+// gtTryReverseCond: Try to reverse the meaning of the given test condition
+//    in-place, without introducing any new IR nodes.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    True if the condition was reversed in-place. False if reversing the
+//    condition would require introducing a new node (e.g. wrapping the tree
+//    in a "tree == 0" comparison); in that case, the tree is not modified.
+//
+bool Compiler::gtTryReverseCond(GenTree* tree)
 {
     if (tree->OperIsCompare())
     {
@@ -3736,23 +3743,45 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         {
             tree->gtFlags ^= GTF_RELOP_NAN_UN;
         }
+        return true;
     }
-    else if (tree->OperIs(GT_JCC, GT_SETCC))
+    if (tree->OperIs(GT_JCC, GT_SETCC))
     {
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
+        return true;
     }
-    else if (tree->OperIs(GT_JCMP, GT_JTEST))
+    if (tree->OperIs(GT_JCMP, GT_JTEST))
     {
         GenTreeOpCC* opCC = tree->AsOpCC();
         opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
+        return true;
     }
-    else if (tree->IsIntegralConst())
+    if (tree->IsIntegralConst())
     {
         GenTreeIntConCommon* con = tree->AsIntConCommon();
         con->SetIntegralValue(con->IsIntegralConst(0) ? 1 : 0);
+        return true;
     }
-    else
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// gtReverseCond: Reverse the meaning of the given test condition.
+//
+// Arguments:
+//    tree - The condition tree to reverse
+//
+// Return Value:
+//    The reversed condition tree. This is normally the same node as the
+//    input tree, with its operator (or condition) reversed in-place. If the
+//    tree cannot be reversed in-place, a new GT_EQ node comparing the tree
+//    to zero is returned instead.
+//
+GenTree* Compiler::gtReverseCond(GenTree* tree)
+{
+    if (!gtTryReverseCond(tree))
     {
         tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
     }
@@ -9443,6 +9472,14 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         return vecCon;
     }
 #endif // FEATURE_SIMD
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (varTypeIsMask(type))
+    {
+        // The GenTreeMskCon constructor already zero-initializes the mask value.
+        return gtNewMskConNode(type);
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     type = genActualType(type);
     switch (type)
@@ -35744,16 +35781,61 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     case FloatComparisonMode::OrderedFalseNonSignaling:
                     case FloatComparisonMode::OrderedFalseSignaling:
-                    {
-                        resultNode = gtNewZeroConNode(retType);
-                        resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
-                        break;
-                    }
-
                     case FloatComparisonMode::UnorderedTrueNonSignaling:
                     case FloatComparisonMode::UnorderedTrueSignaling:
                     {
-                        resultNode = gtNewAllBitsSetConNode(retType);
+                        bool isFalse = (mode == FloatComparisonMode::OrderedFalseNonSignaling) ||
+                                       (mode == FloatComparisonMode::OrderedFalseSignaling);
+
+                        if (ni == NI_AVX_CompareScalar)
+                        {
+                            // CompareScalar only updates the lowest element and copies the remaining
+                            // (upper) elements from op1 unchanged. We can therefore only constant fold
+                            // this when op1 is itself a constant so that those upper elements are known.
+
+                            if (!op1->IsCnsVec())
+                            {
+                                break;
+                            }
+
+                            GenTreeVecCon* vecCon = op1->AsVecCon();
+
+                            // Set the lowest element to the comparison result (all zeros for a false
+                            // mode, all ones for a true mode) while leaving the upper elements intact.
+
+                            if (simdBaseType == TYP_FLOAT)
+                            {
+                                vecCon->gtSimdVal.u32[0] = isFalse ? 0 : 0xFFFFFFFF;
+                            }
+                            else
+                            {
+                                assert(simdBaseType == TYP_DOUBLE);
+                                vecCon->gtSimdVal.u64[0] = isFalse ? 0 : 0xFFFFFFFFFFFFFFFF;
+                            }
+
+                            fgUpdateConstTreeValueNumber(vecCon);
+                            resultNode = vecCon;
+                        }
+                        else if (isFalse)
+                        {
+                            resultNode = gtNewZeroConNode(retType);
+                        }
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                        else if (varTypeIsMask(retType))
+                        {
+                            // A true comparison produces an all-true mask for the given element count.
+
+                            GenTreeMskCon* mskCon = gtNewMskConNode(retType);
+                            mskCon->gtSimdMaskVal =
+                                simdmask_t::AllBitsSet(GenTreeVecCon::ElementCount(simdSize, simdBaseType));
+                            resultNode = mskCon;
+                        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+                        else
+                        {
+                            resultNode = gtNewAllBitsSetConNode(retType);
+                        }
+
                         resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
                         break;
                     }
