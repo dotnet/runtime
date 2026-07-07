@@ -3451,7 +3451,7 @@ mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, Mon
 }
 
 static gboolean
-mono_marshal_unmanaged_callers_only_has_only_associated_source_type (MonoCustomAttrEntry *attr)
+mono_marshal_unmanaged_callers_only_attribute_has_only_associated_source_type (MonoCustomAttrEntry *attr)
 {
 	const guint8 *data = attr->data;
 	const guint8 field_named_arg = 0x53;
@@ -3487,20 +3487,20 @@ MONO_DISABLE_WARNING (4310) // cast truncates constant value
 MONO_RESTORE_WARNING
 
 	if ((*value_start & 0x80) == 0) {
-		if (value_start + 1 >= end)
+		if (value_start + 1 > end)
 			return FALSE;
 	} else if ((*value_start & 0xC0) == 0x80) {
-		if (value_start + 2 >= end)
+		if (value_start + 2 > end)
 			return FALSE;
 	} else if ((*value_start & 0xE0) == 0xC0) {
-		if (value_start + 4 >= end)
+		if (value_start + 4 > end)
 			return FALSE;
 	} else {
 		return FALSE;
 	}
 
 	value_len = mono_metadata_decode_blob_size (value_start, &value_after_size);
-	return value_after_size <= end && value_len <= (guint32)(end - value_after_size) && value_after_size + value_len == end;
+	return value_after_size <= end && value_len <= (guint32)(end - value_after_size) && value_after_size + value_len <= end;
 }
 
 static void
@@ -3526,7 +3526,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		}
 	}
 
-	if (attr != NULL && mono_marshal_unmanaged_callers_only_has_only_associated_source_type (attr))
+	if (attr != NULL && mono_marshal_unmanaged_callers_only_attribute_has_only_associated_source_type (attr))
 		attr = NULL;
 
 	if (attr != NULL) {
@@ -3534,7 +3534,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		mono_error_assert_ok (error);
 		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
-				g_assertf (decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute field %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
+				g_assertf (decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "Expected UnmanagedCallersOnlyAttribute field %s to be SZARRAY type, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
 				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
 				if (calling_conventions->len > 0) {
 					if (calling_conventions->len > 1)
