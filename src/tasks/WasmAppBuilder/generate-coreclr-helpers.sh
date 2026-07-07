@@ -71,7 +71,7 @@ echo "Scan path: $scan_path"
 
 # Run the generator - invoke directly without building a command string
 echo "Running generator..."
-echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/ /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
-./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
+echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/browser/ /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
+./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/browser/" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
 
 echo "Done!"

@@ -81,8 +81,8 @@ echo Scan path: %scan_path%
 
 :: Run the generator - invoke directly without building a command string
 echo Running generator...
-echo .\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\ /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
-.\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\ /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
+echo .\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\browser\ /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
+.\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\browser\ /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
 
 if errorlevel 1 (
     echo Generator failed!
