@@ -6964,7 +6964,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     AllocMemChunk* dataChunk       = emitDataChunks;
     unsigned*      dataChunkOffset = emitDataChunkOffsets;
 
-    unsigned cumulativeOffset = 0;
     for (dataSection* sec = emitConsDsc.dsdList; sec != nullptr; sec = sec->dsNext, dataChunk++, dataChunkOffset++)
     {
         comp->Metrics.ReadOnlyDataBytes += sec->dsSize;
@@ -8555,7 +8554,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 #ifdef DEBUG
             if (EMITVERBOSE)
             {
-                printf("  section %3u, size %2u, RWD%2u:\t", secNum++, dscSize, dsc->dsOffset);
+                printf("  section %3u, size %zu, RWD%zu:\t", secNum++, dscSize, (size_t)dsc->dsOffset);
 
                 for (size_t i = 0; i < dscSize; i++)
                 {
@@ -8613,7 +8612,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
 
         const char* labelFormat = "%-7s";
         char        label[64];
-        sprintf_s(label, ArrLen(label), "RWD%02u", data->dsOffset);
+        sprintf_s(label, ArrLen(label), "RWD%02zu", (size_t)data->dsOffset);
         printf(labelFormat, label);
 
         if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
