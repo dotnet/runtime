@@ -256,6 +256,22 @@ namespace System.Net.NameResolution.Tests
         }
 
         [Theory]
+        [InlineData("\0")]
+        [InlineData("\0host")]
+        [InlineData("host\0")]
+        [InlineData("ho\0st")]
+        [InlineData("host\0name")]
+        public async Task DnsGetHostEntry_NullCharacterInName_ThrowsArgumentException(string hostNameOrAddress)
+        {
+            Assert.Throws<ArgumentException>(() => Dns.GetHostEntry(hostNameOrAddress));
+            Assert.Throws<ArgumentException>(() => Dns.GetHostAddresses(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostEntryAsync(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostAddressesAsync(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, hostNameOrAddress, null));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, hostNameOrAddress, null));
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]

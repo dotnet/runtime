@@ -69,7 +69,7 @@ instructionset     ,X86   ,                     ,Avx512Bitalg       ,70 ,AVX512v
 instructionset     ,X86   ,                     ,Avx512Bitalg_VL    ,71 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,Avx512Vbmi2          ,                   ,77 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,Avx512Vbmi2_VL       ,                   ,78 ,AVX512v3              ,avx512v3
-instructionset     ,X86   ,                     ,Avx512Vnni         ,79 ,AVX512v3              ,avx512v3
+instructionset     ,X86   ,AvxVnni_V512         ,Avx512Vnni         ,79 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,                     ,Avx512Vpopcntdq    ,82 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,                     ,Avx512Vpopcntdq_VL ,83 ,AVX512v3              ,avx512v3
 

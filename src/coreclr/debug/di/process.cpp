@@ -387,7 +387,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, pModule);
+                    pMDII = LookupMetaDataFromDebugger(pModule);
                 }
                 return pMDII;
             }
@@ -398,9 +398,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 }
 
 
-IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
-    VMPTR_PEAssembly vmPEAssembly,
-    CordbModule * pModule)
+IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(CordbModule * pModule)
 {
     DWORD dwImageTimeStamp = 0;
     DWORD dwImageSize = 0;
@@ -409,7 +407,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
     // First, see if the debugger can locate the exact metadata we want.
     BOOL _metaDataFileInfoResult;
-    IfFailThrow(this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
+    IfFailThrow(this->GetDAC()->GetModuleMetaDataFileInfo(pModule->GetRuntimeModule(), &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
     if (_metaDataFileInfoResult)
     {
         _ASSERTE(filePath.IsSet());
@@ -533,102 +531,6 @@ void CordbProcess::Free(void * p)
 }
 
 
-//---------------------------------------------------------------------------------------
-//
-// #DBIVersionChecking
-//
-// There are a few checks we need to do to make sure we are using the matching DBI and DAC for a particular
-// version of the runtime.
-//
-// 1. Runtime vs. DBI
-//     - Desktop
-//         This is done by making sure that the CorDebugInterfaceVersion passed to code:CreateCordbObject is
-//         compatible with the version of the DBI.
-//
-//     - Windows CoreCLR
-//         This is done by dbgshim.dll.  It checks whether the runtime DLL and the DBI DLL have the same
-//         product version.  See CreateDebuggingInterfaceForVersion() in dbgshim.cpp.
-//
-//     - Remote transport (Mac CoreCLR + CoreSystem CoreCLR)
-//         Since there is no dbgshim.dll for a remote CoreCLR, we have to do this check in some other place.
-//         We do this in code:CordbProcess::CreateDacDbiInterface, by calling
-//         code:DacDbiInterfaceImpl::CheckDbiVersion right after we have created the DDMarshal.
-//         The IDacDbiInterface implementation on remote device checks the product version of the device
-//         coreclr by:
-//             mac - looking at the Info.plist file in the CoreCLR bundle.
-//             CoreSystem - this check is skipped at the moment, but should be implemented if we release it
-//
-//         The one twist here is that the DBI needs to communicate with the IDacDbiInterface
-//         implementation on the device BEFORE it can verify the product versions.  This means that we need to
-//         have one IDacDbiInterface API which is consistent across all versions of the IDacDbiInterface.
-//         This puts two constraints on CheckDbiVersion():
-//
-//             1.  It has to be the first API on the IDacDbiInterface.
-//             - Otherwise, a wrong version of the DBI may end up calling a different API on the
-//               IDacDbiInterface and getting random results. (Really what matters is that it is
-//               protocol message id 0, at present the source code position implies the message id)
-//
-//             2.  Its parameters cannot change.
-//             - Otherwise, we may run into random errors when we marshal/unmarshal the arguments for the
-//               call to CheckDbiVersion().  Debugging will still fail, but we won't get the
-//               version mismatch error. (Again, the protocol is what ultimately matters)
-//             - To mitigate the impact of this constraint, we use the code:DbiVersion structure.
-//               In addition to the DBI version, it also contains a format number (in case we decide to
-//               check something else in the future), a breaking change number so that we can force
-//               breaking changes between a DBI and a DAC, and space reserved for future use.
-//
-// 2. DBI vs. DAC
-//     - Desktop and Windows CoreCLR (old architecture)
-//          No verification is done. There is a transitive implication that if DBI matches runtime and DAC matches
-//          runtime then DBI matches DAC. Technically because the DBI only matches runtime on major version number
-//          runtime and DAC could be from different builds. However because we service all three binaries together
-//          and DBI always loads the DAC that is sitting in the same directory DAC and DBI generally get tight
-//          version coupling. A user with admin privileges could put different builds together and no version check
-//          would ever fail though.
-//
-//      - Desktop and Windows CoreCLR (new architecture)
-//          No verification is done. Similar to above its implied that if DBI matches runtime and runtime matches
-//          DAC then DBI matches DAC. The only difference is that here both the DBI and DAC are provided by the
-//          debugger. We provide timestamp and filesize for both binaries which are relatively strongly bound hints,
-//          but there is no enforcement on the returned binaries beyond the runtime compat checking.
-//
-//      - Remote transport (Mac CoreCLR and CoreSystem CoreCLR)
-//          Because the transport exists between DBI and DAC it becomes much more important to do a versioning check
-//
-//          Mac - currently does a tightly bound version check between DBI and the runtime (CheckDbiVersion() above),
-//             which transitively gives a tightly bound check to DAC. In same function there is also a check that is
-//             logically a DAC DBI protocol check, verifying that the m_dwProtocolBreakingChangeCounter of DbiVersion
-//             matches. However this check should be weaker than the build version check and doesn't add anything here.
-//
-//          CoreSystem - currently skips the tightly bound version check to make internal deployment and usage easier.
-//             We want to use old desktop side debugger components to target newer CoreCLR builds, only forcing a desktop
-//             upgrade when the protocol actually does change. To do this we use two checks:
-//             1. The breaking change counter in CheckDbiVersion() whenever a dev knows they are breaking back
-//                compat and wants to be explicit about it. This is the same as mac above.
-//             2. During the auto-generation of the DDMarshal classes we take an MD5 hash of IDacDbiInterface source
-//                code and embed it in two DDMarshal functions, one which runs locally and one that runs remotely.
-//                If both DBI and DAC were built from the same source then the local and remote hashes will match. If the
-//                hashes don't match then we assume there has been a been a breaking change in the protocol. Note
-//                this hash could have both false-positives and false-negatives. False positives could occur when
-//                IDacDbiInterface is changed in a trivial way, such as changing a comment. False negatives could
-//                occur when the semantics of the protocol are changed even though the interface is not. Another
-//                case would be changing the DDMarshal proxy generation code. In addition to the hashes we also
-//                embed timestamps when the auto-generated code was produced. However this isn't used for version
-//                matching, only as a hint to indicate which of two mismatched versions is newer.
-//
-//
-// 3. Runtime vs. DAC
-//     - Desktop, Windows CoreCLR, CoreSystem CoreCLR
-//         In both cases we check this by matching the timestamp in the debug directory of the runtime image
-//         and the timestamp we store in the DAC table when we generate the DAC dll.  This is done in
-//         code:ClrDataAccess::VerifyDlls.
-//
-//     - Mac CoreCLR
-//         On Mac, we don't have a timestamp in the runtime image.  Instead, we rely on checking the 16-byte
-//         UUID in the image.  This UUID is used to check whether a symbol file matches the image, so
-//         conceptually it's the same as the timestamp we use on Windows.  This is also done in
-//         code:ClrDataAccess::VerifyDlls.
-//
 //---------------------------------------------------------------------------------------
 //
 // Instantiates a DacDbi Interface object in a live-debugging scenario that matches
@@ -2554,13 +2456,13 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
 // CordbRefEnum
 // ******************************************
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, BOOL walkWeakRefs)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(TRUE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(TRUE),
       mHandleMask((UINT32)(walkWeakRefs ? CorHandleAll : CorHandleStrongOnly))
 {
 }
 
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, CorGCReferenceType types)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(FALSE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(FALSE),
       mHandleMask((UINT32)types)
 {
 }
@@ -2659,7 +2561,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
     EX_TRY
     {
         if (!mRefHandle)
-            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacksFQ, mEnumStacksFQ, mHandleMask);
+            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacks, mHandleMask);
 
         if (SUCCEEDED(hr))
         {

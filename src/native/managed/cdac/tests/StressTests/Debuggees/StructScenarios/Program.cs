@@ -20,6 +20,7 @@ internal static class Program
             SmallStructReturnScenario();
             StructWithRefsScenario();
             InterfaceDispatchScenario();
+            NestedStructScenario();
         }
         return 100;
     }
@@ -153,5 +154,158 @@ internal static class Program
         string s = gs.Get();
         GC.KeepAlive(s);
         GC.KeepAlive(gs);
+    }
+
+    // ===== Scenario 5: Nested structs =====
+    // Argument GC scanning for by-value structs has to walk the GCDesc
+    // recursively when value-type fields contain (a) other value-type
+    // fields that in turn carry GC refs, or (b) ref-fields buried inside
+    // nested ByRefLike value types. The combinations below exercise the
+    // ArgIterator + GCDesc / ByRefPointerOffsetsReporter paths:
+    //   - Plain nested value type with no refs (encoder should emit
+    //     nothing, runtime should emit nothing).
+    //   - Nested value type with GC refs at non-zero offsets (GCDesc
+    //     series must aggregate inner ref offsets relative to the outer
+    //     argument start).
+    //   - Three levels of nesting with refs at the deepest level.
+    //   - Nested ByRefLike struct (Span<T> inside an outer ref struct):
+    //     the encoder must walk the inner type's BYREF fields and emit
+    //     INTERIOR at the correct offset within the outer struct.
+
+    // Static sink so the JIT can't elide allocations / inline the
+    // NoInlining methods below by proving the result is dead.
+    static object? s_sink;
+
+    struct InnerPlain
+    {
+        public int A;
+    }
+
+    struct OuterPlain
+    {
+        public InnerPlain Inner;
+    }
+
+    struct InnerWithRef
+    {
+        public int Pad;
+        public object Ref;
+    }
+
+    struct OuterWithInnerRef
+    {
+        public int Header;
+        public InnerWithRef Inner;
+        public string Tail;
+    }
+
+    struct DeepLevel0
+    {
+        public object Ref;
+    }
+
+    struct DeepLevel1
+    {
+        public int Pad;
+        public DeepLevel0 Inner;
+    }
+
+    struct DeepLevel2
+    {
+        public DeepLevel1 Inner;
+        public int Trailer;
+    }
+
+    ref struct OuterRefStructWithSpan
+    {
+        public int Header;
+        public Span<byte> Payload;
+        public int Trailer;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ProcessNestedPlain(OuterPlain p)
+    {
+        // Burn allocations in a loop so the cdacstress allocation trigger
+        // fires multiple times while this MD is live on the stack, and
+        // route the results through a static sink so the JIT can't elide
+        // them or inline this frame away.
+        for (int i = 0; i < 16; i++)
+        {
+            s_sink = new object();
+        }
+        return p.Inner.A;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static object ProcessNestedRef(OuterWithInnerRef o)
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            s_sink = new object();
+        }
+        GC.KeepAlive(o.Tail);
+        return o.Inner.Ref;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static object ProcessDeeplyNested(DeepLevel2 d)
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            s_sink = new object();
+        }
+        return d.Inner.Inner.Ref;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ProcessNestedSpan(OuterRefStructWithSpan o)
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            s_sink = new object();
+        }
+        return o.Header + o.Payload.Length + o.Trailer;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void NestedStructScenario()
+    {
+        OuterPlain plain = new OuterPlain { Inner = new InnerPlain { A = 7 } };
+        int v = ProcessNestedPlain(plain);
+        GC.KeepAlive(v);
+
+        OuterWithInnerRef withRef = new OuterWithInnerRef
+        {
+            Header = 1,
+            Inner = new InnerWithRef { Pad = 2, Ref = new object() },
+            Tail = "tail",
+        };
+        object inner = ProcessNestedRef(withRef);
+        GC.KeepAlive(inner);
+        GC.KeepAlive(withRef.Tail);
+
+        DeepLevel2 deep = new DeepLevel2
+        {
+            Inner = new DeepLevel1
+            {
+                Pad = 3,
+                Inner = new DeepLevel0 { Ref = new object() },
+            },
+            Trailer = 4,
+        };
+        object deepRef = ProcessDeeplyNested(deep);
+        GC.KeepAlive(deepRef);
+
+        byte[] buffer = new byte[16];
+        OuterRefStructWithSpan refStruct = new OuterRefStructWithSpan
+        {
+            Header = 1,
+            Payload = buffer,
+            Trailer = 2,
+        };
+        int sum = ProcessNestedSpan(refStruct);
+        GC.KeepAlive(sum);
+        GC.KeepAlive(buffer);
     }
 }

@@ -9,15 +9,6 @@ using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorEle
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct DbiVersion
-{
-    public uint m_dwFormat;
-    public uint m_dwDbiVersion;
-    public uint m_dwProtocolBreakingChangeCounter;
-    public uint m_dwReservedMustBeZero1;
-}
-
-[StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {
     public ulong token1;
@@ -111,6 +102,13 @@ public struct DacDbiExceptionCallStackData
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct AsyncLocalData
+{
+    public uint Offset;
+    public uint IlVarNum;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct COR_HEAPINFO
 {
     public Interop.BOOL areGCStructuresValid;
@@ -126,6 +124,16 @@ public struct COR_HEAPOBJECT
     public ulong address;
     public ulong size;
     public COR_TYPEID type;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct DacGcReference
+{
+    [FieldOffset(0)] public ulong vmDomain;
+    [FieldOffset(8)] public ulong pObject;
+    [FieldOffset(8)] public ulong objHnd;
+    [FieldOffset(16)] public CorGCReferenceType dwType;
+    [FieldOffset(24)] public ulong i64ExtraData;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -220,10 +228,10 @@ public struct DebuggerIPCE_STRData_StubFrame
 // the DI during a stack walk. Mirrors the native Debugger_STRData struct
 // defined in src/coreclr/debug/inc/dbgipcevents.h.
 //
-// `ctx` and `rd` are pointers into dbi-allocated memory.
-// The DAC writes the populated context/regdisplay through these pointers rather
-// than storing them inline. Code paths that do not produce a context/regdisplay
-// (e.g. EnumerateInternalFrames for cStubFrame entries) leave them as 0.
+// `ctx` is a pointer into dbi-allocated memory.
+// The DAC writes the populated context through this pointer rather
+// than storing it inline. Code paths that do not produce a context
+// (e.g. EnumerateInternalFrames for cStubFrame entries) leave it as 0.
 [StructLayout(LayoutKind.Explicit)]
 public struct Debugger_STRData
 {
@@ -236,11 +244,10 @@ public struct Debugger_STRData
 
     [FieldOffset(0)] public ulong fp;                           // FramePointer
     [FieldOffset(8)] public ulong ctx;                          // DT_CONTEXT*
-    [FieldOffset(16)] public ulong rd;                          // DebuggerREGDISPLAY*
-    [FieldOffset(24)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
-    [FieldOffset(32)] public EType eType;
-    [FieldOffset(40)] public DebuggerIPCE_STRData_MethodFrame v;
-    [FieldOffset(40)] public DebuggerIPCE_STRData_StubFrame stubFrame;
+    [FieldOffset(16)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
+    [FieldOffset(24)] public EType eType;
+    [FieldOffset(32)] public DebuggerIPCE_STRData_MethodFrame v;
+    [FieldOffset(32)] public DebuggerIPCE_STRData_StubFrame stubFrame;
 }
 
 #pragma warning restore CS0649
@@ -314,6 +321,20 @@ public unsafe struct ArgInfoList
     public int m_nEntries;
 }
 
+[StructLayout(LayoutKind.Sequential, Size = 48)]
+public struct DebuggerIPCE_TypeArgData
+{
+    public DebuggerIPCE_ExpandedTypeData data;
+    public uint numTypeArgs; // Portable<UINT>
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct TypeInfoList
+{
+    public DebuggerIPCE_TypeArgData* m_pList;
+    public int m_nEntries;
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct DacDbiArrayInfo
 {
@@ -369,6 +390,19 @@ public enum IlNum : int
     TYPECTXT_ILNUM = -3,
 }
 
+[Flags]
+public enum CorGCReferenceType : uint
+{
+    CorHandleStrong = 1 << 0,
+    CorHandleStrongPinning = 1 << 1,
+    CorHandleWeakShort = 1 << 2,
+    CorHandleWeakLong = 1 << 3,
+    CorHandleWeakRefCount = 1 << 4,
+    CorHandleStrongRefCount = 1 << 5,
+    CorHandleStrongDependent = 1 << 6,
+    CorReferenceStack = 0x80000001,
+}
+
 public enum CorDebugSetContextFlags
 {
     SET_CONTEXT_FLAG_ACTIVE_FRAME = 0x1,
@@ -381,9 +415,6 @@ public enum CorDebugSetContextFlags
 [Guid("DB505C1B-A327-4A46-8C32-AF55A56F8E09")]
 public unsafe partial interface IDacDbiInterface
 {
-    [PreserveSig]
-    int CheckDbiVersion(DbiVersion* pVersion);
-
     [PreserveSig]
     int FlushCache();
 
@@ -550,9 +581,6 @@ public unsafe partial interface IDacDbiInterface
     int GetContext(ulong vmThread, byte* pContextBuffer);
 
     [PreserveSig]
-    int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive);
-
-    [PreserveSig]
     int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal);
 
     [PreserveSig]
@@ -595,7 +623,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
 
     [PreserveSig]
-    int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
+    int GetApproxTypeHandle(TypeInfoList* pTypeData, ulong* pRetVal);
 
     [PreserveSig]
     int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle);
@@ -672,7 +700,7 @@ public unsafe partial interface IDacDbiInterface
     int GetAttachStateFlags(int* pRetVal);
 
     [PreserveSig]
-    int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult);
+    int GetModuleMetaDataFileInfo(ulong vmModule, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult);
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
@@ -693,13 +721,13 @@ public unsafe partial interface IDacDbiInterface
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask);
+    int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, CorGCReferenceType handleWalkMask);
 
     [PreserveSig]
     int DeleteRefWalk(nuint handle);
 
     [PreserveSig]
-    int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched);
+    int WalkRefs(nuint handle, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacGcReference[] refs, uint* pFetched);
 
     [PreserveSig]
     int GetTypeID(ulong obj, COR_TYPEID* pType);
@@ -768,7 +796,8 @@ public unsafe partial interface IDacDbiInterface
     int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);
 
     [PreserveSig]
-    int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals);
+    int EnumerateAsyncLocals(ulong vmMethod, ulong codeAddr, uint state,
+        delegate* unmanaged<AsyncLocalData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
