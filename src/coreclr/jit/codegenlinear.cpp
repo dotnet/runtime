@@ -1406,15 +1406,17 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
         {
             regNumber dstReg = tree->GetRegNum();
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             // A floating-point, SIMD, or mask constant is not spilled to the stack (see
             // genProduceReg); rematerialize it directly into the reload target register rather
-            // than loading it from a spill temp that was never created. Note that the GT_CNS_VEC
-            // and GT_CNS_MSK GenTree* overloads of genSetRegToConst materialize into the node's own
-            // register, so the explicit-register overloads are used to honor 'dstReg' (which may be
-            // a GT_RELOAD target register that differs from the original definition's register).
+            // than loading it from a spill temp that was never created.
             if (isRematerializableConstant(unspillTree) && ((unspillTree->gtFlags & GTF_NOREG_AT_USE) == 0))
             {
+#if defined(TARGET_XARCH)
+                // The GT_CNS_VEC and GT_CNS_MSK GenTree* overloads of genSetRegToConst materialize
+                // into the node's own register, so the explicit-register overloads are used to honor
+                // 'dstReg' (which may be a GT_RELOAD target register that differs from the original
+                // definition's register).
                 switch (unspillTree->OperGet())
                 {
                     case GT_CNS_DBL:
@@ -1429,11 +1431,15 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                     default:
                         unreached();
                 }
+#else  // TARGET_ARM64
+                // The arm64 genSetRegToConst honors the explicit target register for every operator.
+                genSetRegToConst(dstReg, unspillTree->TypeGet(), unspillTree);
+#endif // TARGET_XARCH
 
                 unspillTree->gtFlags &= ~GTF_SPILLED;
             }
             else
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
             {
                 // Here we may have a GT_RELOAD.
                 // The spill temp allocated for it is associated with the original tree that defined the
@@ -1468,16 +1474,67 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 //    These constants have no GC liveness. On xarch every such constant can be
 //    rematerialized without a scratch register (zero via `xorps`, all-bits-set via
 //    `pcmpeqd`/`vpternlogd`, or a RIP-relative load from the constant's memory home),
-//    so all of them are eligible. Other targets can be enabled later for the subset of
-//    values that likewise need no scratch register (for example, zero or fmov-immediate
-//    floating-point constants on arm64); loading arbitrary constants from the constant
-//    pool there requires a scratch address register that is not available at the reload
-//    point, so those remain spilled for now.
+//    so all of them are eligible.
+//
+//    On arm64 only the subset that genSetRegToConst encodes directly into an instruction
+//    is eligible; the remaining values are loaded from the constant pool via `adrp`/`ldr`
+//    which needs a scratch address register that is not reserved at the reload point. The
+//    conditions below must therefore stay in sync with the direct-encoding fast paths in
+//    genSetRegToConst: 0.0/fmov-immediate for CNS_DBL, zero/all-bits-set/movi-broadcast for
+//    CNS_VEC, and every CNS_MSK (encoded via `pfalse`/`ptrue`, which never needs a scratch).
+//    Other targets can be enabled later for their own scratch-free subset.
 //
 bool CodeGen::isRematerializableConstant(GenTree* tree)
 {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     return tree->OperIs(GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK);
+#elif defined(TARGET_ARM64)
+    switch (tree->OperGet())
+    {
+        case GT_CNS_DBL:
+        {
+            double constValue = tree->AsDblCon()->DconValue();
+            return (*(int64_t*)&constValue == 0) || emitter::emitIns_valid_imm_for_fmov(constValue);
+        }
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+        {
+            // genSetRegToConst only encodes SIMD8/12/16 constants without a scratch register; any
+            // wider type falls through to its 'unreached' path, so reject those up front (mirroring
+            // the type switch in genSetRegToConst).
+            if (!tree->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16))
+            {
+                return false;
+            }
+
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+            {
+                return true;
+            }
+
+            const bool is8 = tree->TypeIs(TYP_SIMD8);
+            simd16_t   val = vecCon->gtSimd16Val;
+
+            return (ElementsAreSame(val.i32, is8 ? 2 : 4) &&
+                    emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE)) ||
+                   (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
+                    emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE)) ||
+                   (ElementsAreSame(val.i8, is8 ? 8 : 16) &&
+                    emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE));
+        }
+#endif // FEATURE_SIMD
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+            return true;
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+        default:
+            return false;
+    }
 #else
     return false;
 #endif // TARGET_XARCH
