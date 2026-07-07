@@ -81,13 +81,8 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
 
             yield return new ThreadStressLogData(
                 currentPointer,
-                threadStressLog.Next,
                 threadStressLog.ThreadId,
-                threadStressLog.WriteHasWrapped,
-                threadStressLog.CurrentPtr,
-                threadStressLog.ChunkListHead,
-                threadStressLog.ChunkListTail,
-                threadStressLog.CurrentWriteChunk);
+                threadStressLog.WriteHasWrapped);
 
             currentPointer = threadStressLog.Next;
         }
@@ -128,18 +123,20 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
         return TargetPointer.Null;
     }
 
-    public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog)
+    public IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress)
     {
         uint stressMsgHeaderSize = target.GetTypeInfo(DataType.StressMsgHeader).Size!.Value;
         uint pointerSize = (uint)target.PointerSize;
 
+        Data.ThreadStressLog threadLog = target.ProcessedData.GetOrAdd<Data.ThreadStressLog>(threadStressLogAddress);
+
         Data.StressLogChunk currentChunkData = target.ProcessedData.GetOrAdd<Data.StressLogChunk>(threadLog.CurrentWriteChunk);
         TargetPointer currentReadChunk = threadLog.CurrentWriteChunk;
-        TargetPointer readPointer = threadLog.CurrentPointer;
+        TargetPointer readPointer = threadLog.CurrentPtr;
         bool readHasWrapped = false;
         uint chunkSize = target.ReadGlobal<uint>(Constants.Globals.StressLogChunkSize);
 
-        TargetPointer currentPointer = threadLog.CurrentPointer;
+        TargetPointer currentPointer = threadLog.CurrentPtr;
         // the last written log, if it wrapped around may have partially overwritten
         // a previous record.  Update currentPointer to reflect the last safe beginning of a record,
         // but currentPointer shouldn't wrap around, otherwise it'll break our assumptions about stress
@@ -351,7 +348,7 @@ internal sealed class StressLog_1(Target target) : IStressLog
     public StressLogData GetStressLogData() => traversal.GetStressLogData();
     public StressLogData GetStressLogData(TargetPointer stressLog) => traversal.GetStressLogData(stressLog);
     public IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => traversal.GetThreadStressLogs(Logs);
-    public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => traversal.GetStressMessages(threadLog);
+    public IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress) => traversal.GetStressMessages(threadStressLogAddress);
     public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => traversal.IsPointerInStressLog(stressLog, pointer);
     public IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog) => traversal.GetStressLogMemoryRanges(stressLog);
 }
@@ -365,7 +362,7 @@ internal sealed class StressLog_2(Target target) : IStressLog
     public StressLogData GetStressLogData() => traversal.GetStressLogData();
     public StressLogData GetStressLogData(TargetPointer stressLog) => traversal.GetStressLogData(stressLog);
     public IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => traversal.GetThreadStressLogs(Logs);
-    public IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => traversal.GetStressMessages(threadLog);
+    public IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress) => traversal.GetStressMessages(threadStressLogAddress);
     public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => traversal.IsPointerInStressLog(stressLog, pointer);
     public IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog) => traversal.GetStressLogMemoryRanges(stressLog);
 }

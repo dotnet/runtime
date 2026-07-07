@@ -84,13 +84,13 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_stringField), null, "static" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_readonlyStringField), null, "readonlyStatic" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_objectField), null, MyStruct.s_objectField };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intPtr), null, MyStruct.s_intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), "s_intPtr", null, MyStruct.s_intPtrForComparison };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), null, new int[] { 1, 2, 3 } };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.threadStatic_intField), null, 100 };
 
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.stringField), new MyStruct(), "non static" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.intField), new MyStruct(), 101 };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.intPtr), new MyStruct(), MyStruct.intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), "intPtr", new MyStruct(), MyStruct.intPtrForComparison };
             yield return new object[] { typeof(MyStruct_OnlyPrimitiveTypes), nameof(MyStruct_OnlyPrimitiveTypes.intField), new MyStruct_OnlyPrimitiveTypes(), 101 };
         }
 
@@ -107,8 +107,8 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> GetValue_TestData_WithFunctionPointers()
         {
-            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.s_fcnPtr), null, (IntPtr)45 };
-            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.fcnPtr), new MyStructWithFunctionPointers(), (IntPtr)44 };
+            yield return new object[] { typeof(MyStructWithFunctionPointers), "s_fcnPtr", null, (IntPtr)45 };
+            yield return new object[] { typeof(MyStructWithFunctionPointers), "fcnPtr", new MyStructWithFunctionPointers(), (IntPtr)44 };
         }
 
         [Theory]
@@ -235,7 +235,7 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intField_Set), null, 1001, 1001 };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_stringField_Set), null, "new", "new" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_objectField_Set), null, MyStruct.s_objectField, MyStruct.s_objectField };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intPtr_Set), null, MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), "s_intPtr_Set", null, MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.threadStatic_intField_Set), null, 100, 100 };
 
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.boolField), new MyStruct(), true, true };
@@ -243,7 +243,7 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.intField), new MyStruct(), 1002, 1002 };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.stringField), new MyStruct(), "new", "new" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.objectField), new MyStruct(), MyStruct.s_objectField, MyStruct.s_objectField };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.intPtr), new MyStruct(), MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
+            yield return new object[] { typeof(MyStruct), "intPtr", new MyStruct(), MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
         }
 
         [Theory]
@@ -269,8 +269,8 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> SetValue_TestData_FunctionPointers()
         {
-            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.s_fcnPtr_Set), null, (IntPtr)201, (IntPtr)201 };
-            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.fcnPtr), new MyStructWithFunctionPointers(), (IntPtr)200, (IntPtr)200 };
+            yield return new object[] { typeof(MyStructWithFunctionPointers), "s_fcnPtr_Set", null, (IntPtr)201, (IntPtr)201 };
+            yield return new object[] { typeof(MyStructWithFunctionPointers), "fcnPtr", new MyStructWithFunctionPointers(), (IntPtr)200, (IntPtr)200 };
         }
 
         [Theory]

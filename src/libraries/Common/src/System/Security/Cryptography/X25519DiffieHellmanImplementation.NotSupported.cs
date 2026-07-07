@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class X25519DiffieHellmanImplementation : X25519DiffieHellman
+    internal sealed partial class X25519DiffieHellmanImplementation : X25519DiffieHellman
     {
         internal static new bool IsSupported => false;
 

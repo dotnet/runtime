@@ -3620,7 +3620,7 @@ namespace Internal.JitInterface
                     ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
                     : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
                 MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Void), [parameterType]);
-                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature);
             }
             else
             {
@@ -3629,7 +3629,7 @@ namespace Internal.JitInterface
                     ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(signatureVariable)
                     : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(signatureVariable);
                 MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 1, signatureVariable, [parameterType]);
-                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwaitWithResult"u8, signature).MakeInstantiatedMethod(returnType);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(returnType);
             }
 
             MethodDesc result = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
@@ -4638,29 +4638,32 @@ namespace Internal.JitInterface
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
+#if READYTORUN
+                const bool isFallbackBodyCompilation = false;
+#else
+                bool isFallbackBodyCompilation = _isFallbackBodyCompilation;
+#endif
+
                 // Validate UnmanagedCallersOnlyAttribute usage
-                if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
+                if (!isFallbackBodyCompilation && !this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, this.MethodBeingCompiled);
                 }
 
-                if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
+                if (!isFallbackBodyCompilation && (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation)) // No generics involved
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
                 }
 
-                if (this.MethodBeingCompiled.IsAsync)
+                if (!isFallbackBodyCompilation && this.MethodBeingCompiled.IsAsync)
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramAsync, this.MethodBeingCompiled);
                 }
 
-#if READYTORUN
-                // TODO: enable this check in full AOT
-                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module, this.MethodBeingCompiled.GetUnmanagedCallersOnlyMethodCallingConventions())) // Only blittable arguments
+                if (!isFallbackBodyCompilation && MarshalHelpers.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module)) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
-#endif
 
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }

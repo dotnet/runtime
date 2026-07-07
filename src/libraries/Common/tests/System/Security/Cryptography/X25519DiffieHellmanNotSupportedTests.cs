@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -40,9 +41,9 @@ namespace System.Security.Cryptography.Tests
         public static void ImportSubjectPublicKeyInfo_NotSupported()
         {
             // A minimal valid SPKI for X25519
-            byte[] spki = Convert.FromHexString(
+            byte[] spki = (
                 "302a300506032b656e032100" +
-                "0000000000000000000000000000000000000000000000000000000000000000");
+                "0000000000000000000000000000000000000000000000000000000000000000").HexToByteArray();
 
             Assert.Throws<PlatformNotSupportedException>(() =>
                 X25519DiffieHellman.ImportSubjectPublicKeyInfo(spki));
@@ -55,9 +56,9 @@ namespace System.Security.Cryptography.Tests
         public static void ImportPkcs8PrivateKey_NotSupported()
         {
             // A minimal valid PKCS#8 for X25519
-            byte[] pkcs8 = Convert.FromHexString(
+            byte[] pkcs8 = (
                 "302e020100300506032b656e04220420" +
-                "0000000000000000000000000000000000000000000000000000000000000000");
+                "0000000000000000000000000000000000000000000000000000000000000000").HexToByteArray();
 
             Assert.Throws<PlatformNotSupportedException>(() =>
                 X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8));
@@ -71,9 +72,9 @@ namespace System.Security.Cryptography.Tests
         {
             // Use an encrypted PKCS#8 blob. The implementation should throw PlatformNotSupportedException
             // before attempting decryption.
-            byte[] pkcs8 = Convert.FromHexString(
+            byte[] pkcs8 = (
                 "302e020100300506032b656e04220420" +
-                "0000000000000000000000000000000000000000000000000000000000000000");
+                "0000000000000000000000000000000000000000000000000000000000000000").HexToByteArray();
 
             Assert.Throws<PlatformNotSupportedException>(() =>
                 X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey("password", pkcs8));
