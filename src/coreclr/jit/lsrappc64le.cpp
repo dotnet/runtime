@@ -184,9 +184,38 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         // 2. Store to target slot and move to target registers (destination) from source
         //
         unsigned sourceRegCount = 0;
+        unsigned totalFieldCount = 0;
 
         // To avoid redundant moves, have the argument operand computed in the
         // register in which the argument is passed to the call.
+
+        // Count total fields first
+        for (GenTreeFieldList::Use& use : src->AsFieldList()->Uses())
+        {
+            totalFieldCount++;
+        }
+
+        // If we have fields that go to stack (beyond gtNumRegs), we need a temp register
+        // to load them from the source local variable
+        if (totalFieldCount > argNode->gtNumRegs)
+        {
+            // Determine if this is an HFA struct by checking the first field type
+            GenTreeFieldList::Use* firstUse = src->AsFieldList()->Uses().GetHead();
+            if (firstUse != nullptr)
+            {
+                var_types firstFieldType = firstUse->GetNode()->TypeGet();
+                if (varTypeIsFloating(firstFieldType))
+                {
+                    // Need a float temp register for HFA stack fields
+                    buildInternalFloatRegisterDefForNode(argNode);
+                }
+                else
+                {
+                    // Need an int temp register for non-HFA stack fields
+                    buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
+                }
+            }
+        }
 
         for (GenTreeFieldList::Use& use : src->AsFieldList()->Uses())
         {
@@ -1001,18 +1030,6 @@ int LinearScan::BuildNode(GenTree* tree)
 		  break;
 
 		      case GT_RETFILT:
-		          assert(dstCount == 0);
-		          break;
-
-		      case GT_JMPTABLE:
-		          srcCount = 0;
-		          assert(dstCount == 1);
-		          BuildDef(tree);
-		          break;
-
-		      case GT_SWITCH_TABLE:
-		          buildInternalIntRegisterDefForNode(tree);
-		          srcCount = BuildBinaryUses(tree->AsOp());
 		          assert(dstCount == 0);
 		          break;
 
