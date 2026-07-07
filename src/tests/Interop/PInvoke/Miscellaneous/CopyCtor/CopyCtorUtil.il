@@ -36,7 +36,7 @@
   {
   } // end of method CopyCtorUtil.TestDelegate::EndInvoke
 
-} // end of classCopyCtorUtil. TestDelegate
+} // end of class CopyCtorUtil.TestDelegate
 
 .class auto ansi sealed public CopyCtorUtil.DelegateWithMissingParameterMetadata
        extends [mscorlib]System.MulticastDelegate
