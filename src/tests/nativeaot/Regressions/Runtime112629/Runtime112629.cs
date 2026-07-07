@@ -8,10 +8,10 @@ using Xunit;
 
 class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         Assert.Equal("A.B", new AssemblyWithDot::TestNamespace.TestType().Value);
         Assert.Equal("A_B", new AssemblyWithUnderscore::TestNamespace.TestType().Value);
+        return 100;
     }
 }
