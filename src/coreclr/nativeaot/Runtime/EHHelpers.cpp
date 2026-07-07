@@ -475,7 +475,11 @@ static void CaptureHardwareExceptionRecords(PEXCEPTION_POINTERS pExPtrs)
 #endif
 }
 
-static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*) + sizeof(EXCEPTION_RECORD) + sizeof(CONTEXT));
+// The records are laid out at ALIGN_UP-ed offsets within the buffer, so the size includes
+// the worst-case padding needed to align each sub-record to its own alignment requirement.
+static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*)
+    + (alignof(EXCEPTION_RECORD) - 1) + sizeof(EXCEPTION_RECORD)
+    + (alignof(CONTEXT) - 1) + sizeof(CONTEXT));
 
 // Size of the per-fault buffer RhThrowHwEx stackallocs to hold a private copy of the
 // hardware-exception records: a two-pointer header {pInfo, pContext} followed by the
@@ -495,14 +499,19 @@ FCIMPL2(void, RhpCaptureHardwareExceptionRecordsToBuffer, void* pBuffer, int32_t
     ASSERT(cbBuffer >= ExceptionRecordBufferSize);
 
     uint8_t* p = (uint8_t*)pBuffer;
+    // The header holds two pointers, so the buffer must be at least pointer-aligned.
+    ASSERT(IS_ALIGNED(p, sizeof(void*)));
     void** pHeader = (void**)p;
     p += 2 * sizeof(void*);
 
-    EXCEPTION_RECORD* pRecord = (EXCEPTION_RECORD*)p;
+    // Each record is aligned to its own alignment requirement (CONTEXT is 16-byte aligned
+    // on x64/arm64) so the struct copies below (and any later typed access through the
+    // header pointers) are not misaligned.
+    EXCEPTION_RECORD* pRecord = (EXCEPTION_RECORD*)ALIGN_UP(p, alignof(EXCEPTION_RECORD));
     *pRecord = t_hardwareExceptionRecord;
-    p += sizeof(EXCEPTION_RECORD);
+    p = (uint8_t*)(pRecord + 1);
 
-    CONTEXT* pContext = (CONTEXT*)p;
+    CONTEXT* pContext = (CONTEXT*)ALIGN_UP(p, alignof(CONTEXT));
     *pContext = t_hardwareExceptionContext;
 
     pHeader[0] = pRecord;

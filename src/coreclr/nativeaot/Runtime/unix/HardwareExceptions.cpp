@@ -13,6 +13,7 @@
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
 #include "PalCreateDump.h"
+#include "CommonMacros.inl"
 
 #if defined(HOST_APPLE)
 #include <mach/mach.h>
@@ -82,9 +83,13 @@ static void CaptureHardwareExceptionRecords(siginfo_t* siginfo, void* context)
 #endif
 }
 
-static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*) + sizeof(siginfo_t) + sizeof(ucontext_t)
+// The records are laid out at ALIGN_UP-ed offsets within the buffer, so the size includes
+// the worst-case padding needed to align each sub-record to its own alignment requirement.
+static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*)
+        + (alignof(siginfo_t) - 1) + sizeof(siginfo_t)
+        + (alignof(ucontext_t) - 1) + sizeof(ucontext_t)
 #if defined(HOST_APPLE)
-        + sizeof(t_hardwareExceptionMContext)
+        + (alignof(__typeof__(t_hardwareExceptionMContext)) - 1) + sizeof(t_hardwareExceptionMContext)
 #endif
         );
 
@@ -106,21 +111,26 @@ FCIMPL2(void, RhpCaptureHardwareExceptionRecordsToBuffer, void* pBuffer, int32_t
     ASSERT(cbBuffer >= ExceptionRecordBufferSize);
 
     uint8_t* p = (uint8_t*)pBuffer;
+    // The header holds two pointers, so the buffer must be at least pointer-aligned.
+    ASSERT(IS_ALIGNED(p, sizeof(void*)));
     void** pHeader = (void**)p;
     p += 2 * sizeof(void*);
 
-    siginfo_t* pInfo = (siginfo_t*)p;
+    // Each record is aligned to its own alignment requirement so the struct copies below
+    // (and any later typed access through the header pointers) are not misaligned.
+    siginfo_t* pInfo = (siginfo_t*)ALIGN_UP(p, alignof(siginfo_t));
     *pInfo = t_hardwareExceptionSiginfo;
-    p += sizeof(siginfo_t);
+    p = (uint8_t*)(pInfo + 1);
 
-    ucontext_t* pContext = (ucontext_t*)p;
+    ucontext_t* pContext = (ucontext_t*)ALIGN_UP(p, alignof(ucontext_t));
     *pContext = t_hardwareExceptionUContext;
-    p += sizeof(ucontext_t);
+    p = (uint8_t*)(pContext + 1);
 
 #if defined(HOST_APPLE)
     // Repoint uc_mcontext at the copy stored in the caller's buffer so the surfaced
     // ucontext remains valid after the throwing thread's transient copy is overwritten.
-    __typeof__(t_hardwareExceptionMContext)* pMContext = (__typeof__(t_hardwareExceptionMContext)*)p;
+    __typeof__(t_hardwareExceptionMContext)* pMContext =
+        (__typeof__(t_hardwareExceptionMContext)*)ALIGN_UP(p, alignof(__typeof__(t_hardwareExceptionMContext)));
     *pMContext = t_hardwareExceptionMContext;
     pContext->uc_mcontext = pMContext;
 #endif
