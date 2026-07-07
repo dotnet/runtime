@@ -9,6 +9,15 @@ record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uin
 ```
 
 ```csharp
+enum HijackKind
+{
+   None,
+   UnhandledException,
+   Other
+}
+```
+
+```csharp
 bool TryGetDebuggerData(out DebuggerData data);
 int GetAttachStateFlags();
 void MarkDebuggerAttachPending();
@@ -18,6 +27,8 @@ void RequestSyncAtEvent();
 void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
+HijackKind GetHijackKind(TargetCodePointer controlPC);
+TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData)
 ```
 
 ## Version 1
@@ -30,6 +41,7 @@ The contract depends on the following globals
 | `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
 | `CORDebuggerControlFlags` | TargetPointer | Pointer to `g_CORDebuggerControlFlags` |
 | `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
+| `MaxHijackFunctions` | uint32 | Number of entries in the hijack function array. |
 
 The contract additionally depends on these data descriptors
 
@@ -42,7 +54,15 @@ The contract additionally depends on these data descriptors
 | `Debugger` | `RSRequestedSync` | Sync-at-event request flag |
 | `Debugger` | `SendExceptionsOutsideOfJMC` | Exception delivery policy flag |
 | `Debugger` | `GCNotificationEventsEnabled` | Whether GC notification events are enabled |
+| `Debugger` | `RgHijackFunction` | Pointer to the runtime's array of hijack-stub address ranges. |
 | `DebuggerRCThread` | `DCB` | Pointer to `DebuggerIPCControlBlock` |
+| `MemoryRange` | `StartAddress` | Inclusive start address of the range |
+| `MemoryRange` | `Size` | Size of the range in bytes; the range covers `[StartAddress, StartAddress + Size)` |
+
+### Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `UnhandledExceptionHijackIndex` | uint | Index of unhandled exception hijack memory range. | `0` |
 
 ```csharp
 
@@ -133,5 +153,69 @@ void EnableGCNotificationEvents(bool fEnable)
     target.Write<int>(
         debuggerAddress + /* Debugger::GCNotificationEventsEnabled offset */,
         fEnable ? 1 : 0);
+}
+
+HijackKind GetHijackKind(TargetCodePointer controlPC)
+{
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return HijackKind.None;
+
+    TargetPointer rgHijack = target.ReadPointer(
+        debuggerAddress + /* Debugger::RgHijackFunction offset */);
+    if (rgHijack == TargetPointer.Null)
+        return HijackKind.None;
+
+    uint maxHijackFunctions = target.ReadGlobal<uint>("MaxHijackFunctions");
+    if (maxHijackFunctions == 0)
+        return HijackKind.None;
+
+    uint stride = // Size of one MemoryRange entry
+
+    for (uint i = 0; i < maxHijackFunctions; i++)
+    {
+        TargetPointer entryAddress = rgHijack + (ulong)(i * stride);
+        TargetPointer start = target.ReadPointer(
+            entryAddress + /* MemoryRange::StartAddress offset */);
+        TargetNUInt size = target.Read<TargetNUInt>(
+            entryAddress + /* MemoryRange::Size offset */);
+
+        ulong end = start.Value + size.Value;
+        if (controlPC.Value >= start.Value && controlPC.Value < end)
+        {
+            return (i == UnhandledExceptionHijackIndex)
+                ? HijackKind.UnhandledException
+                : HijackKind.Other;
+        }
+    }
+    return HijackKind.None;
+}
+
+private TargetPointer GetHijackAddress()
+{
+    // Returns the start address of the unhandled-exception hijack function
+    // (index UnhandledExceptionHijackIndex == 0 in the RgHijackFunction array).
+    if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+        return TargetPointer.Null;
+
+    TargetPointer rgHijack = target.ReadPointer(
+        debuggerAddress + /* Debugger::RgHijackFunction offset */);
+    if (rgHijack == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    uint maxHijackFunctions = target.ReadGlobal<uint>("MaxHijackFunctions");
+    if (UnhandledExceptionHijackIndex >= maxHijackFunctions)
+        return TargetPointer.Null;
+
+    uint stride = // Size of one MemoryRange entry
+    TargetPointer entryAddress = rgHijack + (ulong)(UnhandledExceptionHijackIndex * stride);
+    return target.ReadPointer(entryAddress + /* MemoryRange::StartAddress offset */);
+}
+
+TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData)
+{
+    // Finds hijack address via GetHijackAddress.
+    // Writes the exception record and context into the target stack as necessary.
+    // Places the arguments to ExceptionHijackWorker as dictated by the native ABI.
+    // Mutates stack pointer and context as necessary.
 }
 ```

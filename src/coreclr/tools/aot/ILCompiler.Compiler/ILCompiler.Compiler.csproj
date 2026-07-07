@@ -84,6 +84,9 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
       <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs">
+      <Link>TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs</Link>
+    </Compile>
 
     <Compile Include="..\..\Common\Compiler\TypeMapManager.cs" Link="Compiler\TypeMapManager.cs" />
     <Compile Include="..\..\Common\Compiler\TypeMapMetadata.cs" Link="Compiler\TypeMapMetadata.cs" />
@@ -624,7 +627,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeThreadStaticIndexNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" Link="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceDocumentsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceLineNumbersNode.cs" />

@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -40,7 +41,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(Target);
         ctx.FillFromBuffer(contextBuffer);
-        Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
+        Assert.NotEqual(TargetCodePointer.Null, ctx.InstructionPointer);
     }
 
     [ConditionalTheory]
@@ -114,9 +115,8 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         IStackWalk sw = Target.Contracts.StackWalk;
 
         // Find a frame whose SP+IP differs from the leaf context
-        byte[]? nonLeafContext = sw.CreateStackWalk(crashingThread)
-            .Where(ClrDataStackWalk.IsLegacyVisible)
-            .Select(sw.GetRawContext)
+        byte[]? nonLeafContext = DumpTestStackWalker.LegacyVisibleFrames(sw, crashingThread)
+            .Select(h => sw.GetRawContext(h))
             .FirstOrDefault(ctx =>
             {
                 IPlatformAgnosticContext frameCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);

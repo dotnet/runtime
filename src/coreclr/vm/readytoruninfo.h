@@ -249,6 +249,12 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
+    BOOL HasStrippedILBodies()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES;
+    }
+
     void DisableAllR2RCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -472,6 +478,14 @@ struct GenericDictionaryDynamicHelperStubData
     UINT32 SlotOffset;
     GenericHandleArgs *HandleArgs;
 };
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+struct GenericDictionaryDynamicHelperStubData_PortableEntryPoint
+{
+    PCODE HelperFunctionTableIndex;
+    GenericDictionaryDynamicHelperStubData stubData;
+};
+#endif
 
 class ReadyToRunLoadedImage
 {

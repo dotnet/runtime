@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -246,7 +247,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         Assert.Equal(cFields, fetched);
 
         TargetPointer[] fieldDescList = rts.GetFieldDescList(stringHandle).Take((int)cFields).ToArray();
-        uint firstFieldOffset = rts.IsObjRef(stringHandle) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
+        uint firstFieldOffset = rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(stringHandle)) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
 
         for (uint i = 0; i < cFields; i++)
         {

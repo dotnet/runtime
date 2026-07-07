@@ -106,8 +106,98 @@ static RtlGrowFunctionTableFnPtr pRtlGrowFunctionTable;
 static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 
 static bool s_publishingActive;              // Publishing to ETW is turned on
-static Crst* s_pUnwindInfoTablePublishLock;  // Protects main table, OS registration, and lazy init
-static Crst* s_pUnwindInfoTablePendingLock;  // Protects pending buffer only
+
+namespace
+{
+    // Uses unsigned subtraction to handle sequence counter wrapping correctly.
+    inline bool SequenceReached(LONG published, LONG target)
+    {
+        // published >= target
+        return (LONG)((ULONG)published - (ULONG)target) >= 0;
+    }
+
+    // RAII helper used by UnwindInfoTable::FlushPendingEntries
+    class FlushGateHolder
+    {
+        volatile LONG* m_pFlag;
+        SRWLOCK* m_pLock;
+    public:
+        FlushGateHolder(volatile LONG* pFlag, SRWLOCK* pLock) : m_pFlag(pFlag), m_pLock(pLock) {}
+        ~FlushGateHolder()
+        {
+            // We clear the gate under m_flushLock such that threads that called
+            // SleepConditionVariableSRW do not lose the wakeup signal and deadlock.
+            // Both paths execute under the same lock, so if a thread observes
+            // VolatileLoad(&m_flushInProgress) != 0 (has taken the lock), the flushing thread cannot
+            // release the gate and call WakeAllConditionVariable until the first thread actually sleeps
+            // and releases the lock. Otherwise, if the flushing thread releases the gate first,
+            // other threads would observe m_flushInProgress is 0 and continue without sleeping.
+            // Either way, no thread would sleep without a corresponding wakeup, preventing deadlocks.
+            AcquireSRWLockExclusive(m_pLock);
+            InterlockedExchange(m_pFlag, 0);
+            ReleaseSRWLockExclusive(m_pLock);
+        }
+
+        FlushGateHolder(const FlushGateHolder&) = delete;
+        FlushGateHolder& operator=(const FlushGateHolder&) = delete;
+        FlushGateHolder(FlushGateHolder&&) = delete;
+        FlushGateHolder& operator=(FlushGateHolder&&) = delete;
+    };
+
+    inline void SortPendingByBeginAddress(T_RUNTIME_FUNCTION* p, ULONG n)
+    {
+        auto cmpSwap = [](T_RUNTIME_FUNCTION& x, T_RUNTIME_FUNCTION& y)
+        {
+            if (y.BeginAddress < x.BeginAddress)
+            {
+                T_RUNTIME_FUNCTION tmp = x;
+                x = y;
+                y = tmp;
+            }
+        };
+
+        if (n <= 1)
+            return;
+
+        if (n == 2)
+        {
+            cmpSwap(p[0], p[1]);
+            return;
+        }
+
+        if (n == 3)
+        {
+            cmpSwap(p[0], p[1]);
+            cmpSwap(p[1], p[2]);
+            cmpSwap(p[0], p[1]);
+            return;
+        }
+
+        if (n == 4)
+        {
+            cmpSwap(p[0], p[1]);
+            cmpSwap(p[2], p[3]);
+            cmpSwap(p[0], p[2]);
+            cmpSwap(p[1], p[3]);
+            cmpSwap(p[1], p[2]);
+            return;
+        }
+
+        // Insertion sort for the remaining sizes.
+        for (ULONG i = 1; i < n; i++)
+        {
+            T_RUNTIME_FUNCTION key = p[i];
+            DWORD keyBegin = key.BeginAddress;
+            ULONG j = i;
+            while (j > 0 && p[j - 1].BeginAddress > keyBegin)
+            {
+                p[j] = p[j - 1];
+                j--;
+            }
+            p[j] = key;
+        }
+    }
+}
 
 /****************************************************************************/
 // initialize the entry points for new win8 unwind info publishing functions.
@@ -145,9 +235,10 @@ bool InitUnwindFtns()
 
 /****************************************************************************/
 UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
+    : m_publishLock(CrstUnwindInfoTablePublishLock)
+    , m_pendingLock(CrstUnwindInfoTablePendingLock)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
     _ASSERTE((rangeEnd - rangeStart) <= 0x7FFFFFFF);
 
     // We can choose the average method size estimate dynamically based on past experience
@@ -166,6 +257,12 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
     hHandle = NULL;
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
     cPendingCount = 0;
+    m_flushInProgress = 0;
+    m_pendingSeq = 0;
+    m_publishedSeq = 0;
+    InitializeSRWLock(&m_flushLock);
+    InitializeConditionVariable(&m_flushCV);
+    m_registrationFailed = false;
 }
 
 /****************************************************************************/
@@ -181,18 +278,19 @@ UnwindInfoTable::~UnwindInfoTable()
     // It would be cleaner if we could take the lock (we did not have to be GC_NOTRIGGER)
     UnRegister();
     delete[] pTable;
+    // SRWLOCK and CONDITION_VARIABLE require no cleanup.
 }
 
 /*****************************************************************************/
 void UnwindInfoTable::Register()
 {
-    _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
-
+    // Caller holds m_publishLock.
     NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
     if (ret != STATUS_SUCCESS)
     {
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
         hHandle = NULL;
+        m_registrationFailed = true;
         STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]\n", ret, iRangeStart, iRangeEnd);
     }
     else
@@ -215,7 +313,7 @@ void UnwindInfoTable::UnRegister()
 
 /*****************************************************************************/
 // Add 'data' entries to the pending buffer for later publication to the OS.
-// When the buffer is full, entries are flushed under s_pUnwindInfoTablePublishLock.
+// When the buffer is full, entries are flushed under m_publishLock.
 //
 void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 {
@@ -228,10 +326,14 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 
     _ASSERTE(s_publishingActive);
 
+    if (m_registrationFailed)
+        return;
+
     for (int i = 0; i < count; )
     {
+        LONG currentSeq;
         {
-            CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+            CrstHolder pendingLock(&m_pendingLock);
             while (i < count && cPendingCount < cPendingMaxCount)
             {
                 _ASSERTE(data[i].BeginAddress <= RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart));
@@ -244,67 +346,57 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
                     data[i].BeginAddress, cPendingCount);
                 i++;
             }
+            currentSeq = (LONG)((ULONG)m_pendingSeq.Load() + 1u);
+            m_pendingSeq.Store(currentSeq);
         }
         // Flush any pending entries if we run out of space, or when we are at the end
         // of the batch so the OS can unwind this method immediately.
-        FlushPendingEntries();
+        FlushPendingEntries(currentSeq);
     }
 }
 
-/*****************************************************************************/
-void UnwindInfoTable::FlushPendingEntries()
+LONG UnwindInfoTable::FlushPendingEntriesUnderGate()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
+        PRECONDITION(m_flushInProgress != 0);
     }
     CONTRACTL_END;
 
     // Free the old table outside the lock
     NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable;
 
-    CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+    CrstHolder publishLock(&m_publishLock);
 
-    if (hHandle == NULL)
+    if (m_registrationFailed)
     {
-        // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
-        // RtlGrowFunctionTable with a null handle.
-        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+        // Registration failed permanently. Discard pending entries.
+        CrstHolder pendingLock(&m_pendingLock);
         cPendingCount = 0;
-        return;
+        return m_pendingSeq;
     }
 
     // Grab the pending entries under the pending lock, then release it so
     // other threads can keep accumulating new entries while we publish.
     T_RUNTIME_FUNCTION localPending[cPendingMaxCount];
     ULONG localPendingCount;
+    LONG drainedSeq;
     {
-        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+        CrstHolder pendingLock(&m_pendingLock);
         localPendingCount = cPendingCount;
-        memcpy(localPending, pendingTable, cPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        drainedSeq = m_pendingSeq;
+
+        if (localPendingCount == 0)
+            return drainedSeq;
+
+        memcpy(localPending, pendingTable, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cPendingCount = 0;
         INDEBUG( memset(pendingTable, 0xcc, sizeof(pendingTable)); )
     }
 
-    if (localPendingCount == 0)
-        return;
-
-    // Sort the pending entries by BeginAddress.
-    // Use a simple insertion sort since cPendingMaxCount is small (32).
-    static_assert(cPendingMaxCount == 32,
-        "cPendingMaxCount was updated and might be too large for insertion sort, consider using a better algorithm");
-    for (ULONG i = 1; i < localPendingCount; i++)
-    {
-        T_RUNTIME_FUNCTION key = localPending[i];
-        ULONG j = i;
-        while (j > 0 && localPending[j - 1].BeginAddress > key.BeginAddress)
-        {
-            localPending[j] = localPending[j - 1];
-            j--;
-        }
-        localPending[j] = key;
-    }
+    SortPendingByBeginAddress(localPending, localPendingCount);
 
     // Fast path: if all pending entries can be appended in order with room to spare,
     // we can just append and call RtlGrowFunctionTable.
@@ -313,11 +405,20 @@ void UnwindInfoTable::FlushPendingEntries()
     {
         memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cTableCurCount += localPendingCount;
-        pRtlGrowFunctionTable(hHandle, cTableCurCount);
+
+        if (hHandle != NULL)
+        {
+            pRtlGrowFunctionTable(hHandle, cTableCurCount);
+        }
+        else
+        {
+            // Register with entries already populated.
+            Register();
+        }
 
         STRESS_LOG5(LF_JIT, LL_INFO1000, "FlushPendingEntries Handle: %p [%p, %p] APPENDED 0x%x entries, now 0x%x\n",
             hHandle, iRangeStart, iRangeEnd, localPendingCount, cTableCurCount);
-        return;
+        return drainedSeq;
     }
 
     // Merge main table and pending entries.
@@ -331,7 +432,7 @@ void UnwindInfoTable::FlushPendingEntries()
 
     NewArrayHolder<T_RUNTIME_FUNCTION> newPTable(new T_RUNTIME_FUNCTION[desiredSpace]);
 
-    // Merge-sort the main table and pending buffer into newPTable.
+    // Merge-sort the main table and flush buffer into newPTable.
     ULONG mainIdx = 0;
     ULONG pendIdx = 0;
     ULONG toIdx = 0;
@@ -388,6 +489,66 @@ void UnwindInfoTable::FlushPendingEntries()
     cDeletedEntries = 0;
 
     Register();
+
+    return drainedSeq;
+}
+
+/*****************************************************************************/
+void UnwindInfoTable::FlushPendingEntries(LONG waitForSeq)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    // This thread attempts to become the sole flusher for this table by taking
+    // the flush gate. If it wins, publish the pending entries and signal waiters.
+    // If it loses, it waits until either its sequence has been published or the gate becomes free.
+    while (InterlockedCompareExchange(&m_flushInProgress, 1, 0) != 0)
+    {
+        // Another thread is flushing. Wait until either our entries are
+        // published or the gate becomes free.
+        bool isSequenceReached;
+
+        AcquireSRWLockShared(&m_flushLock);
+        while (!SequenceReached(m_publishedSeq, waitForSeq) && VolatileLoad(&m_flushInProgress) != 0)
+        {
+            SleepConditionVariableSRW(&m_flushCV, &m_flushLock, INFINITE, CONDITION_VARIABLE_LOCKMODE_SHARED);
+        }
+        isSequenceReached = SequenceReached(m_publishedSeq, waitForSeq);
+        ReleaseSRWLockShared(&m_flushLock);
+
+        if (isSequenceReached)
+            return;
+        // Retry taking the gate.
+    }
+
+    LONG drainedSeq;
+    // Ensure waiters are always woken even if FlushPendingEntriesUnderGate throws.
+    struct WakeAllOnExit
+    {
+        CONDITION_VARIABLE* m_pCV;
+        explicit WakeAllOnExit(CONDITION_VARIABLE* pCV) : m_pCV(pCV) {}
+        ~WakeAllOnExit() { WakeAllConditionVariable(m_pCV); }
+    };
+
+    // Scope the gate holder so m_flushInProgress is reset when the scope exits.
+    {
+        WakeAllOnExit wakeAll(&m_flushCV);
+        FlushGateHolder gateHolder(&m_flushInProgress, &m_flushLock);
+        drainedSeq = FlushPendingEntriesUnderGate();
+
+        // Update published sequence while still holding the gate.
+        AcquireSRWLockExclusive(&m_flushLock);
+        m_publishedSeq = drainedSeq;
+        ReleaseSRWLockExclusive(&m_flushLock);
+    }
+
+    // Our entries are guaranteed published (drainedSeq >= waitForSeq) since
+    // FlushPendingEntriesUnderGate drains all pending entries atomically.
+    _ASSERTE(SequenceReached(drainedSeq, waitForSeq));
 }
 
 /*****************************************************************************/
@@ -412,15 +573,29 @@ void UnwindInfoTable::FlushPendingEntries()
     STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
         entryPoint, baseAddress, relativeEntryPoint);
 
-    // Check the main (published) table under the publish lock.
-    // We don't need to check the pending buffer because the method should have already been published
-    // before it can be removed.
+    // AddToUnwindInfoTable flushes before returning, so once OS registration has succeeded
+    // the entry should be in the published table by the time we get here.
     {
-        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-        for (ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
+        CrstHolder publishLock(&unwindInfo->m_publishLock);
+
+        // pTable is kept sorted by BeginAddress. Soft-deleted entries keep their BeginAddress
+        // intact, so the array remains sorted across removes. Binary search for the largest index
+        // with BeginAddress <= relativeEntryPoint, then check against EndAddress.
+        ULONG lo = 0;
+        ULONG hi = unwindInfo->cTableCurCount;
+        while (lo < hi)
         {
-            if (unwindInfo->pTable[i].BeginAddress <= relativeEntryPoint &&
-                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pTable[i], unwindInfo->iRangeStart))
+            ULONG mid = lo + (hi - lo) / 2;
+            if (unwindInfo->pTable[mid].BeginAddress <= relativeEntryPoint)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+
+        if (lo > 0)
+        {
+            ULONG i = lo - 1;
+            if (relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pTable[i], unwindInfo->iRangeStart))
             {
                 if (unwindInfo->pTable[i].UnwindData != 0)
                     unwindInfo->cDeletedEntries++;
@@ -452,17 +627,17 @@ void UnwindInfoTable::FlushPendingEntries()
     UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
     if (unwindInfo == NULL)
     {
-        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-        if (pRS->_pUnwindInfoTable == NULL)
+        // Create the table and try to atomically install it.
+        // OS registration is deferred to the first flush in FlushPendingEntriesUnderGate.
+        NewHolder<UnwindInfoTable> newTable(new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen()));
+
+        if (InterlockedCompareExchangeT(&pRS->_pUnwindInfoTable, newTable.GetValue(), (UnwindInfoTable*)NULL) == NULL)
         {
-            unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
-            unwindInfo->Register();
-            VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
+            newTable.SuppressRelease();
         }
-        else
-        {
-            unwindInfo = pRS->_pUnwindInfoTable;
-        }
+        // else another thread won. NewHolder frees our unregistered table (no OS call).
+
+        unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
     }
 
     unwindInfo->AddToUnwindInfoTable(methodUnwindData, methodUnwindDataCount);
@@ -516,9 +691,6 @@ void UnwindInfoTable::FlushPendingEntries()
     if (!InitUnwindFtns())
         return;
 
-    // Create the locks
-    s_pUnwindInfoTablePublishLock = new Crst(CrstUnwindInfoTablePublishLock);
-    s_pUnwindInfoTablePendingLock = new Crst(CrstUnwindInfoTablePendingLock);
     s_publishingActive = true;
 }
 
@@ -1331,11 +1503,21 @@ void EEJitManager::SetCpuInfo()
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
 #if defined(FEATURE_INTERPRETER)
-    if (maxVectorTBitWidth != 128 && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED)
+    bool interpreterOnly = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3;
+#else
+    bool interpreterOnly = true;
+#endif
+    if (maxVectorTBitWidth != 128 && interpreterOnly)
     {
         // Disable larger Vector<T> sizes when interpreter is enabled
         maxVectorTBitWidth = 128;
     }
+#endif
+
+#if defined(TARGET_WASM)
+    CPUCompileFlags.Set(InstructionSet_WasmBase);
+    CPUCompileFlags.Set(InstructionSet_PackedSimd);
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1362,7 +1544,15 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v3
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX))
+    bool enableAVX = ((cpuFeatures & XArchIntrinsicConstants_Avx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX);
+
+#if defined(FEATURE_INTERPRETER)
+    // The interpreter only supports 128-bit vectors, so don't enable AVX. The ISA
+    // dependency normalization below then removes the dependent AVX2/AVX512.
+    enableAVX = enableAVX && !interpreterOnly;
+#endif
+
+    if (enableAVX)
     {
         CPUCompileFlags.Set(InstructionSet_AVX);
     }
@@ -1391,7 +1581,7 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX512v3);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_AVX512Bmm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BMM))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Bmm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BMM))
     {
         CPUCompileFlags.Set(InstructionSet_AVX512BMM);
     }
@@ -1701,18 +1891,19 @@ void EEJitManager::SetCpuInfo()
 
     uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
 
-#ifdef FEATURE_INTERPRETER
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
-    {
-        // Disable larger Vector<T> sizes when interpreter is enabled, and not compiling S.P.Corelib
-        preferredVectorBitWidth = 128;
-    }
-#endif
-
     if ((preferredVectorBitWidth == 0) && throttleVector512)
     {
         preferredVectorBitWidth = 256;
     }
+
+#if defined(FEATURE_INTERPRETER)
+    if (interpreterOnly && (preferredVectorBitWidth > 128))
+    {
+        // Limit the preferred vector width so the Vector256/Vector512 marker ISAs
+        // set below are not reported after AVX was left disabled above.
+        preferredVectorBitWidth = 128;
+    }
+#endif
 
     if (preferredVectorBitWidth >= 512)
     {
@@ -5875,6 +6066,69 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
     } while (true);
 }
+
+TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (!ExecutionManager::IsVirtualIP((PCODE)virtualIP))
+    {
+        return 0;
+    }
+
+    VirtualIPRangeSection* pSection = FindVirtualIPRangeSection(virtualIP);
+    if (pSection == nullptr)
+    {
+        return 0;
+    }
+
+    Module* pModule = pSection->rangeSection._pR2RModule;
+    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+    DWORD runtimeFunctionCount = pR2RInfo->GetRuntimeFunctionCount();
+    if (runtimeFunctionCount == 0)
+    {
+        return 0;
+    }
+
+    TADDR minVirtualIP = pR2RInfo->GetMinVirtualIP();
+    if (virtualIP < minVirtualIP)
+    {
+        return 0;
+    }
+
+    TADDR localVirtualIP = virtualIP - minVirtualIP;
+    if (localVirtualIP > UINT32_MAX)
+    {
+        return 0;
+    }
+
+    DWORD localVirtualIP32 = (DWORD)localVirtualIP;
+    PTR_RUNTIME_FUNCTION pRuntimeFunctions = pR2RInfo->GetRuntimeFunctions();
+
+    // Find the function entry with the greatest BeginAddress <= localVirtualIP.
+    DWORD low = 0;
+    DWORD high = runtimeFunctionCount;
+    while (low + 1 < high)
+    {
+        DWORD mid = low + ((high - low) / 2);
+        DWORD beginAddress = RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + mid);
+        if (beginAddress <= localVirtualIP32)
+        {
+            low = mid;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+
+    if (RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + low) > localVirtualIP32)
+    {
+        return 0;
+    }
+
+    return pR2RInfo->GetMinFunctionTableIndex() + low;
+}
 #endif // TARGET_WASM
 
 // Deletes a single range starting at pStartRange
@@ -6734,6 +6988,16 @@ PTR_EXCEPTION_CLAUSE_TOKEN ReadyToRunJitManager::GetNextEHClause(EH_CLAUSE_ENUME
     pEHClauseOut->Flags = pClause->Flags;
     pEHClauseOut->FilterOffset = pClause->FilterOffset;
 
+#ifdef TARGET_WASM
+    // Wasm Virtual IPs are encoded with half their virtual IP value
+    pEHClauseOut->TryStartPC *= 2;
+    pEHClauseOut->TryEndPC *= 2;
+    pEHClauseOut->HandlerStartPC *= 2;
+    pEHClauseOut->HandlerEndPC *= 2;
+    if (pEHClauseOut->Flags & COR_ILEXCEPTION_CLAUSE_FILTER)
+        pEHClauseOut->FilterOffset *= 2;
+#endif
+
     return dac_cast<PTR_EXCEPTION_CLAUSE_TOKEN>(pClause);
 }
 
@@ -7195,8 +7459,8 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (!pCodeInfo->IsFunclet())
         return FALSE;
 
-#ifdef TARGET_X86
-    // x86 doesn't use personality routines in unwind data, so we have to fallback to
+#if defined(TARGET_X86) || defined(TARGET_WASM)
+    // x86 and wasm don't use personality routines in unwind data, so we have to fallback to
     // the slow implementation
     return IJitManager::IsFilterFunclet(pCodeInfo);
 #else

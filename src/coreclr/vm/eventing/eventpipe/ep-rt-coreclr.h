@@ -51,6 +51,10 @@
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) ALIGN_UP(val,align)
 
+extern void ep_rt_coreclr_sample_profiler_enabled (EventPipeEvent *sampling_event);
+extern void ep_rt_coreclr_sample_profiler_session_enabled (void);
+extern void ep_rt_coreclr_sample_profiler_disabled (void);
+
 static
 inline
 ep_rt_lock_handle_t *
@@ -610,7 +614,7 @@ void
 ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_enabled (sampling_event);
 }
 
 static
@@ -619,7 +623,7 @@ void
 ep_rt_sample_profiler_session_enabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_session_enabled ();
 }
 
 static
@@ -628,7 +632,7 @@ void
 ep_rt_sample_profiler_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_disabled ();
 }
 
 static
@@ -1735,7 +1739,9 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
+	// This value is an approximation of the command line for diagnostic purposes, and it may not match
+	// the actual command line used to launch the process.
+	// This value can change over time, specifically before vs after suspension in diagnostics server.
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.

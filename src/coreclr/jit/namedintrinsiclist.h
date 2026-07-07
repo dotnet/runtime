@@ -167,23 +167,27 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_MemoryBarrier,
 
     NI_System_Threading_Tasks_Task_ConfigureAwait,
+    NI_System_Threading_Tasks_Task_FromResult,
+    NI_System_Threading_Tasks_Task_get_CompletedTask,
+
+    NI_System_Threading_Tasks_ValueTask_FromResult,
+    NI_System_Threading_Tasks_ValueTask_get_CompletedTask,
+
+    NI_System_Threading_Tasks_ValueTask_1__ctor,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS)
     NI_HW_INTRINSIC_START,
-#if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost,    \
-                           category, flag)                                                                             \
+
+    // clang-format off
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
     NI_##isa##_##name,
-#include "hwintrinsiclistxarch.h"
-#elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)      \
-    NI_##isa##_##name,
-#include "hwintrinsiclistarm64.h"
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#include "hwintrinsiclist.h"
+    // clang-format on
+
     NI_HW_INTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 

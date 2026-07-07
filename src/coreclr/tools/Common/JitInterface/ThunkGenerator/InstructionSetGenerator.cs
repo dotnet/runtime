@@ -121,6 +121,8 @@ namespace Thunkerator
                 return "AMD64";
             if (arch == "RiscV64")
                 return "RISCV64";
+            if (arch == "Wasm32")
+                return "WASM";
             return arch;
         }
 
@@ -1054,8 +1056,9 @@ enum CORINFO_InstructionSet
     InstructionSet_ILLEGAL = 0,
 ");
 
-            int lastAvailableBit = (FlagsFieldCount * 64) - 1;
-            tr.WriteLine($"    InstructionSet_NONE = {lastAvailableBit},");
+            int lastAvailableBit = (FlagsFieldCount * 64) - 2;
+            tr.WriteLine($"    InstructionSet_Vector = {lastAvailableBit},");
+            tr.WriteLine($"    InstructionSet_NONE = {lastAvailableBit + 1},");
 
             foreach (string architecture in _architectures)
             {

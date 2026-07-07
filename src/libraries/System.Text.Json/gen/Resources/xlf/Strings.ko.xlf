@@ -52,16 +52,6 @@
         <target state="translated">'JsonSourceGenerationMode.Serialization'에서는 'JsonDerivedTypeAttribute'가 지원되지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
-        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="translated">멤버 '{0}.{1}'이(가) JsonIncludeAttribute로 주석 처리되었지만 원본 생성기에는 표시되지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
-        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="translated">JsonIncludeAttribute로 주석 처리된 액세스할 수 없는 속성은 원본 생성 모드에서 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">'{1}' 멤버에 지정된 'JsonConverterAttribute' 형식 '{0}'이(가) 변환기 형식이 아니거나 액세스 가능한 매개 변수가 없는 생성자를 포함하지 않습니다.</target>
@@ -130,6 +120,41 @@
       <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
         <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
         <target state="translated">형식에 JsonExtensionDataAttribute로 주석이 추가 된 멤버가 여러 개 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">폴리모픽 기본 형식 '{0}'에 대해 열려 있는 제네릭 파생 형식 '{1}'을(를) 확인할 수 없습니다. {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">파생 형식이 여러 상위 형식을 통해 기본 형식과 일치합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">형식 매개 변수 '{0}'에 대한 제약 조건이 '{1}'을(를) 만족하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">파생 형식을 기본 형식에 할당할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">파생 형식의 형식 매개 변수 '{0}'은(는) 기본 형식의 인수에 의해 바인딩되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">기본 형식의 인수가 파생 형식의 기본 사양과 일치하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">폴리모픽 기본 형식에 대해 열려 있는 제네릭 파생 형식을 확인할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">

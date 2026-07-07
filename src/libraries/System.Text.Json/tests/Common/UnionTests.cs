@@ -182,7 +182,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Trigger configuration of the type info via GetTypeInfo (modifiers run during
             // resolver invocation, before Configure).
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
             _ = options.GetTypeInfo(typeof(UnionWithCustomClassifier));
 
             Assert.NotNull(observedAtModifierTime);
@@ -323,7 +323,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             options.TypeClassifiers.Add(new UnionWithOtherCaseOptionsClassifierFactory());
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
             _ = options.GetTypeInfo(typeof(UnionWithCustomConverterCase));
 
             Assert.NotNull(observedAtModifierTime);
@@ -1140,7 +1140,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             });
 
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
                 () => options.GetTypeInfo(typeof(NullableCaseUnion)));
@@ -1160,7 +1160,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             });
 
-            options.MakeReadOnly(populateMissingResolver: true);
+            options.MakeReadOnly();
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
                 () => options.GetTypeInfo(typeof(NullableCaseUnion)));
@@ -1209,70 +1209,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo<UserDefinedUnionViaIUnion>();
             Assert.Equal(JsonTypeInfoKind.Object, typeInfo.Kind);
-        }
-
-#pragma warning disable SYSLIB1228
-        [Union]
-        public class UserDefinedUnionWithoutValueProperty
-        {
-            public UserDefinedUnionWithoutValueProperty(int v) { X = v; }
-            public int X { get; }
-        }
-#pragma warning restore SYSLIB1228
-
-        [Fact]
-        public void UnionAttribute_WithoutValueProperty_ThrowsAtConfigure()
-        {
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-                () => Serializer.GetTypeInfo<UserDefinedUnionWithoutValueProperty>());
-
-            Assert.Contains(nameof(UserDefinedUnionWithoutValueProperty), ex.Message);
-        }
-
-#pragma warning disable SYSLIB1228
-        [Union]
-        public class UserDefinedUnconventionalUnion
-        {
-            public UserDefinedUnconventionalUnion(int x, int y) { Sum = x + y; }
-            public int Sum { get; }
-            public object Value => Sum;
-        }
-#pragma warning restore SYSLIB1228
-
-        [Fact]
-        public void UnionMissingMetadata_DefaultResolver_ThrowsAtConfigure()
-        {
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-                () => Serializer.GetTypeInfo<UserDefinedUnconventionalUnion>());
-
-            Assert.Contains(nameof(UserDefinedUnconventionalUnion), ex.Message);
-        }
-
-        [Fact]
-        public async Task UnionMissingMetadata_ContractCustomization_RescuesAndRoundTrips()
-        {
-            // The convention path produces an empty union JsonTypeInfo. A modifier patches it up by
-            // providing UnionCases plus the deconstructor/constructor delegates.
-            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
-            {
-                if (typeInfo.Type != typeof(UserDefinedUnconventionalUnion))
-                {
-                    return;
-                }
-
-                JsonTypeInfo<UserDefinedUnconventionalUnion> ti = (JsonTypeInfo<UserDefinedUnconventionalUnion>)typeInfo;
-                ti.UnionCases.Add(new JsonUnionCaseInfo(typeof(int)));
-                ti.UnionDeconstructor = static (UserDefinedUnconventionalUnion u) => (typeof(int), (object?)u.Sum);
-                ti.UnionConstructor = static (Type _, object? value) => new UserDefinedUnconventionalUnion((int)value!, 0);
-            });
-
-            UserDefinedUnconventionalUnion value = new(2, 3);
-            string json = await Serializer.SerializeWrapper(value, options);
-            Assert.Equal("5", json);
-
-            UserDefinedUnconventionalUnion? roundTripped = await Serializer.DeserializeWrapper<UserDefinedUnconventionalUnion>("7", options);
-            Assert.NotNull(roundTripped);
-            Assert.Equal(7, roundTripped!.Sum);
         }
 
         [Union]
@@ -1843,7 +1779,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             Assert.Throws<JsonException>(() =>
-                JsonSerializer.Serialize(union, options));
+                JsonSerializer.Serialize(union, options.GetTypeInfo<SelfReferentialUnion>()));
         }
 
         [Fact]

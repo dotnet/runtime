@@ -34,7 +34,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
     regMaskTP rsRestoreRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -1387,8 +1387,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(block != NULL);
     assert(m_compiler->bbIsFuncletBeg(block));
 
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
-
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -1552,8 +1550,6 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
     if (verbose)
         printf("*************** In genFuncletEpilog()\n");
 #endif
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     bool unwindStarted = false;
 
@@ -1883,7 +1879,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 
@@ -2309,7 +2305,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -3120,7 +3116,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         needsZeroing = false;
 
         // If amount is zero then return null in targetReg
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
@@ -3512,7 +3508,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     assert(tree->OperIs(GT_DIV, GT_UDIV));
 
     var_types targetType = tree->TypeGet();
-    emitter*  emit       = GetEmitter();
 
     genConsumeOperands(tree);
 
@@ -3557,32 +3552,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // (MinInt / -1) => ArithmeticException
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
-            // Signed-division might overflow.
-
-            assert(tree->OperIs(GT_DIV));
-            assert(!divisorOp->IsIntegralConst(0));
-
-            BasicBlock* sdivLabel  = genCreateTempLabel();
-            GenTree*    dividendOp = tree->gtGetOp1();
-
-            // Check if the divisor is not -1 branch to 'sdivLabel'
-            emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
-
-            inst_JMP(EJ_ne, sdivLabel);
-            // If control flow continues past here the 'divisorReg' is known to be -1
-
-            regNumber dividendReg = dividendOp->GetRegNum();
-            // At this point the divisor is known to be -1
-            //
-            // Issue the 'cmp dividendReg, 1' instruction.
-            // This is an alias to 'subs zr, dividendReg, 1' on ARM64 itself.
-            // This will set the V (overflow) flags only when dividendReg is MinInt
-            //
-            emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
-            genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                          // ArithmeticException
-
-            genDefineTempLabel(sdivLabel);
+            genCodeForDivModOverflowCheck(tree);
         }
 
         genCodeForBinary(tree); // Generate the sdiv instruction
@@ -5437,7 +5407,7 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
@@ -5543,7 +5513,7 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->compIsProfilerHookNeeded())
     {
@@ -5631,7 +5601,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (delta == 0)
     {
@@ -5673,7 +5643,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (frameSize == 0)
     {
@@ -5863,6 +5833,37 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
     GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
                                   (int)shiftByImm, (int)srcBits);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBfx: Generates the code sequence for a GenTree node that
+// represents a bitfield extract.
+//
+// Arguments:
+//    tree - the bitfield extract.
+//
+void CodeGen::genCodeForBfx(GenTreeBfm* tree)
+{
+    assert(tree->OperIs(GT_BFX));
+
+    emitAttr size = emitActualTypeSize(tree);
+
+    GenTree* src = tree->gtGetOp1();
+
+    const unsigned bitWidth = emitter::getBitWidth(size);
+    const unsigned lsb      = tree->GetOffset();
+    const unsigned width    = tree->GetWidth();
+
+    assert((bitWidth == 32) || (bitWidth == 64));
+    assert(lsb < bitWidth);
+    assert(width > 0);
+    assert((lsb + width) <= bitWidth);
+
+    genConsumeRegs(src);
+
+    GetEmitter()->emitIns_R_R_I_I(INS_ubfx, size, tree->GetRegNum(), src->GetRegNum(), (int)lsb, (int)width);
 
     genProduceReg(tree);
 }

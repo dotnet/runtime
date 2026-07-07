@@ -74,7 +74,7 @@ namespace System.Diagnostics
             return processName;
         }
 
-        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
+        internal static unsafe ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
             Interop.libproc.proc_taskallinfo? info;
             string processName = GetProcessName(pid, out info, getInfo: true) ?? "";
