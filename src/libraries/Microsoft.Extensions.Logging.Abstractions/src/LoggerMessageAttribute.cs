@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging
     /// <para>   - Must return <c>void</c>.</para>
     /// <para>   - Must not be generic.</para>
     /// <para>   - Must have an <see cref="ILogger"/> as one of its parameters.</para>
-    /// <para>   - Must have a <see cref="Microsoft.Extensions.Logging.LogLevel"/> as one of its parameters.</para>
+    /// <para>   - Must specify a log level, either on the attribute (through a constructor or the <see cref="Level"/> property) or as a <see cref="Microsoft.Extensions.Logging.LogLevel"/> parameter on the method.</para>
     /// <para>   - None of the parameters can be generic.</para>
     /// </remarks>
     /// <example>
