@@ -184,7 +184,6 @@ class DacDbiInterfaceImpl;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
-#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
@@ -791,6 +790,10 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 
 typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
+#ifdef TARGET_WASM
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp);
+#endif
+
 class TransitionFrame : public Frame
 {
 #ifndef DACCESS_COMPILE
@@ -873,6 +876,18 @@ public:
     TADDR GetSP()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
+        if (pTransitionBlock != NULL)
+        {
+            if ((pTransitionBlock->m_ReturnAddress != 0) && (pTransitionBlock->m_StackPointer != 0))
+            {
+                // If the TransitionBlock is setup with both a return address and a stack pointer, then we can trust the stack pointer value,
+                // and it corresponds into the R2R unwind stack
+                return pTransitionBlock->m_StackPointer;
+            }
+        }
+#endif
         return GetTransitionBlock() + sizeof(TransitionBlock);
     }
 
@@ -1194,6 +1209,7 @@ template<>
 struct cdac_data<FuncEvalFrame>
 {
     static constexpr size_t DebuggerEvalPtr = offsetof(FuncEvalFrame, m_pDebuggerEval);
+    static constexpr size_t ReturnAddress = offsetof(FuncEvalFrame, m_ReturnAddress);
 };
 
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
@@ -1218,6 +1234,17 @@ public:
     TADDR GetTransitionBlock_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)m_pTransitionBlock;
+        if (pTransitionBlock != NULL)
+        {
+            if (pTransitionBlock->m_ReturnAddress == 0)
+            {
+                // Lazy compute the virtual IP for the frame
+                pTransitionBlock->m_ReturnAddress = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+            }
+        }
+#endif
         return m_pTransitionBlock;
     }
 
@@ -1332,6 +1359,14 @@ public:
         trace->InitForUnmanaged(GetPInvokeCalliTarget());
         return TRUE;
     }
+
+    friend struct ::cdac_data<PInvokeCalliFrame>;
+};
+
+template <>
+struct cdac_data<PInvokeCalliFrame>
+{
+    static constexpr size_t VASigCookiePtr = offsetof(PInvokeCalliFrame, m_pVASigCookie);
 };
 
 // Some context-related forwards.
@@ -1354,6 +1389,20 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return PTR_HOST_MEMBER_TADDR(HijackFrame, this,
                                      m_ReturnAddress);
+    }
+
+    PCODE GetReturnAddress_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
+        if (m_SpForPacSign != 0)
+        {
+            return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
+        }
+#endif
+
+        return (PCODE)m_ReturnAddress;
     }
 
     BOOL NeedsUpdateRegDisplay_Impl()
@@ -1383,11 +1432,14 @@ public:
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
     // So, it's a public function -- but that doesn't mean you should make some.
-    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args);
+    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args ARM64_ARG(LPVOID spForPacSign));
 
 protected:
 
     TADDR               m_ReturnAddress;
+#if defined(TARGET_ARM64)
+    TADDR               m_SpForPacSign;
+#endif
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
 
@@ -1764,6 +1816,17 @@ private:
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
+
+    friend struct ::cdac_data<GCFrame>;
+};
+
+template<>
+struct cdac_data<GCFrame>
+{
+    static constexpr size_t Next = offsetof(GCFrame, m_Next);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pObjRefs);
+    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
+    static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------
@@ -2383,20 +2446,6 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
-#ifndef TARGET_WASM
-    void SetInterpExecMethodSP(TADDR sp)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_SP = sp;
-    }
-
-    TADDR GetInterpExecMethodSP()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SP;
-    }
-#endif // TARGET_WASM
-
     void SetIsFaulting(bool isFaulting)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2441,9 +2490,6 @@ private:
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
 #endif // HOST_AMD64 && HOST_WINDOWS
-#ifndef TARGET_WASM
-    TADDR m_SP;
-#endif // TARGET_WASM
     PTR_Object m_continuation;
 
     friend struct cdac_data<InterpreterFrame>;

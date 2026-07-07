@@ -9,7 +9,7 @@ namespace System.Net
 {
     internal static class SecurityStatusAdapterPal
     {
-        private const int StatusDictionarySize = 45;
+        private const int StatusDictionarySize = 46;
 
 #if DEBUG
         static SecurityStatusAdapterPal()
@@ -44,6 +44,7 @@ namespace System.Net
             { Interop.SECURITY_STATUS.InvalidToken, SecurityStatusPalErrorCode.InvalidToken },
             { Interop.SECURITY_STATUS.LogonDenied, SecurityStatusPalErrorCode.LogonDenied },
             { Interop.SECURITY_STATUS.MessageAltered, SecurityStatusPalErrorCode.MessageAltered },
+            { Interop.SECURITY_STATUS.MutualAuthFailed, SecurityStatusPalErrorCode.MutualAuthFailed },
             { Interop.SECURITY_STATUS.NoAuthenticatingAuthority, SecurityStatusPalErrorCode.NoAuthenticatingAuthority },
             { Interop.SECURITY_STATUS.NoImpersonation, SecurityStatusPalErrorCode.NoImpersonation },
             { Interop.SECURITY_STATUS.NoCredentials, SecurityStatusPalErrorCode.NoCredentials },

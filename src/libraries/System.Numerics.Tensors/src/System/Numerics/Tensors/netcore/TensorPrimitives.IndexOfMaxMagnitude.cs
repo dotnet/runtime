@@ -62,7 +62,7 @@ namespace System.Numerics.Tensors
                 Vector128<T> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
                 if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector128<T> equalResult = IsPositive(x) & IsNegative(y);
+                    Vector128<T> equalResult = Vector128.IsPositive(x) & Vector128.IsNegative(y);
                     return Vector128.GreaterThan(xMag, yMag) | (Vector128.Equals(xMag, yMag) & equalResult);
                 }
                 else if (typeof(T) == typeof(sbyte)
@@ -74,7 +74,7 @@ namespace System.Numerics.Tensors
                     // Consider overflows (when IsNegative(Abs(x))) from Abs(MinValue) which implies maximum magnitude.
                     Vector128<T> equalResult = Vector128.IsPositive(x) & Vector128.IsNegative(y);
                     Vector128<T> nonOverflowResult = Vector128.GreaterThan(xMag, yMag) | (Vector128.Equals(xMag, yMag) & equalResult);
-                    return Vector128.AndNot(nonOverflowResult | IsNegative(xMag), IsNegative(yMag));
+                    return Vector128.AndNot(nonOverflowResult | Vector128.IsNegative(xMag), Vector128.IsNegative(yMag));
                 }
                 else
                 {
@@ -88,7 +88,7 @@ namespace System.Numerics.Tensors
                 Vector256<T> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
                 if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector256<T> equalResult = IsPositive(x) & IsNegative(y);
+                    Vector256<T> equalResult = Vector256.IsPositive(x) & Vector256.IsNegative(y);
                     return Vector256.GreaterThan(xMag, yMag) | (Vector256.Equals(xMag, yMag) & equalResult);
                 }
                 else if (typeof(T) == typeof(sbyte)
@@ -114,7 +114,7 @@ namespace System.Numerics.Tensors
                 Vector512<T> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
                 if (typeof(T) == typeof(double) || typeof(T) == typeof(float))
                 {
-                    Vector512<T> equalResult = IsPositive(x) & IsNegative(y);
+                    Vector512<T> equalResult = Vector512.IsPositive(x) & Vector512.IsNegative(y);
                     return Vector512.GreaterThan(xMag, yMag) | (Vector512.Equals(xMag, yMag) & equalResult);
                 }
                 else if (typeof(T) == typeof(sbyte)

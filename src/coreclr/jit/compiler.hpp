@@ -141,12 +141,12 @@ inline unsigned genLog2(uint64_t value)
     return BitOperations::BitScanForward(value);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline unsigned genLog2(size_t value)
 {
     return genLog2((uint64_t)value);
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
@@ -1973,8 +1973,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_CNS_INT:
-            AsIntCon()->gtFieldSeq = nullptr;
-            INDEBUG(AsIntCon()->gtTargetHandle = 0);
+            AsIntCon()->SetFieldSeq(nullptr);
+            INDEBUG(AsIntCon()->SetTargetHandle(0));
             break;
 #if defined(TARGET_ARM)
         case GT_MUL_LONG:
@@ -2101,7 +2101,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq = nullptr;
+            AsIntCon()->SetFieldSeq(nullptr);
+            AsIntCon()->SetCompileTimeHandle(0);
             break;
 
 #if !defined(TARGET_64BIT)
@@ -4353,6 +4354,11 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         // Below conditions guarantee block initialization, which will initialize
         // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
         // changes, these conditions need to be updated.
+#ifdef TARGET_WASM
+        // On WASM the prolog always uses a single memory.fill to zero any
+        // locals that need initialization, regardless of size.
+        return false;
+#else // !TARGET_WASM
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
@@ -4368,6 +4374,7 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         {
             return false;
         }
+#endif // !TARGET_WASM
     }
 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());

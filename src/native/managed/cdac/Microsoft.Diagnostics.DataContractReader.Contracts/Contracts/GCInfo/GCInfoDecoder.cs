@@ -518,6 +518,12 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _stackBaseRegister;
     }
 
+    public uint GetSizeOfStackParameterArea()
+    {
+        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        return _fixedStackParameterScratchArea;
+    }
+
     public IReadOnlyList<InterruptibleRange> GetInterruptibleRanges()
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);
@@ -841,9 +847,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         }
         else
         {
-            // Skip scratch stack slots for non-leaf frames (slots in the outgoing/scratch area)
-            if (!reportScratchSlots && TTraits.IsScratchStackSlot(slot.SpOffset, (uint)slot.Base, _fixedStackParameterScratchArea))
-                return;
             // FP-based-only mode: only report GC_FRAMEREG_REL slots
             if (reportFpBasedSlotsOnly && slot.Base != GcStackSlotBase.GC_FRAMEREG_REL)
                 return;

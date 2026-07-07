@@ -481,8 +481,14 @@ namespace System.IO.Compression
             {
                 // this means we have never opened it before
 
-                // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
-                // grow as data is copied into it
+                // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
+                // Validate up front before attempting the (int) cast.
+                if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+                {
+                    _currentlyOpenForWrite = false;
+                    throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+                }
+
                 _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
                 if (_originallyInArchive)
@@ -981,7 +987,11 @@ namespace System.IO.Compression
         private bool IsOpenableFinalVerifications(bool needToLoadIntoMemory, long offsetOfCompressedData, out string? message)
         {
             message = null;
-            if (offsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)
+            // Use an overflow-safe form: corrupt zip64 archives can report compressed sizes / offsets
+            // near long.MaxValue, which would wrap around in 'offsetOfCompressedData + _compressedSize'.
+            if (offsetOfCompressedData < 0 ||
+                _compressedSize < 0 ||
+                _compressedSize > _archive.ArchiveStream.Length - offsetOfCompressedData)
             {
                 message = SR.LocalFileHeaderCorrupt;
                 return false;

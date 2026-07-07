@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource, VfsAsset } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
@@ -96,9 +96,11 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
         }
 
+        const appsettingsVfs = getAppsettingsVfs();
+
         // HTTP cache only path: just fetch all resources into browser cache and discard
         if (downloadOnly && httpCacheOnly) {
-            await prefetchAllResources();
+            await prefetchAllResources(appsettingsVfs);
             downloadMode = "cacheOnly";
             downloadDeferred?.resolve(undefined as unknown as void);
             return;
@@ -125,7 +127,8 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && resources.satelliteResources
             ? fetchSatelliteAssemblies(Object.keys(resources.satelliteResources))
             : Promise.resolve();
-        const vfsPromise = forEachResource(resources.vfs, fetchVfs);
+
+        const vfsPromise = forEachResource([...normalizeCollection(resources.vfs), ...appsettingsVfs], fetchVfs);
 
         // WASM-TODO: also check that the debugger is linked in and check feature flags
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
@@ -235,4 +238,24 @@ function normalizeCollection<T>(collection: T[] | undefined): T[] {
         return [];
     }
     return collection;
+}
+
+function getAppsettingsVfs(): VfsAsset[] {
+    const result: VfsAsset[] = [];
+    if (!loaderConfig.appsettings) {
+        return result;
+    }
+    for (const configUrl of loaderConfig.appsettings) {
+        const lastSlash = configUrl.lastIndexOf("/");
+        const configFileName = lastSlash >= 0 ? configUrl.substring(lastSlash + 1) : configUrl;
+        if (configFileName === "appsettings.json" || configFileName === `appsettings.${loaderConfig.applicationEnvironment}.json`) {
+            result.push({
+                name: configUrl,
+                virtualPath: configFileName,
+                cache: "no-cache",
+                useCredentials: true,
+            } as any);
+        }
+    }
+    return result;
 }

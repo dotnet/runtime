@@ -3087,7 +3087,7 @@ namespace
         STANDARD_VM_CONTRACT;
 
         PTR_MethodTable fieldType = pFieldDesc->GetFieldTypeHandleThrowing().GetMethodTable();
-        CorElementType corType = fieldType->GetVerifierCorElementType();
+        CorElementType corType = fieldType->GetInternalCorElementType();
 
         if (corType == ELEMENT_TYPE_VALUETYPE)
         {
@@ -3826,6 +3826,7 @@ void MethodTable::CheckRunClassInitThrowing()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(IsFullyLoaded());
     }
@@ -4969,9 +4970,8 @@ CorElementType MethodTable::GetInternalCorElementType()
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_PrimitiveValueType:
-        // This path should only be taken for the builtin CoreLib types
-        // and primitive valuetypes
+    case enum_flag_Category_Primitive:
+        // enum_flag_Category_ElementTypeMask maps both Category_TruePrimitive and Category_Primitive here.
         ret = GetClass()->GetInternalCorElementType();
         _ASSERTE((ret != ELEMENT_TYPE_CLASS) &&
                     (ret != ELEMENT_TYPE_VALUETYPE));
@@ -4991,48 +4991,6 @@ CorElementType MethodTable::GetInternalCorElementType()
         _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
     }
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    return ret;
-}
-
-//==========================================================================================
-CorElementType MethodTable::GetVerifierCorElementType()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    // This should not touch the EEClass, at least not in the
-    // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
-    CorElementType ret;
-
-    switch (GetFlag(enum_flag_Category_ElementTypeMask))
-    {
-    case enum_flag_Category_Array:
-        ret = ELEMENT_TYPE_ARRAY;
-        break;
-
-    case enum_flag_Category_Array | enum_flag_Category_IfArrayThenSzArray:
-        ret = ELEMENT_TYPE_SZARRAY;
-        break;
-
-    case enum_flag_Category_ValueType:
-        ret = ELEMENT_TYPE_VALUETYPE;
-        break;
-
-    case enum_flag_Category_PrimitiveValueType:
-        //
-        // This is the only difference from MethodTable::GetInternalCorElementType()
-        //
-        if (IsTruePrimitive() || IsEnum())
-            ret = GetClass()->GetInternalCorElementType();
-        else
-            ret = ELEMENT_TYPE_VALUETYPE;
-        break;
-
-    default:
-        ret = ELEMENT_TYPE_CLASS;
-        break;
-    }
-
     return ret;
 }
 
@@ -5058,7 +5016,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
 
     case enum_flag_Category_ValueType:
     case enum_flag_Category_Nullable:
-    case enum_flag_Category_PrimitiveValueType:
+    case enum_flag_Category_Primitive:
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
@@ -5077,11 +5035,11 @@ CorElementType MethodTable::GetSignatureCorElementType()
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-void MethodTable::SetInternalCorElementType (CorElementType _NormType)
+void MethodTable::SetInternalCorElementType(CorElementType elemType, bool isTruePrimitive)
 {
     WRAPPER_NO_CONTRACT;
 
-    switch (_NormType)
+    switch (elemType)
     {
     case ELEMENT_TYPE_CLASS:
         _ASSERTE(!IsArray());
@@ -5089,16 +5047,14 @@ void MethodTable::SetInternalCorElementType (CorElementType _NormType)
         break;
     case ELEMENT_TYPE_VALUETYPE:
         SetFlag(enum_flag_Category_ValueType);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         break;
     default:
-        SetFlag(enum_flag_Category_PrimitiveValueType);
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_PrimitiveValueType);
+        SetFlag(isTruePrimitive ? enum_flag_Category_TruePrimitive : enum_flag_Category_Primitive);
         break;
     }
 
-    GetClass()->SetInternalCorElementType(_NormType);
-    _ASSERTE(GetInternalCorElementType() == _NormType);
+    GetClass()->SetInternalCorElementType(elemType);
+    _ASSERTE(GetInternalCorElementType() == elemType);
 }
 
 #endif // !DACCESS_COMPILE
@@ -6020,39 +5976,6 @@ UINT32 MethodTable::LookupTypeID()
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
     return AppDomain::GetCurrentDomain()->LookupTypeID(pMT);
-}
-
-//==========================================================================================
-BOOL MethodTable::ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, MethodTable *pParentMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsInterface() && !pParentMT->IsInterface());
-        PRECONDITION(pItfMT->IsInterface());
-    } CONTRACTL_END;
-
-    MethodTable *pMT = this;
-    do
-    {
-        DispatchMap::EncodedMapIterator it(pMT);
-        for (; it.IsValid(); it.Next())
-        {
-            DispatchMapEntry *pCurEntry = it.Entry();
-            if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), pItfMT))
-            {
-                // this class and its parents up to pParentMT must have no mappings for the interface
-                return FALSE;
-            }
-        }
-
-        pMT = pMT->GetParentMethodTable();
-        _ASSERTE(pMT != NULL);
-    }
-    while (pMT != pParentMT);
-
-    return TRUE;
 }
 
 #endif // !DACCESS_COMPILE
@@ -7907,7 +7830,7 @@ namespace
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncVariantMethod() == pDefMD->IsAsyncVariantMethod())
+                && pMD->MatchesAsyncVariantLookup(pDefMD->GetMatchingAsyncVariantLookup()))
             {
                 return pMD;
             }

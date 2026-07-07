@@ -23,7 +23,7 @@ namespace System.Text.Json
                 options.Key.ClearCaches();
             }
 
-            DefaultJsonTypeInfoResolver.ClearMemberAccessorCaches();
+            MemberAccessor.ClearCache();
         }
     }
 }

@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -901,5 +903,238 @@ namespace Microsoft.Extensions.Options.Tests
             var unvalidated = monitor.Get("unvalidated");
             Assert.NotNull(unvalidated);
         }
+
+#if NET11_0_OR_GREATER
+        private sealed class AsyncOnlyFailAttribute : AsyncValidationAttribute
+        {
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext) => ValidationResult.Success;
+
+            protected override async Task<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken)
+            {
+                await Task.Yield();
+                if (value is null)
+                {
+                    return ValidationResult.Success;
+                }
+
+                return new ValidationResult("Async-only failure", new[] { validationContext.MemberName! });
+            }
+        }
+
+        private class AsyncAnnotatedOptions
+        {
+            [AsyncOnlyFail]
+            public string? Value { get; set; }
+        }
+
+        private class ParentWithNestedAsync
+        {
+            [Required]
+            public string? Name { get; set; }
+
+            [ValidateObjectMembers]
+            public AsyncAnnotatedOptions? Child { get; set; }
+        }
+
+        private class ParentWithEnumeratedAsync
+        {
+            [ValidateEnumeratedItems]
+            public List<AsyncAnnotatedOptions>? Items { get; set; }
+        }
+#endif
+
+#if NET11_0_OR_GREATER
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_ReportsAnnotationFailures()
+        {
+            var options = new AnnotatedOptions
+            {
+                StringLength = "111111",
+                IntRange = 10,
+                Custom = "nowhere",
+                Dep1 = "Not dep2"
+            };
+
+            var validator = new DataAnnotationValidateOptions<AnnotatedOptions>(Options.DefaultName);
+
+            ValidateOptionsResult syncResult = validator.Validate(Options.DefaultName, options);
+            Assert.True(syncResult.Failed);
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(asyncResult.Failed);
+            Assert.Equal(syncResult.Failures.OrderBy(f => f), asyncResult.Failures.OrderBy(f => f));
+            Assert.Equal(5, asyncResult.Failures.Count());
+            Assert.All(asyncResult.Failures, f => Assert.Contains("DataAnnotation validation failed", f));
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_SucceedsWhenValid()
+        {
+            var options = new AnnotatedOptions
+            {
+                Required = "value",
+                StringLength = "1234",
+                IntRange = 0,
+                Custom = "USA",
+                Dep1 = "dep",
+                Dep2 = "dep"
+            };
+
+            var validator = new DataAnnotationValidateOptions<AnnotatedOptions>(Options.DefaultName);
+            ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(result.Succeeded);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_SkipsWhenNameMismatch()
+        {
+            var validator = new DataAnnotationValidateOptions<AnnotatedOptions>("expected");
+            ValidateOptionsResult result = await validator.ValidateAsync("other", new AnnotatedOptions());
+            Assert.True(result.Skipped);
+        }
+
+        [Theory]
+        [InlineData("named1")]
+        [InlineData(null)]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_NameMatching(string? registeredName)
+        {
+            var options = new AnnotatedOptions
+            {
+                StringLength = "111111",
+                IntRange = 10,
+                Custom = "nowhere",
+                Dep1 = "Not dep2"
+            };
+
+            var validator = new DataAnnotationValidateOptions<AnnotatedOptions>(registeredName);
+
+            ValidateOptionsResult defaultResult = await validator.ValidateAsync(Options.DefaultName, options);
+
+            if (registeredName is null)
+            {
+                Assert.True(defaultResult.Failed);
+            }
+            else
+            {
+                Assert.True(defaultResult.Skipped);
+            }
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_ThrowsOnNullOptions()
+        {
+            var validator = new DataAnnotationValidateOptions<AnnotatedOptions>(Options.DefaultName);
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                () => validator.ValidateAsync(Options.DefaultName, null!, CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task ValidateDataAnnotations_ValidateOnStart_AsyncStartupValidator_Success()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>()
+                .Configure(o =>
+                {
+                    o.Required = "required";
+                    o.StringLength = "1111";
+                    o.IntRange = 0;
+                    o.Custom = "USA";
+                    o.Dep1 = "dep";
+                    o.Dep2 = "dep";
+                })
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+            var asyncValidator = sp.GetRequiredService<IAsyncStartupValidator>();
+            await asyncValidator.ValidateAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_AcceptsCancellationToken()
+        {
+            var options = new AnnotatedOptions
+            {
+                Required = "value",
+                StringLength = "1234",
+                IntRange = 0,
+                Custom = "USA",
+                Dep1 = "dep",
+                Dep2 = "dep"
+            };
+
+            var validator = new DataAnnotationValidateOptions<AnnotatedOptions>(Options.DefaultName);
+            using var cts = new CancellationTokenSource();
+
+            ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options, cts.Token);
+            Assert.True(result.Succeeded);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_DetectsAsyncOnlyFailure()
+        {
+            var options = new AsyncAnnotatedOptions { Value = "test" };
+            var validator = new DataAnnotationValidateOptions<AsyncAnnotatedOptions>(Options.DefaultName);
+
+            ValidateOptionsResult syncResult = validator.Validate(Options.DefaultName, options);
+            Assert.True(syncResult.Succeeded);
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(asyncResult.Failed);
+            Assert.Contains("Async-only failure", asyncResult.FailureMessage);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_AsyncOnlySuccess()
+        {
+            var options = new AsyncAnnotatedOptions { Value = null };
+            var validator = new DataAnnotationValidateOptions<AsyncAnnotatedOptions>(Options.DefaultName);
+
+            ValidateOptionsResult result = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(result.Succeeded);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_NestedObjectRecursion()
+        {
+            var options = new ParentWithNestedAsync
+            {
+                Name = "parent",
+                Child = new AsyncAnnotatedOptions { Value = "test" }
+            };
+            var validator = new DataAnnotationValidateOptions<ParentWithNestedAsync>(Options.DefaultName);
+
+            ValidateOptionsResult syncResult = validator.Validate(Options.DefaultName, options);
+            Assert.True(syncResult.Succeeded);
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(asyncResult.Failed);
+            Assert.Contains("ParentWithNestedAsync.Child", asyncResult.FailureMessage);
+            Assert.Contains("Async-only failure", asyncResult.FailureMessage);
+        }
+
+        [Fact]
+        public async Task DataAnnotationValidateOptions_ValidateAsync_EnumeratedItemsRecursion()
+        {
+            var options = new ParentWithEnumeratedAsync
+            {
+                Items = new List<AsyncAnnotatedOptions>
+                {
+                    new() { Value = "a" },
+                    new() { Value = "b" }
+                }
+            };
+            var validator = new DataAnnotationValidateOptions<ParentWithEnumeratedAsync>(Options.DefaultName);
+
+            ValidateOptionsResult syncResult = validator.Validate(Options.DefaultName, options);
+            Assert.True(syncResult.Succeeded);
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync(Options.DefaultName, options);
+            Assert.True(asyncResult.Failed);
+            Assert.Contains("[0]", asyncResult.FailureMessage);
+            Assert.Contains("[1]", asyncResult.FailureMessage);
+            Assert.Contains("Async-only failure", asyncResult.FailureMessage);
+        }
+#endif // NET11_0_OR_GREATER
     }
 }

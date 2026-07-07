@@ -24,7 +24,7 @@ namespace System.Runtime.Loader.Tests
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string UseCorruptAssembly() => BindFailureTest.Corrupt.TestClass.GetMessage();
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsNotMobile))]
         public void NotFound_ExceptionContainsAssemblyPath()
         {
             // The Missing assembly is listed in deps.json (so the host adds it to the TPA
@@ -71,7 +71,7 @@ namespace System.Runtime.Loader.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsNotMobile))]
         public void Corrupt_ExceptionContainsPathAndHResult()
         {
             const int COR_E_ASSEMBLYEXPECTED = unchecked((int)0x80131018);

@@ -28,8 +28,6 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getMethodClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     bool (* resolveVirtualMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_DEVIRTUALIZATION_INFO* info);
-    CORINFO_METHOD_HANDLE (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-    CORINFO_METHOD_HANDLE (* getInstantiatedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
     CORINFO_METHOD_HANDLE (* getAsyncOtherVariant)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
     CORINFO_CLASS_HANDLE (* getDefaultComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
@@ -133,6 +131,7 @@ struct JitInterfaceCallbacks
     bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     void (* getAsyncInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASYNC_INFO* pAsyncInfoOut);
+    CORINFO_METHOD_HANDLE (* getAwaitReturnCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
     size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames);
@@ -372,27 +371,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->resolveVirtualMethod(_thisHandle, &pException, info);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getUnboxedEntry(_thisHandle, &pException, ftn, requiresInstMethodTableArg);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getInstantiatedEntry(_thisHandle, &pException, ftn, methodArg, classArg);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1381,6 +1359,16 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getAsyncInfo(_thisHandle, &pException, pAsyncInfoOut);
     if (pException != nullptr) throw pException;
+}
+
+    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_METHOD_HANDLE temp = _callbacks->getAwaitReturnCall(_thisHandle, &pException, callerHandle, instArg);
+    if (pException != nullptr) throw pException;
+    return temp;
 }
 
     virtual mdMethodDef getMethodDefFromMethod(

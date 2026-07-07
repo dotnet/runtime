@@ -408,6 +408,24 @@ VOID ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiN
     delete pContext;
 }
 
+#if defined(TARGET_BROWSER)
+#include "wasm/entrypoints.h"
+
+static size_t ForceGCForDiagnosticsJob(void* data)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    ETW::GCLog::ForceGCForDiagnostics();
+    return 1; // done
+}
+#endif // TARGET_BROWSER
+
 // This implements the public runtime provider's GCHeapCollectKeyword.  It
 // performs a full, gen-2, blocking GC.
 VOID ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
@@ -427,7 +445,14 @@ VOID ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
 
     InterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
 
+#if defined(TARGET_BROWSER)
+    // On single-threaded browser, we cannot call ForceGCForDiagnostics synchronously
+    // from within the provider callback (which runs during ep_enable_3 under the
+    // EventPipe lock). Defer the GC to the next event loop turn.
+    SystemJS_DiagnosticServerQueueJob(ForceGCForDiagnosticsJob, NULL);
+#else
     ForceGCForDiagnostics();
+#endif // TARGET_BROWSER
 }
 
 //---------------------------------------------------------------------------------------

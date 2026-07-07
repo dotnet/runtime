@@ -6,15 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public readonly struct ModuleHandle
-{
-    public ModuleHandle(TargetPointer address)
-    {
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
-}
+public readonly record struct ModuleHandle(TargetPointer Address);
 
 [Flags]
 public enum ModuleFlags
@@ -87,7 +79,8 @@ public record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
 
 public readonly struct LoaderHeapBlockData
 {
@@ -105,6 +98,7 @@ public interface ILoader : IContract
     IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     string GetAppDomainFriendlyName() => throw new NotImplementedException();
+    TargetPointer GetAppDomain() => throw new NotImplementedException();
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
@@ -121,6 +115,7 @@ public interface ILoader : IContract
     string GetSimpleName(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
+    bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();

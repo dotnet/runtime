@@ -241,28 +241,6 @@ bool interceptor_ICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     return result;
 }
 
-// Get the unboxed entry point for a method, if possible.
-CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
-{
-    mc->cr->AddCall("getUnboxedEntry");
-    bool                  localRequiresInstMethodTableArg = false;
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
-    mc->recGetUnboxedEntry(ftn, &localRequiresInstMethodTableArg, result);
-    if (requiresInstMethodTableArg != nullptr)
-    {
-        *requiresInstMethodTableArg = localRequiresInstMethodTableArg;
-    }
-    return result;
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
-{
-    mc->cr->AddCall("getInstantaitedEntry");
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getInstantiatedEntry(ftn, methodHandle, classHandle);
-    mc->recGetInstantiatedEntry(ftn, *methodHandle, *classHandle, result);
-    return result;
-}
-
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
 {
     mc->cr->AddCall("getAsyncOtherVariant");
@@ -616,7 +594,7 @@ unsigned interceptor_ICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls
 // This is called for ref and value classes.  It returns a boolean array
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
-// (of length // getClassSize(cls) / sizeof(void*)),
+// (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
 // 'gcPtrs' is a pointer to an array of BYTEs of this length.
 // getClassGClayout fills in this array so that gcPtrs[i] is set
 // to one of the CorInfoGCType values which is the GC type of
@@ -628,14 +606,30 @@ unsigned interceptor_ICJI::getClassGClayout(CORINFO_CLASS_HANDLE cls,   /* IN */
 {
     mc->cr->AddCall("getClassGClayout");
     unsigned temp = original_ICorJitInfo->getClassGClayout(cls, gcPtrs);
+
+    // Use the target's pointer size, not the host's, so cross-target collections
+    // (e.g., wasm32 on an x64 host) record the full GC-layout buffer.
+    unsigned targetPointerSize;
+    switch (original_ICorJitInfo->getExpectedTargetArchitecture())
+    {
+        case CORINFO_ARCH_X86:
+        case CORINFO_ARCH_ARM:
+        case CORINFO_ARCH_WASM32:
+            targetPointerSize = 4;
+            break;
+        default:
+            targetPointerSize = 8;
+            break;
+    }
+
     unsigned len = 0;
     if (isValueClass(cls))
     {
-        len = (getClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+        len = (getClassSize(cls) + targetPointerSize - 1) / targetPointerSize;
     }
     else
     {
-        len = (getHeapClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+        len = (getHeapClassSize(cls) + targetPointerSize - 1) / targetPointerSize;
     }
     mc->recGetClassGClayout(cls, gcPtrs, len, temp);
     return temp;
@@ -1386,6 +1380,14 @@ void interceptor_ICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     mc->cr->AddCall("getAsyncInfo");
     original_ICorJitInfo->getAsyncInfo(pAsyncInfo);
     mc->recGetAsyncInfo(pAsyncInfo);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitReturnCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
+    mc->recGetAwaitReturnCall(callerHandle, instArg, result);
+    return result;
 }
 
 /*********************************************************************************/

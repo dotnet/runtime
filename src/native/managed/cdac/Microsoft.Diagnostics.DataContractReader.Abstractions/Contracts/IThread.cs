@@ -59,7 +59,14 @@ public record struct ThreadData(
     TargetPointer CurrentCustomDebuggerNotificationHandle,
     bool LastThrownObjectIsUnhandled,
     bool HasUnhandledException,
-    TargetPointer NextThread);
+    TargetPointer NextThread,
+    TargetPointer ThreadHandle,
+    bool IsInteropDebuggingHijacked,
+    TargetPointer DebuggerFilterContext,
+    TargetPointer GCFrame,
+    bool IsExceptionInProgress,
+    TargetPointer OSExceptionRecord,
+    TargetPointer OSExceptionContextRecord);
 
 public interface IThread : IContract
 {
@@ -77,7 +84,6 @@ public interface IThread : IContract
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
-    byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

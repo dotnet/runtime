@@ -22,7 +22,7 @@ public readonly ref struct RefWrapper
 public class Runtime_125169
 {
     // Regression test for bug in JIT where ref struct static fields of reference type initialized in
-    // its static constructor were missing calls to JIT_ByRefWriteBarrier for each such static field.
+    // its static constructor were missing write barriers for each such static field.
     [Fact]
     public static void TestEntryPoint()
     {

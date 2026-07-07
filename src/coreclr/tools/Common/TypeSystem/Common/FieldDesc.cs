@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
-
+using Internal.Text;
 using Debug = System.Diagnostics.Debug;
 
 #if TYPE_LOADER_IMPLEMENTATION
@@ -31,18 +31,18 @@ namespace Internal.TypeSystem
             return ReferenceEquals(this, o);
         }
 
-        public virtual ReadOnlySpan<byte> Name
+        public virtual Utf8Span Name
         {
             get
             {
-                return [];
+                return Array.Empty<byte>();
             }
         }
 
         public string GetName()
         {
             return System.Text.Encoding.UTF8.GetString(
-                Name
+                Name.AsSpan()
 #if NETSTANDARD
                 .ToArray()
 #endif

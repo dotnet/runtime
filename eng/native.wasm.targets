@@ -55,6 +55,17 @@
   <Target Name="GenerateEmccExports" Condition="'$(TargetsBrowser)' == 'true'">
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="FS" />
+      <EmccExportedRuntimeMethod Include="HEAP8" />
+      <EmccExportedRuntimeMethod Include="HEAP16" />
+      <EmccExportedRuntimeMethod Include="HEAPU8" />
+      <EmccExportedRuntimeMethod Include="HEAPU16" />
+      <EmccExportedRuntimeMethod Include="HEAP32" />
+      <EmccExportedRuntimeMethod Include="HEAPU32" />
+      <EmccExportedRuntimeMethod Include="HEAPF32" />
+      <EmccExportedRuntimeMethod Include="HEAPF64" />
+      <!-- HEAP64+HEAPU64 are removed for corerun under NodeJS -->
+      <EmccExportedRuntimeMethod Include="HEAP64" />
+      <EmccExportedRuntimeMethod Include="HEAPU64" />
       <EmccExportedRuntimeMethod Include="out" />
       <EmccExportedRuntimeMethod Include="err" />
       <EmccExportedRuntimeMethod Include="ccall" />
@@ -81,6 +92,8 @@
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave" />
+      <EmccExportedFunction Include="___stack_pointer" />
+      <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
     </ItemGroup>
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>

@@ -81,6 +81,7 @@ namespace System.Text.Json
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
         private ConverterList? _converters;
+        private TypeClassifierList? _typeClassifiers;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonObjectCreationHandling _preferredObjectCreationHandling;
@@ -133,6 +134,7 @@ namespace System.Text.Json
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
             _converters = options._converters is { } converters ? new(this, converters) : null;
+            _typeClassifiers = options._typeClassifiers is { } TypeClassifiers ? new(this, TypeClassifiers) : null;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -1128,6 +1130,20 @@ namespace System.Text.Json
             private readonly JsonSerializerOptions _options;
 
             public ConverterList(JsonSerializerOptions options, IList<JsonConverter>? source = null)
+                : base(source)
+            {
+                _options = options;
+            }
+
+            public override bool IsReadOnly => _options.IsReadOnly;
+            protected override void OnCollectionModifying() => _options.VerifyMutable();
+        }
+
+        private sealed class TypeClassifierList : ConfigurationList<JsonTypeClassifierFactory>
+        {
+            private readonly JsonSerializerOptions _options;
+
+            public TypeClassifierList(JsonSerializerOptions options, IList<JsonTypeClassifierFactory>? source = null)
                 : base(source)
             {
                 _options = options;

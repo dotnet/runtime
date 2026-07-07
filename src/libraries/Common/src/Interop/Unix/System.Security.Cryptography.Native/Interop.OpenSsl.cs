@@ -34,6 +34,15 @@ internal static partial class Interop
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
         private static readonly Lazy<string[]> s_defaultSigAlgs = new(GetDefaultSignatureAlgorithms);
 
+#if DEBUG
+        // Test-only knob: when DOTNET_OPENSSL_FORCE_BIO_SPILL=1 is set, the managed-span
+        // BIO is given a zero-length write window, which forces every byte SSL emits
+        // to take the spill (heap) path inside the BIO. Reading the environment variable
+        // once is safe because the value never changes during the lifetime of the process.
+        private static readonly bool s_forceBioSpill =
+            Environment.GetEnvironmentVariable("DOTNET_OPENSSL_FORCE_BIO_SPILL") == "1";
+#endif
+
         private sealed class SafeSslContextCache : SafeHandleCache<SslContextCacheKey, SafeSslContextHandle> { }
 
         private static readonly SafeSslContextCache s_sslContexts = new();
@@ -661,26 +670,64 @@ internal static partial class Interop
             outputBuffer = Array.Empty<byte>();
             if (ret != 1)
             {
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, GetSslError(ret, errorCode));
+                Exception? ex = GetSslError(ret, errorCode);
+
+                SecurityStatusPalErrorCode palErrorCode = (ex?.HResult & 0X7FFFFF) switch
+                {
+                    279 /*SSL_R_EXTENSION_NOT_RECEIVED*/ or
+                    339 /*SSL_R_NO_RENEGOTIATION*/ => SecurityStatusPalErrorCode.NoRenegotiation,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
+
+                return new SecurityStatusPal(palErrorCode, ex);
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
-        internal static SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, ref ProtocolToken token)
+        internal static unsafe SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out int consumed, ref ProtocolToken token)
         {
             token.Size = 0;
+            consumed = 0;
             Exception? handshakeException = null;
 
-            if (input.Length > 0)
+            // Drain any bytes accumulated in the OutputBio's spill from a prior call
+            // (e.g. SSL_read emitting alerts before this handshake step).
+            DrainOutputBioSpill(context, ref token);
+
+            // Reserve a reasonable initial window in the outgoing token; the spill buffer
+            // catches anything that doesn't fit.
+            const int InitialHandshakeWindow = 4096;
+            token.EnsureAvailableSpace(InitialHandshakeWindow);
+
+            int retVal;
+            int writtenToWindow;
+            int spillLen;
+            Ssl.SslErrorCode errorCode;
+
+            Span<byte> outputSpan = token.AvailableSpan;
+#if DEBUG
+            if (s_forceBioSpill)
             {
-                if (Ssl.BioWrite(context.InputBio!, ref MemoryMarshal.GetReference(input), input.Length) != input.Length)
-                {
-                    // Make sure we clear out the error that is stored in the queue
-                    throw Crypto.CreateOpenSslCryptographicException();
-                }
+                outputSpan = default;
+            }
+#endif
+            fixed (byte* inputPtr = input)
+            fixed (byte* outputPtr = outputSpan)
+            {
+                retVal = Ssl.SslHandshake(
+                    context,
+                    inputPtr,
+                    input.Length,
+                    out consumed,
+                    outputPtr,
+                    outputSpan.Length,
+                    out writtenToWindow,
+                    out spillLen,
+                    out errorCode);
             }
 
-            int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode errorCode);
+            token.Size += writtenToWindow;
+
             if (retVal != 1)
             {
                 if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
@@ -706,30 +753,16 @@ internal static partial class Interop
                 }
             }
 
-            int sendCount = Crypto.BioCtrlPending(context.OutputBio!);
-            if (sendCount > 0)
+            if (spillLen > 0)
             {
-                token.EnsureAvailableSpace(sendCount);
-                try
+                token.EnsureAvailableSpace(spillLen);
+                Span<byte> spillDst = token.AvailableSpan;
+                fixed (byte* spillPtr = spillDst)
                 {
-                    sendCount = BioRead(context.OutputBio!, token.AvailableSpan, sendCount);
-                }
-                catch (Exception) when (handshakeException != null)
-                {
-                    // If we already have handshake exception, ignore any exception from BioRead().
-                }
-                finally
-                {
-                    if (sendCount <= 0)
-                    {
-                        // Make sure we clear out the error that is stored in the queue
-                        Crypto.ErrClearError();
-                        sendCount = 0;
-                    }
+                    int drained = Ssl.BioDrainSpill(context.OutputBio!, spillPtr, spillDst.Length);
+                    token.Size += drained;
                 }
             }
-
-            token.Size = sendCount;
 
             if (handshakeException != null)
             {
@@ -755,13 +788,51 @@ internal static partial class Interop
             return stateOk ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded;
         }
 
-        internal static Ssl.SslErrorCode Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, ref ProtocolToken outToken)
+        internal static unsafe Ssl.SslErrorCode Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, ref ProtocolToken outToken)
         {
-            int retVal = Ssl.SslWrite(context, ref MemoryMarshal.GetReference(input), input.Length, out Ssl.SslErrorCode errorCode);
+            // Drain any bytes that the OutputBio may have accumulated outside of an explicit
+            // write window (e.g. from a prior SSL_read that emitted alerts / KeyUpdate / etc.).
+            DrainOutputBioSpill(context, ref outToken);
+
+            // Preserve any bytes already in outToken (including those just drained from a prior SSL_read's
+            // alerts / KeyUpdate output). On error we restore Size to this snapshot so those bytes are
+            // still sent rather than overwritten with the partial output of a failed SSL_write.
+            int preWriteSize = outToken.Size;
+
+            // Worst-case TLS output for the user's plaintext.
+            int upperBound = ComputeMaxTlsOutput(input.Length);
+            outToken.EnsureAvailableSpace(upperBound);
+
+            int retVal;
+            int writtenToWindow;
+            int spillLen;
+            Ssl.SslErrorCode errorCode;
+
+            Span<byte> windowSpan = outToken.AvailableSpan;
+#if DEBUG
+            if (s_forceBioSpill)
+            {
+                windowSpan = default;
+            }
+#endif
+            fixed (byte* plaintextPtr = input)
+            fixed (byte* windowPtr = windowSpan)
+            {
+                retVal = Ssl.SslEncrypt(
+                    context,
+                    plaintextPtr,
+                    input.Length,
+                    windowPtr,
+                    windowSpan.Length,
+                    out writtenToWindow,
+                    out spillLen,
+                    out errorCode);
+            }
 
             if (retVal != input.Length)
             {
-                outToken.Size = 0;
+                // Drop any partial output written by the failed SSL_write but keep the drained spill bytes.
+                outToken.Size = preWriteSize;
                 switch (errorCode)
                 {
                     // indicate end-of-file
@@ -772,35 +843,97 @@ internal static partial class Interop
                     default:
                         throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), GetSslError(retVal, errorCode));
                 }
-            }
-            else
-            {
-                int capacityNeeded = Crypto.BioCtrlPending(context.OutputBio!);
-                outToken.EnsureAvailableSpace(capacityNeeded);
-                retVal = BioRead(context.OutputBio!, outToken.AvailableSpan, capacityNeeded);
 
-                if (retVal <= 0)
+                return errorCode;
+            }
+
+            outToken.Size += writtenToWindow;
+
+            if (spillLen > 0)
+            {
+                outToken.EnsureAvailableSpace(spillLen);
+                Span<byte> spillDst = outToken.AvailableSpan;
+                fixed (byte* spillPtr = spillDst)
                 {
-                    // Make sure we clear out the error that is stored in the queue
-                    Crypto.ErrClearError();
-                    outToken.Size = 0;
-                }
-                else
-                {
-                    outToken.Size = retVal;
+                    int drained = Ssl.BioDrainSpill(context.OutputBio!, spillPtr, spillDst.Length);
+                    outToken.Size += drained;
                 }
             }
 
             return errorCode;
         }
 
-        internal static int Decrypt(SafeSslHandle context, Span<byte> buffer, out Ssl.SslErrorCode errorCode)
+        private static int ComputeMaxTlsOutput(int inputLength)
         {
-            BioWrite(context.InputBio!, buffer);
+            // TLS 1.3 record max plaintext = 16384 bytes. Per-record overhead is bounded by
+            // OpenSSL's SSL3_RT_MAX_ENCRYPTED_OVERHEAD (256 bytes, covering record header, AEAD
+            // tag, optional MAC, padding, and the inner content-type byte for TLS 1.3).
+            // Always add slack for at least one record's overhead even when inputLength == 0,
+            // since SSL_write of an empty buffer can still emit handshake/alert bytes.
+            //
+            // No overflow check is needed: SslStream chunks user writes to MaxDataSize before
+            // calling EncryptMessage (see WriteAsyncChunked in SslStream.IO.cs), and on Unix
+            // MaxDataSize is at most StreamSizes.Default.MaximumMessage = 32 * 1024. The
+            // resulting upper bound (~33 KiB) is several orders of magnitude below int.MaxValue.
+            // The assert below guards against accidentally breaking that invariant in the future.
+            const int MaxExpectedInput = 32 * 1024;
+            Debug.Assert(
+                (uint)inputLength <= MaxExpectedInput,
+                $"ComputeMaxTlsOutput: inputLength {inputLength} exceeds expected upper bound {MaxExpectedInput}; SslStream chunking invariant broken.");
+            const int MaxRecordOverhead = 256;
+            int records = (inputLength >> 14) + 2;
+            return inputLength + (records * MaxRecordOverhead);
+        }
 
-            int retVal = Ssl.SslRead(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out errorCode);
-            if (retVal > 0)
+        private static unsafe void DrainOutputBioSpill(SafeSslHandle context, ref ProtocolToken outToken)
+        {
+            Ssl.BioGetWriteResult(context.OutputBio!, out _, out int spillLen);
+            if (spillLen <= 0)
             {
+                return;
+            }
+
+            outToken.EnsureAvailableSpace(spillLen);
+            Span<byte> dst = outToken.AvailableSpan;
+            fixed (byte* dstPtr = dst)
+            {
+                int drained = Ssl.BioDrainSpill(context.OutputBio!, dstPtr, dst.Length);
+                outToken.Size += drained;
+            }
+        }
+
+        internal static unsafe int Decrypt(
+            SafeSslHandle context,
+            Span<byte> input,
+            Span<byte> output,
+            out int leftoverOffset,
+            out int leftoverLength,
+            out Ssl.SslErrorCode errorCode)
+        {
+            int retVal;
+            int consumed;
+            fixed (byte* inputPtr = input)
+            fixed (byte* outputPtr = output)
+            {
+                retVal = Ssl.SslDecrypt(
+                    context,
+                    inputPtr,
+                    input.Length,
+                    out consumed,
+                    outputPtr,
+                    output.Length,
+                    out leftoverOffset,
+                    out leftoverLength,
+                    out errorCode);
+            }
+            if (retVal + leftoverLength > 0)
+            {
+                // The managed callers always pass exactly one full TLS frame (sized via
+                // EnsureFullTlsFrameAsync). OpenSSL's SSL_read consumes whole records on
+                // success, so on any successful decrypt the entire frame is consumed - the
+                // input span has no residual ciphertext to forward and `consumed` is
+                // not plumbed through the managed surface.
+                Debug.Assert(consumed == input.Length, "Expected all input to be consumed.");
                 return retVal;
             }
 

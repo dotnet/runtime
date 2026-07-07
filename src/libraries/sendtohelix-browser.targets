@@ -45,6 +45,21 @@
     <WasmBatchLibraryTests Condition="'$(WasmBatchLibraryTests)' == ''">false</WasmBatchLibraryTests>
     <_WasmBatchLargeThreshold Condition="'$(_WasmBatchLargeThreshold)' == ''">52428800</_WasmBatchLargeThreshold>
 
+    <!-- Per-batch Helix timeout knobs. Outerloop runs the slow [OuterLoop] suites, so
+         give each batch a larger budget; innerloop keeps the original 20/30 values.
+         The minimum must exceed the per-suite xharness timeout (04:00:00, see
+         WasmXHarnessTestsTimeout in eng/testing/tests.wasm.targets) so a solo slow-suite
+         batch is bounded by the suite's own timeout, not by the batch floor. MaximumMinutes
+         stays below the AzDO outerloop job timeout (minus build/send overhead) so the
+         synchronous send-to-Helix wait cannot outlast the job. -->
+    <_IsOuterloopTestScope Condition="'$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all'">true</_IsOuterloopTestScope>
+    <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == '' and '$(_IsOuterloopTestScope)' == 'true'">40</_WasmBatchMinutesPerSuite>
+    <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == ''">20</_WasmBatchMinutesPerSuite>
+    <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">270</_WasmBatchMinimumMinutes>
+    <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == ''">30</_WasmBatchMinimumMinutes>
+    <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">300</_WasmBatchMaximumMinutes>
+    <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == ''">1439</_WasmBatchMaximumMinutes>
+
     <HelixExtensionTargets />
     <PrepareForBuildHelixWorkItems_WasmDependsOn>
         PrepareHelixCorrelationPayload_Wasm;
@@ -158,6 +173,8 @@
     <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=$HELIX_CORRELATION_PAYLOAD/build/wasm/" />
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$HELIX_CORRELATION_PAYLOAD/build/WasmAppBuilder/WasmAppBuilder.dll" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/" />
+    <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/minipal/" />
+    <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/coreclr-vm-wasm/" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'BuildWasmApps' and '$(WindowsShell)' == 'true'">
@@ -165,6 +182,8 @@
     <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=%HELIX_CORRELATION_PAYLOAD%\build\wasm\" />
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=%HELIX_CORRELATION_PAYLOAD%\build\WasmAppBuilder\WasmAppBuilder.dll" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\" />
+    <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\minipal\" />
+    <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\coreclr-vm-wasm\" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -174,7 +193,7 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
-    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-notrait category=native -notrait category=mono -notrait category=workload</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-notrait category=native-mono -notrait category=mono -notrait category=workload</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -283,6 +302,34 @@
       <HelixCorrelationPayload Include="$(_CoreCLRWbtEngPayloadDir)" Destination="build/eng" />
     </ItemGroup>
 
+    <!-- CoreCLR WBT: ship src/native/minipal/{utils.h,entrypoints.h} and
+         src/coreclr/vm/wasm/callhelpers.hpp into the payload so per-app native
+         re-link (BrowserWasmApp.CoreCLR.targets) can resolve the #include lines
+         emitted by ManagedToNativeGenerator output. Stage into directories first
+         because HelixCorrelationPayload on individual files causes the Helix
+         client to try unzipping them as archives. -->
+    <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <_CoreCLRWbtMinipalPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-minipal\</_CoreCLRWbtMinipalPayloadDir>
+      <_CoreCLRWbtVmWasmPayloadDir>$(ArtifactsObjDir)helix-staging\coreclr-wbt-vm-wasm\</_CoreCLRWbtVmWasmPayloadDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <_CoreCLRWbtMinipalFiles Include="$(RepoRoot)src\native\minipal\utils.h" />
+      <_CoreCLRWbtMinipalFiles Include="$(RepoRoot)src\native\minipal\entrypoints.h" />
+      <_CoreCLRWbtVmWasmFiles Include="$(RepoRoot)src\coreclr\vm\wasm\callhelpers.hpp" />
+    </ItemGroup>
+    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+          SourceFiles="@(_CoreCLRWbtMinipalFiles)"
+          DestinationFolder="$(_CoreCLRWbtMinipalPayloadDir)"
+          SkipUnchangedFiles="true" />
+    <Copy Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+          SourceFiles="@(_CoreCLRWbtVmWasmFiles)"
+          DestinationFolder="$(_CoreCLRWbtVmWasmPayloadDir)"
+          SkipUnchangedFiles="true" />
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <HelixCorrelationPayload Include="$(_CoreCLRWbtMinipalPayloadDir)" Destination="build/minipal" />
+      <HelixCorrelationPayload Include="$(_CoreCLRWbtVmWasmPayloadDir)" Destination="build/coreclr-vm-wasm" />
+    </ItemGroup>
+
     <!-- copy node separately only if EMSDK is not being included -->
     <ItemGroup Condition="'$(IncludeNodePayload)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk-node" />
@@ -372,8 +419,27 @@
       <_WasmBatchAllItems Include="@(_WasmBatchDefaultItems)" />
     </ItemGroup>
 
+    <!-- Slow [OuterLoop] suites are isolated into their own solo batch so a single
+         slow suite does not inflate the runtime of a shared batch. Gated on outerloop
+         because these suites are only slow with the [OuterLoop] tests enabled; in
+         innerloop batching is left unchanged. The first six mirror the long-running list
+         gated on RunLongRunningWasmTests in tests.proj
+         (https://github.com/dotnet/runtime/issues/125495) and are excluded from innerloop;
+         System.Xml.Linq.xNodeBuilder.Tests is an additional outerloop-slow suite that still
+         runs in innerloop. Suites not present in the archive are simply ignored. -->
+    <ItemGroup Condition="'$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all'">
+      <_WasmSoloBatchSuite Include="System.Linq.Tests" />
+      <_WasmSoloBatchSuite Include="System.Memory.Tests" />
+      <_WasmSoloBatchSuite Include="System.Private.Uri.Functional.Tests" />
+      <_WasmSoloBatchSuite Include="System.Private.Xml.Tests" />
+      <_WasmSoloBatchSuite Include="System.Runtime.Numerics.Tests" />
+      <_WasmSoloBatchSuite Include="System.Text.Json.Tests" />
+      <_WasmSoloBatchSuite Include="System.Xml.Linq.xNodeBuilder.Tests" />
+    </ItemGroup>
+
     <!-- Assign batch IDs via greedy bin-packing -->
-    <GroupWorkItems Items="@(_WasmBatchAllItems)" BatchSize="20" LargeThreshold="$(_WasmBatchLargeThreshold)">
+    <GroupWorkItems Items="@(_WasmBatchAllItems)" BatchSize="20" LargeThreshold="$(_WasmBatchLargeThreshold)"
+                    SoloItems="@(_WasmSoloBatchSuite)">
       <Output TaskParameter="GroupedItems" ItemName="_WasmGroupedItem" />
     </GroupWorkItems>
 
@@ -390,9 +456,13 @@
     <Copy SourceFiles="$(RepositoryEngineeringDir)testing/WasmBatchRunner.sh"
           DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_WasmUniqueBatchId.Identity)/" />
 
-    <!-- Compute per-batch timeout: 20 minutes per suite, minimum 30 minutes -->
+    <!-- Compute per-batch timeout: MinutesPerSuite per suite, MinimumMinutes floor,
+         capped at MaximumMinutes (larger for outerloop, see the knobs above). -->
     <ComputeBatchTimeout GroupedItems="@(_WasmGroupedItem)" BatchIds="@(_WasmUniqueBatchId)"
-                          ItemPrefix="$(WorkItemPrefix)" BatchOutputDir="$(IntermediateOutputPath)helix-batches/">
+                          ItemPrefix="$(WorkItemPrefix)" BatchOutputDir="$(IntermediateOutputPath)helix-batches/"
+                          MinutesPerSuite="$(_WasmBatchMinutesPerSuite)"
+                          MinimumMinutes="$(_WasmBatchMinimumMinutes)"
+                          MaximumMinutes="$(_WasmBatchMaximumMinutes)">
       <Output TaskParameter="TimedItems" ItemName="_WasmTimedBatchItem" />
     </ComputeBatchTimeout>
 

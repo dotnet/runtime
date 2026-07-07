@@ -117,6 +117,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
 #ifdef TARGET_X86
     m_pHijackedReturnValue = NULL;
     m_HijackedReturnValueKind = GCRK_Unknown;
+    m_pHijackedAsyncContinuation = NULL;
 #endif
     m_pConservativeStackRangeLowerBound = NULL;
     m_pConservativeStackRangeUpperBound = NULL;
@@ -336,11 +337,17 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 #endif // TARGET_AMD64
 
 #ifdef TARGET_X86
-    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
+    bool isAsync;
+    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags, &isAsync);
     if (retValueKind != GCRK_Scalar)
     {
         m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pRax;
         m_HijackedReturnValueKind = retValueKind;
+    }
+
+    if (isAsync)
+    {
+        m_pHijackedAsyncContinuation = (PTR_OBJECTREF)m_RegDisplay.pRcx;
     }
 #endif
 
@@ -1793,6 +1800,7 @@ UnwindOutOfCurrentManagedFrame:
 #ifdef TARGET_X86
     m_pHijackedReturnValue = NULL;
     m_HijackedReturnValueKind = GCRK_Unknown;
+    m_pHijackedAsyncContinuation = NULL;
 #endif
 
 #ifdef _DEBUG
@@ -2221,6 +2229,15 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocatio
 
     *pLocation = m_pHijackedReturnValue;
     *pKind = m_HijackedReturnValueKind;
+    return true;
+}
+
+bool StackFrameIterator::GetHijackedAsyncContinuation(PTR_OBJECTREF * pLocation)
+{
+    if (m_pHijackedAsyncContinuation == NULL)
+        return false;
+
+    *pLocation = m_pHijackedAsyncContinuation;
     return true;
 }
 #endif

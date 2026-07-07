@@ -205,16 +205,24 @@
                int32[] V_6,
                int32 V_7)
 
-		ldarg.0 refanytype
+		ldarg.0
+		refanytype
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
-		ldarg.1 refanytype
+
+		ldarg.1
+		refanytype
 		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
-		ldarg.2 refanytype
-		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
-		ldarg.3 refanytype
-		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
-		ceq		
 		ceq
+
+		ldarg.2
+		refanytype
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
+
+		ldarg.3
+		refanytype
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle )
+		ceq
+
 		ceq
 		pop
 

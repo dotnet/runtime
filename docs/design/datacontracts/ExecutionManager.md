@@ -50,6 +50,9 @@ struct CodeBlockHandle
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
+    // Get the size (in bytes) of stack-passed parameters at the call to the method
+    uint GetStackParameterSize(CodeBlockHandle codeInfoHandle);
+
     // Extension Methods (implemented in terms of other APIs)
     // Returns true if the code block is a funclet (exception handler, filter, or finally)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
@@ -206,7 +209,7 @@ Data descriptors used:
 | `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
 | `ImageDataDirectory` | `Size` | Size of the data |
-| `RuntimeFunction` | `BeginAddress` | Begin address of the function |
+| `RuntimeFunction` | `BeginAddress` | Begin address of the function. On ARM32, bit 0 (the Thumb bit) is set. |
 | `RuntimeFunction` | `EndAddress` | End address of the function. Only exists on some platforms |
 | `RuntimeFunction` | `UnwindData` | Pointer to the unwind info for the function |
 | `HashMap` | `Buckets` | Pointer to the buckets of a `HashMap` |
@@ -529,6 +532,8 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` -> `MethodDesc` -> `MethodTable` -> `TypeHandle` -> `Module` via the `RuntimeTypeSystem` contract.
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
+
+`IExecutionManager.GetStackParameterSize` returns the size (in bytes) of stack-passed parameters at the call to the method described by the code block handle. It mirrors the native `EECodeManager::GetStackParameterSize`: it returns 0 for funclets and for non-x86 targets. On x86, it returns 0 for methods using the varargs calling convention (which are caller-popped), otherwise it returns the argument size encoded in the GC info header.
 
 `GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, and interpreter code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule

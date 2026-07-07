@@ -3123,4 +3123,70 @@ public static partial class DataContractJsonSerializerTests
     {
         return ((CultureInfo)dateTimeFormat.FormatProvider).DateTimeFormat.AMDesignator;
     }
+
+    // Test for the fix to ensure DataContractJsonSerializer passes ISerializationSurrogateProvider to internal XML serializer
+    // Same tests used for the regular DataContractSerializer to ensure the surrogate provider is working correctly
+    [Fact]
+    public static void DCJS_MyPersonSurrogate()
+    {
+        DataContractJsonSerializer dcjs = new DataContractJsonSerializer(typeof(Family));
+        dcjs.SetSerializationSurrogateProvider(new MyPersonSurrogateProvider());
+        MemoryStream ms = new MemoryStream();
+        Family myFamily = new Family
+        {
+            Members = new NonSerializablePerson[]
+            {
+                new NonSerializablePerson("John", 34),
+                new NonSerializablePerson("Jane", 32),
+                new NonSerializablePerson("Bob", 5),
+            }
+        };
+        dcjs.WriteObject(ms, myFamily);
+        ms.Position = 0;
+        var newFamily = (Family)dcjs.ReadObject(ms);
+        Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
+        for (int i = 0; i < myFamily.Members.Length; ++i)
+        {
+            Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Age, newFamily.Members[i].Age);
+        }
+    }
+
+    [Fact]
+    [SkipOnPlatform(TestPlatforms.Wasi, "/tmp is not preopened in the wasmtime '--dir .' sandbox, so temp files cannot be created.")]
+    public static void DCJS_FileStreamSurrogate()
+    {
+        using (var testFile = TempFile.Create())
+        {
+            const string TestFileData = "Some data for data contract surrogate test";
+
+            // Create the serializer and specify the surrogate
+            var dcjs = new DataContractJsonSerializer(typeof(MyFileStream));
+            dcjs.SetSerializationSurrogateProvider(MyFileStreamSurrogateProvider.Singleton);
+
+            // Create and initialize the stream
+            byte[] serializedStream;
+
+            // Serialize the stream
+            using (var stream1 = new MyFileStream(testFile.Path))
+            {
+                stream1.WriteLine(TestFileData);
+                using (var memoryStream = new MemoryStream())
+                {
+                    dcjs.WriteObject(memoryStream, stream1);
+                    serializedStream = memoryStream.ToArray();
+                }
+            }
+
+            // Deserialize the stream
+            using (var stream = new MemoryStream(serializedStream))
+            {
+                using (var stream2 = (MyFileStream)dcjs.ReadObject(stream))
+                {
+                    string fileData = stream2.ReadLine();
+                    Assert.Equal(TestFileData, fileData);
+                }
+            }
+        }
+    }
 }

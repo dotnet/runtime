@@ -1010,7 +1010,7 @@ bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
     // TODO-RISCV64-RVC: Disable this early return once compresed instructions are allowed in prolog / epilog
-    if (m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog)
+    if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
     {
         return false;
     }
@@ -1634,7 +1634,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     int insCountLimit = prefMaxInsCount;
     // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
     // not use the emitDataConst + emitIns_R_C combination.
-    if (m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog)
+    if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
     {
         insCountLimit = absMaxInsCount;
     }
@@ -1861,7 +1861,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     {
         if (doEmit)
         {
-            assert(!m_compiler->compGeneratingProlog && !m_compiler->compGeneratingEpilog);
+            assert(!emitGeneratingPrologOrFuncletProlog() && !emitGeneratingEpilogOrFuncletEpilog());
             auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, m_compiler->eeFindJitDataOffs(constAddr));
         }
@@ -1939,12 +1939,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
         imm -= jalrOffset;
         emitLoadImmediate<true>(EA_PTRSIZE, params.ireg, imm); // upper bits
-    }
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
 
     /*
@@ -2882,18 +2876,6 @@ static unsigned UpperNBitsOfWordSignExtend(ssize_t word)
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
 }
 
-static unsigned UpperWordOfDoubleWord(ssize_t immediate)
-{
-    return static_cast<unsigned>(immediate >> 32);
-}
-
-static unsigned LowerWordOfDoubleWord(ssize_t immediate)
-{
-    static constexpr size_t kWordMask = WordMask(32);
-
-    return static_cast<unsigned>(immediate & kWordMask);
-}
-
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
 static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
 {
@@ -2901,20 +2883,6 @@ static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
     static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (63 - UpperMaskSize);
 
     return doubleWord + (kLowerSignExtend | kUpperSignExtend);
-}
-
-template <uint8_t UpperMaskSize>
-static ssize_t UpperWordOfDoubleWordSingleSignExtend(ssize_t doubleWord)
-{
-    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (31 - UpperMaskSize);
-
-    return UpperWordOfDoubleWord(doubleWord + kUpperSignExtend);
-}
-
-template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
-static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
-{
-    return UpperWordOfDoubleWord(DoubleWordSignExtend<UpperMaskSize, LowerMaskSize>(doubleWord));
 }
 
 /*static*/ unsigned emitter::TrimSignedToImm12(ssize_t imm12)
@@ -5690,7 +5658,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
 
             regNumber baseReg = id->idReg2();
-            if (baseReg != REG_SP || baseReg != REG_FP)
+            if ((baseReg != REG_SP) && (baseReg != REG_FP))
                 result.insLatency += PERFSCORE_LATENCY_1C; // assume non-stack load/stores are more likely to cache-miss
 
             result.insThroughput += immediateBuildingCost;

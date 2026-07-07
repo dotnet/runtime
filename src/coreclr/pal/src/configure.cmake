@@ -136,7 +136,6 @@ int main(int argc, char **argv) {
 }" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
-check_function_exists(directio HAVE_DIRECTIO)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)

@@ -89,7 +89,7 @@ export function commandCounters(options: DiagnosticCommandOptions) {
                 keywords: [0, Keywords.GCHandle],
                 logLevel: 4,
                 providerName: "System.Diagnostics.Metrics",
-                arguments: `SessionId=SHARED;Metrics=System.Runtime;RefreshInterval=${options.intervalSeconds || 1};MaxTimeSeries=1000;MaxHistograms=10;ClientId=${uuidv4()};`,
+                arguments: `SessionId=SHARED;Metrics=System.Runtime;RefreshInterval=${options.intervalSeconds ?? 1};MaxTimeSeries=1000;MaxHistograms=10;ClientId=${uuidv4()};`,
             },
             ...options.extraProviders || [],
         ]

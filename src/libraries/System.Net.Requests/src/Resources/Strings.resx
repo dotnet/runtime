@@ -196,7 +196,7 @@
     <value>The underlying connection was closed: An unexpected error occurred on a receive</value>
   </data>
   <data name="net_ftp_no_newlines" xml:space="preserve">
-    <value>CRLF character pair is not allowed in FtpWebRequest inputs.</value>
+    <value>CR and LF characters are not allowed in FtpWebRequest inputs.</value>
   </data>
   <data name="net_webstatus_NameResolutionFailure" xml:space="preserve">
     <value>The remote name could not be resolved</value>
