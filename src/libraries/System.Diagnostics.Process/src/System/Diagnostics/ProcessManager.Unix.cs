@@ -13,12 +13,12 @@ namespace System.Diagnostics
         /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
+        /// <param name="isRemoteMachine">Unused on Unix since remote machines are not supported.</param>
         /// <returns>true if the process is running; otherwise, false.</returns>
-        public static bool IsProcessRunning(int processId, string machineName)
-        {
-            ThrowIfRemoteMachine(machineName);
-            return IsProcessRunning(processId);
-        }
+#pragma warning disable IDE0060
+        public static bool IsProcessRunning(int processId, string machineName, bool isRemoteMachine) =>
+            IsProcessRunning(processId);
+#pragma warning restore IDE0060
 
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>
         /// <param name="processId">The process ID.</param>
@@ -34,47 +34,41 @@ namespace System.Diagnostics
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
         /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
+        /// <param name="machineName">Unused on Unix since remote machines are not supported.</param>
+        /// <param name="isRemoteMachine">Unused on Unix since remote machines are not supported.</param>
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
-        public static ProcessInfo? GetProcessInfo(int processId, string machineName)
-        {
-            ThrowIfRemoteMachine(machineName);
-            return CreateProcessInfo(processId);
-        }
+#pragma warning disable IDE0060
+        public static ProcessInfo? GetProcessInfo(int processId, string machineName, bool isRemoteMachine) =>
+            CreateProcessInfo(processId);
+#pragma warning restore IDE0060
 
-        /// <summary>Gets the IDs of all processes on the specified machine.</summary>
-        /// <param name="machineName">The machine to examine.</param>
-        /// <returns>An array of process IDs from the specified machine.</returns>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static int[] GetProcessIds(string machineName)
-        {
-            ThrowIfRemoteMachine(machineName);
-            return GetProcessIds();
-        }
-
-        /// <summary>Gets the ID of a process from a handle to the process.</summary>
-        /// <param name="processHandle">The handle.</param>
-        /// <returns>The process ID.</returns>
-        public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
-        {
-            return processHandle.ProcessId;
-        }
-
-        private static bool IsRemoteMachineCore(string machineName)
+        private static bool IsRemoteMachine(string machineName)
         {
             return
                 machineName != "." &&
                 machineName != Interop.Sys.GetHostName();
         }
 
-        internal static void ThrowIfRemoteMachine(string machineName)
+        internal static bool HandleRemoteMachineSupport(string machineName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(machineName);
             if (IsRemoteMachine(machineName))
             {
                 throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
             }
+            return false;
         }
+
+        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <remarks>On Unix, <paramref name="isRemoteMachine"/> and <paramref name="machineName"/> are unused since remote machines are not supported.</remarks>
+        /// <param name="builder">The builder to add found process infos to.</param>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        /// <param name="machineName">Unused on Unix.</param>
+        /// <param name="isRemoteMachine">Unused on Unix.</param>
+#pragma warning disable IDE0060
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName, bool isRemoteMachine) =>
+            GetProcessInfos(ref builder, processNameFilter);
+#pragma warning restore IDE0060
+
     }
 }

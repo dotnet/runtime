@@ -441,7 +441,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
 
-        private static void RejectPromise(JSObject holder, Exception ex)
+        private static unsafe void RejectPromise(JSObject holder, Exception ex)
         {
             holder.AssertNotDisposed();
 
@@ -476,7 +476,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
         }
 
-        private static void ResolveVoidPromise(JSObject holder)
+        private static unsafe void ResolveVoidPromise(JSObject holder)
         {
             holder.AssertNotDisposed();
 
@@ -510,7 +510,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
         }
 
-        private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
+        private static unsafe void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
         {
             holder.AssertNotDisposed();
 

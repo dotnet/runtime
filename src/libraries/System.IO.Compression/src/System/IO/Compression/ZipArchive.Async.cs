@@ -365,6 +365,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
             completeRewriteStartingOffset = startingOffset;
 
             entriesToWrite = new(_entries.Count);
+
             foreach (ZipArchiveEntry entry in _entries)
             {
                 if (!entry.OriginallyInArchive)
@@ -373,7 +374,6 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 }
                 else
                 {
-
                     WriteFileCalculateOffsets(entry, ref startingOffset, ref nextFileOffset);
 
                     // We want to re-write entries which are after the starting offset of the first entry which has pending data to write.

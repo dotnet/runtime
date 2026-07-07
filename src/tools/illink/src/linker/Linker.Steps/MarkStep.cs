@@ -166,6 +166,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.DynamicInterfaceCastableImplementation,
             DependencyKind.XmlDescriptor,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 
         static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -215,6 +216,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.XmlDescriptor,
             DependencyKind.UnsafeAccessorTarget,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 #endif
 
@@ -500,6 +502,24 @@ namespace Mono.Linker.Steps
             {
                 marked = true;
                 ApplyPreserveInfo(type);
+            }
+
+            foreach (var (method, origin) in Annotations.DrainPendingReflectionVisibleMethods())
+            {
+                marked = true;
+                MarkMethodVisibleToReflection(method, DependencyInfo.AlreadyMarked, origin);
+            }
+
+            foreach (var (field, origin) in Annotations.DrainPendingReflectionVisibleFields())
+            {
+                marked = true;
+                MarkFieldVisibleToReflection(field, DependencyInfo.AlreadyMarked, origin);
+            }
+
+            foreach (var (type, origin) in Annotations.DrainPendingReflectionVisibleTypes())
+            {
+                marked = true;
+                MarkTypeVisibleToReflection(type, DependencyInfo.AlreadyMarked, origin);
             }
 
             return marked;
@@ -1489,6 +1509,8 @@ namespace Mono.Linker.Steps
                     disableMarkingOfCopyAssembliesValue != "true")
                 {
                     MarkEntireAssembly(assembly, assemblyOrigin);
+                    // For copy/save assemblies, also mark scopes of type references, since they won't be rewritten.
+                    TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
                 }
                 return;
             }
@@ -1519,8 +1541,14 @@ namespace Mono.Linker.Steps
             foreach (TypeDefinition type in module.Types)
                 MarkEntireType(type, new DependencyInfo(DependencyKind.TypeInAssembly, assembly), origin);
 
-            // Mark scopes of type references and exported types.
-            TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
+            MarkExportedTypes(assembly, origin);
+        }
+
+        void MarkExportedTypes(AssemblyDefinition assembly, MessageOrigin origin)
+        {
+            ModuleDefinition module = assembly.MainModule;
+            foreach (ExportedType exportedType in module.ExportedTypes)
+                MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), origin);
         }
 
         sealed class TypeReferenceMarker : TypeReferenceWalker
@@ -1546,7 +1574,6 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                markingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
                 markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType), new MessageOrigin(assembly));
             }
 
@@ -2000,6 +2027,11 @@ namespace Mono.Linker.Steps
                 Annotations.MarkReflectionUsed(methodDefinition);
                 Annotations.MarkIndirectlyCalledMethod(methodDefinition);
 
+                // A reflection-visible method's DeclaringType is also accessible
+                // (e.g., via MethodBase.DeclaringType). Mark it as reflection-visible.
+                if (!Annotations.IsReflectionUsed(methodDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(methodDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, methodDefinition), origin);
+
                 // On a reflectable method, perform generic data flow for the return type and all the parameter types
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
                 var methodOrigin = new MessageOrigin(methodDefinition);
@@ -2031,6 +2063,13 @@ namespace Mono.Linker.Steps
             MarkField(field, reason, origin);
             if (Context.Resolve(field) is FieldDefinition fieldDefinition)
             {
+                Annotations.MarkReflectionUsed(fieldDefinition);
+
+                // A reflection-visible field's DeclaringType is also accessible
+                // (e.g., via FieldInfo.DeclaringType). Mark it as reflection-visible.
+                if (!Annotations.IsReflectionUsed(fieldDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(fieldDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, fieldDefinition), origin);
+
                 // On a reflectable field, perform generic data flow for the field's type
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
                 var fieldOrigin = new MessageOrigin(fieldDefinition);
@@ -2162,7 +2201,6 @@ namespace Mono.Linker.Steps
                 handleMarkType(type);
 
             MarkType(type.BaseType, new DependencyInfo(DependencyKind.BaseType, type), typeOrigin);
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in typeOrigin, this, Context, type.BaseType);
 
             // The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
             // (to avoid inconsistencies in the cache), but before anything else as work done below
@@ -2926,23 +2964,16 @@ namespace Mono.Linker.Steps
         {
             var arguments = instance.GenericArguments;
 
-            IGenericParameterProvider? generic_element = GetGenericProviderFromInstance(instance);
-            Collection<GenericParameter>? parameters = generic_element?.GenericParameters;
-
             for (int i = 0; i < arguments.Count; i++)
             {
                 var argument = arguments[i];
-                var parameter = parameters?[i];
 
                 var argumentTypeDef = MarkType(argument, new DependencyInfo(DependencyKind.GenericArgumentType, instance), origin);
                 if (argumentTypeDef == null)
                     continue;
 
                 MarkRelevantToVariantCasting(argumentTypeDef);
-
-                if (parameter?.HasDefaultConstructorConstraint == true)
-                    MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
-            }
+           }
         }
 
         IGenericParameterProvider? GetGenericProviderFromInstance(IGenericInstance instance)
@@ -3165,19 +3196,8 @@ namespace Mono.Linker.Steps
             if (method == null)
                 return null;
 
-            var methodAction = Annotations.GetAction(method);
-            if (methodAction is MethodAction.ConvertToStub)
-            {
-                // CodeRewriterStep runs after sweeping, and may request the stubbed value for any preserved method
-                // with the action ConvertToStub. Ensure we have precomputed any stub value that may be needed by
-                // CodeRewriterStep. This ensures sweeping doesn't change the stub value (which can be determined by
-                // FeatureGuardAttribute or FeatureSwitchDefinitionAttribute that might have been removed).
-                Annotations.TryGetMethodStubValue(method, out _);
-            }
-
-            if (methodAction == MethodAction.Nothing)
+            if (Annotations.GetAction(method) == MethodAction.Nothing)
                 Annotations.SetAction(method, MethodAction.Parse);
-
 
             // Use the original reason as it's important to correctly generate warnings
             // the updated reason is only useful for better tracking of dependencies.
@@ -3516,7 +3536,7 @@ namespace Mono.Linker.Steps
             return false;
         }
 
-        protected virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
+        protected internal virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
         {
             if (Annotations.IsInstantiated(type))
                 return;

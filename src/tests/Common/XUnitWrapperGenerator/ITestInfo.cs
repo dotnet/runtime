@@ -270,6 +270,10 @@ public sealed class ConditionalTest : ITestInfo
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsFreeBSD()");
         }
+        if (platform.HasFlag(Xunit.TestPlatforms.OpenBSD))
+        {
+            platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""OpenBSD"")");
+        }
         if (platform.HasFlag(Xunit.TestPlatforms.NetBSD))
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""NetBSD"")");
@@ -295,9 +299,11 @@ public sealed class MemberDataTest : ITestInfo
                           string externAlias,
                           string argumentLoopVarIdentifier)
     {
-        TestNameExpression = innerTest.TestNameExpression;
         Method = innerTest.Method;
         ContainingType = innerTest.ContainingType;
+        // Use a static expression that doesn't reference the loop variable since it may be used
+        // outside the foreach loop scope (e.g., in a ConditionalTest's else branch).
+        TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}(...)\"";
         DisplayNameForFiltering = $"{ContainingType}.{Method}(...)";
 
         _innerTest = innerTest;

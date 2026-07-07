@@ -82,6 +82,8 @@ namespace DefaultNamespace {
             return 1;
         }
 
+        public RootMem() { }
+
         private RootMem( int i )
         {
             if( i> 0)

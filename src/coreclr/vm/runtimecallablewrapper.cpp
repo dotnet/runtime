@@ -357,7 +357,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
     {
         pOuter.SuppressRelease();
         pClassFact.SuppressRelease();
-        pNewRCW.SuppressRelease();
+        pNewRCW.Detach();
     }
 
     return oref;
@@ -1687,7 +1687,7 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
     }
     GCPROTECT_END();
 
-    pNewWrap.SuppressRelease();
+    pNewWrap.Detach();
 }
 
 //--------------------------------------------------------------------------------
@@ -2041,6 +2041,8 @@ BOOL RCW::AllowEagerSTACleanup()
     return m_Flags.m_fAllowEagerSTACleanup;
 }
 
+using CtxEntryHolder = ReleaseHolder<CtxEntry>;
+
 HRESULT RCW::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
 {
     CONTRACTL
@@ -2053,7 +2055,7 @@ HRESULT RCW::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     }
     CONTRACTL_END;
 
-    CtxEntryHolder pCtxEntry = GetWrapperCtxEntry();
+    CtxEntryHolder pCtxEntry(GetWrapperCtxEntry());
     return pCtxEntry->EnterContext(pCallbackFunc, pData);
 }
 

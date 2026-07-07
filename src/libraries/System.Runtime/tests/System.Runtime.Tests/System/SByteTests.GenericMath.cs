@@ -193,6 +193,20 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)0));
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)1));
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)9));
+            Assert.Equal((sbyte)1, BinaryIntegerHelper<sbyte>.Log10((sbyte)10));
+            Assert.Equal((sbyte)1, BinaryIntegerHelper<sbyte>.Log10((sbyte)99));
+            Assert.Equal((sbyte)2, BinaryIntegerHelper<sbyte>.Log10((sbyte)100));
+            Assert.Equal((sbyte)2, BinaryIntegerHelper<sbyte>.Log10((sbyte)127));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10((sbyte)(-128)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10((sbyte)(-1)));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.PopCount((sbyte)0x00));

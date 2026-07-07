@@ -64,6 +64,8 @@ namespace System
 
         public static TSelf LeadingZeroCount(TSelf value) => TSelf.LeadingZeroCount(value);
 
+        public static TSelf Log10(TSelf value) => TSelf.Log10(value);
+
         public static TSelf PopCount(TSelf value) => TSelf.PopCount(value);
 
         public static TSelf ReadBigEndian(byte[] source, bool isUnsigned) => TSelf.ReadBigEndian(source, isUnsigned);

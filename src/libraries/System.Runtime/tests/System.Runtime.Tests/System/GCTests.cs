@@ -297,7 +297,7 @@ namespace System.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsMultithreadingSupported))] // Races finalization across threads; meaningless on single-threaded platforms.
         public static void WaitForPendingFinalizersRaces()
         {
             Task.Run(Test);
@@ -1097,7 +1097,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(-1)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         private static void AllocateArrayNegativeSize(int negValue)
         {
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));

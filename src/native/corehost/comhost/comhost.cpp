@@ -4,7 +4,7 @@
 #include "comhost.h"
 #include "redirected_error_writer.h"
 #include "hostfxr.h"
-#include "fxr_resolver.h"
+#include "load_fxr_and_get_delegate.h"
 #include "pal.h"
 #include "trace.h"
 #include "error_codes.h"
@@ -198,6 +198,12 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     _In_ REFIID riid,
     _Outptr_ LPVOID FAR* ppv)
 {
+    if (ppv == nullptr)
+        return E_POINTER;
+
+    // COM out parameters must always be initialized, including on failure paths.
+    *ppv = nullptr;
+
     // Check if the CLSID map contains a mapping
     clsid_map map;
     RETURN_HRESULT_IF_EXCEPT(map = comhost::get_clsid_map());

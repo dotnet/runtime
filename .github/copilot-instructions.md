@@ -1,6 +1,4 @@
----
-excludeAgent: code-review
----
+When reviewing pull requests, use the `code-review` skill unless the user has stated they will review the changes themselves.
 
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
 
@@ -50,7 +48,7 @@ When NOT running under CCA, guidance for creating commits and pushing changes:
 
 ## AI-Generated Content Disclosure
 
-When posting any content to GitHub under a user's credentials — opening PRs, creating issues, commenting on PRs or issues, posting review comments, or any other public-facing action — and the account is **not** a dedicated "copilot" or "bot" account/app, you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated.
+When posting any content to GitHub under a user's credentials — opening PRs, creating issues, commenting on PRs or issues, posting review comments, or any other public-facing action — and the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`), you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated.
 
 This applies to all GitHub interactions: PR descriptions, issue bodies, comments, review comments, etc. Exceptions:
 - The account is a recognized bot or Copilot app account (e.g., `github-actions[bot]`, `copilot`), where the AI origin is already apparent from the account identity.
@@ -84,7 +82,7 @@ Based on file paths you will modify:
 
 ### Step 2: Run the Baseline Build (from repo root)
 
-**First, checkout the `main` branch** to establish a known-good baseline, then run the appropriate build command:
+From the repo root, on the branch you intend to modify, ensure you have a clean working tree (no uncommitted changes) at the current HEAD, then run the appropriate build command **before making any code changes**:
 
 | Component | Command |
 |-----------|---------|
@@ -108,7 +106,7 @@ export PATH="$(pwd)/.dotnet:$PATH"
 dotnet --version  # Should match sdk.version in global.json
 ```
 
-**Only proceed with changes after the baseline build succeeds.** If it fails, report the failure and stop. After the baseline build, switch back to your working branch before making changes.
+**Only proceed with changes after the baseline build succeeds.** If it fails, report the failure and stop.
 
 ---
 

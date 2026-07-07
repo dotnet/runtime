@@ -9,20 +9,20 @@ namespace System.Diagnostics.Eventing.Reader
     public sealed class EventRecordWrittenEventArgs : EventArgs
     {
         internal EventRecordWrittenEventArgs(EventLogRecord record) { EventRecord = record; }
-        internal EventRecordWrittenEventArgs(Exception exception) { EventException = exception; }
+        internal EventRecordWrittenEventArgs(Exception? exception) { EventException = exception; }
 
         /// <summary>
         /// The EventRecord being notified.
         /// NOTE: If non null, then caller is required to call Dispose().
         /// </summary>
-        public EventRecord EventRecord { get; }
+        public EventRecord? EventRecord { get; }
 
         /// <summary>
         /// If any error occurred during subscription, this will be non-null.
         /// After a notification containing an exception, no more notifications will
         /// be made for this subscription.
         /// </summary>
-        public Exception EventException { get; }
+        public Exception? EventException { get; }
     }
 
 }

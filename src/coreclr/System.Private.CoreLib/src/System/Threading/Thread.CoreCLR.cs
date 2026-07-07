@@ -109,22 +109,21 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
-        [RequiresUnsafe]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
-        // Called from the runtime
-        private void StartCallback()
+        [UnmanagedCallersOnly]
+        private static unsafe void StartCallback(Thread* pThread)
         {
-            StartHelper? startHelper = _startHelper;
+            StartHelper? startHelper = pThread->_startHelper;
             Debug.Assert(startHelper != null);
-            _startHelper = null;
+            pThread->_startHelper = null;
 
             startHelper.Run();
 
             // When this thread is about to exit, inform any subsystems that need to know.
             // For external threads that have been attached to the runtime, we'll call this
             // after the thread has been detached as it won't come through this path.
-            OnThreadExited();
+            pThread->OnThreadExited();
         }
 
         // Max iterations to be done in SpinWait without switching GC modes.
@@ -324,8 +323,6 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
-        // Temporary workaround for https://github.com/dotnet/runtime/issues/122479
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         internal void ClearWaitSleepJoinState()
         {
             // This method is called when the thread is no longer in a wait, sleep, or join state.
@@ -586,7 +583,6 @@ namespace System.Threading
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void OnThreadExited(Thread* pThread, Exception* pException)
         {
             try
@@ -600,7 +596,6 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
-        [RequiresUnsafe]
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
         internal static void CheckForPendingInterrupt()

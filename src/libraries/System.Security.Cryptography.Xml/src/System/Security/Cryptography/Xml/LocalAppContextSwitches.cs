@@ -7,26 +7,51 @@ namespace System
 {
     internal static partial class LocalAppContextSwitches
     {
-        internal static int MaxReferencesPerSignedInfo { get; } = InitializeMaxReferencesPerSignedInfo();
+        internal const int DefaultMaxRecursionDepth = 64;
+        internal const string DangerousMaxRecursionDepthAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxRecursionDepth";
+        internal const string AllowDangerousEncryptedXmlTransformsAppContextSwitch = "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms";
 
-        private static int InitializeMaxReferencesPerSignedInfo()
+        // 0 disables the limit for compatibility. Negative values fall back to the default.
+        internal static int DangerousMaxRecursionDepth { get; } =
+            GetInt32Config(DangerousMaxRecursionDepthAppContextSwitch, DefaultMaxRecursionDepth, allowNegative: false);
+
+        internal static bool AllowDangerousEncryptedXmlTransforms { get; } =
+            GetBooleanConfig(AllowDangerousEncryptedXmlTransformsAppContextSwitch, defaultValue: false);
+
+        internal static int MaxReferencesPerSignedInfo { get; } =
+            GetInt32Config("System.Security.Cryptography.MaxReferencesPerSignedInfo", defaultValue: 100);
+
+        private static int GetInt32Config(string appContextName, int defaultValue, bool allowNegative = true)
         {
-            const int DefaultMaxReferencesPerSignedInfo = 100;
-            object? data = AppContext.GetData("System.Security.Cryptography.MaxReferencesPerSignedInfo");
+            object? data = AppContext.GetData(appContextName);
 
             if (data is null)
             {
-                return DefaultMaxReferencesPerSignedInfo;
+                return defaultValue;
             }
+
+            int value;
 
             try
             {
-                return Convert.ToInt32(data, CultureInfo.InvariantCulture);
+                value = Convert.ToInt32(data, CultureInfo.InvariantCulture);
             }
             catch
             {
-                return DefaultMaxReferencesPerSignedInfo;
+                return defaultValue;
             }
+
+            return (allowNegative || value >= 0) ? value : defaultValue;
+        }
+
+        private static bool GetBooleanConfig(string appContextName, bool defaultValue)
+        {
+            if (AppContext.TryGetSwitch(appContextName, out bool isEnabled))
+            {
+                return isEnabled;
+            }
+
+            return defaultValue;
         }
     }
 }

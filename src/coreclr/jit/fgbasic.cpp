@@ -887,6 +887,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         compInlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
         // Observe force inline state and code size.
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
+        compInlineResult->NoteBool(InlineObservation::CALLEE_IS_INTRINSIC_TYPE,
+                                   (info.compClassAttr & CORINFO_FLG_INTRINSIC_TYPE) != 0);
         compInlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
         // Determine if call site is within a try.
@@ -1189,13 +1191,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_ArmBase_Arm64_ReverseElementBits:
                             case NI_ArmBase_LeadingZeroCount:
                             case NI_ArmBase_ReverseElementBits:
-                            case NI_Vector64_Create:
-                            case NI_Vector64_CreateScalar:
-                            case NI_Vector64_CreateScalarUnsafe:
 #endif // TARGET_ARM64
-                            case NI_Vector128_Create:
-                            case NI_Vector128_CreateScalar:
-                            case NI_Vector128_CreateScalarUnsafe:
+                            case NI_Vector_Create:
+                            case NI_Vector_CreateScalar:
+                            case NI_Vector_CreateScalarUnsafe:
 #if defined(TARGET_XARCH)
                             case NI_AVX2_LeadingZeroCount:
                             case NI_AVX2_TrailingZeroCount:
@@ -1203,12 +1202,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_AVX2_X64_TrailingZeroCount:
                             case NI_X86Base_PopCount:
                             case NI_X86Base_X64_PopCount:
-                            case NI_Vector256_Create:
-                            case NI_Vector512_Create:
-                            case NI_Vector256_CreateScalar:
-                            case NI_Vector512_CreateScalar:
-                            case NI_Vector256_CreateScalarUnsafe:
-                            case NI_Vector512_CreateScalarUnsafe:
                             case NI_X86Base_BitScanForward:
                             case NI_X86Base_X64_BitScanForward:
                             case NI_X86Base_BitScanReverse:
@@ -1423,67 +1416,21 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             }
 
 #if defined(FEATURE_HW_INTRINSICS)
-#if defined(TARGET_ARM64)
-                            case NI_Vector64_As:
-                            case NI_Vector64_AsByte:
-                            case NI_Vector64_AsDouble:
-                            case NI_Vector64_AsInt16:
-                            case NI_Vector64_AsInt32:
-                            case NI_Vector64_AsInt64:
-                            case NI_Vector64_AsNInt:
-                            case NI_Vector64_AsNUInt:
-                            case NI_Vector64_AsSByte:
-                            case NI_Vector64_AsSingle:
-                            case NI_Vector64_AsUInt16:
-                            case NI_Vector64_AsUInt32:
-                            case NI_Vector64_AsUInt64:
-                            case NI_Vector64_op_UnaryPlus:
-#endif // TARGET_ARM64
-                            case NI_Vector128_As:
-                            case NI_Vector128_AsByte:
-                            case NI_Vector128_AsDouble:
-                            case NI_Vector128_AsInt16:
-                            case NI_Vector128_AsInt32:
-                            case NI_Vector128_AsInt64:
-                            case NI_Vector128_AsNInt:
-                            case NI_Vector128_AsNUInt:
-                            case NI_Vector128_AsSByte:
-                            case NI_Vector128_AsSingle:
-                            case NI_Vector128_AsUInt16:
-                            case NI_Vector128_AsUInt32:
-                            case NI_Vector128_AsUInt64:
-                            case NI_Vector128_AsVector4:
-                            case NI_Vector128_op_UnaryPlus:
-#if defined(TARGET_XARCH)
-                            case NI_Vector256_As:
-                            case NI_Vector256_AsByte:
-                            case NI_Vector256_AsDouble:
-                            case NI_Vector256_AsInt16:
-                            case NI_Vector256_AsInt32:
-                            case NI_Vector256_AsInt64:
-                            case NI_Vector256_AsNInt:
-                            case NI_Vector256_AsNUInt:
-                            case NI_Vector256_AsSByte:
-                            case NI_Vector256_AsSingle:
-                            case NI_Vector256_AsUInt16:
-                            case NI_Vector256_AsUInt32:
-                            case NI_Vector256_AsUInt64:
-                            case NI_Vector256_op_UnaryPlus:
-                            case NI_Vector512_As:
-                            case NI_Vector512_AsByte:
-                            case NI_Vector512_AsDouble:
-                            case NI_Vector512_AsInt16:
-                            case NI_Vector512_AsInt32:
-                            case NI_Vector512_AsInt64:
-                            case NI_Vector512_AsNInt:
-                            case NI_Vector512_AsNUInt:
-                            case NI_Vector512_AsSByte:
-                            case NI_Vector512_AsSingle:
-                            case NI_Vector512_AsUInt16:
-                            case NI_Vector512_AsUInt32:
-                            case NI_Vector512_AsUInt64:
-                            case NI_Vector512_op_UnaryPlus:
-#endif // TARGET_XARCH
+                            case NI_Vector_As:
+                            case NI_Vector_AsByte:
+                            case NI_Vector_AsDouble:
+                            case NI_Vector_AsInt16:
+                            case NI_Vector_AsInt32:
+                            case NI_Vector_AsInt64:
+                            case NI_Vector_AsNInt:
+                            case NI_Vector_AsNUInt:
+                            case NI_Vector_AsSByte:
+                            case NI_Vector_AsSingle:
+                            case NI_Vector_AsUInt16:
+                            case NI_Vector_AsUInt32:
+                            case NI_Vector_AsUInt64:
+                            case NI_Vector_AsVector4:
+                            case NI_Vector_op_UnaryPlus:
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
                             case NI_SRCS_UNSAFE_AsRef:
@@ -1500,58 +1447,18 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             }
 
 #if defined(FEATURE_HW_INTRINSICS)
-#if defined(TARGET_ARM64)
-                            case NI_Vector64_get_AllBitsSet:
-                            case NI_Vector64_get_E:
-                            case NI_Vector64_get_Epsilon:
-                            case NI_Vector64_get_NaN:
-                            case NI_Vector64_get_NegativeInfinity:
-                            case NI_Vector64_get_NegativeOne:
-                            case NI_Vector64_get_NegativeZero:
-                            case NI_Vector64_get_One:
-                            case NI_Vector64_get_Pi:
-                            case NI_Vector64_get_PositiveInfinity:
-                            case NI_Vector64_get_Tau:
-                            case NI_Vector64_get_Zero:
-#endif // TARGET_ARM64
-                            case NI_Vector128_get_AllBitsSet:
-                            case NI_Vector128_get_E:
-                            case NI_Vector128_get_Epsilon:
-                            case NI_Vector128_get_NaN:
-                            case NI_Vector128_get_NegativeInfinity:
-                            case NI_Vector128_get_NegativeOne:
-                            case NI_Vector128_get_NegativeZero:
-                            case NI_Vector128_get_One:
-                            case NI_Vector128_get_Pi:
-                            case NI_Vector128_get_PositiveInfinity:
-                            case NI_Vector128_get_Tau:
-                            case NI_Vector128_get_Zero:
-#if defined(TARGET_XARCH)
-                            case NI_Vector256_get_AllBitsSet:
-                            case NI_Vector256_get_E:
-                            case NI_Vector256_get_Epsilon:
-                            case NI_Vector256_get_NaN:
-                            case NI_Vector256_get_NegativeInfinity:
-                            case NI_Vector256_get_NegativeOne:
-                            case NI_Vector256_get_NegativeZero:
-                            case NI_Vector256_get_One:
-                            case NI_Vector256_get_Pi:
-                            case NI_Vector256_get_PositiveInfinity:
-                            case NI_Vector256_get_Tau:
-                            case NI_Vector256_get_Zero:
-                            case NI_Vector512_get_AllBitsSet:
-                            case NI_Vector512_get_E:
-                            case NI_Vector512_get_Epsilon:
-                            case NI_Vector512_get_NaN:
-                            case NI_Vector512_get_NegativeInfinity:
-                            case NI_Vector512_get_NegativeOne:
-                            case NI_Vector512_get_NegativeZero:
-                            case NI_Vector512_get_One:
-                            case NI_Vector512_get_Pi:
-                            case NI_Vector512_get_PositiveInfinity:
-                            case NI_Vector512_get_Tau:
-                            case NI_Vector512_get_Zero:
-#endif // TARGET_XARCH
+                            case NI_Vector_get_AllBitsSet:
+                            case NI_Vector_get_E:
+                            case NI_Vector_get_Epsilon:
+                            case NI_Vector_get_NaN:
+                            case NI_Vector_get_NegativeInfinity:
+                            case NI_Vector_get_NegativeOne:
+                            case NI_Vector_get_NegativeZero:
+                            case NI_Vector_get_One:
+                            case NI_Vector_get_Pi:
+                            case NI_Vector_get_PositiveInfinity:
+                            case NI_Vector_get_Tau:
+                            case NI_Vector_get_Zero:
 #endif // FEATURE_HW_INTRINSICS
                             {
                                 // These always produce a vector constant
@@ -2128,6 +2035,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     if (!impOpcodeIsCallOpcode(actualOpcode))
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
+                    }
+
+                    if (compIsAsyncVersion())
+                    {
+                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
                     }
                 }
                 handled = true;
@@ -3304,7 +3216,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
     GOT_ENDP:
 
-        tailCall = (opcode == CEE_TAILCALL);
+        tailCall = (opcode == CEE_TAILCALL) && !compIsAsyncVersion();
 
         // Make sure a jump target isn't in the middle of our opcode
 
@@ -4692,7 +4604,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->CopyFlags(curr);
 
     // Remove flags that the new block can't have.
-    newBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->RemoveFlags(BBF_KEEP_BBJ_ALWAYS | BBF_OSR_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -5190,6 +5102,10 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         // Unlink this block from the bbNext chain
         fgUnlinkBlockForRemoval(block);
 
+        // Retarget any surviving EH region whose 'last' block was this one.
+        assert(bPrev != nullptr);
+        ehUpdateLastBlocks(block, bPrev);
+
         // At this point the bbPreds and bbRefs had better be zero
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
     }
@@ -5250,6 +5166,8 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         for (BasicBlock* const predBlock : block->PredBlocksEditing())
         {
+            // Inherit affordances
+            predBlock->CopyFlags(block, BBF_ASYNC_RESUMPTION);
             // change all jumps/refs to the removed block
             fgReplaceJumpTarget(predBlock, block, succBlock);
         }
@@ -5377,10 +5295,6 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
 //
 // Return Value:
 //    The last block that was relocated, or nullptr on failure.
-//
-// Notes:
-//    This function can invalidate all pointers into the EH table, as well as
-//    change the size of the EH table!
 //
 BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType)
 {

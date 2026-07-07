@@ -109,15 +109,35 @@ namespace System.Numerics
                     right = right.Slice(0, k);
                 }
 
-                // Barrett's quotient estimate may overshoot by up to 2, so right
-                // can exceed left by up to 2*modulus. Compensate by adding modulus
-                // until left >= right before subtracting.
-                while (CompareActual(left, right) < 0)
+                // Barrett reduction guarantees the true residual x - q̂·m is in
+                // [0, 2·modulus], but after truncating both sides to k limbs the
+                // truncated right can appear larger than the truncated left.
+                // Unsigned underflow is safe here: the wrapped result equals the
+                // true residual, which is guaranteed to fit in k limbs because
+                // 2·modulus < b^k where b = 2^BitsPerLimb.
+                Debug.Assert(left.Length >= right.Length);
                 {
-                    AddSelf(left, modulus);
+                    int i = 0;
+                    nuint borrow = 0;
+
+                    if (right.Length != 0)
+                    {
+                        _ = left[right.Length - 1];
+                    }
+
+                    for (; i < right.Length; i++)
+                    {
+                        left[i] = SubWithBorrow(left[i], right[i], borrow, out borrow);
+                    }
+
+                    for (; borrow != 0 && i < left.Length; i++)
+                    {
+                        nuint val = left[i];
+                        left[i] = val - borrow;
+                        borrow = val == 0 ? 1 : (nuint)0;
+                    }
                 }
 
-                SubtractSelf(left, right);
                 left = left.Slice(0, ActualLength(left));
 
                 while (Compare(left, modulus) >= 0)

@@ -171,8 +171,8 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Data.SimpleComCallWrapper data = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccw);
         return new SimpleComCallWrapperData
         {
-            RefCount = data.RefCount & (ulong)ComRefCount.RefCountMask,
-            IsNeutered = (data.RefCount & (ulong)ComRefCount.CleanupSentinel) != 0,
+            RefCount = (uint)(data.RefCount & (long)ComRefCount.RefCountMask),
+            IsNeutered = (data.RefCount & (long)ComRefCount.CleanupSentinel) != 0,
             IsAggregated = (data.Flags & (uint)SimpleComCallWrapperFlags.IsAggregated) != 0,
             IsExtendsCOMObject = (data.Flags & (uint)SimpleComCallWrapperFlags.IsExtendsCom) != 0,
             IsHandleWeak = (data.Flags & (uint)SimpleComCallWrapperFlags.IsHandleWeak) != 0,

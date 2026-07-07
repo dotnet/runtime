@@ -290,6 +290,45 @@ namespace System.Tests
             VerifyConvert(DateTime.MinValue.AddHours(0.5) + earlyTimesDifference, s_strSydney, s_strPacific, DateTime.MinValue.AddHours(0.5));
         }
 
+        [Theory]
+        [InlineData(4, 3, 1, 13, 15, 0, 13, 15)]   // UTC+4 to UTC+3: subtract 1 hour
+        [InlineData(5, 3, 2, 30, 0, 0, 30, 0)]      // UTC+5 to UTC+3: subtract 2 hours
+        [InlineData(3, 4, 0, 30, 0, 1, 30, 0)]      // UTC+3 to UTC+4: add 1 hour
+        [InlineData(8, 3, 4, 0, 0, 0, 0, 0)]        // UTC+8 to UTC+3: subtract 5 hours, result is MinValue boundary
+        public static void ConvertTime_DateTime_NearMinValue_PositiveOffsetZones(
+            int sourceOffsetHours, int destOffsetHours,
+            int inputHour, int inputMinute, int inputSecond,
+            int expectedHour, int expectedMinute, int expectedSecond)
+        {
+            TimeZoneInfo sourceTimeZone = TimeZoneInfo.CreateCustomTimeZone($"UTC+{sourceOffsetHours}", TimeSpan.FromHours(sourceOffsetHours), $"UTC+{sourceOffsetHours}", $"UTC+{sourceOffsetHours}");
+            TimeZoneInfo destTimeZone = TimeZoneInfo.CreateCustomTimeZone($"UTC+{destOffsetHours}", TimeSpan.FromHours(destOffsetHours), $"UTC+{destOffsetHours}", $"UTC+{destOffsetHours}");
+
+            DateTime earlyDate = new DateTime(0001, 01, 01, inputHour, inputMinute, inputSecond);
+            DateTime converted = TimeZoneInfo.ConvertTime(earlyDate, sourceTimeZone, destTimeZone);
+
+            DateTime expected = new DateTime(0001, 01, 01, expectedHour, expectedMinute, expectedSecond);
+            Assert.Equal(expected, converted);
+        }
+
+        [Theory]
+        [InlineData(-4, -3, 22, 46, 45, 23, 46, 45)]   // UTC-4 to UTC-3: add 1 hour
+        [InlineData(-3, -4, 23, 46, 45, 22, 46, 45)]   // UTC-3 to UTC-4: subtract 1 hour
+        [InlineData(-3, -8, 23, 0, 0, 18, 0, 0)]       // UTC-3 to UTC-8: subtract 5 hours
+        public static void ConvertTime_DateTime_NearMaxValue_NegativeOffsetZones(
+            int sourceOffsetHours, int destOffsetHours,
+            int inputHour, int inputMinute, int inputSecond,
+            int expectedHour, int expectedMinute, int expectedSecond)
+        {
+            TimeZoneInfo sourceTimeZone = TimeZoneInfo.CreateCustomTimeZone($"UTC{sourceOffsetHours}", TimeSpan.FromHours(sourceOffsetHours), $"UTC{sourceOffsetHours}", $"UTC{sourceOffsetHours}");
+            TimeZoneInfo destTimeZone = TimeZoneInfo.CreateCustomTimeZone($"UTC{destOffsetHours}", TimeSpan.FromHours(destOffsetHours), $"UTC{destOffsetHours}", $"UTC{destOffsetHours}");
+
+            DateTime lateDate = new DateTime(9999, 12, 31, inputHour, inputMinute, inputSecond);
+            DateTime converted = TimeZoneInfo.ConvertTime(lateDate, sourceTimeZone, destTimeZone);
+
+            DateTime expected = new DateTime(9999, 12, 31, expectedHour, expectedMinute, expectedSecond);
+            Assert.Equal(expected, converted);
+        }
+
         [Fact]
         public static void ConvertTime_DateTimeOffset_VariousSystemTimeZones()
         {

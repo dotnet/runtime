@@ -846,5 +846,17 @@ namespace System.Globalization
                 }
             }
         }
+
+        internal static void ValidateParseStyleDecimal(NumberStyles style)
+        {
+            // Check for undefined flags or hex/binary specifiers.
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
+            {
+                ThrowInvalid(style);
+
+                static void ThrowInvalid(NumberStyles value) =>
+                    throw new ArgumentException((value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+            }
+        }
     }
 }

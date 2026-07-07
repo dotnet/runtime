@@ -7,7 +7,6 @@
 #include "excep.h"
 #include "interoputil.h"
 #include "interopconverter.h"
-#include "olevariant.h"
 #include "comcallablewrapper.h"
 
 #ifdef FEATURE_COMINTEROP

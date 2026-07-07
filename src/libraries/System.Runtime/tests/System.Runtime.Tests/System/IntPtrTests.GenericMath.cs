@@ -344,6 +344,33 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0)));
+                Assert.Equal(unchecked((nint)0), BinaryIntegerHelper<nint>.Log10(unchecked((nint)1)));
+                Assert.Equal(unchecked((nint)0), BinaryIntegerHelper<nint>.Log10(unchecked((nint)9)));
+                Assert.Equal(unchecked((nint)1), BinaryIntegerHelper<nint>.Log10(unchecked((nint)10)));
+                Assert.Equal(unchecked((nint)2), BinaryIntegerHelper<nint>.Log10(unchecked((nint)100)));
+                Assert.Equal(unchecked((nint)18), BinaryIntegerHelper<nint>.Log10(unchecked((nint)9_223_372_036_854_775_807)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x8000000000000000)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.Equal((nint)0, BinaryIntegerHelper<nint>.Log10((nint)0));
+                Assert.Equal((nint)0, BinaryIntegerHelper<nint>.Log10((nint)1));
+                Assert.Equal((nint)0, BinaryIntegerHelper<nint>.Log10((nint)9));
+                Assert.Equal((nint)1, BinaryIntegerHelper<nint>.Log10((nint)10));
+                Assert.Equal((nint)2, BinaryIntegerHelper<nint>.Log10((nint)100));
+                Assert.Equal((nint)9, BinaryIntegerHelper<nint>.Log10((nint)2_147_483_647));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x80000000)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             if (Environment.Is64BitProcess)

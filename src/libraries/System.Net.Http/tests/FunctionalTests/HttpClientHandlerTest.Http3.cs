@@ -1930,7 +1930,6 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://www.litespeedtech.com/" }, // LiteSpeed
-                { "https://quic.tech:8443/" }, // Cloudflare
                 { "https://quic.aiortc.org:443/" }, // aioquic
                 { "https://h2o.examp1e.net/" } // h2o/quicly
             };

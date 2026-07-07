@@ -384,6 +384,137 @@ namespace Internal.TypeSystem.Interop
             return true;
         }
 
+        private static Marshaller[] GetMarshallers(
+            MethodSignature methodSig,
+            PInvokeFlags flags,
+            ParameterMetadata[] parameterMetadataArray,
+            bool runtimeMarshallingEnabled)
+        {
+            Marshaller[] marshallers = new Marshaller[methodSig.Length + 1];
+
+            for (int i = 0, parameterIndex = 0; i < marshallers.Length; i++)
+            {
+                Debug.Assert(parameterIndex == parameterMetadataArray.Length || i <= parameterMetadataArray[parameterIndex].Index);
+
+                ParameterMetadata parameterMetadata;
+                if (parameterIndex == parameterMetadataArray.Length || i < parameterMetadataArray[parameterIndex].Index)
+                {
+                    // if we don't have metadata for the parameter, create a dummy one
+                    parameterMetadata = new ParameterMetadata(i, ParameterMetadataAttributes.None, null);
+                }
+                else
+                {
+                    Debug.Assert(i == parameterMetadataArray[parameterIndex].Index);
+                    parameterMetadata = parameterMetadataArray[parameterIndex++];
+                }
+
+                TypeDesc parameterType = (i == 0) ? methodSig.ReturnType : methodSig[i - 1];  //first item is the return type
+                if (runtimeMarshallingEnabled)
+                {
+                    marshallers[i] = CreateMarshaller(parameterType,
+                                                        parameterIndex,
+                                                        methodSig.GetEmbeddedSignatureData(),
+                                                        MarshallerType.Argument,
+                                                        parameterMetadata.MarshalAsDescriptor,
+                                                        MarshalDirection.Forward,
+                                                        marshallers,
+#if !READYTORUN
+                                                        null,
+#endif
+                                                        parameterMetadata.Index,
+                                                        flags,
+                                                        parameterMetadata.In,
+                                                        parameterMetadata.Out,
+                                                        parameterMetadata.Return);
+                }
+                else
+                {
+                    marshallers[i] = CreateDisabledMarshaller(
+                        parameterType,
+                        MarshallerType.Argument,
+                        MarshalDirection.Forward,
+                        marshallers,
+                        parameterMetadata.Index,
+                        flags,
+                        parameterMetadata.Return);
+                }
+            }
+
+            return marshallers;
+        }
+
+        public static Marshaller[] GetMarshallersForMethod(MethodDesc targetMethod)
+        {
+            Debug.Assert(targetMethod.IsPInvoke);
+            return GetMarshallers(
+                targetMethod.Signature,
+                targetMethod.GetPInvokeMethodMetadata().Flags,
+                targetMethod.GetParameterMetadata(),
+                MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)targetMethod.OwningType).Module));
+        }
+
+        public static Marshaller[] GetMarshallersForSignature(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
+        {
+            return GetMarshallers(
+                methodSig,
+                new PInvokeFlags(PInvokeAttributes.None),
+                paramMetadata,
+                MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext));
+        }
+
+        public static bool IsMarshallingRequired(MethodDesc targetMethod)
+        {
+            Debug.Assert(targetMethod.IsPInvoke);
+
+            if (targetMethod.IsUnmanagedCallersOnly)
+                return true;
+
+            PInvokeMetadata metadata = targetMethod.GetPInvokeMethodMetadata();
+            PInvokeFlags flags = metadata.Flags;
+
+            if (flags.SetLastError)
+                return true;
+
+            if (!flags.PreserveSig)
+                return true;
+
+            if (MarshalHelpers.ShouldCheckForPendingException(targetMethod.Context.Target, metadata))
+                return true;
+
+            var marshallers = GetMarshallersForMethod(targetMethod);
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].IsMarshallingRequired())
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext)
+        {
+            Marshaller[] marshallers = GetMarshallersForSignature(methodSig, Array.Empty<ParameterMetadata>(), moduleContext);
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].IsMarshallingRequired())
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
+        {
+            Marshaller[] marshallers = GetMarshallersForSignature(methodSig, paramMetadata, moduleContext);
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].IsMarshallingRequired())
+                    return true;
+            }
+
+            return false;
+        }
+
         public bool IsMarshallingRequired()
         {
             return Out || IsManagedByRef || IsMarshallingRequired(MarshallerKind);
@@ -1114,9 +1245,30 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.Emit(ILOpcode.mul_ovf);
 
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                InteropTypes.GetMarshal(Context).GetKnownMethod("AllocCoTaskMem"u8, null)));
-            StoreNativeValue(codeStream);
+            if (!In)
+            {
+                // For out only parameters, zero initialize the native buffer.
+                // The native callee may attempt to free the pointers in each slot
+                // before writing new values. Uninitialized garbage pointers would cause heap corruption.
+                var vAllocSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+                codeStream.Emit(ILOpcode.dup);
+                codeStream.EmitStLoc(vAllocSize);
+
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    InteropTypes.GetMarshal(Context).GetKnownMethod("AllocCoTaskMem"u8, null)));
+                codeStream.Emit(ILOpcode.dup);
+                StoreNativeValue(codeStream);
+                // Zero initialize: initblk(nativeBuffer, 0, allocSize)
+                codeStream.EmitLdc(0);
+                codeStream.EmitLdLoc(vAllocSize);
+                codeStream.Emit(ILOpcode.initblk);
+            }
+            else
+            {
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    InteropTypes.GetMarshal(Context).GetKnownMethod("AllocCoTaskMem"u8, null)));
+                StoreNativeValue(codeStream);
+            }
 
             codeStream.EmitLabel(lNullArray);
         }

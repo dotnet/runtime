@@ -286,6 +286,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CurrentDirectoryGet()
         {
             var CurrentDirectory = System.IO.Directory.GetCurrentDirectory();
@@ -294,6 +295,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CurrentDirectorySet()
         {
             var SavedCurrentDirectory = System.IO.Directory.GetCurrentDirectory();

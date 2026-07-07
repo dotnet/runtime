@@ -49,7 +49,6 @@ namespace System.Runtime.InteropServices.CustomMarshalers
         }
 
         [System.Runtime.InteropServices.UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InternalMarshalNativeToManaged(IntPtr pNativeData, object* pResult, Exception* pException)
         {
             try

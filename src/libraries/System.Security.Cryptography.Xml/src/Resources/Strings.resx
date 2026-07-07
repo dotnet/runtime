@@ -183,6 +183,9 @@
   <data name="Cryptography_Xml_LoadKeyFailed" xml:space="preserve">
     <value>Signing key is not loaded.</value>
   </data>
+  <data name="Cryptography_Xml_MaxDepthExceeded" xml:space="preserve">
+    <value>The XML element has exceeded the maximum nesting depth allowed for decryption.</value>
+  </data>
   <data name="Cryptography_Xml_MissingAlgorithm" xml:space="preserve">
     <value>Symmetric algorithm is not specified. If the application has been trimmed, ensure the required algorithm implementations are preserved.</value>
   </data>

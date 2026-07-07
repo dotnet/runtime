@@ -221,6 +221,13 @@ browse.VC.db
 **/.vscode/**
 !**/.vscode/c_cpp_properties.json
 
+# C# Dev Kit language server caches
+*.lscache
+
+# Dump files
+*.dmp
+*.dump
+
 ### MonoDevelop ###
 *.userprefs
 

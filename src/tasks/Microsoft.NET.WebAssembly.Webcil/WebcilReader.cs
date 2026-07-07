@@ -55,17 +55,23 @@ public sealed partial class WebcilReader : IDisposable
         InputPath = inputPath;
     }
 
+    // V0 header is 28 bytes, V1 adds a 4-byte TableBase field (32 bytes total)
+    private const int V0HeaderSize = 28;
+    private const int V1HeaderSize = 32;
+
     private unsafe bool ReadHeader()
     {
-        WebcilHeader header;
-        var buffer = new byte[Marshal.SizeOf<WebcilHeader>()];
+        // Read the V0 portion of the header first (28 bytes)
+        WebcilHeader header = default;
+        var buffer = new byte[V0HeaderSize];
         if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
         {
             return false;
         }
         fixed (byte* p = buffer)
         {
-            header = *(WebcilHeader*)p;
+            // Copy V0 fields only (28 bytes) into the 32-byte struct
+            Buffer.MemoryCopy(p, &header, Marshal.SizeOf<WebcilHeader>(), V0HeaderSize);
         }
         if (!BitConverter.IsLittleEndian)
         {
@@ -79,10 +85,28 @@ public sealed partial class WebcilReader : IDisposable
             header.PeDebugSize = BinaryPrimitives.ReverseEndianness(header.PeDebugSize);
         }
         if (header.Id != WebcilConstants.WEBCIL_MAGIC
-            || header.VersionMajor != WebcilConstants.WC_VERSION_MAJOR
+            || (header.VersionMajor != 0 && header.VersionMajor != 1)
             || header.VersionMinor != WebcilConstants.WC_VERSION_MINOR)
         {
             return false;
+        }
+        if (header.VersionMajor >= 1)
+        {
+            // V1 has an additional TableBase field
+            var extra = new byte[V1HeaderSize - V0HeaderSize];
+            if (_stream.Read(extra, 0, extra.Length) != extra.Length)
+            {
+                return false;
+            }
+            header.TableBase = BitConverter.ToUInt32(extra, 0);
+            if (!BitConverter.IsLittleEndian)
+            {
+                header.TableBase = BinaryPrimitives.ReverseEndianness(header.TableBase);
+            }
+        }
+        else
+        {
+            header.TableBase = uint.MaxValue;
         }
         _header = header;
         return true;
@@ -353,7 +377,10 @@ public sealed partial class WebcilReader : IDisposable
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
     }
 
-    private static long SectionDirectoryOffset => Marshal.SizeOf<WebcilHeader>();
+    // V0 header is 28 bytes (no TableBase), V1 is 32 bytes
+    private long SectionDirectoryOffset => _header.VersionMajor >= 1
+        ? V1HeaderSize
+        : V0HeaderSize;
 
     private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
     {

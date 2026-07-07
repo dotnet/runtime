@@ -8,14 +8,14 @@ using System.Text;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.TestCasesRunner;
-using NUnit.Framework;
+using Xunit;
 
 namespace Mono.Linker.Tests
 {
-    [TestFixture]
     public class DocumentationSignatureParserTests
     {
-        [TestCaseSource(nameof(GetMemberAssertions), new object[] { typeof(DocumentationSignatureParserTests) })]
+        [Theory]
+        [MemberData(nameof(GetMemberAssertions))]
         public void TestSignatureParsing(IMemberDefinition member, CustomAttribute customAttribute)
         {
             var attributeString = (string)customAttribute.ConstructorArguments[0].Value;
@@ -38,22 +38,22 @@ namespace Mono.Linker.Tests
             }
         }
 
-        public static IEnumerable<TestCaseData> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
+        public static IEnumerable<object[]> GetMemberAssertions() => MemberAssertionsCollector.GetMemberAssertionsData(typeof(DocumentationSignatureParserTests));
 
         public static void CheckUniqueParsedString(IMemberDefinition member, string input)
         {
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
             Assert.NotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
-            Assert.AreEqual(1, parseResults.Count());
-            Assert.AreEqual(member, parseResults.First());
+            Assert.Equal(1, parseResults.Count());
+            Assert.Equal(member, parseResults.First());
         }
 
         public static void CheckGeneratedString(IMemberDefinition member, string expected)
         {
             var builder = new StringBuilder();
             DocumentationSignatureGenerator.VisitMember(member, builder, new TestResolver());
-            Assert.AreEqual(expected, builder.ToString());
+            Assert.Equal(expected, builder.ToString());
         }
 
         public static void CheckParsedString(IMemberDefinition member, string input)
@@ -61,7 +61,7 @@ namespace Mono.Linker.Tests
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
             Assert.NotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
-            CollectionAssert.Contains(parseResults, member);
+            Assert.Contains(member, parseResults);
         }
 
         public static void CheckUnresolvedDocumentationSignature(IMemberDefinition member, string input)
@@ -69,11 +69,10 @@ namespace Mono.Linker.Tests
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
             Assert.NotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
-            CollectionAssert.DoesNotContain(parseResults, member);
+            Assert.DoesNotContain(member, parseResults);
         }
 
         // testcases
-
         [ExpectGeneratedDocumentationSignature("T:Mono.Linker.Tests.DocumentationSignatureParserTests.A")]
         [ExpectExactlyResolvedDocumentationSignature("T:Mono.Linker.Tests.DocumentationSignatureParserTests.A")]
         public class A

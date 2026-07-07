@@ -11,16 +11,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
-using WasiHttpWorld.wit.imports.wasi.http.v0_2_0;
-using WasiHttpWorld.wit.imports.wasi.io.v0_2_0;
-using static WasiHttpWorld.wit.imports.wasi.http.v0_2_0.ITypes;
-using static WasiHttpWorld.wit.imports.wasi.io.v0_2_0.IStreams;
+using WasiHttpWorld.wit.Imports.wasi.http.v0_2_8;
+using WasiHttpWorld.wit.Imports.wasi.io.v0_2_8;
+using static WasiHttpWorld.wit.Imports.wasi.http.v0_2_8.ITypesImports;
+using static WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports;
 
 namespace System.Net.Http
 {
     internal static class WasiHttpInterop
     {
-        public static Task RegisterWasiPollable(IPoll.Pollable pollable, CancellationToken cancellationToken)
+        public static Task RegisterWasiPollable(IPollImports.Pollable pollable, CancellationToken cancellationToken)
         {
             var handle = pollable.Handle;
 
@@ -42,34 +42,34 @@ namespace System.Net.Http
             {
                 case "":
                 case "GET":
-                    method = Method.get();
+                    method = Method.Get();
                     break;
                 case "HEAD":
-                    method = Method.head();
+                    method = Method.Head();
                     break;
                 case "POST":
-                    method = Method.post();
+                    method = Method.Post();
                     break;
                 case "PUT":
-                    method = Method.put();
+                    method = Method.Put();
                     break;
                 case "DELETE":
-                    method = Method.delete();
+                    method = Method.Delete();
                     break;
                 case "CONNECT":
-                    method = Method.connect();
+                    method = Method.Connect();
                     break;
                 case "OPTIONS":
-                    method = Method.options();
+                    method = Method.Options();
                     break;
                 case "TRACE":
-                    method = Method.trace();
+                    method = Method.Trace();
                     break;
                 case "PATCH":
-                    method = Method.patch();
+                    method = Method.Patch();
                     break;
                 default:
-                    method = Method.other(requestMethod.Method);
+                    method = Method.Other(requestMethod.Method);
                     break;
             }
             return method;
@@ -82,13 +82,13 @@ namespace System.Net.Http
             {
                 case "":
                 case "http":
-                    scheme = Scheme.http();
+                    scheme = Scheme.Http();
                     break;
                 case "https":
-                    scheme = Scheme.https();
+                    scheme = Scheme.Https();
                     break;
                 default:
-                    scheme = Scheme.other(uri.Scheme);
+                    scheme = Scheme.Other(uri.Scheme);
                     break;
             }
             return scheme;
@@ -150,11 +150,11 @@ namespace System.Net.Http
         {
             switch (error.Tag)
             {
-                case ITypes.HeaderError.INVALID_SYNTAX:
+                case HeaderError.Tags.InvalidSyntax:
                     return "INVALID_SYNTAX";
-                case ITypes.HeaderError.FORBIDDEN:
+                case HeaderError.Tags.Forbidden:
                     return "FORBIDDEN";
-                case ITypes.HeaderError.IMMUTABLE:
+                case HeaderError.Tags.Immutable:
                     return "IMMUTABLE";
                 default:
                     return $"{error.Tag}";
@@ -188,121 +188,121 @@ namespace System.Net.Http
             // TODO: include payload data in result where applicable
             switch (code.Tag)
             {
-                case ErrorCode.DNS_TIMEOUT:
+                case ErrorCode.Tags.DnsTimeout:
                     return "DNS_TIMEOUT";
 
-                case ErrorCode.DNS_ERROR:
+                case ErrorCode.Tags.DnsError:
                     return "DNS_ERROR";
 
-                case ErrorCode.DESTINATION_NOT_FOUND:
+                case ErrorCode.Tags.DestinationNotFound:
                     return "DESTINATION_NOT_FOUND";
 
-                case ErrorCode.DESTINATION_UNAVAILABLE:
+                case ErrorCode.Tags.DestinationUnavailable:
                     return "DESTINATION_UNAVAILABLE";
 
-                case ErrorCode.DESTINATION_IP_PROHIBITED:
+                case ErrorCode.Tags.DestinationIpProhibited:
                     return "DESTINATION_IP_PROHIBITED";
 
-                case ErrorCode.DESTINATION_IP_UNROUTABLE:
+                case ErrorCode.Tags.DestinationIpUnroutable:
                     return "DESTINATION_IP_UNROUTABLE";
 
-                case ErrorCode.CONNECTION_REFUSED:
+                case ErrorCode.Tags.ConnectionRefused:
                     return "CONNECTION_REFUSED";
 
-                case ErrorCode.CONNECTION_TERMINATED:
+                case ErrorCode.Tags.ConnectionTerminated:
                     return "CONNECTION_TERMINATED";
 
-                case ErrorCode.CONNECTION_TIMEOUT:
+                case ErrorCode.Tags.ConnectionTimeout:
                     return "CONNECTION_TIMEOUT";
 
-                case ErrorCode.CONNECTION_READ_TIMEOUT:
+                case ErrorCode.Tags.ConnectionReadTimeout:
                     return "CONNECTION_READ_TIMEOUT";
 
-                case ErrorCode.CONNECTION_WRITE_TIMEOUT:
+                case ErrorCode.Tags.ConnectionWriteTimeout:
                     return "CONNECTION_WRITE_TIMEOUT";
 
-                case ErrorCode.CONNECTION_LIMIT_REACHED:
+                case ErrorCode.Tags.ConnectionLimitReached:
                     return "CONNECTION_LIMIT_REACHED";
 
-                case ErrorCode.TLS_PROTOCOL_ERROR:
+                case ErrorCode.Tags.TlsProtocolError:
                     return "TLS_PROTOCOL_ERROR";
 
-                case ErrorCode.TLS_CERTIFICATE_ERROR:
+                case ErrorCode.Tags.TlsCertificateError:
                     return "TLS_CERTIFICATE_ERROR";
 
-                case ErrorCode.TLS_ALERT_RECEIVED:
+                case ErrorCode.Tags.TlsAlertReceived:
                     return "TLS_ALERT_RECEIVED";
 
-                case ErrorCode.HTTP_REQUEST_DENIED:
+                case ErrorCode.Tags.HttpRequestDenied:
                     return "HTTP_REQUEST_DENIED";
 
-                case ErrorCode.HTTP_REQUEST_LENGTH_REQUIRED:
+                case ErrorCode.Tags.HttpRequestLengthRequired:
                     return "HTTP_REQUEST_LENGTH_REQUIRED";
 
-                case ErrorCode.HTTP_REQUEST_BODY_SIZE:
+                case ErrorCode.Tags.HttpRequestBodySize:
                     return "HTTP_REQUEST_BODY_SIZE";
 
-                case ErrorCode.HTTP_REQUEST_METHOD_INVALID:
+                case ErrorCode.Tags.HttpRequestMethodInvalid:
                     return "HTTP_REQUEST_METHOD_INVALID";
 
-                case ErrorCode.HTTP_REQUEST_URI_INVALID:
+                case ErrorCode.Tags.HttpRequestUriInvalid:
                     return "HTTP_REQUEST_URI_INVALID";
 
-                case ErrorCode.HTTP_REQUEST_URI_TOO_LONG:
+                case ErrorCode.Tags.HttpRequestUriTooLong:
                     return "HTTP_REQUEST_URI_TOO_LONG";
 
-                case ErrorCode.HTTP_REQUEST_HEADER_SECTION_SIZE:
+                case ErrorCode.Tags.HttpRequestHeaderSectionSize:
                     return "HTTP_REQUEST_HEADER_SECTION_SIZE";
 
-                case ErrorCode.HTTP_REQUEST_HEADER_SIZE:
+                case ErrorCode.Tags.HttpRequestHeaderSize:
                     return "HTTP_REQUEST_HEADER_SIZE";
 
-                case ErrorCode.HTTP_REQUEST_TRAILER_SECTION_SIZE:
+                case ErrorCode.Tags.HttpRequestTrailerSectionSize:
                     return "HTTP_REQUEST_TRAILER_SECTION_SIZE";
 
-                case ErrorCode.HTTP_REQUEST_TRAILER_SIZE:
+                case ErrorCode.Tags.HttpRequestTrailerSize:
                     return "HTTP_REQUEST_TRAILER_SIZE";
 
-                case ErrorCode.HTTP_RESPONSE_INCOMPLETE:
+                case ErrorCode.Tags.HttpResponseIncomplete:
                     return "HTTP_RESPONSE_INCOMPLETE";
 
-                case ErrorCode.HTTP_RESPONSE_HEADER_SECTION_SIZE:
+                case ErrorCode.Tags.HttpResponseHeaderSectionSize:
                     return "HTTP_RESPONSE_HEADER_SECTION_SIZE";
 
-                case ErrorCode.HTTP_RESPONSE_HEADER_SIZE:
+                case ErrorCode.Tags.HttpResponseHeaderSize:
                     return "HTTP_RESPONSE_HEADER_SIZE";
 
-                case ErrorCode.HTTP_RESPONSE_BODY_SIZE:
+                case ErrorCode.Tags.HttpResponseBodySize:
                     return "HTTP_RESPONSE_BODY_SIZE";
 
-                case ErrorCode.HTTP_RESPONSE_TRAILER_SECTION_SIZE:
+                case ErrorCode.Tags.HttpResponseTrailerSectionSize:
                     return "HTTP_RESPONSE_TRAILER_SECTION_SIZE";
 
-                case ErrorCode.HTTP_RESPONSE_TRAILER_SIZE:
+                case ErrorCode.Tags.HttpResponseTrailerSize:
                     return "HTTP_RESPONSE_TRAILER_SIZE";
 
-                case ErrorCode.HTTP_RESPONSE_TRANSFER_CODING:
+                case ErrorCode.Tags.HttpResponseTransferCoding:
                     return "HTTP_RESPONSE_TRANSFER_CODING";
 
-                case ErrorCode.HTTP_RESPONSE_CONTENT_CODING:
+                case ErrorCode.Tags.HttpResponseContentCoding:
                     return "HTTP_RESPONSE_CONTENT_CODING";
 
-                case ErrorCode.HTTP_RESPONSE_TIMEOUT:
+                case ErrorCode.Tags.HttpResponseTimeout:
                     return "HTTP_RESPONSE_TIMEOUT";
 
-                case ErrorCode.HTTP_UPGRADE_FAILED:
+                case ErrorCode.Tags.HttpUpgradeFailed:
                     return "HTTP_UPGRADE_FAILED";
 
-                case ErrorCode.HTTP_PROTOCOL_ERROR:
+                case ErrorCode.Tags.HttpProtocolError:
                     return "HTTP_PROTOCOL_ERROR";
 
-                case ErrorCode.LOOP_DETECTED:
+                case ErrorCode.Tags.LoopDetected:
                     return "LOOP_DETECTED";
 
-                case ErrorCode.CONFIGURATION_ERROR:
+                case ErrorCode.Tags.ConfigurationError:
                     return "CONFIGURATION_ERROR";
 
-                case ErrorCode.INTERNAL_ERROR:
+                case ErrorCode.Tags.InternalError:
                     return "INTERNAL_ERROR";
 
                 default:

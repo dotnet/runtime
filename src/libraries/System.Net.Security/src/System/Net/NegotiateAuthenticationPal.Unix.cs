@@ -40,20 +40,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(clientOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
+
                 return new UnsupportedNegotiateAuthenticationPal(clientOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(clientOptions);
             }
         }
 
@@ -63,20 +64,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
                 return new UnsupportedNegotiateAuthenticationPal(serverOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
             }
         }
 
@@ -758,6 +760,14 @@ namespace System.Net
                     case Interop.NetSecurityNative.Status.GSS_S_BAD_MECH:
                     case Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE:
                         return NegotiateAuthenticationStatusCode.Unsupported;
+                    case Interop.NetSecurityNative.Status.GSS_S_FAILURE:
+                        // KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - server principal is unknown in the KDC
+                        // This is the same error code value in both MIT and Heimdal Kerberos (com_err base for "krb5" table)
+                        if ((uint)exception.MinorStatus == 0x96C73A07u)
+                        {
+                            return NegotiateAuthenticationStatusCode.TargetUnknown;
+                        }
+                        return NegotiateAuthenticationStatusCode.GenericFailure;
                     case Interop.NetSecurityNative.Status.GSS_S_NO_CONTEXT:
                     default:
                         return NegotiateAuthenticationStatusCode.GenericFailure;

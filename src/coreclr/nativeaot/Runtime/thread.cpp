@@ -481,6 +481,12 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             EnumGcRef(pHijackedReturnValue, returnKind, pfnEnumCallback, pvCallbackData);
         }
     }
+
+    PTR_OBJECTREF pHijackedAsyncContinuation = NULL;
+    if (frameIterator.GetHijackedAsyncContinuation(&pHijackedAsyncContinuation))
+    {
+        EnumGcRef(pHijackedAsyncContinuation, GCRK_Object, pfnEnumCallback, pvCallbackData);
+    }
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -817,9 +823,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
 #if defined(TARGET_X86)
-        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(
-            frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(),
-                                                                frameIterator->GetRegisterSet()));
+        bool isAsync = false;
+        GCRefKind retKind = frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet(), &isAsync);
+        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retKind, isAsync);
 #endif
 
         *ppvRetAddrLocation = (void*)pfnHijackFunction;

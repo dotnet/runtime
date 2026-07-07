@@ -40,6 +40,7 @@
     <Compile Include="System\Linq\Except.cs" />
     <Compile Include="System\Linq\ExceptBy.cs" />
     <Compile Include="System\Linq\FirstAsync.cs" />
+    <Compile Include="System\Linq\FullJoin.cs" />
     <Compile Include="System\Linq\GroupBy.cs" />
     <Compile Include="System\Linq\GroupJoin.cs" />
     <Compile Include="System\Linq\Index.cs" />

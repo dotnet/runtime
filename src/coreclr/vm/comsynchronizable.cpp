@@ -31,6 +31,8 @@
 #include "utilcode.h"
 #endif
 
+MethodDesc* g_pThreadStartCallbackMethodDesc = nullptr;
+
 
 // For the following helpers, we make no attempt to synchronize.  The app developer
 // is responsible for managing their own race conditions.
@@ -133,10 +135,13 @@ static void KickOffThread_Worker(LPVOID ptr)
     OBJECTREF exposedObj = GetThread()->GetExposedObjectRaw();
     GCPROTECT_BEGIN(exposedObj);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__START_CALLBACK);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(exposedObj);
-    CALL_MANAGED_METHOD_NORET(args);
+    if (g_pThreadStartCallbackMethodDesc == nullptr)
+    {
+        g_pThreadStartCallbackMethodDesc = CoreLibBinder::GetMethod(METHOD__THREAD__START_CALLBACK);
+    }
+
+    UnmanagedCallersOnlyCaller startCallback(METHOD__THREAD__START_CALLBACK);
+    startCallback.InvokeDirect(&exposedObj);
 
     GCPROTECT_END();
 }
@@ -401,9 +406,9 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     INT32 res = 0;
 
     // grab a snapshot
-    Thread::ThreadState state = thread->GetSnapshotState();
+    Thread::ThreadState state = thread->GetState();
 
-    if (state & Thread::TS_Dead)
+    if (state & Thread::TS_Stopped)
         res |= ThreadNative::ThreadStopped;
 
     if (state & Thread::TS_Background)
@@ -415,7 +420,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     if (state & Thread::TS_AbortRequested)
         res |= ThreadNative::ThreadAbortRequested;
 
-    if (state & Thread::TS_Interruptible)
+    if (state & Thread::TS_WaitSleepJoin)
         res |= ThreadNative::ThreadWaitSleepJoin;
 
     return res;
@@ -431,8 +436,7 @@ extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle
     CONTRACTL_END;
 
     // Set the state bits.
-    thread->SetThreadState(Thread::TS_Interruptible);
-    thread->SetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
+    thread->SetThreadState(Thread::TS_WaitSleepJoin);
 }
 
 extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread)
@@ -445,8 +449,7 @@ extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHand
     CONTRACTL_END;
 
     // Clear the state bits.
-    thread->ResetThreadState(Thread::TS_Interruptible);
-    thread->ResetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
+    thread->ResetThreadState(Thread::TS_WaitSleepJoin);
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -625,7 +628,9 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
+#ifdef FEATURE_MULTITHREADING
         Thread::SetCleanupNeededForFinalizedThread();
+#endif // FEATURE_MULTITHREADING
     }
 }
 FCIMPLEND
@@ -826,7 +831,7 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 }
 FCIMPLEND
 
-FCIMPL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* pObj)
+FCIMPL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* pObj)
 {
     FCALL_CONTRACT;
 
@@ -840,7 +845,7 @@ FCIMPL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* pObj)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
 {
     QCALL_CONTRACT;
 
@@ -854,22 +859,6 @@ extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnSta
 
     END_QCALL;
 }
-
-FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    return obj->GetHeader()->AcquireHeaderThinLock(GetThread());
-}
-FCIMPLEND
-
-FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread());
-}
-FCIMPLEND
 
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles)
 {
