@@ -2642,6 +2642,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
                 }
                 else
+#elif defined(TARGET_WASM)
+                // On WASM, PackedSimd.ReplaceScalar takes the lane immediate as the middle
+                // (op2) operand: ReplaceScalar(Vector128<T> vector, byte imm, T value). Other
+                // 3-arg PackedSimd immediate intrinsics (LoadScalarAndInsert, StoreSelectedScalar)
+                // put the immediate at op3 and fall through to the default handling below.
+                if (intrinsic == NI_PackedSimd_ReplaceScalar)
+                {
+                    op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
+                }
+                else
 #endif
                 {
                     op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
