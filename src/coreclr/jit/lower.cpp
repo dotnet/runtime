@@ -2112,7 +2112,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     GenTree* srcPlaceholder  = m_compiler->gtNewZeroConNode(src->TypeGet());
 
     GenTreeCall* call =
-        m_compiler->gtNewCallNode(CT_USER_FUNC, m_compiler->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
+        m_compiler->gtNewUserCallNode(m_compiler->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
 
     call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(destPlaceholder));
     call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(srcPlaceholder));

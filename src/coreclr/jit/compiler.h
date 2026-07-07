@@ -3349,6 +3349,10 @@ public:
                                var_types             type,
                                const DebugInfo&      di = DebugInfo());
 
+    GenTreeCall* gtNewUserCallNode(CORINFO_METHOD_HANDLE handle,
+                                   var_types             type,
+                                   const DebugInfo&      di = DebugInfo());
+
     GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(
@@ -13659,10 +13663,6 @@ extern const BYTE genActualTypes[];
 #ifdef DEBUG
 void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars);
 #endif // DEBUG
-
-// Defined in async.cpp. Sets the Ready-to-Run entrypoint on a JIT-synthesized async call so it is marked
-// R2R-relative-indirect. A no-op when not compiling for Ready-to-Run.
-void SetCallEntrypointForR2R(GenTreeCall* call, Compiler* compiler, CORINFO_METHOD_HANDLE handle);
 
 #include "compiler.hpp" // All the shared inline functions
 
