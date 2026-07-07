@@ -47,7 +47,7 @@ public static unsafe class CopyCtor
         return 100;
     }
 
-    public static unsafe int StructWithCtorAfterUnmodifiedParameterTest(int* ptrInt, StructWithCtor* ptrStruct)
+    public static unsafe int StructWithCtorWithPrecedingParameterTest(int* ptrInt, StructWithCtor* ptrStruct)
     {
         if (*ptrInt != 42)
         {
@@ -104,9 +104,9 @@ public static unsafe class CopyCtor
     {
         ResetCounters();
 
-        CopyCtorUtil.SparseMetadataTestDelegate del = (CopyCtorUtil.SparseMetadataTestDelegate)Delegate.CreateDelegate(
-            typeof(CopyCtorUtil.SparseMetadataTestDelegate),
-            typeof(CopyCtor).GetMethod(nameof(StructWithCtorAfterUnmodifiedParameterTest)));
+        CopyCtorUtil.DelegateWithMissingParameterMetadata del = (CopyCtorUtil.DelegateWithMissingParameterMetadata)Delegate.CreateDelegate(
+            typeof(CopyCtorUtil.DelegateWithMissingParameterMetadata),
+            typeof(CopyCtor).GetMethod(nameof(StructWithCtorWithPrecedingParameterTest)));
         int i = 42;
         StructWithCtor s = new StructWithCtor();
         s._instanceField = 3;

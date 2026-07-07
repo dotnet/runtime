@@ -38,7 +38,7 @@
 
 } // end of classCopyCtorUtil. TestDelegate
 
-.class auto ansi sealed public CopyCtorUtil.SparseMetadataTestDelegate
+.class auto ansi sealed public CopyCtorUtil.DelegateWithMissingParameterMetadata
        extends [mscorlib]System.MulticastDelegate
 {
   .custom instance void [mscorlib]System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute::.ctor(valuetype [mscorlib]System.Runtime.InteropServices.CallingConvention) = ( 01 00 03 00 00 00 00 00 )
@@ -46,13 +46,13 @@
           instance void  .ctor(object 'object',
                                native int 'method') runtime managed
   {
-  } // end of method CopyCtorUtil.SparseMetadataTestDelegate::.ctor
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::.ctor
 
   .method public hidebysig newslot virtual
           instance int32  Invoke(int32*,
                                  valuetype [CopyCtorUtil]StructWithCtor modreq([mscorlib]System.Runtime.CompilerServices.IsCopyConstructed)*) runtime managed
   {
-  } // end of method CopyCtorUtil.SparseMetadataTestDelegate::Invoke
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::Invoke
 
   .method public hidebysig newslot virtual
           instance class [mscorlib]System.IAsyncResult
@@ -61,14 +61,14 @@
                       class [mscorlib]System.AsyncCallback callback,
                       object 'object') runtime managed
   {
-  } // end of method CopyCtorUtil.SparseMetadataTestDelegate::BeginInvoke
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::BeginInvoke
 
   .method public hidebysig newslot virtual
           instance int32  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed
   {
-  } // end of method CopyCtorUtil.SparseMetadataTestDelegate::EndInvoke
+  } // end of method CopyCtorUtil.DelegateWithMissingParameterMetadata::EndInvoke
 
-} // end of class CopyCtorUtil.SparseMetadataTestDelegate
+} // end of class CopyCtorUtil.DelegateWithMissingParameterMetadata
 
 .class public sealed sequential ansi beforefieldinit StructWithCtor
        extends [mscorlib]System.ValueType
@@ -137,4 +137,3 @@
         ret
     }
 }
-
