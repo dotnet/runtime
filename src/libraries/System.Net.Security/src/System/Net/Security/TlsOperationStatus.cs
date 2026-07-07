@@ -59,7 +59,7 @@ namespace System.Net.Security
         /// has no resolved <see cref="TlsContext"/> yet (either none was assigned or the
         /// assigned context is a bootstrap without a server certificate). Inspect
         /// <see cref="TlsSession.ClientHelloInfo"/>, supply the resolved context via
-        /// <see cref="TlsSession.SetServerContext"/>, and continue the handshake.
+        /// <see cref="TlsSession.SetContext"/>, and continue the handshake.
         /// </summary>
         NeedsTlsContext = 6,
     }

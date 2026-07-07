@@ -55,7 +55,7 @@ namespace System.Net.Security
         internal bool ShareOptions => _isWedge;
 
         // True if the template was constructed with non-null server options. Sessions seed
-        // their own per-session HasServerOptions from this and flip it in SetServerContext.
+        // their own per-session HasServerOptions from this and flip it in SetContext.
         internal bool TemplateHasServerOptions => _templateHasServerOptions;
 
         // Returns a per-session options bag. For normal contexts each call returns a fresh
@@ -91,7 +91,7 @@ namespace System.Net.Security
         /// call on a session built from this context returns
         /// <see cref="TlsOperationStatus.NeedsTlsContext"/> with
         /// <see cref="TlsSession.ClientHelloInfo"/> populated; the caller must then
-        /// invoke <see cref="TlsSession.SetServerContext"/> before continuing the
+        /// invoke <see cref="TlsSession.SetContext"/> before continuing the
         /// handshake. Useful for SNI-based options selection that involves I/O.
         /// </param>
         public static TlsContext Create(SslServerAuthenticationOptions? options)

@@ -139,7 +139,7 @@ public class TlsHandshakeBench
         _ctxFd = TlsContext.CreateServer(_serverOptions);
         // Bootstrap context used by the deferred socket-bound flow: no cert baked in,
         // sessions are created against it and then re-parented to a per-tenant TlsContext
-        // via SetServerContext(...) once the ClientHello arrives.
+        // via SetContext(...) once the ClientHello arrives.
         _ctxFdDeferred = TlsContext.CreateServer(new SslServerAuthenticationOptions());
 
         _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -218,9 +218,9 @@ public class TlsHandshakeBench
         GC.KeepAlive(ss);
     }
 
-    // Socket-bound TlsSession in the deferred-SetServerContext flow: bootstrap TlsContext
+    // Socket-bound TlsSession in the deferred-SetContext flow: bootstrap TlsContext
     // (no cert) is used to create the session; after the ClientHello arrives the caller
-    // inspects session.ClientHelloInfo and calls SetServerContext with a pre-built
+    // inspects session.ClientHelloInfo and calls SetContext with a pre-built
     // per-tenant TlsContext (bench reuses _ctxFd for simplicity, but the pattern is one
     // TlsContext per virtual host / cert).
     [Benchmark]
@@ -475,7 +475,7 @@ public class TlsHandshakeBench
         }
     }
 
-    // Deferred fd driver that resolves NeedsServerOptions via SetServerContext, using the
+    // Deferred fd driver that resolves NeedsServerOptions via SetContext, using the
     // bench's pre-warmed _ctxFd as the per-tenant context (SSL_CTX is already allocated
     // and cert-installed on it, so the deferred session just adopts that CTX for the rest
     // of the handshake).
@@ -489,7 +489,7 @@ public class TlsHandshakeBench
             switch (s)
             {
                 case TlsOperationStatus.NeedsTlsContext:
-                    session.SetServerContext(bench._ctxFd);
+                    session.SetContext(bench._ctxFd);
                     continue;
                 case TlsOperationStatus.NeedsCertificateValidation:
                     session.AcceptWithDefaultValidation();

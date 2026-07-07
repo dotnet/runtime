@@ -109,7 +109,7 @@ namespace System.Net.Security
         // Creates a socket-replay BIO on the fd, buffers a full TLS record via
         // BioReadTlsFrame, parses via TlsFrameHelper, and populates ClientHelloInfo /
         // TargetHostName from the SNI extension. In the deferred flow returns
-        // NeedsServerOptions so the caller resolves via SetServerContext; in the capture
+        // NeedsServerOptions so the caller resolves via SetContext; in the capture
         // flow transfers the peek BIO to the pending SSL* and falls through to fd-mode.
         // Either way the BIO stays alive so GetClientHelloBytes can span its retained
         // prefix until Dispose().
@@ -172,7 +172,7 @@ namespace System.Net.Security
             if (!_hasServerOptions)
             {
                 // Deferred / SNI-callback flow: caller inspects ClientHelloInfo and
-                // resolves via SetServerContext; OnServerContextSet then transfers the
+                // resolves via SetContext; OnServerContextSet then transfers the
                 // peek BIO to _options.PreallocatedReadBio.
                 result = TlsOperationStatus.NeedsTlsContext;
                 return;

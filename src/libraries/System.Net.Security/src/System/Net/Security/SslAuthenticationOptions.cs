@@ -229,7 +229,7 @@ namespace System.Net.Security
         }
 
         // Bulk-copy field values from another options bag into this one. Used by
-        // TlsSession.SetServerContext to inherit a fully-configured server context's
+        // TlsSession.SetContext to inherit a fully-configured server context's
         // options into an existing session (whose bag was originally created empty
         // from a deferred TlsContext.Create((SslServerAuthenticationOptions?)null)).
         // Mirrors the field set copied by Clone(). Session-scoped state (SafeSslHandle,

@@ -734,7 +734,7 @@ namespace System.Net.Security
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection? GetRemoteCertificates() { throw null; }
         public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
         public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
-        public void SetServerContext(System.Net.Security.TlsContext serverContext) { }
+        public void SetContext(System.Net.Security.TlsContext context) { }
         public void SetClientCertificateContext(System.Net.Security.SslStreamCertificateContext context) { }
         public System.Collections.Generic.IReadOnlyList<string>? GetAcceptableIssuers() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }

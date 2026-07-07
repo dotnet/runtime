@@ -247,7 +247,7 @@ namespace System.Net.Security.Tests
         {
             // An empty server options bag (no certificate, no selection callback) is allowed:
             // the server-side session parses the ClientHello and suspends on NeedsTlsContext so
-            // the caller can resolve options via SetServerContext (e.g. SNI-driven).
+            // the caller can resolve options via SetContext (e.g. SNI-driven).
             using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
 
             Assert.Throws<ArgumentNullException>(() => TlsContext.CreateServer((SslServerAuthenticationOptions)null!));
@@ -1817,7 +1817,7 @@ namespace System.Net.Security.Tests
                                 throw new InvalidOperationException(
                                     "Handshake suspended on NeedsServerOptions but no factory was supplied.");
                             }
-                            session.SetServerContext(serverContextFactory(session.ClientHelloInfo!.Value));
+                            session.SetContext(serverContextFactory(session.ClientHelloInfo!.Value));
                             continue;
 
                         case TlsOperationStatus.NeedsCertificateValidation:
@@ -2088,9 +2088,9 @@ namespace System.Net.Security.Tests
 
         // Socket-bound server session with deferred options. The handshake loop must
         // suspend on NeedsServerOptions, expose ClientHelloInfo (SNI), and continue
-        // after SetServerContext. On the OpenSSL socket-bound fast path, the managed
+        // after SetContext. On the OpenSSL socket-bound fast path, the managed
         // pre-fetch loop peels the ClientHello off the socket to surface SNI, then
-        // SetServerContext activates fd-mode with a socket-replay BIO that hands
+        // SetContext activates fd-mode with a socket-replay BIO that hands
         // those bytes to OpenSSL before the fd is consulted again.
         [Fact]
         public async Task SocketBoundSession_DeferredOptions_SelectedFromSni_Succeeds()
@@ -2143,7 +2143,7 @@ namespace System.Net.Security.Tests
                     {
                         factoryCalls++;
                         observedSni = session.ClientHelloInfo!.Value.ServerName;
-                        session.SetServerContext(hostCtx);
+                        session.SetContext(hostCtx);
                         continue;
                     }
                     if (s == TlsOperationStatus.NeedsCertificateValidation)
@@ -2243,7 +2243,7 @@ namespace System.Net.Security.Tests
                         {
                             sniSeenByServer = session.ClientHelloInfo!.Value.ServerName;
                             TlsContext pickCtx = string.Equals(sniSeenByServer, nameB, StringComparison.OrdinalIgnoreCase) ? hostCtxB : hostCtxA;
-                            session.SetServerContext(pickCtx);
+                            session.SetContext(pickCtx);
                             continue;
                         }
                         if (s == TlsOperationStatus.NeedsCertificateValidation)
@@ -2270,7 +2270,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        // ApplicationProtocols supplied in the deferred SetServerContext call must survive
+        // ApplicationProtocols supplied in the deferred SetContext call must survive
         // the handoff onto the fd-mode replay-BIO path and be honored by OpenSSL's ALPN
         // selection callback.
         [Fact]
@@ -2321,7 +2321,7 @@ namespace System.Net.Security.Tests
                     }
                     if (s == TlsOperationStatus.NeedsTlsContext)
                     {
-                        session.SetServerContext(hostCtx);
+                        session.SetContext(hostCtx);
                         continue;
                     }
                     if (s == TlsOperationStatus.NeedsCertificateValidation)
@@ -2343,7 +2343,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(SslApplicationProtocol.Http2, clientSsl.NegotiatedApplicationProtocol);
         }
 
-        // Deferred SetServerContext with an EnabledSslProtocols set that has no overlap
+        // Deferred SetContext with an EnabledSslProtocols set that has no overlap
         // with the client's ClientHello must fail the handshake cleanly (no crash, no hang)
         // via the socket-replay BIO path.
         [Fact]
@@ -2392,7 +2392,7 @@ namespace System.Net.Security.Tests
                     }
                     if (s == TlsOperationStatus.NeedsTlsContext)
                     {
-                        session.SetServerContext(hostCtx);
+                        session.SetContext(hostCtx);
                         continue;
                     }
                     if (s == TlsOperationStatus.NeedsCertificateValidation)
@@ -2607,7 +2607,7 @@ namespace System.Net.Security.Tests
             });
         }
 
-        // Regression: SetServerContext used to acquire credentials into the shared
+        // Regression: SetContext used to acquire credentials into the shared
         // TlsContext.CredentialsHandle (via EnsureCredentialsAcquired), so the first
         // session to resolve to a tenant would stamp its credentials into the shared
         // bootstrap and every subsequent session would inherit them regardless of
@@ -2616,7 +2616,7 @@ namespace System.Net.Security.Tests
         // single bootstrap TlsContext, each resolving to a distinct per-tenant cert,
         // and verify every client sees the correct server cert.
         [Fact]
-        public async Task SetServerContext_ConcurrentSessionsOnSharedBootstrap_DoNotRace()
+        public async Task SetContext_ConcurrentSessionsOnSharedBootstrap_DoNotRace()
         {
             const int SessionCount = 4;
             X509Certificate2[] serverCerts = new X509Certificate2[SessionCount];

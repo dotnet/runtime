@@ -462,31 +462,32 @@ namespace System.Net.Security
         /// <summary>
         /// Server-side only. Resolves a session suspended on
         /// <see cref="TlsOperationStatus.NeedsTlsContext"/> by supplying an
-        /// already-configured <see cref="TlsContext"/> whose SSL_CTX (and TLS
-        /// session-ticket cache) will back this session. Callers that maintain a
-        /// pool of virtual-host contexts (typically keyed by SNI + options fingerprint)
-        /// use this to steer the session onto the pre-warmed context matching the
-        /// ClientHello, preserving cross-connection resumption on a per-tenant basis.
+        /// already-configured server-side <see cref="TlsContext"/> whose SSL_CTX
+        /// (and TLS session-ticket cache) will back this session. Callers that
+        /// maintain a pool of virtual-host contexts (typically keyed by SNI +
+        /// options fingerprint) use this to steer the session onto the pre-warmed
+        /// context matching the ClientHello, preserving cross-connection
+        /// resumption on a per-tenant basis.
         /// </summary>
-        /// <param name="serverContext">A fully-configured server <see cref="TlsContext"/>.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="serverContext"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="serverContext"/> is not a server-side context.</exception>
+        /// <param name="context">A fully-configured server <see cref="TlsContext"/>.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="context"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="context"/> is not a server-side context.</exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the session is not currently awaiting server options, or if
         /// server options were already supplied at <see cref="TlsContext"/> creation.
         /// </exception>
-        public void SetServerContext(TlsContext serverContext)
+        public void SetContext(TlsContext context)
         {
-            ArgumentNullException.ThrowIfNull(serverContext);
+            ArgumentNullException.ThrowIfNull(context);
             ThrowIfDisposed();
 
             if (!_context.IsServer)
             {
-                throw new InvalidOperationException("SetServerContext can only be called on a server-side session.");
+                throw new InvalidOperationException("SetContext can only be called on a server-side session.");
             }
-            if (!serverContext.IsServer)
+            if (!context.IsServer)
             {
-                throw new ArgumentException("TlsContext must be server-side.", nameof(serverContext));
+                throw new ArgumentException("TlsContext must be server-side.", nameof(context));
             }
             if (_hasServerOptions)
             {
@@ -494,7 +495,7 @@ namespace System.Net.Security
             }
             if (_clientHelloInfo is null)
             {
-                throw new InvalidOperationException("SetServerContext can only be called after ProcessHandshake returned NeedsServerOptions.");
+                throw new InvalidOperationException("SetContext can only be called after ProcessHandshake returned NeedsTlsContext.");
             }
 
             // Ask the supplied context for a session-options bag — this allocates its
@@ -502,7 +503,7 @@ namespace System.Net.Security
             // the returned bag. Copy those fields (including PreallocatedSslContext) into
             // our session's options so subsequent AllocateSslHandle picks up the passed
             // context's SSL_CTX instead of falling back to the per-session cache path.
-            SslAuthenticationOptions serverOpts = serverContext.CreateSessionOptions();
+            SslAuthenticationOptions serverOpts = context.CreateSessionOptions();
             _options.CopyFrom(serverOpts);
 #if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
             _options.PreallocatedSslContext = serverOpts.PreallocatedSslContext;
@@ -517,7 +518,7 @@ namespace System.Net.Security
             // bootstrap would inherit those credentials regardless of which tenant it
             // resolved to (SChannel-only; OpenSSL routes per-tenant SSL_CTX via
             // PreallocatedSslContext on the session-local options bag). Acquire eagerly
-            // so any AcquireCredentialsHandle failure surfaces from SetServerContext,
+            // so any AcquireCredentialsHandle failure surfaces from SetContext,
             // not from an opaque PAL call downstream.
             _sessionCredentialsHandle?.Dispose();
             _sessionCredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_options, false);
@@ -780,7 +781,7 @@ namespace System.Net.Security
                     {
                         if (!_hasServerOptions)
                         {
-                            // Deferred / SNI-callback flow: caller resolves via SetServerContext.
+                            // Deferred / SNI-callback flow: caller resolves via SetContext.
                             // Leave input unconsumed; the caller re-feeds the same bytes on resume.
                             return TlsOperationStatus.NeedsTlsContext;
                         }
@@ -2091,7 +2092,7 @@ namespace System.Net.Security
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result);
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result);
 
-        // Fires at the end of SetServerContext. Platforms with a deferred-server
+        // Fires at the end of SetContext. Platforms with a deferred-server
         // fast path (OpenSSL socket-bound sessions) use this hook to activate
         // native binding now that server options are known.
         partial void OnServerContextSet();

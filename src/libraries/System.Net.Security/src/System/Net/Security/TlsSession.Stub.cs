@@ -77,7 +77,7 @@ namespace System.Net.Security
         public void SetRemoteCertificateValidationResult(SslPolicyErrors errors) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public void SetServerContext(TlsContext serverContext) =>
+        public void SetContext(TlsContext serverContext) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public void SetClientCertificateContext(SslStreamCertificateContext context) =>
