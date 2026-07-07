@@ -17,6 +17,8 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class BrotliCompressedContent : System.Net.Http.HttpContent
     {
         public BrotliCompressedContent(System.Net.Http.HttpContent content) { }
@@ -37,6 +39,8 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class ZstandardCompressedContent : System.Net.Http.HttpContent
     {
         public ZstandardCompressedContent(System.Net.Http.HttpContent content) { }
