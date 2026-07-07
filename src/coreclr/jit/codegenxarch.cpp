@@ -1846,7 +1846,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
-            genSetRegToConst(targetReg, targetType, treeNode);
+            // A rematerializable constant that is spilled right after its definition has no
+            // in-register use; its value is rematerialized at each reload point (see
+            // genUnspillRegIfNeeded) and its store is skipped (see genProduceReg). Skip emitting
+            // the definition too, since it would only materialize a value that is never read.
+            if (!isRematerializedConstantSpill(treeNode))
+            {
+                genSetRegToConst(targetReg, targetType, treeNode);
+            }
             genProduceReg(treeNode);
             break;
 

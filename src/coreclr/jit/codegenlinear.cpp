@@ -1540,6 +1540,34 @@ bool CodeGen::isRematerializableConstant(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// isRematerializedConstantSpill: Determine whether a constant that LSRA has marked to
+//    spill will instead be handled entirely by rematerialization, so that both its stack
+//    store and its register definition can be elided.
+//
+// Arguments:
+//    tree - the node that defines the value
+//
+// Return Value:
+//    True if 'tree' is a rematerializable constant whose definition is spilled immediately
+//    (GTF_SPILL) and every reload will rematerialize the value rather than consume it from
+//    a spill temp (GTF_NOREG_AT_USE).
+//
+// Notes:
+//    GTF_SPILL on a definition carries spill-after semantics: LSRA stores the value right
+//    after it is produced and frees the register, so there is no in-register use of the
+//    definition and every consumer reloads it. When such a value is rematerializable, the
+//    reload is replaced by rematerialization (see genUnspillRegIfNeeded) and the stack store
+//    is skipped (see genProduceReg). In that case the definition itself only materializes a
+//    value into a register that is never read, so callers use this predicate to also elide
+//    the definition. GTF_NOREG_AT_USE means the value is consumed directly from the spill
+//    temp as a contained memory operand, which still requires the definition and its store.
+//
+bool CodeGen::isRematerializedConstantSpill(GenTree* tree)
+{
+    return ((tree->gtFlags & (GTF_SPILL | GTF_NOREG_AT_USE)) == GTF_SPILL) && isRematerializableConstant(tree);
+}
+
+//------------------------------------------------------------------------
 // genCopyRegIfNeeded: Copy the given node into the specified register
 //
 // Arguments:
@@ -2364,10 +2392,10 @@ void CodeGen::genProduceReg(GenTree* tree)
                 // for which isRematerializableConstant is enabled) can be rematerialized cheaply
                 // without a scratch register. Rather than spilling such a value to the stack and
                 // reloading it, skip creating the spill temp and emitting the store;
-                // genUnspillRegIfNeeded will rematerialize it at the reload point. If the value will
-                // instead be consumed directly from the spill temp as a contained memory operand
-                // (GTF_NOREG_AT_USE), it must still be spilled normally.
-                if (isRematerializableConstant(tree) && ((tree->gtFlags & GTF_NOREG_AT_USE) == 0))
+                // genUnspillRegIfNeeded will rematerialize it at the reload point. The definition
+                // that produced this value is likewise elided at the definition site (see
+                // genCodeForTreeNode), so nothing reads the register here.
+                if (isRematerializedConstantSpill(tree))
                 {
                     tree->gtFlags |= GTF_SPILLED;
                     tree->gtFlags &= ~GTF_SPILL;
