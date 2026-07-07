@@ -176,7 +176,10 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            for (int i = 0; i < source.Length; i++)
+            // Quickly upper-case the leading run of ASCII characters, then handle the remainder.
+            Ascii.ToUpper(source, destination, out int start);
+
+            for (int i = start; i < source.Length; i++)
             {
                 char c = source[i];
                 if (c <= '\u00FF') // optimize ASCII/Latin
@@ -227,7 +230,10 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            for (int i = 0; i < source.Length; i++)
+            // Quickly lower-case the leading run of ASCII characters, then handle the remainder.
+            Ascii.ToLower(source, destination, out int start);
+
+            for (int i = start; i < source.Length; i++)
             {
                 char c = source[i];
                 if (c <= '\u00FF') // optimize ASCII/Latin

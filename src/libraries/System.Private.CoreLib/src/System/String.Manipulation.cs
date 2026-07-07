@@ -2614,57 +2614,45 @@ namespace System
             return ChangeCaseOrdinal(toUpper: false);
         }
 
-        private unsafe string ChangeCaseOrdinal(bool toUpper)
+        // All ASCII characters except the lowercase letters 'a'-'z'. The first character outside this set is
+        // the first one ToUpperOrdinal must change (a lowercase ASCII letter or a non-ASCII character).
+        private static readonly SearchValues<char> s_asciiExceptLowercase = CreateAsciiExcept('a', 'z');
+
+        // All ASCII characters except the uppercase letters 'A'-'Z'. The first character outside this set is
+        // the first one ToLowerOrdinal must change (an uppercase ASCII letter or a non-ASCII character).
+        private static readonly SearchValues<char> s_asciiExceptUppercase = CreateAsciiExcept('A', 'Z');
+
+        private static SearchValues<char> CreateAsciiExcept(char firstLetter, char lastLetter)
+        {
+            int letterCount = lastLetter - firstLetter + 1;
+            Span<char> asciiChars = stackalloc char[128 - letterCount];
+            int count = 0;
+            for (int c = 0; c < 128; c++)
+            {
+                if ((uint)(c - firstLetter) >= (uint)letterCount)
+                {
+                    asciiChars[count++] = (char)c;
+                }
+            }
+
+            return SearchValues.Create(asciiChars);
+        }
+
+        private string ChangeCaseOrdinal(bool toUpper)
         {
             Debug.Assert(Length > 0);
 
-            int consumed;
+            // Fast path: scan the leading run of ASCII characters that is already in the requested case.
+            // If the entire string is ASCII and needs no change, return the same instance to avoid an
+            // allocation. This mirrors the behavior of TextInfo.ChangeCaseCommon used by ToUpper(Invariant)/ToLower.
+            int consumed = toUpper
+                ? this.AsSpan().IndexOfAnyExcept(s_asciiExceptLowercase)
+                : this.AsSpan().IndexOfAnyExcept(s_asciiExceptUppercase);
 
-            // Fast path: scan the leading run of ASCII characters that is already in the
-            // requested case. If the entire string is ASCII and needs no change, return the
-            // same instance to avoid an allocation. This mirrors the behavior of
-            // TextInfo.ChangeCaseCommon used by ToUpper(Invariant)/ToLower.
-            fixed (char* pSource = this)
+            if (consumed < 0)
             {
-                nuint currIdx = 0; // in chars
-
-                if (Length >= 2)
-                {
-                    nuint lastIndexWhereCanReadTwoChars = (uint)Length - 2;
-                    do
-                    {
-                        // Read 2 chars (one 32-bit integer) at a time.
-                        uint tempValue = Unsafe.ReadUnaligned<uint>(pSource + currIdx);
-                        if (!Utf16Utility.AllCharsInUInt32AreAscii(tempValue) ||
-                            (toUpper
-                                ? Utf16Utility.UInt32ContainsAnyLowercaseAsciiChar(tempValue)
-                                : Utf16Utility.UInt32ContainsAnyUppercaseAsciiChar(tempValue)))
-                        {
-                            goto MustChange;
-                        }
-
-                        currIdx += 2;
-                    } while (currIdx <= lastIndexWhereCanReadTwoChars);
-                }
-
-                // If there's a single character left, check it now.
-                if ((Length & 1) != 0)
-                {
-                    uint tempValue = pSource[currIdx];
-                    if (tempValue > 0x7Fu ||
-                        (toUpper
-                            ? ((tempValue - 'a') <= (uint)('z' - 'a'))
-                            : ((tempValue - 'A') <= (uint)('Z' - 'A'))))
-                    {
-                        goto MustChange;
-                    }
-                }
-
                 // The whole string is ASCII and already in the requested case.
                 return this;
-
-            MustChange:
-                consumed = (int)currIdx;
             }
 
             // The leading [0, consumed) chars are ASCII already in the requested case, so copy
