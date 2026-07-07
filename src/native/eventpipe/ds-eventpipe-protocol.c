@@ -157,6 +157,12 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 	uint16_t buffer_len);
 
 static
+uint8_t *
+eventpipe_protocol_helper_stop_tracing_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len);
+
+static
 bool
 eventpipe_protocol_helper_stop_tracing (
 	DiagnosticsIpcMessage *message,
@@ -855,6 +861,30 @@ eventpipe_protocol_helper_send_start_tracing_success (
 }
 
 static
+uint8_t *
+eventpipe_protocol_helper_stop_tracing_try_parse_payload(uint8_t *buffer, uint16_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+
+	uint8_t * buffer_cursor = buffer;
+	uint32_t buffer_cursor_len = buffer_len;
+
+	EventPipeStopTracingCommandPayload *instance = ep_rt_object_alloc (EventPipeStopTracingCommandPayload);
+	ep_raise_error_if_nok (instance != NULL);
+
+	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (&buffer_cursor, &buffer_cursor_len, &instance->session_id));
+
+ep_on_exit:
+	ep_rt_byte_array_free (buffer);
+	return (uint8_t *)instance;
+
+ep_on_error:
+	ds_eventpipe_stop_tracing_command_payload_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+static
 bool
 eventpipe_protocol_helper_stop_tracing (
 	DiagnosticsIpcMessage *message,
@@ -864,7 +894,7 @@ eventpipe_protocol_helper_stop_tracing (
 
 	bool result = false;
 	EventPipeStopTracingCommandPayload *payload;
-	payload = (EventPipeStopTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, NULL);
+	payload = (EventPipeStopTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_protocol_helper_stop_tracing_try_parse_payload);
 
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
@@ -966,7 +996,7 @@ void
 ds_eventpipe_stop_tracing_command_payload_free (EventPipeStopTracingCommandPayload *payload)
 {
 	ep_return_void_if_nok (payload != NULL);
-	ep_rt_byte_array_free ((uint8_t *)payload);
+	ep_rt_object_free (payload);
 }
 
 bool

@@ -167,6 +167,8 @@ namespace System.IO.Compression
         public System.DateTimeOffset LastWriteTime { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string Name { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ushort VersionMadeBy { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
         public System.IO.Stream Open(FileAccess access) { throw null; }
@@ -285,6 +287,7 @@ namespace System.IO.Compression
     {
         public ZstandardDecoder() { }
         public ZstandardDecoder(int maxWindowLog) { }
+        public ZstandardDecoder(System.IO.Compression.ZstandardDecompressionOptions decompressionOptions) { }
         public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary) { }
         public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindowLog) { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
@@ -294,6 +297,14 @@ namespace System.IO.Compression
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.ZstandardDictionary dictionary) { throw null; }
         public static bool TryGetMaxDecompressedLength(System.ReadOnlySpan<byte> data, out long length) { throw null; }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
+    public sealed partial class ZstandardDecompressionOptions
+    {
+        public ZstandardDecompressionOptions() { }
+        public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
+        public int MaxWindowLog { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
@@ -338,6 +349,7 @@ namespace System.IO.Compression
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, System.IO.Compression.ZstandardDictionary dictionary, bool leaveOpen = false) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.ZstandardCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.ZstandardDecoder decoder, bool leaveOpen = false) { }
+        public ZstandardStream(System.IO.Stream stream, System.IO.Compression.ZstandardDecompressionOptions decompressionOptions, bool leaveOpen = false) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.ZstandardEncoder encoder, bool leaveOpen = false) { }
         public System.IO.Stream BaseStream { get { throw null; } }
         public override bool CanRead { get { throw null; } }

@@ -325,6 +325,15 @@ namespace System.IO.Compression
         /// </summary>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
+        /// <summary>
+        /// Gets the "version made by" field of the entry as stored in the archive's central directory record.
+        /// </summary>
+        /// <remarks>
+        /// As defined by the ZIP file format specification, the low byte contains the version of the specification used to create the entry, and the high byte identifies the host system (platform) compatibility.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public ushort VersionMadeBy => (ushort)(((byte)_versionMadeByPlatform << 8) | (byte)_versionMadeBySpecification);
+
         internal ZipArchive.ChangeState Changes { get; private set; }
 
         internal bool OriginallyInArchive => _originallyInArchive;
@@ -481,8 +490,14 @@ namespace System.IO.Compression
             {
                 // this means we have never opened it before
 
-                // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
-                // grow as data is copied into it
+                // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
+                // Validate up front before attempting the (int) cast.
+                if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+                {
+                    _currentlyOpenForWrite = false;
+                    throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+                }
+
                 _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
                 if (_originallyInArchive)

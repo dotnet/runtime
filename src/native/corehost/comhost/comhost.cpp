@@ -4,7 +4,7 @@
 #include "comhost.h"
 #include "redirected_error_writer.h"
 #include "hostfxr.h"
-#include "fxr_resolver.h"
+#include "load_fxr_and_get_delegate.h"
 #include "pal.h"
 #include "trace.h"
 #include "error_codes.h"

@@ -71,12 +71,14 @@ public class ObjectiveCMarshalTests
         };
 
         // Register ObjcTrackingInformation type with a single pointer-sized _memory field at offset 0.
+        // The managed _memory field is an IntPtr, so the contract descriptor reports its type as "nint";
+        // model that here so the pointer read path is validated against the real descriptor type.
         var trackingInfoType = new Target.TypeInfo
         {
             Size = (uint)helpers.PointerSize,
             Fields = new Dictionary<string, Target.FieldInfo>
             {
-                ["_memory"] = new Target.FieldInfo { Offset = 0 }
+                ["_memory"] = new Target.FieldInfo { Offset = 0, TypeName = "nint" }
             }
         };
 

@@ -393,3 +393,46 @@ Each variable entry in the Vars section is nibble-encoded as follows:
 | `VLT_FIXED_VA` | offset (encoded unsigned) |
 
 Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.
+
+### Async Suspension Point APIs (Version 2+)
+
+We also support decoding async suspension points (and their captured continuation-object locals) from the `AsyncInfo` chunk of the debug info blob. The chunk is present only for methods that the JIT compiled with runtime-async suspension points; for all other methods, `AsyncInfoSize` is `0` in the FAT header and the API returns an empty list.
+
+Additional types:
+```csharp
+// A native code location at which an async method may suspend, together with
+// the continuation-object locals captured at that point.
+public readonly struct AsyncSuspensionInfo
+{
+    public uint NativeOffset { get; init; }
+    public IReadOnlyList<AsyncLocalInfo> Locals { get; init; }
+}
+
+// A single local captured into the continuation object at a suspension point.
+public readonly struct AsyncLocalInfo
+{
+    // Offset of the local within the continuation object's data area.
+    public uint Offset { get; init; }
+    // IL var number of the local (or a synthetic marker such as MAX_ILNUM-relative values).
+    public uint ILVarNumber { get; init; }
+}
+```
+
+```csharp
+IReadOnlyList<AsyncSuspensionInfo> GetAsyncSuspensionPoints(TargetCodePointer pCode);
+```
+
+### AsyncInfo Data Encoding
+
+Each entry is nibble-encoded as follows:
+
+1. `NumSuspensionPoints` — encoded unsigned 32-bit integer.
+2. Total var count across all suspension points — encoded unsigned 32-bit integer. Informational only; the decoder reads it but does not need it, since the per-suspension-point counts read in step 3 already cover the entire flat var list.
+3. For each of the `NumSuspensionPoints` suspension points (in order):
+   * `DiagnosticNativeOffset` — encoded signed delta from the previous suspension point's offset (the first delta is from `0`). Deltas are not required to be monotonic.
+   * `NumContinuationVars` — encoded unsigned 32-bit integer giving the number of continuation locals captured at this suspension point.
+4. For each var (a single flat sequence, partitioned by the `NumContinuationVars` counts from step 3, in suspension-point order):
+   * `VarNumber - MAX_ILNUM` — encoded unsigned 32-bit integer. The `MAX_ILNUM` bias keeps the synthetic negative IL var numbers (e.g. `VARARGS_HND_ILNUM`, `RETBUF_ILNUM`, `TYPECTXT_ILNUM`) representable as unsigned values; the decoder reverses the bias by adding `MAX_ILNUM` back.
+   * `Offset` — encoded unsigned 32-bit integer giving the byte offset of the local within the continuation object's data area.
+
+`AsyncSuspensionInfo.Locals[i]` for the `n`-th suspension point therefore corresponds to the `i`-th var in the flat sequence whose flat index is the prefix sum of `NumContinuationVars[0..n-1]` plus `i`.

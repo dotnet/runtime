@@ -242,21 +242,12 @@ namespace System.Buffers
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
-            where T : struct, INumber<T>, IMinMaxValue<T>
+            where T : struct, INumber<T>
         {
-            T min = T.MaxValue;
-            T max = T.MinValue;
+            minInclusive = values.Min();
+            maxInclusive = values.Max();
 
-            foreach (T value in values)
-            {
-                min = T.Min(min, value);
-                max = T.Max(max, value);
-            }
-
-            minInclusive = min;
-            maxInclusive = max;
-
-            uint range = uint.CreateChecked(max - min) + 1;
+            uint range = uint.CreateChecked(maxInclusive - minInclusive) + 1;
             if (range > values.Length)
             {
                 return false;
@@ -268,7 +259,7 @@ namespace System.Buffers
 
             foreach (T value in values)
             {
-                int offset = int.CreateChecked(value - min);
+                int offset = int.CreateChecked(value - minInclusive);
                 seenValues[offset] = true;
             }
 

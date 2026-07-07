@@ -241,28 +241,6 @@ bool interceptor_ICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     return result;
 }
 
-// Get the unboxed entry point for a method, if possible.
-CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
-{
-    mc->cr->AddCall("getUnboxedEntry");
-    bool                  localRequiresInstMethodTableArg = false;
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
-    mc->recGetUnboxedEntry(ftn, &localRequiresInstMethodTableArg, result);
-    if (requiresInstMethodTableArg != nullptr)
-    {
-        *requiresInstMethodTableArg = localRequiresInstMethodTableArg;
-    }
-    return result;
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
-{
-    mc->cr->AddCall("getInstantaitedEntry");
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getInstantiatedEntry(ftn, methodHandle, classHandle);
-    mc->recGetInstantiatedEntry(ftn, *methodHandle, *classHandle, result);
-    return result;
-}
-
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
 {
     mc->cr->AddCall("getAsyncOtherVariant");
@@ -1402,6 +1380,14 @@ void interceptor_ICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     mc->cr->AddCall("getAsyncInfo");
     original_ICorJitInfo->getAsyncInfo(pAsyncInfo);
     mc->recGetAsyncInfo(pAsyncInfo);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitReturnCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
+    mc->recGetAwaitReturnCall(callerHandle, instArg, result);
+    return result;
 }
 
 /*********************************************************************************/

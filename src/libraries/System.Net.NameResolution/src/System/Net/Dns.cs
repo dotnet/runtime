@@ -895,6 +895,13 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(hostName),
                     SR.Format(SR.net_toolong, nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
             }
+
+            // The hostname is passed to native APIs that treat '\0' as the end of the string,
+            // so embedded null characters would silently truncate the name. Reject them up front.
+            if (hostName.Contains('\0'))
+            {
+                throw new ArgumentException(SR.net_hostname_invalid_character, nameof(hostName));
+            }
         }
 
         private static bool LogFailure(object hostNameOrAddress, in NameResolutionActivity activity, Exception exception)

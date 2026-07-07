@@ -150,7 +150,11 @@ internal readonly struct Thread_1 : IThread
             thread.LinkNext,
             thread.ThreadHandle,
             thread.InteropDebuggingHijacked != 0,
-            thread.DebuggerFilterContext);
+            thread.DebuggerFilterContext,
+            thread.GCFrame,
+            address != TargetPointer.Null,
+            exceptionInfo?.ExceptionRecord ?? TargetPointer.Null,
+            exceptionInfo?.ContextRecord ?? TargetPointer.Null);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -216,7 +220,8 @@ internal readonly struct Thread_1 : IThread
                 if (collectibleCount > indexOffset)
                 {
                     TargetPointer collectibleArray = threadLocalData.CollectibleTlsArrayData;
-                    threadLocalStaticBase = _target.ReadPointer(collectibleArray + (ulong)(indexOffset * _target.PointerSize));
+                    TargetPointer handleSlotAddress = collectibleArray + (ulong)(indexOffset * _target.PointerSize);
+                    threadLocalStaticBase = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(handleSlotAddress).Object;
                 }
                 break;
             case TLSIndexType.DirectOnThreadLocalData:

@@ -12,6 +12,11 @@ internal interface IGCInfoDecoder : IGCInfoHandle
     uint GetCodeLength();
     uint GetStackBaseRegister();
     uint GetSizeOfStackParameterArea();
+
+    // Default 0; mirrors native EECodeManager::GetStackParameterSize, which only
+    // returns non-zero on x86 (where managed code uses __stdcall, callee-popped args).
+    uint GetCalleePoppedArgumentsSize() => 0;
+
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
 }

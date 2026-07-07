@@ -3208,7 +3208,7 @@ void emitter::emitIns_R_R_R(instruction ins,
                 }
             }
 
-#if !defined(USE_HELPERS_FOR_INT_DIV)
+#if !USE_HELPERS_FOR_INT_DIV
             FALLTHROUGH;
         case INS_sdiv:
         case INS_udiv:

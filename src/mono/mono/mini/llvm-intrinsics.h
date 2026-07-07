@@ -64,6 +64,19 @@ INTRINS_OVR(CEIL, ceil, Generic, LLVMDoubleType ())
 INTRINS_OVR(CEILF, ceil, Generic, LLVMFloatType ())
 INTRINS_OVR(FMA, fma, Generic, LLVMDoubleType ())
 INTRINS_OVR(FMAF, fma, Generic, LLVMFloatType ())
+	/*
+	 * IEEE 754-2019 minimum/maximum (NaN-propagating). Used for scalar OP_FMIN/OP_FMAX/
+	 * OP_RMIN/OP_RMAX. We avoid the older fcmp+select lowering because (a) it has
+	 * asymmetric NaN semantics (Min(NaN,x)=NaN but Min(x,NaN)=x), violating
+	 * Math.Min/Math.Max (and the MathF.Min/MathF.Max forwarders) spec, and (b) on
+	 * AArch64 the backend folds it to fminnm/fmaxnm (IEEE 754-2008 minNum/maxNum),
+	 * which suppresses NaN entirely and miscompiles the System.Half software
+	 * conversion path under LLVM 23.
+	 */
+INTRINS_OVR(MINIMUM, minimum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MINIMUMF, minimum, Generic, LLVMFloatType ())
+INTRINS_OVR(MAXIMUM, maximum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MAXIMUMF, maximum, Generic, LLVMFloatType ())
 	/* This isn't an intrinsic, instead llvm seems to special case it by name */
 INTRINS_OVR(FABS, fabs, Generic, LLVMDoubleType ())
 INTRINS_OVR(ABSF, fabs, Generic, LLVMFloatType ())
@@ -75,6 +88,7 @@ INTRINS_OVR(POW, pow, Generic, LLVMDoubleType ())
 INTRINS_OVR(EXP, exp, Generic, LLVMDoubleType ())
 INTRINS_OVR(EXPF, exp, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG, log, Generic, LLVMDoubleType ())
+INTRINS_OVR(LOGF, log, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG2, log2, Generic, LLVMDoubleType ())
 INTRINS_OVR(LOG2F, log2, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG10, log10, Generic, LLVMDoubleType ())
@@ -83,6 +97,19 @@ INTRINS_OVR(TRUNC, trunc, Generic, LLVMDoubleType ())
 INTRINS_OVR(TRUNCF, trunc, Generic, LLVMFloatType ())
 INTRINS_OVR(COPYSIGN, copysign, Generic, LLVMDoubleType ())
 INTRINS_OVR(COPYSIGNF, copysign, Generic, LLVMFloatType ())
+	/*
+	 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). When exactly one operand
+	 * is NaN they return the other; when both are NaN they return NaN. This is
+	 * what `float.MinNumber` / `double.MinNumber` (and the Max variants,
+	 * surfaced via INumber<TSelf> on the primitive Single/Double/Half types)
+	 * are documented to do, and on AArch64 these lower to single fminnm/fmaxnm
+	 * instructions. Use llvm.minimum/maximum (see above) for the NaN-propagating
+	 * Math.Min/Math.Max instead.
+	 */
+INTRINS_OVR(MINNUM, minnum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MINNUMF, minnum, Generic, LLVMFloatType ())
+INTRINS_OVR(MAXNUM, maxnum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MAXNUMF, maxnum, Generic, LLVMFloatType ())
 INTRINS_OVR(EXPECT_I8, expect, Generic, LLVMInt8Type ())
 INTRINS_OVR(EXPECT_I1, expect, Generic, LLVMInt1Type ())
 INTRINS_OVR(CTPOP_I32, ctpop, Generic, LLVMInt32Type ())

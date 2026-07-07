@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -22,6 +23,11 @@ namespace System.Security.Cryptography
         internal const string BCRYPT_MLKEM_PARAMETER_SET_768 = "768";
         internal const string BCRYPT_MLKEM_PARAMETER_SET_1024 = "1024";
 
+        internal const string BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_44_ECDSA_P256_SHA256 = "44-ECDSA-P256-SHA256";
+        internal const string BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_65_ECDSA_P256_SHA512 = "65-ECDSA-P256-SHA512";
+        internal const string BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_65_ECDSA_P384_SHA512 = "65-ECDSA-P384-SHA512";
+        internal const string BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_87_ECDSA_P384_SHA512 = "87-ECDSA-P384-SHA512";
+
         internal static string GetMLDsaParameterSet(MLDsaAlgorithm algorithm)
         {
             if (algorithm == MLDsaAlgorithm.MLDsa44)
@@ -39,6 +45,35 @@ namespace System.Security.Cryptography
 
             Debug.Fail($"Unknown MLDsaAlgorithm: {algorithm}");
             throw new PlatformNotSupportedException();
+        }
+
+        internal static bool TryGetCompositeMLDsaParameterSet(
+            CompositeMLDsaAlgorithm algorithm,
+            [NotNullWhen(true)] out string? parameterSet)
+        {
+            if (algorithm == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256)
+            {
+                parameterSet = BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_44_ECDSA_P256_SHA256;
+                return true;
+            }
+            else if (algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256)
+            {
+                parameterSet = BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_65_ECDSA_P256_SHA512;
+                return true;
+            }
+            else if (algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384)
+            {
+                parameterSet = BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_65_ECDSA_P384_SHA512;
+                return true;
+            }
+            else if (algorithm == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384)
+            {
+                parameterSet = BCRYPT_COMPOSITE_MLDSA_PARAMETER_SET_87_ECDSA_P384_SHA512;
+                return true;
+            }
+
+            parameterSet = null;
+            return false;
         }
 
         internal delegate TResult EncodeBlobFunc<TResult>(ReadOnlySpan<byte> blob);
@@ -61,6 +96,30 @@ namespace System.Security.Cryptography
                     break;
                 case Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB:
                     magic = KeyBlobMagicNumber.BCRYPT_MLDSA_PRIVATE_SEED_MAGIC;
+                    break;
+                default:
+                    Debug.Fail("Unknown blob type.");
+                    throw new CryptographicException();
+            }
+
+            return EncodePQDsaBlob(magic, parameterSet, data, callback);
+        }
+
+        internal static TResult EncodeCompositeMLDsaBlob<TResult>(
+            ReadOnlySpan<char> parameterSet,
+            ReadOnlySpan<byte> data,
+            string blobType,
+            EncodeBlobFunc<TResult> callback)
+        {
+            KeyBlobMagicNumber magic;
+
+            switch (blobType)
+            {
+                case Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB:
+                    magic = KeyBlobMagicNumber.BCRYPT_COMPOSITE_MLDSA_PUBLIC_MAGIC;
+                    break;
+                case Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB:
+                    magic = KeyBlobMagicNumber.BCRYPT_COMPOSITE_MLDSA_PRIVATE_MAGIC;
                     break;
                 default:
                     Debug.Fail("Unknown blob type.");
@@ -96,6 +155,29 @@ namespace System.Security.Cryptography
             return data;
         }
 
+        internal static ReadOnlySpan<byte> DecodeCompositeMLDsaBlob(
+            ReadOnlySpan<byte> blob,
+            out ReadOnlySpan<char> parameterSet,
+            out string blobType)
+        {
+            ReadOnlySpan<byte> data = DecodePQDsaBlob(blob, out KeyBlobMagicNumber magic, out parameterSet);
+
+            switch (magic)
+            {
+                case KeyBlobMagicNumber.BCRYPT_COMPOSITE_MLDSA_PUBLIC_MAGIC:
+                    blobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
+                    break;
+                case KeyBlobMagicNumber.BCRYPT_COMPOSITE_MLDSA_PRIVATE_MAGIC:
+                    blobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB;
+                    break;
+                default:
+                    Debug.Fail("Unknown blob type.");
+                    throw new CryptographicException();
+            }
+
+            return data;
+        }
+
         private static unsafe TResult EncodePQDsaBlob<TResult>(
             KeyBlobMagicNumber magic,
             ReadOnlySpan<char> parameterSet,
@@ -110,10 +192,8 @@ namespace System.Security.Cryptography
                                    data.Length);                            // Key
 
             // For ML-DSA we need 12 bytes for header, 6 bytes for parameter set, and 32 bytes for seed. Round up to 64.
+            // Other PQC algorithms may need over 256 bytes, so fall back to renting.
             const int StackAllocThreshold = 64;
-
-            // If there are new algorithms that require more than 64 bytes, we should increase the threshold.
-            Debug.Assert(blobSize is > 256 or <= StackAllocThreshold, "Increase stackalloc threshold");
 
             byte[]? rented = null;
             Span<byte> blobBytes =

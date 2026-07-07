@@ -3701,7 +3701,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
-        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, and enum_flag_GenericsMask_TypicalInst.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, enum_flag_GenericsMask_SharedInst, and enum_flag_GenericsMask_TypicalInst.
 
         // We are overloading the low 2 bytes of m_dwFlags to be a component size for Strings
         // and Arrays and some set of flags which we can be assured are of a specified state
