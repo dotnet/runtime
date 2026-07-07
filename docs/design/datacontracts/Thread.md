@@ -56,6 +56,9 @@ record struct ThreadData (
     bool IsInteropDebuggingHijacked;
     TargetPointer DebuggerFilterContext;
     TargetPointer GCFrame;
+    bool IsExceptionInProgress;
+    TargetPointer OSExceptionRecord;
+    TargetPointer OSExceptionContextRecord;
 );
 ```
 
@@ -103,6 +106,8 @@ The contract additionally depends on these data descriptors
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
 | `ExceptionInfo` | `ThrownObjectHandle` | Pointer to exception object handle |
 | `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets on non-Unix |
+| `ExceptionInfo` | `ExceptionRecord` | Pointer to the OS `EXCEPTION_RECORD` the OS dispatcher pushed for this exception |
+| `ExceptionInfo` | `ContextRecord` | Pointer to the OS `CONTEXT` the OS dispatcher pushed for this exception |
 | `GCAllocContext` | `Pointer` | GC allocation pointer |
 | `GCAllocContext` | `Limit` | Allocation limit pointer |
 | `GCAllocContext` | `AllocBytes` | Number of bytes allocated on SOH by this context |
@@ -228,6 +233,18 @@ ThreadData GetThreadData(TargetPointer address)
     }
 
     ulong threadLinkoffset = ... // offset from Thread data descriptor
+
+    // The OS-pushed EXCEPTION_RECORD / CONTEXT are reachable through the current
+    // exception tracker (ExInfo). When there is no exception in progress the tracker
+    // pointer is null.
+    bool isExceptionInProgress = exceptionTrackerAddr != TargetPointer.Null;
+    TargetPointer osExceptionRecord = isExceptionInProgress
+        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ExceptionRecord offset */)
+        : TargetPointer.Null;
+    TargetPointer osExceptionContextRecord = isExceptionInProgress
+        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::ContextRecord offset */)
+        : TargetPointer.Null;
+
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
         OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
@@ -240,6 +257,9 @@ ThreadData GetThreadData(TargetPointer address)
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
         GCFrame: target.ReadPointer(address + /* Thread::GCFrame offset */),
+        IsExceptionInProgress: isExceptionInProgress,
+        OSExceptionRecord: osExceptionRecord,
+        OSExceptionContextRecord: osExceptionContextRecord,
     );
 }
 

@@ -68,6 +68,8 @@ namespace Microsoft.Extensions.Primitives
                 case ExceptionResource.Capacity_CannotChangeAfterWriteStarted: return SR.Capacity_CannotChangeAfterWriteStarted;
                 case ExceptionResource.Capacity_NotEnough: return SR.Capacity_NotEnough;
                 case ExceptionResource.Capacity_NotUsedEntirely: return SR.Capacity_NotUsedEntirely;
+                case ExceptionResource.InvalidOperation_ConcurrentDisposableSet: return SR.InvalidOperation_ConcurrentDisposableSet;
+                case ExceptionResource.InvalidOperation_NullConsumerTask: return SR.InvalidOperation_NullConsumerTask;
                 default:
                     Debug.Fail($"Unexpected resource {resource}");
                     return "";
@@ -108,6 +110,8 @@ namespace Microsoft.Extensions.Primitives
         Argument_InvalidOffsetLengthStringSegment,
         Capacity_CannotChangeAfterWriteStarted,
         Capacity_NotEnough,
-        Capacity_NotUsedEntirely
+        Capacity_NotUsedEntirely,
+        InvalidOperation_ConcurrentDisposableSet,
+        InvalidOperation_NullConsumerTask
     }
 }

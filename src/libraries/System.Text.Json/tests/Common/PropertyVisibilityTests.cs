@@ -1,9 +1,10 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -1785,7 +1786,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways))]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
-        public async Task JsonIgnoreConditionSetToAlwaysWorks(Type type)
+        public async Task JsonIgnoreConditionSetToAlwaysWorks([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             string json = """{"MyString":"Random","MyDateTime":"2020-03-23","MyInt":4}""";
 
@@ -1830,7 +1831,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_ClassProperty_TestData))]
-        public async Task JsonIgnoreConditionWhenWritingDefault_ClassProperty(Type type, JsonSerializerOptions options)
+        public async Task JsonIgnoreConditionWhenWritingDefault_ClassProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
             string json = """{"Int1":1,"MyString":"Random","Int2":2}""";
@@ -1916,7 +1917,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_StructProperty_TestData))]
-        public async Task JsonIgnoreConditionWhenWritingDefault_StructProperty(Type type, JsonSerializerOptions options)
+        public async Task JsonIgnoreConditionWhenWritingDefault_StructProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
             string json = """{"Int1":1,"MyInt":3,"Int2":2}""";
@@ -1974,7 +1975,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-        public async Task JsonIgnoreConditionNever(Type type)
+        public async Task JsonIgnoreConditionNever([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             // Property should always be (de)serialized, even when null.
             string json = """{"Int1":1,"MyString":"Random","Int2":2}""";
@@ -2017,7 +2018,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-        public async Task JsonIgnoreConditionNever_IgnoreNullValues_True(Type type)
+        public async Task JsonIgnoreConditionNever_IgnoreNullValues_True([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             // Property should always be (de)serialized.
             string json = """{"Int1":1,"MyString":"Random","Int2":2}""";
@@ -2903,7 +2904,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail(Type type)
+        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
             string exAsStr = ex.ToString();
@@ -2923,7 +2924,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
+        public virtual async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
             string exAsStr = ex.ToString();
