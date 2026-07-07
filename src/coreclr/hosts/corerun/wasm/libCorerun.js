@@ -30,6 +30,21 @@ function libCoreRunFactory() {
                     }
                 }
 
+                // The WasmFS node backend maps the virtual root "/" onto the host filesystem, but its
+                // current directory defaults to "/", which is typically not writable on the host. Publish
+                // the host process working directory so that native startup can chdir into it, ensuring
+                // relative file operations (for example the test harness temp log) resolve to a writable
+                // location. FS.chdir() is unavailable in this WasmFS configuration, so the chdir is done
+                // natively in corerun's main using this environment variable.
+                if (globalThis.process && typeof process.cwd === "function") {
+                    let hostCwd = process.cwd();
+                    if (process.platform === "win32") {
+                        // drop the drive letter and normalize separators; node resolves a leading "/" to the current drive
+                        hostCwd = hostCwd.replace(/^[a-zA-Z]:/, "").replace(/\\/g, "/");
+                    }
+                    ENV["CORERUN_HOST_CWD"] = hostCwd;
+                }
+
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
             },
         },
