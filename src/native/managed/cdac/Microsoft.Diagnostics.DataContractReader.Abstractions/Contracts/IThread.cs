@@ -62,7 +62,11 @@ public record struct ThreadData(
     TargetPointer NextThread,
     TargetPointer ThreadHandle,
     bool IsInteropDebuggingHijacked,
-    TargetPointer DebuggerFilterContext);
+    TargetPointer DebuggerFilterContext,
+    TargetPointer GCFrame,
+    bool IsExceptionInProgress,
+    TargetPointer OSExceptionRecord,
+    TargetPointer OSExceptionContextRecord);
 
 public interface IThread : IContract
 {

@@ -95,15 +95,6 @@ void getMethodVTableOffset(
 bool resolveVirtualMethod(
           CORINFO_DEVIRTUALIZATION_INFO* info) override;
 
-CORINFO_METHOD_HANDLE getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg) override;
-
-CORINFO_METHOD_HANDLE getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg) override;
-
 CORINFO_METHOD_HANDLE getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
           bool* variantIsThunk) override;
@@ -506,6 +497,10 @@ void getEEInfo(
 
 void getAsyncInfo(
           CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
+
+CORINFO_METHOD_HANDLE getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_LOOKUP* instArg) override;
 
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;

@@ -53,7 +53,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.FreeBSD, "Not supported on FreeBSD.")]
+        [SkipOnPlatform(TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "Not supported on FreeBSD and OpenBSD.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]

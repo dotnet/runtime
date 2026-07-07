@@ -42,7 +42,15 @@ WARNING:   When setting properties based on their current state (for example:
     <Error Text="Setting both AlwaysUseCrossGen2 to true and CrossGenTest to false is non-sensical" Condition="'$(CrossGenTest)' == 'false' and '$(AlwaysUseCrossGen2)' == 'true'"/>
 
     <PropertyGroup>
-      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  exit 0
+fi
+        ]]>
+      </CrossgenBashScript>
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
@@ -122,6 +130,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
         echo --method-layout:random >> "$__ResponseFile"
+        if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+            echo --codegenopt:JitWasmNyiToR2RUnsupported=1 >> "$__ResponseFile"
+            echo --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 >> "$__ResponseFile"
+        fi
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
             echo --synthesize-random-mibc >> "$__ResponseFile"
             echo --embed-pgo-data >> "$__ResponseFile"
@@ -229,7 +241,16 @@ fi
 
   <Target Name="GetCrossgenBatchScript">
     <PropertyGroup>
-      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+IF NOT "%RunCrossGen2%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  popd
+  Exit /b 0
+)
+        ]]>
+      </CrossgenBatchScript>
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if /i "$(AlwaysUseCrossGen2)" == "true" (
@@ -322,6 +343,10 @@ if defined RunCrossGen2 (
     echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
+    if "$(CrossGen2OutputFormat)"=="wasm" (
+        echo "--codegenopt:JitWasmNyiToR2RUnsupported=1">>!__ResponseFile!
+        echo "--codegenopt:JitWasmSimdNyiToR2RUnsupported=1">>!__ResponseFile!
+    )
     if not "$(CrossGen2OutputFormat)"=="" (
         echo -f:$(CrossGen2OutputFormat)>>!__ResponseFile!
     )

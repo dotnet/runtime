@@ -72,6 +72,9 @@
   <data name="net_invalid_ip_addr" xml:space="preserve">
     <value>IPv4 address 0.0.0.0 and IPv6 address ::0 are unspecified addresses that cannot be used as a target address.</value>
   </data>
+  <data name="net_hostname_invalid_character" xml:space="preserve">
+    <value>The host name contains an invalid character.</value>
+  </data>
   <data name="SystemNetNameResolution_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.NameResolution is not supported on this platform.</value>
   </data>

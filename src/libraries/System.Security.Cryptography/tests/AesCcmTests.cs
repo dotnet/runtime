@@ -52,6 +52,25 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [InlineData(16)]
+        [InlineData(24)]
+        [InlineData(32)]
+        public static void KeySizeInBytes(int keyLength)
+        {
+            byte[] key = new byte[keyLength];
+
+            using (var aesCcm = new AesCcm(key))
+            {
+                Assert.Equal(keyLength, aesCcm.KeySizeInBytes);
+            }
+
+            using (var aesCcm = new AesCcm(key.AsSpan()))
+            {
+                Assert.Equal(keyLength, aesCcm.KeySizeInBytes);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(GetInvalidNonceSizes))]
         public static void InvalidNonceSize(int nonceSize)
         {

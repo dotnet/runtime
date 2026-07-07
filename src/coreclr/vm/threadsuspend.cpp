@@ -25,6 +25,7 @@
 #if defined(TARGET_ARM64)
 extern "C" void* PacSignPtr(void* ptr, void* sp);
 extern "C" void* PacAuthPtr(void* ptr, void* sp);
+extern "C" void* PacStripPtr(void* ptr);
 #endif // TARGET_ARM64
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -4549,6 +4550,37 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     m_pSpForPacSign = esb->m_pSpForPacSign;
 #endif
 
+#ifndef TARGET_X86
+    // Except for x86, no registers are scanned as part of the HijackFrame on top of the stack.
+    // This still allows scanning of the return value because the registers in question are
+    // scanned as part of the calling method's roots. The problem arises if we are returning to
+    // the interpreter. The return value is not rooted here but also not yet present on the
+    // interpreter frame to have it detected by the GC.
+    PCODE hijackedReturnAddress = (PCODE)(TADDR)m_pvHJRetAddr;
+#if defined(TARGET_ARM64)
+    // We strip the return address here as it's only used for comparison and
+    // not being used to branch execution to.
+    hijackedReturnAddress = (PCODE)PacStripPtr((void*)hijackedReturnAddress);
+#endif // TARGET_ARM64
+
+    if (IsCallDescrWorkerInternalReturnAddress(hijackedReturnAddress))
+    {
+        return;
+    }
+#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
+    EECodeInfo codeInfo(hijackedReturnAddress);
+    if (!codeInfo.IsValid())
+    {
+#ifndef FEATURE_INTERPRETER
+        _ASSERTE(!"Unknown managed code callsite");
+#endif
+        STRESS_LOG2(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p): Early out - return address %p is not jitted code.\n", this, (void *)hijackedReturnAddress);
+        return;
+    }
+#endif // FEATURE_INTERPRETER || _DEBUG
+
+#endif // !TARGET_X86
+
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
     // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
     // may be uncommented once isLegalManagedCodeCaller works properly
@@ -5772,6 +5804,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         pThread->PulseGCMode();
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -5779,6 +5812,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
         frame.Pop(pThread);
     }

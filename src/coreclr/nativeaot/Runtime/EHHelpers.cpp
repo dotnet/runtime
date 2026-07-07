@@ -326,6 +326,12 @@ static uintptr_t UnwindSimpleHelperToCaller(
     pContext->SetSp(sp+sizeof(uintptr_t)); // pop the stack
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     uintptr_t adjustedFaultingIP = pContext->GetLr();
+#if defined(HOST_ARM)
+    // Interface dispatch pushes {r1,r2} (8 bytes) before the potential null-this AV.
+    // Restore SP to the caller's original value.
+    if (InInterfaceDispatchHelper(pContext->GetIp()))
+        pContext->SetSp(pContext->GetSp() + 8);
+#endif
 #elif defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     uintptr_t adjustedFaultingIP = pContext->GetRa();
 #else

@@ -54,9 +54,9 @@ public readonly struct GCHeapData
     public TargetPointer SavedSweepEphemeralSegment { get; init; } /* Only valid in segment GC builds */
     public TargetPointer SavedSweepEphemeralStart { get; init; } /* Only valid in segment GC builds */
 
-    public TargetPointer InternalRootArray { get; init; }
-    public TargetNUInt InternalRootArrayIndex { get; init; }
-    public bool HeapAnalyzeSuccess { get; init; }
+    public TargetPointer? InternalRootArray { get; init; }
+    public TargetNUInt? InternalRootArrayIndex { get; init; }
+    public bool? HeapAnalyzeSuccess { get; init; }
 
     public IReadOnlyList<TargetNUInt> InterestingData { get; init; }
     public IReadOnlyList<TargetNUInt> CompactReasons { get; init; }

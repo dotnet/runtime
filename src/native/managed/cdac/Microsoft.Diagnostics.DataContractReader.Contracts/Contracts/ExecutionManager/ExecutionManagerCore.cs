@@ -284,7 +284,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
     {
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeaturePortableEntrypoints) != 0)
+        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
         {
             Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
             return portableEntryPoint.MethodDesc;
@@ -419,9 +419,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (gcInfoAddress == TargetPointer.Null)
             throw new InvalidOperationException($"GC info not available for {codeInfoHandle.Address}");
 
-        uint relOffset = (uint)eman.GetRelativeOffset(codeInfoHandle).Value;
-        StackWalkHelpers.X86.GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
-        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount * (uint)_target.PointerSize;
+        IGCInfo gcInfoContract = _target.Contracts.GCInfo;
+        IGCInfoHandle handle = gcInfoContract.DecodePlatformSpecificGCInfo(gcInfoAddress, gcInfoVersion);
+        return gcInfoContract.GetCalleePoppedArgumentsSize(handle);
     }
 
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
