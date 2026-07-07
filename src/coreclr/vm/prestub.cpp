@@ -725,6 +725,17 @@ namespace
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
+        Module* pModule = pMD->GetModule();
+        if (pModule->IsReadyToRun()
+            && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
+            && pHeader->GetCodeSize() == 2
+            && pHeader->Code[0] == 0xFE
+            && pHeader->Code[1] == 0x24)
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                W("A method body required at runtime was stripped from the ReadyToRun image."));
+        }
+
         return pHeader;
     }
 

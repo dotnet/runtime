@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>());
 
         public static IEnumerable<object[]> Get_PolymorphicClass_TestData_Deserialization()
             => PolymorphicClass.GetSerializeTestData().Where(entry => entry.ExpectedJson != null).Select(entry => new object[] { entry });
@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Tests
                     .Where(entry => entry.ExpectedRoundtripValue is not null)
                     .Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
                 options: s_optionsWithAllowOutOfOrderMetadata,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>());
 
         [Theory]
         [InlineData("""{"Number":42, "$type":"derivedClass1", "String": "str"}""", typeof(PolymorphicClass.DerivedClass1_TypeDiscriminator))]
@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Tests
 
         //--
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Theory]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Serialization))]
         public Task PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Serialization(PolymorphicClass.TestData testData)
             => TestMultiContextSerialization(
@@ -142,14 +142,14 @@ namespace System.Text.Json.Serialization.Tests
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithBaseTypeFallback().Select(entry => new object[] { entry });
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Theory]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Deserialization))]
         public Task PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Deserialization(PolymorphicClass.TestData testData)
             => TestMultiContextDeserialization<PolymorphicClass>(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedSerializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Deserialization()
@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Tests
                 .Where(entry => entry.ExpectedJson != null)
                 .Select(entry => new object[] { entry });
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public async Task PolymorphicClass_CustomConfigWithBaseTypeFallback_TestDataArray_Serialization()
         {
             IEnumerable<(PolymorphicClass Value, string ExpectedJson)> inputs =
@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextSerialization(inputs, options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public async Task PolymorphicClass_CustomConfigWithBaseTypeFallbacks_TestDataArray_Deserialization()
         {
             IEnumerable<(string ExpectedJson, PolymorphicClass ExpectedRoundtripValue)> inputs =
@@ -178,11 +178,11 @@ namespace System.Text.Json.Serialization.Tests
 
             await TestMultiContextDeserialization(
                 inputs,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Theory]
         [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
@@ -206,7 +206,7 @@ namespace System.Text.Json.Serialization.Tests
 
         //---
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Theory]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization))]
         public Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization(PolymorphicClass.TestData testData)
             => TestMultiContextSerialization(
@@ -219,14 +219,14 @@ namespace System.Text.Json.Serialization.Tests
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithNearestAncestorFallback().Select(entry => new object[] { entry });
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Theory]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization))]
         public Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization(PolymorphicClass.TestData testData)
             => TestMultiContextDeserialization<PolymorphicClass>(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
 
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization()
@@ -234,7 +234,7 @@ namespace System.Text.Json.Serialization.Tests
                     .Where(entry => entry.ExpectedJson != null)
                     .Select(entry => new object[] { entry });
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestDataArray_Serialization()
         {
             IEnumerable<(PolymorphicClass Value, string ExpectedJson)> inputs =
@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextSerialization(inputs, options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestDataArray_Deserialization()
         {
             IEnumerable<(string ExpectedJson, PolymorphicClass ExpectedRoundtripValue)> inputs =
@@ -255,11 +255,11 @@ namespace System.Text.Json.Serialization.Tests
 
             await TestMultiContextDeserialization(
                 inputs,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass>.Instance,
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass>(),
                 options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Theory]
         [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
@@ -302,22 +302,13 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicClass_ClearPolymorphismOptions_DoesNotUsePolymorphism()
         {
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static jsonTypeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                if (jsonTypeInfo.Type == typeof(PolymorphicClass))
                 {
-                    Modifiers =
-                    {
-                        static jsonTypeInfo =>
-                        {
-                            if (jsonTypeInfo.Type == typeof(PolymorphicClass))
-                            {
-                                jsonTypeInfo.PolymorphismOptions = null;
-                            }
-                        }
-                    }
+                    jsonTypeInfo.PolymorphismOptions = null;
                 }
-            };
+            });
 
             PolymorphicClass value = new PolymorphicClass.DerivedAbstractClass.DerivedClass { Number = 42, Boolean = true };
             string json = await Serializer.SerializeWrapper(value, options);
@@ -961,13 +952,13 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextDeserialization<PolymorphicClass_WithDerivedPolymorphicClass>(
                 json,
                 expectedValueUsingBaseContract,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass>());
 
             var expectedValueUsingDerivedContract = new PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass.DerivedClass2();
             await TestMultiContextDeserialization<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>(
                 json,
                 expectedValueUsingDerivedContract,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>());
         }
 
         [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
@@ -1149,7 +1140,7 @@ namespace System.Text.Json.Serialization.Tests
             => TestMultiContextDeserialization<PolymorphicClassWithConstructor>(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicClassWithConstructor>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicClassWithConstructor>());
 
         public static IEnumerable<object[]> Get_PolymorphicClassWithConstructor_TestData_Deserialization()
             => PolymorphicClassWithConstructor.GetSerializeTestData()
@@ -1171,7 +1162,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<(string ExpectedJson, PolymorphicClassWithConstructor ExpectedRoundtripValue)> inputs =
                 PolymorphicClassWithConstructor.GetSerializeTestData().Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicClassWithConstructor>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicClassWithConstructor>());
         }
 
         [JsonPolymorphic]
@@ -1300,7 +1291,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
 
         public static IEnumerable<object[]> Get_PolymorphicInterface_TestData_Deserialization()
             => PolymorphicInterface.Helpers.GetSerializeTestData()
@@ -1326,7 +1317,7 @@ namespace System.Text.Json.Serialization.Tests
                 .Where(entry => entry.ExpectedRoundtripValue is not null)
                 .Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
         }
 
         [Theory]
@@ -1369,7 +1360,7 @@ namespace System.Text.Json.Serialization.Tests
                 testData.ExpectedRoundtripValue,
                 testData.ExpectedDeserializationException,
                 options: PolymorphicInterface.Helpers.CustomConfigWithNearestAncestorFallback,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
 
         public static IEnumerable<object[]> Get_PolymorphicInterface_CustomConfigWithNearestAncestorFallback_TestData_Deserialization()
             => PolymorphicInterface.Helpers.GetSerializeTestData_CustomConfigWithNearestAncestorFallback()
@@ -1398,7 +1389,7 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextDeserialization(
                 inputs,
                 options: PolymorphicInterface.Helpers.CustomConfigWithNearestAncestorFallback,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicInterface>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicInterface>());
         }
 
         // --
@@ -1615,7 +1606,7 @@ namespace System.Text.Json.Serialization.Tests
             => TestMultiContextDeserialization(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicList>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicList>());
 
         public static IEnumerable<object[]> Get_PolymorphicList_TestData_Deserialization()
             => PolymorphicList.GetSerializeTestData().Select(entry => new object[] { entry });
@@ -1635,7 +1626,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<(string ExpectedJson, PolymorphicList ExpectedRoundtripValue)> inputs =
                 PolymorphicList.GetSerializeTestData().Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicList>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicList>());
         }
 
         [Fact]
@@ -1865,7 +1856,7 @@ namespace System.Text.Json.Serialization.Tests
             => TestMultiContextDeserialization(
                 testData.ExpectedJson,
                 testData.ExpectedRoundtripValue,
-                equalityComparer: PolymorphicEqualityComparer<PolymorphicDictionary>.Instance);
+                equalityComparer: CreateJsonEqualityComparer<PolymorphicDictionary>());
 
         public static IEnumerable<object[]> Get_PolymorphicDictionary_TestData_Deserialization()
             => PolymorphicDictionary.GetSerializeTestData().Select(entry => new object[] { entry });
@@ -1885,7 +1876,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<(string ExpectedJson, PolymorphicDictionary ExpectedRoundtripValue)> inputs =
                 PolymorphicDictionary.GetSerializeTestData().Select(entry => (entry.ExpectedJson, entry.ExpectedRoundtripValue));
 
-            await TestMultiContextDeserialization(inputs, equalityComparer: PolymorphicEqualityComparer<PolymorphicDictionary>.Instance);
+            await TestMultiContextDeserialization(inputs, equalityComparer: CreateJsonEqualityComparer<PolymorphicDictionary>());
         }
 
         [Fact]
@@ -1944,7 +1935,7 @@ namespace System.Text.Json.Serialization.Tests
             public record TestData(PolymorphicDictionary Value, string ExpectedJson, PolymorphicDictionary ExpectedRoundtripValue);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public async Task PolymorphicDictionaryInterface_Serialization()
         {
             var values = new IEnumerable<KeyValuePair<int, object>>[]
@@ -1968,7 +1959,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public async Task PolymorphicDictionaryInterface_Deserialization()
         {
             string json =
@@ -2130,7 +2121,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = jsonTemplate("1"); // root values have reference id "1"
             PolymorphicClass actualValue = await Serializer.DeserializeWrapper<PolymorphicClass>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValue, actualValue, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, actualValue, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -2163,7 +2154,7 @@ namespace System.Text.Json.Serialization.Tests
             var result = await Serializer.DeserializeWrapper<List<PolymorphicClass>>(json, s_jsonSerializerOptionsPreserveRefs);
 
             Assert.Equal(2, result.Count);
-            Assert.Equal(expectedValue, result[0], PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, result[0], CreateJsonEqualityComparer<PolymorphicClass>());
             Assert.Same(result[0], result[1]);
         }
 
@@ -2192,7 +2183,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = "[" + string.Join(", ", idValues.Concat(refValues)) + "]";
 
             PolymorphicClass[] result = await Serializer.DeserializeWrapper<PolymorphicClass[]>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValues, result, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValues, result, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         public static IEnumerable<(PolymorphicClass Value, Func<string, string> JsonTemplate)> Get_ReferencePreservation_TestData()
@@ -2232,7 +2223,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = jsonTemplate("1"); // root values have reference id "1"
             PolymorphicClassWithCustomTypeDiscriminator actualValue = await Serializer.DeserializeWrapper<PolymorphicClassWithCustomTypeDiscriminator>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValue, actualValue, PolymorphicEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>.Instance);
+            Assert.Equal(expectedValue, actualValue, CreateJsonEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>());
         }
 
         [Theory]
@@ -2265,7 +2256,7 @@ namespace System.Text.Json.Serialization.Tests
             var result = await Serializer.DeserializeWrapper<List<PolymorphicClassWithCustomTypeDiscriminator>>(json, s_jsonSerializerOptionsPreserveRefs);
 
             Assert.Equal(2, result.Count);
-            Assert.Equal(expectedValue, result[0], PolymorphicEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>.Instance);
+            Assert.Equal(expectedValue, result[0], CreateJsonEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>());
             Assert.Same(result[0], result[1]);
         }
 
@@ -2294,7 +2285,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = "[" + string.Join(", ", idValues.Concat(refValues)) + "]";
 
             PolymorphicClassWithCustomTypeDiscriminator[] result = await Serializer.DeserializeWrapper<PolymorphicClassWithCustomTypeDiscriminator[]>(json, s_jsonSerializerOptionsPreserveRefs);
-            Assert.Equal(expectedValues, result, PolymorphicEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>.Instance);
+            Assert.Equal(expectedValues, result, CreateJsonEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>());
         }
 
         [Theory]
@@ -2303,7 +2294,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = jsonTemplate("1"); // root values have reference id "1"
             PolymorphicClass actualValue = await Serializer.DeserializeWrapper<PolymorphicClass>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead);
-            Assert.Equal(expectedValue, actualValue, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, actualValue, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -2320,7 +2311,7 @@ namespace System.Text.Json.Serialization.Tests
             var result = await Serializer.DeserializeWrapper<List<PolymorphicClass>>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead);
 
             Assert.Equal(2, result.Count);
-            Assert.Equal(expectedValue, result[0], PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValue, result[0], CreateJsonEqualityComparer<PolymorphicClass>());
             Assert.Same(result[0], result[1]);
         }
 
@@ -2335,7 +2326,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = "[" + string.Join(", ", idValues.Concat(refValues)) + "]";
 
             PolymorphicClass[] result = await Serializer.DeserializeWrapper<PolymorphicClass[]>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead);
-            Assert.Equal(expectedValues, result, PolymorphicEqualityComparer<PolymorphicClass>.Instance);
+            Assert.Equal(expectedValues, result, CreateJsonEqualityComparer<PolymorphicClass>());
         }
 
         [Theory]
@@ -2947,7 +2938,14 @@ namespace System.Text.Json.Serialization.Tests
             public T? Extra { get; set; }
         }
 
-        [Fact]
+        // Validates the runtime programmatic API by adding polymorphism to OpenGenericBase_Programmatic<int>
+        // via a resolver modifier. The type is deliberately not registered with a JsonSerializerContext
+        // (no [JsonDerivedType]), so it relies on the reflection-based DefaultJsonTypeInfoResolver and only
+        // runs where runtime code generation is available; OpenGenericDerivedType_MixedWithRegularDerivedType_Works
+        // covers the attribute-based equivalent that also runs under source-gen.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [RequiresUnreferencedCode("Uses DefaultJsonTypeInfoResolver and reflection-based serialization.")]
+        [RequiresDynamicCode("Uses DefaultJsonTypeInfoResolver and reflection-based serialization.")]
         public async Task OpenGenericDerivedType_ProgrammaticApi_Works()
         {
             var options = new JsonSerializerOptions
@@ -3471,22 +3469,13 @@ namespace System.Text.Json.Serialization.Tests
             // Same as above with explicit FallBackToBaseType. The resolver falls through to the
             // base contract (no discriminator emitted) because the runtime type is not registered.
             // This matches the previously-described "serializes as base contract" behavior.
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(IVarCovBase<VarAnimal>) && typeInfo.PolymorphismOptions is { } pOpts)
                 {
-                    Modifiers =
-                    {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(IVarCovBase<VarAnimal>) && typeInfo.PolymorphismOptions is { } pOpts)
-                            {
-                                pOpts.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType;
-                            }
-                        }
-                    }
+                    pOpts.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType;
                 }
-            };
+            });
 
             IVarCovBase<VarAnimal> value = new VarCovImpl<VarDog> { Value = new VarDog { Name = "Rex", Breed = "Labrador" } };
             string json = await Serializer.SerializeWrapper(value, options);
@@ -3798,51 +3787,14 @@ namespace System.Text.Json.Serialization.Tests
         #endregion
 
         #region Test Helpers
-        public class PolymorphicEqualityComparer<TBaseType> : IEqualityComparer<TBaseType>
-            where TBaseType : class
-        {
-            public static PolymorphicEqualityComparer<TBaseType> Instance { get; } = new();
-
-            public bool Equals(TBaseType? left, TBaseType? right)
-            {
-                if (left is null || right is null)
-                {
-                    return left is null == right is null;
-                }
-
-                Type runtimeType = left.GetType();
-                if (runtimeType != right.GetType())
-                {
-                    return false;
-                }
-
-                EqualityComparer<object> objComparer = EqualityComparer<object>.Default;
-
-                // Runtime type is enumerable; use enumerable sequence comparison
-                if (left is IEnumerable leftColl)
-                {
-                    IEnumerable rightColl = (IEnumerable)right;
-                    return leftColl.Cast<object>().SequenceEqual(rightColl.Cast<object>(), objComparer);
-                }
-
-                // Runtime is regular POCO; use property structural comparison
-                foreach (var propInfo in runtimeType.GetProperties())
-                {
-                    if (!objComparer.Equals(propInfo.GetValue(left), propInfo.GetValue(right)))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            public int GetHashCode(TBaseType _) => throw new NotImplementedException();
-        }
 
         public class CustomPolymorphismResolver : IJsonTypeInfoResolver
         {
+            #if BUILDING_SOURCE_GENERATOR_TESTS
+            private readonly IJsonTypeInfoResolver _inner = System.Text.Json.SourceGeneration.Tests.PolymorphicTests_Metadata.PolymorphicTestsContext_Metadata.Default;
+            #else
             private readonly DefaultJsonTypeInfoResolver _inner = new();
+            #endif
             private readonly List<JsonDerivedType> _jsonDerivedTypes = new();
 
             public CustomPolymorphismResolver(Type baseType)

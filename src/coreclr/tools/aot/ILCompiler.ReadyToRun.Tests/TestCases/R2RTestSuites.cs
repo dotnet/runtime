@@ -1181,7 +1181,6 @@ public class R2RTestSuites
     /// to the underlying EcmaMethod.
     /// </summary>
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/129524")]
     public void CompositeAsyncDevirtNonAsyncCallee()
     {
         // Compiled WITHOUT runtime-async so the awaited virtuals get synthesized async-variant thunks.
