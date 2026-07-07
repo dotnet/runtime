@@ -17,6 +17,12 @@ namespace System.Runtime.CompilerServices
 
             public void UnsafeOnCompleted(Action continuation)
             {
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    default(YieldAwaitable.YieldAwaiter).UnsafeOnCompleted(continuation);
+                    return;
+                }
+
                 object continuationTarget = continuation.GetTargetForSingleCastInstanceDelegate();
                 Debug.Assert(
                     continuationTarget != null &&
