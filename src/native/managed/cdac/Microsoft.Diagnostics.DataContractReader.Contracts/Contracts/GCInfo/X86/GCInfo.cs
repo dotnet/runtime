@@ -89,6 +89,11 @@ public record X86GCInfo : IGCInfoDecoder
     private ImmutableArray<int> SortedTransitionOffsets => _sortedTransitionOffsets.Value;
     private readonly Lazy<ImmutableArray<int>> _sortedTransitionOffsets;
 
+    private ImmutableArray<NoGCRegion> NoGCRegions => _noGCRegions.Value;
+    private readonly Lazy<ImmutableArray<NoGCRegion>> _noGCRegions;
+
+    internal readonly record struct NoGCRegion(uint Offset, uint Size);
+
     public X86GCInfo(Target target, TargetPointer gcInfoAddress, uint gcInfoVersion, uint relativeOffset = 0)
     {
         if (gcInfoVersion < MINIMUM_SUPPORTED_GCINFO_VERSION)
@@ -179,6 +184,27 @@ public record X86GCInfo : IGCInfoDecoder
         // Sorted offsets walked by EnumerateLiveSlots / CalculatePushedArgSizeAt /
         // GetInterruptibleRanges. Cached once instead of re-sorting per call.
         _sortedTransitionOffsets = new(() => [.. Transitions.Keys.OrderBy(o => o)]);
+
+        // Lazily decode the explicit no-GC regions table (used by IsGcSafe).
+        _noGCRegions = new(DecodeNoGCRegions);
+    }
+
+    private ImmutableArray<NoGCRegion> DecodeNoGCRegions()
+    {
+        if (Header.NoGCRegionCount == 0)
+            return ImmutableArray<NoGCRegion>.Empty;
+
+        // The no-GC region table immediately follows the header. Each entry is two
+        // unsigned integers (region offset, region size).
+        TargetPointer ptr = _gcInfoAddress + _infoHdrSize;
+        ImmutableArray<NoGCRegion>.Builder builder = ImmutableArray.CreateBuilder<NoGCRegion>((int)Header.NoGCRegionCount);
+        for (int i = 0; i < Header.NoGCRegionCount; i++)
+        {
+            uint regionOffset = _target.GCDecodeUnsigned(ref ptr);
+            uint regionSize = _target.GCDecodeUnsigned(ref ptr);
+            builder.Add(new NoGCRegion(regionOffset, regionSize));
+        }
+        return builder.MoveToImmutable();
     }
 
     private ImmutableDictionary<int, List<BaseGcTransition>> DecodeTransitions()
@@ -503,6 +529,31 @@ public record X86GCInfo : IGCInfoDecoder
             }
         }
         return callRanges;
+    }
+
+    bool IGCInfoDecoder.IsGcSafe(uint instructionOffset)
+    {
+        // Mirrors native EECodeManager::IsGcSafe for x86 (hdrInfo): there is no safe point
+        // table, so GC-safeness is a single interruptibility check.
+        if (IsCodeOffsetInProlog(instructionOffset) || IsCodeOffsetInEpilog(instructionOffset))
+            return false;
+
+        if (!Header.Interruptible)
+            return false;
+
+        return !IsInNoGCRegion(instructionOffset);
+    }
+
+    private bool IsInNoGCRegion(uint codeOffset)
+    {
+        foreach (NoGCRegion region in NoGCRegions)
+        {
+            if (codeOffset < region.Offset)
+                return false;
+            if (codeOffset - region.Offset < region.Size)
+                return true;
+        }
+        return false;
     }
 
     IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options)
