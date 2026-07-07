@@ -1136,10 +1136,12 @@ namespace System.Numerics
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
-            var handler = new DefaultInterpolatedStringHandler(literalLength: 4, formattedCount: 2, formatProvider, stackalloc char[512]);
+            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
+            var handler = new DefaultInterpolatedStringHandler(literalLength: 3 + (separator.Length * 1), formattedCount: 2, formatProvider, stackalloc char[512]);
             handler.AppendLiteral("<");
             handler.AppendFormatted(X, format);
-            handler.AppendLiteral("; ");
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
             handler.AppendFormatted(Y, format);
             handler.AppendLiteral(">");
             return handler.ToStringAndClear();

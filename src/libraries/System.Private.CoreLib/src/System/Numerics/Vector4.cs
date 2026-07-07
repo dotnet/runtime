@@ -1216,14 +1216,18 @@ namespace System.Numerics
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
         public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
-            var handler = new DefaultInterpolatedStringHandler(literalLength: 8, formattedCount: 4, formatProvider, stackalloc char[512]);
+            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
+            var handler = new DefaultInterpolatedStringHandler(literalLength: 5 + (separator.Length * 3), formattedCount: 4, formatProvider, stackalloc char[512]);
             handler.AppendLiteral("<");
             handler.AppendFormatted(X, format);
-            handler.AppendLiteral("; ");
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
             handler.AppendFormatted(Y, format);
-            handler.AppendLiteral("; ");
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
             handler.AppendFormatted(Z, format);
-            handler.AppendLiteral("; ");
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
             handler.AppendFormatted(W, format);
             handler.AppendLiteral(">");
             return handler.ToStringAndClear();

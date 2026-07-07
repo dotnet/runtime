@@ -60,7 +60,7 @@ namespace System.Numerics
 
         /// <summary>Creates a <see cref="Plane" /> from a specified normal and the distance along the normal from the origin.</summary>
         /// <param name="normal">The plane's normal vector.</param>
-        /// <param name="d">The plane's distance from the origin along its normal vector.</param>\
+        /// <param name="d">The plane's distance from the origin along its normal vector.</param>
         /// <returns>A <see cref="Plane" /> created from a specified normal and the distance along the normal from the origin.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

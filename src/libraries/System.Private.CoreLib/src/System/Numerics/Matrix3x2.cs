@@ -425,11 +425,18 @@ namespace System.Numerics
 
             Impl result;
 
-            result.X = Vector2.Transform(left.X.AsVector128Unsafe(), in right).AsVector2();
-            result.Y = Vector2.Transform(left.Y.AsVector128Unsafe(), in right).AsVector2();
+            result.X = Transform2x2(left.X.AsVector128Unsafe(), in right).AsVector2();
+            result.Y = Transform2x2(left.Y.AsVector128Unsafe(), in right).AsVector2();
             result.Z = Vector2.Transform(left.Z.AsVector128Unsafe(), in right).AsVector2();
 
             return result.AsM3x2();
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<float> Transform2x2(Vector128<float> position, in Matrix3x2.Impl matrix)
+            {
+                Vector128<float> result = matrix.X.AsVector128Unsafe() * position.GetElement(0);
+                return Vector128.MultiplyAddEstimate(matrix.Y.AsVector128Unsafe(), Vector128.Create(position.GetElement(1)), result);
+            }
         }
 
         /// <summary>Multiplies a matrix by a float to compute the product.</summary>

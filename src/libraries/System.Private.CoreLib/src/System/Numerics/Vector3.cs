@@ -734,7 +734,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.LessThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, 0, 0));
+        public static bool LessThanOrEqualAny(Vector3 left, Vector3 right) => Vector128.EqualsAny(Vector128.LessThanOrEqual(left.AsVector128(), right.AsVector128()).AsInt32(), Vector128.Create(-1, -1, -1, 0));
 
         /// <inheritdoc cref="Vector4.Load(float*)" />
         [Intrinsic]
@@ -1146,12 +1146,15 @@ namespace System.Numerics
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
         public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
-            var handler = new DefaultInterpolatedStringHandler(literalLength: 6, formattedCount: 3, formatProvider, stackalloc char[512]);
+            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
+            var handler = new DefaultInterpolatedStringHandler(literalLength: 4 + (separator.Length * 2), formattedCount: 3, formatProvider, stackalloc char[512]);
             handler.AppendLiteral("<");
             handler.AppendFormatted(X, format);
-            handler.AppendLiteral("; ");
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
             handler.AppendFormatted(Y, format);
-            handler.AppendLiteral("; ");
+            handler.AppendLiteral(separator);
+            handler.AppendLiteral(" ");
             handler.AppendFormatted(Z, format);
             handler.AppendLiteral(">");
             return handler.ToStringAndClear();

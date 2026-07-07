@@ -212,7 +212,7 @@ namespace System.Numerics
         /// <param name="y">The value to assign to the Y component of the quaternion.</param>
         /// <param name="z">The value to assign to the Z component of the quaternion.</param>
         /// <param name="w">The value to assign to the W component of the quaternion.</param>
-        /// <returns>A <see cref="Quaternion" /> created from the specified components.</returns>>
+        /// <returns>A <see cref="Quaternion" /> created from the specified components.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Create(float x, float y, float z, float w) => Vector128.Create(x, y, z, w).AsQuaternion();
