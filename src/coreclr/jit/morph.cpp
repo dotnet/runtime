@@ -12700,6 +12700,21 @@ GenTree* Compiler::fgMorphTree(GenTree* tree)
             {
                 use.SetNode(fgMorphTree(use.GetNode()));
                 tree->gtFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
+
+                // A whole read of a promoted SIMD local is not a supported
+                // GT_FIELD_LIST operand. Preserve the post-morph promoted-struct
+                // invariant (see fgMorphHWIntrinsic) by marking it do-not-enregister
+                // (dependent promotion). Restrict this to SIMD locals: a non-SIMD
+                // promoted struct is a legal FIELD_LIST operand and must keep its
+                // independent promotion.
+                //
+                GenTree* const operand = use.GetNode();
+                if (operand->OperIs(GT_LCL_VAR) && varTypeIsSIMD(operand) &&
+                    lvaGetDesc(operand->AsLclVar())->lvPromoted)
+                {
+                    lvaSetVarDoNotEnregister(operand->AsLclVar()->GetLclNum()
+                                                 DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));
+                }
             }
             break;
 
