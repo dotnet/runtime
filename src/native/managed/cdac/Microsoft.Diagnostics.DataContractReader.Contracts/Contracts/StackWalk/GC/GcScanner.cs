@@ -340,12 +340,17 @@ internal class GcScanner
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
         RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
-        // TODO(https://github.com/dotnet/runtime/issues/130008): extend ICallingConvention.TryComputeArgGCRefMapBlob
-        // coverage to non-Windows / ARM targets (SystemV-AMD64 / ARM64 struct-in-register classification, ARM32 ABI
-        // port) so this path is taken on those targets too instead of deferring to RecordDeferredFrame.
+        // Matches the ARGITER stress-test gate in CdacStressTests.cs. Platforms
+        // still missing calling-convention coverage (SystemV-AMD64 / RISC-V /
+        // LoongArch / WASM) fall through to RecordDeferredFrame.
+        // TODO(https://github.com/dotnet/runtime/issues/130008): extend
+        // ICallingConvention.TryComputeArgGCRefMapBlob coverage to the
+        // remaining targets so this path fires everywhere.
         bool supportedByCallingConvention =
-            os is RuntimeInfoOperatingSystem.Windows
-            && arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64;
+            (os is RuntimeInfoOperatingSystem.Windows
+                && arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64 or RuntimeInfoArchitecture.Arm64)
+            || (os is RuntimeInfoOperatingSystem.Unix
+                && arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64);
 
         if (!supportedByCallingConvention)
         {

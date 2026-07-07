@@ -582,14 +582,6 @@ namespace Internal.JitInterface
                 return true;
             }
 
-            // Currently crossgen2 does not support compiling async versions of synchronous Task-returning functions.
-            // We would compile a wrapper thunk but that comes with different perf characteristics and diagnostics
-            // that we do not want to deal with.
-            if (methodNeedingCode.SupportsAsyncVersionCodegen())
-            {
-                return true;
-            }
-
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
                 return true;

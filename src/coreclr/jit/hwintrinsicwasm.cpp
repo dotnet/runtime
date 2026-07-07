@@ -76,6 +76,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
+    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
+
+    if (isa == InstructionSet_Vector)
+    {
+        return impXplatIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, retType, simdSize,
+                                 mustExpand);
+    }
+
     assert(varTypeIsArithmetic(simdBaseType));
 
     GenTree* retNode = nullptr;
@@ -84,15 +92,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_Vector128_GetElement:
-        case NI_Vector128_WithElement:
-        {
-            // Vector128.GetElement / WithElement have valid managed implementations in
-            // Vector128.cs. Return nullptr to let the importer fall back to those rather
-            // than asserting / NYI'ing in the JIT.
-            return nullptr;
-        }
-
         // The following PackedSimd intrinsics are not yet implemented on WASM. Because they are must-expand,
         // when we return nullptr here the importer will insert a PlatformNotSupportedException throw.
         case NI_PackedSimd_CompareGreaterThan:
@@ -153,12 +152,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_PackedSimd_Splat:
             break;
-
-        case NI_Vector128_Create:
-        {
-            retNode = impSimdCreate(intrinsic, sig, simdBaseType, retType, simdSize);
-            break;
-        }
 
         default:
         {
