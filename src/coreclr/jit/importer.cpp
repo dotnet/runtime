@@ -5928,6 +5928,18 @@ checkForAwait:
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impMatchStlocLdloca:
+//   Match stloc followed by ldloca, and returne the local number if matched.
+//
+// Arguments:
+//   codeAddr    - IL pointer to first opcode
+//   codeEndp    - End of IL code stream
+//   lclNum      - [out] local variable number if matched
+//
+// Returns:
+//   True if the IL is a stloc followed by a ldloca; otherwise false.
+//
 bool Compiler::impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, unsigned* lclNum)
 {
     *lclNum          = BAD_VAR_NUM;
@@ -6027,6 +6039,19 @@ bool Compiler::impMatchStlocLdloca(const BYTE** codeAddr, const BYTE* codeEndp, 
     return true;
 }
 
+//------------------------------------------------------------------------
+// impMatchAsyncVersionTailCall:
+//   See if a call can be matched to be a tailcall in an async version.
+//
+// Arguments:
+//   codeAddr        - IL pointer to first opcode
+//   codeEndp        - End of IL code stream
+//   prefixFlags     - [out] flags indicating the presence of specific prefixes
+//   numBytesMatched - [out] number of bytes matched in the pattern
+//
+// Returns:
+//   True if the IL is a tailcall in an async version; otherwise false.
+//
 bool Compiler::impMatchAsyncVersionTailCall(const BYTE* codeAddr,
                                             const BYTE* codeEndp,
                                             int*        prefixFlags,
