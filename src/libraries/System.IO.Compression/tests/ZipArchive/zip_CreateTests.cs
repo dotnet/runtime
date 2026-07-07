@@ -67,8 +67,8 @@ namespace System.IO.Compression.Tests
         {
             // The high byte identifies the host system: 0 on Windows, 3 on Unix.
             int expectedHostSystem = OperatingSystem.IsWindows() ? 0 : 3;
-            // The low byte is the zip specification version; a new entry defaults to 1.0 (10).
-            const int DefaultZipVersion = 10;
+            // The low byte is the zip specification version;
+            const int DefaultZipVersion = 20;
 
             ZipArchive archive = await CreateZipArchive(async, new MemoryStream(), ZipArchiveMode.Create, leaveOpen: false);
             ZipArchiveEntry entry = archive.CreateEntry("file.txt");
