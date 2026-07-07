@@ -289,9 +289,19 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
     SetContextRegister(pContext, m_reg1Info.m_kRegNumber, highPart); // throws
     SetContextRegister(pContext, m_reg2Info.m_kRegNumber, lowPart); // throws
 
-    // update the frame's register display
-    void * valueAddress = (void *)(m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber));
-    memcpy(valueAddress, newValue.StartAddress(), newValue.Size());
+    // Update the frame's register display for each register individually.
+    // We must not do a single memcpy of the full value into reg1's address
+    // because the two registers may not be contiguous in the CONTEXT layout.
+    UINT_PTR * pReg1 = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
+    UINT_PTR * pReg2 = m_pFrame->GetAddressOfRegister(m_reg2Info.m_kRegNumber);
+    if (pReg1 != NULL)
+    {
+        *pReg1 = highPart;
+    }
+    if (pReg2 != NULL)
+    {
+        *pReg2 = lowPart;
+    }
 } // RegRegValueHome::SetEnregisteredValue
 
 // RegRegValueHome::GetEnregisteredValue

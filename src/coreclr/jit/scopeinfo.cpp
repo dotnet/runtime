@@ -652,7 +652,7 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             {
                 printf(STR_SPBASE "'[%d] (1 slot)", varLoc->vlStk.vlsOffset);
             }
-            if (varLoc->vlType == VLT_REG_BYREF)
+            if (varLoc->vlType == VLT_STK_BYREF)
             {
                 printf(" byref");
             }
