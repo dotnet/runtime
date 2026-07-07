@@ -463,7 +463,6 @@ void emitter::emitIns_V128Imm(instruction ins, const uint8_t bytes[16])
 //
 // Arguments:
 //   ins     - instruction (e.g., INS_i8x16_extract_lane_s)
-//   attr    - emit attribute indicating the lane element size
 //   laneIdx - lane index byte
 //
 void emitter::emitIns_Lane(instruction ins, uint8_t laneIdx)

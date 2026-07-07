@@ -872,10 +872,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 for (int i = 1; i <= node->GetOperandCount(); i++)
                 {
                     GenTree* op = node->Op(i);
-                    JITDUMP(
-                        "Lowering: Marking operand [%06u] as multiply-used for HWIntrinsic with non-constant immediate\n",
-                        Compiler::dspTreeID(op));
-                    m_compiler->gtDispTree(op);
                     SetMultiplyUsed(op DEBUGARG("Non-constant imm op needs jump table fallback"));
                 }
             }
