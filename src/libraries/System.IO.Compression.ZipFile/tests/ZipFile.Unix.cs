@@ -115,6 +115,36 @@ namespace System.IO.Compression.Tests
             }).Dispose();
         }
 
+        [Fact]
+        public void UnixExtractIgnoresUnixPermissionBitsForWindowsMadeEntries()
+        {
+            const string permissions = "777";
+
+            string archivePath = GetTestFilePath();
+            using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
+            using (ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry("file.txt");
+                entry.ExternalAttributes = Convert.ToInt32(permissions, 8) << 16;
+                using Stream stream = entry.Open();
+                stream.Write("contents"u8);
+            }
+
+            SetFirstEntryVersionMadeByPlatform(archivePath, windowsPlatform: 0);
+
+            string expectedPermissions = GetExpectedPermissions(expectedPermissions: null);
+
+            using var tempFolder = new TempDirectory(GetTestFilePath());
+            ZipFile.ExtractToDirectory(archivePath, tempFolder.Path);
+
+            string filename = Path.Combine(tempFolder.Path, "file.txt");
+            Assert.True(File.Exists(filename));
+
+            Interop.Sys.FileStatus status;
+            Assert.Equal(0, Interop.Sys.Stat(filename, out status));
+            Assert.Equal(Convert.ToInt32(expectedPermissions, 8), status.Mode & 0xFFF);
+        }
+
         private static string[] CreateFiles(string folderPath, string[] testPermissions)
         {
             string[] expectedPermissions = new string[testPermissions.Length];
@@ -213,7 +243,18 @@ namespace System.IO.Compression.Tests
             await Assert.ThrowsAsync<IOException>(() => CallZipFileCreateFromDirectory(async, subFolderPath, destPath));
         }
 
-        private static string GetExpectedPermissions(string expectedPermissions)
+        private static void SetFirstEntryVersionMadeByPlatform(string archivePath, byte windowsPlatform)
+        {
+            byte[] archiveBytes = File.ReadAllBytes(archivePath);
+            int centralDirectoryHeaderIndex = archiveBytes.AsSpan().IndexOf([0x50, 0x4B, 0x01, 0x02]);
+            Assert.True(centralDirectoryHeaderIndex >= 0);
+
+            // version made by is a little-endian ushort; upper byte is the platform.
+            archiveBytes[centralDirectoryHeaderIndex + 5] = windowsPlatform;
+            File.WriteAllBytes(archivePath, archiveBytes);
+        }
+
+        private static string GetExpectedPermissions(string? expectedPermissions)
         {
             using (var tempFolder = new TempDirectory())
             {
