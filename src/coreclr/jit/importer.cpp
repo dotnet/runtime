@@ -5930,12 +5930,12 @@ checkForAwait:
 
 //------------------------------------------------------------------------
 // impMatchStlocLdloca:
-//   Match stloc followed by ldloca, and returne the local number if matched.
+//   Match stloc followed by ldloca, and return the local number if matched.
 //
 // Arguments:
-//   codeAddr    - IL pointer to first opcode
-//   codeEndp    - End of IL code stream
-//   lclNum      - [out] local variable number if matched
+//   codeAddr - IL pointer to first opcode
+//   codeEndp - End of IL code stream
+//   lclNum   - [out] local variable number if matched
 //
 // Returns:
 //   True if the IL is a stloc followed by a ldloca; otherwise false.
@@ -6141,6 +6141,8 @@ bool Compiler::impMatchAsyncVersionTailCall(const BYTE* codeAddr,
 
         if (info.compRetType != TYP_VOID)
         {
+            // Since we validated above that this instance is being returned
+            // this can only be ValueTask<T> at this point.
             assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
             CORINFO_CLASS_HANDLE paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
             if (paramClass == sig.sigInst.classInst[0])
