@@ -472,7 +472,7 @@ static void EmitCrashInfo(const CrashInfoWriter& writer, UINT exitCode, LPCWSTR 
         {
             writer.Write("Process terminated.\n");
         }
-        else
+        else if (exitCode != (UINT)COR_E_STACKOVERFLOW)
         {
             writer.Write("Fatal error.\n");
         }
@@ -1155,9 +1155,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         // RunDefaultHandler — write crash info to stderr and proceed with
         // default fatal handling (Watson, crash dump, etc.).
-        STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogInfoForFatalError\n");
-        LogInfoForFatalError(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 
