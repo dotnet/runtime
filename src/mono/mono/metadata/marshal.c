@@ -3487,13 +3487,13 @@ MONO_DISABLE_WARNING (4310) // cast truncates constant value
 MONO_RESTORE_WARNING
 
 	if ((*value_start & 0x80) == 0) {
-		if (value_start + 1 > end)
+		if (value_start + 1 >= end)
 			return FALSE;
 	} else if ((*value_start & 0xC0) == 0x80) {
-		if (value_start + 2 > end)
+		if (value_start + 2 >= end)
 			return FALSE;
 	} else if ((*value_start & 0xE0) == 0xC0) {
-		if (value_start + 4 > end)
+		if (value_start + 4 >= end)
 			return FALSE;
 	} else {
 		return FALSE;
@@ -3534,11 +3534,11 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		mono_error_assert_ok (error);
 		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
-				g_assertf (decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
+				g_assertf (decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute field %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
 				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
 				if (calling_conventions->len > 0) {
 					if (calling_conventions->len > 1)
-						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
+						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute field %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
 					// TODO: Support multiple conventions?
 					// System.Type values are stored in the primitive union member by load_cattr_value_noalloc.
 					MonoType *calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
