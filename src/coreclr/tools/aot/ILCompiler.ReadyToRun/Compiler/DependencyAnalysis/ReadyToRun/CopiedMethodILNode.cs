@@ -14,9 +14,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedMethodILNode : ObjectNode, ISymbolDefinitionNode
     {
-        // Throws NullReferenceException if the stripped body is encountered.
-        // Tiny header (0x0A: 2 bytes code size) + ldnull (0x14) + throw (0x7A).
-        private static readonly byte[] s_minimalILBody = [0x0A, 0x14, 0x7A];
+        // Sentinel body for stripped IL methods: tiny header (0x0A) + invalid opcode 0xFE 0x24.
+        // Invalid IL so it can never collide with a real method body.
+        private static readonly byte[] s_minimalILBody = [0x0A, 0xFE, 0x24];
 
         EcmaMethod _method;
 
