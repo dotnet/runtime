@@ -3450,6 +3450,252 @@ mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, Mon
 	//		 - Adjust the code above with 'anding' the attribute parameter value
 }
 
+#define MONO_MARSHAL_CATTR_TYPE_SYSTEM_TYPE 0x50
+#define MONO_MARSHAL_CATTR_TYPE_FIELD 0x53
+
+static guint16
+mono_marshal_read16 (const char *p)
+{
+	return (guint16)((guint8)p [0] | ((guint8)p [1] << 8));
+}
+
+static guint32
+mono_marshal_read32 (const char *p)
+{
+	return (guint32)((guint8)p [0] | ((guint8)p [1] << 8) | ((guint8)p [2] << 16) | ((guint8)p [3] << 24));
+}
+
+static gboolean
+mono_marshal_check_blob (const char *p, guint32 len, const char *end)
+{
+	return p <= end && (gsize)(end - p) >= len;
+}
+
+static gboolean
+mono_marshal_decode_blob_size (const char **p, const char *end, guint32 *size)
+{
+	if (!mono_marshal_check_blob (*p, 1, end))
+		return FALSE;
+
+	const guint8 first = (guint8)**p;
+	if ((first & 0x80) == 0) {
+		*size = first;
+		*p += 1;
+		return TRUE;
+	}
+
+	if ((first & 0xC0) == 0x80) {
+		if (!mono_marshal_check_blob (*p, 2, end))
+			return FALSE;
+
+		*size = ((guint32)(first & 0x3F) << 8) | (guint8)(*p) [1];
+		*p += 2;
+		return TRUE;
+	}
+
+	if ((first & 0xE0) == 0xC0) {
+		if (!mono_marshal_check_blob (*p, 4, end))
+			return FALSE;
+
+		*size = ((guint32)(first & 0x1F) << 24) | ((guint32)(guint8)(*p) [1] << 16) | ((guint32)(guint8)(*p) [2] << 8) | (guint8)(*p) [3];
+		*p += 4;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+mono_marshal_skip_ser_string (const char **p, const char *end)
+{
+	if (!mono_marshal_check_blob (*p, 1, end))
+		return FALSE;
+
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
+	if (**p == (char)0xFF) {
+		*p += 1;
+		return TRUE;
+	}
+MONO_RESTORE_WARNING
+
+	guint32 len;
+	if (!mono_marshal_decode_blob_size (p, end, &len))
+		return FALSE;
+	if (!mono_marshal_check_blob (*p, len, end))
+		return FALSE;
+
+	*p += len;
+	return TRUE;
+}
+
+static gboolean
+mono_marshal_skip_cattr_element_value (const char **p, const char *end, guint8 type)
+{
+	switch (type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		if (!mono_marshal_check_blob (*p, 1, end))
+			return FALSE;
+		*p += 1;
+		return TRUE;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		if (!mono_marshal_check_blob (*p, 2, end))
+			return FALSE;
+		*p += 2;
+		return TRUE;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		if (!mono_marshal_check_blob (*p, 4, end))
+			return FALSE;
+		*p += 4;
+		return TRUE;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		if (!mono_marshal_check_blob (*p, 8, end))
+			return FALSE;
+		*p += 8;
+		return TRUE;
+	case MONO_TYPE_STRING:
+	case MONO_MARSHAL_CATTR_TYPE_SYSTEM_TYPE:
+		return mono_marshal_skip_ser_string (p, end);
+	default:
+		return FALSE;
+	}
+}
+
+static gboolean
+mono_marshal_skip_cattr_named_arg_value (const char **p, const char *end, guint8 type, guint8 array_type)
+{
+	if (type != MONO_TYPE_SZARRAY)
+		return mono_marshal_skip_cattr_element_value (p, end, type);
+
+	if (!mono_marshal_check_blob (*p, 4, end))
+		return FALSE;
+
+	guint32 len = mono_marshal_read32 (*p);
+	*p += 4;
+	if (len == 0xFFFFFFFF)
+		return TRUE;
+
+	for (guint32 i = 0; i < len; ++i) {
+		if (!mono_marshal_skip_cattr_element_value (p, end, array_type))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
+mono_marshal_set_callconv_from_unmanaged_callers_only_attribute_data (MonoCustomAttrEntry *attr, MonoMethod *method, MonoMethodSignature *csig, MonoError *error)
+{
+	error_init (error);
+
+	const char *p = (const char*)attr->data;
+	const char *end = p + attr->data_size;
+
+	if (!mono_marshal_check_blob (p, 2, end) || mono_marshal_read16 (p) != 0x0001)
+		return FALSE;
+	p += 2;
+
+	MonoMethodSignature *sig = mono_method_signature_internal (attr->ctor);
+	if (sig->param_count != 0)
+		return FALSE;
+
+	if (!mono_marshal_check_blob (p, 2, end))
+		return FALSE;
+
+	guint16 num_named_args = mono_marshal_read16 (p);
+	p += 2;
+
+	for (guint16 i = 0; i < num_named_args; ++i) {
+		if (!mono_marshal_check_blob (p, 2, end))
+			return FALSE;
+
+		guint8 named_type = (guint8)*p++;
+		guint8 data_type = (guint8)*p++;
+		guint8 array_type = 0;
+
+		if (data_type == MONO_TYPE_SZARRAY) {
+			if (!mono_marshal_check_blob (p, 1, end))
+				return FALSE;
+			array_type = (guint8)*p++;
+		}
+
+		if ((data_type == MONO_TYPE_ENUM || (data_type == MONO_TYPE_SZARRAY && array_type == MONO_TYPE_ENUM)) && !mono_marshal_skip_ser_string (&p, end))
+			return FALSE;
+
+		guint32 name_len;
+		if (!mono_marshal_decode_blob_size (&p, end, &name_len))
+			return FALSE;
+		if (!mono_marshal_check_blob (p, name_len, end))
+			return FALSE;
+
+		const char *name = p;
+		p += name_len;
+
+		if (name_len != strlen ("CallConvs") || strncmp (name, "CallConvs", name_len) != 0) {
+			if (!mono_marshal_skip_cattr_named_arg_value (&p, end, data_type, array_type))
+				return FALSE;
+			continue;
+		}
+
+		if (named_type != MONO_MARSHAL_CATTR_TYPE_FIELD || data_type != MONO_TYPE_SZARRAY || array_type != MONO_MARSHAL_CATTR_TYPE_SYSTEM_TYPE)
+			return FALSE;
+		if (!mono_marshal_check_blob (p, 4, end))
+			return FALSE;
+
+		guint32 callconv_count = mono_marshal_read32 (p);
+		p += 4;
+		if (callconv_count == 0xFFFFFFFF)
+			continue;
+
+		if (callconv_count > 1)
+			g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter CallConvs, specified for method %s. Only the first calling convention will be taken into account", method->name);
+
+		for (guint32 callconv_index = 0; callconv_index < callconv_count; ++callconv_index) {
+			if (!mono_marshal_check_blob (p, 1, end))
+				return FALSE;
+
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
+			if (*p == (char)0xFF) {
+				p += 1;
+				continue;
+			}
+MONO_RESTORE_WARNING
+
+			guint32 type_name_len;
+			if (!mono_marshal_decode_blob_size (&p, end, &type_name_len))
+				return FALSE;
+			if (!mono_marshal_check_blob (p, type_name_len, end))
+				return FALSE;
+
+			if (callconv_index == 0) {
+				char *type_name = g_strndup (p, type_name_len);
+				MonoAssemblyLoadContext *alc = mono_image_get_alc (mono_defaults.corlib);
+				MonoType *callconv_type = mono_reflection_type_from_name_checked (type_name, alc, mono_defaults.corlib, error);
+				g_free (type_name);
+				return_val_if_nok (error, FALSE);
+
+				if (callconv_type)
+					mono_marshal_set_signature_callconv_from_attribute (csig, callconv_type, error);
+				return_val_if_nok (error, FALSE);
+			}
+
+			p += type_name_len;
+		}
+	}
+
+	return TRUE;
+}
+
+#undef MONO_MARSHAL_CATTR_TYPE_FIELD
+#undef MONO_MARSHAL_CATTR_TYPE_SYSTEM_TYPE
+
 static void
 mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *method, MonoMethodSignature *csig)
 {
@@ -3474,22 +3720,9 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 	}
 
 	if (attr != NULL) {
-		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
+		if (!mono_marshal_set_callconv_from_unmanaged_callers_only_attribute_data (attr, method, csig, error) && is_ok (error))
+			mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
 		mono_error_assert_ok (error);
-		for (int i = 0; i < decoded_args->named_args_num; ++i) {
-			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
-				g_assertf(decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
-				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
-				if (calling_conventions->len > 0) {
-					if (calling_conventions->len > 1)
-						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
-					// TODO: Support multiple conventions?
-					MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
-					mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
-				}
-			}
-		}
-		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 	}
 
 	if (!cinfo->cached)
