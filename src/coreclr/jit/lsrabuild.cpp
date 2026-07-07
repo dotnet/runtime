@@ -3087,6 +3087,11 @@ Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
     }
 #endif
 
+    if (!canHandle)
+    {
+        return nullptr;
+    }
+
     // Only coalesce a plain, single-register definition that feeds a parent use.
     if (tree->IsMultiRegNode() || tree->IsUnusedValue() || (tree->GetRegNum() != REG_NA))
     {
