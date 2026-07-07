@@ -1457,7 +1457,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                 break;
             }
 
-            // If Threads is stopped under a managed debugger, it will have both
+            // If a thread is stopped under a managed debugger, it will have both
             // TS_DebugSuspendPending and TS_DebugSyncSuspended, regardless of whether
             // the thread is actually suspended or not.
             if (m_State & TS_DebugSyncSuspended)
