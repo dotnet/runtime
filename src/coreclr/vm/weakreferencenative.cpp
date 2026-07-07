@@ -95,7 +95,7 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
     IWeakReference* pWeakReference = nullptr;
     BEGIN_QCALL;
 
-    SafeComHolderPreemp<IWeakReferenceSource> pWeakReferenceSource;
+    SafeComHolderAny<IWeakReferenceSource> pWeakReferenceSource;
 
     {
         // COM helpers assume COOP mode and the arguments are protected refs.
