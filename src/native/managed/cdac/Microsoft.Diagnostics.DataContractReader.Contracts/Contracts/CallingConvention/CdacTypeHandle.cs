@@ -127,16 +127,9 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         if (_typeHandle.IsNull)
             return;
 
-        // The runtime pre-computes the eightbyte classification for every managed
-        // value type at MethodTable construction and caches it in
-        // EEClass::m_eightByteRegistersInfo (inside EEClassOptionalFields). We
-        // read that cached descriptor instead of re-classifying, mirroring
-        // jitinterface.cpp::SystemVRegDescriptorFromSystemVEightByteRegistersInfo.
-        //
-        // The runtime only allocates m_eightByteRegistersInfo on UNIX_AMD64_ABI
-        // builds; on other targets the field is absent from the
-        // EEClassOptionalFields descriptor and EightByteRegistersInfo below is
-        // null.
+        // Read the runtime-cached classification from EEClassOptionalFields;
+        // mirrors SystemVRegDescriptorFromSystemVEightByteRegistersInfo in
+        // jitinterface.cpp. Field only populated on UNIX_AMD64_ABI builds.
         TargetPointer eeClassPtr = Rts.GetClassPointer(_typeHandle);
         if (eeClassPtr == TargetPointer.Null)
             return;
@@ -147,12 +140,12 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
         Data.EEClassOptionalFields optFields = _target.ProcessedData.GetOrAdd<Data.EEClassOptionalFields>(eeClass.OptionalFields);
         if (optFields.EightByteRegistersInfo is not Data.SystemVEightByteRegistersInfo info)
-            return; // Non-Unix-x64 target: descriptor doesn't include this field.
+            return;
 
         if (info.NumEightBytes == 0)
-            return; // Runtime marked this struct as not-enregisterable.
+            return;
 
-        Debug.Assert(info.NumEightBytes <= 2, "SystemV descriptor never encodes more than 2 eightbytes");
+        Debug.Assert(info.NumEightBytes <= 2);
 
         descriptor.passedInRegisters = true;
         descriptor.eightByteCount = info.NumEightBytes;
@@ -160,10 +153,6 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         descriptor.eightByteSizes0 = info.EightByteSizes[0];
         descriptor.eightByteOffsets0 = 0;
 
-        // Slots beyond NumEightBytes are undefined in the runtime's cached
-        // SystemVEightByteRegistersInfo. Only populate the second slot when
-        // it's actually in use; mirrors
-        // jitinterface.cpp::SystemVRegDescriptorFromSystemVEightByteRegistersInfo.
         if (info.NumEightBytes > 1)
         {
             descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassifications[1];

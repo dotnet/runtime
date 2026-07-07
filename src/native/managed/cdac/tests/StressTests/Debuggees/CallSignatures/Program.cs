@@ -539,55 +539,46 @@ internal static unsafe class Program
     [MethodImpl(MethodImplOptions.NoInlining)] private static void VecNumericsFloatArg(Vector<float> v) { AllocBurst(); GC.KeepAlive((object)v[0]); }
 
     // ===== Category 13: SystemV-AMD64 struct-in-register shapes =====
-    // Exercises SystemV-AMD64 struct classification. On non-Unix-x64 targets
-    // these methods still run but the cDAC has no cached eightbyte descriptor
-    // to read (it lives in EEClassOptionalFields only on UNIX_AMD64_ABI
-    // builds), so GetSystemVAmd64PassStructInRegisterDescriptor returns "not
-    // in registers" -- the runtime and cDAC agree via other paths and no
-    // divergence surfaces. On Linux/macOS x64 the runtime pre-computes the
-    // eightbyte classification at MethodTable-build time and the cDAC reads
-    // that cached SystemVEightByteRegistersInfo to decide FP-reg vs GP-reg
-    // vs stack placement, so ArgIterator produces different GCRefMap tokens
-    // depending on which eightbytes end up in which register class.
+    // On non-Unix-x64 targets the cDAC's descriptor is absent so classification
+    // returns "not in registers" and the runtime path agrees trivially. Linux/
+    // macOS x64 read the cached SystemVEightByteRegistersInfo and produce
+    // different GCRefMap tokens per eightbyte classification.
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void SysVCategory()
     {
         // Single-eightbyte shapes.
-        SysVIntPair(default);           // 8 bytes, Integer eightbyte
-        SysVFloatPair(default);         // 8 bytes, SSE eightbyte
-        SysVIntFloat(default);          // 8 bytes, mixed -> Integer eightbyte (Integer wins)
-        SysVSingleRef(default);         // 8 bytes, IntegerReference eightbyte
+        SysVIntPair(default);           // Integer
+        SysVFloatPair(default);         // SSE
+        SysVIntFloat(default);          // mixed -> Integer (Integer wins)
+        SysVSingleRef(default);         // IntegerReference
 
         // Two-eightbyte shapes.
-        SysVLongLong(default);          // 16 bytes, Integer + Integer
-        SysVLongDouble(default);        // 16 bytes, Integer + SSE
-        SysVDoubleDouble(default);      // 16 bytes, SSE + SSE
-        SysVRefInt(default);            // 16 bytes, IntegerReference + Integer
+        SysVLongLong(default);          // Integer + Integer
+        SysVLongDouble(default);        // Integer + SSE
+        SysVDoubleDouble(default);      // SSE + SSE
+        SysVRefInt(default);            // IntegerReference + Integer
 
-        // Nested value type.
-        SysVNested(default);            // outer wraps inner-struct + int
+        SysVNested(default);            // nested value type
 
-        // ByRefLike passed as struct on SystemV.
+        // Span<byte>: IntegerByRef + Integer.
         Span<byte> sp = stackalloc byte[8];
-        SysVSpanByte(sp);               // Span<byte>: IntegerByRef + Integer
+        SysVSpanByte(sp);
 
         SysVThreeRefs(default);         // 24 bytes -> stack
         SysVVector128Arg(default);      // intrinsic Vector -> stack
-        SysVInt128Arg(default);         // 2 Integer eightbytes (runtime does NOT reject Int128 by name)
-        SysVEmpty(default);             // 1-byte empty struct -> 1 Integer eightbyte (padding is normalized to Integer)
+        SysVInt128Arg(default);         // 2 Integer eightbytes (runtime doesn't reject Int128 by name)
+        SysVEmpty(default);             // 1-byte empty -> 1 Integer eightbyte (NoClass normalized to Integer)
+        // SSE + IntegerReference: ref goes in RDI, not RSI -- SSE eightbytes
+        // don't advance the general-register cursor.
+        SysVDoubleRef(default);
 
-        // Unions (LayoutKind.Explicit with overlapping fields). Exercises
-        // the ReClassifyField merge path in the classifier. C# rules forbid
-        // mixing GC refs with non-refs at the same offset, so the only
-        // legal overlaps are Integer/Integer, SSE/SSE, or Integer/SSE (both
-        // primitive kinds).
-        SysVIntFloatUnion(default);     // int + float at offset 0 -> Integer eightbyte
-        SysVIntIntUnion(default);       // int + int at offset 0 -> Integer eightbyte
+        // Unions (LayoutKind.Explicit) -- exercises the classifier's merge path.
+        SysVIntFloatUnion(default);     // int + float @ 0 -> Integer
+        SysVIntIntUnion(default);       // int + int @ 0 -> Integer
 
-        // Unaligned sub-eightbyte and single-field wrappers.
-        SysVSmall(default);             // { int a; byte b; } -> 1 Integer eightbyte (unaligned tail)
-        SysVWrapInt(default);           // { int a; } single-field wrapper -> 1 Integer eightbyte
+        SysVSmall(default);             // { int a; byte b; } -> Integer (unaligned tail)
+        SysVWrapInt(default);           // { int a; } single-field wrapper
     }
 
     // ---- SystemV struct shapes ----
@@ -599,6 +590,7 @@ internal static unsafe class Program
     private struct LongDouble { public long A; public double B; }
     private struct DoubleDouble { public double A, B; }
     private struct RefInt { public object? R; public long Padding; }
+    private struct DoubleRef { public double D; public object? R; }
     private struct SysVNestedStruct { public IntPair Inner; public int Trailing; }
     private struct SysVThreeRefsStruct { public object? R1, R2, R3; }
     private struct Int128Wrapper { public System.Int128 V; }
@@ -632,6 +624,7 @@ internal static unsafe class Program
     [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVLongDouble(LongDouble s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
     [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVDoubleDouble(DoubleDouble s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
     [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVRefInt(RefInt s) { AllocBurst(); GC.KeepAlive(s.R); GC.KeepAlive((object)s.Padding); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVDoubleRef(DoubleRef s) { AllocBurst(); GC.KeepAlive(s.R); GC.KeepAlive((object)s.D); }
     [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVNested(SysVNestedStruct s) { AllocBurst(); GC.KeepAlive((object)(s.Inner.A + s.Trailing)); }
     [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVSpanByte(Span<byte> s) { AllocBurst(); GC.KeepAlive((object)s.Length); }
     [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVThreeRefs(SysVThreeRefsStruct s) { AllocBurst(); GC.KeepAlive(s.R1); GC.KeepAlive(s.R2); GC.KeepAlive(s.R3); }

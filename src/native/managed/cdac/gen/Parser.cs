@@ -359,13 +359,8 @@ internal static class Parser
         }
         else if (ImplementsIData(type) && prop.NullableAnnotation == NullableAnnotation.Annotated)
         {
-            // Nullable reference-type annotation on an IData<T> sub-typed
-            // field (e.g. `IDataT? Foo`). Treated the same as optional:
-            // emitter guards the descriptor lookup with ContainsKey and
-            // assigns default (null) when absent. Only IData sub-types
-            // participate; non-IData reference-typed [Field]s aren't a
-            // real scenario today and staying narrow here avoids silently
-            // making them optional.
+            // IData<T>? field: emitter treats it as optional (ContainsKey
+            // guard + default(null) when the descriptor omits the field).
             isNullable = true;
         }
 
