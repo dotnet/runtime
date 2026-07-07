@@ -61,26 +61,6 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(cdaclite PRIVATE ${CDACLITE_LIBRARIES})
 
-# Optimize cdac-lite for binary size: the whole point of cdac-lite is to be a small,
-# standalone native package. Favor size over speed for the cdac-lite-specific targets
-# (the shared coreclr static libs it links keep their default optimization).
-if(CLR_CMAKE_HOST_WIN32)
-    set(CDACLITE_SIZE_COMPILE_OPTS /O1 /Gw /Gy)
-    set(CDACLITE_SIZE_LINK_OPTS "/OPT:REF /OPT:ICF")
-elseif(CLR_CMAKE_HOST_APPLE)
-    # Apple's ld does not understand --gc-sections; the equivalent is -dead_strip.
-    set(CDACLITE_SIZE_COMPILE_OPTS -Os -ffunction-sections -fdata-sections)
-    set(CDACLITE_SIZE_LINK_OPTS "-Wl,-dead_strip")
-else()
-    set(CDACLITE_SIZE_COMPILE_OPTS -Os -ffunction-sections -fdata-sections)
-    set(CDACLITE_SIZE_LINK_OPTS "-Wl,--gc-sections")
-endif()
-
-foreach(_cdaclite_target cdaclite cdacgc cdacdata cdacjson)
-    target_compile_options(${_cdaclite_target} PRIVATE ${CDACLITE_SIZE_COMPILE_OPTS})
-endforeach()
-set_property(TARGET cdaclite APPEND_STRING PROPERTY LINK_FLAGS " ${CDACLITE_SIZE_LINK_OPTS}")
-
 install_clr(TARGETS cdaclite DESTINATIONS . sharedFramework COMPONENT debug)
 
 # Standalone test harness (Windows-only): drives cdaclite against a live process.
