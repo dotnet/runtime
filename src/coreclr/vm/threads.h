@@ -491,11 +491,9 @@ public:
     // If we are trying to suspend a thread, we set the appropriate pending bit to
     // indicate why we want to suspend it (TS_AbortRequested or TS_DebugSuspendPending).
     //
-    // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
-    // this with TS_SyncSuspended.  However, we need to know whether the synchronous
-    // suspension is for a user request, or for an internal one (GC & Debug).  That's
-    // because a user request is not allowed to resume a thread suspended for
-    // debugging or GC.  -- That's not stricly true.  It is allowed to resume such a
+    // If instead the thread has blocked itself, via WaitForDebugSuspend, we indicate
+    // this with TS_DebugSyncSuspended.  A user request is not allowed to resume a thread
+    // suspended for debugging.  -- That's not stricly true.  It is allowed to resume such a
     // thread so long as it was ALSO suspended by the user.  In other words, this
     // ensures that user resumptions aren't unbalanced from user suspensions.
     //
@@ -538,7 +536,7 @@ public:
 
         // unused                 = 0x00040000,
 
-        TS_SyncSuspended          = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request. [cDAC] [Thread]: Contract depends on this value.
+        TS_DebugSyncSuspended     = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request. [cDAC] [Thread]: Contract depends on this value.
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync. [cDAC] [Thread]: Contract depends on this value.
 
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
@@ -2421,8 +2419,8 @@ private:
 
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
-    void    WaitSuspendEvents();
-    BOOL    WaitSuspendEventsHelper(void);
+    void    WaitForDebugSuspend();
+    BOOL    WaitForDebugSuspendHelper(void);
 
     // Helpers to ensure that the bits for suspension and the number of active
     // traps remain coordinated.
@@ -2455,7 +2453,7 @@ private:
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_DebugSyncSuspended));
 
             if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {

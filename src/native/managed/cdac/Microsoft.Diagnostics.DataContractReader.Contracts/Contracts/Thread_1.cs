@@ -33,7 +33,7 @@ internal readonly struct Thread_1 : IThread
         InSTA = 0x4000,
         InMTA = 0x8000,
         Stopped = 0x10000,
-        SyncSuspended = 0x80000,
+        DebugSyncSuspended = 0x80000,
         DebugWillSync = 0x100000,
         ThreadPoolWorker = 0x1000000,
         WaitSleepJoin = 0x2000000,
@@ -109,8 +109,8 @@ internal readonly struct Thread_1 : IThread
             result |= Contracts.ThreadState.InMTA;
         if (state.HasFlag(ThreadState_1.Stopped))
             result |= Contracts.ThreadState.Stopped;
-        if (state.HasFlag(ThreadState_1.SyncSuspended))
-            result |= Contracts.ThreadState.SyncSuspended;
+        if (state.HasFlag(ThreadState_1.DebugSyncSuspended))
+            result |= Contracts.ThreadState.DebugSyncSuspended;
         if (state.HasFlag(ThreadState_1.DebugWillSync))
             result |= Contracts.ThreadState.DebugWillSync;
         if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
