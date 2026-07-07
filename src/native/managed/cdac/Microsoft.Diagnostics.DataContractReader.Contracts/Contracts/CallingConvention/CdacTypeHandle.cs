@@ -121,8 +121,48 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public void GetSystemVAmd64PassStructInRegisterDescriptor(out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor)
     {
-        throw new NotImplementedException("SystemV AMD64 struct-in-registers is not yet supported by the cDAC.");
+        descriptor = default;
+        descriptor.passedInRegisters = false;
+
+        if (_typeHandle.IsNull)
+            return;
+
+        // The runtime pre-computes the eightbyte classification for every managed
+        // value type at MethodTable construction and caches it in
+        // EEClass::m_eightByteRegistersInfo (inside EEClassOptionalFields). We
+        // read that cached descriptor instead of re-classifying, mirroring
+        // jitinterface.cpp::SystemVRegDescriptorFromSystemVEightByteRegistersInfo.
+        //
+        // The runtime only allocates m_eightByteRegistersInfo on UNIX_AMD64_ABI
+        // builds; on other targets the field is absent from the
+        // EEClassOptionalFields descriptor and EightByteRegistersInfo below is
+        // null.
+        TargetPointer eeClassPtr = Rts.GetClassPointer(_typeHandle);
+        if (eeClassPtr == TargetPointer.Null)
+            return;
+
+        Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
+        if (eeClass.OptionalFields == TargetPointer.Null)
+            return;
+
+        Data.EEClassOptionalFields optFields = _target.ProcessedData.GetOrAdd<Data.EEClassOptionalFields>(eeClass.OptionalFields);
+        if (optFields.EightByteRegistersInfo is not Data.SystemVEightByteRegistersInfo info)
+            return; // Non-Unix-x64 target: descriptor doesn't include this field.
+
+        if (info.NumEightBytes == 0)
+            return; // Runtime marked this struct as not-enregisterable.
+
+        descriptor.passedInRegisters = true;
+        descriptor.eightByteCount = info.NumEightBytes;
+        descriptor.eightByteClassifications0 = (SystemVClassificationType)info.EightByteClassifications[0];
+        descriptor.eightByteSizes0 = info.EightByteSizes[0];
+        descriptor.eightByteOffsets0 = 0;
+        descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassifications[1];
+        descriptor.eightByteSizes1 = info.EightByteSizes[1];
+        descriptor.eightByteOffsets1 = SystemVEightByteSizeInBytes;
     }
+
+    private const int SystemVEightByteSizeInBytes = 8;
 
     public FpStructInRegistersInfo GetFpStructInRegistersInfo(Internal.TypeSystem.TargetArchitecture architecture)
     {

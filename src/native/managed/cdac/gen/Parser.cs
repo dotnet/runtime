@@ -357,6 +357,15 @@ internal static class Parser
             isNullable = true;
             type = named.TypeArguments[0];
         }
+        else if (type.IsReferenceType && prop.NullableAnnotation == NullableAnnotation.Annotated)
+        {
+            // Nullable reference type annotation (e.g. `IDataT? Foo`). Only
+            // meaningful for IData<T> sub-typed fields; primitive fields use
+            // Nullable<T> above. Treated the same as optional: emitter guards
+            // the descriptor lookup with ContainsKey and assigns default (null)
+            // when absent.
+            isNullable = true;
+        }
 
         string fqn = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 

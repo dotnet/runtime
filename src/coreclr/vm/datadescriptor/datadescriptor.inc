@@ -572,7 +572,24 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumStaticFields, cdac_data<EEClass>::NumStati
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
+CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(EEClassOptionalFields)
+CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_FIELD(EEClassOptionalFields, TYPE(SystemVEightByteRegistersInfo), EightByteRegistersInfo, cdac_data<EEClassOptionalFields>::EightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
+CDAC_TYPE_END(EEClassOptionalFields)
+
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_BEGIN(SystemVEightByteRegistersInfo)
+CDAC_TYPE_INDETERMINATE(SystemVEightByteRegistersInfo)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, NumEightBytes, cdac_data<SystemVEightByteRegistersInfo>::NumEightBytes)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassifications, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassifications)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSizes, cdac_data<SystemVEightByteRegistersInfo>::EightByteSizes)
+CDAC_TYPE_END(SystemVEightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)

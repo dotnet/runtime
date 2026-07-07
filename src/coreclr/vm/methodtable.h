@@ -921,6 +921,15 @@ public:
         _ASSERTE(index < NumEightBytes);
         return EightByteSizes[index];
     }
+
+    friend struct ::cdac_data<SystemVEightByteRegistersInfo>;
+};
+
+template<> struct cdac_data<SystemVEightByteRegistersInfo>
+{
+    static constexpr size_t NumEightBytes = offsetof(SystemVEightByteRegistersInfo, NumEightBytes);
+    static constexpr size_t EightByteClassifications = offsetof(SystemVEightByteRegistersInfo, EightByteClassifications);
+    static constexpr size_t EightByteSizes = offsetof(SystemVEightByteRegistersInfo, EightByteSizes);
 };
 #endif
 
