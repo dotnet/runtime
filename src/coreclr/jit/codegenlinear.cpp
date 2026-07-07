@@ -1432,7 +1432,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                         unreached();
                 }
 #else  // TARGET_ARM64
-                // The arm64 genSetRegToConst honors the explicit target register for every operator.
+       // The arm64 genSetRegToConst honors the explicit target register for every operator.
                 genSetRegToConst(dstReg, unspillTree->TypeGet(), unspillTree);
 #endif // TARGET_XARCH
 
@@ -1522,8 +1522,7 @@ bool CodeGen::isRematerializableConstant(GenTree* tree)
                     emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE)) ||
                    (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
                     emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE)) ||
-                   (ElementsAreSame(val.i8, is8 ? 8 : 16) &&
-                    emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE));
+                   (ElementsAreSame(val.i8, is8 ? 8 : 16) && emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE));
         }
 #endif // FEATURE_SIMD
 
