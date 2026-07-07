@@ -3539,7 +3539,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 					if (calling_conventions->len > 1)
 						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
 					// TODO: Support multiple conventions?
-					MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
+					MonoType *calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
 					mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
 				}
 			}
