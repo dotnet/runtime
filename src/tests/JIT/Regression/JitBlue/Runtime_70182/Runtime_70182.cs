@@ -12,7 +12,6 @@
 
 namespace Runtime_70182;
 
-using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;

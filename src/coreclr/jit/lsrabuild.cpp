@@ -3062,10 +3062,24 @@ Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
         return nullptr;
     }
 
-    if (!tree->OperIs(GT_CNS_DBL) && !tree->OperIs(GT_CNS_VEC) && !tree->OperIs(GT_CNS_MSK))
+    bool canHandle = false;
+
+    if (tree->OperIs(GT_CNS_DBL))
     {
-        return nullptr;
+        canHandle = true;
     }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (tree->OperIs(GT_CNS_VEC))
+    {
+        canHandle = true;
+    }
+#endif
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    else if (tree->OperIs(GT_CNS_MSK))
+    {
+        canHandle = true;
+    }
+#endif
 
     // Only coalesce a plain, single-register definition that feeds a parent use.
     if (tree->IsMultiRegNode() || tree->IsUnusedValue() || (tree->GetRegNum() != REG_NA))

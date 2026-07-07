@@ -2013,10 +2013,10 @@ private:
     Interval*   getConstantIntervalForReuse(GenTree* tree);
     static bool areSameConstantNodes(GenTree* tree1, GenTree* tree2);
 
-    void         BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);
-    int          BuildCallArgUses(GenTreeCall* call);
-    void         BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates);
-    void         BuildKills(GenTree* tree, regMaskTP killMask);
+    void BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);
+    int  BuildCallArgUses(GenTreeCall* call);
+    void BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates);
+    void BuildKills(GenTree* tree, regMaskTP killMask);
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     void BuildDefWithKills(GenTree* tree, SingleTypeRegSet dstCandidates, regMaskTP killMask);
 #else
