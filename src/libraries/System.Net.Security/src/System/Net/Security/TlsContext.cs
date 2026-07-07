@@ -21,8 +21,11 @@ namespace System.Net.Security
     public sealed partial class TlsContext : IDisposable
     {
         private readonly SslAuthenticationOptions _options;
-        private readonly bool _ownsOptions;
-        private readonly bool _shareOptions;
+        // True when this context wraps an SslStream-owned options bag (wedge mode):
+        // sessions share the same bag by reference and TlsContext does not dispose it,
+        // does not allocate its own native context, and defers cred-handle lifetime to
+        // the wrapper. False for standalone contexts created via Create(...).
+        private readonly bool _isWedge;
         private readonly bool _templateHasServerOptions;
 
         // SChannel credentials handle (an SSPI CredHandle from AcquireCredentialsHandle).
@@ -32,11 +35,10 @@ namespace System.Net.Security
         // lives in TlsContext.OpenSsl.cs.
         internal SafeFreeCredentials? CredentialsHandle;
 
-        private TlsContext(SslAuthenticationOptions options, bool ownsOptions, bool shareOptions, bool templateHasServerOptions)
+        private TlsContext(SslAuthenticationOptions options, bool isWedge, bool templateHasServerOptions)
         {
             _options = options;
-            _ownsOptions = ownsOptions;
-            _shareOptions = shareOptions;
+            _isWedge = isWedge;
             _templateHasServerOptions = templateHasServerOptions;
         }
 
@@ -50,7 +52,7 @@ namespace System.Net.Security
 
         // True when sessions should reuse the context's options bag directly (wedge mode).
         // False when each session must take a private clone before mutating any field.
-        internal bool ShareOptions => _shareOptions;
+        internal bool ShareOptions => _isWedge;
 
         // True if the template was constructed with non-null server options. Sessions seed
         // their own per-session HasServerOptions from this and flip it in SetServerContext.
@@ -64,7 +66,7 @@ namespace System.Net.Security
         // onto the returned bag so the PAL can reuse it across sessions.
         internal SslAuthenticationOptions CreateSessionOptions()
         {
-            SslAuthenticationOptions sessionOptions = _shareOptions ? _options : _options.Clone();
+            SslAuthenticationOptions sessionOptions = _isWedge ? _options : _options.Clone();
             sessionOptions.ForceSyncPal = true;
             AttachSharedNativeContext(sessionOptions);
             return sessionOptions;
@@ -98,11 +100,11 @@ namespace System.Net.Security
             if (options is null)
             {
                 bag.IsServer = true;
-                return new TlsContext(bag, ownsOptions: true, shareOptions: false, templateHasServerOptions: false);
+                return new TlsContext(bag, isWedge: false, templateHasServerOptions: false);
             }
 
             bag.UpdateOptions(options);
-            return new TlsContext(bag, ownsOptions: true, shareOptions: false, templateHasServerOptions: true);
+            return new TlsContext(bag, isWedge: false, templateHasServerOptions: true);
         }
 
         /// <summary>
@@ -122,7 +124,7 @@ namespace System.Net.Security
             ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();
             bag.UpdateOptions(options);
-            return new TlsContext(bag, ownsOptions: true, shareOptions: false, templateHasServerOptions: false);
+            return new TlsContext(bag, isWedge: false, templateHasServerOptions: false);
         }
 
         // Used by SslStream's TlsSession wedge: share the existing options bag so
@@ -131,12 +133,12 @@ namespace System.Net.Security
         internal static TlsContext WrapShared(SslAuthenticationOptions sharedOptions)
         {
             Debug.Assert(sharedOptions != null);
-            return new TlsContext(sharedOptions, ownsOptions: false, shareOptions: true, templateHasServerOptions: sharedOptions.IsServer);
+            return new TlsContext(sharedOptions, isWedge: true, templateHasServerOptions: sharedOptions.IsServer);
         }
 
         public void Dispose()
         {
-            if (_ownsOptions)
+            if (!_isWedge)
             {
                 CredentialsHandle?.Dispose();
                 CredentialsHandle = null;

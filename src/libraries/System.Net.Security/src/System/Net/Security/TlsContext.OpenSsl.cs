@@ -23,7 +23,7 @@ namespace System.Net.Security
         {
             // Wedge mode reuses SslStream's existing per-handshake SSL_CTX caching path;
             // don't allocate a TlsContext-owned SSL_CTX that would conflict with it.
-            if (!_ownsOptions)
+            if (_isWedge)
             {
                 return;
             }
