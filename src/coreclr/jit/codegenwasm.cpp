@@ -2879,7 +2879,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 if (callRetType == TYP_REF && sigInfoCall->retType == CORINFO_TYPE_VOID &&
                     sigInfoCall->callConv == CORINFO_CALLCONV_HASTHIS)
                 {
-                    const unsigned methodFlags = m_compiler->info.compCompHnd->getMethodAttribs(params.methHnd);
+                    const unsigned       methodFlags = m_compiler->info.compCompHnd->getMethodAttribs(params.methHnd);
                     CORINFO_CLASS_HANDLE stringClass = m_compiler->info.compCompHnd->getBuiltinClass(CLASSID_STRING);
 
                     if ((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0 && (stringClass != NO_CLASS_HANDLE) &&
