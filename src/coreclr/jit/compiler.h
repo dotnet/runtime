@@ -7781,7 +7781,7 @@ protected:
     void optPrintCSEDataFlowSet(EXPSET_VALARG_TP cseDataFlowSet, bool includeBits = true);
 
     EXPSET_TP cseCallKillsMask; // Computed once - A mask that is used to kill available CSEs at callsites
-    EXPSET_TP cseAsyncKillsMask; // Computed once - A mask that is used to kill available CSEs at async suspension points
+    EXPSET_TP cseAsyncKillsMask; // Computed once - A mask that is used to kill available BYREF CSEs at async suspension points
 
     static const size_t s_optCSEhashSizeInitial;
     static const size_t s_optCSEhashGrowthFactor;

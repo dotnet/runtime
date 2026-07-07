@@ -436,8 +436,6 @@ struct CSEdsc
     }
 
     void ComputeNumLocals(Compiler* compiler);
-
-    bool IsKilledAcrossAsyncSuspensions(Compiler* compiler);
 };
 
 //  The following class nested within CSE_Heuristic encapsulates the information

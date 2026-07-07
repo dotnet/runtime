@@ -465,79 +465,6 @@ void CSEdsc::ComputeNumLocals(Compiler* compiler)
     numLocalOccurrences = lcv.m_occurrences;
 }
 
-//---------------------------------------------------------------------------
-// IsKilledAcrossAsyncSuspensions:
-//   Check if this CSE is considered killed across async suspension.
-//
-// Arguments:
-//   compiler - compiler instance
-//
-// Returns:
-//   True for byref and helpers that return values dependent on current thread.
-//
-bool CSEdsc::IsKilledAcrossAsyncSuspensions(Compiler* compiler)
-{
-    GenTree* tree = csdTreeList.tslTree;
-    if (tree->TypeIs(TYP_BYREF))
-    {
-        return true;
-    }
-
-    if (tree->TypeIs(TYP_STRUCT))
-    {
-        ClassLayout* layout = tree->GetLayout(compiler);
-        if (layout->HasGCByRef())
-        {
-            return true;
-        }
-    }
-
-    // Handle static bases. Most are byref typed, so handled above, but some of
-    // these are native int typed (e.g. the pinned variants).
-    ValueNum vn = tree->gtVNPair.GetLiberal();
-    vn = compiler->vnStore->VNNormalValue(vn);
-    VNFuncApp func;
-    if (compiler->vnStore->GetVNFunc(vn, &func))
-    {
-        switch (func.GetFunc())
-        {
-            case VNF_GetGcstaticBase:
-            case VNF_GetNongcstaticBase:
-            case VNF_GetdynamicGcstaticBase:
-            case VNF_GetdynamicNongcstaticBase:
-            case VNF_GetdynamicGcstaticBaseNoctor:
-            case VNF_GetdynamicNongcstaticBaseNoctor:
-            case VNF_ReadyToRunStaticBaseGC:
-            case VNF_ReadyToRunStaticBaseNonGC:
-            case VNF_ReadyToRunStaticBaseThread:
-            case VNF_ReadyToRunStaticBaseThreadNoctor:
-            case VNF_ReadyToRunStaticBaseThreadNonGC:
-            case VNF_ReadyToRunGenericStaticBase:
-            case VNF_GetpinnedGcstaticBase:
-            case VNF_GetpinnedNongcstaticBase:
-            case VNF_GetpinnedGcstaticBaseNoctor:
-            case VNF_GetpinnedNongcstaticBaseNoctor:
-            case VNF_GetGcthreadstaticBase:
-            case VNF_GetNongcthreadstaticBase:
-            case VNF_GetGcthreadstaticBaseNoctor:
-            case VNF_GetNongcthreadstaticBaseNoctor:
-            case VNF_GetdynamicGcthreadstaticBase:
-            case VNF_GetdynamicNongcthreadstaticBase:
-            case VNF_GetdynamicGcthreadstaticBaseNoctor:
-            case VNF_GetdynamicGcthreadstaticBaseNoctorOptimized:
-            case VNF_GetdynamicNongcthreadstaticBaseNoctor:
-            case VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized:
-            case VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2:
-            case VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2NoJitOpt:
-                return true;
-            default:
-                break;
-        }
-    }
-
-    return false;
-}
-
 /*****************************************************************************
  *
  *  Initialize the Value Number CSE tracking logic.
@@ -1186,11 +1113,21 @@ void Compiler::optValnumCSE_SetUpAsyncByrefKills()
     {
         CSEdsc* dsc = optCSEtab[inx - 1];
         assert(dsc->csdIndex == inx);
+        bool isByRef = false;
+        if (dsc->csdTreeList.tslTree->TypeIs(TYP_BYREF))
+        {
+            isByRef = true;
+        }
+        else if (dsc->csdTreeList.tslTree->TypeIs(TYP_STRUCT))
+        {
+            ClassLayout* layout = dsc->csdTreeList.tslTree->GetLayout(this);
+            isByRef             = layout->HasGCByRef();
+        }
 
-        if (dsc->IsKilledAcrossAsyncSuspensions(this))
+        if (isByRef)
         {
             // We generate a bit pattern like: 1111111100111100 where there
-            // are 0s only for the CSEs that are killed.
+            // are 0s only for the byref CSEs.
             BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailBit(inx));
             BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailCrossCallBit(inx));
             anyAsyncKills = true;
