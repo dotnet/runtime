@@ -47,13 +47,12 @@ namespace System
         private static unsafe void* s_fatalErrorInfo;
         private static unsafe void* s_fatalErrorContext;
 
-        // Pre-allocated array to hold crash log fragments as string references.
         // Each fragment is stored during crash info building and replayed on-demand
         // by GetFatalErrorLog (for the handler callback) or WriteCrashLogToStdErr
         // (for the default RunDefaultHandler path). This avoids a fixed-size UTF-8
         // buffer and eliminates truncation.
         private const int MaxCrashLogFragments = 16;
-        private static readonly string?[] s_crashLogFragments = new string?[MaxCrashLogFragments];
+        private static InlineArray16<string?> s_crashLogFragments;
         private static int s_crashLogFragmentCount;
 
         private static void StoreCrashLogFragment(string? text)
