@@ -589,55 +589,15 @@ const char* getWellKnownArgName(WellKnownArg arg)
     {
         case WellKnownArg::None:
             return "None";
-        case WellKnownArg::ThisPointer:
-            return "ThisPointer";
-        case WellKnownArg::VarArgsCookie:
-            return "VarArgsCookie";
-        case WellKnownArg::InstParam:
-            return "InstParam";
-        case WellKnownArg::AsyncContinuation:
-            return "AsyncContinuation";
-        case WellKnownArg::RetBuffer:
-            return "RetBuffer";
-        case WellKnownArg::PInvokeFrame:
-            return "PInvokeFrame";
-        case WellKnownArg::ShiftLow:
-            return "ShiftLow";
-        case WellKnownArg::ShiftHigh:
-            return "ShiftHigh";
-        case WellKnownArg::VirtualStubCell:
-            return "VirtualStubCell";
-        case WellKnownArg::PInvokeCookie:
-            return "PInvokeCookie";
-        case WellKnownArg::PInvokeTarget:
-            return "PInvokeTarget";
-        case WellKnownArg::R2RIndirectionCell:
-            return "R2RIndirectionCell";
-        case WellKnownArg::ValidateIndirectCallTarget:
-            return "ValidateIndirectCallTarget";
-        case WellKnownArg::DispatchIndirectCallTarget:
-            return "DispatchIndirectCallTarget";
-        case WellKnownArg::SwiftError:
-            return "SwiftError";
-        case WellKnownArg::SwiftSelf:
-            return "SwiftSelf";
-        case WellKnownArg::X86TailCallSpecialArg:
-            return "X86TailCallSpecialArg";
-        case WellKnownArg::StackArrayLocal:
-            return "StackArrayLocal";
-        case WellKnownArg::RuntimeMethodHandle:
-            return "RuntimeMethodHandle";
-        case WellKnownArg::AsyncExecutionContext:
-            return "AsyncExecutionContext";
-        case WellKnownArg::AsyncSynchronizationContext:
-            return "AsyncSynchronizationContext";
-        case WellKnownArg::WasmShadowStackPointer:
-            return "WasmShadowStackPointer";
-        case WellKnownArg::WasmPortableEntryPoint:
-            return "WasmPortableEntryPoint";
-    }
 
-    return "N/A";
+#define WELL_KNOWN_ARG(name, shortName, isILArg, addedByMorph)                                                         \
+    case WellKnownArg::name:                                                                                           \
+        return #name;
+#include "wellknownargs.h"
+
+        default:
+            return "N/A";
+    }
 }
 
 //------------------------------------------------------------------------

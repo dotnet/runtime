@@ -690,9 +690,9 @@ struct InlineInfo
     CORINFO_CONTEXT_HANDLE tokenLookupContextHandle; // The context handle that will be passed to
                                                      // impTokenLookupContextHandle in Inlinee's Compiler.
 
-    unsigned      argCnt;
-    InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];
-    InlArgInfo*   inlInstParamArgInfo;
+    unsigned      argCnt;                                      // Number of IL args
+    InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];                // IL arg info
+    InlArgInfo*   inlInstParamArgInfo;                         // Arg info for inst param
     int           lclTmpNum[MAX_INL_LCLS];                     // map local# -> temp# (-1 if unused)
     InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
 

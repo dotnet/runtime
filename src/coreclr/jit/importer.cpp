@@ -13872,24 +13872,23 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
-    unsigned ilArgCnt = 0;
+    pInlineInfo->argCnt = pInlineInfo->inlineCandidateInfo->methInfo.args.totalILArgs();
+    unsigned ilArgCnt   = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         InlArgInfo* argInfo;
-        switch (arg.GetWellKnownArg())
+        if (arg.IsUserArg())
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::AsyncContinuation:
-            case WellKnownArg::AsyncExecutionContext:
-            case WellKnownArg::AsyncSynchronizationContext:
-                // These do not appear in the table of inline arg info; do not include them
-                continue;
-            case WellKnownArg::InstParam:
-                pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
-                break;
-            default:
-                argInfo = &inlArgInfo[ilArgCnt++];
-                break;
+            assert(ilArgCnt < pInlineInfo->argCnt);
+            argInfo = &inlArgInfo[ilArgCnt++];
+        }
+        else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
+        {
+            pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
+        }
+        else
+        {
+            continue;
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
@@ -13900,6 +13899,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             return;
         }
     }
+
+    assert(ilArgCnt == pInlineInfo->argCnt);
 
 #ifdef FEATURE_SIMD
     bool foundSIMDType = pInlineInfo->hasSIMDTypeArgLocalOrReturn;
