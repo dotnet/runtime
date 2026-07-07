@@ -3454,7 +3454,10 @@ static gboolean
 mono_marshal_unmanaged_callers_only_has_only_associated_source_type (MonoCustomAttrEntry *attr)
 {
 	const guint8 *data = attr->data;
+	const guint8 field_named_arg = 0x53;
+	const guint8 system_type = 0x50;
 	const guint32 associated_source_type_name_len = sizeof ("AssociatedSourceType") - 1;
+	/* Prolog, named argument count, named argument kind, data type, and single-byte name length. */
 	const guint32 minimum_data_size = 2 + 2 + 1 + 1 + 1 + associated_source_type_name_len;
 	const char *value;
 	const char *end;
@@ -3466,7 +3469,7 @@ mono_marshal_unmanaged_callers_only_has_only_associated_source_type (MonoCustomA
 		return FALSE;
 	if (data [2] != 0x01 || data [3] != 0x00)
 		return FALSE;
-	if (data [4] != 0x53 || data [5] != 0x50)
+	if (data [4] != field_named_arg || data [5] != system_type)
 		return FALSE;
 	if (data [6] != associated_source_type_name_len)
 		return FALSE;
@@ -3522,25 +3525,26 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		}
 	}
 
+	if (attr != NULL && mono_marshal_unmanaged_callers_only_has_only_associated_source_type (attr))
+		attr = NULL;
+
 	if (attr != NULL) {
-		if (!mono_marshal_unmanaged_callers_only_has_only_associated_source_type (attr)) {
-			MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
-			mono_error_assert_ok (error);
-			for (int i = 0; i < decoded_args->named_args_num; ++i) {
-				if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
-					g_assertf(decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
-					MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
-					if (calling_conventions->len > 0) {
-						if (calling_conventions->len > 1)
-							g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
-						// TODO: Support multiple conventions?
-						MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
-						mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
-					}
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
+		mono_error_assert_ok (error);
+		for (int i = 0; i < decoded_args->named_args_num; ++i) {
+			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
+				g_assertf(decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
+				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
+				if (calling_conventions->len > 0) {
+					if (calling_conventions->len > 1)
+						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
+					// TODO: Support multiple conventions?
+					MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
+					mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
 				}
 			}
-			mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 		}
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 	}
 
 	if (!cinfo->cached)
