@@ -4636,29 +4636,32 @@ namespace Internal.JitInterface
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
+#if READYTORUN
+                const bool isFallbackBodyCompilation = false;
+#else
+                bool isFallbackBodyCompilation = _isFallbackBodyCompilation;
+#endif
+
                 // Validate UnmanagedCallersOnlyAttribute usage
-                if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
+                if (!isFallbackBodyCompilation && !this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, this.MethodBeingCompiled);
                 }
 
-                if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
+                if (!isFallbackBodyCompilation && (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation)) // No generics involved
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
                 }
 
-                if (this.MethodBeingCompiled.IsAsync)
+                if (!isFallbackBodyCompilation && this.MethodBeingCompiled.IsAsync)
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramAsync, this.MethodBeingCompiled);
                 }
 
-#if READYTORUN
-                // TODO: enable this check in full AOT
-                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module, this.MethodBeingCompiled.GetUnmanagedCallersOnlyMethodCallingConventions())) // Only blittable arguments
+                if (!isFallbackBodyCompilation && MarshalHelpers.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module)) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
-#endif
 
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }
