@@ -916,8 +916,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         assert(varTypeIsIntegral(simdBaseType));
     }
 
-    LowerNode(node);
-    return node->gtNext;
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------
