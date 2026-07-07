@@ -152,14 +152,24 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         if (info.NumEightBytes == 0)
             return; // Runtime marked this struct as not-enregisterable.
 
+        Debug.Assert(info.NumEightBytes <= 2, "SystemV descriptor never encodes more than 2 eightbytes");
+
         descriptor.passedInRegisters = true;
         descriptor.eightByteCount = info.NumEightBytes;
         descriptor.eightByteClassifications0 = (SystemVClassificationType)info.EightByteClassifications[0];
         descriptor.eightByteSizes0 = info.EightByteSizes[0];
         descriptor.eightByteOffsets0 = 0;
-        descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassifications[1];
-        descriptor.eightByteSizes1 = info.EightByteSizes[1];
-        descriptor.eightByteOffsets1 = SystemVEightByteSizeInBytes;
+
+        // Slots beyond NumEightBytes are undefined in the runtime's cached
+        // SystemVEightByteRegistersInfo. Only populate the second slot when
+        // it's actually in use; mirrors
+        // jitinterface.cpp::SystemVRegDescriptorFromSystemVEightByteRegistersInfo.
+        if (info.NumEightBytes > 1)
+        {
+            descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassifications[1];
+            descriptor.eightByteSizes1 = info.EightByteSizes[1];
+            descriptor.eightByteOffsets1 = SystemVEightByteSizeInBytes;
+        }
     }
 
     private const int SystemVEightByteSizeInBytes = 8;
