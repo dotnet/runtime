@@ -18,5 +18,7 @@ void EventPipe_ThreadShutdown();
 void EventPipe_Shutdown();
 bool DiagnosticServer_Shutdown();
 
+#ifdef FEATURE_EVENT_TRACE
 void EventTracing_Initialize();
+#endif // FEATURE_EVENT_TRACE
 #endif //EVENTPIPE_INTERFACE_H
