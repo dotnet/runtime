@@ -1005,5 +1005,171 @@ namespace Microsoft.Extensions.Configuration.Test
             // Assert
             Assert.NotNull(config);
         }
+
+        [Fact]
+        public void GetChildrenDeduplicatesSameChildKeyAcrossProviders()
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string> { { "Section:A", "1" }, { "Section:B", "2" } })
+                .AddInMemoryCollection(new Dictionary<string, string> { { "Section:B", "3" }, { "Section:C", "4" } })
+                .Build();
+
+            string[] children = config.GetSection("Section").GetChildren().Select(c => c.Key).ToArray();
+
+            Assert.Equal(new[] { "A", "B", "C" }, children);
+            Assert.Equal("3", config["Section:B"]);
+        }
+
+        [Fact]
+        public void GetChildrenDeduplicatesKeysFromProviderReturningDuplicates()
+        {
+            var config = new ConfigurationBuilder()
+                .Add(new DuplicateChildKeysSource())
+                .Build();
+
+            string[] children = config.GetChildren().Select(c => c.Key).ToArray();
+
+            Assert.Equal(new[] { "Dup" }, children);
+        }
+
+        [Fact]
+        public void GetChildren_LargeProvider_MatchesBruteForce()
+        {
+            // A provider with many keys across a deep hierarchy. Cross-check several parent paths against a
+            // brute-force computation of the expected immediate children.
+            var data = new Dictionary<string, string>();
+            for (int s = 0; s < 30; s++)
+            {
+                for (int g = 0; g < 5; g++)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        data[$"Section{s}:Group{g}:Item{i}"] = "v";
+                    }
+                }
+            }
+            for (int i = 0; i < 12; i++)
+            {
+                data[$"Array:{i}"] = i.ToString();
+            }
+            // Case-insensitive duplicate immediate child of the root ("Dup" vs "dup").
+            data["Dup:Child"] = "1";
+            data["dup:Other"] = "2";
+
+            var config = new ConfigurationBuilder().AddInMemoryCollection(data).Build();
+
+            foreach (string parent in new[] { null, "Section0", "Section0:Group0", "Array", "Section29:Group4", "Dup", "Missing" })
+            {
+                string[] expected = ExpectedImmediateChildren(data, parent);
+                IEnumerable<IConfigurationSection> children = parent is null
+                    ? config.GetChildren()
+                    : config.GetSection(parent).GetChildren();
+
+                Assert.Equal(expected, children.Select(c => c.Key).ToArray(), StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        [Fact]
+        public void GetChildren_VeryDeepSegmentStart_Works()
+        {
+            // A key whose child segment starts far into the key (past ushort range) is handled by the plain scan:
+            // the segment is materialized with Substring, so there is no offset limit.
+            var data = new Dictionary<string, string>();
+            string longParent = new string('a', ushort.MaxValue + 100);
+            data[longParent + ":Child"] = "v";
+            data[longParent + ":Sibling"] = "v";
+
+            var config = new ConfigurationBuilder().AddInMemoryCollection(data).Build();
+
+            string[] children = config.GetSection(longParent).GetChildren().Select(c => c.Key).ToArray();
+            Assert.Equal(new[] { "Child", "Sibling" }, children, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void GetChildren_ProviderCanHideInheritedChildKey()
+        {
+            // The GetChildKeys contract threads the preceding providers' keys through each provider and uses what it
+            // returns, so a later provider can filter out a child key contributed by an earlier one.
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["a"] = "1",
+                    ["b"] = "2",
+                    ["c"] = "3",
+                })
+                .Add(new FilteringChildKeysSource("b"))
+                .Build();
+
+            string[] children = config.GetChildren().Select(c => c.Key).ToArray();
+
+            Assert.Equal(new[] { "a", "c" }, children, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain("b", children, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string[] ExpectedImmediateChildren(Dictionary<string, string> data, string parentPath)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string key in data.Keys)
+            {
+                int start;
+                if (parentPath is null)
+                {
+                    start = 0;
+                }
+                else if (key.Length > parentPath.Length &&
+                         key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
+                         key[parentPath.Length] == ':')
+                {
+                    start = parentPath.Length + 1;
+                }
+                else
+                {
+                    continue;
+                }
+
+                int colon = key.IndexOf(':', start);
+                set.Add(colon < 0 ? key.Substring(start) : key.Substring(start, colon - start));
+            }
+
+            string[] result = set.ToArray();
+            Array.Sort(result, ConfigurationKeyComparer.Instance);
+            return result;
+        }
+
+        private sealed class DuplicateChildKeysSource : IConfigurationSource, IConfigurationProvider
+        {
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => this;
+            public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath) =>
+                parentPath is null ? earlierKeys.Concat(new[] { "Dup", "Dup" }) : earlierKeys;
+            public bool TryGet(string key, out string value)
+            {
+                value = string.Equals(key, "Dup", StringComparison.OrdinalIgnoreCase) ? "v" : null;
+                return value is not null;
+            }
+            public Primitives.IChangeToken GetReloadToken() => new ConfigurationReloadToken();
+            public void Load() { }
+            public void Set(string key, string value) { }
+        }
+
+        // A provider that removes a specific immediate child of the root from the keys inherited from the earlier
+        // providers, exercising the contract that a provider may filter the preceding providers' keys.
+        private sealed class FilteringChildKeysSource : IConfigurationSource, IConfigurationProvider
+        {
+            private readonly string _hidden;
+            public FilteringChildKeysSource(string hidden) => _hidden = hidden;
+            public IConfigurationProvider Build(IConfigurationBuilder builder) => this;
+            public IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath) =>
+                parentPath is null
+                    ? earlierKeys.Where(key => !string.Equals(key, _hidden, StringComparison.OrdinalIgnoreCase)).ToArray()
+                    : earlierKeys;
+            public bool TryGet(string key, out string value)
+            {
+                value = null;
+                return false;
+            }
+            public Primitives.IChangeToken GetReloadToken() => new ConfigurationReloadToken();
+            public void Load() { }
+            public void Set(string key, string value) { }
+        }
     }
 }

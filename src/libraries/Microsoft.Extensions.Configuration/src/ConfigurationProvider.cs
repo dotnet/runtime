@@ -62,42 +62,60 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
-            var results = new List<string>();
-
-            if (parentPath is null)
+            if (earlierKeys is SortedChildKeys accumulator)
             {
-                foreach (KeyValuePair<string, string?> kv in Data)
+                AddOwnChildKeys(new ChildKeysBag(accumulator), parentPath);
+                return accumulator;
+            }
+
+            var results = new List<string>();
+            AddOwnChildKeys(new ChildKeysBag(results), parentPath);
+            results.AddRange(earlierKeys);
+            results.Sort(ConfigurationKeyComparer.Comparison);
+            return results;
+        }
+
+        private void AddOwnChildKeys(in ChildKeysBag bag, string? parentPath)
+        {
+            Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
+
+            // Prefer the concrete Dictionary's struct enumerator
+            if (Data is Dictionary<string, string?> dictionary)
+            {
+                foreach (KeyValuePair<string, string?> kv in dictionary)
                 {
-                    results.Add(Segment(kv.Key, 0));
+                    AddChildKey(in bag, kv.Key, parentPath);
                 }
             }
             else
             {
-                Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
-
                 foreach (KeyValuePair<string, string?> kv in Data)
                 {
-                    if (kv.Key.Length > parentPath.Length &&
-                        kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
-                        kv.Key[parentPath.Length] == ':')
-                    {
-                        results.Add(Segment(kv.Key, parentPath.Length + 1));
-                    }
+                    AddChildKey(in bag, kv.Key, parentPath);
                 }
             }
-
-            results.AddRange(earlierKeys);
-
-            results.Sort(ConfigurationKeyComparer.Comparison);
-
-            return results;
         }
 
-        private static string Segment(string key, int prefixLength)
+        private static void AddChildKey(in ChildKeysBag bag, string key, string? parentPath)
         {
-            Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
-            int indexOf = key.IndexOf(':', prefixLength);
-            return indexOf < 0 ? key.Substring(prefixLength) : key.Substring(prefixLength, indexOf - prefixLength);
+            int start;
+            if (parentPath is null)
+            {
+                start = 0;
+            }
+            else if (key.Length > parentPath.Length &&
+                     key[parentPath.Length] == ':' &&
+                     key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase))
+            {
+                start = parentPath.Length + 1;
+            }
+            else
+            {
+                return;
+            }
+
+            int delimiter = key.IndexOf(':', start);
+            bag.Add(key, start, delimiter < 0 ? key.Length - start : delimiter - start);
         }
 
         /// <summary>
@@ -123,5 +141,33 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <returns>The configuration name.</returns>
         public override string ToString() => GetType().Name;
+
+        private readonly struct ChildKeysBag
+        {
+            private readonly SortedChildKeys? _accumulator;
+            private readonly List<string>? _fallback;
+
+            public ChildKeysBag(SortedChildKeys accumulator)
+            {
+                _accumulator = accumulator;
+            }
+
+            public ChildKeysBag(List<string> fallback)
+            {
+                _fallback = fallback;
+            }
+
+            public void Add(string key, int start, int length)
+            {
+                if (_accumulator is not null)
+                {
+                    _accumulator.AddSegment(key, start, length);
+                }
+                else
+                {
+                    _fallback!.Add(start == 0 && length == key.Length ? key : key.Substring(start, length));
+                }
+            }
+        }
     }
 }

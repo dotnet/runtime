@@ -92,15 +92,19 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
+            SortedChildKeys accumulator = earlierKeys is SortedChildKeys existing ? existing : new(earlierKeys);
+            if (_config is IConfigurationRoot root)
+            {
+                return root.GetChildKeysImplementation(parentPath, accumulator);
+            }
+
             IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
-            var keys = new List<string>();
             foreach (IConfigurationSection child in section.GetChildren())
             {
-                keys.Add(child.Key);
+                accumulator.AddSegment(child.Key, 0, child.Key.Length);
             }
-            keys.AddRange(earlierKeys);
-            keys.Sort(ConfigurationKeyComparer.Comparison);
-            return keys;
+
+            return accumulator;
         }
 
         /// <inheritdoc />
