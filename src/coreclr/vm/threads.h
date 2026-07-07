@@ -493,7 +493,7 @@ public:
     //
     // If instead the thread has blocked itself, via WaitForDebugSuspend, we indicate
     // this with TS_DebugSyncSuspended.  A user request is not allowed to resume a thread
-    // suspended for debugging.  -- That's not stricly true.  It is allowed to resume such a
+    // suspended for debugging.  -- That's not strictly true.  It is allowed to resume such a
     // thread so long as it was ALSO suspended by the user.  In other words, this
     // ensures that user resumptions aren't unbalanced from user suspensions.
     //
