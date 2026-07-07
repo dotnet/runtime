@@ -14,6 +14,12 @@ set(CDACLITE_SOURCES
 )
 
 if(CLR_CMAKE_HOST_WIN32)
+    add_definitions(-DFX_VER_INTERNALNAME_STR=cdaclite.dll)
+
+    # Embed the FX version resource so the shared framework manifest validation
+    # (sharedfx.targets) finds a FileVersion, matching mscordaccore/mscordbi.
+    list(APPEND CDACLITE_SOURCES Native.rc)
+
     set(DEF_SOURCES cdaclite.src)
     set(CURRENT_BINARY_DIR_FOR_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR})
 
