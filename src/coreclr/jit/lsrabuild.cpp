@@ -3097,13 +3097,12 @@ GenTree* LinearScan::getConsumingNode(GenTree* node)
 //    would require the shared interval to be in multiple registers at a single
 //    location (see below).
 //
-//    Only applied when optimizing (enregisterLocalVars). Constant nodes are
-//    single-use in LIR and the defList is per-block, so any match is guaranteed to
-//    be within the current block.
+//    Only applied when optimizing. Constant nodes are single-use in LIR and the
+//    defList is per-block, so any match is guaranteed to be within the current block.
 //
 Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
 {
-    if (!enregisterLocalVars)
+    if (!enregisterLocalVars || !m_compiler->opts.OptimizationEnabled())
     {
         return nullptr;
     }
