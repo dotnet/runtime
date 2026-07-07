@@ -994,10 +994,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetUserState(ulong vmThread, int* pRetVal)
     {
-        *pRetVal = default;
         int hr = HResults.S_OK;
         try
         {
+            *pRetVal = default;
             CorDebugUserState partialState;
             hr = GetPartialUserState(vmThread, &partialState);
             if (hr != HResults.S_OK)
