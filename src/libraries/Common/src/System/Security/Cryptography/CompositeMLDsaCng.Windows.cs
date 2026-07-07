@@ -129,22 +129,61 @@ namespace System.Security.Cryptography
             ExportKey(CngKeyBlobFormat.PQDsaPublicBlob, Algorithm.MaxPublicKeySizeInBytes, destination);
 
         /// <inheritdoc/>
-        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination) =>
-            CngPkcs8.AllowsOnlyEncryptedExport(_key)
-            ? throw new CryptographicException(SR.Cryptography_KeyNotExtractable)
-            : ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.MaxPrivateKeySizeInBytes, destination);
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination)
+        {
+            if (CngPkcs8.AllowsOnlyEncryptedExport(_key))
+            {
+                ArraySegment<byte> pkcs8 = GetRentedPkcs8ForEncryptedOnlyExport();
+
+                try
+                {
+                    ReadOnlySpan<byte> privateKey = KeyFormatHelper.ReadPkcs8([Algorithm.Oid], pkcs8.AsSpan(), out _);
+
+                    if (!privateKey.TryCopyTo(destination))
+                    {
+                        Debug.Fail($"Private key size too large for buffer: {privateKey.Length} / {destination.Length}");
+                        throw new CryptographicException();
+                    }
+
+                    return privateKey.Length;
+                }
+                finally
+                {
+                    CryptoPool.Return(pkcs8);
+                }
+            }
+
+            return ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.MaxPrivateKeySizeInBytes, destination);
+        }
 
         /// <inheritdoc/>
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
             bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
 
-            // Windows NCrypt does not yet support PKCS#8 export for Composite ML-DSA.
             if (encryptedOnlyExport)
             {
-                throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
+                ArraySegment<byte> pkcs8 = GetRentedPkcs8ForEncryptedOnlyExport();
+
+                try
+                {
+                    if (destination.Length < pkcs8.Count)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    bytesWritten = pkcs8.Count;
+                    pkcs8.AsSpan().CopyTo(destination);
+                    return true;
+                }
+                finally
+                {
+                    CryptoPool.Return(pkcs8);
+                }
             }
 
+            // Windows NCrypt does not yet support PKCS#8 export for Composite ML-DSA, so build it from the private key.
             return TryExportPkcs8FromExportedPrivateKey(destination, out bytesWritten);
         }
 
@@ -188,6 +227,20 @@ namespace System.Security.Cryptography
 
                 keyBytes.CopyTo(destination);
                 return keyBytes.Length;
+            }
+        }
+
+        private ArraySegment<byte> GetRentedPkcs8ForEncryptedOnlyExport()
+        {
+            const string TemporaryExportPassword = "DotnetExportPhrase";
+            byte[] exported = _key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
+
+            using (PinAndClear.Track(exported))
+            {
+                return KeyFormatHelper.DecryptPkcs8(
+                    TemporaryExportPassword,
+                    exported,
+                    out _);
             }
         }
     }

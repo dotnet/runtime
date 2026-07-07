@@ -237,7 +237,7 @@ namespace System.Security.Cryptography
         ///   Digital Signature Algorithm (Composite ML-DSA).
         /// </value>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-        public static CngAlgorithm CompositeMLDsa =>
+        internal static CngAlgorithm CompositeMLDsa =>
             field ??= new CngAlgorithm("Composite-ML-DSA"); // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
 
         private static CngAlgorithm? s_ecdh;
