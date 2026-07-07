@@ -198,16 +198,15 @@ namespace System.Buffers
             Debug.Assert(reader.UnreadSpan.Length < sizeof(T));
 
             // Not enough data in the current segment, try to peek for the data we need.
-            T buffer = default;
-            Span<byte> tempSpan = new Span<byte>(&buffer, sizeof(T));
+            Span<T> tempSpan = [default];
 
-            if (!reader.TryCopyTo(tempSpan))
+            if (!reader.TryCopyTo(MemoryMarshal.AsBytes(tempSpan)))
             {
                 value = default;
                 return false;
             }
 
-            value = MemoryMarshal.Read<T>(tempSpan);
+            value = tempSpan[0];
             return true;
         }
 
