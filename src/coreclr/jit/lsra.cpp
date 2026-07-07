@@ -4151,6 +4151,14 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
         (regRec->previousInterval != nullptr && regRec->previousInterval != assignedInterval &&
          regRec->previousInterval->assignedReg == regRec && regRec->previousInterval->getNextRefPosition() != nullptr);
 
+    // A constant interval that had its register borrowed by another definition no longer holds its
+    // value in that register, so it must not be restored (the value would need to be rematerialized).
+    // Restoring it would leave the register marked as holding a constant it no longer contains.
+    if (retVal && regRec->previousInterval->isConstant)
+    {
+        retVal = false;
+    }
+
 #ifdef TARGET_ARM
     if (retVal && regRec->previousInterval->registerType == TYP_DOUBLE)
     {
@@ -6307,6 +6315,17 @@ void LinearScan::allocateRegisters()
                         {
                             currentRefPosition.reload = true;
                         }
+                    }
+                    else if (RefTypeIsDef(refType) && currentInterval->isConstant &&
+                             (currentRefPosition.treeNode != nullptr) &&
+                             isRegConstant(assignedRegister, currentInterval->registerType))
+                    {
+                        // This is a redefinition of a constant interval that is already
+                        // materialized in this register (an identical constant was coalesced
+                        // into this interval at build time). Reuse the value in place rather
+                        // than re-materializing it.
+                        assert(m_compiler->opts.OptimizationEnabled());
+                        currentRefPosition.treeNode->SetReuseRegVal();
                     }
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
                 }

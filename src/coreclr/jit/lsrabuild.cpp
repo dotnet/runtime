@@ -468,6 +468,20 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
             {
                 checkConflictingDefUse(rp);
                 rp->lastUse = true;
+
+                if (theInterval->isConstant)
+                {
+                    // This may be a coalesced constant interval, where several identical
+                    // floating-point/SIMD/mask constants share a single interval. In that case an
+                    // earlier use is no longer the last use, so clear its lastUse flag (mirroring
+                    // the localVar handling above) to keep the interval a single continuous live
+                    // range rather than freeing and re-using its register mid-range.
+                    RefPosition* const prevRP = theInterval->recentRefPosition;
+                    if ((prevRP != nullptr) && RefTypeIsUse(prevRP->refType) && (prevRP->bbNum == rp->bbNum))
+                    {
+                        prevRP->lastUse = false;
+                    }
+                }
             }
         }
 
@@ -2962,6 +2976,136 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
 #endif // !TARGET_ARM
 
 //------------------------------------------------------------------------
+// areSameConstantNodes: Determine whether two floating-point, SIMD, or mask
+//                       constant nodes represent an identical value that can
+//                       share a single register.
+//
+// Arguments:
+//    tree1 - The first constant node
+//    tree2 - The second constant node
+//
+// Return Value:
+//    True iff both nodes are the same kind of FP/SIMD/mask constant, have the
+//    same type, and hold a bitwise-identical value.
+//
+// Notes:
+//    Only GT_CNS_DBL, GT_CNS_VEC, and GT_CNS_MSK are considered. These constants
+//    have no GC liveness considerations, so they can be freely coalesced.
+//
+/* static */ bool LinearScan::areSameConstantNodes(GenTree* tree1, GenTree* tree2)
+{
+    if (tree1->OperGet() != tree2->OperGet())
+    {
+        return false;
+    }
+
+    if (tree1->TypeGet() != tree2->TypeGet())
+    {
+        return false;
+    }
+
+    switch (tree1->OperGet())
+    {
+        case GT_CNS_DBL:
+        {
+            // For floating point constants, the values must be identical, not simply compare
+            // equal. So we compare the bits.
+            return tree1->AsDblCon()->isBitwiseEqual(tree2->AsDblCon());
+        }
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+        {
+            return GenTreeVecCon::Equals(tree1->AsVecCon(), tree2->AsVecCon());
+        }
+#endif // FEATURE_SIMD
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+        {
+            return GenTreeMskCon::Equals(tree1->AsMskCon(), tree2->AsMskCon());
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// getConstantIntervalForReuse: If an identical floating-point/SIMD/mask constant
+//                              is still pending in the defList, return its interval
+//                              so the new definition can be coalesced into it.
+//
+// Arguments:
+//    tree - The constant node currently being defined
+//
+// Return Value:
+//    The existing constant Interval to reuse, or nullptr if none is available.
+//
+// Notes:
+//    A matching def still present in the defList means the earlier constant has
+//    not yet been consumed and therefore overlaps this definition. Coalescing the
+//    two into a single interval lets the allocator keep the value in one register
+//    and elide the redundant re-materialization.
+//
+//    Only applied when optimizing (enregisterLocalVars). Constant nodes are
+//    single-use in LIR and the defList is per-block, so any match is guaranteed to
+//    be within the current block.
+//
+Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
+{
+    if (!enregisterLocalVars)
+    {
+        return nullptr;
+    }
+
+    if (!tree->OperIs(GT_CNS_DBL) && !tree->OperIs(GT_CNS_VEC) && !tree->OperIs(GT_CNS_MSK))
+    {
+        return nullptr;
+    }
+
+    // Only coalesce a plain, single-register definition that feeds a parent use.
+    if (tree->IsMultiRegNode() || tree->IsUnusedValue() || (tree->GetRegNum() != REG_NA))
+    {
+        return nullptr;
+    }
+
+    for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
+         listNode = listNode->Next())
+    {
+        GenTree* defNode = listNode->treeNode;
+
+        if (!areSameConstantNodes(tree, defNode))
+        {
+            continue;
+        }
+
+        Interval* interval = listNode->ref->getInterval();
+
+        if (!interval->isConstant)
+        {
+            continue;
+        }
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        // Values needing a partial callee-save may have their upper bits saved/restored
+        // around calls, so they can't be blindly reused.
+        if (Compiler::varTypeNeedsPartialCalleeSave(interval->registerType))
+        {
+            continue;
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+        return interval;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // BuildDef: Build one RefTypeDef RefPosition for the given node at given index
 //
 // Arguments:
@@ -3002,7 +3146,11 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         needToKillFloatRegs               = true;
     }
 
-    Interval* interval = newInterval(type);
+    Interval* interval = getConstantIntervalForReuse(tree);
+    if (interval == nullptr)
+    {
+        interval = newInterval(type);
+    }
     if (tree->GetRegNum() != REG_NA)
     {
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
