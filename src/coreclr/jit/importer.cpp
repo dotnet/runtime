@@ -11748,7 +11748,7 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     assert(awaitSig.isAsyncCall());
 
-    var_types    callRetType = JITtype2varType(awaitSig.retType);
+    var_types callRetType = JITtype2varType(awaitSig.retType);
 
     // The await-return call is synthesized here and never goes through impImportCall, so use gtNewUserCallNode to
     // give it its Ready-to-Run entrypoint explicitly (as the other synthesized async calls do). Without this the call
