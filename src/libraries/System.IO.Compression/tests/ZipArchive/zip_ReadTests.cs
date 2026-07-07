@@ -981,6 +981,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
         public async Task DecryptEntries_SamePassword_7Zip(bool async)
         {
             string password = "S3cur3P@ssw0rd";
@@ -1016,6 +1017,8 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+
         public async Task DecryptEntries_MixedEncryptions(bool async)
         {
             string password = "S3cur3P@ssw0rd";
@@ -1051,6 +1054,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
         public async Task DecryptEntries_DifferentPasswords(bool async)
         {
             using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_DifferentPasswords.zip"));
@@ -1085,6 +1089,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
         public async Task PasswordProtectedZip64_UpdateMode_Throws(bool async)
         {
             using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtectedZIP64.zip"));

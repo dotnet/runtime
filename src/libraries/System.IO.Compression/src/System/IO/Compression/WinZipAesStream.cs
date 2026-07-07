@@ -69,6 +69,7 @@ namespace System.IO.Compression
             {
                 throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
             }
+
             ArgumentNullException.ThrowIfNull(baseStream);
 
             if (!encrypting)
