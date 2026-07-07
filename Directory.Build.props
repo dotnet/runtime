@@ -236,10 +236,8 @@
     <CoreLibProject Condition="'$(UseNativeAotCoreLib)' == 'true'">$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'nativeaot', 'System.Private.CoreLib', 'src', 'System.Private.CoreLib.csproj'))</CoreLibProject>
     <UriProject>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'System.Private.Uri', 'src', 'System.Private.Uri.csproj'))</UriProject>
 
-    <!-- NativeAOT is CoreCLR-based and never uses the Mono runtime. Force UseMonoRuntime off so the mobile inner target frameworks of
-         multi-targeted libraries do not default to Mono during restore, which would fail the .NET 11 SDK's mobile check (NETSDK1242). -->
-    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">false</UseMonoRuntime>
     <!-- this property is used by the SDK to pull in mono-based runtime packs -->
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">false</UseMonoRuntime>
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == 'true' and '$(TargetsMobile)' != 'true' and (
         $(TargetFramework.EndsWith('-android')) or $(TargetFramework.EndsWith('-ios')) or
