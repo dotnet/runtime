@@ -510,6 +510,18 @@ namespace System.Net.Security
 
             _hasServerOptions = true;
 
+            // The per-tenant options differ from the bootstrap context's template, so
+            // credentials must be session-local. Otherwise EnsureCredentialsAcquired
+            // would stamp this session's SChannel cred handle into the shared bootstrap
+            // TlsContext.CredentialsHandle, and every subsequent session on the same
+            // bootstrap would inherit those credentials regardless of which tenant it
+            // resolved to (SChannel-only; OpenSSL routes per-tenant SSL_CTX via
+            // PreallocatedSslContext on the session-local options bag). Acquire eagerly
+            // so any AcquireCredentialsHandle failure surfaces from SetServerContext,
+            // not from an opaque PAL call downstream.
+            _sessionCredentialsHandle?.Dispose();
+            _sessionCredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_options, false);
+
             OnServerContextSet();
         }
 

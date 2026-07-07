@@ -2607,6 +2607,90 @@ namespace System.Net.Security.Tests
             });
         }
 
+        // Regression: SetServerContext used to acquire credentials into the shared
+        // TlsContext.CredentialsHandle (via EnsureCredentialsAcquired), so the first
+        // session to resolve to a tenant would stamp its credentials into the shared
+        // bootstrap and every subsequent session would inherit them regardless of
+        // which tenant it resolved to. Same class of bug as SetClientCertificateContext;
+        // fix is per-session credentials. Run several server sessions in parallel on a
+        // single bootstrap TlsContext, each resolving to a distinct per-tenant cert,
+        // and verify every client sees the correct server cert.
+        [Fact]
+        public async Task SetServerContext_ConcurrentSessionsOnSharedBootstrap_DoNotRace()
+        {
+            const int SessionCount = 4;
+            X509Certificate2[] serverCerts = new X509Certificate2[SessionCount];
+            TlsContext[] tenantCtx = new TlsContext[SessionCount];
+            string?[] observedThumbprints = new string?[SessionCount];
+            for (int i = 0; i < SessionCount; i++)
+            {
+                serverCerts[i] = CreateSelfSignedServerCert($"tls-session-tenant-{i}.example");
+                tenantCtx[i] = TlsContext.Create(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCerts[i],
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    ClientCertificateRequired = false,
+                });
+            }
+
+            try
+            {
+                // One shared bootstrap TlsContext (no cert baked in) across all sessions.
+                using TlsContext bootstrap = TlsContext.Create((SslServerAuthenticationOptions?)null);
+
+                Task[] tasks = new Task[SessionCount];
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    int idx = i;
+                    tasks[i] = Task.Run(() => RunServerTenantSessionAsync(bootstrap, tenantCtx[idx], serverCerts[idx].GetNameInfo(X509NameType.SimpleName, forIssuer: false), observedThumbprints, idx));
+                }
+
+                await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(60));
+
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    Assert.Equal(serverCerts[i].Thumbprint, observedThumbprints[i]);
+                }
+            }
+            finally
+            {
+                for (int i = 0; i < SessionCount; i++)
+                {
+                    tenantCtx[i]?.Dispose();
+                    serverCerts[i]?.Dispose();
+                }
+            }
+        }
+
+        private static async Task RunServerTenantSessionAsync(
+            TlsContext bootstrap, TlsContext tenantCtx, string sni,
+            string?[] observedThumbprints, int slot)
+        {
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false,
+                (_, c, _, _) =>
+                {
+                    observedThumbprints[slot] = (c as X509Certificate2)?.Thumbprint;
+                    return true;
+                }))
+            {
+                Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = sni,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+
+                using TlsSession session = TlsSession.Create(bootstrap);
+                Task serverHandshake = DriveHandshakeAsync(session, serverStream, _ => tenantCtx);
+
+                await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+                Assert.True(session.IsHandshakeComplete);
+                Assert.True(clientSsl.IsAuthenticated);
+            }
+        }
+
         // Regression: SetClientCertificateContext used to dispose+null the shared
         // TlsContext.CredentialsHandle, racing with any concurrent session on the same
         // context. It must instead acquire session-local credentials without touching
