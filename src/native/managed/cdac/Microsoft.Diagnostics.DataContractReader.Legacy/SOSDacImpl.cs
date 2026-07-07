@@ -1745,6 +1745,12 @@ public sealed unsafe partial class SOSDacImpl
             }
         }
 
+        public SOSMemoryEnum(SOSMemoryRegion[] regions, ISOSMemoryEnum? legacyMemoryEnum = null)
+        {
+            _regions = regions;
+            _legacyMemoryEnum = legacyMemoryEnum;
+        }
+
         int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegions, uint* pNeeded)
         {
             int hr = HResults.S_OK;
@@ -7321,24 +7327,39 @@ public sealed unsafe partial class SOSDacImpl
             if (!stressLogContract.HasStressLog())
                 return HResults.S_FALSE;
 
+            TargetPointer address = threadStressLogAddress.ToTargetPointer(_target);
+            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(address);
+            ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogMemoryRanges(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
             Contracts.StressLogData logData = stressLogContract.GetStressLogData();
 
-            // Find the matching thread
-            Contracts.ThreadStressLogData? matchedThread = null;
-            foreach (var thread in stressLogContract.GetThreadStressLogs(logData.Logs))
-            {
-                if (thread.Address == threadStressLogAddress.ToTargetPointer(_target))
+            SOSMemoryRegion[] regions = stressLogContract.GetStressLogMemoryRanges(logData)
+                .Select(r => new SOSMemoryRegion
                 {
-                    matchedThread = thread;
-                    break;
-                }
-            }
-
-            if (matchedThread is null)
-                return HResults.E_INVALIDARG;
-
-            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(matchedThread.Value);
-            ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
+                    Start = r.Start.ToClrDataAddress(_target),
+                    Size = (ClrDataAddress)r.Size,
+                    ExtraData = default,
+                    Heap = 0,
+                })
+                .ToArray();
+            ppEnum.Interface = new SOSMemoryEnum(regions);
         }
         catch (System.Exception ex)
         {
