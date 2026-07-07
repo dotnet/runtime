@@ -3450,61 +3450,6 @@ mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, Mon
 	//		 - Adjust the code above with 'anding' the attribute parameter value
 }
 
-static gboolean
-mono_marshal_unmanaged_callers_only_attribute_has_only_associated_source_type (MonoCustomAttrEntry *attr)
-{
-	const guint8 *data = attr->data;
-	const guint8 custom_attribute_prolog = 0x01;
-	const guint8 named_arg_count = 0x01;
-	const guint8 field_named_arg = 0x53;
-	const guint8 system_type = 0x50;
-	const guint32 associated_source_type_name_len = sizeof ("AssociatedSourceType") - 1;
-	/* Prolog, named argument count, named argument kind, data type, and single-byte name length. */
-	const guint32 minimum_data_size = 2 + 2 + 1 + 1 + 1 + associated_source_type_name_len;
-	const char *value_start;
-	const char *value_after_size;
-	const char *end;
-	guint32 value_len;
-
-	if (attr->data_size < minimum_data_size)
-		return FALSE;
-	if (data [0] != custom_attribute_prolog || data [1] != 0x00)
-		return FALSE;
-	if (data [2] != named_arg_count || data [3] != 0x00)
-		return FALSE;
-	if (data [4] != field_named_arg || data [5] != system_type)
-		return FALSE;
-	if (data [6] != associated_source_type_name_len)
-		return FALSE;
-	if (memcmp (&data [7], "AssociatedSourceType", associated_source_type_name_len))
-		return FALSE;
-
-	value_start = (const char *)&data [7 + associated_source_type_name_len];
-	end = (const char *)data + attr->data_size;
-	if (value_start >= end)
-		return FALSE;
-MONO_DISABLE_WARNING (4310) // cast truncates constant value
-	if (*value_start == (char)0xFF)
-		return value_start + 1 == end;
-MONO_RESTORE_WARNING
-
-	if ((*value_start & 0x80) == 0) {
-		if (value_start + 1 > end)
-			return FALSE;
-	} else if ((*value_start & 0xC0) == 0x80) {
-		if (value_start + 2 > end)
-			return FALSE;
-	} else if ((*value_start & 0xE0) == 0xC0) {
-		if (value_start + 4 > end)
-			return FALSE;
-	} else {
-		return FALSE;
-	}
-
-	value_len = mono_metadata_decode_blob_size (value_start, &value_after_size);
-	return value_after_size <= end && value_len <= (guint32)(end - value_after_size);
-}
-
 static void
 mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *method, MonoMethodSignature *csig)
 {
@@ -3528,11 +3473,8 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		}
 	}
 
-	if (attr != NULL && mono_marshal_unmanaged_callers_only_attribute_has_only_associated_source_type (attr))
-		attr = NULL;
-
 	if (attr != NULL) {
-		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (method->klass), attr->ctor, attr->data, attr->data_size, error);
 		mono_error_assert_ok (error);
 		for (int i = 0; i < decoded_args->named_args_num; ++i) {
 			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
