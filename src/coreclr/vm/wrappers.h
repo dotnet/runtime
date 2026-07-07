@@ -5,6 +5,7 @@
 #ifndef _WRAPPERS_H_
 #define _WRAPPERS_H_
 
+#include "holder.h"
 #include "metadata.h"
 #include "interoputil.h"
 
