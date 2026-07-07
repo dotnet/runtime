@@ -135,12 +135,12 @@ public class TlsHandshakeBench
         };
 
         // TlsContext is allocated once and reused; SSL_CTX caching is the design point.
-        _ctxBuffered = TlsContext.Create(_serverOptions);
-        _ctxFd = TlsContext.Create(_serverOptions);
+        _ctxBuffered = TlsContext.CreateServer(_serverOptions);
+        _ctxFd = TlsContext.CreateServer(_serverOptions);
         // Bootstrap context used by the deferred socket-bound flow: no cert baked in,
         // sessions are created against it and then re-parented to a per-tenant TlsContext
         // via SetServerContext(...) once the ClientHello arrives.
-        _ctxFdDeferred = TlsContext.Create((SslServerAuthenticationOptions?)null);
+        _ctxFdDeferred = TlsContext.CreateServer(new SslServerAuthenticationOptions());
 
         _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         _listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -637,7 +637,7 @@ internal static class TraceHarness
             RemoteCertificateValidationCallback = static (_, _, _, _) => true,
             AllowTlsResume = allowResume,
         };
-        using TlsContext ctx = TlsContext.Create(serverOpts);
+        using TlsContext ctx = TlsContext.CreateServer(serverOpts);
 
         var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));

@@ -702,9 +702,8 @@ namespace System.Net.Security
     public sealed partial class TlsContext : System.IDisposable
     {
         internal TlsContext() { }
-        public bool IsServer { get { throw null; } }
-        public static System.Net.Security.TlsContext Create(System.Net.Security.SslServerAuthenticationOptions? options) { throw null; }
-        public static System.Net.Security.TlsContext Create(System.Net.Security.SslClientAuthenticationOptions options) { throw null; }
+        public static System.Net.Security.TlsContext CreateServer(System.Net.Security.SslServerAuthenticationOptions options) { throw null; }
+        public static System.Net.Security.TlsContext CreateClient(System.Net.Security.SslClientAuthenticationOptions options) { throw null; }
         public void Dispose() { }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]

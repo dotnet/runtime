@@ -34,7 +34,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -81,7 +81,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        // Server starts with TlsContext.Create((SslServerAuthenticationOptions?)null) - no options
+        // Server starts with TlsContext.CreateServer(new SslServerAuthenticationOptions()) - no options
         // baked in. ProcessHandshake parses the ClientHello, surfaces NeedsServerOptions with
         // ClientHelloInfo populated, and the caller picks options based on SNI before resuming.
         [Fact]
@@ -98,7 +98,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
                 using TlsSession session = TlsSession.Create(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
@@ -108,7 +108,7 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
 
-                using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext hostCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -151,7 +151,7 @@ namespace System.Net.Security.Tests
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
 
-            using TlsContext serverCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext serverCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = protocol,
@@ -243,22 +243,22 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void TlsContext_NullServerOptions_DefersResolution()
+        public void TlsContext_EmptyServerOptions_DefersResolution()
         {
-            // Null server options are allowed: the server-side session parses the ClientHello
-            // and suspends on NeedsServerOptions so the caller can resolve options via
-            // SetServerContext (e.g. SNI-driven). Only the client overload rejects null.
-            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions)null!);
-            Assert.True(ctx.IsServer);
+            // An empty server options bag (no certificate, no selection callback) is allowed:
+            // the server-side session parses the ClientHello and suspends on NeedsTlsContext so
+            // the caller can resolve options via SetServerContext (e.g. SNI-driven).
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
 
-            Assert.Throws<ArgumentNullException>(() => TlsContext.Create((SslClientAuthenticationOptions)null!));
+            Assert.Throws<ArgumentNullException>(() => TlsContext.CreateServer((SslServerAuthenticationOptions)null!));
+            Assert.Throws<ArgumentNullException>(() => TlsContext.CreateClient((SslClientAuthenticationOptions)null!));
         }
 
         [Fact]
         public void TlsSession_OperationsBeforeHandshake_Throw()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
-            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions { ServerCertificate = serverCert });
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions { ServerCertificate = serverCert });
             using TlsSession session = TlsSession.Create(ctx);
 
             byte[] buf = new byte[16];
@@ -277,7 +277,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -338,7 +338,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -453,7 +453,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = protocol,
@@ -518,7 +518,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = protocol,
@@ -621,7 +621,7 @@ namespace System.Net.Security.Tests
                     },
                 });
 
-                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
                     EnabledSslProtocols = protocol,
@@ -736,7 +736,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -779,7 +779,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12,
@@ -839,13 +839,13 @@ namespace System.Net.Security.Tests
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
 
-            using TlsContext serverCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext serverCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = protocols,
                 ClientCertificateRequired = false,
             });
-            using TlsContext clientCtx = TlsContext.Create(new SslClientAuthenticationOptions
+            using TlsContext clientCtx = TlsContext.CreateClient(new SslClientAuthenticationOptions
             {
                 TargetHost = serverName,
                 EnabledSslProtocols = protocols,
@@ -918,7 +918,7 @@ namespace System.Net.Security.Tests
             using (NetworkStream clientNetStream = new NetworkStream(clientSocket, ownsSocket: false))
             using (SslStream clientSsl = new SslStream(clientNetStream, leaveInnerStreamOpen: true, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -1144,7 +1144,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
             {
-                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -1200,7 +1200,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
             {
-                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -1267,7 +1267,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
             {
-                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -1323,7 +1323,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
             {
-                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -1375,7 +1375,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream serverSsl = new SslStream(serverStream, leaveInnerStreamOpen: false))
             {
-                using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -1420,7 +1420,7 @@ namespace System.Net.Security.Tests
         public void TlsSession_ExternalValidation_SetResultBeforeSuspended_Throws()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
-            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions { ServerCertificate = serverCert });
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions { ServerCertificate = serverCert });
             using TlsSession session = TlsSession.Create(ctx);
 
             Assert.Throws<InvalidOperationException>(() =>
@@ -1650,7 +1650,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -1688,7 +1688,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificateSelectionCallback = (sender, hostName) =>
                     {
@@ -1728,7 +1728,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12,
@@ -1987,7 +1987,7 @@ namespace System.Net.Security.Tests
             // Hand the raw handle to TlsSession; it takes ownership.
             SafeSocketHandle serverHandle = serverSocket.SafeHandle;
 
-            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2114,8 +2114,8 @@ namespace System.Net.Security.Tests
             int factoryCalls = 0;
             string? observedSni = null;
 
-            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
-            using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+            using TlsContext hostCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2178,13 +2178,13 @@ namespace System.Net.Security.Tests
             string nameA = certA.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
             const string nameB = "tls-session-vhost-b.example";
 
-            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
-            using TlsContext hostCtxA = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+            using TlsContext hostCtxA = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = certA,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
             });
-            using TlsContext hostCtxB = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext hostCtxB = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = certB,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2292,8 +2292,8 @@ namespace System.Net.Security.Tests
             serverSocket.Blocking = false;
             SafeSocketHandle serverHandle = serverSocket.SafeHandle;
 
-            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
-            using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+            using TlsContext hostCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2365,8 +2365,8 @@ namespace System.Net.Security.Tests
             serverSocket.Blocking = false;
             SafeSocketHandle serverHandle = serverSocket.SafeHandle;
 
-            using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
-            using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
+            using TlsContext hostCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls13,
@@ -2448,7 +2448,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2497,7 +2497,7 @@ namespace System.Net.Security.Tests
             using (serverStream)
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
-                using TlsContext ctx = TlsContext.Create((SslServerAuthenticationOptions?)null);
+                using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
                 using TlsSession session = TlsSession.Create(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
@@ -2507,7 +2507,7 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
 
-                using TlsContext hostCtx = TlsContext.Create(new SslServerAuthenticationOptions
+                using TlsContext hostCtx = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2549,7 +2549,7 @@ namespace System.Net.Security.Tests
             await connect;
             serverSocket.Blocking = false;
 
-            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2595,7 +2595,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void ClientSession_GetClientHelloBytes_Throws()
         {
-            using TlsContext ctx = TlsContext.Create(new SslClientAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateClient(new SslClientAuthenticationOptions
             {
                 TargetHost = "example.com",
             });
@@ -2625,7 +2625,7 @@ namespace System.Net.Security.Tests
             for (int i = 0; i < SessionCount; i++)
             {
                 serverCerts[i] = CreateSelfSignedServerCert($"tls-session-tenant-{i}.example");
-                tenantCtx[i] = TlsContext.Create(new SslServerAuthenticationOptions
+                tenantCtx[i] = TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = serverCerts[i],
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2636,7 +2636,7 @@ namespace System.Net.Security.Tests
             try
             {
                 // One shared bootstrap TlsContext (no cert baked in) across all sessions.
-                using TlsContext bootstrap = TlsContext.Create((SslServerAuthenticationOptions?)null);
+                using TlsContext bootstrap = TlsContext.CreateServer(new SslServerAuthenticationOptions());
 
                 Task[] tasks = new Task[SessionCount];
                 for (int i = 0; i < SessionCount; i++)
@@ -2715,7 +2715,7 @@ namespace System.Net.Security.Tests
             try
             {
                 // Shared TlsContext across all sessions - no client cert baked in.
-                using TlsContext sharedCtx = TlsContext.Create(new SslClientAuthenticationOptions
+                using TlsContext sharedCtx = TlsContext.CreateClient(new SslClientAuthenticationOptions
                 {
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
@@ -2830,7 +2830,7 @@ namespace System.Net.Security.Tests
         public void ServerSession_GetClientHelloBytes_BeforeClientHello_Throws()
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
-            using TlsContext ctx = TlsContext.Create(new SslServerAuthenticationOptions
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
             {
                 ServerCertificate = serverCert,
             });
