@@ -1387,7 +1387,7 @@ static var_types NormalizeCmpMaskSimdBaseType(var_types simdBaseType)
         case TYP_INT:
         case TYP_UINT:
         {
-            return Compiler::getIndexTypeForShuffle(simdBaseType);
+            return Compiler::getUnsignedSimdBaseType(simdBaseType);
         }
 
         default:

@@ -27562,7 +27562,7 @@ GenTree* Compiler::gtNewSimdZipNode(
         }
 
         GenTreeVecCon* shuffle       = gtNewVconNode(type);
-        var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
+        var_types      indexBaseType = getUnsignedSimdBaseType(simdBaseType);
         uint32_t       start         = upper ? (simdCount / 2) : 0;
 
         for (uint32_t index = 0; index < simdCount; index++)
@@ -27670,7 +27670,7 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 #elif defined(TARGET_XARCH)
 
     unsigned  elementSize   = genTypeSize(simdBaseType);
-    var_types indexBaseType = getIndexTypeForShuffle(simdBaseType);
+    var_types indexBaseType = getUnsignedSimdBaseType(simdBaseType);
 
     if (simdSize == 16)
     {
@@ -27826,7 +27826,7 @@ GenTree* Compiler::gtNewSimdReverseNode(var_types type, GenTree* op1, var_types 
     // return Shuffle(op1, indices);
 
     GenTreeVecCon* shuffle       = gtNewVconNode(type);
-    var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
+    var_types      indexBaseType = getUnsignedSimdBaseType(simdBaseType);
 
     for (uint32_t index = 0; index < simdCount; index++)
     {
