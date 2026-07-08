@@ -48,6 +48,5 @@ internal static class Program
     // Loaded into a collectible ALC and used as the type argument of List<>.
     public class CollectibleArg
     {
-        public int Value;
     }
 }
