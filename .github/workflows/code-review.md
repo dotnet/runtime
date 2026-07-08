@@ -12,7 +12,6 @@ network:
 
 tools:
   github:
-    # Use the default containerized github-mcp-server, authenticated with the Actions GITHUB_TOKEN.
     toolsets: [default, search]
   web-fetch:
 
