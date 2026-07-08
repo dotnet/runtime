@@ -337,27 +337,6 @@ internal class GcScanner
     /// </summary>
     private void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
     {
-        // Fast-reject targets whose ArgIterator port isn't yet complete. Without
-        // this gate the eventual NotImplementedException inside
-        // TryComputeArgGCRefMapBlob would drive routine stack scans through
-        // exception-based control flow (expensive, and surfaces as first-chance
-        // exceptions under debuggers).
-        // TODO(https://github.com/dotnet/runtime/issues/130008): extend coverage
-        // and remove this gate.
-        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
-        RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
-        RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
-        bool supported =
-            (os is RuntimeInfoOperatingSystem.Windows
-                && arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64 or RuntimeInfoArchitecture.Arm64)
-            || (os is RuntimeInfoOperatingSystem.Unix or RuntimeInfoOperatingSystem.Apple
-                && arch is RuntimeInfoArchitecture.X64 or RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64);
-        if (!supported)
-        {
-            scanContext.RecordDeferredFrame(frameAddress);
-            return;
-        }
-
         Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
         if (fmf.MethodDescPtr == TargetPointer.Null)
         {

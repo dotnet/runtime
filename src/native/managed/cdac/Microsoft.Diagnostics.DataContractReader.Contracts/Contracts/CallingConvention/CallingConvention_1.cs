@@ -228,8 +228,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                     // SystemV-AMD64 struct-in-registers.
                     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR sysvDesc;
                     parameterTypes[argIndex].GetSystemVAmd64PassStructInRegisterDescriptor(out sysvDesc);
-                    Internal.CallingConvention.ArgLocDesc? loc = argit.GetArgLoc(argOffset);
-                    Debug.Assert(loc.HasValue);
+                    ArgLocDesc loc = argit.GetArgLoc(argOffset) ?? throw new InvalidOperationException("ArgIterator returned null ArgLocDesc for struct-in-registers argument");
 
                     arguments.Add(new ArgumentLocation
                     {
@@ -238,7 +237,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                         TypeHandle = methodSig.ParameterTypes[argIndex],
                         IsStructPassedInRegs = true,
                         SysVEightByteDescriptor = sysvDesc,
-                        SysVIdxGenReg = loc.Value.m_idxGenReg,
+                        SysVIdxGenReg = loc.m_idxGenReg,
                         OpenGenericType = paramInfo[argIndex].OpenGenericType,
                     });
                     argIndex++;
@@ -623,6 +622,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         bool isX86 = arch is RuntimeInfoArchitecture.X86;
 
         int pointerSize = _target.PointerSize;
+        TransitionBlock tb = BuildTransitionBlock(runtimeInfo);
 
         SortedDictionary<int, GCRefMapToken> tokens = new();
         ArgumentLayout enumeration = GetArgumentLayout(methodDesc);
@@ -644,8 +644,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
             {
                 // Mirrors ArgDestination::ReportPointersFromStructInRegisters
                 // in src/coreclr/vm/argdestination.h.
-                TransitionBlock tbForStruct = BuildTransitionBlock(runtimeInfo);
-                int genRegOffset = tbForStruct.OffsetOfArgumentRegisters + arg.SysVIdxGenReg * pointerSize;
+                int genRegOffset = tb.OffsetOfArgumentRegisters + arg.SysVIdxGenReg * pointerSize;
                 for (int i = 0; i < arg.SysVEightByteDescriptor.eightByteCount; i++)
                 {
                     SystemVClassificationType cls = (i == 0)
@@ -790,7 +789,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // the lowest positions). On non-x86 the mapping is monotonic so we
         // could iterate the offset map directly, but using OffsetFromGCRefMapPos
         // for both keeps the code path uniform.
-        TransitionBlock tb = BuildTransitionBlock(runtimeInfo);
 
         // For x86 we need to know how many slot positions exist (we'd otherwise
         // miss high-pos register slots when the offset map's max is on the
