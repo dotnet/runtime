@@ -332,6 +332,13 @@ namespace System.Tests
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, double.PositiveInfinity };
             yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, double.NegativeInfinity };
 
+            // Special-value symbols match case-insensitively (mixed casing exercises the UTF-8 path)
+            yield return new object[] { "nan", NumberStyles.Any, invariantFormat, double.NaN };
+            yield return new object[] { "NAN", NumberStyles.Any, invariantFormat, double.NaN };
+            yield return new object[] { "infinity", NumberStyles.Any, invariantFormat, double.PositiveInfinity };
+            yield return new object[] { "INFINITY", NumberStyles.Any, invariantFormat, double.PositiveInfinity };
+            yield return new object[] { "-iNfInItY", NumberStyles.Any, invariantFormat, double.NegativeInfinity };
+
             // Hex float parsing tests (IEEE 754:2008 §5.12.3)
             // Basic values
             yield return new object[] { "0x1.0p0", NumberStyles.HexFloat, invariantFormat, 1.0 };

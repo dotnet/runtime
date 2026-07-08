@@ -1115,6 +1115,25 @@ namespace System
             }
         }
 
+        internal static bool SpanEqualsOrdinalIgnoreCase<TChar>(ReadOnlySpan<TChar> span, ReadOnlySpan<TChar> value)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
+                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
+                return typedSpan.EqualsOrdinalIgnoreCase(typedValue);
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(byte));
+
+                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
+                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
+                return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<TChar> SpanTrim<TChar>(ReadOnlySpan<TChar> span)
             where TChar : unmanaged, IUtfChar<TChar>
@@ -1159,7 +1178,7 @@ namespace System
         internal static bool TryMatchSpecialValueSymbol<TChar>(ReadOnlySpan<TChar> candidate, ReadOnlySpan<TChar> symbol, bool allowTrailingInvalid, ref int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (!symbol.IsEmpty && SpanStartsWith(candidate, symbol, StringComparison.OrdinalIgnoreCase))
+            if (!symbol.IsEmpty && symbol.Length <= candidate.Length && SpanEqualsOrdinalIgnoreCase(candidate.Slice(0, symbol.Length), symbol))
             {
                 ReadOnlySpan<TChar> trailing = SpanTrimStart(candidate.Slice(symbol.Length));
 
