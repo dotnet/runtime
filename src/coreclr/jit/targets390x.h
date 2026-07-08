@@ -51,7 +51,7 @@
   #define FIRST_FP_ARGREG          REG_F0
   #define LAST_FP_ARGREG           REG_F6
 
-  #define REGNUM_BITS              6       // number of bits in a REG_*
+  #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         8      // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers

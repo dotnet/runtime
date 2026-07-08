@@ -792,7 +792,7 @@ protected:
 #define _idNoGC           _idCustom3 /* Some helpers don't get recorded in GC tables */
 #define _idEvexAaaContext (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1 /* bits used for the EVEX.aaa context */
 
-#if !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_S390X)
         unsigned _idCustom4 : 1;
 
 #define _idCallRegPtr   _idCustom4 /* IL indirect calls : addr in reg */
@@ -969,7 +969,7 @@ protected:
             // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
             // about reading what we think is here, to avoid unexpected corruption issues.
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_S390X)
             emitLclVarAddr iiaLclVar;
 #endif
             BasicBlock* iiaBBlabel;
@@ -1027,6 +1027,7 @@ protected:
 #elif defined(TARGET_S390X)
             struct
             {
+                emitLclVarAddr iiaLclVar;
                 unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
                 GCtype         _idGCref2 : 2;
                 regNumber _idReg3 : REGNUM_BITS;
@@ -1800,7 +1801,7 @@ protected:
             _idBound = 1;
         }
 
-#ifndef TARGET_ARMARCH
+#if !defined(TARGET_ARMARCH) && !defined(TARGET_S390X)
         bool idIsCallRegPtr() const
         {
             assert(!IsAvx512OrPriorInstruction(_idIns));
