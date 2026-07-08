@@ -95,8 +95,7 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
     IWeakReference* pWeakReference = nullptr;
     BEGIN_QCALL;
 
-    SafeComHolderAny<IWeakReferenceSource> pWeakReferenceSource;
-
+    IWeakReferenceSource* pWeakReferenceSourceRaw = nullptr;
     {
         // COM helpers assume COOP mode and the arguments are protected refs.
         GCX_COOP();
@@ -112,12 +111,13 @@ extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnSt
         if (pMT->IsComObjectType()
             && (pMT == g_pBaseCOMObject || !pMT->IsExtensibleRCW()))
         {
-            pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(&objRef, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
+            pWeakReferenceSourceRaw = reinterpret_cast<IWeakReferenceSource*>(GetComIPFromObjectRef(&objRef, IID_IWeakReferenceSource, false /* throwIfNoComIP */));
         }
 
         GCPROTECT_END();
     }
 
+    SafeComHolderPreemp<IWeakReferenceSource> pWeakReferenceSource{ pWeakReferenceSourceRaw };
     if (pWeakReferenceSource != nullptr)
     {
         SafeComHolderPreemp<IWeakReference> weakReferenceHolder;
