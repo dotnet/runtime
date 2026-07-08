@@ -7809,8 +7809,6 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             }
             else if (refPosition->reload)
             {
-                assert(currentSpill[type] > 0);
-
                 // A coalesced constant interval can be reloaded for one use and immediately
                 // re-spilled for a later use at the same refposition. The reload releases the
                 // spill temp while the re-spill reserves a new one, so the concurrent spill
@@ -7818,6 +7816,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 // For all other (single-use) intervals reload and spillAfter never coincide.
                 if (!(interval->isConstant && refPosition->spillAfter))
                 {
+                    assert(currentSpill[type] > 0);
                     currentSpill[type]--;
                 }
             }
@@ -7829,11 +7828,13 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 // decrement spill count.
                 assert(RefTypeIsUse(refType));
 
-                // A coalesced constant interval can have several uses that read the value directly
-                // from a single spill temp. The temp stays live until the final such use, so only
-                // release it on the last use; earlier uses must leave the temp reserved. For all
-                // other (single-use) intervals the use is always the last use, so this is a no-op.
-                if (refPosition->lastUse)
+                // A constant use that is not assigned a register reads its value directly from
+                // the read-only data section rather than from a spill temp, so there is no spill
+                // temp to release here. A constant def is only store-spilled when a later use
+                // needs the value in a register (i.e. that use is a reload), and the temp is
+                // released on that reload instead. For all other intervals the memory operand is
+                // the spill temp, which this use frees.
+                if (!interval->isConstant)
                 {
                     assert(currentSpill[type] > 0);
                     currentSpill[type]--;
