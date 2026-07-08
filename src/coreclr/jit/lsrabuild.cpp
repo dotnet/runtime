@@ -470,8 +470,11 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                 rp->lastUse = true;
             }
 
-            if (theInterval->isConstant)
+            if (theInterval->isConstant && (regType(theInterval->registerType) != IntRegisterType))
             {
+                // Only floating-point/SIMD/mask constants can be coalesced (see areSameConstantNodes),
+                // so integer constant intervals are never multi-ref and are skipped here.
+                //
                 // This may be a coalesced constant interval, where several identical
                 // floating-point/SIMD/mask constants share a single interval. Once another
                 // reference (a later use, or a later definition coalesced into the interval via
