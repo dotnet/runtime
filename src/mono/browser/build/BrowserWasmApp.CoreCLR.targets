@@ -75,13 +75,6 @@
     <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
-  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods.
-       Only available in-tree (RepositoryEngineeringDir is set by the build system).
-       For the workload path we use EmSdkRepo.Defaults.props and inline the exported
-       functions/methods below. -->
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
-          Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
-
   <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set -->
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
           Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
@@ -96,10 +89,10 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
-  <!-- Exported runtime methods and functions for the emcc link step.
-       In the in-tree path native.wasm.targets also defines a GenerateEmccExports target
-       with the same items plus NativeCMakeArg entries; the last definition wins in MSBuild
-       and the CMake args are unused during app relink, so the override is harmless. -->
+  <!-- Fallback exported runtime methods and functions for the emcc link step.
+       Used when the workload path is active and native.wasm.targets is not available.
+       When building in-tree, native.wasm.targets is imported AFTER this target (below)
+       and its GenerateEmccExports definition wins (MSBuild last-definition-wins). -->
   <Target Name="GenerateEmccExports"
           Condition="'$(TargetsBrowser)' == 'true'">
     <ItemGroup>
@@ -144,6 +137,13 @@
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
     </ItemGroup>
   </Target>
+
+  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods.
+       Only available in-tree (RepositoryEngineeringDir is set by the build system).
+       When present its GenerateEmccExports target overrides the fallback above
+       (MSBuild last-definition-wins), so the in-tree list is always authoritative. -->
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
+          Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
 
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
