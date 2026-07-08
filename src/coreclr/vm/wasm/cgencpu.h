@@ -158,4 +158,6 @@ inline TADDR GetSecondArgReg(T_CONTEXT *context)
     return 0;
 }
 
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC);
+
 #endif // __cgenwasm_h__

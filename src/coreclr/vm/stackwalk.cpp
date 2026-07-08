@@ -1476,11 +1476,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#else
+#else // TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
 
     pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
     if (pRD->IsCallerContextValid)
@@ -1501,11 +1501,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
         ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#else
+#else // TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
         ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
-#endif
+#endif // !TARGET_WASM
     }
     SyncRegDisplayToCurrentContext(pRD);
 }

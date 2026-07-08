@@ -6031,7 +6031,7 @@ FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSec
     return nullptr;
 }
 
-BOOL ExecutionManager::IsFuncletFuntionIndex(DWORD functionIndex)
+BOOL ExecutionManager::IsFuncletFunctionIndex(DWORD functionIndex)
 {
     LIMITED_METHOD_CONTRACT;
 
