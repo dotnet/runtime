@@ -65,6 +65,8 @@
             bytes[1] == 0xBB &&
             bytes[2] == 0xBF;
 
+        static bool ContainsNullByte(byte[] bytes) => Array.IndexOf(bytes, (byte)0) >= 0;
+
         var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             ".csproj",
@@ -159,6 +161,13 @@
                 if (HasUtf8Bom(bytes))
                 {
                     Log.LogError($"File '{displayPath}' must be saved as UTF-8 without a byte-order mark to match the repository .editorconfig.");
+                    succeeded = false;
+                    continue;
+                }
+
+                if (ContainsNullByte(bytes))
+                {
+                    Log.LogError($"File '{displayPath}' contains NUL bytes and is not valid UTF-8 text for the repository .editorconfig charset rules.");
                     succeeded = false;
                     continue;
                 }
