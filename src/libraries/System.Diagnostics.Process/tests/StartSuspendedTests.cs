@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact]
         public void StartSuspended_ResumeImmediately_Succeeds()
         {
-            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.StartInfo.StartSuspended = true;
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
