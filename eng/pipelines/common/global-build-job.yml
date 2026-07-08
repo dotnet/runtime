@@ -218,6 +218,10 @@ jobs:
         - ${{ else }}:
           - ${{ preBuildStep }}
 
+    - script: $(_msbuildCommand) eng$(dir)validate-editorconfig-charset.proj /t:ValidateEditorConfigCharsetChangedFiles /p:RepoRoot=$(Build.SourcesDirectory)
+      displayName: Validate .editorconfig charset
+      condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+
     # Build
     - template: /eng/pipelines/common/templates/global-build-step.yml
       parameters:
