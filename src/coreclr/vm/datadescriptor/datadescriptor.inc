@@ -586,8 +586,10 @@ CDAC_TYPE_END(EEClassOptionalFields)
 CDAC_TYPE_BEGIN(SystemVEightByteRegistersInfo)
 CDAC_TYPE_INDETERMINATE(SystemVEightByteRegistersInfo)
 CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, NumEightBytes, cdac_data<SystemVEightByteRegistersInfo>::NumEightBytes)
-CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassifications, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassifications)
-CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSizes, cdac_data<SystemVEightByteRegistersInfo>::EightByteSizes)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification0, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification1, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification1)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize0, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize1, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize1)
 CDAC_TYPE_END(SystemVEightByteRegistersInfo)
 #endif // UNIX_AMD64_ABI
 

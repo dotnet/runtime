@@ -6,16 +6,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.SystemVEightByteRegistersInfo))]
 internal sealed partial class SystemVEightByteRegistersInfo : IData<SystemVEightByteRegistersInfo>
 {
-    [Field] public byte NumEightBytes { get; }
-
     // Slots beyond NumEightBytes are undefined.
-    public byte[] EightByteClassifications { get; private set; } = new byte[2];
-    public byte[] EightByteSizes { get; private set; } = new byte[2];
-
-    partial void OnInit(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.SystemVEightByteRegistersInfo);
-        target.ReadBuffer(address + (ulong)type.Fields[nameof(EightByteClassifications)].Offset, EightByteClassifications);
-        target.ReadBuffer(address + (ulong)type.Fields[nameof(EightByteSizes)].Offset, EightByteSizes);
-    }
+    [Field] public byte NumEightBytes { get; }
+    [Field] public byte EightByteClassification0 { get; }
+    [Field] public byte EightByteClassification1 { get; }
+    [Field] public byte EightByteSize0 { get; }
+    [Field] public byte EightByteSize1 { get; }
 }

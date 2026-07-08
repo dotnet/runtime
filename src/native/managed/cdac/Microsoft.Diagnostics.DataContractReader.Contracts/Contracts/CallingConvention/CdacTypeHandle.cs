@@ -145,18 +145,22 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         if (info.NumEightBytes == 0)
             return;
 
-        Debug.Assert(info.NumEightBytes <= 2);
+        // Runtime contract: at most CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS (2)
+        // eightbytes. Treat a corrupted / out-of-range count as "not passed in
+        // registers" so downstream loops keyed off eightByteCount can't overrun.
+        if (info.NumEightBytes > 2)
+            return;
 
         descriptor.passedInRegisters = true;
         descriptor.eightByteCount = info.NumEightBytes;
-        descriptor.eightByteClassifications0 = (SystemVClassificationType)info.EightByteClassifications[0];
-        descriptor.eightByteSizes0 = info.EightByteSizes[0];
+        descriptor.eightByteClassifications0 = (SystemVClassificationType)info.EightByteClassification0;
+        descriptor.eightByteSizes0 = info.EightByteSize0;
         descriptor.eightByteOffsets0 = 0;
 
         if (info.NumEightBytes > 1)
         {
-            descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassifications[1];
-            descriptor.eightByteSizes1 = info.EightByteSizes[1];
+            descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassification1;
+            descriptor.eightByteSizes1 = info.EightByteSize1;
             descriptor.eightByteOffsets1 = SystemVEightByteSizeInBytes;
         }
     }
