@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
     <Compile Include="System\Linq\Aggregate.cs" />
     <Compile Include="System\Linq\AnyAll.cs" />
     <Compile Include="System\Linq\AppendPrepend.cs" />

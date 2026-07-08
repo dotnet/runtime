@@ -40,12 +40,10 @@ endif()
 #-----------------------------------------------------
 
 if (CLR_CMAKE_HOST_UNIX)
+    add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-conversion)
-        add_compile_options(-glldb)
-    else()
-        add_compile_options(-g)
     endif()
 endif()
 
@@ -759,6 +757,9 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
   elseif(NOT LD_SOLARIS)
     add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+    if (NOT LD_GNU AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+      add_linker_flag(-Wl,--icf=all RELEASE RELWITHDEBINFO)
+    endif()
   endif()
 
   # Specify the minimum supported version of macOS

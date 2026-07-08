@@ -442,6 +442,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormatProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.DecimalIeee754.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal128.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Decimal64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1CharPackedSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1CharPackedIgnoreCaseSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2CharPackedIgnoreCaseSearchValues.cs" />
@@ -620,9 +624,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Rgba.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Rgba.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.Impl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.Impl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.cs" />
@@ -1315,8 +1317,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationLockException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\AsyncCausalityTracerConstants.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\CachedCompletedInt32Task.cs"
-             Link="Common\System\Threading\Tasks\CachedCompletedInt32Task.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\CachedCompletedInt32Task.cs" Link="Common\System\Threading\Tasks\CachedCompletedInt32Task.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConfigureAwaitOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task_T.cs" />

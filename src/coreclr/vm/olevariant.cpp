@@ -425,10 +425,17 @@ struct RecordVariantHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
         if (value != NULL)
         {
+            GCX_PREEMP();
             if (V_RECORD(value))
                 V_RECORDINFO(value)->RecordDestroy(V_RECORD(value));
             if (V_RECORDINFO(value))
@@ -1664,8 +1671,8 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     {
         GCX_PREEMP();
 
-        SafeComHolder<ITypeInfo> pITI;
-        SafeComHolder<IRecordInfo> pRecInfo;
+        ComHolderPreemp<ITypeInfo> pITI;
+        ComHolderPreemp<IRecordInfo> pRecInfo;
         IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
         IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
@@ -2205,7 +2212,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    SafeComHolder<ITypeInfo> pTypeInfo = NULL;
+    ComHolderAnyMode<ITypeInfo> pTypeInfo;
     RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.

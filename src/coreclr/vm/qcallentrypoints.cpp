@@ -295,6 +295,7 @@ static const Entry s_QCall[] =
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
+    DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -348,10 +349,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_WaitForPendingFinalizers)
     DllImportEntry(GCInterface_AddMemoryPressure)
     DllImportEntry(GCInterface_RemoveMemoryPressure)
-#ifdef FEATURE_BASICFREEZE
     DllImportEntry(GCInterface_RegisterFrozenSegment)
     DllImportEntry(GCInterface_UnregisterFrozenSegment)
-#endif
     DllImportEntry(GCInterface_EnumerateConfigurationValues)
     DllImportEntry(GCInterface_RefreshMemoryLimit)
     DllImportEntry(GCInterface_EnableNoGCRegionCallback)
