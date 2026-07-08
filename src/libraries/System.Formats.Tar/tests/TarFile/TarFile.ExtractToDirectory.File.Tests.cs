@@ -347,7 +347,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227", TestPlatforms.OSX)]
         public void LinkBeforeTarget()
         {
             using TempDirectory source = new TempDirectory();
@@ -377,7 +376,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227", TestPlatforms.OSX)]
         public void ExtractToDirectory_RejectsSymlinkDirectoryTraversal_WithNestedFile()
         {
             using TempDirectory root = new TempDirectory();
@@ -419,7 +417,6 @@ namespace System.Formats.Tar.Tests
 
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227", TestPlatforms.OSX | TestPlatforms.Windows)]
         public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal_WithNestedFile()
         {
             // dir a/
