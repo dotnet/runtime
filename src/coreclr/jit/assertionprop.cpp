@@ -2192,6 +2192,18 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
             }
+            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
+                     IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
+                // Create "IND >= 0" assertion for int indirections that are known to be non-negative.
+                // Mainly, this is for unpromoted Span.Length indirections.
+                ValueNum vn = optConservativeNormalVN(tree);
+                if (vn != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, vn, vnStore->VNZeroForType(TYP_INT)));
+                }
+            }
             break;
 
         case GT_INTRINSIC:
