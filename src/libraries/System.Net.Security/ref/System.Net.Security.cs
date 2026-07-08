@@ -687,6 +687,72 @@ namespace System.Net.Security
         TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 = (ushort)53251,
         TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 = (ushort)53253,
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public enum TlsOperationStatus
+    {
+        Complete = 0,
+        DestinationTooSmall = 1,
+        NeedMoreData = 2,
+        Closed = 3,
+        CertificateRequested = 4,
+        NeedsCertificateValidation = 5,
+        NeedsTlsContext = 6,
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class TlsContext : System.IDisposable
+    {
+        internal TlsContext() { }
+        public static System.Net.Security.TlsContext CreateServer(System.Net.Security.SslServerAuthenticationOptions options) { throw null; }
+        public static System.Net.Security.TlsContext CreateClient(System.Net.Security.SslClientAuthenticationOptions options) { throw null; }
+        public void Dispose() { }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class TlsSession : System.IDisposable
+    {
+        private protected TlsSession() { }
+        public bool IsHandshakeComplete { get { throw null; } }
+        public bool HasPendingOutput { get { throw null; } }
+        public string? TargetHostName { get { throw null; } set { } }
+        public System.Net.Security.SslClientHelloInfo? ClientHelloInfo { get { throw null; } }
+        public int GetClientHelloLength() { throw null; }
+        public bool TryGetClientHelloBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public System.Security.Authentication.SslProtocols NegotiatedProtocol { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }
+        public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? GetRemoteCertificate() { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection? GetRemoteCertificates() { throw null; }
+        public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
+        public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
+        public void SetContext(System.Net.Security.TlsContext context) { }
+        public void SetClientCertificateContext(System.Net.Security.SslStreamCertificateContext? context) { }
+        public System.Collections.Generic.IReadOnlyList<string>? GetAcceptableIssuers() { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
+        public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
+        public void Dispose() { }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class TlsBufferSession : System.Net.Security.TlsSession
+    {
+        public TlsBufferSession() { }
+        public System.Net.Security.TlsOperationStatus Handshake(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Write(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Read(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class TlsSocketSession : System.Net.Security.TlsSession
+    {
+        public TlsSocketSession(System.Net.Sockets.SafeSocketHandle socket) { }
+        public System.Net.Sockets.SafeSocketHandle Socket { get { throw null; } }
+        public System.Net.Security.TlsOperationStatus Handshake() { throw null; }
+        public System.Net.Security.TlsOperationStatus Read(System.Span<byte> buffer, out int bytesRead) { throw null; }
+        public System.Net.Security.TlsOperationStatus Write(System.ReadOnlySpan<byte> buffer, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Shutdown() { throw null; }
+        public System.Net.Security.TlsOperationStatus RequestClientCertificate() { throw null; }
+    }
 }
 namespace System.Security.Authentication
 {

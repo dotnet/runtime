@@ -92,3 +92,46 @@ shifting the rest down. Returns the number of bytes drained.
 */
 PALEXPORT int32_t CryptoNative_BioDrainSpill(BIO* bio, void* dst, int32_t dstLen);
 
+/*
+Creates a new BIO that first replays the provided prefix bytes to any
+BIO_read caller, then delegates BIO_read/BIO_write to recv/send on the
+supplied socket file descriptor.
+
+Used by the OpenSSL deferred-server flow: the managed TlsSession first
+peeks the ClientHello off the socket to run a ServerOptionsSelectionCallback
+(so SNI is available), then installs an SSL* whose input BIO replays the
+already-consumed ClientHello bytes before touching the wire again. The
+prefix bytes are copied into the BIO; the fd is borrowed (the BIO does
+not take ownership of it or close it in Destroy).
+*/
+PALEXPORT BIO* CryptoNative_BioNewSocketReplay(intptr_t fd, const void* prefix, int32_t prefixLen);
+
+/*
+Reads directly from a socket-replay BIO's bound fd into its internal peek
+buffer until a full TLS record (5-byte header + fragment) is present.
+Used by the deferred-server fast path to peek the ClientHello without a
+managed pre-fetch buffer + copy round-trip: the same BIO becomes the SSL's
+read BIO once SetServerContext/SetServerOptions resumes the handshake.
+
+*outPtr / *outLen point into the BIO's internal buffer and are valid
+until the BIO is destroyed or SocketReplayBioRead begins consuming it.
+
+Returns:
+   1  = full frame present.
+   0  = need more data (fd would block); caller polls SelectRead and retries.
+  -1  = error (invalid args, EOF, oversized record, or recv failure).
+*/
+PALEXPORT int32_t CryptoNative_BioReadTlsFrame(BIO* bio, uint8_t** outPtr, int32_t* outLen);
+
+/*
+Returns a pointer + length to the socket-replay BIO's peek buffer (the ClientHello
+bytes captured by CryptoNative_BioReadTlsFrame). The buffer remains valid until
+the BIO is destroyed, even after OpenSSL has consumed it during the handshake.
+
+Returns:
+   1  = prefix present; *outPtr / *outLen wrap the internal buffer.
+   0  = no captured prefix (never peeked, or created without one).
+  -1  = error (invalid args).
+*/
+PALEXPORT int32_t CryptoNative_BioGetPrefix(BIO* bio, uint8_t** outPtr, int32_t* outLen);
+
