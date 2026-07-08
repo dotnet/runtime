@@ -196,7 +196,8 @@ function Get-TagSortKey {
 
 # Find the earliest published tag for a given major.minor that already contains the
 # merge commit. Used to recover exact preview/RC granularity when branch containment
-# only resolved to a (pruned) GA line. Returns the parsed tag, or $null.
+# only resolved to a (pruned) GA line. Only the tags for that major.minor are fetched
+# (server-side prefix filter). Returns the parsed tag, or $null.
 #
 # Containment is monotonic along release order: each tag on a major.minor line is a
 # superset of the previous one (preview N+1 includes preview N, GA includes all
@@ -209,12 +210,17 @@ function Get-EarliestContainingTag {
 
     if (-not $commit) { return $null }
 
-    $tagNames = @(gh api "repos/$repo/tags" --paginate --jq '.[].name' 2>$null)
+    # Fetch only the tags for this major.minor via a server-side prefix filter
+    # (git/matching-refs) instead of paginating every tag in the repo. The trailing
+    # dot scopes the match to v<major>.<minor>.* (e.g. v9.0.0, v9.0.0-preview.4,
+    # v9.0.10). This endpoint returns HTTP 200 with an empty array (not 404) when
+    # nothing matches, so the exit-code check below stays valid.
+    $refs = @(gh api "repos/$repo/git/matching-refs/tags/v$major.$minor." --paginate --jq '.[].ref' 2>$null)
     if ($LASTEXITCODE -ne 0) { return $null }
 
     $candidates = @(
-        $tagNames |
-        ForEach-Object { ConvertFrom-DotNetTag $_ } |
+        $refs |
+        ForEach-Object { ConvertFrom-DotNetTag ($_ -replace '^refs/tags/', '') } |
         Where-Object { $_ -and $_.Major -eq $major -and $_.Minor -eq $minor } |
         Sort-Object { Get-TagSortKey $_ }
     )
