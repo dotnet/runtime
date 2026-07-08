@@ -7,9 +7,9 @@ parameters:
   buildDebuggees: true
   skipDebuggeeCopy: false
   runtimeConfiguration: 'Checked'
-  # When true, copy cdaclite.dll into the testhost payload (next to coreclr.dll) so createdump can
-  # select managed memory with cdac-lite instead of the legacy DAC. Paired with the
-  # DOTNET_DbgUseCdacLite pre-command in cdac-dump-helix.proj. Windows-only (no-op elsewhere).
+  # When true, copy the cdac-lite native library into the testhost payload (next to coreclr) so
+  # createdump can select managed memory with cdac-lite instead of the legacy DAC. Paired with the
+  # DOTNET_DbgUseCdacLite pre-command in cdac-dump-helix.proj. Supported on Windows, Linux, and macOS.
   useCdacLite: false
   # Configuration the cDAC managed assemblies are built at during payload
   # prep. The dump tests load the managed cDAC directly via ProjectReference,
@@ -75,20 +75,21 @@ steps:
   displayName: 'Find TestHost Directory and Helix Queue'
 
 - ${{ if parameters.useCdacLite }}:
-  # cdac-lite mode: place cdaclite.dll next to the testhost's coreclr.dll so createdump (which runs
-  # on the Helix machine when a debuggee crashes) loads it and selects the managed memory instead of
-  # the legacy DAC. Windows-only -- the createdump cdac-lite path is Windows-only.
+  # cdac-lite mode: place the cdac-lite native library next to the testhost's coreclr so createdump
+  # (which runs on the Helix machine when a debuggee crashes) loads it and selects the managed memory
+  # instead of the legacy DAC. Supported on Windows, Linux, and macOS.
   - pwsh: |
-      if ("$(osGroup)" -ne "windows") {
-          Write-Host "cdac-lite mode is Windows-only; skipping cdaclite.dll copy for $(osGroup)."
-          exit 0
+      $names = switch ("$(osGroup)") {
+          "windows" { @{ coreclr = "coreclr.dll";      cdaclite = "cdaclite.dll" } }
+          "osx"     { @{ coreclr = "libcoreclr.dylib"; cdaclite = "libcdaclite.dylib" } }
+          default   { @{ coreclr = "libcoreclr.so";    cdaclite = "libcdaclite.so" } }
       }
       $coreclr = Get-ChildItem -Recurse -ErrorAction SilentlyContinue `
           -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*-$(osGroup)-*-$(archType)/shared/Microsoft.NETCore.App" `
-          -Filter "coreclr.dll" | Select-Object -First 1
-      if (-not $coreclr) { Write-Error "coreclr.dll not found in the testhost shared framework."; exit 1 }
-      $src = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).${{ parameters.runtimeConfiguration }}/cdaclite.dll"
-      if (-not (Test-Path $src)) { Write-Error "cdaclite.dll not found at $src (was it built by the CdacBuild -s clr subset?)."; exit 1 }
+          -Filter $names.coreclr | Select-Object -First 1
+      if (-not $coreclr) { Write-Error "$($names.coreclr) not found in the testhost shared framework."; exit 1 }
+      $src = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).${{ parameters.runtimeConfiguration }}/$($names.cdaclite)"
+      if (-not (Test-Path $src)) { Write-Error "$($names.cdaclite) not found at $src (was it built by the CdacBuild -s clr subset?)."; exit 1 }
       Copy-Item $src $coreclr.DirectoryName -Force
-      Write-Host "Copied cdaclite.dll into $($coreclr.DirectoryName)"
+      Write-Host "Copied $($names.cdaclite) into $($coreclr.DirectoryName)"
     displayName: 'Copy cdac-lite into TestHost payload'
