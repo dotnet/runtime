@@ -10,11 +10,6 @@
 #include "error_codes.h"
 #include "hostfxr_resolver.h"
 
-namespace
-{
-    const fxr_search_location s_dotnet_search_location = fxr_search_location_default;
-}
-
 hostfxr_main_bundle_startupinfo_fn hostfxr_resolver_t::resolve_main_bundle_startupinfo()
 {
     assert(m_hostfxr_dll != nullptr);
@@ -45,7 +40,7 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
     {
         pal_char_t* dotnet_root = nullptr;
         pal_char_t* fxr_path = nullptr;
-        resolved = fxr_resolver_try_get_path(app_root.c_str(), s_dotnet_search_location, nullptr, &dotnet_root, &fxr_path);
+        resolved = fxr_resolver_try_get_path(app_root.c_str(), fxr_search_location_default, nullptr, &dotnet_root, &fxr_path);
         if (resolved)
         {
             m_dotnet_root.assign(dotnet_root);
