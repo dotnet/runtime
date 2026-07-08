@@ -290,13 +290,48 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 
             int64_t constValue = node->AsIntConCommon()->IntegralValue();
 
-            if (FitsIn<int32_t>(constValue))
+            if (constValue <= UINT16_MAX)
             {
-                rangeType = TYP_INT;
+                if (constValue <= UINT8_MAX)
+                {
+                    if (constValue <= INT8_MAX)
+                    {
+                        rangeType = TYP_BYTE;
+                    }
+                    else
+                    {
+                        rangeType = TYP_UBYTE;
+                    }
+                }
+                else
+                {
+                    if (constValue <= INT16_MAX)
+                    {
+                        rangeType = TYP_SHORT;
+                    }
+                    else
+                    {
+                        rangeType = TYP_USHORT;
+                    }
+                }
             }
-            else if (FitsIn<uint32_t>(constValue))
+            else
             {
-                rangeType = TYP_UINT;
+                if (constValue <= UINT32_MAX)
+                {
+                    if (constValue <= INT32_MAX)
+                    {
+                        rangeType = TYP_INT;
+                    }
+                    else
+                    {
+                        rangeType = TYP_UINT;
+                    }
+                }
+                else
+                {
+                    rangeType = TYP_LONG;
+                }
             }
 
             if (constValue >= 0)
