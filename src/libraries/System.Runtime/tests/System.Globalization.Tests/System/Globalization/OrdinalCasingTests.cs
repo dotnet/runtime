@@ -86,7 +86,7 @@ namespace System.Globalization.Tests
                 // The String, Char and span overloads must agree.
                 Assert.Equal(upper[0], char.ToUpperOrdinal((char)c));
 
-                Span<char> destination = stackalloc char[1];
+                Span<char> destination = ['\0'];
                 Assert.Equal(1, original.AsSpan().ToUpperOrdinal(destination));
                 Assert.Equal(upper[0], destination[0]);
             }
@@ -108,7 +108,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(1, lower.Length);
                 Assert.Equal(lower[0], char.ToLowerOrdinal((char)c));
 
-                Span<char> destination = stackalloc char[1];
+                Span<char> destination = ['\0'];
                 Assert.Equal(1, original.AsSpan().ToLowerOrdinal(destination));
                 Assert.Equal(lower[0], destination[0]);
             }

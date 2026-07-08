@@ -179,7 +179,7 @@ namespace System.Globalization
             // Quickly upper-case the leading run of ASCII characters, then handle the remainder.
             Ascii.ToUpper(source, destination, out int start);
 
-            for (int i = start; i < source.Length; i++)
+            for (int i = start; (uint)i < (uint)source.Length; i++)
             {
                 char c = source[i];
                 if (c <= '\u00FF') // optimize ASCII/Latin
@@ -233,7 +233,7 @@ namespace System.Globalization
             // Quickly lower-case the leading run of ASCII characters, then handle the remainder.
             Ascii.ToLower(source, destination, out int start);
 
-            for (int i = start; i < source.Length; i++)
+            for (int i = start; (uint)i < (uint)source.Length; i++)
             {
                 char c = source[i];
                 if (c <= '\u00FF') // optimize ASCII/Latin

@@ -40,6 +40,16 @@ namespace System
             public static readonly SearchValues<char> WhiteSpaceChars =
                 SearchValues.Create("\t\n\v\f\r\u0020\u0085\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000");
 
+            // All ASCII characters except the lowercase letters 'a'-'z'. The first character outside this set is
+            // the first one ToUpperOrdinal must change (a lowercase ASCII letter or a non-ASCII character).
+            public static readonly SearchValues<char> AsciiExceptLowercase =
+                SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\e\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~\u007F");
+
+            // All ASCII characters except the uppercase letters 'A'-'Z'. The first character outside this set is
+            // the first one ToLowerOrdinal must change (an uppercase ASCII letter or a non-ASCII character).
+            public static readonly SearchValues<char> AsciiExceptUppercase =
+                SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\e\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007F");
+
 #if DEBUG
             static SearchValuesStorage()
             {
@@ -2614,30 +2624,6 @@ namespace System
             return ChangeCaseOrdinal(toUpper: false);
         }
 
-        // All ASCII characters except the lowercase letters 'a'-'z'. The first character outside this set is
-        // the first one ToUpperOrdinal must change (a lowercase ASCII letter or a non-ASCII character).
-        private static readonly SearchValues<char> s_asciiExceptLowercase = CreateAsciiExcept('a', 'z');
-
-        // All ASCII characters except the uppercase letters 'A'-'Z'. The first character outside this set is
-        // the first one ToLowerOrdinal must change (an uppercase ASCII letter or a non-ASCII character).
-        private static readonly SearchValues<char> s_asciiExceptUppercase = CreateAsciiExcept('A', 'Z');
-
-        private static SearchValues<char> CreateAsciiExcept(char firstLetter, char lastLetter)
-        {
-            int letterCount = lastLetter - firstLetter + 1;
-            Span<char> asciiChars = stackalloc char[128 - letterCount];
-            int count = 0;
-            for (int c = 0; c < 128; c++)
-            {
-                if ((uint)(c - firstLetter) >= (uint)letterCount)
-                {
-                    asciiChars[count++] = (char)c;
-                }
-            }
-
-            return SearchValues.Create(asciiChars);
-        }
-
         private string ChangeCaseOrdinal(bool toUpper)
         {
             Debug.Assert(Length > 0);
@@ -2646,8 +2632,8 @@ namespace System
             // If the entire string is ASCII and needs no change, return the same instance to avoid an
             // allocation. This mirrors the behavior of TextInfo.ChangeCaseCommon used by ToUpper(Invariant)/ToLower.
             int consumed = toUpper
-                ? this.AsSpan().IndexOfAnyExcept(s_asciiExceptLowercase)
-                : this.AsSpan().IndexOfAnyExcept(s_asciiExceptUppercase);
+                ? this.AsSpan().IndexOfAnyExcept(SearchValuesStorage.AsciiExceptLowercase)
+                : this.AsSpan().IndexOfAnyExcept(SearchValuesStorage.AsciiExceptUppercase);
 
             if (consumed < 0)
             {
