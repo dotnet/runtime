@@ -6117,7 +6117,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadFloatRegistersFromContext(
     IN  BYTE * ctxBuf,
     IN  ULONG32 cb,
     IN  ULONG32 maxValues,
-    OUT DOUBLE values[],
+    OUT DOUBLE values[CORDB_MAX_FLOAT_REGISTERS],
     OUT ULONG32 * pValuesCount,
     OUT int * pFirstFloatReg,
     OUT ULONG32 * pFloatStackTop)

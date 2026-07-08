@@ -161,7 +161,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
     return g_JITToCorDbgReg[reg];
 }
 
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context)
+inline LPVOID CORDbgGetIP(T_CONTEXT *context)
 {
     LIMITED_METHOD_CONTRACT;
 

@@ -72,7 +72,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 //
 // inline function to access/modify the CONTEXT
 //
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context) {
+inline LPVOID CORDbgGetIP(T_CONTEXT *context) {
     LIMITED_METHOD_CONTRACT;
 
     return (LPVOID)(size_t)(context->Eip);
