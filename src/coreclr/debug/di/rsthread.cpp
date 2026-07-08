@@ -3463,7 +3463,7 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     // Save the thread's full context + CONTEXT_EXTENDED_REGISTERS
     // to avoid getting incomplete information and corrupt the thread context
     T_CONTEXT context;
-#if defined(CONTEXT_EXTENDED_REGISTERS)
+#if defined(TARGET_X86)
     context.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
 #else
     context.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
@@ -3476,7 +3476,7 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
         DWORD error = GetLastError();
         LOG((LF_CORDB, LL_ERROR, "CUT::SFCHFS: DbiGetThreadContext error=0x%x\n", error));
     }
-#if defined(CONTEXT_EXTENDED_REGISTERS)
+#if defined(TARGET_X86)
     GetHijackCtx()->ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
 #else
     GetHijackCtx()->ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;

@@ -5924,7 +5924,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, T_CONTEXT *
     BYTE * pCtxSource = (BYTE*) pCtx;
 
 
-#if defined(CONTEXT_EXTENDED_REGISTERS)
+#if defined(TARGET_X86)
     if ((pCtx->ContextFlags & CONTEXT_EXTENDED_REGISTERS) != CONTEXT_EXTENDED_REGISTERS)
     {
         sizeToWrite = offsetof(T_CONTEXT, SegSs) + sizeof(pCtx->SegSs);
@@ -12700,7 +12700,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         {
             LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: hijack complete will restore context...\n"));
             T_CONTEXT tempContext = { 0 };
-#if defined(CONTEXT_EXTENDED_REGISTERS)
+#if defined(TARGET_X86)
             tempContext.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
 #else
             tempContext.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
