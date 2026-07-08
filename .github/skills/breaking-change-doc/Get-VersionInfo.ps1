@@ -199,6 +199,13 @@ function Get-TagSortKey {
 # Find the earliest published tag for a given major.minor that already contains the
 # merge commit. Used to recover exact preview/RC granularity when branch containment
 # only resolved to a (pruned) GA line. Returns the parsed tag, or $null.
+#
+# Containment is monotonic along release order: each tag on a major.minor line is a
+# superset of the previous one (preview N+1 includes preview N, GA includes all
+# previews/RCs, each servicing release includes GA). So the candidates -- sorted into
+# chronological release order by Get-TagSortKey -- form a false*..true* sequence, and
+# the earliest containing tag can be found with a binary search (~log2(n) compare-API
+# calls) instead of probing every candidate linearly.
 function Get-EarliestContainingTag {
     param([string]$repo, [string]$commit, [int]$major, [int]$minor)
 
@@ -213,13 +220,21 @@ function Get-EarliestContainingTag {
         Where-Object { $_ -and $_.Major -eq $major -and $_.Minor -eq $minor } |
         Sort-Object { Get-TagSortKey $_ }
     )
+    if ($candidates.Count -eq 0) { return $null }
 
-    foreach ($t in $candidates) {
-        if (Test-CommitInBranch -repo $repo -commit $commit -branch $t.Tag) {
-            return $t
+    $lo = 0
+    $hi = $candidates.Count - 1
+    $earliest = $null
+    while ($lo -le $hi) {
+        $mid = [int](($lo + $hi) / 2)
+        if (Test-CommitInBranch -repo $repo -commit $commit -branch $candidates[$mid].Tag) {
+            $earliest = $candidates[$mid]
+            $hi = $mid - 1   # a containing tag exists; look for an earlier one
+        } else {
+            $lo = $mid + 1
         }
     }
-    return $null
+    return $earliest
 }
 
 # Read MajorVersion/MinorVersion from eng/Versions.props at a specific ref.
