@@ -25,7 +25,7 @@ safe-outputs:
 if: |
   github.event_name == 'workflow_dispatch' ||
   (
-    !github.event.repository.fork &&
+    github.event.repository.fork == false &&
     github.event.pull_request.merged &&
     contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')
   )
