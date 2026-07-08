@@ -13,6 +13,7 @@
 
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
+#define INLINED_PINVOKE_FROM_R2R 0
 
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
@@ -491,12 +492,21 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         return;
     }
 
-    pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
-
     pRD->IsCallerContextValid = FALSE;
 
-    pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
-    pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+    if (m_CallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
+    {
+        pRD->pCurrentContext->InterpreterSP = m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(m_pCallSiteSP);
+        _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(m_pCallSiteSP, pRD->pCurrentContext->InterpreterIP);
+    }
+    else
+    {
+        pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
+        pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+    }
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
     ENUM_CALLEE_SAVED_REGISTERS();
@@ -687,15 +697,68 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void)
     PORTABILITY_ASSERT("GenericPInvokeCalliHelper is not implemented on wasm");
 }
 
-EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame)
+// Does the pinvoke frame transition; the naked wrappers below have already set the wasm
+// __stack_pointer global to sp so it is safe to run native code here.
+EXTERN_C void JIT_PInvokeBeginImpl(void* sp, InlinedCallFrame* pFrame)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeBegin is not implemented on wasm");
+    Thread* pThread = GetThread();
+
+    // Initialize the JIT-provided frame storage, deriving its state from sp/pep since wasm
+    // has no machine registers to read the caller SP / return address from.
+    ::new ((void*)pFrame) InlinedCallFrame();
+    pFrame->m_pCallSiteSP          = sp;
+    pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is tru the UpdateRegisters function will do all work based on m_pCallerReturnAddress
+    pFrame->m_pCalleeSavedFP       = 0;
+    pFrame->m_pThread              = pThread;
+
+    // Link the frame and transition to preemptive GC mode for the native call.
+    pFrame->Push();
+    pThread->EnablePreemptiveGC();
 }
 
-EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame)
+// R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale, so publish
+// the incoming sp to __stack_pointer before any native code runs and leave it there so the
+// subsequent native pinvoke target is also safe.
+extern "C" __attribute__((naked)) void JIT_PInvokeBegin(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeEnd is not implemented on wasm");
+    asm("local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
+        "local.get 0\n"                /* sp */
+        "local.get 1\n"                /* pFrame */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeBeginImpl));
 }
+
+#ifdef DEBUG
+// Debug variant of these apis tests that sp and __stack_pointer are in sync
+EXTERN_C void* JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
+{
+    _ASSERTE(sp == stack_pointer_global_value);
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    // Transition back to cooperative GC mode and unlink the frame.
+    pThread->DisablePreemptiveGC();
+    pFrame->Pop();
+}
+
+extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    asm("local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
+        "local.get 1\n"                /* pFrame */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeEndImpl));
+}
+#else
+extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    // Transition back to cooperative GC mode and unlink the frame.
+    pThread->DisablePreemptiveGC();
+    pFrame->Pop();
+}
+#endif
 
 extern "C" void STDCALL JIT_StackProbe()
 {
