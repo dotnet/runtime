@@ -52,16 +52,6 @@
         <target state="translated">'JsonSourceGenerationMode.Serialization' içinde 'JsonDerivedTypeAttribute' desteklenmiyor.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
-        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="translated">'{0}.{1}' üyesine JsonIncludeAttribute notu eklendi ancak bu üye kaynak oluşturucu tarafından görülmüyor.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
-        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="translated">JsonIncludeAttribute notu eklenmiş erişilemeyen özellikler kaynak oluşturma modunda desteklenmiyor.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">'{1}' üyesi üzerinde belirtilen 'JsonConverterAttribute' '{0}' türü dönüştürücü türü değil veya erişilebilir parametresiz bir oluşturucu içermiyor.</target>

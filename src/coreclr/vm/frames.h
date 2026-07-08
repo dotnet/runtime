@@ -1061,6 +1061,7 @@ public:
     }
 
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
+    void SetContext(T_CONTEXT *pContext);
 #endif
 
     TADDR GetReturnAddressPtr_Impl()

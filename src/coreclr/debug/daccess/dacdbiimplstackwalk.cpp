@@ -1223,14 +1223,14 @@ BOOL DacDbiInterfaceImpl::UnwindRuntimeStackFrame(StackFrameIterator * pIter)
 
 //---------------------------------------------------------------------------------------
 //
-// To aid in doing the stack walk, the shim needs to know if either TS_SyncSuspended or
+// To aid in doing the stack walk, the shim needs to know if either TS_DebugSyncSuspended or
 // TS_Hijacked is set on a given thread. This DAC helper provides that access.
 //
 // Arguments:
-//    vmThread - Thread on which to check the TS_SyncSuspended & TS_Hijacked states
+//    vmThread - Thread on which to check the TS_DebugSyncSuspended & TS_Hijacked states
 //
 // Return Value:
-//    Return true iff TS_SyncSuspended or TS_Hijacked is set on the specified thread.
+//    Return true iff TS_DebugSyncSuspended or TS_Hijacked is set on the specified thread.
 //
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult)
@@ -1243,7 +1243,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR
 
         Thread * pThread = vmThread.GetDacPtr();
         Thread::ThreadState ts = pThread->GetState();
-        if ((ts & Thread::TS_SyncSuspended) != 0)
+        if ((ts & Thread::TS_DebugSyncSuspended) != 0)
         {
             *pResult = TRUE;
         }

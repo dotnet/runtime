@@ -530,6 +530,27 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _interruptibleRanges;
     }
 
+    public bool IsGcSafe(uint instructionOffset)
+    {
+        // Mirrors native EECodeManager::IsGcSafe for the GcInfoDecoder path: the offset is
+        // GC-safe if it is either fully interruptible or a partially-interruptible safe point.
+        EnsureDecodedTo(DecodePoints.InterruptibleRanges);
+
+        // Interruptible: the offset lies within [start, stop) of any range.
+        // Mirrors native GcInfoDecoder::EnumerateInterruptibleRanges/SetIsInterruptibleCB.
+        foreach (InterruptibleRange range in _interruptibleRanges)
+        {
+            if (instructionOffset >= range.StartOffset && instructionOffset < range.EndOffset)
+                return true;
+        }
+
+        // Safe point: the offset matches an entry in the safe point table.
+        // Mirrors native GcInfoDecoder::IsSafePoint.
+        if (_numSafePoints == 0)
+            return false;
+        return FindSafePoint(instructionOffset) != _numSafePoints;
+    }
+
     public uint NumTrackedSlots => _numSlots - _numUntrackedSlots;
 
     IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(

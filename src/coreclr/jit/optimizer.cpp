@@ -5675,26 +5675,6 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
 }
 
 //------------------------------------------------------------------------------
-// optRemoveStandaloneRangeCheck : A thin wrapper over optRemoveRangeCheck that removes standalone checks.
-//
-// Arguments:
-//    check - The standalone top-level CHECK node.
-//    stmt  - The statement "check" is a root node of.
-//
-// Return Value:
-//    If "check" has no side effects, it is retuned, bashed to a no-op.
-//    If it has side effects, the tree that executes them is returned.
-//
-GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt)
-{
-    assert(check != nullptr);
-    assert(stmt != nullptr);
-    assert(check == stmt->GetRootNode());
-
-    return optRemoveRangeCheck(check, nullptr, stmt);
-}
-
-//------------------------------------------------------------------------------
 // optRemoveCommaBasedRangeCheck : A thin wrapper over optRemoveRangeCheck that removes COMMA-based checks.
 //
 // Arguments:
