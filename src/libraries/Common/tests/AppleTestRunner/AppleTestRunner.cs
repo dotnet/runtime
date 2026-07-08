@@ -20,11 +20,37 @@ using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 {
     // to be wired once https://github.com/dotnet/xharness/pull/46 is merged
-    [DllImport("__Internal")]
-    public extern static void mono_ios_append_output (string value);
+    [DllImport("__Internal", EntryPoint = "mono_ios_append_output")]
+    private extern static void mono_ios_append_output_native (IntPtr value);
 
-    [DllImport("__Internal")]
-    public extern static void mono_ios_set_summary (string value);
+    [DllImport("__Internal", EntryPoint = "mono_ios_set_summary")]
+    private extern static void mono_ios_set_summary_native (IntPtr value);
+
+    private static void mono_ios_append_output (string value)
+    {
+        IntPtr ptr = Marshal.StringToCoTaskMemUTF8(value);
+        try
+        {
+            mono_ios_append_output_native(ptr);
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(ptr);
+        }
+    }
+
+    private static void mono_ios_set_summary (string value)
+    {
+        IntPtr ptr = Marshal.StringToCoTaskMemUTF8(value);
+        try
+        {
+            mono_ios_set_summary_native(ptr);
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(ptr);
+        }
+    }
 
     private static List<string> s_testLibs = new List<string>();
     private static List<Assembly>? s_testAssemblies;
