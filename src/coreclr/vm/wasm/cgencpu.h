@@ -112,7 +112,7 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return context->InterpreterFP;
 }
 
-#define ENUM_CALLEE_SAVED_REGISTERS()
+#define ENUM_CALLEE_SAVED_REGISTERS() CALLEE_SAVED_REGISTER(InterpreterFP)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS()
 

@@ -6031,6 +6031,24 @@ FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSec
     return nullptr;
 }
 
+BOOL ExecutionManager::IsFuncletFuntionIndex(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
+    if (pSection == nullptr)
+    {
+        return FALSE;
+    }
+
+    Module* pModule = pSection->pR2RModule;
+    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+
+    DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
+    return RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction);
+}
+
 TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)
 {
     LIMITED_METHOD_CONTRACT;
