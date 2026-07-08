@@ -41,28 +41,13 @@
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Include the test assembly as Content. We don't do this on Browser or Apple mobile Mono to work around
-         https://github.com/dotnet/runtime/issues/46856 that would treat the Content as an assembly reference anyway.
-         Apple mobile NativeAOT compiles the assembly into the native image and would leave no file on disk, so
-         deploy it as Content there too; the loose .dll is then redeployed as .exe by the target below. -->
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' != 'browser' and ('$(TargetsAppleMobile)' != 'true' or '$(UseNativeAotRuntime)' == 'true')">
+    <!-- Embed the test assembly as a managed resource. FileVersionInfoTest writes it to a temp file at run time and
+         inspects that. This avoids deploying a loose managed .dll, which needed per-platform workarounds on Browser
+         and Apple mobile (https://github.com/dotnet/runtime/issues/46856) and does not survive NativeAOT bundling. -->
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <OutputItemType>EmbeddedResource</OutputItemType>
+      <LogicalName>System.Diagnostics.FileVersionInfo.TestAssembly.dll</LogicalName>
     </ProjectReference>
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(UseNativeAotRuntime)' != 'true')" />
-    <!-- R2R testing does not tolerate the combination of a regular project reference and a content reference. -->
-    <!-- This is a bug in the SDK tracked here: https://github.com/dotnet/sdk/issues/30718 -->
-    <PublishReadyToRunExclude Include="System.Diagnostics.FileVersionInfo.TestAssembly.dll" />
-    <!-- Apple mobile trimming descriptor for Mono runtime -->
-    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
-  <!-- The Apple app bundler strips managed .dll files from NativeAOT bundles, so the deployed .dll never reaches
-       the app working directory. Redeploy it under a bundle-safe .exe name for the test to open by path. -->
-  <Target Name="RedeployTestAssemblyForAppleNativeAot"
-          Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseNativeAotRuntime)' == 'true'"
-          BeforeTargets="_AppleGenerateAppBundle">
-    <Copy SourceFiles="$([MSBuild]::NormalizePath('$(PublishDir)', 'System.Diagnostics.FileVersionInfo.TestAssembly.dll'))"
-          DestinationFiles="$([MSBuild]::NormalizePath('$(PublishDir)', 'System.Diagnostics.FileVersionInfo.TestAssembly.exe'))" />
-  </Target>
 </Project>

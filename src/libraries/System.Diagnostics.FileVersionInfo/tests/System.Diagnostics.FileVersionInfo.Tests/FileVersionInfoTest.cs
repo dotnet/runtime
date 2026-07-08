@@ -9,10 +9,6 @@ namespace System.Diagnostics.Tests
 {
     public partial class FileVersionInfoTest : FileCleanupTestBase
     {
-        private static readonly string TestAssemblyFileName =
-            PlatformDetection.IsAppleMobile && PlatformDetection.IsNativeAot ?
-            "System.Diagnostics.FileVersionInfo.TestAssembly.exe" :
-            "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
         // On Unix the internal name's extension is .exe if OutputType is exe even though the TargetExt is .dll.
         private readonly string OriginalTestAssemblyInternalName = PlatformDetection.IsWindows ?
             "System.Diagnostics.FileVersionInfo.TestAssembly.dll" :
@@ -20,12 +16,26 @@ namespace System.Diagnostics.Tests
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
+        // The test assembly is embedded as a managed resource so it is available on every platform without deploying
+        // a loose managed .dll. Write it to a temp file so it can be inspected by path.
+        private string WriteTestAssemblyToFile()
+        {
+            string path = GetTestFilePath();
+            using (Stream source = typeof(FileVersionInfoTest).Assembly.GetManifestResourceStream("System.Diagnostics.FileVersionInfo.TestAssembly.dll"))
+            using (FileStream destination = File.Create(path))
+            {
+                source.CopyTo(destination);
+            }
+
+            return path;
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void FileVersionInfo_CustomManagedAssembly()
         {
-            // Assembly1.dll
-            VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), new MyFVI()
+            string filePath = WriteTestAssemblyToFile();
+            VerifyVersionInfo(filePath, new MyFVI()
             {
                 Comments = "Have you played a Contoso amusement device today?",
                 CompanyName = "The name of the company.",
@@ -33,7 +43,7 @@ namespace System.Diagnostics.Tests
                 FileDescription = "My File",
                 FileMajorPart = 4,
                 FileMinorPart = 3,
-                FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName),
+                FileName = filePath,
                 FilePrivatePart = 1,
                 FileVersion = "4.3.2.1",
                 InternalName = OriginalTestAssemblyInternalName,
