@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging
     /// <para>   - Must have a <see cref="Microsoft.Extensions.Logging.LogLevel"/> as one of its parameters, if the attribute does not specify it.</para>
     /// <para>   - Must have access to an <see cref="ILogger"/>: as a parameter (which is required when the method is <c>static</c>), or, for an instance method, through an <see cref="ILogger"/> field or primary constructor parameter on the containing type.</para>
     /// <para>   - Must not have a name that starts with an underscore, or any parameter whose name starts with an underscore.</para>
-    /// <para>   - Can be generic, but its type parameters cannot have the <c>allows ref struct</c> anti-constraint.</para>
+    /// <para>   - Can be generic, but its type parameters cannot use the <c>allows ref struct</c> constraint.</para>
     /// <para>   - Must not have parameters that use the <c>params</c>, <c>scoped</c>, or <c>out</c> modifiers, or that are <c>ref struct</c> types.</para>
     /// </remarks>
     /// <example>
