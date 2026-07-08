@@ -16,16 +16,17 @@
 // <search_location> \0 <app_relative_dotnet_placeholder>
 #define EMBED_DOTNET_SEARCH_FULL_UTF8    ("\0\0" EMBED_DOTNET_SEARCH_HI_PART_UTF8 EMBED_DOTNET_SEARCH_LO_PART_UTF8)
 
+// Size of the embedded .NET search options buffer.
+#define EMBED_DOTNET_SEARCH_SIZE 512
+
 // Get the .NET search options that should be used.
 // Returns false if options are invalid.
 // out_app_relative_dotnet is a pal_char_t buffer that receives the app-relative dotnet path.
 static bool try_get_dotnet_search_options(fxr_search_location* out_search_location, pal_char_t* out_app_relative_dotnet, size_t out_app_relative_dotnet_len)
 {
-    enum { EMBED_SIZE = 512 };
-
     // Contains the EMBED_DOTNET_SEARCH_FULL_UTF8 value at compile time or app-relative .NET path written by the SDK.
     // Always a narrow UTF-8 string, regardless of platform.
-    static char embed[EMBED_SIZE] = EMBED_DOTNET_SEARCH_FULL_UTF8;
+    static char embed[EMBED_DOTNET_SEARCH_SIZE] = EMBED_DOTNET_SEARCH_FULL_UTF8;
 
     *out_search_location = (fxr_search_location)embed[0];
     assert(embed[1] == 0); // NUL separates the search location and embedded .NET root value
@@ -37,7 +38,7 @@ static bool try_get_dotnet_search_options(fxr_search_location* out_search_locati
     size_t binding_len = strlen(binding);
 
     // Check if the path exceeds the max allowed size
-    enum { EMBED_APP_RELATIVE_DOTNET_MAX_SIZE = EMBED_SIZE - 3 }; // -2 for search location + null, -1 for null terminator
+    enum { EMBED_APP_RELATIVE_DOTNET_MAX_SIZE = EMBED_DOTNET_SEARCH_SIZE - 3 }; // -2 for search location + null, -1 for null terminator
     if (binding_len > EMBED_APP_RELATIVE_DOTNET_MAX_SIZE)
     {
         trace_error(_X("The app-relative .NET path is longer than the max allowed length (%d)"), EMBED_APP_RELATIVE_DOTNET_MAX_SIZE);
@@ -100,7 +101,7 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_char_t* app_r
     resolver->status_code = Success;
 
     fxr_search_location search_loc = fxr_search_location_default;
-    pal_char_t app_relative_dotnet[512];
+    pal_char_t app_relative_dotnet[EMBED_DOTNET_SEARCH_SIZE];
     app_relative_dotnet[0] = _X('\0');
 
     if (!try_get_dotnet_search_options(&search_loc, app_relative_dotnet, ARRAY_SIZE(app_relative_dotnet)))

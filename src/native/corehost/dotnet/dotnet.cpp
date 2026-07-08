@@ -9,7 +9,6 @@
 #include "trace.h"
 #include "utils.h"
 #include "hostfxr_resolver.h"
-#include <cinttypes>
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
