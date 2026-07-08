@@ -12,7 +12,8 @@ using TestLibrary;
 
 public class StrideTest
 {
-    [ActiveIssue("Allocates large contiguous array that is not consistently available on 32-bit platforms", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+    [ActiveIssue("Allocates large contiguous array that is not consistently available on 32-bit platforms", typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+    [ActiveIssue("Allocates large contiguous array that is not consistently available", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
     [Fact]
     public static int TestEntryPoint()
     {
