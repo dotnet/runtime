@@ -85,7 +85,7 @@ namespace System.Net.Security
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
         // True when the transport reported EOF before NW signalled a clean close_notify;
         // any pending or future app receive should surface as IOException(net_io_eof) rather than 0.
-        private bool _transportEofUnclean;
+        private volatile bool _transportEofUnclean;
 
         private ResettableValueTaskSource _appWriteTcs = new ResettableValueTaskSource()
         {

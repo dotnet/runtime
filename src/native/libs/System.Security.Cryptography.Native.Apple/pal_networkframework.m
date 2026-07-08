@@ -412,6 +412,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
     if (listener == NULL)
     {
         LOG_ERROR(context, "Failed to create server listener");
+        dispatch_release(sessionQueue);
         return NULL;
     }
 

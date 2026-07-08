@@ -146,8 +146,8 @@ namespace System.Net.Security
 
         public string? TargetHostName
         {
-            get => _options.TargetHost;
-            set => _options.TargetHost = value ?? string.Empty;
+            get { ThrowIfContextNotSet(); return _options.TargetHost; }
+            set { ThrowIfContextNotSet(); _options.TargetHost = value ?? string.Empty; }
         }
 
         public SslProtocols NegotiatedProtocol
@@ -248,7 +248,7 @@ namespace System.Net.Security
             if (!_externalValidationPending)
             {
                 throw new InvalidOperationException(
-                    "AcceptWithDefaultValidation can only be called after ProcessHandshake returned NeedsCertificateValidation.");
+                    $"{nameof(AcceptWithDefaultValidation)} can only be called when certificate validation is pending.");
             }
 
             // Build a fresh X509Chain locally and seed it with the peer-sent intermediates.
@@ -317,7 +317,7 @@ namespace System.Net.Security
             if (!_externalValidationPending)
             {
                 throw new InvalidOperationException(
-                    "SetRemoteCertificateValidationResult can only be called after ProcessHandshake returned NeedsCertificateValidation.");
+                    $"{nameof(SetRemoteCertificateValidationResult)} can only be called when certificate validation is pending.");
             }
 
             _externalValidationPending = false;
@@ -2222,8 +2222,15 @@ namespace System.Net.Security
             _securityContext = null;
 
             // Disposes the underlying SafeSocketHandle as well (ownership transferred at Create).
-            _socket?.Dispose();
-            _socket = null;
+            if (_socket is not null)
+            {
+                _socket.Dispose();
+                _socket = null;
+            }
+            else
+            {
+                _socketHandle?.Dispose();
+            }
             _socketHandle = null;
 
             if (_ownsOptions)
