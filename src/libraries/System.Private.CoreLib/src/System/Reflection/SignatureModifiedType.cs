@@ -46,6 +46,7 @@ namespace System.Reflection
         public override string Name => _unmodifiedType.Name;
         public override string? Namespace => _unmodifiedType.Namespace;
         public override bool IsEnum => _unmodifiedType.IsEnum;
+        protected override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
         protected override bool HasElementTypeImpl() => _unmodifiedType.HasElementType;
         protected override bool IsArrayImpl() => _unmodifiedType.IsArray;
         protected override bool IsByRefImpl() => _unmodifiedType.IsByRef;
