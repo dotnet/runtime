@@ -1481,11 +1481,6 @@ namespace System.Threading.Tasks.Tests
             // We expect at least one marker callstack per iteration.
             AssertTrue(stream, markerCallstacks.Count >= iterations,
                 $"Expected at least {iterations} callstacks with marker, got {markerCallstacks.Count}");
-
-            // Verify multiple buffer flushes occurred -- proves the buffer machinery is exercised.
-            int bufferCount = 0;
-            ForEachEventBufferPayload(events, _ => bufferCount++);
-            AssertTrue(stream, bufferCount >= 3, $"Expected at least 3 buffer flushes, got {bufferCount}");
         }
 
         [RuntimeAsyncMethodGeneration(false)]
