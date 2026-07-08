@@ -15,6 +15,51 @@ namespace System.IO.Tests
 
         public static bool IsAsyncIoSupportedForRegularFiles => PlatformDetection.IsWindows;
 
+        private static readonly Lazy<string> s_tempDriveFormat = new Lazy<string>(() =>
+            PlatformDetection.IsInAppContainer ? string.Empty : new DriveInfo(Path.GetTempPath()).DriveFormat);
+
+        private static readonly Lazy<bool> s_supportsAlternateDataStreams =
+            new Lazy<bool>(GetSupportsAlternateDataStreams);
+
+        public static string TempDriveFormat => s_tempDriveFormat.Value;
+
+        public static bool IsTempPathOnFat32 =>
+            string.Equals(TempDriveFormat, "FAT32", StringComparison.OrdinalIgnoreCase);
+
+        public static bool TempPathSupportsLargeFiles => !IsTempPathOnFat32;
+
+        public static bool DeletesOpenFileNameImmediately =>
+            PlatformDetection.IsWindows10Version1903OrGreater && !IsTempPathOnFat32;
+
+        public static bool SupportsAlternateDataStreams => s_supportsAlternateDataStreams.Value;
+
+        private static bool GetSupportsAlternateDataStreams()
+        {
+            if (!PlatformDetection.IsWindows)
+            {
+                return false;
+            }
+
+            string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string streamPath = path + ":stream";
+
+            try
+            {
+                File.WriteAllText(path, string.Empty);
+                File.WriteAllText(streamPath, "stream");
+
+                return File.ReadAllText(streamPath) == "stream";
+            }
+            catch (Exception ex) when (ex is IOException || ex is NotSupportedException || ex is UnauthorizedAccessException)
+            {
+                return false;
+            }
+            finally
+            {
+                try { File.Delete(path); } catch { }
+            }
+        }
+
         public static TheoryData<string> PathsWithInvalidColons = TestData.PathsWithInvalidColons;
         public static TheoryData<string> PathsWithInvalidCharacters = TestData.PathsWithInvalidCharacters;
         public static TheoryData<char> TrailingCharacters = TestData.TrailingCharacters;

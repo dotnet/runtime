@@ -14,12 +14,14 @@ namespace System.IO.Tests
         public delegate void SetTime(T item, DateTime time);
         public delegate DateTime GetTime(T item);
         // AppContainer restricts access to DriveFormat (::GetVolumeInformation)
-        private static string driveFormat = PlatformDetection.IsInAppContainer ? string.Empty : new DriveInfo(Path.GetTempPath()).DriveFormat;
+        private static string driveFormat = TempDriveFormat;
 
         private static bool isHFS => driveFormat != null && driveFormat.Equals("hfs", StringComparison.InvariantCultureIgnoreCase);
+        private static bool isFat32 => IsTempPathOnFat32;
+        private static int TemporalResolutionSafeSecond => isFat32 ? 4 : 3;
 
         protected static bool SecondTemporalResolution => true;
-        protected static bool MilliSecondTemporalResolution => SecondTemporalResolution && !isHFS;  // HFS only supports temporal resolution of 1 second
+        protected static bool MilliSecondTemporalResolution => SecondTemporalResolution && !isHFS && !isFat32; // HFS and FAT32 have low temporal resolution
         protected static bool NanoSecondTemporalResolution => MilliSecondTemporalResolution && !PlatformDetection.IsBrowser; // Browser does not support nanosecond resolution
         protected static bool NotMilliSecondTemporalResolution => !MilliSecondTemporalResolution;
         protected static bool NotNanoSecondTemporalResolution => !NanoSecondTemporalResolution;
@@ -73,7 +75,7 @@ namespace System.IO.Tests
                 bool isLink = linkTarget is not null;
 
                 // Checking that milliseconds are not dropped after setter.
-                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, function.Kind);
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, TemporalResolutionSafeSecond, NotMilliSecondTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
 
                 T getTarget = !isLink || ApiTargetsLink ? item : linkTarget;
@@ -207,9 +209,9 @@ namespace System.IO.Tests
                 bool reverse = functions.reverse;
 
                 // Checking that milliseconds are not dropped after setter.
-                DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
-                DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
-                DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, TemporalResolutionSafeSecond, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, TemporalResolutionSafeSecond, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, TemporalResolutionSafeSecond, NotMilliSecondTemporalResolution ? 0 : 321, DateTimeKind.Utc);
                 if (reverse) //reverse the order of setting dates
                 {
                     (dt1, dt3) = (dt3, dt1);
