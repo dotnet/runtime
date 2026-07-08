@@ -264,7 +264,6 @@ enum HWIntrinsicFlag : uint64_t
     // The intrinsic supports some sort of containment analysis
     HW_Flag_SupportsContainment   = 0x400,
     HW_Flag_ReturnsPerElementMask = 0x800,
-    // TODO-WASM: Add WASM-specific flags as needed.
 #else
 #error Unsupported platform
 #endif
