@@ -131,7 +131,7 @@ namespace System.IO.Compression.Tests
                 stream.Write("contents"u8);
             }
 
-            SetFirstEntryVersionMadeByPlatform(archivePath, windowsPlatform: 0);
+            SetFirstEntryVersionMadeByPlatform(archivePath, 0);
 
             string expectedPermissions = GetExpectedPermissions(expectedPermissions: null);
 
@@ -244,14 +244,14 @@ namespace System.IO.Compression.Tests
             await Assert.ThrowsAsync<IOException>(() => CallZipFileCreateFromDirectory(async, subFolderPath, destPath));
         }
 
-        private static void SetFirstEntryVersionMadeByPlatform(string archivePath, byte windowsPlatform)
+        private static void SetFirstEntryVersionMadeByPlatform(string archivePath, byte madeByPlatform)
         {
             byte[] archiveBytes = File.ReadAllBytes(archivePath);
             int centralDirectoryHeaderIndex = archiveBytes.AsSpan().IndexOf(new byte[] { 0x50, 0x4B, 0x01, 0x02 });
             Assert.True(centralDirectoryHeaderIndex >= 0);
 
             // version made by is a little-endian ushort; upper byte is the platform.
-            archiveBytes[centralDirectoryHeaderIndex + 5] = windowsPlatform;
+            archiveBytes[centralDirectoryHeaderIndex + 5] = madeByPlatform;
             File.WriteAllBytes(archivePath, archiveBytes);
         }
 
