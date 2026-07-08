@@ -17,7 +17,7 @@ namespace System.Net.Security
     // dispose) continues to work against the same SafeHandles.
     public partial class SslStream
     {
-        private TlsSession? _tlsSession;
+        private TlsBufferSession? _tlsSession;
 
         private void EnsureTlsSession()
         {
@@ -25,7 +25,8 @@ namespace System.Net.Security
             {
                 Debug.Assert(_sslAuthenticationOptions != null);
                 TlsContext ctx = TlsContext.WrapShared(_sslAuthenticationOptions);
-                _tlsSession = TlsSession.Create(ctx);
+                _tlsSession = new TlsBufferSession();
+                _tlsSession.SetContext(ctx);
 
                 // SslStream owns post-handshake certificate validation (see
                 // SslStream.IO.cs ProcessHandshakeSuccess). Tell TlsSession not to run

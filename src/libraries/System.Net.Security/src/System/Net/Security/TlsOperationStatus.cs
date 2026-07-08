@@ -19,7 +19,7 @@ namespace System.Net.Security
         /// <summary>
         /// The destination buffer was too small for the pending output. Call the
         /// operation again with a larger buffer, or drain via
-        /// <see cref="TlsSession.DrainPendingOutput"/>.
+        /// <see cref="TlsBufferSession.DrainPendingOutput"/>.
         /// </summary>
         DestinationTooSmall = 1,
 

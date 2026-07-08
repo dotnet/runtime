@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
-    public sealed partial class TlsSession
+    public abstract partial class TlsSession
     {
         // When true, socket-bound I/O delegates ciphertext directly to OpenSSL via
         // SSL_set_fd / SSL_do_handshake / SSL_read / SSL_write, bypassing the
@@ -45,7 +45,7 @@ namespace System.Net.Security
             // because ClientHello capture is on (the default). Callers can disable capture
             // via the System.Net.Security.CaptureClientHello AppContext switch to skip the
             // peek and take the SSL_set_fd fast path when options are already supplied.
-            if (_context.IsServer && (!_hasServerOptions || LocalAppContextSwitches.CaptureClientHello))
+            if (_context!.IsServer && (!_hasServerOptions || LocalAppContextSwitches.CaptureClientHello))
             {
                 _pendingFdSocket = socket;
                 nativeBindingEnabled = false;

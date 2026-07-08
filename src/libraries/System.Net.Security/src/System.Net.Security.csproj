@@ -79,6 +79,10 @@
     <Compile Include="System\Net\Security\TlsOperationStatus.cs" />
     <Compile Include="System\Net\Security\TlsSession.cs"
              Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows' or '$(UseAppleCrypto)' == 'true'" />
+    <Compile Include="System\Net\Security\TlsBufferSession.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows' or '$(UseAppleCrypto)' == 'true'" />
+    <Compile Include="System\Net\Security\TlsSocketSession.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'windows' or '$(UseAppleCrypto)' == 'true'" />
     <Compile Include="System\Net\Security\TlsSession.OpenSsl.cs"
              Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd'" />
     <Compile Include="System\Net\Security\TlsSession.Stub.cs"

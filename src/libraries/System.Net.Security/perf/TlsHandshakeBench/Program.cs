@@ -79,6 +79,20 @@ public class TlsHandshakeBench
     private const int ScratchSize = 32 * 1024;
     private const string ServerName = "tlsbench.local";
 
+    private static TlsBufferSession NewBufferSession(TlsContext ctx)
+    {
+        TlsBufferSession s = new TlsBufferSession();
+        s.SetContext(ctx);
+        return s;
+    }
+
+    private static TlsSocketSession NewSocketSession(TlsContext ctx, SafeSocketHandle handle)
+    {
+        TlsSocketSession s = new TlsSocketSession(handle);
+        s.SetContext(ctx);
+        return s;
+    }
+
     private static TlsHandshakeBench? s_current;
 
     private X509Certificate2 _cert = null!;
@@ -186,7 +200,7 @@ public class TlsHandshakeBench
 
         using var clientStream = new NetworkStream(cs, ownsSocket: true);
         using var client = new SslStream(clientStream, leaveInnerStreamOpen: false);
-        using TlsSession session = TlsSession.Create(_ctxBuffered);
+        using TlsBufferSession session = NewBufferSession(_ctxBuffered);
 
         Task c = ClientHandshakeThenPingPongAsync(client);
         Task s = RunOnDedicatedThreadAsync(() => DriveBufferedHandshakeAndPingPong(session, ss));
@@ -206,7 +220,7 @@ public class TlsHandshakeBench
 
         using var clientStream = new NetworkStream(cs, ownsSocket: true);
         using var client = new SslStream(clientStream, leaveInnerStreamOpen: false);
-        using TlsSession session = TlsSession.Create(_ctxFd, ss.SafeHandle);
+        using TlsSocketSession session = NewSocketSession(_ctxFd, ss.SafeHandle);
 
         Task c = ClientHandshakeThenPingPongAsync(client);
         Task s = RunOnDedicatedThreadAsync(() => DriveFdHandshakeAndPingPong(session, ss));
@@ -231,7 +245,7 @@ public class TlsHandshakeBench
 
         using var clientStream = new NetworkStream(cs, ownsSocket: true);
         using var client = new SslStream(clientStream, leaveInnerStreamOpen: false);
-        using TlsSession session = TlsSession.Create(_ctxFdDeferred, ss.SafeHandle);
+        using TlsSocketSession session = NewSocketSession(_ctxFdDeferred, ss.SafeHandle);
 
         Task c = ClientHandshakeThenPingPongAsync(client);
         Task s = RunOnDedicatedThreadAsync(() => DriveFdDeferredHandshakeAndPingPong(session, ss));
@@ -299,7 +313,7 @@ public class TlsHandshakeBench
         if (c2.Result != 1 || rx[0] != 0xCD) throw new IOException("sslstream pong failed");
     }
 
-    private static void DriveBufferedHandshakeAndPingPong(TlsSession session, Socket socket)
+    private static void DriveBufferedHandshakeAndPingPong(TlsBufferSession session, Socket socket)
     {
         DriveBufferedHandshake(session, socket);
         if (!session.IsHandshakeComplete) throw new IOException("buffered handshake not complete before ping/pong");
@@ -320,7 +334,7 @@ public class TlsHandshakeBench
             int inUsed = 0;
             while (true)
             {
-                TlsOperationStatus s = session.Decrypt(netIn.AsSpan(0, inUsed), plain, out int consumed, out int produced);
+                TlsOperationStatus s = session.Read(netIn.AsSpan(0, inUsed), plain, out int consumed, out int produced);
                 if (consumed > 0)
                 {
                     if (consumed < inUsed) Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
@@ -348,7 +362,7 @@ public class TlsHandshakeBench
             int sent = 0;
             while (sent < 1)
             {
-                TlsOperationStatus s = session.Encrypt(pong.AsSpan(sent), netOut, out int consumed, out int produced);
+                TlsOperationStatus s = session.Write(pong.AsSpan(sent), netOut, out int consumed, out int produced);
                 sent += consumed;
                 if (produced > 0) NonBlockingSendAll(socket, netOut, 0, produced);
                 if (s == TlsOperationStatus.DestinationTooSmall) DrainPending(session, socket, netOut);
@@ -362,7 +376,7 @@ public class TlsHandshakeBench
         }
     }
 
-    private static void DriveFdHandshakeAndPingPong(TlsSession session, Socket socket)
+    private static void DriveFdHandshakeAndPingPong(TlsSocketSession session, Socket socket)
     {
         DriveFdHandshake(session, socket);
         if (!session.IsHandshakeComplete) throw new IOException("fd handshake not complete before ping/pong");
@@ -396,7 +410,7 @@ public class TlsHandshakeBench
         }
     }
 
-    private static void DriveBufferedHandshake(TlsSession session, Socket socket)
+    private static void DriveBufferedHandshake(TlsBufferSession session, Socket socket)
     {
         byte[] netIn = ArrayPool<byte>.Shared.Rent(ScratchSize);
         byte[] netOut = ArrayPool<byte>.Shared.Rent(ScratchSize);
@@ -406,7 +420,7 @@ public class TlsHandshakeBench
             while (!session.IsHandshakeComplete)
             {
                 Probe.ProcessHandshakeCalls++;
-                TlsOperationStatus status = session.ProcessHandshake(
+                TlsOperationStatus status = session.Handshake(
                     netIn.AsSpan(0, inUsed), netOut, out int consumed, out int produced);
 
                 if (consumed > 0)
@@ -447,7 +461,7 @@ public class TlsHandshakeBench
         }
     }
 
-    private static void DriveFdHandshake(TlsSession session, Socket socket)
+    private static void DriveFdHandshake(TlsSocketSession session, Socket socket)
     {
         // fd-mode: OpenSSL drives the socket directly. Wait on socket readiness
         // (not SpinWait) when WantRead/WantWrite surfaces.
@@ -479,7 +493,7 @@ public class TlsHandshakeBench
     // bench's pre-warmed _ctxFd as the per-tenant context (SSL_CTX is already allocated
     // and cert-installed on it, so the deferred session just adopts that CTX for the rest
     // of the handshake).
-    private static void DriveFdDeferredHandshakeAndPingPong(TlsSession session, Socket socket)
+    private static void DriveFdDeferredHandshakeAndPingPong(TlsSocketSession session, Socket socket)
     {
         TlsHandshakeBench bench = s_current!;
         while (true)
@@ -536,7 +550,7 @@ public class TlsHandshakeBench
         }
     }
 
-    private static void DrainPending(TlsSession session, Socket socket, byte[] scratch)
+    private static void DrainPending(TlsBufferSession session, Socket socket, byte[] scratch)
     {
         while (session.HasPendingOutput)
         {
@@ -617,6 +631,20 @@ public class TlsHandshakeBench
 
 internal static class TraceHarness
 {
+    private static TlsBufferSession NewBufferSession(TlsContext ctx)
+    {
+        TlsBufferSession s = new TlsBufferSession();
+        s.SetContext(ctx);
+        return s;
+    }
+
+    private static TlsSocketSession NewSocketSession(TlsContext ctx, SafeSocketHandle handle)
+    {
+        TlsSocketSession s = new TlsSocketSession(handle);
+        s.SetContext(ctx);
+        return s;
+    }
+
     public static async Task Run(int iterations, SslProtocols protocol, bool allowResume, string mode)
     {
         Console.WriteLine($"=== TRACE iterations={iterations} protocol={protocol} allowResume={allowResume} mode={mode} ===");
@@ -655,8 +683,8 @@ internal static class TraceHarness
             server.Blocking = false;
 
             using TlsSession session = mode == "fd"
-                ? TlsSession.Create(ctx, server.SafeHandle)
-                : TlsSession.Create(ctx);
+                ? NewSocketSession(ctx, server.SafeHandle)
+                : NewBufferSession(ctx);
 
             using var clientStream = new NetworkStream(client, ownsSocket: true);
             using var sslClient = new SslStream(clientStream, leaveInnerStreamOpen: false);
@@ -698,137 +726,138 @@ internal static class TraceHarness
 
     private static void DriveTraced(TlsSession session, Socket socket, int iter, string mode)
     {
+        if (mode == "fd")
+        {
+            DriveTracedFd((TlsSocketSession)session, socket, iter);
+        }
+        else
+        {
+            DriveTracedBuffered((TlsBufferSession)session, socket, iter);
+        }
+    }
+
+    private static void DriveTracedFd(TlsSocketSession session, Socket socket, int iter)
+    {
+        Console.WriteLine($"[i{iter}][S] fd handshake start");
+        while (true)
+        {
+            TlsOperationStatus s = session.Handshake();
+            Console.WriteLine($"[i{iter}][S] Handshake -> {s} complete={session.IsHandshakeComplete}");
+            if (s == TlsOperationStatus.Complete) break;
+            if (s == TlsOperationStatus.NeedsCertificateValidation) { session.AcceptWithDefaultValidation(); continue; }
+            if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
+            if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
+            throw new IOException($"unexpected {s}");
+        }
+
+        Console.WriteLine($"[i{iter}][S] reading 1-byte ping");
+        byte[] rx = new byte[1];
+        while (true)
+        {
+            TlsOperationStatus s = session.Read(rx, out int produced);
+            Console.WriteLine($"[i{iter}][S] Read -> {s} produced={produced}");
+            if (produced == 1) break;
+            if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
+            if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
+            throw new IOException($"read {s}");
+        }
+
+        Console.WriteLine($"[i{iter}][S] writing 1-byte pong");
+        byte[] tx = new byte[] { 0xCD };
+        int written = 0;
+        while (written < 1)
+        {
+            TlsOperationStatus s = session.Write(tx.AsSpan(written), out int consumed);
+            written += consumed;
+            Console.WriteLine($"[i{iter}][S] Write -> {s} consumed={consumed}");
+            if (written == 1) break;
+            if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
+            if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
+            throw new IOException($"write {s}");
+        }
+        Console.WriteLine($"[i{iter}][S] done");
+    }
+
+    private static void DriveTracedBuffered(TlsBufferSession session, Socket socket, int iter)
+    {
         const int ScratchSize = 32 * 1024;
         byte[] netIn = new byte[ScratchSize];
         byte[] netOut = new byte[ScratchSize];
         int inUsed = 0;
 
-        if (mode == "fd")
+        Console.WriteLine($"[i{iter}][S] buffered handshake start");
+        while (!session.IsHandshakeComplete)
         {
-            Console.WriteLine($"[i{iter}][S] fd handshake start");
-            while (true)
+            TlsOperationStatus status = session.Handshake(netIn.AsSpan(0, inUsed), netOut, out int consumed, out int produced);
+            Console.WriteLine($"[i{iter}][S] ProcessHandshake in={inUsed} consumed={consumed} produced={produced} -> {status} complete={session.IsHandshakeComplete}");
+            if (consumed > 0)
             {
-                TlsOperationStatus s = session.Handshake();
-                Console.WriteLine($"[i{iter}][S] Handshake -> {s} complete={session.IsHandshakeComplete}");
-                if (s == TlsOperationStatus.Complete) break;
-                if (s == TlsOperationStatus.NeedsCertificateValidation) { session.AcceptWithDefaultValidation(); continue; }
-                if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
-                if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
-                throw new IOException($"unexpected {s}");
+                if (consumed < inUsed) Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
+                inUsed -= consumed;
+            }
+            if (produced > 0)
+            {
+                int sent = TraceSend(socket, netOut, 0, produced, iter, "hs");
+                Console.WriteLine($"[i{iter}][S]   wrote {sent} bytes to socket");
+            }
+            switch (status)
+            {
+                case TlsOperationStatus.Complete: continue;
+                case TlsOperationStatus.NeedsCertificateValidation: session.AcceptWithDefaultValidation(); continue;
+                case TlsOperationStatus.DestinationTooSmall:
+                    Console.WriteLine($"[i{iter}][S]   draining pending");
+                    DrainTraced(session, socket, netOut, iter);
+                    continue;
+                case TlsOperationStatus.NeedMoreData:
+                    inUsed += TraceRecv(socket, netIn, inUsed, iter, "hs");
+                    continue;
+                case TlsOperationStatus.Closed:
+                    throw new IOException("closed in handshake");
             }
         }
-        else
-        {
-            Console.WriteLine($"[i{iter}][S] buffered handshake start");
-            while (!session.IsHandshakeComplete)
-            {
-                TlsOperationStatus status = session.ProcessHandshake(netIn.AsSpan(0, inUsed), netOut, out int consumed, out int produced);
-                Console.WriteLine($"[i{iter}][S] ProcessHandshake in={inUsed} consumed={consumed} produced={produced} -> {status} complete={session.IsHandshakeComplete}");
-                if (consumed > 0)
-                {
-                    if (consumed < inUsed) Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
-                    inUsed -= consumed;
-                }
-                if (produced > 0)
-                {
-                    int sent = TraceSend(socket, netOut, 0, produced, iter, "hs");
-                    Console.WriteLine($"[i{iter}][S]   wrote {sent} bytes to socket");
-                }
-                switch (status)
-                {
-                    case TlsOperationStatus.Complete: continue;
-                    case TlsOperationStatus.NeedsCertificateValidation: session.AcceptWithDefaultValidation(); continue;
-                    case TlsOperationStatus.DestinationTooSmall:
-                        Console.WriteLine($"[i{iter}][S]   draining pending");
-                        DrainTraced(session, socket, netOut, iter);
-                        continue;
-                    case TlsOperationStatus.NeedMoreData:
-                        inUsed += TraceRecv(socket, netIn, inUsed, iter, "hs");
-                        continue;
-                    case TlsOperationStatus.Closed:
-                        throw new IOException("closed in handshake");
-                }
-            }
-            Console.WriteLine($"[i{iter}][S] handshake complete; post-handshake drain");
-            DrainTraced(session, socket, netOut, iter);
-        }
+        Console.WriteLine($"[i{iter}][S] handshake complete; post-handshake drain");
+        DrainTraced(session, socket, netOut, iter);
 
-        // ping read
         Console.WriteLine($"[i{iter}][S] reading 1-byte ping");
-        if (mode == "fd")
+        byte[] plain = new byte[1024];
+        while (true)
         {
-            byte[] rx = new byte[1];
-            while (true)
+            TlsOperationStatus s = session.Read(netIn.AsSpan(0, inUsed), plain, out int consumed, out int produced);
+            Console.WriteLine($"[i{iter}][S] Decrypt in={inUsed} consumed={consumed} produced={produced} -> {s}");
+            if (consumed > 0)
             {
-                TlsOperationStatus s = session.Read(rx, out int produced);
-                Console.WriteLine($"[i{iter}][S] Read -> {s} produced={produced}");
-                if (produced == 1) break;
-                if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
-                if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
-                throw new IOException($"read {s}");
+                if (consumed < inUsed) Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
+                inUsed -= consumed;
             }
-        }
-        else
-        {
-            byte[] plain = new byte[1024];
-            while (true)
+            if (produced > 0) break;
+            switch (s)
             {
-                TlsOperationStatus s = session.Decrypt(netIn.AsSpan(0, inUsed), plain, out int consumed, out int produced);
-                Console.WriteLine($"[i{iter}][S] Decrypt in={inUsed} consumed={consumed} produced={produced} -> {s}");
-                if (consumed > 0)
-                {
-                    if (consumed < inUsed) Buffer.BlockCopy(netIn, consumed, netIn, 0, inUsed - consumed);
-                    inUsed -= consumed;
-                }
-                if (produced > 0) break;
-                switch (s)
-                {
-                    case TlsOperationStatus.NeedMoreData:
-                        inUsed += TraceRecv(socket, netIn, inUsed, iter, "ping");
-                        continue;
-                    case TlsOperationStatus.DestinationTooSmall:
-                        DrainTraced(session, socket, netOut, iter);
-                        continue;
-                    case TlsOperationStatus.Closed:
-                        throw new IOException("closed");
-                }
+                case TlsOperationStatus.NeedMoreData:
+                    inUsed += TraceRecv(socket, netIn, inUsed, iter, "ping");
+                    continue;
+                case TlsOperationStatus.DestinationTooSmall:
+                    DrainTraced(session, socket, netOut, iter);
+                    continue;
+                case TlsOperationStatus.Closed:
+                    throw new IOException("closed");
             }
         }
 
-        // pong write
         Console.WriteLine($"[i{iter}][S] writing 1-byte pong");
-        if (mode == "fd")
+        byte[] tx = new byte[] { 0xCD };
+        int wrote = 0;
+        while (wrote < 1)
         {
-            byte[] tx = new byte[] { 0xCD };
-            int written = 0;
-            while (written < 1)
-            {
-                TlsOperationStatus s = session.Write(tx.AsSpan(written), out int consumed);
-                written += consumed;
-                Console.WriteLine($"[i{iter}][S] Write -> {s} consumed={consumed}");
-                if (written == 1) break;
-                if (s == TlsOperationStatus.DestinationTooSmall) { socket.Poll(-1, SelectMode.SelectWrite); continue; }
-                if (s == TlsOperationStatus.NeedMoreData) { socket.Poll(-1, SelectMode.SelectRead); continue; }
-                throw new IOException($"write {s}");
-            }
-        }
-        else
-        {
-            byte[] tx = new byte[] { 0xCD };
-            int written = 0;
-            while (written < 1)
-            {
-                TlsOperationStatus s = session.Encrypt(tx.AsSpan(written), netOut, out int consumed, out int produced);
-                written += consumed;
-                Console.WriteLine($"[i{iter}][S] Encrypt -> {s} consumed={consumed} produced={produced}");
-                if (produced > 0) TraceSend(socket, netOut, 0, produced, iter, "pong");
-                if (s == TlsOperationStatus.DestinationTooSmall) DrainTraced(session, socket, netOut, iter);
-            }
+            TlsOperationStatus s = session.Write(tx.AsSpan(wrote), netOut, out int consumed, out int produced);
+            wrote += consumed;
+            Console.WriteLine($"[i{iter}][S] Encrypt -> {s} consumed={consumed} produced={produced}");
+            if (produced > 0) TraceSend(socket, netOut, 0, produced, iter, "pong");
+            if (s == TlsOperationStatus.DestinationTooSmall) DrainTraced(session, socket, netOut, iter);
         }
         Console.WriteLine($"[i{iter}][S] done");
     }
 
-    private static void DrainTraced(TlsSession session, Socket socket, byte[] scratch, int iter)
+    private static void DrainTraced(TlsBufferSession session, Socket socket, byte[] scratch, int iter)
     {
         while (session.HasPendingOutput)
         {

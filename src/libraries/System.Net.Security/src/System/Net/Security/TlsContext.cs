@@ -80,25 +80,34 @@ namespace System.Net.Security
         // Platform hook: lets the OpenSSL partial dispose the owned SSL_CTX. No-op elsewhere.
         partial void DisposeNativeContext();
 
-        public bool IsServer => _options.IsServer;
+        internal bool IsServer => _options.IsServer;
 
         /// <summary>
         /// Creates a server-side TLS context.
         /// </summary>
         /// <param name="options">
-        /// The server authentication options, or <see langword="null"/> to defer
-        /// configuration. When null, the first <see cref="TlsSession.ProcessHandshake"/>
-        /// call on a session built from this context returns
+        /// The server authentication options. May be a default-constructed instance
+        /// (no server certificate, no <see cref="SslServerAuthenticationOptions.ServerCertificateSelectionCallback"/>)
+        /// to defer server configuration: the first <see cref="TlsBufferSession.Handshake"/>
+        /// call on a session built from that context returns
         /// <see cref="TlsOperationStatus.NeedsTlsContext"/> with
         /// <see cref="TlsSession.ClientHelloInfo"/> populated; the caller must then
         /// invoke <see cref="TlsSession.SetContext"/> before continuing the
         /// handshake. Useful for SNI-based options selection that involves I/O.
         /// </param>
-        public static TlsContext Create(SslServerAuthenticationOptions? options)
+        public static TlsContext CreateServer(SslServerAuthenticationOptions options)
         {
+            ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();
-            if (options is null)
+            bool hasServerCredentials =
+                options.ServerCertificate != null ||
+                options.ServerCertificateContext != null ||
+                options.ServerCertificateSelectionCallback != null;
+
+            if (!hasServerCredentials)
             {
+                // Deferred: caller will resolve the credential from SNI and hand back
+                // a completed TlsContext via TlsSession.SetContext.
                 bag.IsServer = true;
                 return new TlsContext(bag, isWedge: false, templateHasServerOptions: false);
             }
@@ -112,14 +121,14 @@ namespace System.Net.Security
         /// </summary>
         /// <remarks>
         /// Peer certificate validation always runs outside the TLS state machine: after the
-        /// handshake reaches the point at which the peer cert is available, <see cref="TlsSession.ProcessHandshake"/>
+        /// handshake reaches the point at which the peer cert is available, <see cref="TlsBufferSession.Handshake"/>
         /// returns <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and the caller
         /// must record a result via <see cref="TlsSession.SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors)"/>
         /// or <see cref="TlsSession.AcceptWithDefaultValidation"/>. Any
         /// <see cref="SslClientAuthenticationOptions.RemoteCertificateValidationCallback"/> set on
         /// <paramref name="options"/> is invoked only by <see cref="TlsSession.AcceptWithDefaultValidation"/>.
         /// </remarks>
-        public static TlsContext Create(SslClientAuthenticationOptions options)
+        public static TlsContext CreateClient(SslClientAuthenticationOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
             SslAuthenticationOptions bag = new SslAuthenticationOptions();

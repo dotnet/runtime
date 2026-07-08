@@ -26,15 +26,15 @@ namespace System.Net.Security
     /// Non-blocking TLS state machine wrapper around the existing
     /// <see cref="SslStreamPal"/>. The caller owns I/O and drives ciphertext
     /// in and out via byte spans. Supported on Linux/FreeBSD (OpenSSL) and
-    /// Windows (SChannel). Provides <see cref="ProcessHandshake"/>,
-    /// <see cref="Encrypt"/>, <see cref="Decrypt"/>, and a pending-output queue.
+    /// Windows (SChannel). Provides <see cref="TlsBufferSession.Handshake"/>,
+    /// <see cref="TlsBufferSession.Write"/>, <see cref="TlsBufferSession.Read"/>, and a pending-output queue.
     /// </summary>
     /// <remarks>
     /// <para>
     /// The session never performs any I/O. The caller drives ciphertext in/out
     /// via byte spans. Any ciphertext the TLS layer needs to send (handshake
     /// records, alerts, encrypted application data) is staged in an internal
-    /// pending-output buffer and drained via <see cref="DrainPendingOutput"/>.
+    /// pending-output buffer and drained via <see cref="TlsBufferSession.DrainPendingOutput"/>.
     /// </para>
     /// <para>
     /// Contract: any operation may return <see cref="TlsOperationStatus.DestinationTooSmall"/>
@@ -44,15 +44,17 @@ namespace System.Net.Security
     /// </para>
     /// </remarks>
     [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public sealed partial class TlsSession : IDisposable
+    public abstract partial class TlsSession : IDisposable
     {
         // Matches StreamSizes.Default on Unix; conservative upper bound for a
         // single TLS record's plaintext payload.
         internal const int MaxRecordPlaintext = 16354;
 
-        private readonly TlsContext _context;
-        private readonly SslAuthenticationOptions _options;
-        private readonly bool _ownsOptions;
+        // Nullable until SetContext is called. All operations that depend on a
+        // configured context validate this at entry.
+        private TlsContext? _context;
+        private SslAuthenticationOptions _options = null!;
+        private bool _ownsOptions;
         private bool _hasServerOptions;
         private TlsSecurityContext? _securityContext;
 
@@ -97,54 +99,44 @@ namespace System.Net.Security
         private byte[]? _socketInBuf;
         private int _socketInUsed;
 
-        private TlsSession(TlsContext context)
+        private protected TlsSession()
         {
+        }
+
+        // Called by TlsSocketSession's constructor to bind a socket handle before the
+        // session receives any TlsContext. The socket is taken to ownership and disposed
+        // with the session. Platforms with a native fd-binding fast path (OpenSSL) take
+        // the socket directly; otherwise the socket is wrapped in a managed Socket for
+        // the buffered I/O path.
+        internal void AttachSocket(SafeSocketHandle socket)
+        {
+            Debug.Assert(socket != null);
+            _socketHandle = socket;
+
+            bool nativeBindingEnabled = false;
+            EnableNativeSocketBinding(socket, ref nativeBindingEnabled);
+            if (!nativeBindingEnabled)
+            {
+                _socket = new Socket(socket);
+            }
+        }
+
+        internal SafeSocketHandle? SocketHandle => _socketHandle;
+
+        private void InitializeFromContext(TlsContext context)
+        {
+            Debug.Assert(_context is null);
             _context = context;
             _ownsOptions = !context.ShareOptions;
             _options = context.CreateSessionOptions();
             _hasServerOptions = context.TemplateHasServerOptions;
+            OnContextInitialized();
         }
 
-
-        /// <summary>
-        /// Creates a socket-bound session that drives its own ciphertext I/O on the
-        /// supplied socket via <see cref="Handshake"/>, <see cref="Read"/>, and
-        /// <see cref="Write"/>. The socket must be configured as non-blocking;
-        /// behavior with a blocking socket is unspecified.
-        /// </summary>
-        /// <remarks>
-        /// The session takes ownership of <paramref name="socket"/> and disposes
-        /// it when the session is disposed.
-        /// </remarks>
-        public static TlsSession Create(TlsContext context, SafeSocketHandle socket)
+        internal virtual void OnContextInitialized()
         {
-            ArgumentNullException.ThrowIfNull(context);
-            ArgumentNullException.ThrowIfNull(socket);
-
-            TlsSession session = new TlsSession(context);
-            session._socketHandle = socket;
-
-            // Platforms with a native fd-binding fast path (OpenSSL) take the
-            // socket directly; otherwise wrap it in a managed Socket for the
-            // buffered I/O path.
-            bool nativeBindingEnabled = false;
-            session.EnableNativeSocketBinding(socket, ref nativeBindingEnabled);
-            if (!nativeBindingEnabled)
-            {
-                session._socket = new Socket(socket);
-            }
-            return session;
         }
 
-        public SafeSocketHandle? Socket => _socketHandle;
-        public static TlsSession Create(TlsContext context)
-        {
-            ArgumentNullException.ThrowIfNull(context);
-
-            TlsSession session = new TlsSession(context);
-
-            return session;
-        }
 
         // ── State ─────────────────────────────────────────────────────────
 
@@ -226,7 +218,7 @@ namespace System.Net.Security
         /// Returns the intermediate certificates the peer sent alongside its leaf certificate
         /// (the leaf itself is available via <see cref="GetRemoteCertificate"/>), or <c>null</c>
         /// if no intermediates were received. Only meaningful while the session is awaiting an
-        /// external validation result (after <see cref="ProcessHandshake"/> returned
+        /// external validation result (after <see cref="TlsBufferSession.Handshake"/> returned
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/>). The certificates are
         /// owned by the session and disposed when the session is disposed or when the validation
         /// result is recorded; callers that need to retain them must clone the instances.
@@ -246,7 +238,7 @@ namespace System.Net.Security
         /// validation logic.
         /// </summary>
         /// <remarks>
-        /// Must be called only after <see cref="ProcessHandshake"/> returned
+        /// Must be called only after <see cref="TlsBufferSession.Handshake"/> returned
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and before
         /// <see cref="SetRemoteCertificateValidationResult"/> is called.
         /// </remarks>
@@ -313,8 +305,8 @@ namespace System.Net.Security
         /// <summary>
         /// Records the caller's external certificate-validation result.
         /// <see cref="SslPolicyErrors.None"/> means accept; any other value causes
-        /// subsequent calls to <see cref="ProcessHandshake"/>, <see cref="Encrypt"/>,
-        /// and <see cref="Decrypt"/> to throw <see cref="AuthenticationException"/>.
+        /// subsequent calls to <see cref="TlsBufferSession.Handshake"/>, <see cref="TlsBufferSession.Write"/>,
+        /// and <see cref="TlsBufferSession.Read"/> to throw <see cref="AuthenticationException"/>.
         /// Must be called exactly once between
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and the next
         /// session operation.
@@ -423,65 +415,97 @@ namespace System.Net.Security
         }
 
         /// <summary>
-        /// Server-side only. Returns a <see cref="ReadOnlySpan{Byte}"/> over the raw
-        /// ClientHello record bytes (5-byte TLS record header plus the ClientHello
-        /// handshake message). The returned span is valid until <see cref="Dispose"/>
-        /// and never escapes the calling frame - callers who need to persist the bytes
-        /// should call <c>ToArray()</c>.
+        /// Server-side only. Returns the number of bytes in the captured raw ClientHello
+        /// record (5-byte TLS record header plus the ClientHello handshake message), or
+        /// 0 if unavailable. Callers use this to size a destination buffer for
+        /// <see cref="TryGetClientHelloBytes"/>.
         /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown when the ClientHello bytes are not available: on client-side sessions,
-        /// before the ClientHello has been received, or on server sessions where
-        /// ClientHello capture was disabled via the
-        /// <c>System.Net.Security.CaptureClientHello</c> AppContext switch AND options
-        /// were supplied at <see cref="TlsContext"/> creation time.
-        /// </exception>
-        public ReadOnlySpan<byte> GetClientHelloBytes()
+        /// <remarks>
+        /// The ClientHello is only captured on server-side sessions and requires the
+        /// <c>System.Net.Security.CaptureClientHello</c> AppContext switch to be enabled
+        /// (default true). Returns 0 on client-side sessions, before the ClientHello has
+        /// been received, or when capture has been disabled.
+        /// </remarks>
+        public int GetClientHelloLength()
         {
             ThrowIfDisposed();
 
-            // Native/fd-mode path: bytes are retained inside the socket-replay BIO's
-            // peek buffer until the SSL* holding it is freed.
             ReadOnlySpan<byte> native = default;
             TryGetNativeClientHelloBytes(ref native);
             if (!native.IsEmpty)
             {
-                return native;
+                return native.Length;
             }
 
-            // Buffered / managed path: bytes copied into a session-owned array at parse
-            // time.
-            if (_clientHelloBytesBuffered is not null)
-            {
-                return _clientHelloBytesBuffered;
-            }
-
-            throw new InvalidOperationException(SR.net_ssl_client_hello_bytes_unavailable);
+            return _clientHelloBytesBuffered?.Length ?? 0;
         }
 
         /// <summary>
-        /// Server-side only. Resolves a session suspended on
-        /// <see cref="TlsOperationStatus.NeedsTlsContext"/> by supplying an
-        /// already-configured server-side <see cref="TlsContext"/> whose SSL_CTX
-        /// (and TLS session-ticket cache) will back this session. Callers that
-        /// maintain a pool of virtual-host contexts (typically keyed by SNI +
-        /// options fingerprint) use this to steer the session onto the pre-warmed
-        /// context matching the ClientHello, preserving cross-connection
-        /// resumption on a per-tenant basis.
+        /// Server-side only. Copies the captured raw ClientHello record into
+        /// <paramref name="destination"/>. Returns <see langword="true"/> when the full
+        /// record was written; <see langword="false"/> if the destination is too small
+        /// or the ClientHello is not available.
         /// </summary>
-        /// <param name="context">A fully-configured server <see cref="TlsContext"/>.</param>
+        /// <param name="destination">Buffer that receives the ClientHello bytes.</param>
+        /// <param name="bytesWritten">Number of bytes copied. Zero when the method returns false.</param>
+        public bool TryGetClientHelloBytes(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+
+            ReadOnlySpan<byte> source = default;
+            TryGetNativeClientHelloBytes(ref source);
+            if (source.IsEmpty)
+            {
+                if (_clientHelloBytesBuffered is null)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+                source = _clientHelloBytesBuffered;
+            }
+
+            if (destination.Length < source.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            source.CopyTo(destination);
+            bytesWritten = source.Length;
+            return true;
+        }
+
+        /// <summary>
+        /// Assigns a <see cref="TlsContext"/> to this session. Must be called at least
+        /// once before <see cref="TlsBufferSession.Handshake"/> or its socket-bound
+        /// equivalent can make forward progress. May also be called on a server-side
+        /// session that suspended with <see cref="TlsOperationStatus.NeedsTlsContext"/>
+        /// to steer it onto the resolved per-tenant context.
+        /// </summary>
+        /// <param name="context">A fully-configured <see cref="TlsContext"/>.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="context"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="context"/> is not a server-side context.</exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when supplying a resolved context after
+        /// <see cref="TlsOperationStatus.NeedsTlsContext"/> and the passed context is
+        /// not server-side.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if the session is not currently awaiting server options, or if
-        /// server options were already supplied at <see cref="TlsContext"/> creation.
+        /// Thrown when the session already has a context and is not currently awaiting
+        /// server options (i.e., the caller tried to swap a context that was already
+        /// fully configured).
         /// </exception>
         public void SetContext(TlsContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
             ThrowIfDisposed();
 
-            if (!_context.IsServer)
+            if (_context is null)
+            {
+                InitializeFromContext(context);
+                return;
+            }
+
+            if (!_context!.IsServer)
             {
                 throw new InvalidOperationException("SetContext can only be called on a server-side session.");
             }
@@ -495,7 +519,7 @@ namespace System.Net.Security
             }
             if (_clientHelloInfo is null)
             {
-                throw new InvalidOperationException("SetContext can only be called after ProcessHandshake returned NeedsTlsContext.");
+                throw new InvalidOperationException("SetContext can only be called after Handshake returned NeedsTlsContext.");
             }
 
             // Ask the supplied context for a session-options bag — this allocates its
@@ -528,33 +552,33 @@ namespace System.Net.Security
 
         /// <summary>
         /// Client-side only. Supplies the certificate context the session should send
-        /// in response to the server's CertificateRequest. Intended to resolve a session
-        /// suspended on <see cref="TlsOperationStatus.CertificateRequested"/>: callers that need
-        /// to fetch a certificate from an out-of-process source (e.g. a key vault) do so
-        /// outside the session, then resume the handshake with another call to
-        /// <see cref="ProcessHandshake"/> (with empty input). May also be called before
-        /// the first <see cref="ProcessHandshake"/> to seed the client credential when the
+        /// in response to the server's CertificateRequest, or <see langword="null"/> to
+        /// decline. Intended to resolve a session suspended on
+        /// <see cref="TlsOperationStatus.CertificateRequested"/>: callers that need to
+        /// fetch a certificate from an out-of-process source (e.g. a key vault) do so
+        /// outside the session, then resume the handshake. May also be called before
+        /// the first handshake call to seed the client credential when the
         /// <see cref="TlsContext"/> was created without one.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown on a server-side session.
+        /// Thrown on a server-side session, or before <see cref="SetContext"/> has been
+        /// called.
         /// </exception>
-        public void SetClientCertificateContext(SslStreamCertificateContext context)
+        public void SetClientCertificateContext(SslStreamCertificateContext? context)
         {
-            ArgumentNullException.ThrowIfNull(context);
             ThrowIfDisposed();
+            ThrowIfContextNotSet();
 
-            if (_context.IsServer)
+            if (_context!.IsServer)
             {
                 throw new InvalidOperationException("SetClientCertificateContext can only be called on a client-side session.");
             }
-
             _options.CertificateContext = context;
 
             // Drop the cached credentials handle (acquired without a client cert) so the
-            // next ProcessHandshake re-acquires with the supplied context.
-            _context.CredentialsHandle?.Dispose();
-            _context.CredentialsHandle = null;
+            // next Handshake re-acquires with the supplied context.
+            _context!.CredentialsHandle?.Dispose();
+            _context!.CredentialsHandle = null;
             _resumeAfterCredentials = true;
         }
 
@@ -571,7 +595,7 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
 
-            if (_context.IsServer || _securityContext is null)
+            if (_context is null || _context.IsServer || _securityContext is null)
             {
                 return null;
             }
@@ -620,7 +644,7 @@ namespace System.Net.Security
             get
             {
                 ThrowIfDisposed();
-                if (_context.IsServer)
+                if (_context!.IsServer)
                 {
                     return _options.CertificateContext?.TargetCertificate;
                 }
@@ -657,7 +681,7 @@ namespace System.Net.Security
 
         // ── Handshake ─────────────────────────────────────────────────────
 
-        public TlsOperationStatus ProcessHandshake(
+        private protected TlsOperationStatus HandshakeBufferedCore(
             ReadOnlySpan<byte> input,
             Span<byte> output,
             out int bytesConsumed,
@@ -713,7 +737,7 @@ namespace System.Net.Security
             // The only call that legitimately runs with empty input is the very first
             // client-side ISC, which produces the ClientHello, or a client resume after
             // SetClientCertificateContext resolved a prior WantCredentials suspension.
-            bool isInitialClientCall = !_context.IsServer && _securityContext is null;
+            bool isInitialClientCall = !_context!.IsServer && _securityContext is null;
             bool isCredentialResume = _resumeAfterCredentials;
             _resumeAfterCredentials = false;
             if (!isInitialClientCall && !isCredentialResume)
@@ -739,7 +763,7 @@ namespace System.Net.Security
             token.RentBuffer = true;
             try
             {
-                if (_context.IsServer)
+                if (_context!.IsServer)
                 {
                     // Parse and capture the ClientHello managed-side so the ClientHelloInfo /
                     // TargetHostName / GetClientHelloBytes surface is consistent across paths.
@@ -845,7 +869,7 @@ namespace System.Net.Security
                     }
 
                     SecurityStatusPal selStatus = SslStreamPal.SelectApplicationProtocol(
-                        _context.CredentialsHandle,
+                        _context!.CredentialsHandle,
                         _securityContext!,
                         _options,
                         rawAlpn);
@@ -857,7 +881,7 @@ namespace System.Net.Security
 
                     token.ReleasePayload();
 
-                    if (_context.IsServer)
+                    if (_context!.IsServer)
                     {
                         token = SslStreamPal.AcceptSecurityContext(
                             ref ActiveCredentialsRef(),
@@ -972,7 +996,7 @@ namespace System.Net.Security
             }
         }
 
-        public TlsOperationStatus Encrypt(
+        private protected TlsOperationStatus WriteBufferedCore(
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
             out int bytesConsumed,
@@ -1042,7 +1066,7 @@ namespace System.Net.Security
 
         // ── Decrypt ───────────────────────────────────────────────────────
 
-        public TlsOperationStatus Decrypt(
+        private protected TlsOperationStatus ReadBufferedCore(
             ReadOnlySpan<byte> ciphertext,
             Span<byte> plaintext,
             out int bytesConsumed,
@@ -1224,14 +1248,14 @@ namespace System.Net.Security
         /// <para>
         /// The generated handshake bytes are staged into the pending-output
         /// buffer (drained into <paramref name="ciphertext"/>). The caller
-        /// must then continue normal <see cref="Decrypt"/> / <see cref="Encrypt"/>
+        /// must then continue normal <see cref="TlsBufferSession.Read"/> / <see cref="TlsBufferSession.Write"/>
         /// operations; OpenSSL processes the peer's response transparently
         /// inside subsequent <c>SSL_read</c> calls. Once the peer's
         /// certificate has been received, it becomes observable via
         /// <see cref="GetRemoteCertificate"/>.
         /// </para>
         /// </remarks>
-        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int bytesWritten)
+        private protected TlsOperationStatus RequestClientCertificateBufferedCore(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
             bytesWritten = 0;
@@ -1241,7 +1265,7 @@ namespace System.Net.Security
             // path, and Network.framework does not provide renegotiation primitives.
             throw new PlatformNotSupportedException(SR.net_ssl_renegotiate_not_supported);
 #else
-            if (!_context.IsServer)
+            if (!_context!.IsServer)
             {
                 throw new InvalidOperationException("RequestClientCertificate can only be invoked on a server session.");
             }
@@ -1296,7 +1320,7 @@ namespace System.Net.Security
         /// otherwise <see cref="TlsOperationStatus.Closed"/> once all bytes have
         /// been handed to the caller.
         /// </remarks>
-        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int bytesWritten)
+        private protected TlsOperationStatus ShutdownBufferedCore(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
             bytesWritten = 0;
@@ -1323,7 +1347,7 @@ namespace System.Net.Security
                 token.RentBuffer = true;
                 try
                 {
-                    if (_context.IsServer)
+                    if (_context!.IsServer)
                     {
                         token = SslStreamPal.AcceptSecurityContext(
                             ref ActiveCredentialsRef(),
@@ -1362,7 +1386,7 @@ namespace System.Net.Security
 
         // ── Pending output ────────────────────────────────────────────────
 
-        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int bytesWritten)
+        private protected TlsOperationStatus DrainPendingOutputCore(Span<byte> ciphertext, out int bytesWritten)
         {
             ThrowIfDisposed();
             bytesWritten = DrainTo(ciphertext);
@@ -1442,6 +1466,14 @@ namespace System.Net.Security
         }
 
         private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+        private void ThrowIfContextNotSet()
+        {
+            if (_context is null)
+            {
+                throw new InvalidOperationException(SR.net_ssl_tlssession_context_not_set);
+            }
+        }
 
         // Server-side: parses the ClientHello and returns a populated
         // SslClientHelloInfo (SNI + supported versions), or null if more bytes
@@ -1527,7 +1559,7 @@ namespace System.Net.Security
         }
 
         internal TlsSecurityContext? SecurityContext => _securityContext;
-        internal TlsContext Context => _context;
+        internal TlsContext Context => _context!;
         internal SafeFreeCredentials? CredentialsHandle
         {
             get => ActiveCredentialsRef();
@@ -1539,7 +1571,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    _context.CredentialsHandle = value;
+                    _context!.CredentialsHandle = value;
                 }
             }
         }
@@ -1551,7 +1583,7 @@ namespace System.Net.Security
         private ref SafeFreeCredentials? ActiveCredentialsRef()
             => ref (_sessionCredentialsHandle is not null
                     ? ref _sessionCredentialsHandle
-                    : ref _context.CredentialsHandle);
+                    : ref _context!.CredentialsHandle);
 
         // SslStream's GenerateToken replacement. Drives one ASC/ISC step via PAL and
         // updates internal handshake-complete state. Returns the raw PAL token so the
@@ -1562,7 +1594,7 @@ namespace System.Net.Security
             ThrowIfDisposed();
 
             ProtocolToken token;
-            if (_context.IsServer)
+            if (_context!.IsServer)
             {
                 token = SslStreamPal.AcceptSecurityContext(
                     ref ActiveCredentialsRef(),
@@ -1665,12 +1697,12 @@ namespace System.Net.Security
         // certificate selection are not yet integrated.
         private void EnsureCredentialsAcquired()
         {
-            if (_context.CredentialsHandle is not null)
+            if (_context!.CredentialsHandle is not null)
             {
                 return;
             }
 
-            _context.CredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_options, false);
+            _context!.CredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_options, false);
         }
 
         // Feed a decrypted post-handshake message (e.g. TLS 1.3 NewSessionTicket
@@ -1688,7 +1720,7 @@ namespace System.Net.Security
             token.RentBuffer = true;
             try
             {
-                if (_context.IsServer)
+                if (_context!.IsServer)
                 {
                     token = SslStreamPal.AcceptSecurityContext(
                         ref ActiveCredentialsRef(),
@@ -1768,7 +1800,7 @@ namespace System.Net.Security
             return true;
         }
 
-        public TlsOperationStatus Handshake()
+        private protected TlsOperationStatus HandshakeSocketCore()
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
@@ -1809,7 +1841,7 @@ namespace System.Net.Security
                         }
                     }
 
-                    TlsOperationStatus status = ProcessHandshake(
+                    TlsOperationStatus status = HandshakeBufferedCore(
                         new ReadOnlySpan<byte>(_socketInBuf, 0, _socketInUsed),
                         scratch,
                         out int consumed,
@@ -1894,7 +1926,7 @@ namespace System.Net.Security
             }
         }
 
-        public TlsOperationStatus Read(Span<byte> buffer, out int bytesRead)
+        private protected TlsOperationStatus ReadSocketCore(Span<byte> buffer, out int bytesRead)
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
@@ -1918,7 +1950,7 @@ namespace System.Net.Security
             {
                 if (_socketInUsed > 0)
                 {
-                    TlsOperationStatus status = Decrypt(
+                    TlsOperationStatus status = ReadBufferedCore(
                         new ReadOnlySpan<byte>(_socketInBuf, 0, _socketInUsed),
                         buffer,
                         out int consumed,
@@ -1981,7 +2013,7 @@ namespace System.Net.Security
             }
         }
 
-        public TlsOperationStatus Write(ReadOnlySpan<byte> buffer, out int bytesWritten)
+        private protected TlsOperationStatus WriteSocketCore(ReadOnlySpan<byte> buffer, out int bytesWritten)
         {
             ThrowIfDisposed();
             ThrowIfNotSocketBound();
@@ -2023,7 +2055,7 @@ namespace System.Net.Security
                 int totalConsumed = 0;
                 while (totalConsumed < buffer.Length)
                 {
-                    TlsOperationStatus encStatus = Encrypt(
+                    TlsOperationStatus encStatus = WriteBufferedCore(
                         buffer.Slice(totalConsumed),
                         scratch,
                         out int consumed,
@@ -2081,6 +2113,74 @@ namespace System.Net.Security
                 ArrayPool<byte>.Shared.Return(scratch);
             }
         }
+
+        // Simple driver that runs a buffered "output-only" op (Shutdown /
+        // RequestClientCertificate) and drains its staged ciphertext to the socket.
+        private TlsOperationStatus DriveBufferedOpOverSocket(Func<Span<byte>, (TlsOperationStatus status, int written)> op)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotSocketBound();
+
+            // Drain any leftover pending output before staging new bytes.
+            if (_pendingLength > 0)
+            {
+                if (!TryDrainPendingToSocket(out SocketError leftoverErr))
+                {
+                    if (leftoverErr == SocketError.WouldBlock)
+                    {
+                        return TlsOperationStatus.DestinationTooSmall;
+                    }
+                    throw new SocketException((int)leftoverErr);
+                }
+            }
+
+            byte[] scratch = ArrayPool<byte>.Shared.Rent(SocketScratchSize);
+            try
+            {
+                (TlsOperationStatus status, int written) = op(scratch);
+                if (written > 0)
+                {
+                    int offset = 0;
+                    while (offset < written)
+                    {
+                        int sent = _socket!.Send(
+                            new ReadOnlySpan<byte>(scratch, offset, written - offset),
+                            SocketFlags.None,
+                            out SocketError sendErr);
+                        if (sent > 0)
+                        {
+                            offset += sent;
+                            continue;
+                        }
+                        if (sendErr == SocketError.WouldBlock)
+                        {
+                            AppendPending(new ReadOnlySpan<byte>(scratch, offset, written - offset));
+                            return TlsOperationStatus.DestinationTooSmall;
+                        }
+                        throw new SocketException((int)sendErr);
+                    }
+                }
+                return status;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(scratch);
+            }
+        }
+
+        private protected TlsOperationStatus ShutdownSocketCore()
+            => DriveBufferedOpOverSocket(dest =>
+            {
+                TlsOperationStatus s = ShutdownBufferedCore(dest, out int w);
+                return (s, w);
+            });
+
+        private protected TlsOperationStatus RequestClientCertificateSocketCore()
+            => DriveBufferedOpOverSocket(dest =>
+            {
+                TlsOperationStatus s = RequestClientCertificateBufferedCore(dest, out int w);
+                return (s, w);
+            });
 
         // Platform hooks. Implemented by the OpenSSL partial (TlsSession.OpenSsl.cs)
         // to bind the socket fd directly to the SSL object and drive ciphertext

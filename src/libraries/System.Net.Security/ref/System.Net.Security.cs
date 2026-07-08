@@ -707,40 +707,51 @@ namespace System.Net.Security
         public void Dispose() { }
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    public sealed partial class TlsSession : System.IDisposable
+    public abstract partial class TlsSession : System.IDisposable
     {
-        internal TlsSession() { }
+        private protected TlsSession() { }
         public bool IsHandshakeComplete { get { throw null; } }
         public bool HasPendingOutput { get { throw null; } }
         public string? TargetHostName { get { throw null; } set { } }
         public System.Net.Security.SslClientHelloInfo? ClientHelloInfo { get { throw null; } }
-        public System.ReadOnlySpan<byte> GetClientHelloBytes() { throw null; }
+        public int GetClientHelloLength() { throw null; }
+        public bool TryGetClientHelloBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public System.Security.Authentication.SslProtocols NegotiatedProtocol { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
-        public static System.Net.Security.TlsSession Create(System.Net.Security.TlsContext context) { throw null; }
-        public static System.Net.Security.TlsSession Create(System.Net.Security.TlsContext context, System.Net.Sockets.SafeSocketHandle socket) { throw null; }
-        public System.Net.Sockets.SafeSocketHandle? Socket { get { throw null; } }
-        public System.Net.Security.TlsOperationStatus Handshake() { throw null; }
-        public System.Net.Security.TlsOperationStatus Read(System.Span<byte> buffer, out int bytesRead) { throw null; }
-        public System.Net.Security.TlsOperationStatus Write(System.ReadOnlySpan<byte> buffer, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus ProcessHandshake(System.ReadOnlySpan<byte> input, System.Span<byte> output, out int bytesConsumed, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus Encrypt(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, out int bytesConsumed, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus Decrypt(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, out int bytesConsumed, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
-        public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? GetRemoteCertificate() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection? GetRemoteCertificates() { throw null; }
         public System.Net.Security.SslPolicyErrors AcceptWithDefaultValidation() { throw null; }
         public void SetRemoteCertificateValidationResult(System.Net.Security.SslPolicyErrors errors) { }
         public void SetContext(System.Net.Security.TlsContext context) { }
-        public void SetClientCertificateContext(System.Net.Security.SslStreamCertificateContext context) { }
+        public void SetClientCertificateContext(System.Net.Security.SslStreamCertificateContext? context) { }
         public System.Collections.Generic.IReadOnlyList<string>? GetAcceptableIssuers() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? LocalCertificate { get { throw null; } }
         public System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind) { throw null; }
-        public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
         public void Dispose() { }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class TlsBufferSession : System.Net.Security.TlsSession
+    {
+        public TlsBufferSession() { }
+        public System.Net.Security.TlsOperationStatus Handshake(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Write(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Read(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> ciphertext, out int bytesWritten) { throw null; }
+    }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public sealed partial class TlsSocketSession : System.Net.Security.TlsSession
+    {
+        public TlsSocketSession(System.Net.Sockets.SafeSocketHandle socket) { }
+        public System.Net.Sockets.SafeSocketHandle Socket { get { throw null; } }
+        public System.Net.Security.TlsOperationStatus Handshake() { throw null; }
+        public System.Net.Security.TlsOperationStatus Read(System.Span<byte> buffer, out int bytesRead) { throw null; }
+        public System.Net.Security.TlsOperationStatus Write(System.ReadOnlySpan<byte> buffer, out int bytesWritten) { throw null; }
+        public System.Net.Security.TlsOperationStatus Shutdown() { throw null; }
+        public System.Net.Security.TlsOperationStatus RequestClientCertificate() { throw null; }
     }
 }
 namespace System.Security.Authentication

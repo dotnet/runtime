@@ -15,9 +15,9 @@ namespace System.Net.Security
     /// All operations throw <see cref="PlatformNotSupportedException"/>.
     /// </summary>
     [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-    public sealed class TlsSession : IDisposable
+    public abstract class TlsSession : IDisposable
     {
-        private TlsSession() { }
+        private protected TlsSession() { }
 
         public bool IsHandshakeComplete => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public bool HasPendingOutput => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
@@ -27,43 +27,12 @@ namespace System.Net.Security
             set => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         }
         public SslClientHelloInfo? ClientHelloInfo => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-        public ReadOnlySpan<byte> GetClientHelloBytes() => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+        public int GetClientHelloLength() => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+        public bool TryGetClientHelloBytes(Span<byte> destination, out int bytesWritten) => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public SslProtocols NegotiatedProtocol => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         [System.CLSCompliant(false)]
         public TlsCipherSuite NegotiatedCipherSuite => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
         public SslApplicationProtocol NegotiatedApplicationProtocol => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public static TlsSession Create(TlsContext context) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public static TlsSession Create(TlsContext context, SafeSocketHandle socket) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public SafeSocketHandle? Socket => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus Handshake() =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus Read(Span<byte> buffer, out int bytesRead) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus Write(ReadOnlySpan<byte> buffer, out int bytesWritten) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus ProcessHandshake(ReadOnlySpan<byte> input, Span<byte> output, out int bytesConsumed, out int bytesWritten) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, out int bytesConsumed, out int bytesWritten) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus Decrypt(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, out int bytesConsumed, out int bytesWritten) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int bytesWritten) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
-
-        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int bytesWritten) =>
-            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public X509Certificate2? GetRemoteCertificate() =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
@@ -77,10 +46,10 @@ namespace System.Net.Security
         public void SetRemoteCertificateValidationResult(SslPolicyErrors errors) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public void SetContext(TlsContext serverContext) =>
+        public void SetContext(TlsContext context) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public void SetClientCertificateContext(SslStreamCertificateContext context) =>
+        public void SetClientCertificateContext(SslStreamCertificateContext? context) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
         public IReadOnlyList<string>? GetAcceptableIssuers() =>
@@ -92,9 +61,53 @@ namespace System.Net.Security
         public ChannelBinding? GetChannelBinding(ChannelBindingKind kind) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int bytesWritten) =>
+        public void Dispose() { }
+    }
+
+    [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+    public sealed class TlsBufferSession : TlsSession
+    {
+        public TlsBufferSession() => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Handshake(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten) =>
             throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
 
-        public void Dispose() { }
+        public TlsOperationStatus Write(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Read(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Shutdown(Span<byte> ciphertext, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus DrainPendingOutput(Span<byte> ciphertext, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus RequestClientCertificate(Span<byte> ciphertext, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+    }
+
+    [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+    public sealed class TlsSocketSession : TlsSession
+    {
+        public TlsSocketSession(SafeSocketHandle socket) => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public SafeSocketHandle Socket => throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Handshake() =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Read(Span<byte> buffer, out int bytesRead) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Write(ReadOnlySpan<byte> buffer, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus Shutdown() =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
+
+        public TlsOperationStatus RequestClientCertificate() =>
+            throw new PlatformNotSupportedException(SR.SystemNetSecurity_PlatformNotSupported);
     }
 }

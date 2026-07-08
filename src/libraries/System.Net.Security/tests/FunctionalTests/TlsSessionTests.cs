@@ -23,6 +23,34 @@ namespace System.Net.Security.Tests
     {
         private const int CipherBufSize = 32 * 1024;
 
+        private static TlsBufferSession NewBufferSession(TlsContext ctx)
+        {
+            TlsBufferSession session = new TlsBufferSession();
+            session.SetContext(ctx);
+            return session;
+        }
+
+        private static TlsSocketSession NewSocketSession(TlsContext ctx, SafeSocketHandle handle)
+        {
+            TlsSocketSession session = new TlsSocketSession(handle);
+            session.SetContext(ctx);
+            return session;
+        }
+
+        private static byte[] GetClientHelloBytesHelper(TlsSession session)
+        {
+            int len = session.GetClientHelloLength();
+            if (len == 0)
+            {
+                throw new InvalidOperationException("ClientHello bytes are not available.");
+            }
+            byte[] buf = new byte[len];
+            bool ok = session.TryGetClientHelloBytes(buf, out int written);
+            Assert.True(ok);
+            Assert.Equal(len, written);
+            return buf;
+        }
+
         [Fact]
         public async Task ServerSession_AgainstSslStreamClient_HandshakeAndPingPong_Succeeds()
         {
@@ -40,7 +68,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     ClientCertificateRequired = false,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -99,7 +127,7 @@ namespace System.Net.Security.Tests
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
                 using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -187,7 +215,7 @@ namespace System.Net.Security.Tests
                 var counter = new ByteCountingStream(new NetworkStream(ss, ownsSocket: false));
                 using var clientStream = new NetworkStream(cs, ownsSocket: false);
                 using var clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
-                using TlsSession session = TlsSession.Create(serverCtx);
+                using TlsBufferSession session = NewBufferSession(serverCtx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -259,11 +287,11 @@ namespace System.Net.Security.Tests
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions { ServerCertificate = serverCert });
-            using TlsSession session = TlsSession.Create(ctx);
+            using TlsBufferSession session = NewBufferSession(ctx);
 
             byte[] buf = new byte[16];
-            Assert.Throws<InvalidOperationException>(() => session.Encrypt(buf, buf, out _, out _));
-            Assert.Throws<InvalidOperationException>(() => session.Decrypt(buf, buf, out _, out _));
+            Assert.Throws<InvalidOperationException>(() => session.Write(buf, buf, out _, out _));
+            Assert.Throws<InvalidOperationException>(() => session.Read(buf, buf, out _, out _));
         }
 
         [Fact]
@@ -283,7 +311,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     ClientCertificateRequired = false,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -350,7 +378,7 @@ namespace System.Net.Security.Tests
                         return true;
                     },
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -464,7 +492,7 @@ namespace System.Net.Security.Tests
                         return true;
                     },
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -525,7 +553,7 @@ namespace System.Net.Security.Tests
                     ClientCertificateRequired = true,
                     // No RemoteCertificateValidationCallback — caller drives validation externally.
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -576,7 +604,7 @@ namespace System.Net.Security.Tests
                 {
                     byte[] pt = "blocked"u8.ToArray();
                     byte[] ct = new byte[CipherBufSize];
-                    Assert.Throws<AuthenticationException>(() => session.Encrypt(pt, ct, out _, out _));
+                    Assert.Throws<AuthenticationException>(() => session.Write(pt, ct, out _, out _));
                 }
 
             }
@@ -628,7 +656,7 @@ namespace System.Net.Security.Tests
                     AllowTlsResume = false,
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 int wantCredentialsCount = 0;
                 Task clientHandshake = Task.Run(async () =>
@@ -640,7 +668,7 @@ namespace System.Net.Security.Tests
                     {
                         while (!session.IsHandshakeComplete)
                         {
-                            TlsOperationStatus status = session.ProcessHandshake(
+                            TlsOperationStatus status = session.Handshake(
                                 netIn.AsSpan(0, inUsed),
                                 netOut,
                                 out int consumed,
@@ -749,7 +777,7 @@ namespace System.Net.Security.Tests
                         return true;
                     },
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -785,7 +813,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12,
                     ClientCertificateRequired = false,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -852,8 +880,8 @@ namespace System.Net.Security.Tests
                 RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
             });
 
-            using TlsSession server = TlsSession.Create(serverCtx);
-            using TlsSession client = TlsSession.Create(clientCtx);
+            using TlsBufferSession server = NewBufferSession(serverCtx);
+            using TlsBufferSession client = NewBufferSession(clientCtx);
 
             byte[] cToS = new byte[CipherBufSize]; int cToSLen = 0;
             byte[] sToC = new byte[CipherBufSize]; int sToCLen = 0;
@@ -880,12 +908,12 @@ namespace System.Net.Security.Tests
             Assert.Equal(pong, RoundtripRecord(server, client, pong));
         }
 
-        private static void DrainAppDataInto(TlsSession session, byte[] cipher, ref int cipherLen)
+        private static void DrainAppDataInto(TlsBufferSession session, byte[] cipher, ref int cipherLen)
         {
             byte[] scratch = new byte[CipherBufSize];
             while (cipherLen > 0)
             {
-                session.Decrypt(
+                session.Read(
                     cipher.AsSpan(0, cipherLen), scratch, out int consumed, out _);
                 if (consumed == 0)
                 {
@@ -924,7 +952,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     ClientCertificateRequired = false,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -978,7 +1006,7 @@ namespace System.Net.Security.Tests
             return (client, server);
         }
 
-        private static void DriveHandshakeNonBlocking(TlsSession session, Socket socket)
+        private static void DriveHandshakeNonBlocking(TlsBufferSession session, Socket socket)
         {
             byte[] netIn = new byte[CipherBufSize];
             byte[] netOut = new byte[CipherBufSize];
@@ -986,7 +1014,7 @@ namespace System.Net.Security.Tests
 
             while (!session.IsHandshakeComplete)
             {
-                TlsOperationStatus status = session.ProcessHandshake(
+                TlsOperationStatus status = session.Handshake(
                     netIn.AsSpan(0, inUsed), netOut, out int consumed, out int produced);
 
                 if (consumed > 0)
@@ -1022,7 +1050,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static byte[] ReadOnePlaintextNonBlocking(TlsSession session, Socket socket, int expectedLength)
+        private static byte[] ReadOnePlaintextNonBlocking(TlsBufferSession session, Socket socket, int expectedLength)
         {
             byte[] netIn = new byte[CipherBufSize];
             byte[] plain = new byte[CipherBufSize];
@@ -1030,7 +1058,7 @@ namespace System.Net.Security.Tests
 
             while (true)
             {
-                TlsOperationStatus status = session.Decrypt(
+                TlsOperationStatus status = session.Read(
                     netIn.AsSpan(0, inUsed), plain, out int consumed, out int produced);
 
                 if (consumed > 0)
@@ -1064,13 +1092,13 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static void WritePlaintextNonBlocking(TlsSession session, Socket socket, ReadOnlySpan<byte> data)
+        private static void WritePlaintextNonBlocking(TlsBufferSession session, Socket socket, ReadOnlySpan<byte> data)
         {
             byte[] outBuf = new byte[CipherBufSize];
             int sent = 0;
             while (sent < data.Length)
             {
-                TlsOperationStatus status = session.Encrypt(
+                TlsOperationStatus status = session.Write(
                     data.Slice(sent), outBuf, out int consumed, out int produced);
                 sent += consumed;
                 if (produced > 0)
@@ -1084,7 +1112,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static void DrainPending(TlsSession session, Socket socket, byte[] scratch)
+        private static void DrainPending(TlsBufferSession session, Socket socket, byte[] scratch)
         {
             while (session.HasPendingOutput)
             {
@@ -1150,7 +1178,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
@@ -1206,7 +1234,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     // Intentionally no RemoteCertificateValidationCallback — caller drives validation externally.
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
@@ -1272,7 +1300,7 @@ namespace System.Net.Security.Tests
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
@@ -1304,7 +1332,7 @@ namespace System.Net.Security.Tests
                 byte[] plain = "should-fail"u8.ToArray();
                 byte[] ct = new byte[CipherBufSize];
                 Assert.Throws<AuthenticationException>(() =>
-                    session.Encrypt(plain, ct, out _, out _));
+                    session.Write(plain, ct, out _, out _));
             }
         }
 
@@ -1328,7 +1356,7 @@ namespace System.Net.Security.Tests
                     TargetHost = serverName,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
@@ -1353,11 +1381,11 @@ namespace System.Net.Security.Tests
                 byte[] plain = "rejected"u8.ToArray();
                 byte[] ct = new byte[CipherBufSize];
                 Assert.Throws<AuthenticationException>(() =>
-                    session.Encrypt(plain, ct, out _, out _));
+                    session.Write(plain, ct, out _, out _));
 
                 byte[] pt = new byte[CipherBufSize];
                 Assert.Throws<AuthenticationException>(() =>
-                    session.Decrypt(ct, pt, out _, out _));
+                    session.Read(ct, pt, out _, out _));
             }
         }
 
@@ -1383,7 +1411,7 @@ namespace System.Net.Security.Tests
                     // and reports no policy errors. The session must still reject.
                     RemoteCertificateValidationCallback = (_, _, _, _) => false,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task serverHandshake = serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
@@ -1410,7 +1438,7 @@ namespace System.Net.Security.Tests
                 // the test cert happens to validate against the trust store on some hosts), but the
                 // false return from the user callback must still fault the session.
                 Assert.Throws<AuthenticationException>(() =>
-                    session.Encrypt("x"u8.ToArray(), new byte[CipherBufSize], out _, out _));
+                    session.Write("x"u8.ToArray(), new byte[CipherBufSize], out _, out _));
 
                 _ = observedErrors;
             }
@@ -1421,7 +1449,7 @@ namespace System.Net.Security.Tests
         {
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions { ServerCertificate = serverCert });
-            using TlsSession session = TlsSession.Create(ctx);
+            using TlsBufferSession session = NewBufferSession(ctx);
 
             Assert.Throws<InvalidOperationException>(() =>
                 session.SetRemoteCertificateValidationResult(SslPolicyErrors.None));
@@ -1432,7 +1460,7 @@ namespace System.Net.Security.Tests
         // After a handshake-time AuthenticationException, flush any TLS alert bytes the PAL
         // queued in the session's pending buffer to the wire so the peer observes a fatal
         // alert instead of timing out / seeing handshake-completed.
-        private static async Task DrainAfterAuthFaultAsync(TlsSession session, Stream transport)
+        private static async Task DrainAfterAuthFaultAsync(TlsBufferSession session, Stream transport)
         {
             byte[] scratch = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             try
@@ -1462,7 +1490,7 @@ namespace System.Net.Security.Tests
         // TLS state machine (TLS records have been exchanged), but Encrypt/Decrypt block until the
         // caller posts a verdict via SetRemoteCertificateValidationResult / AcceptWithDefaultValidation.
         private static async Task DriveHandshakeWithExternalValidationAsync(
-            TlsSession session, Stream transport, Action onSuspend)
+            TlsBufferSession session, Stream transport, Action onSuspend)
         {
             byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             byte[] netOut = ArrayPool<byte>.Shared.Rent(CipherBufSize);
@@ -1477,7 +1505,7 @@ namespace System.Net.Security.Tests
                     int produced;
                     try
                     {
-                        status = session.ProcessHandshake(
+                        status = session.Handshake(
                             netIn.AsSpan(0, inUsed),
                             netOut,
                             out consumed,
@@ -1559,14 +1587,14 @@ namespace System.Net.Security.Tests
         // ── Helpers ────────────────────────────────────────────────────────
 
         private static void StepHandshakeInMemory(
-            TlsSession session, byte[] input, ref int inputLen, byte[] output, ref int outputLen)
+            TlsBufferSession session, byte[] input, ref int inputLen, byte[] output, ref int outputLen)
         {
             if (session.IsHandshakeComplete)
             {
                 return;
             }
 
-            TlsOperationStatus status = session.ProcessHandshake(
+            TlsOperationStatus status = session.Handshake(
                 input.AsSpan(0, inputLen),
                 output.AsSpan(outputLen),
                 out int consumed,
@@ -1598,14 +1626,14 @@ namespace System.Net.Security.Tests
             Assert.NotEqual(TlsOperationStatus.Closed, status);
         }
 
-        private static byte[] RoundtripRecord(TlsSession sender, TlsSession receiver, byte[] plaintext)
+        private static byte[] RoundtripRecord(TlsBufferSession sender, TlsBufferSession receiver, byte[] plaintext)
         {
             byte[] ct = new byte[CipherBufSize];
             int ctLen = 0;
             int sent = 0;
             while (sent < plaintext.Length)
             {
-                sender.Encrypt(
+                sender.Write(
                     plaintext.AsSpan(sent),
                     ct.AsSpan(ctLen),
                     out int consumed,
@@ -1624,7 +1652,7 @@ namespace System.Net.Security.Tests
             int ctOff = 0;
             while (ctOff < ctLen)
             {
-                receiver.Decrypt(
+                receiver.Read(
                     ct.AsSpan(ctOff, ctLen - ctOff),
                     pt.AsSpan(ptLen),
                     out int consumed,
@@ -1656,7 +1684,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                     ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 },
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -1694,12 +1722,12 @@ namespace System.Net.Security.Tests
                     {
                         callbackCount++;
                         observedSni = hostName;
-                        Assert.IsType<TlsSession>(sender);
+                        Assert.IsType<TlsSession>(sender, exactMatch: false);
                         return serverCert;
                     },
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -1734,7 +1762,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12,
                     AllowRenegotiation = true,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -1769,11 +1797,11 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static Task DriveHandshakeAsync(TlsSession session, Stream transport)
+        private static Task DriveHandshakeAsync(TlsBufferSession session, Stream transport)
             => DriveHandshakeAsync(session, transport, serverContextFactory: null);
 
         private static async Task DriveHandshakeAsync(
-            TlsSession session,
+            TlsBufferSession session,
             Stream transport,
             Func<SslClientHelloInfo, TlsContext>? serverContextFactory)
         {
@@ -1785,7 +1813,7 @@ namespace System.Net.Security.Tests
             {
                 while (!session.IsHandshakeComplete)
                 {
-                    TlsOperationStatus status = session.ProcessHandshake(
+                    TlsOperationStatus status = session.Handshake(
                         netIn.AsSpan(0, inUsed),
                         netOut,
                         out int consumed,
@@ -1850,7 +1878,7 @@ namespace System.Net.Security.Tests
         }
 
         private static async Task<byte[]> ReadOnePlaintextRecordAsync(
-            TlsSession session, Stream transport, int expectedLength)
+            TlsBufferSession session, Stream transport, int expectedLength)
         {
             byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             byte[] plain = ArrayPool<byte>.Shared.Rent(CipherBufSize);
@@ -1860,7 +1888,7 @@ namespace System.Net.Security.Tests
             {
                 while (true)
                 {
-                    TlsOperationStatus status = session.Decrypt(
+                    TlsOperationStatus status = session.Read(
                         netIn.AsSpan(0, inUsed),
                         plain,
                         out int consumed,
@@ -1914,7 +1942,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static async Task WritePlaintextAsync(TlsSession session, Stream transport, ReadOnlyMemory<byte> data)
+        private static async Task WritePlaintextAsync(TlsBufferSession session, Stream transport, ReadOnlyMemory<byte> data)
         {
             byte[] outBuf = ArrayPool<byte>.Shared.Rent(CipherBufSize);
             try
@@ -1922,7 +1950,7 @@ namespace System.Net.Security.Tests
                 int sent = 0;
                 while (sent < data.Length)
                 {
-                    TlsOperationStatus status = session.Encrypt(
+                    TlsOperationStatus status = session.Write(
                         data.Span[sent..],
                         outBuf,
                         out int consumed,
@@ -1948,7 +1976,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static async Task DrainAsync(TlsSession session, Stream transport, byte[] scratch)
+        private static async Task DrainAsync(TlsBufferSession session, Stream transport, byte[] scratch)
         {
             while (session.HasPendingOutput)
             {
@@ -1993,7 +2021,7 @@ namespace System.Net.Security.Tests
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 ClientCertificateRequired = false,
             });
-            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
             Assert.Same(serverHandle, session.Socket);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
@@ -2120,7 +2148,7 @@ namespace System.Net.Security.Tests
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
             });
-            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
             Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
@@ -2210,7 +2238,7 @@ namespace System.Net.Security.Tests
                 serverSocket.Blocking = false;
                 SafeSocketHandle serverHandle = serverSocket.SafeHandle;
 
-                using TlsSession session = TlsSession.Create(ctx, serverHandle);
+                using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
 
                 using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false);
 
@@ -2299,7 +2327,7 @@ namespace System.Net.Security.Tests
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
             });
-            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
             Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
@@ -2371,7 +2399,7 @@ namespace System.Net.Security.Tests
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls13,
             });
-            using TlsSession session = TlsSession.Create(ctx, serverHandle);
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
             Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
@@ -2453,7 +2481,7 @@ namespace System.Net.Security.Tests
                     ServerCertificate = serverCert,
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 });
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -2468,7 +2496,7 @@ namespace System.Net.Security.Tests
                 Assert.True(session.IsHandshakeComplete);
 
                 // Capture bytes via ToArray so we can assert on the shape without re-entering GetClientHelloBytes.
-                byte[] bytes = session.GetClientHelloBytes().ToArray();
+                byte[] bytes = GetClientHelloBytesHelper(session);
                 Assert.True(bytes.Length >= 5, $"ClientHello smaller than TLS record header: {bytes.Length}");
                 // TLS handshake record: content-type 0x16, TLS 1.0/1.2 legacy version 0x0301/0x0303 in header,
                 // then 2-byte length, then message body starting with handshake type 0x01 (client_hello).
@@ -2498,7 +2526,7 @@ namespace System.Net.Security.Tests
             using (SslStream clientSsl = new SslStream(clientStream, leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate))
             {
                 using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions());
-                using TlsSession session = TlsSession.Create(ctx);
+                using TlsBufferSession session = NewBufferSession(ctx);
 
                 Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -2515,7 +2543,7 @@ namespace System.Net.Security.Tests
 
                 Task serverHandshake = DriveHandshakeAsync(session, serverStream, hello =>
                 {
-                    bytesDuringCallback = session.GetClientHelloBytes().ToArray();
+                    bytesDuringCallback = GetClientHelloBytesHelper(session);
                     return hostCtx;
                 });
 
@@ -2527,7 +2555,7 @@ namespace System.Net.Security.Tests
                 Assert.Equal(0x01, bytesDuringCallback[5]);
 
                 // Bytes stay available post-handshake and match what we captured during the callback.
-                byte[] bytesAfter = session.GetClientHelloBytes().ToArray();
+                byte[] bytesAfter = GetClientHelloBytesHelper(session);
                 Assert.Equal(bytesDuringCallback, bytesAfter);
             }
         }
@@ -2554,7 +2582,7 @@ namespace System.Net.Security.Tests
                 ServerCertificate = serverCert,
                 EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
             });
-            using TlsSession session = TlsSession.Create(ctx, serverSocket.SafeHandle);
+            using TlsSocketSession session = NewSocketSession(ctx, serverSocket.SafeHandle);
 
             using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
             Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
@@ -2581,7 +2609,7 @@ namespace System.Net.Security.Tests
             Assert.True(session.IsHandshakeComplete);
 
             // Native path: span backed by socket-replay BIO's retained peek buffer.
-            byte[] bytes = session.GetClientHelloBytes().ToArray();
+            byte[] bytes = GetClientHelloBytesHelper(session);
             Assert.Equal(0x16, bytes[0]);
             int payloadLen = (bytes[3] << 8) | bytes[4];
             Assert.Equal(5 + payloadLen, bytes.Length);
@@ -2599,11 +2627,11 @@ namespace System.Net.Security.Tests
             {
                 TargetHost = "example.com",
             });
-            using TlsSession session = TlsSession.Create(ctx);
+            using TlsBufferSession session = NewBufferSession(ctx);
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                ReadOnlySpan<byte> _ = session.GetClientHelloBytes();
+                ReadOnlySpan<byte> _ = GetClientHelloBytesHelper(session);
             });
         }
 
@@ -2682,7 +2710,7 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                 });
 
-                using TlsSession session = TlsSession.Create(bootstrap);
+                using TlsBufferSession session = NewBufferSession(bootstrap);
                 Task serverHandshake = DriveHandshakeAsync(session, serverStream, _ => tenantCtx);
 
                 await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
@@ -2768,7 +2796,7 @@ namespace System.Net.Security.Tests
                     },
                 });
 
-                using TlsSession session = TlsSession.Create(sharedCtx);
+                using TlsBufferSession session = NewBufferSession(sharedCtx);
                 Task clientHandshake = Task.Run(async () =>
                 {
                     byte[] netIn = ArrayPool<byte>.Shared.Rent(CipherBufSize);
@@ -2778,7 +2806,7 @@ namespace System.Net.Security.Tests
                     {
                         while (!session.IsHandshakeComplete)
                         {
-                            TlsOperationStatus status = session.ProcessHandshake(
+                            TlsOperationStatus status = session.Handshake(
                                 netIn.AsSpan(0, inUsed), netOut, out int consumed, out int produced);
                             if (consumed > 0)
                             {
@@ -2834,11 +2862,11 @@ namespace System.Net.Security.Tests
             {
                 ServerCertificate = serverCert,
             });
-            using TlsSession session = TlsSession.Create(ctx);
+            using TlsBufferSession session = NewBufferSession(ctx);
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                ReadOnlySpan<byte> _ = session.GetClientHelloBytes();
+                ReadOnlySpan<byte> _ = GetClientHelloBytesHelper(session);
             });
         }
     }
