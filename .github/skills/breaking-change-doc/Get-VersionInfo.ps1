@@ -141,7 +141,7 @@ function Get-NextMilestoneVersion {
     return [pscustomobject]@{
         Version       = $version
         HighestBranch = $highest.Branch
-        Detection     = "Merged to '$baseRef'; ships after highest branched milestone '$($highest.Branch)' (assumes $previewCount previews + $rcCount RCs before GA)"
+        Detection     = "Merged to '$baseRef'; ships after highest branched milestone '$($highest.Branch)'"
     }
 }
 

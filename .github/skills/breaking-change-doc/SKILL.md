@@ -123,7 +123,7 @@ persistent release **tags** to recover the exact first preview/RC. The JSON outp
 includes:
 - `EstimatedVersion` — human-readable version string like ".NET 11 Preview 7"
 - `Tentative` — `true` when the version depends on an unverified linked release-branch
-  PR (open or merged); treat the version as provisional and say so in the draft
+  PR (open or merged)
 - `DetectionMethod` — how the version was determined (direct release-branch merge,
   own-commit containment in a branched milestone, tag-refined first-shipped version,
   potential linked backport, or "ships after highest branched milestone")
@@ -158,6 +158,8 @@ workflow log. Then check the JSON:
 - If `Tentative` is `true`, confirm the referenced linked PR is a genuine backport of
   this change (title/description/diff). If it is, use `EstimatedVersion` and note in the
   draft that it depends on that backport; if it is not, use `FallbackVersion` instead.
+- If the candidate backport is confirmed and merged, treat the `EstimatedVersion` as definitive.
+  If it's confirmed and still open, treat the `EstimatedVersion` as provisional and note this in the draft.
 - If the JSON does **not** contain an `Error` field, use `EstimatedVersion` as
   the version for the breaking change issue. **Do not fall back to manual
   detection when the script succeeds.**
