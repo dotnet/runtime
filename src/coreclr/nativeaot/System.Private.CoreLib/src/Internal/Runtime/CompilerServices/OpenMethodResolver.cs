@@ -41,8 +41,6 @@ namespace Internal.Runtime.CompilerServices
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
         }
 
-        private static nint GVMLookupForSlot(object o, RuntimeMethodHandle method)
-            => method.ResolveGenericVirtualMethodTarget(o);
 
         public OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
         {
