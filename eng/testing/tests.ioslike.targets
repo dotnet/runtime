@@ -157,6 +157,7 @@
       <_ApplePropertyNames Include="MainLibraryFileName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
       <_ApplePropertyNames Include="ShouldILStrip" />
+      <_ApplePropertyNames Include="PublishReadyToRunStripILBodies" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
