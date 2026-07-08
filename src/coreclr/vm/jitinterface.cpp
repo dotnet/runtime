@@ -12391,7 +12391,16 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "Setup",
         "GetEnvironmentVariable",
         "ThrowIfNull",
-        "GetReference"
+        "GetReference",
+	"get_Capacity",
+	"ThrowIfNullOrEmpty",
+	"IsNullOrEmpty",
+	"Enter",
+	"get_MaxValue",
+	"IsHandleRedirected",
+	"IsCompletedMethod",
+	"get_Value",
+	"GetRawStringData"
     };
 
     struct JitInclusionEntry
