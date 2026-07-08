@@ -39,7 +39,7 @@ typedef ucontext_t native_context_t;
 // native_context_t here; siginfo_t lives in pal/wasi/pal_wasi_missing.h
 // which is pulled in below.
 //
-// REPLACE: delete when wasi-libc exposes siginfo_t and a ucontext_t (no upstream
+// TODO: delete when wasi-libc exposes siginfo_t and a ucontext_t (no upstream
 // plan as of WASI 0.2.8).
 typedef struct { int _placeholder; } native_context_t;
 #include "pal/wasi/pal_wasi_missing.h"

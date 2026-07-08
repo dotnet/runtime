@@ -37,7 +37,6 @@ struct HijackArgs
 static __attribute__((naked)) void* GetCurrentSP()
 {
     __asm__(
-        ".globaltype __stack_pointer, i32\n"
         "global.get __stack_pointer\n"
         "return\n");
 }
