@@ -45,8 +45,8 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         return DoubleImpl(n);
     }
 
-    [UnmanagedCallersOnly(AssociatedSourceType = typeof(UnmanagedCallersOnlyBasicTest))]
-    public static int ManagedDoubleCallback_AssociatedSourceType(int n)
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)], EntryPoint = "IgnoredEntryPoint", AssociatedSourceType = typeof(object))]
+    public static int ManagedDoubleCallback_AllOptionalParameters(int n)
     {
         return DoubleImpl(n);
     }
@@ -71,13 +71,15 @@ public unsafe class UnmanagedCallersOnlyBasicTest
     [ActiveIssue("needs triage", TestPlatforms.Android)]
     [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
-    public static void TestUnmanagedCallersOnlyValid_AssociatedSourceType()
+    public static void TestUnmanagedCallersOnlyValid_AllOptionalParameters()
     {
-        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_AssociatedSourceType)}...");
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_AllOptionalParameters)}...");
 
         int n = 12345;
         int expected = DoubleImpl(n);
-        Assert.Equal(expected, ((delegate* unmanaged<int, int>)&ManagedDoubleCallback_AssociatedSourceType)(n));
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Stdcall(&ManagedDoubleCallback_AllOptionalParameters, n);
+
+        Assert.Equal(expected, actual);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
