@@ -13,7 +13,7 @@ void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc)
     CopyRegDisplay(pSrc, pDst, &tmp);
 }
 
-void SetSSFlag(DT_CONTEXT *, Thread *pThread)
+void SetSSFlag(T_CONTEXT *, Thread *pThread)
 {
     _ASSERTE(pThread != NULL);
 
