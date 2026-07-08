@@ -12,7 +12,7 @@ namespace System.IO.Compression
         {
             ZstandardCompressionOptions options = new();
             options.Quality = 0;
-            options.WindowLog = 0;
+            options.WindowLog2 = 0;
             options.TargetBlockSize = 0;
         }
 
@@ -40,20 +40,20 @@ namespace System.IO.Compression
         [InlineData(10)]
         [InlineData(23)]
         [InlineData(30)]
-        public void WindowLog_SetToValidRange_Succeeds(int windowLog)
+        public void WindowLog2_SetToValidRange_Succeeds(int windowLog2)
         {
             ZstandardCompressionOptions options = new();
-            options.WindowLog = windowLog; // Should not throw
-            Assert.Equal(windowLog, options.WindowLog);
+            options.WindowLog2 = windowLog2; // Should not throw
+            Assert.Equal(windowLog2, options.WindowLog2);
         }
 
         [Theory]
         [InlineData(9)]
         [InlineData(32)]
-        public void WindowLog_SetOutOfRange_ThrowsArgumentOutOfRangeException(int windowLog)
+        public void WindowLog2_SetOutOfRange_ThrowsArgumentOutOfRangeException(int windowLog2)
         {
             ZstandardCompressionOptions options = new();
-            Assert.Throws<ArgumentOutOfRangeException>(() => options.WindowLog = windowLog);
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.WindowLog2 = windowLog2);
         }
 
         [Theory]
@@ -84,21 +84,21 @@ namespace System.IO.Compression
         [InlineData(10)]
         [InlineData(23)]
         [InlineData(30)]
-        public void MaxWindowLog_SetToValidRange_Succeeds(int maxWindowLog)
+        public void MaxWindowLog2_SetToValidRange_Succeeds(int maxWindowLog2)
         {
             ZstandardDecompressionOptions options = new();
-            options.MaxWindowLog = maxWindowLog;
-            Assert.Equal(maxWindowLog, options.MaxWindowLog);
+            options.MaxWindowLog2 = maxWindowLog2;
+            Assert.Equal(maxWindowLog2, options.MaxWindowLog2);
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(9)]
         [InlineData(32)]
-        public void MaxWindowLog_SetOutOfRange_ThrowsArgumentOutOfRangeException(int maxWindowLog)
+        public void MaxWindowLog2_SetOutOfRange_ThrowsArgumentOutOfRangeException(int maxWindowLog2)
         {
             ZstandardDecompressionOptions options = new();
-            Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxWindowLog = maxWindowLog);
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.MaxWindowLog2 = maxWindowLog2);
         }
 
         [Fact]
