@@ -1671,8 +1671,6 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     }
     CONTRACT_END;
 
-    ComHolderPreemp<IMetaDataAssemblyEmit> emitHolder;
-
     AssemblySpec spec;
     spec.InitializeSpec(refedAssembly->GetPEAssembly());
 
