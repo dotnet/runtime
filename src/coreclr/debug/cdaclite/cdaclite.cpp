@@ -101,7 +101,18 @@ namespace cdac
 // The classic DAC factory entry point. dbghelp (Windows) and createdump
 // (Unix/macOS) call this to obtain an ICLRDataEnumMemoryRegions for a target.
 //
-STDAPI CLRDataCreateInstance(REFIID iid, ICLRDataTarget* pLegacyTarget, void** iface)
+// On Unix the symbol needs explicit default visibility so it survives
+// -fvisibility=hidden and is exported for createdump's dlsym; the version script
+// alone cannot un-hide a hidden symbol. On Windows the export comes from
+// cdaclite.def, so no attribute is needed. Matches the DAC's CLRDataCreateInstance.
+//
+#ifdef HOST_WINDOWS
+#define CDACLITE_EXPORT
+#else
+#define CDACLITE_EXPORT __attribute__((visibility("default")))
+#endif
+
+STDAPI CDACLITE_EXPORT CLRDataCreateInstance(REFIID iid, ICLRDataTarget* pLegacyTarget, void** iface)
 {
     if (pLegacyTarget == nullptr || iface == nullptr)
     {
