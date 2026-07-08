@@ -995,6 +995,28 @@ done:;
         CloseIfOpen(waitForChildToExecPipe[READ_END_OF_PIPE]);
     }
 
+    // When startSuspended is requested, the child closes the exec-waiting pipe just before
+    // calling raise(SIGSTOP). Wait here until the child is truly in the stopped state so that
+    // the caller cannot send SIGCONT (via Resume()) before the child has delivered SIGSTOP.
+    // Without this synchronization, SIGCONT may arrive before SIGSTOP, causing the child to
+    // stop permanently on the subsequent SIGSTOP.
+    if (startSuspended && success && processId > 0)
+    {
+        int childStatus;
+        pid_t waitResult;
+        do
+        {
+            waitResult = waitpid(processId, &childStatus, WUNTRACED);
+        }
+        while (waitResult == -1 && errno == EINTR);
+
+        if (waitResult == -1 || !WIFSTOPPED(childStatus))
+        {
+            success = false;
+            priorErrno = (waitResult == -1) ? errno : ECHILD;
+        }
+    }
+
     // If we failed, give back error values in all out arguments.
     if (!success)
     {

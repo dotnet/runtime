@@ -15,6 +15,19 @@ namespace System.Diagnostics.Tests
     public class StartSuspendedTests : ProcessTestBase
     {
         [ConditionalFact]
+        public void StartSuspended_ResumeImmediately_Succeeds()
+        {
+            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.StartInfo.StartSuspended = true;
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            processHandle.Resume();
+
+            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+        }
+
+        [ConditionalFact]
         public void StartSuspended_ResumeCompletes()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);

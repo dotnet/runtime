@@ -161,7 +161,8 @@ namespace System.Diagnostics
         /// On macOS, the process is started with the <c>POSIX_SPAWN_START_SUSPENDED</c> flag.
         /// </para>
         /// <para>
-        /// On other Unix platforms, the child process raises <c>SIGSTOP</c> against itself before calling <c>execve</c>.
+        /// On other Unix platforms, the child process raises <c>SIGSTOP</c> against itself before calling <c>execve</c>,
+        /// so the process has not yet transitioned to the target program image when it is suspended.
         /// </para>
         /// <para>
         /// This property cannot be used together with <see cref="UseShellExecute" /> set to <see langword="true" />.
