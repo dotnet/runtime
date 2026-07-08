@@ -83,6 +83,12 @@
 #ifndef HWCAP2_SVESM4
 #define HWCAP2_SVESM4   (1 << 6)
 #endif
+#ifndef HWCAP2_ECV
+#define HWCAP2_ECV   (1 << 19)
+#endif
+#ifndef HWCAP2_WFXT
+#define HWCAP2_WFXT   (1UL << 31)
+#endif
 
 #endif
 
@@ -566,6 +572,11 @@ int minipal_getcpufeatures(void)
     if (hwCap2 & HWCAP2_SVESM4)
         result |= ARM64IntrinsicConstants_SveSm4;
 
+    // WFET is only used together with the self-synchronized CNTVCTSS_EL0 counter read (FEAT_ECV),
+    // so require both FEAT_WFxT and FEAT_ECV.
+    if ((hwCap2 & HWCAP2_WFXT) && (hwCap2 & HWCAP2_ECV))
+        result |= ARM64IntrinsicConstants_Wfxt;
+
 #else // !HAVE_AUXV_HWCAP_H
 
 #if HAVE_SYSCTLBYNAME
@@ -636,6 +647,20 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SVE_SM4", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_SveSm4;
+
+    // WFET is only used together with the self-synchronized CNTVCTSS_EL0 counter read (FEAT_ECV),
+    // so require both FEAT_WFxT and FEAT_ECV.
+    {
+        int64_t hasWfxt = 0;
+        int64_t hasEcv = 0;
+        size_t szWfxt = sizeof(hasWfxt);
+        size_t szEcv = sizeof(hasEcv);
+        if ((sysctlbyname("hw.optional.arm.FEAT_WFxT", &hasWfxt, &szWfxt, NULL, 0) == 0) && (hasWfxt != 0) &&
+            (sysctlbyname("hw.optional.arm.FEAT_ECV", &hasEcv, &szEcv, NULL, 0) == 0) && (hasEcv != 0))
+        {
+            result |= ARM64IntrinsicConstants_Wfxt;
+        }
+    }
 #endif // HAVE_SYSCTLBYNAME
 #endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
@@ -793,3 +818,61 @@ bool minipal_detect_rosetta(void)
 
     return false;
 }
+
+#if defined(HOST_ARM64) && !defined(HOST_WINDOWS)
+// Opt-in flag set by the runtime once it has verified FEAT_WFxT support and read the configuration knob.
+int g_minipalWfetSpinWaitEnabled = 0;
+
+// Instruction encodings, used via .inst so that the sources build without requiring an assembler that
+// understands the Armv8.7 mnemonics:
+//   WFET Xn               : 0xD5031000 | n
+//   MRS  Xn, CNTVCTSS_EL0 : 0xD53BE0C0 | n   (self-synchronized virtual counter, FEAT_ECV)
+//   MRS  Xn, CNTFRQ_EL0   : 0xD53BE000 | n
+//   SB                    : 0xD50330FF
+static inline uint64_t minipal_read_cntvctss_el0(void)
+{
+    uint64_t value;
+    __asm__ __volatile__(".inst 0xd53be0c0\n\tmov %0, x0" : "=r"(value) : : "x0", "memory"); // mrs x0, cntvctss_el0
+    return value;
+}
+
+static inline uint64_t minipal_read_cntfrq_el0(void)
+{
+    uint64_t value;
+    __asm__ __volatile__(".inst 0xd53be000\n\tmov %0, x0" : "=r"(value) : : "x0"); // mrs x0, cntfrq_el0
+    return value;
+}
+
+void minipal_wfet_wait_ns(uint64_t ns)
+{
+    // The system counter frequency is fixed for the lifetime of the process, so read it once.
+    static uint64_t s_cntfrq = 0;
+    uint64_t cntfrq = s_cntfrq;
+    if (cntfrq == 0)
+    {
+        cntfrq = minipal_read_cntfrq_el0();
+        s_cntfrq = cntfrq; // benign race: all readers observe the same value
+    }
+
+    // Convert nanoseconds to counter ticks. From Armv8.6 onwards the counter runs at a fixed 1GHz
+    // (1 tick == 1 ns), which is the common case; scale by CNTFRQ_EL0 otherwise to stay correct.
+    const uint64_t NsPerSecond = 1000000000ULL;
+    uint64_t ticks = (cntfrq == NsPerSecond) ? ns : (ns * cntfrq) / NsPerSecond;
+    if (ticks == 0)
+    {
+        ticks = 1;
+    }
+
+    uint64_t target = minipal_read_cntvctss_el0() + ticks;
+    uint64_t current;
+    do
+    {
+        // WFET enters a low-power state until an event arrives or CNTVCT_EL0 reaches the target in x9.
+        // It may also wake spuriously, so re-read the counter and loop until the deadline is reached.
+        __asm__ __volatile__("mov x9, %0\n\t.inst 0xd5031009" : : "r"(target) : "x9", "memory"); // wfet x9
+        current = minipal_read_cntvctss_el0();
+    } while (current < target);
+
+    __asm__ __volatile__(".inst 0xd50330ff" : : : "memory"); // sb - prevent speculation past the wait
+}
+#endif // HOST_ARM64 && !HOST_WINDOWS

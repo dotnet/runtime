@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "minipal/cpufeatures.h"
+
 #ifdef FEATURE_NATIVEAOT
 FORCEINLINE void System_YieldProcessor() { PalYieldProcessor(); }
 #else
@@ -87,6 +89,23 @@ public:
     friend void YieldProcessorWithBackOffNormalized(const YieldProcessorNormalizationInfo &, unsigned int);
 };
 
+// When enabled at startup (Arm64 with FEAT_WFxT and the ThreadWfetSpinWait knob), a normalized spin-wait
+// issues a single low-power WFET wait for the equivalent duration instead of a busy YieldProcessor loop.
+// This trades a small amount of extra wake-up latency for substantially lower energy usage while spinning.
+// 'normalizedYields' is the number of normalized yields the caller intended to perform.
+FORCEINLINE bool TryYieldProcessorWithWfet(size_t normalizedYields)
+{
+#if defined(HOST_ARM64) && !defined(HOST_WINDOWS)
+    if (g_minipalWfetSpinWaitEnabled)
+    {
+        minipal_wfet_wait_ns((uint64_t)normalizedYields * YieldProcessorNormalization::TargetNsPerNormalizedYield);
+        return true;
+    }
+#endif
+    (void)normalizedYields;
+    return false;
+}
+
 // See YieldProcessorNormalized() for preliminary info. Typical usage:
 //     if (!condition)
 //     {
@@ -98,6 +117,11 @@ public:
 //     }
 FORCEINLINE void YieldProcessorNormalized(const YieldProcessorNormalizationInfo &normalizationInfo)
 {
+    if (TryYieldProcessorWithWfet(1))
+    {
+        return;
+    }
+
     unsigned int n = normalizationInfo.yieldsPerNormalizedYield;
     _ASSERTE(n != 0);
     do
@@ -140,6 +164,11 @@ FORCEINLINE void YieldProcessorNormalized()
 FORCEINLINE void YieldProcessorNormalized(const YieldProcessorNormalizationInfo &normalizationInfo, unsigned int count)
 {
     _ASSERTE(count != 0);
+
+    if (TryYieldProcessorWithWfet(count))
+    {
+        return;
+    }
 
     if (sizeof(size_t) <= sizeof(unsigned int))
     {
@@ -271,16 +300,23 @@ FORCEINLINE void YieldProcessorWithBackOffNormalized(
     static_assert(
         ((unsigned int)1 << (MaxShift + 1)) > YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
 
-    unsigned int n;
+    unsigned int normalizedYields;
     if (spinIteration <= MaxShift &&
         ((unsigned int)1 << spinIteration) < normalizationInfo.optimalMaxNormalizedYieldsPerSpinIteration)
     {
-        n = ((unsigned int)1 << spinIteration) * normalizationInfo.yieldsPerNormalizedYield;
+        normalizedYields = (unsigned int)1 << spinIteration;
     }
     else
     {
-        n = normalizationInfo.optimalMaxYieldsPerSpinIteration;
+        normalizedYields = normalizationInfo.optimalMaxNormalizedYieldsPerSpinIteration;
     }
+
+    if (TryYieldProcessorWithWfet(normalizedYields))
+    {
+        return;
+    }
+
+    unsigned int n = normalizedYields * normalizationInfo.yieldsPerNormalizedYield;
     _ASSERTE(n != 0);
     do
     {

@@ -4,6 +4,8 @@
 #ifndef HAVE_MINIPAL_CPUFEATURES_H
 #define HAVE_MINIPAL_CPUFEATURES_H
 
+#include <stdint.h>
+
 //
 // Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
 //
@@ -50,6 +52,9 @@
 #define ARM64IntrinsicConstants_SveAes (1 << 13)
 #define ARM64IntrinsicConstants_SveSha3 (1 << 14)
 #define ARM64IntrinsicConstants_SveSm4 (1 << 15)
+// Runtime-only feature (not a JIT hardware intrinsic ISA). Indicates FEAT_WFxT (WFET/WFIT) is
+// available together with FEAT_ECV (required for the self-synchronized CNTVCTSS_EL0 counter read).
+#define ARM64IntrinsicConstants_Wfxt (1 << 16)
 
 #include <assert.h>
 
@@ -71,6 +76,16 @@ extern "C"
 
 int minipal_getcpufeatures(void);
 bool minipal_detect_rosetta(void);
+
+#if defined(HOST_ARM64) && !defined(HOST_WINDOWS)
+// Non-zero when the runtime has opted into using FEAT_WFxT (WFET) for low-power spin-waits.
+// Set once during startup; read on the spin-wait hot path.
+extern int g_minipalWfetSpinWaitEnabled;
+
+// Low-power wait for approximately 'ns' nanoseconds using the WFET instruction. The caller must
+// ensure ARM64IntrinsicConstants_Wfxt is present (FEAT_WFxT + FEAT_ECV).
+void minipal_wfet_wait_ns(uint64_t ns);
+#endif // HOST_ARM64 && !HOST_WINDOWS
 
 #ifdef __cplusplus
 }

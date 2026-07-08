@@ -1784,6 +1784,17 @@ void EEJitManager::SetCpuInfo()
     {
         g_arm64_atomics_present = true;
     }
+
+    // Opt into low-power WFET-based spin-waits when the hardware supports FEAT_WFxT (+ FEAT_ECV) and the
+    // ThreadWfetSpinWait knob is set. This is consumed on the spin-wait hot path via YieldProcessorNormalized.
+    // WFET is emitted via GNU inline asm in the minipal, so it is only available on non-Windows Arm64.
+#if !defined(TARGET_WINDOWS)
+    if (((cpuFeatures & ARM64IntrinsicConstants_Wfxt) != 0) &&
+        (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadWfetSpinWait) != 0))
+    {
+        g_minipalWfetSpinWaitEnabled = 1;
+    }
+#endif // !TARGET_WINDOWS
 #elif defined(TARGET_RISCV64)
     if (g_pConfig->EnableHWIntrinsic())
     {

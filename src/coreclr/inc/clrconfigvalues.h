@@ -400,6 +400,9 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinLimitProcCap, W("SpinLimitProcCap"), 0xFFF
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinLimitProcFactor, W("SpinLimitProcFactor"), 0x4E20, "Hex value specifying the multiplier on NumProcs to use when calculating the maximum spin duration")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinLimitConstant, W("SpinLimitConstant"), 0x0, "Hex value specifying the constant to add when calculating the maximum spin duration")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinRetryCount, W("SpinRetryCount"), 0xA, "Hex value specifying the number of times the entire spin process is repeated (when applicable)")
+// Opt-in (disabled by default). On Arm64 hardware with FEAT_WFxT (WFET), issue a low-power timed wait
+// during normalized spin-waits instead of a busy YieldProcessor loop. Reduces energy usage while spinning.
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThreadWfetSpinWait, W("ThreadWfetSpinWait"), 0, "When set to 1 on Arm64 with FEAT_WFxT, use WFET for low-power spin-waits")
 
 ///
 /// Profiling API / ETW

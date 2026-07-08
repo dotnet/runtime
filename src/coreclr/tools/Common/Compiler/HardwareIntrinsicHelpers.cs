@@ -232,6 +232,9 @@ namespace ILCompiler
             public const int SveAes = (1 << 13);
             public const int SveSha3 = (1 << 14);
             public const int SveSm4 = (1 << 15);
+            // Runtime-only feature (FEAT_WFxT), not a JIT hardware intrinsic ISA. Reserved here to keep the
+            // bit layout in sync with cpufeatures.h; it is intentionally not mapped to an InstructionSet.
+            public const int Wfxt = (1 << 16);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
