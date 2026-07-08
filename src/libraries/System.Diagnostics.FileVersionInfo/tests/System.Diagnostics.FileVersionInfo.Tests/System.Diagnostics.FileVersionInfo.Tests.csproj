@@ -42,8 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Embed the test assembly as a managed resource. FileVersionInfoTest writes it to a temp file at run time and
-         inspects that. This avoids deploying a loose managed .dll, which needed per-platform workarounds on Browser
-         and Apple mobile (https://github.com/dotnet/runtime/issues/46856) and does not survive NativeAOT bundling. -->
+         inspects that. -->
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>EmbeddedResource</OutputItemType>
