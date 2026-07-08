@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.c,**/*.cc,**/*.cpp,**/*.cxx,**/*.h,**/*.hpp,**/*.inc,**/*.S,**/*.asm"
+applyTo: "**/*.c,**/*.cc,**/*.cpp,**/*.cxx,**/*.h,**/*.hpp,**/*.inc,**/*.S,**/*.s,**/*.asm"
 ---
 
 # Code Review -- Native code (C/C++/asm) & interop

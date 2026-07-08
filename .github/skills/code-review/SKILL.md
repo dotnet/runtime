@@ -52,7 +52,7 @@ Based **only** on the code context gathered above (without the PR description or
 3. **Is this the right approach?** Would a simpler alternative be more consistent with the codebase? Could the goal be achieved with existing functionality? Are there correctness, performance, or safety concerns?
 4. **What problems do you see?** Identify bugs, edge cases, missing validation, thread-safety issues, performance regressions, API design problems, test gaps, and anything else that concerns you.
 
-Write down your independent assessment before proceeding. You must produce a holistic assessment (per the criteria in `.github/instructions/review-all-src.instructions.md`) at this stage.
+Write down your independent assessment before proceeding. You must produce a holistic assessment (using the criteria from the applicable `.github/instructions/*.instructions.md` files for the diff) at this stage.
 
 ### Step 4: Incorporate PR Narrative and Reconcile
 
@@ -182,11 +182,11 @@ review**, in addition to the process above.
 
 Load, based on the paths in the diff:
 
-- **Always:** `review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Holistic Assessment in your output.
-- **`**/*.cs` changed:** `review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
-- **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
-- **Test files (`**/tests/**`, `src/tests/**`) changed:** `review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
-- **Area matches:** also load any matching area file (`jit`, `system-net-*`, `extensions-*`, `compression`, `cdac`). These stack on top of the language rules. The area **agents** under `.github/agents/` carry the deep per-area checklists -- launch them per Step 2.
+- **`src/**` changed:** `.github/instructions/review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Holistic Assessment in your output.
+- **`**/*.cs` changed:** `.github/instructions/review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
+- **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
+- **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
+- **Area matches:** also load any matching area file under `.github/instructions/` (for example `.github/instructions/jit.instructions.md`, `.github/instructions/system-net-*.instructions.md`, `.github/instructions/extensions-*.instructions.md`, `.github/instructions/compression.instructions.md`, `.github/instructions/cdac.instructions.md`). These stack on top of the language rules. The area **agents** under `.github/agents/` carry the deep per-area checklists -- launch them per Step 2.
 
 If a rule in a more specific file conflicts with a general one, the more specific file
 wins. If any required instruction file cannot be loaded, note it in the review and fall
