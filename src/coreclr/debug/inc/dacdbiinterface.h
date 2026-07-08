@@ -2203,6 +2203,34 @@ public:
         VMPTR_MethodDesc vmMethod,
         OUT UINT32* pTokenIndex) = 0;
 
+    typedef enum
+    {
+        kArchUnknown = 0,
+        kArchX86,
+        kArchAMD64,
+        kArchArm,
+        kArchArm64,
+        kArchLoongArch64,
+        kArchRiscV64,
+        kArchWasm,
+    } TargetArchitecture;
+
+    typedef enum
+    {
+        kOSUnknown = 0,
+        kOSWindows,
+        kOSUnix,
+    } TargetOperatingSystem;
+
+    struct TargetInfo
+    {
+        TargetArchitecture    arch;
+        TargetOperatingSystem os;
+    };
+
+    // Returns the target's processor architecture and OS family.
+    virtual HRESULT STDMETHODCALLTYPE GetTargetInfo(OUT TargetInfo * pTargetInfo) = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 

@@ -129,6 +129,7 @@ typedef struct { void *pList; int nEntries; } DacDbiArrayList_CORDB_ADDRESS;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_GUID;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_SEGMENT;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_MEMORY_RANGE;
+typedef struct { int arch; int os; } TargetInfo;
 
 cpp_quote("#endif")
 
@@ -436,4 +437,7 @@ interface IDacDbiInterface : IUnknown
 
     // Generic Arg Token
     HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);
+
+    // Returns the target's processor architecture and OS family.
+    HRESULT GetTargetInfo([out] struct TargetInfo * pTargetInfo);
 };
