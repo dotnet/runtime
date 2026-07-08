@@ -920,8 +920,8 @@ void CodeGen::genArm64EmitterUnitTestsGeneral()
     theEmitter->emitIns_R_R(INS_rbit, EA_4BYTE, REG_R9, REG_R4);
     theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R10, REG_R5);
     theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R11, REG_R6);
-    theEmitter->emitIns_R_R(INS_cnt, EA_4BYTE, REG_R9, REG_R4);   // FEAT_CSSC
-    theEmitter->emitIns_R_R(INS_ctz, EA_4BYTE, REG_R10, REG_R5);  // FEAT_CSSC
+    theEmitter->emitIns_R_R(INS_cnt, EA_4BYTE, REG_R9, REG_R4);  // FEAT_CSSC
+    theEmitter->emitIns_R_R(INS_ctz, EA_4BYTE, REG_R10, REG_R5); // FEAT_CSSC
 
     //
     // R_I
