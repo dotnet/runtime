@@ -9,6 +9,7 @@
 #include "loader.h"
 #include "runtimetypes.h"
 
+#include <cstring>
 #include <set>
 
 namespace cdac
@@ -106,6 +107,116 @@ namespace contracts
             int emitted;
         };
 
+        // Emits the ECMA metadata (and the PE/CLI headers needed to locate it) for a managed
+        // module's loaded image. On Windows the managed reader reads metadata from the on-disk
+        // image, but on Linux/macOS EcmaMetadata_1.GetReadOnlyMetadataAddress reads it directly from
+        // target memory (no on-disk fallback), and createdump's ELF/Mach-O core omits read-only
+        // file-backed segments. So cdac-lite emits the bytes the reader will touch:
+        //   - PE headers [Base, SizeOfHeaders]  (the reader's PEReader parses these)
+        //   - CLI (COR20) header [Base+corRVA, corSize]
+        //   - ECMA metadata [Base+metadataRVA, metadataSize]
+        // For a mapped image RVA == offset-from-base. For a flat (file-layout) image the whole file
+        // is contiguous and small, so emit it wholesale. Managed assemblies are PE on every platform,
+        // so this PE parse is valid on Linux/macOS.
+        void EmitModuleMetadata(const Target& target, uint64_t base, uint32_t size, uint32_t flags)
+        {
+            if (base == 0)
+            {
+                return;
+            }
+
+            const bool isMapped = (flags & 0x1) != 0; // FLAG_MAPPED
+            if (!isMapped)
+            {
+                // Flat layout: the whole file is mapped contiguously at Base (small).
+                if (size != 0)
+                {
+                    target.EmitMemory(base, size);
+                }
+                return;
+            }
+
+            uint8_t dos[0x40];
+            if (!target.ReadBuffer(base, dos, sizeof(dos)) || dos[0] != 'M' || dos[1] != 'Z')
+            {
+                return;
+            }
+            uint32_t e_lfanew = 0;
+            memcpy(&e_lfanew, dos + 0x3C, sizeof(e_lfanew));
+
+            // PE signature(4) + COFF header(20) + optional header. Read enough to cover the optional
+            // header + the full data directory (PE32+: 112 + 16*8 = 240).
+            uint8_t peHdr[4 + 20 + 240];
+            if (!target.ReadBuffer(base + e_lfanew, peHdr, sizeof(peHdr)) || peHdr[0] != 'P' || peHdr[1] != 'E')
+            {
+                return;
+            }
+
+            const uint32_t optOffset = 4 + 20; // within peHdr
+            uint16_t optMagic = 0;
+            memcpy(&optMagic, peHdr + optOffset, sizeof(optMagic));
+
+            uint32_t sizeOfHeaders = 0;
+            memcpy(&sizeOfHeaders, peHdr + optOffset + 60, sizeof(sizeOfHeaders));
+
+            const uint32_t dataDirOffset = optOffset + ((optMagic == 0x20B) ? 112 : 96);
+            uint32_t corRVA = 0, corSize = 0;
+            memcpy(&corRVA, peHdr + dataDirOffset + 14 * 8, sizeof(corRVA));
+            memcpy(&corSize, peHdr + dataDirOffset + 14 * 8 + 4, sizeof(corSize));
+
+            // PE headers (DOS + NT + section headers) that the reader's PEReader parses.
+            if (sizeOfHeaders != 0)
+            {
+                target.EmitMemory(base, sizeOfHeaders);
+            }
+
+            if (corRVA == 0 || corSize == 0)
+            {
+                return;
+            }
+
+            // CLI (COR20) header, then its MetaData directory (RVA at +8, Size at +12).
+            target.EmitMemory(base + corRVA, corSize);
+            uint8_t corHdr[16];
+            if (target.ReadBuffer(base + corRVA, corHdr, sizeof(corHdr)))
+            {
+                uint32_t metadataRVA = 0, metadataSize = 0;
+                memcpy(&metadataRVA, corHdr + 8, sizeof(metadataRVA));
+                memcpy(&metadataSize, corHdr + 12, sizeof(metadataSize));
+                if (metadataRVA != 0 && metadataSize != 0)
+                {
+                    target.EmitMemory(base + metadataRVA, metadataSize);
+                }
+            }
+        }
+
+        // Emit the module's metadata-locator chain: Module -> PEAssembly -> PEImage ->
+        // PEImageLayout. The reader follows this (EcmaMetadata.GetMetadata ->
+        // Loader.TryGetPEImage -> TryGetLoadedImageContents) to find where a module's ECMA
+        // metadata lives, then reads the metadata bytes (see EmitModuleMetadata).
+        void EmitModuleMetadataChain(const Target& target, const data::Module& module)
+        {
+            if (module.PEAssembly == 0)
+            {
+                return;
+            }
+            data::PEAssembly peAssembly;
+            if (!target.TryRead(module.PEAssembly, peAssembly) || peAssembly.PEImage == 0)
+            {
+                return;
+            }
+            data::PEImage peImage;
+            if (!target.TryRead(peAssembly.PEImage, peImage) || peImage.LoadedImageLayout == 0)
+            {
+                return;
+            }
+            data::PEImageLayout layout;
+            if (target.TryRead(peImage.LoadedImageLayout, layout)) // struct read -> auto-emitted
+            {
+                EmitModuleMetadata(target, layout.Base, (uint32_t)layout.Size, (uint32_t)layout.Flags);
+            }
+        }
+
         // Iterates modules and captures only the memory that is NOT available from the on-disk
         // binaries: in-memory symbol (PDB) streams. The DAC does not dump file-backed module
         // images -- the analyzer re-reads image bytes (code, R2R, ECMA metadata) from the binary
@@ -121,24 +232,8 @@ namespace contracts
                 return;
             }
 
-            // Emit the module's metadata-locator chain: Module -> PEAssembly -> PEImage ->
-            // PEImageLayout. The reader follows this (EcmaMetadata.GetMetadata ->
-            // Loader.TryGetPEImage -> TryGetLoadedImageContents) to find where a module's ECMA
-            // metadata lives; the metadata bytes themselves come from the on-disk image, but these
-            // small locator structs are not otherwise captured in a Normal dump.
-            if (module.PEAssembly != 0)
-            {
-                data::PEAssembly peAssembly;
-                if (target.TryRead(module.PEAssembly, peAssembly) && peAssembly.PEImage != 0)
-                {
-                    data::PEImage peImage;
-                    if (target.TryRead(peAssembly.PEImage, peImage) && peImage.LoadedImageLayout != 0)
-                    {
-                        data::PEImageLayout layout;
-                        target.TryRead(peImage.LoadedImageLayout, layout); // struct read -> auto-emitted
-                    }
-                }
-            }
+            // Emit the module's metadata-locator chain and the ECMA metadata bytes.
+            EmitModuleMetadataChain(target, module);
 
             // If the module has an in-memory symbol stream, capture its buffer (ILoader.TryGetSymbolStream).
             // In-memory PDBs have no on-disk backing, so they must be in the dump.
