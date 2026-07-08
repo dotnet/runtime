@@ -57,14 +57,12 @@ function ConvertFrom-ReleaseBranch {
     $number = if ($matches[4]) { [int]$matches[4] } else { $null }
 
     # Milestone ordering rank within a major.minor: previews < rc < GA.
-    $kind = "ga"
-    $rank = 3000
     switch ($label) {
         "preview" { $kind = "preview"; $rank = 1000 + ($number ?? 0) }
         "rc"      { $kind = "rc";      $rank = 2000 + ($number ?? 0) }
         "staging" { $kind = "ga";      $rank = 3000 }
         $null     { $kind = "ga";      $rank = 3000 }
-        default   { $kind = $label;    $rank = 0 }
+        default   { return $null }   # unrecognized label (e.g. release/11.0-rtm)
     }
 
     return [pscustomobject]@{
@@ -289,11 +287,17 @@ function Get-BackportPRs {
     # Cross-references can point at PRs in *other* repos (e.g. VMR codeflow PRs from
     # dotnet/dotnet). Filter to same-repo PRs up front (via source.issue.repository)
     # so the GraphQL batch only asks for numbers that exist in this repo.
-    $candidateNumbers = @(
-        gh api "repos/$repo/issues/$prNumber/timeline" --paginate `
-            --jq ".[] | select(.event==`"cross-referenced`") | select(.source.issue.pull_request != null) | select(.source.issue.repository.full_name == `"$repo`") | .source.issue.number" 2>$null |
-        Sort-Object -Unique
-    )
+    # Capture the call separately and check the exit code: on failure, warn and return
+    # no candidates rather than failing silently. Backport detection only enriches the
+    # result (it can make a version tentative), so a timeline hiccup shouldn't abort the
+    # whole version detection -- but the warning ensures the gap is visible in the log.
+    $timeline = gh api "repos/$repo/issues/$prNumber/timeline" --paginate `
+        --jq ".[] | select(.event==`"cross-referenced`") | select(.source.issue.pull_request != null) | select(.source.issue.repository.full_name == `"$repo`") | .source.issue.number" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Failed to read cross-references from the issue timeline for $repo#$prNumber; proceeding without backport candidates."
+        return @()
+    }
+    $candidateNumbers = @($timeline | Sort-Object -Unique)
     if ($candidateNumbers.Count -eq 0) { return @() }
 
     $parts = $repo -split '/'
