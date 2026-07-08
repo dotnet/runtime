@@ -100,6 +100,15 @@ extern "C" void QCALLTYPE WasiFinalizer_RunWorker()
 
 #ifdef TARGET_WASI
 
+#ifdef FEATURE_WASM_MANAGED_THREADS
+// The WASI finalizer design below is single-threaded by construction: there is
+// no separate finalizer thread, and finalization is drained synchronously on the
+// main thread via a plain (non-atomic-swap) pending flag. If managed threads are
+// ever enabled on WASI this is unsound and needs a real finalizer thread, so fail
+// the build loudly rather than silently running the single-threaded path.
+#error "TARGET_WASI finalizer path assumes a single-threaded runtime; FEATURE_WASM_MANAGED_THREADS requires a real finalizer thread implementation."
+#endif // FEATURE_WASM_MANAGED_THREADS
+
 // On WASI there is no separate finalizer thread and no JS event loop to defer
 // work to. EnableFinalization runs inside the GC, so it cannot safely cross
 // back into managed code (queueing into ThreadPool itself is a managed

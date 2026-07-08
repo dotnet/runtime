@@ -82,6 +82,7 @@
   <Target Name="StageWasmtimeForHelixPayload"
           Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'"
           BeforeTargets="CoreTest"
+          DependsOnTargets="ProvisionWasmtime"
           Inputs="$(WasmtimeDir)\.stamp-wasmtime-version.txt"
           Outputs="$(WasmtimeDirForHelixPayload)\.stamp-wasmtime-version.txt">
     <ItemGroup>
