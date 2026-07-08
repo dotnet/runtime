@@ -3079,6 +3079,61 @@ GenTree* LinearScan::getConsumingNode(GenTree* node)
 
     return nullptr;
 }
+
+//------------------------------------------------------------------------
+// constantConsumerReusesOperandReg: Determine whether 'consumer' reads-modifies-writes
+//    one of its register operands, reusing that operand's register for its own result.
+//
+// Arguments:
+//    consumer - The non-contained node that consumes a constant value (or nullptr)
+//
+// Return Value:
+//    True if 'consumer' may reuse one of its source registers for its destination
+//    (read-modify-write), or if the consumer could not be determined.
+//
+// Notes:
+//    A coalesced (multi-reference) constant that feeds such a consumer is unsafe: when
+//    the shared register is reused for the consumer's result, it is clobbered at the very
+//    point of use, while later references of the coalesced interval still expect the
+//    constant value. Because a coalesced constant is spillable, the allocator may then
+//    store-spill the (already clobbered) register and reload that garbage for the later
+//    uses, producing incorrect results under register pressure.
+//
+//    This is intentionally conservative: it declines coalescing whenever any consumer is a
+//    read-modify-write operation, without distinguishing which operand is reused. The
+//    restriction can be relaxed once spilled floating-point/SIMD/mask constants are
+//    rematerialized rather than stored and reloaded.
+//
+bool LinearScan::constantConsumerReusesOperandReg(GenTree* consumer)
+{
+    if (consumer == nullptr)
+    {
+        // The consumer could not be determined, so conservatively assume the worst.
+        return true;
+    }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (consumer->OperIsHWIntrinsic())
+    {
+        // Read-modify-write intrinsics (for example the fused-multiply-add family) reuse one
+        // of their source registers as the destination. This is the common cross-target case.
+        return consumer->isRMWHWIntrinsic(m_compiler);
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+#ifdef TARGET_XARCH
+    // Without VEX, a binary floating-point operation reuses op1's register as its destination.
+    // With VEX (the common case) such operations use the non-destructive three-operand form, so
+    // no register is reused; checking the ISA first lets us skip the operand/oper inspection.
+    if (!m_compiler->canUseVexEncoding() && consumer->OperIsBinary())
+    {
+        return isRMWRegOper(consumer);
+    }
+#endif // TARGET_XARCH
+
+    return false;
+}
+
 //------------------------------------------------------------------------
 // getConstantIntervalForReuse: If an identical floating-point/SIMD/mask constant
 //                              is still pending in the defList, return its interval
@@ -3160,7 +3215,7 @@ Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
             treeConsumer    = getConsumingNode(tree);
             gotTreeConsumer = true;
 
-            if (treeConsumer == nullptr)
+            if ((treeConsumer == nullptr) || constantConsumerReusesOperandReg(treeConsumer))
             {
                 return nullptr;
             }
@@ -3168,7 +3223,8 @@ Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
 
         GenTree* defConsumer = getConsumingNode(defNode);
 
-        if ((defConsumer == nullptr) || (defConsumer == treeConsumer))
+        if ((defConsumer == nullptr) || (defConsumer == treeConsumer) ||
+            constantConsumerReusesOperandReg(defConsumer))
         {
             return nullptr;
         }

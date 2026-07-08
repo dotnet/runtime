@@ -7810,7 +7810,16 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             else if (refPosition->reload)
             {
                 assert(currentSpill[type] > 0);
-                currentSpill[type]--;
+
+                // A coalesced constant interval can be reloaded for one use and immediately
+                // re-spilled for a later use at the same refposition. The reload releases the
+                // spill temp while the re-spill reserves a new one, so the concurrent spill
+                // count is unchanged. Only a reload without a subsequent spill frees the temp.
+                // For all other (single-use) intervals reload and spillAfter never coincide.
+                if (!(interval->isConstant && refPosition->spillAfter))
+                {
+                    currentSpill[type]--;
+                }
             }
             else if (refPosition->RegOptional() && refPosition->assignedReg() == REG_NA)
             {
