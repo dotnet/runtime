@@ -92,44 +92,103 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_PackedSimd_CompareGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 16);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdCmpOpNode(GT_GT, retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_PackedSimd_CompareGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 16);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdCmpOpNode(GT_GE, retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_PackedSimd_CompareLessThan:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 16);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdCmpOpNode(GT_LT, retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_PackedSimd_CompareLessThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 16);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdCmpOpNode(GT_LE, retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
         // The following PackedSimd intrinsics are not yet implemented on WASM. Because they are must-expand,
         // when we return nullptr here the importer will insert a PlatformNotSupportedException throw.
-        case NI_PackedSimd_CompareGreaterThan:
-        case NI_PackedSimd_CompareGreaterThanOrEqual:
-        case NI_PackedSimd_CompareLessThan:
-        case NI_PackedSimd_CompareLessThanOrEqual:
-            break;
-
         case NI_PackedSimd_ExtractScalar:
+        {
             break;
+        }
 
         case NI_PackedSimd_ReplaceScalar:
+        {
             break;
+        }
 
         case NI_PackedSimd_LoadVector128:
         {
             assert(sig->numArgs == 1);
             assert(simdSize == 16);
+
             op1 = impPopStack().val;
+
             if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
             {
                 // If what we have is a BYREF, that's what we really want, so throw away the cast.
                 op1 = op1->gtGetOp1();
             }
 
-            return gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
+            break;
         }
 
         case NI_PackedSimd_LoadScalarVector128:
         case NI_PackedSimd_LoadScalarAndSplatVector128:
         case NI_PackedSimd_LoadScalarAndInsert:
         case NI_PackedSimd_LoadWideningVector128:
+        {
             break;
+        }
+
+        case NI_PackedSimd_ShiftLeft:
+        case NI_PackedSimd_ShiftRightArithmetic:
+        case NI_PackedSimd_ShiftRightLogical:
+        {
+            break;
+        }
 
         case NI_PackedSimd_Store:
         {
             assert(sig->numArgs == 2);
             assert(simdSize == 16);
+
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -139,23 +198,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = op1->gtGetOp1();
             }
 
-            return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
+            retNode = gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
+            break;
         }
 
         case NI_PackedSimd_StoreSelectedScalar:
+        {
             break;
-
-        case NI_PackedSimd_ShiftLeft:
-        case NI_PackedSimd_ShiftRightArithmetic:
-        case NI_PackedSimd_ShiftRightLogical:
-            break;
-
-        case NI_PackedSimd_Splat:
-            break;
+        }
 
         default:
         {
-            break;
+            unreached();
         }
     }
 
