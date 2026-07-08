@@ -351,7 +351,6 @@ namespace System.Formats.Tar
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
                                                 Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
-
             if (fileDestinationPath is null || FilePathEscapesDirectory(destinationDirectoryPath, fileDestinationPath))
             {
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
@@ -399,7 +398,9 @@ namespace System.Formats.Tar
             return (fileDestinationPath, linkTargetPath);
         }
 
-        // Check if the file destination path or the link target path escapes the destination directory, by walking through the relative path components and resolving symlinks at each step.
+        // Prevent an archive from escaping the extraction root through symlinks that were created by earlier entries in the same archive.
+        // This protection applies only to links introduced by the archive itself. It is not intended to defend against preexisting symlinks
+        // already present on disk before extraction
         private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
         {
             // Windows is case insensitive while Linux is case sensitive
@@ -409,6 +410,13 @@ namespace System.Formats.Tar
                 : StringComparison.Ordinal;
 
             string resolvedDest = ResolvePhysicalPath(destinationDirectoryPath);
+
+            // Use the logical destination path for computing the relative path
+            string logicalDest = Path.GetFullPath(destinationDirectoryPath);
+            string logicalPrefix = logicalDest.EndsWith(Path.DirectorySeparatorChar)
+                ? logicalDest
+                : logicalDest + Path.DirectorySeparatorChar;
+
             string destPrefix = resolvedDest.EndsWith(Path.DirectorySeparatorChar)
                 ? resolvedDest
                 : resolvedDest + Path.DirectorySeparatorChar;
@@ -416,8 +424,15 @@ namespace System.Formats.Tar
             // Normalize file path (resolves .. and . but not symlinks)
             string normalizedFile = Path.GetFullPath(fileDestinationPath);
 
+            // Guard with StartsWith before computing relative path
+            if (!normalizedFile.StartsWith(logicalPrefix, pathComparison) &&
+                !normalizedFile.Equals(logicalDest, pathComparison))
+            {
+                return true;
+            }
+
             // Walk relative components, resolving symlinks at each step
-            string relative = normalizedFile.Substring(resolvedDest.Length)
+            string relative = normalizedFile.Substring(logicalPrefix.Length)
                 .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             string[] components = relative.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
@@ -428,16 +443,7 @@ namespace System.Formats.Tar
             foreach (string component in components)
             {
                 current = Path.Combine(current, component);
-
-                if (Path.Exists(current))
-                {
-                    string? resolved = ResolveSymlink(current);
-                    if (resolved is null)
-                    {
-                        return true;
-                    }
-                    current = resolved;
-                }
+                current = ResolveSymlink(current);
 
                 string normalizedCurrent = Path.GetFullPath(current);
                 if (!normalizedCurrent.StartsWith(destPrefix, pathComparison) &&
@@ -450,15 +456,18 @@ namespace System.Formats.Tar
             return false;
         }
 
-        private static string? ResolveSymlink(string path)
+        private static string ResolveSymlink(string path)
         {
-            FileSystemInfo? target = new FileInfo(path).ResolveLinkTarget(returnFinalTarget: true);
+            var info = new FileInfo(path);
 
-            if (target is null)
+            // Check LinkTarget first so dangling symlinks/junctions (whose final target doesn't exist yet)
+            // are still resolved to their raw target, rather than being treated as a non-link.
+            if (info.LinkTarget is null)
             {
                 return Path.GetFullPath(path);
             }
 
+            FileSystemInfo target = info.ResolveLinkTarget(returnFinalTarget: true) ?? info;
             return target.FullName;
         }
 
@@ -482,12 +491,7 @@ namespace System.Formats.Tar
                 current = Path.Combine(current, component);
                 if (Path.Exists(current))
                 {
-                    string? resolved = ResolveSymlink(current);
-                    if (resolved is null)
-                    {
-                        return current;
-                    }
-                    current = resolved;
+                    current = ResolveSymlink(current);
                 }
             }
 
