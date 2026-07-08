@@ -651,7 +651,6 @@ CDAC_TYPE_END(ThreadStressLog)
 
 CDAC_TYPE_BEGIN(StressLogChunk)
 CDAC_TYPE_SIZE(sizeof(StressLogChunk))
-CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Prev, offsetof(StressLogChunk, prev))
 CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Next, offsetof(StressLogChunk, next))
 CDAC_TYPE_FIELD(StressLogChunk, T_ARRAY(T_UINT8), Buf, offsetof(StressLogChunk, buf))
 CDAC_TYPE_FIELD(StressLogChunk, T_UINT32, Sig1, offsetof(StressLogChunk, dwSig1))

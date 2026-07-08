@@ -1427,6 +1427,30 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     _ASSERTE(pMD != NULL);
     _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
+    // Prefer R2R-compiled native code for UnmanagedCallersOnly methods since it is emitted
+    // with the native (unmanaged) calling convention and its R2R code is itself the directly-callable
+    // unmanaged entrypoint. Resolve the method's code first and, if it has native (R2R) code, return that
+    // entrypoint directly. The g_ReverseThunks interpreter fallback below is only required for methods
+    // that are executed by the interpreter (no native code), and is intentionally unused for R2R methods.
+    PCODE entryPoint = pMD->GetPortableEntryPoint();
+    if (!PortableEntryPoint::HasNativeEntryPoint(entryPoint) && pMD->GetInterpreterCode() == NULL)
+    {
+        // The method has not been prepared yet. Probe for precompiled R2R native code and, if present,
+        // publish it into the portable entrypoint WITHOUT compiling interpreter byte code. Purely
+        // interpreted methods are intentionally left unprepared here so that their byte code is generated
+        // lazily on first call through the reverse thunk below (better for startup). For R2R methods we
+        // run the prestub to perform the canonical full preparation; it finds the R2R code first and never
+        // falls back to compiling byte code.
+        if (pMD->TryPublishR2RCodeForUnmanagedCallersOnly())
+        {
+            (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
+        }
+    }
+    if (PortableEntryPoint::HasNativeEntryPoint(entryPoint))
+    {
+        return PortableEntryPoint::GetActualCode(entryPoint);
+    }
+
     const ReverseThunkMapValue* value = LookupThunk(pMD);
     if (value == NULL)
     {

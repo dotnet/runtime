@@ -186,16 +186,20 @@ public abstract class CdacStressTestBase
         // On supported targets every Frame's caller-arg refs are enumerated via
         // the GCRefMap blob synthesized by ICallingConvention -- there should be
         // no deferred frames at all, so any KnownIssue count is a regression.
+        // Keep this gate in sync with the ARGITER-support gate in
+        // ArgIterStress_AllVerificationsPass below and with the
+        // supportedByCallingConvention gate in GcScanner.PromoteCallerStack.
         GetTargetPlatform(out OSPlatform os, out Architecture arch);
         bool requiresZeroKnownIssues =
-            os == OSPlatform.Windows && arch is Architecture.X86 or Architecture.X64;
+               (os == OSPlatform.Windows && arch is Architecture.X86 or Architecture.X64 or Architecture.Arm64)
+            || (os == OSPlatform.Linux && arch is Architecture.Arm or Architecture.Arm64);
         if (requiresZeroKnownIssues && results.KnownIssues > 0)
         {
             string analysis = results.AnalyzeFailures(maxFailures: 3);
             Assert.Fail(
                 $"GCREFS stress test '{debuggeeName}' had {results.KnownIssues} known issue(s) " +
                 $"out of {results.TotalVerifications} verifications. " +
-                "Windows x86 / x64 are expected to enumerate every transition Frame's " +
+                "This platform is expected to enumerate every transition Frame's " +
                 "caller-stack refs via ICallingConvention.TryComputeArgGCRefMapBlob with no " +
                 "deferred frames. A non-zero KnownIssues count indicates the encoder declined " +
                 "a method it should support (e.g. a regression in ComputeArgGCRefMapBlobCore " +
