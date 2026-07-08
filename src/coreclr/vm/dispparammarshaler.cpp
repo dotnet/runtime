@@ -589,8 +589,8 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
     }
     CONTRACTL_END;
 
-    SafeComHolderAnyMode<IUnknown> pUnk;
-    SafeComHolderAnyMode<IDispatch> pDisp;
+    ComHolderAnyMode<IUnknown> pUnk;
+    ComHolderAnyMode<IDispatch> pDisp;
 
     // Convert the object using the custom marshaler.
     SafeVariantClear(pDestVar);

@@ -93,7 +93,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
 
     BOOL        fReleaseWrapper     = false;
     HRESULT     hr                  = E_NOINTERFACE;
-    SafeComHolderAnyMode<IUnknown> pUnk;
+    ComHolderAnyMode<IUnknown> pUnk;
     size_t      ul                  = 0;
 
     if (*poref == NULL)
@@ -347,7 +347,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     }
     else
     {
-        SafeComHolderAnyMode<IUnknown> pUnkHolder;
+        ComHolderAnyMode<IUnknown> pUnkHolder;
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -407,7 +407,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     Thread * pThread = GetThread();
 
     IUnknown* pOuter = pUnk;
-    SafeComHolderAnyMode<IUnknown> pAutoOuterUnk;
+    ComHolderAnyMode<IUnknown> pAutoOuterUnk;
 
     if (pUnk != NULL)
     {

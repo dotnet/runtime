@@ -53,7 +53,7 @@ private:
 };
 
 template <typename TYPE>
-struct SafeComHolderAnyModeTraits final
+struct ComHolderAnyModeTraits final
 {
     static_assert(
         std::is_base_of<IUnknown, TYPE>::value,
@@ -75,13 +75,13 @@ struct SafeComHolderAnyModeTraits final
 };
 
 // Releases the held COM interface regardless of the current GC mode, switching
-// to preemptive internally when required. Use SafeComHolderPreemp instead when
+// to preemptive internally when required. Use ComHolderPreemp instead when
 // the release will always occur in preemptive mode.
 template<typename _TYPE>
-using SafeComHolderAnyMode = LifetimeHolder<SafeComHolderAnyModeTraits<_TYPE>>;
+using ComHolderAnyMode = LifetimeHolder<ComHolderAnyModeTraits<_TYPE>>;
 
 template <typename TYPE>
-struct SafeComHolderPreempTraits final
+struct ComHolderPreempTraits final
 {
     static_assert(
         std::is_base_of<IUnknown, TYPE>::value,
@@ -103,9 +103,9 @@ struct SafeComHolderPreempTraits final
 };
 
 // Use this holder if you're already in preemptive mode for other reasons,
-// use SafeComHolderAnyMode otherwise.
+// use ComHolderAnyMode otherwise.
 template<typename _TYPE>
-using SafeComHolderPreemp = LifetimeHolder<SafeComHolderPreempTraits<_TYPE>>;
+using ComHolderPreemp = LifetimeHolder<ComHolderPreempTraits<_TYPE>>;
 
 //--------------------------------------------------------------------------------
 // safe variant helper
