@@ -33,18 +33,17 @@ struct HijackArgs
 {
 };
 
+#if defined(TARGET_BROWSER)
 inline void* GetCurrentSP()
 {
     WRAPPER_NO_CONTRACT;
-#if defined(TARGET_BROWSER)
     return (void*)emscripten_stack_get_current();
-#else
-    // WASI has no equivalent of emscripten_stack_get_current(). The interpreter
-    // walks the explicit InterpreterFrame chain rather than consulting native
-    // SP, so any caller is in a code path that won't actually run on WASI.
-    return nullptr;
-#endif
 }
+#else // TARGET_WASI
+// Defined in wasm/getstate.S: reads the wasm __stack_pointer global, the portable
+// equivalent of emscripten_stack_get_current() (which wasi-sdk does not provide).
+extern "C" void* GetCurrentSP();
+#endif
 
 extern PCODE GetPreStubEntryPoint();
 
