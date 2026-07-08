@@ -1895,6 +1895,11 @@ namespace System.Tests
             // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
             yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 10 };
 
+            // Hex-float (AllowTrailingInvalidCharacters combined with HexFloat)
+            yield return new object[] { "0x1.8p0xyz", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.5, 7 };
+            yield return new object[] { "0x1.0p10!!", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1024.0, 8 };
+            yield return new object[] { "0x1.8p0  x", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.5, 9 };
+
             // Valid number without trailing characters
             yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45, 6 };
             
@@ -1980,6 +1985,13 @@ namespace System.Tests
             Assert.False(double.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0.0, result);
             Assert.Equal(0, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(double.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0.0, result);
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }

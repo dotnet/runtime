@@ -827,11 +827,12 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
-            // Check for undefined flags, AllowBinarySpecifier (never valid for float), or AllowHexSpecifier with anything other than HexFloat flags.
+            // Check for undefined flags, AllowBinarySpecifier (never valid for float), or AllowHexSpecifier with anything
+            // other than HexFloat flags (optionally combined with AllowTrailingInvalidCharacters).
             // When AllowHexSpecifier is specified, AllowExponent must also be specified; this reserves
             // AllowHexSpecifier without AllowExponent for possible future use (e.g. optional p exponent).
             if ((style & (InvalidNumberStyles | NumberStyles.AllowBinarySpecifier | NumberStyles.AllowHexSpecifier)) != 0 &&
-                ((style & ~NumberStyles.HexFloat) != 0 ||
+                ((style & ~(NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters)) != 0 ||
                  (style & NumberStyles.AllowHexSpecifier) != 0 && (style & NumberStyles.AllowExponent) == 0))
             {
                 ThrowInvalid(style);

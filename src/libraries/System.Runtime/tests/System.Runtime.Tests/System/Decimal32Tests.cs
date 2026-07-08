@@ -554,6 +554,10 @@ namespace System.Tests
 
             Assert.False(Decimal32.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0, charsConsumed);
+
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
+            Assert.False(Decimal32.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }
