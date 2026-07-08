@@ -92,8 +92,9 @@ public:
 // When enabled at startup (Arm64 with FEAT_WFxT and the ThreadWfetSpinWait knob), a normalized spin-wait
 // issues a single low-power WFET wait for the equivalent duration instead of a busy YieldProcessor loop.
 // This trades a small amount of extra wake-up latency for substantially lower energy usage while spinning.
-// 'normalizedYields' is the number of normalized yields the caller intended to perform.
-FORCEINLINE bool TryYieldProcessorWithWfet(size_t normalizedYields)
+// 'normalizedYields' is the number of normalized yields the caller intended to perform. It is 'unsigned int'
+// (not size_t) so that 'normalizedYields * TargetNsPerNormalizedYield' cannot overflow the uint64_t result.
+FORCEINLINE bool TryYieldProcessorWithWfet(unsigned int normalizedYields)
 {
 #if defined(HOST_ARM64) && !defined(HOST_WINDOWS)
     if (g_minipalWfetSpinWaitEnabled)

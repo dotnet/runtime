@@ -845,19 +845,15 @@ static inline uint64_t minipal_read_cntfrq_el0(void)
 
 void minipal_wfet_wait_ns(uint64_t ns)
 {
-    // The system counter frequency is fixed for the lifetime of the process, so read it once.
-    static uint64_t s_cntfrq = 0;
-    uint64_t cntfrq = s_cntfrq;
-    if (cntfrq == 0)
-    {
-        cntfrq = minipal_read_cntfrq_el0();
-        s_cntfrq = cntfrq; // benign race: all readers observe the same value
-    }
+    // CNTFRQ_EL0 is a constant system register, so reading it per call is a cheap non-trapping mrs and
+    // avoids any shared cache state (and the associated data race).
+    uint64_t cntfrq = minipal_read_cntfrq_el0();
 
     // Convert nanoseconds to counter ticks. From Armv8.6 onwards the counter runs at a fixed 1GHz
-    // (1 tick == 1 ns), which is the common case; scale by CNTFRQ_EL0 otherwise to stay correct.
+    // (1 tick == 1 ns), which is the common case; scale by CNTFRQ_EL0 otherwise to stay correct. The
+    // scaling uses a 128-bit intermediate so the multiply cannot overflow for large 'ns'.
     const uint64_t NsPerSecond = 1000000000ULL;
-    uint64_t ticks = (cntfrq == NsPerSecond) ? ns : (ns * cntfrq) / NsPerSecond;
+    uint64_t ticks = (cntfrq == NsPerSecond) ? ns : (uint64_t)(((unsigned __int128)ns * cntfrq) / NsPerSecond);
     if (ticks == 0)
     {
         ticks = 1;
