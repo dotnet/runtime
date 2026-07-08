@@ -863,15 +863,15 @@ void minipal_wfet_wait_ns(uint64_t ns)
         ticks = 1;
     }
 
-    uint64_t target = minipal_read_cntvctss_el0() + ticks;
-    uint64_t current;
+    uint64_t start = minipal_read_cntvctss_el0();
+    uint64_t target = start + ticks;
     do
     {
         // WFET enters a low-power state until an event arrives or CNTVCT_EL0 reaches the target in x9.
         // It may also wake spuriously, so re-read the counter and loop until the deadline is reached.
         __asm__ __volatile__("mov x9, %0\n\t.inst 0xd5031009" : : "r"(target) : "x9", "memory"); // wfet x9
-        current = minipal_read_cntvctss_el0();
-    } while (current < target);
+        // Subtract-and-compare against the elapsed ticks so the loop is robust to counter roll-over.
+    } while ((minipal_read_cntvctss_el0() - start) < ticks);
 
     __asm__ __volatile__(".inst 0xd50330ff" : : : "memory"); // sb - prevent speculation past the wait
 }
