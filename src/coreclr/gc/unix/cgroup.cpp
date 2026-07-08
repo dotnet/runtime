@@ -475,6 +475,11 @@ private:
                 }
             }
 
+            if (cgroupPathLength == memory_cgroup_hierarchy_mount_length)
+            {
+                break;
+            }
+
             // Get the parent cgroup memory limit file path
             char *parent_directory_end = mem_limit_filename + cgroupPathLength - 1;
             while (*parent_directory_end != '/')
@@ -486,7 +491,7 @@ private:
 
             strcpy(parent_directory_end, CGROUP2_MEMORY_LIMIT_FILENAME);
         }
-        while (cgroupPathLength != memory_cgroup_hierarchy_mount_length);
+        while (true);
 
         free(mem_limit_filename);
 
