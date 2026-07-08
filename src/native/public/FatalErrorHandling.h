@@ -79,7 +79,7 @@ enum FatalErrorProperty : int32_t
 // Property-getter callback passed to the fatal error handler. The handler
 // calls it with a FatalErrorProperty value and a pointer that receives the
 // property's value. The retrieved value is a pointer to read-only crash state
-// owned by the runtime. The handler must not modify the pointed-to data.
+// owned by the runtime or callbacks. The handler must not modify pointed-to data.
 // Returns a nonzero value if the property is available (and *value has been
 // written), or 0 if the property is not available.
 typedef int32_t (DOTNET_CALLCONV *FatalErrorPropertyGetter)(FatalErrorProperty prop, const void** value);
