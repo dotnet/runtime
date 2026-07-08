@@ -1574,94 +1574,92 @@ namespace System
                 }
             }
 
-            // Hex floating-point does not support the Infinity/NaN symbols, so only the non-hex
-            // path falls through to the special-value handling below.
-            if ((styles & NumberStyles.AllowHexSpecifier) == 0)
+            // Both the hex and non-hex floating-point paths support the Infinity/NaN symbols, so
+            // either falls through to the special-value handling below when the numeric parse fails.
+            //
+            // Leading and trailing whitespace around a special value (Infinity/NaN) is always
+            // consumed, independent of the AllowLeadingWhite/AllowTrailingWhite styles (historical
+            // precedent). When AllowTrailingInvalidCharacters is set, parsing additionally stops at
+            // the first non-whitespace character after the symbol; otherwise such a trailing
+            // character rejects the match.
+            ReadOnlySpan<TChar> valueTrim = SpanTrimStart(value);
+            bool allowTrailingInvalid = (styles & NumberStyles.AllowTrailingInvalidCharacters) != 0;
+
+            // elementsConsumed is seeded with the offset of the candidate within value (the leading
+            // whitespace, plus any sign) and then advanced by TryMatchSpecialValueSymbol on a match.
+            elementsConsumed = value.Length - valueTrim.Length;
+
+            // This code would be simpler if we only had the concept of `InfinitySymbol`, but
+            // we don't so we'll check the existing cases first and then handle `PositiveSign` +
+            // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
+
+            ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
+
+            if (TryMatchSpecialValueSymbol(valueTrim, positiveInfinitySymbol, allowTrailingInvalid, ref elementsConsumed))
             {
-                // Leading and trailing whitespace around a special value (Infinity/NaN) is always
-                // consumed, independent of the AllowLeadingWhite/AllowTrailingWhite styles (historical
-                // precedent). When AllowTrailingInvalidCharacters is set, parsing additionally stops at
-                // the first non-whitespace character after the symbol; otherwise such a trailing
-                // character rejects the match.
-                ReadOnlySpan<TChar> valueTrim = SpanTrimStart(value);
-                bool allowTrailingInvalid = (styles & NumberStyles.AllowTrailingInvalidCharacters) != 0;
+                result = TFloat.PositiveInfinity;
+                return true;
+            }
 
-                // elementsConsumed is seeded with the offset of the candidate within value (the leading
-                // whitespace, plus any sign) and then advanced by TryMatchSpecialValueSymbol on a match.
-                elementsConsumed = value.Length - valueTrim.Length;
+            if (TryMatchSpecialValueSymbol(valueTrim, info.NegativeInfinitySymbolTChar<TChar>(), allowTrailingInvalid, ref elementsConsumed))
+            {
+                result = TFloat.NegativeInfinity;
+                return true;
+            }
 
-                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
-                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
-                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
+            ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
 
-                ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
+            if (TryMatchSpecialValueSymbol(valueTrim, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
+            {
+                result = TFloat.NaN;
+                return true;
+            }
 
-                if (TryMatchSpecialValueSymbol(valueTrim, positiveInfinitySymbol, allowTrailingInvalid, ref elementsConsumed))
+            ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+
+            if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
+            {
+                ReadOnlySpan<TChar> afterSign = valueTrim.Slice(positiveSign.Length);
+                elementsConsumed = value.Length - afterSign.Length;
+
+                if (TryMatchSpecialValueSymbol(afterSign, positiveInfinitySymbol, allowTrailingInvalid, ref elementsConsumed))
                 {
                     result = TFloat.PositiveInfinity;
                     return true;
                 }
-
-                if (TryMatchSpecialValueSymbol(valueTrim, info.NegativeInfinitySymbolTChar<TChar>(), allowTrailingInvalid, ref elementsConsumed))
-                {
-                    result = TFloat.NegativeInfinity;
-                    return true;
-                }
-
-                ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
-
-                if (TryMatchSpecialValueSymbol(valueTrim, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
+                else if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
                 {
                     result = TFloat.NaN;
                     return true;
                 }
 
-                ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+                result = TFloat.Zero;
+                elementsConsumed = 0;
+                return false;
+            }
 
-                if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
+            ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+            if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+            {
+                ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSign.Length);
+                elementsConsumed = value.Length - afterSign.Length;
+
+                if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
                 {
-                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(positiveSign.Length);
-                    elementsConsumed = value.Length - afterSign.Length;
-
-                    if (TryMatchSpecialValueSymbol(afterSign, positiveInfinitySymbol, allowTrailingInvalid, ref elementsConsumed))
-                    {
-                        result = TFloat.PositiveInfinity;
-                        return true;
-                    }
-                    else if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
-                    {
-                        result = TFloat.NaN;
-                        return true;
-                    }
-
-                    result = TFloat.Zero;
-                    elementsConsumed = 0;
-                    return false;
+                    result = TFloat.NaN;
+                    return true;
                 }
 
-                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-
-                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+                if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')))
                 {
-                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSign.Length);
-                    elementsConsumed = value.Length - afterSign.Length;
+                    ReadOnlySpan<TChar> afterHyphen = valueTrim.Slice(1);
+                    elementsConsumed = value.Length - afterHyphen.Length;
 
-                    if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
+                    if (TryMatchSpecialValueSymbol(afterHyphen, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
                     {
                         result = TFloat.NaN;
                         return true;
-                    }
-
-                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')))
-                    {
-                        ReadOnlySpan<TChar> afterHyphen = valueTrim.Slice(1);
-                        elementsConsumed = value.Length - afterHyphen.Length;
-
-                        if (TryMatchSpecialValueSymbol(afterHyphen, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
-                        {
-                            result = TFloat.NaN;
-                            return true;
-                        }
                     }
                 }
             }

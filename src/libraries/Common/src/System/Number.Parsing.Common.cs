@@ -305,7 +305,6 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
         private static int ConsumeTrailingNulls<TChar>(ReadOnlySpan<TChar> value, int index)
             where TChar : unmanaged, IUtfChar<TChar>
         {

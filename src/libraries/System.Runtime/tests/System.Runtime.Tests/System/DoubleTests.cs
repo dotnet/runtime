@@ -479,6 +479,12 @@ namespace System.Tests
             // Zero with absurd exponent (still zero)
             yield return new object[] { "0x0p99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
             yield return new object[] { "0x0p-99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
+
+            // Special values (Infinity/NaN) are supported with HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, invariantFormat, double.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.HexFloat, invariantFormat, double.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.HexFloat, invariantFormat, double.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.HexFloat, invariantFormat, double.NaN };
         }
 
         [Theory]
@@ -628,8 +634,6 @@ namespace System.Tests
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
             yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
             yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
-            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
-            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
@@ -1899,6 +1903,11 @@ namespace System.Tests
             yield return new object[] { "0x1.8p0xyz", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.5, 7 };
             yield return new object[] { "0x1.0p10!!", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1024.0, 8 };
             yield return new object[] { "0x1.8p0  x", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 1.5, 9 };
+
+            // Hex-float special values (Infinity/NaN) with trailing invalid characters
+            yield return new object[] { "Infinityxyz", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinity!!", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NegativeInfinity, 9 };
+            yield return new object[] { "NaN  x", NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NaN, 5 };
 
             // Valid number without trailing characters
             yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, 123.45, 6 };

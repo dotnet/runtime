@@ -516,6 +516,16 @@ namespace System.Tests
             yield return new object[] { "Infinityabc", style, CultureInfo.InvariantCulture, Decimal32.PositiveInfinity, 8 };
             yield return new object[] { "-Infinityxyz", style, CultureInfo.InvariantCulture, Decimal32.NegativeInfinity, 9 };
             yield return new object[] { "NaNabc", style, CultureInfo.InvariantCulture, Decimal32.NaN, 3 };
+
+            // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
+            yield return new object[] { "Infinity   ", style, CultureInfo.InvariantCulture, Decimal32.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", style, CultureInfo.InvariantCulture, Decimal32.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", style, CultureInfo.InvariantCulture, Decimal32.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", style, CultureInfo.InvariantCulture, Decimal32.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", style, CultureInfo.InvariantCulture, Decimal32.NaN, 5 };
+
+            // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Decimal32.PositiveInfinity, 10 };
         }
 
         [Theory]

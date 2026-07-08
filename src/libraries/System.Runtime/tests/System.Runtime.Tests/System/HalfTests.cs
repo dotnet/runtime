@@ -789,6 +789,12 @@ namespace System.Tests
             // Various representations
             yield return new object[] { "0xA.0p0", NumberStyles.HexFloat, invariantFormat, 10.0f };
             yield return new object[] { "0x.1p4", NumberStyles.HexFloat, invariantFormat, 1.0f };
+
+            // Special values (Infinity/NaN) are supported with HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.HexFloat, invariantFormat, float.NaN };
         }
 
         [Theory]
@@ -874,8 +880,6 @@ namespace System.Tests
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
             yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
             yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
-            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
-            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
@@ -2473,6 +2477,16 @@ namespace System.Tests
             yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 8 };
             yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NegativeInfinity, 9 };
             yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NaN, 3 };
+
+            // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
+            yield return new object[] { "Infinity   ", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NaN, 5 };
+
+            // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 10 };
             
             // Valid number without trailing characters
             yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
