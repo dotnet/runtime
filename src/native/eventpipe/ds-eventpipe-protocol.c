@@ -823,7 +823,8 @@ eventpipe_collect_tracing5_command_try_parse_payload_core (
 	if (parse_buffering_mode && instance->session_type == EP_SESSION_TYPE_IPCSTREAM) {
 		uint32_t buffering_mode = 0;
 		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &buffering_mode));
-		instance->buffering_mode = (buffering_mode == EP_BUFFERING_MODE_BLOCK) ? EP_BUFFERING_MODE_BLOCK : EP_BUFFERING_MODE_DROP;
+		ep_raise_error_if_nok (buffering_mode == EP_BUFFERING_MODE_DROP || buffering_mode == EP_BUFFERING_MODE_BLOCK);
+		instance->buffering_mode = (EventPipeBufferingMode)buffering_mode;
 	}
 
 	instance->rundown_requested = instance->rundown_keyword != 0;

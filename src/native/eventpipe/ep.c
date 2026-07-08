@@ -929,11 +929,12 @@ write_event_2 (
 				// also picks up such an unpublish. The first write and every block-mode retry share the
 				// single ep_session_write_event call in this loop.
 				EventPipeSession *write_session = ep_volatile_load_session (i);
+				EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 #ifndef PERFTRACING_DISABLE_THREADS
 				EventPipeBufferManager *buffer_manager = NULL;
 #endif // !PERFTRACING_DISABLE_THREADS
 				while (write_session != NULL) {
-					EventPipeWriteEventResult write_result = ep_session_write_event (
+					write_result = ep_session_write_event (
 						write_session,
 						thread,
 						ep_event,
@@ -976,6 +977,16 @@ write_event_2 (
 					write_session = ep_volatile_load_session (i);
 #endif // !PERFTRACING_DISABLE_THREADS
 				}
+#ifndef PERFTRACING_DISABLE_THREADS
+				// If we gave up on a BLOCKED event during teardown (the session started aborting), it will never
+				// be written. Account it as a drop by bumping the thread's sequence number so it stays visible to
+				// sequence-number based drop detection, matching the buffer manager's terminal drop paths.
+				if (write_result == EP_WRITE_EVENT_RESULT_BLOCKED && write_session != NULL) {
+					EventPipeThreadSessionState *blocked_session_state = ep_thread_get_volatile_session_state (current_thread, write_session);
+					if (blocked_session_state != NULL)
+						ep_thread_session_state_increment_sequence_number (blocked_session_state);
+				}
+#endif // !PERFTRACING_DISABLE_THREADS
 			}
 			// Do not reference session past this point; we are signaling the teardown path that it is safe to
 			// delete it.
@@ -1094,20 +1105,23 @@ enable_default_session_via_env_variables (void)
 		output_path = ep_config_output_path ? ep_config_output_path : "trace.nettrace";
 		ep_circular_mb = ep_circular_mb > 0 ? ep_circular_mb : 1;
 
-		uint64_t session_id = ep_init_session_2 (
-			output_path,
-			ep_circular_mb,
-			ep_config,
-			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
-			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			ep_default_rundown_keyword,
-			NULL,
-			NULL,
-			NULL,
-			ep_rt_config_value_get_buffering_mode () == EP_BUFFERING_MODE_BLOCK ? EP_BUFFERING_MODE_BLOCK : EP_BUFFERING_MODE_DROP);
+		uint32_t buffering_mode = ep_rt_config_value_get_buffering_mode ();
+		if (buffering_mode == EP_BUFFERING_MODE_DROP || buffering_mode == EP_BUFFERING_MODE_BLOCK) {
+			uint64_t session_id = ep_init_session_2 (
+				output_path,
+				ep_circular_mb,
+				ep_config,
+				ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
+				EP_SERIALIZATION_FORMAT_NETTRACE_V4,
+				ep_default_rundown_keyword,
+				NULL,
+				NULL,
+				NULL,
+				(EventPipeBufferingMode)buffering_mode);
 
-		if (session_id)
-			ep_start_session (session_id);
+			if (session_id)
+				ep_start_session (session_id);
+		}
 	}
 
 	ep_rt_utf8_string_free (ep_config_output_path);
