@@ -1425,10 +1425,18 @@ namespace System.Numerics.Tests
             // HexNumber with trailing invalid characters
             yield return new object[] { "ABCDEFxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("ABCDEF", NumberStyles.HexNumber), 6 };
             yield return new object[] { "FFGHxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 2 };
-            
+
+            // HexNumber consumes trailing whitespace (AllowTrailingWhite) before stopping on the first invalid non-whitespace character
+            yield return new object[] { "FF  G", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
+            yield return new object[] { "FF  ", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
+            yield return new object[] { "FF  G  ", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("FF", NumberStyles.HexNumber), 4 };
+
             // BinaryNumber with trailing invalid characters
             yield return new object[] { "101010abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("101010", NumberStyles.BinaryNumber), 6 };
             yield return new object[] { "1112", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("111", NumberStyles.BinaryNumber), 3 };
+
+            // BinaryNumber consumes trailing whitespace (AllowTrailingWhite) before stopping on the first invalid non-whitespace character
+            yield return new object[] { "101  2", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("101", NumberStyles.BinaryNumber), 5 };
             
             // Large numbers with trailing characters
             yield return new object[] { "123456789012345678901234567890abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("123456789012345678901234567890"), 30 };

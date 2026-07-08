@@ -161,52 +161,45 @@ namespace System
                 value = value[index..];
             }
 
-            // Skip past any whitespace at the end.
+            // Find the leading run of valid digits. Parsing stops at the first character that
+            // isn't a valid digit for the given base.
+            int validLength = 0;
+
+            while ((validLength < value.Length) && TParser.IsValidDigit(TChar.CastToUInt32(value[validLength])))
+            {
+                validLength++;
+            }
+
+            // Skip past any whitespace immediately following the digits. This whitespace is
+            // counted as consumed (it's trailing whitespace) even if an invalid character
+            // follows it, consistent with the core numeric parsers.
+            int trailingStart = validLength;
+
             if ((style & NumberStyles.AllowTrailingWhite) != 0)
             {
-                int whiteIndex;
-
-                for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
+                while ((trailingStart < value.Length) && IsWhite(TChar.CastToUInt32(value[trailingStart])))
                 {
-                    if (!IsWhite(TChar.CastToUInt32(value[whiteIndex])))
-                    {
-                        break;
-                    }
+                    trailingStart++;
                 }
-                whiteIndex++;
 
-                trailingWhiteLength = value.Length - whiteIndex;
-                value = value[..whiteIndex];
+                trailingWhiteLength = trailingStart - validLength;
             }
 
-            // When trailing invalid characters are allowed, parsing should stop at the first
-            // character that isn't a valid digit for the given base. Truncate the input to the
-            // leading run of valid digits so the block-based parsing below operates on a fully
-            // valid sequence. If we stop early, any trailing whitespace we skipped above was
-            // beyond the first invalid character and therefore wasn't actually consumed.
-            if ((style & NumberStyles.AllowTrailingInvalidCharacters) != 0)
+            // If anything remains after the digits and their trailing whitespace, the input is
+            // only valid when trailing invalid characters are explicitly allowed.
+            if ((trailingStart != value.Length) && ((style & NumberStyles.AllowTrailingInvalidCharacters) == 0))
             {
-                int validLength = 0;
-
-                while ((validLength < value.Length) && TParser.IsValidDigit(TChar.CastToUInt32(value[validLength])))
-                {
-                    validLength++;
-                }
-
-                if (validLength != value.Length)
-                {
-                    value = value[..validLength];
-                    trailingWhiteLength = 0;
-                }
+                goto FailExit;
             }
+
+            value = value[..validLength];
 
             if (value.IsEmpty)
             {
                 goto FailExit;
             }
 
-            // Remember the sign from original leading input
-            // Invalid digits will be caught in parsing below
+            // Remember the sign from the leading digit.
             nuint signBits = TParser.GetSignBitsIfValid(TChar.CastToUInt32(value[0]));
 
             // Start from leading blocks. Leading blocks can be unaligned, or whole of 0/F's that need to be trimmed.
