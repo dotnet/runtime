@@ -366,6 +366,7 @@ public enum CorDebugUserState
     USER_UNSTARTED = 0x08,
     USER_STOPPED = 0x10,
     USER_WAIT_SLEEP_JOIN = 0x20,
+    USER_UNSAFE_POINT = 0x80,
     USER_THREADPOOL = 0x100,
 }
 

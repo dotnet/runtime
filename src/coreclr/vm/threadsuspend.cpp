@@ -1371,7 +1371,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
         // Two more cases can be folded in here as well.  If the thread is unstarted, it'll
         // abort when we start it.
         //
-        // If the thread is user suspended (SyncSuspended) -- we're out of luck.  Set the bit and
+        // If the thread is debug suspended (DebugSyncSuspended) -- we're out of luck.  Set the bit and
         // hope for the best on resume.
         //
         if ((m_State & TS_AbortInitiated) && !IsRudeAbort())
@@ -1457,10 +1457,10 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                 break;
             }
 
-            // If Threads is stopped under a managed debugger, it will have both
-            // TS_DebugSuspendPending and TS_SyncSuspended, regardless of whether
+            // If a thread is stopped under a managed debugger, it will have both
+            // TS_DebugSuspendPending and TS_DebugSyncSuspended, regardless of whether
             // the thread is actually suspended or not.
-            if (m_State & TS_SyncSuspended)
+            if (m_State & TS_DebugSyncSuspended)
             {
 #ifndef DISABLE_THREADSUSPEND
                 ResumeThread();
@@ -2131,8 +2131,8 @@ void Thread::RareDisablePreemptiveGC()
                 LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: debug suspended while switching to coop mode.\n", GetThreadId()));
             }
 #endif
-            // unsets TS_DebugSuspendPending | TS_SyncSuspended
-            WaitSuspendEvents();
+            // unsets TS_DebugSuspendPending | TS_DebugSyncSuspended
+            WaitForDebugSuspend();
 
             // disable preemptive gc.
             m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
@@ -4365,9 +4365,9 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
 
 /*
  *
- * WaitSuspendEventsHelper
+ * WaitForDebugSuspendHelper
  *
- * This function is a simple helper function for WaitSuspendEvents.  It is needed
+ * This function is a simple helper function for WaitForDebugSuspend.  It is needed
  * because of the EX_TRY macro.  This macro does an alloca(), which allocates space
  * off the stack, not free'ing it.  Thus, doing a EX_TRY in a loop can easily result
  * in a stack overflow error.  By factoring out the EX_TRY into a separate function,
@@ -4380,7 +4380,7 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
  *   true if meant to continue, else false.
  *
  */
-BOOL Thread::WaitSuspendEventsHelper(void)
+BOOL Thread::WaitForDebugSuspendHelper(void)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -4395,13 +4395,13 @@ BOOL Thread::WaitSuspendEventsHelper(void)
 
             while (oldState & TS_DebugSuspendPending) {
 
-                ThreadState newState = (ThreadState)(oldState | TS_SyncSuspended);
+                ThreadState newState = (ThreadState)(oldState | TS_DebugSyncSuspended);
                 if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {
                     result = m_DebugSuspendEvent.Wait(INFINITE,FALSE);
 #if _DEBUG
                     newState = m_State;
-                    _ASSERTE(!(newState & TS_SyncSuspended));
+                    _ASSERTE(!(newState & TS_DebugSyncSuspended));
 #endif
                     break;
                 }
@@ -4419,18 +4419,18 @@ BOOL Thread::WaitSuspendEventsHelper(void)
 
 
 // There's a bit of a workaround here
-void Thread::WaitSuspendEvents()
+void Thread::WaitForDebugSuspend()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     _ASSERTE(!PreemptiveGCDisabled());
-    _ASSERTE((m_State & TS_SyncSuspended) == 0);
+    _ASSERTE((m_State & TS_DebugSyncSuspended) == 0);
 
     // Let us do some useful work before suspending ourselves.
     while (TRUE)
     {
-        WaitSuspendEventsHelper();
+        WaitForDebugSuspendHelper();
 
         ThreadState oldState = m_State;
 
@@ -4443,7 +4443,7 @@ void Thread::WaitSuspendEvents()
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_DebugSyncSuspended));
 
             if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
