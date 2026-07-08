@@ -530,16 +530,23 @@ namespace System.Tests
         {
             uint result;
             int charsConsumed;
-            
+
             // Test string overload with charsConsumed
             Assert.False(uint.TryParse(value, style, provider, out result, out charsConsumed));
             Assert.Equal(0u, result);
             Assert.Equal(0, charsConsumed);
-            
+
             // Test ReadOnlySpan<char> overload with charsConsumed
             Assert.False(uint.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0u, result);
             Assert.Equal(0, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(uint.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(0u, result);
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }
