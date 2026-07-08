@@ -2590,7 +2590,20 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;
             pFriendAssemblyName = new FriendAssemblyName_t;
-            pFriendAssemblyName->Init(displayName);
+            EX_TRY
+            {
+                pFriendAssemblyName->Init(displayName);
+            }
+            EX_CATCH
+            {
+                // Preserve the underlying reason the friend assembly name could not be
+                // parsed (e.g. a malformed identity string) as the inner exception, while
+                // reporting the assembly that declared the invalid friend.
+                Exception *pInnerException = GET_EXCEPTION();
+                EEFileLoadException::Throw(pAssembly, pInnerException->GetHR(), pInnerException);
+            }
+            EX_END_CATCH
+
             hr = pFriendAssemblyName->CheckFriendAssemblyName();
 
             if (FAILED(hr))

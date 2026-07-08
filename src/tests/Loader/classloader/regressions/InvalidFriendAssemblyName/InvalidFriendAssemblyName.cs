@@ -17,8 +17,13 @@ public class InvalidFriendAssemblyName
     {
         FileLoadException exception = Assert.Throws<FileLoadException>(() => new InvalidFriendAssemblyName().GetCopy());
 
-        Assert.Equal(InvalidAssemblyName, exception.FileName);
-        Assert.Contains("assembly name was invalid", exception.Message, StringComparison.OrdinalIgnoreCase);
+        // The outer exception identifies the assembly that declared the invalid friend reference.
+        Assert.Contains(nameof(InvalidFriendAssemblyName), exception.FileName, StringComparison.Ordinal);
+
+        // The inner exception preserves the real cause: the invalid friend assembly name.
+        FileLoadException inner = Assert.IsType<FileLoadException>(exception.InnerException);
+        Assert.Equal(InvalidAssemblyName, inner.FileName);
+        Assert.Contains("assembly name was invalid", inner.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     public object GetCopy() => MemberwiseClone();
