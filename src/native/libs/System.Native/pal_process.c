@@ -1000,7 +1000,7 @@ done:;
     // the caller cannot send SIGCONT (via Resume()) before the child has delivered SIGSTOP.
     // Without this synchronization, SIGCONT may arrive before SIGSTOP, causing the child to
     // stop permanently on the subsequent SIGSTOP.
-    if (startSuspended && success && processId > 0)
+    if (startSuspended && success)
     {
         int childStatus;
         pid_t waitResult;
@@ -1010,10 +1010,16 @@ done:;
         }
         while (waitResult == -1 && errno == EINTR);
 
-        if (waitResult == -1 || !WIFSTOPPED(childStatus))
+        if (waitResult == -1)
         {
             success = false;
-            priorErrno = (waitResult == -1) ? errno : ECHILD;
+            priorErrno = errno;
+        }
+        else if (!WIFSTOPPED(childStatus))
+        {
+            // Child exited (WIFEXITED) or was killed by a signal (WIFSIGNALED) before stopping.
+            success = false;
+            priorErrno = ECHILD;
         }
     }
 
