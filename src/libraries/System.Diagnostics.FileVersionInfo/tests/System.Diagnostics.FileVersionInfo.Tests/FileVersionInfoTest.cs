@@ -16,8 +16,6 @@ namespace System.Diagnostics.Tests
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
-        // The test assembly is embedded as a managed resource so it is available on every platform without deploying
-        // a loose managed .dll. Write it to a temp file so it can be inspected by path.
         private string WriteTestAssemblyToFile()
         {
             string path = GetTestFilePath();
