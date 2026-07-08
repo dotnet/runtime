@@ -43,7 +43,8 @@ public class CollectibleGenericInstDumpTests : DumpTestBase
 
             TypeHandle candidate = rts.GetTypeHandle(objectContract.GetMethodTableAddress(objAddr));
             if (rts.GetInstantiation(candidate).Length == 1 &&
-                rts.GetModule(candidate) != rts.GetLoaderModule(candidate))
+                rts.GetModule(candidate) != rts.GetLoaderModule(candidate) &&
+                rts.IsCollectible(candidate))
             {
                 constructed = candidate;
                 break;
