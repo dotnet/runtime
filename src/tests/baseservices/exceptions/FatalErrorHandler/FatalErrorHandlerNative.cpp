@@ -31,21 +31,21 @@ static void WriteStdErr(const char* msg)
 }
 
 // Handler that skips the default fatal error handling.
-static int DOTNET_CALLCONV HandlerSkipDefault(int hresult, FatalErrorPropertyGetter getProperty)
+static int DOTNET_CALLCONV HandlerSkipDefault(int /*hresult*/, FatalErrorPropertyGetter /*getProperty*/)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
     return SkipDefaultHandler;
 }
 
 // Handler that allows the default fatal error handling to proceed.
-static int DOTNET_CALLCONV HandlerRunDefault(int hresult, FatalErrorPropertyGetter getProperty)
+static int DOTNET_CALLCONV HandlerRunDefault(int /*hresult*/, FatalErrorPropertyGetter /*getProperty*/)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
     return RunDefaultHandler;
 }
 
 // Handler that retrieves the crash log before skipping the default handling.
-static void DOTNET_CALLCONV LogCallback(const char* logString, void* userContext)
+static void DOTNET_CALLCONV LogCallback(const char* logString, void* /*userContext*/)
 {
     WriteStdErr("FATAL_LOG_RECEIVED:");
     if (logString != NULL)
@@ -53,7 +53,7 @@ static void DOTNET_CALLCONV LogCallback(const char* logString, void* userContext
     WriteStdErr("\n");
 }
 
-static int DOTNET_CALLCONV HandlerWithLog(int hresult, FatalErrorPropertyGetter getProperty)
+static int DOTNET_CALLCONV HandlerWithLog(int /*hresult*/, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
 
@@ -70,7 +70,7 @@ static int DOTNET_CALLCONV HandlerWithLog(int hresult, FatalErrorPropertyGetter 
 // Handler that reports which native exception properties were populated. Used to
 // verify that a native exception (for example, an access violation) supplies
 // the platform-specific siginfo/exception-record and thread context pointers.
-static int DOTNET_CALLCONV HandlerCheckInfo(int hresult, FatalErrorPropertyGetter getProperty)
+static int DOTNET_CALLCONV HandlerCheckInfo(int /*hresult*/, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
 

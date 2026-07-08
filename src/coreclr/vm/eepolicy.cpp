@@ -840,7 +840,8 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
 {
     WRAPPER_NO_CONTRACT;
 
-    FatalErrorHandlerFunc pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(s_fatalErrorHandler);
+    void* pHandler = VolatileLoad(&s_fatalErrorHandler);
+    FatalErrorHandlerFunc pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(pHandler);
     if (pfnHandler == NULL)
         return false;
 

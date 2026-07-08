@@ -529,7 +529,7 @@ namespace System
 
             // Invoke the user's fatal error handler, if one was registered.
             bool skipDefault = false;
-            IntPtr fatalHandler = ExceptionHandling.s_fatalErrorHandler;
+            IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
             if (fatalHandler != IntPtr.Zero)
             {
                 s_fatalErrorAddress = (void*)pExAddress;
