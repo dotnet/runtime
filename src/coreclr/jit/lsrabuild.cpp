@@ -3223,8 +3223,7 @@ Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
 
         GenTree* defConsumer = getConsumingNode(defNode);
 
-        if ((defConsumer == nullptr) || (defConsumer == treeConsumer) ||
-            constantConsumerReusesOperandReg(defConsumer))
+        if ((defConsumer == nullptr) || (defConsumer == treeConsumer) || constantConsumerReusesOperandReg(defConsumer))
         {
             return nullptr;
         }
