@@ -177,6 +177,8 @@ Each of the references below contributed to the design and implementation to ens
 
 ## Known Issues
 
+### Workflows must produce a `pre_activation` job
+
 The `pat_pool` import integration requires that the workflow's compilation results in a `pre_activation` job. If nothing in your workflow definition produces a `pre_activation` job, a compilation error will be received.
 
 ```text
@@ -194,6 +196,29 @@ on:
 ```
 
 See: [Activation 'needs' does not incorporate jobs in engine.env expressions (github/gh-aw#30790)](https://github.com/github/gh-aw/issues/30790)
+
+### Fork guards must be wrapped in parentheses
+
+A workflow-level `if:` is applied to the generated `pre_activation` job -- the same job produced by the `on.permissions: {}` workaround above. When that condition is a single expression beginning with `!`, such as a fork guard, `gh aw compile` emits it inline and produces invalid YAML, because a leading `!` is a YAML tag indicator.
+
+```yml
+# Frontmatter fork guard
+if: ${{ !github.event.repository.fork }}
+```
+
+```yml
+# ...emitted as an invalid `pre_activation` condition in <workflow-name>.lock.yml
+  pre_activation:
+    if: !github.event.repository.fork
+```
+
+GitHub then rejects the compiled workflow with a tag-construction error (`could not determine a constructor for the tag '!github.event.repository.fork'`). Only single-term conditions are affected; a compound condition -- for example, a fork guard combined with a `pull_request` head-repo check -- is emitted in an already-parenthesized form that parses cleanly.
+
+Wrap the expression in parentheses so the emitted condition starts with `(` instead of `!`. The `${{ }}` wrapper is optional -- `gh aw compile` strips it -- so it can be dropped.
+
+```yml
+if: (!github.event.repository.fork)
+```
 
 ## References
 
