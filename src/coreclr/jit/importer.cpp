@@ -6066,46 +6066,6 @@ bool Compiler::impMatchAsyncVersionTailCall(const BYTE* codeAddr,
         return true;
     }
 
-    // Look for call; stloc X; ldloca X; call AsTask(); ret
-    unsigned vtLclNum;
-    if (impMatchStlocLdloca(&nextOpcode, codeEndp, &vtLclNum))
-    {
-        if ((nextOpcode >= codeEndp) || (*nextOpcode != CEE_CALL))
-        {
-            return false;
-        }
-
-        nextOpcode++;
-
-        // Quick check for ret before we resolve the token
-        if (nextOpcode + sizeof(mdToken) >= codeEndp || (*(nextOpcode + sizeof(mdToken)) != CEE_RET))
-        {
-            return false;
-        }
-
-        CORINFO_RESOLVED_TOKEN callTok;
-        impResolveToken(nextOpcode, &callTok, CORINFO_TOKENKIND_Method);
-
-        if (!eeIsIntrinsic(callTok.hMethod))
-        {
-            return false;
-        }
-
-        NamedIntrinsic ni = lookupNamedIntrinsic(callTok.hMethod);
-        if ((ni != NI_System_Threading_Tasks_ValueTask_AsTask) && (ni != NI_System_Threading_Tasks_ValueTask_1_AsTask))
-        {
-            return false;
-        }
-
-        nextOpcode += sizeof(mdToken);
-        nextOpcode++; // matched CEE_RET already
-
-        JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
-        *prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
-        *numBytesMatched = (int)(nextOpcode - codeAddr);
-        return true;
-    }
-
     // Look for call; newobj ValueTask; ret
     if ((nextOpcode < codeEndp) && (*nextOpcode == CEE_NEWOBJ))
     {
@@ -6158,6 +6118,46 @@ bool Compiler::impMatchAsyncVersionTailCall(const BYTE* codeAddr,
         nextOpcode++; // matched CEE_RET already
 
         JITDUMP("Matched \"return new ValueTask(TaskReturn())\"\n");
+        *numBytesMatched = (int)(nextOpcode - codeAddr);
+        return true;
+    }
+
+    // Look for call; stloc X; ldloca X; call AsTask(); ret
+    unsigned vtLclNum;
+    if (impMatchStlocLdloca(&nextOpcode, codeEndp, &vtLclNum))
+    {
+        if ((nextOpcode >= codeEndp) || (*nextOpcode != CEE_CALL))
+        {
+            return false;
+        }
+
+        nextOpcode++;
+
+        // Quick check for ret before we resolve the token
+        if (nextOpcode + sizeof(mdToken) >= codeEndp || (*(nextOpcode + sizeof(mdToken)) != CEE_RET))
+        {
+            return false;
+        }
+
+        CORINFO_RESOLVED_TOKEN callTok;
+        impResolveToken(nextOpcode, &callTok, CORINFO_TOKENKIND_Method);
+
+        if (!eeIsIntrinsic(callTok.hMethod))
+        {
+            return false;
+        }
+
+        NamedIntrinsic ni = lookupNamedIntrinsic(callTok.hMethod);
+        if ((ni != NI_System_Threading_Tasks_ValueTask_AsTask) && (ni != NI_System_Threading_Tasks_ValueTask_1_AsTask))
+        {
+            return false;
+        }
+
+        nextOpcode += sizeof(mdToken);
+        nextOpcode++; // matched CEE_RET already
+
+        JITDUMP("Matched \"return ValueTaskReturn().AsTask()\"\n");
+        *prefixFlags |= PREFIX_IS_ADAPTED_FROM_VALUETASK;
         *numBytesMatched = (int)(nextOpcode - codeAddr);
         return true;
     }
