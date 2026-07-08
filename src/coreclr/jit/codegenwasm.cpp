@@ -2879,10 +2879,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 if (callRetType == TYP_REF && sigInfoCall->retType == CORINFO_TYPE_VOID &&
                     sigInfoCall->callConv == CORINFO_CALLCONV_HASTHIS)
                 {
-                    // String ctors are special. The JIT recognizes them, and rewrites the call to call the function as a static
-                    // function which returns the string instead of calling them with the normal allocation/initialization pattern.
-                    // The signature of the static function is different from the instance method, so we need to adjust the signature
-                    // here to match what the WASM runtime expects.
+                    // String ctors are special. The JIT recognizes them, and rewrites the call to call the function as
+                    // a static function which returns the string instead of calling them with the normal
+                    // allocation/initialization pattern. The signature of the static function is different from the
+                    // instance method, so we need to adjust the signature here to match what the WASM runtime expects.
                     const unsigned       methodFlags = m_compiler->info.compCompHnd->getMethodAttribs(params.methHnd);
                     CORINFO_CLASS_HANDLE stringClass = m_compiler->info.compCompHnd->getBuiltinClass(CLASSID_STRING);
 
