@@ -311,7 +311,10 @@ function Get-BackportPRs {
     $query = 'query($owner:String!,$name:String!){ repository(owner:$owner,name:$name){ ' + ($aliases -join ' ') + ' } }'
 
     $resp = gh api graphql -f owner=$owner -f name=$name -f query=$query 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not $resp) { return @() }
+    if ($LASTEXITCODE -ne 0 -or -not $resp) {
+        Write-Warning "Failed to resolve backport PR metadata via GraphQL for $repo#$prNumber; proceeding without backport candidates."
+        return @()
+    }
     $repository = ($resp | ConvertFrom-Json).data.repository
     if (-not $repository) { return @() }
 

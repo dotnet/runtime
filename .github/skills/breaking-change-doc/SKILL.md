@@ -356,7 +356,7 @@ If the user provides a GitHub search query or asks to process multiple PRs:
 | Problem | Solution |
 |---|---|
 | No `area-*` label on PR | Ask the user to add one, or ask which area applies |
-| Version detection script fails | Inspect release branches manually: `gh api repos/dotnet/runtime/branches --paginate --jq '.[].name'` and find the highest `release/<M>.<m>-preview<N>`; a change on `main` ships in Preview N+1 |
+| Version detection script fails | Inspect release branches manually: `gh api repos/dotnet/runtime/branches --paginate --jq '.[].name'` and find the highest milestone branch (`release/<M>.<m>-preview<N>`, `release/<M>.<m>-rc<N>`, or `release/<M>.<m>`); a change on `main` ships in the **next** milestone (Preview N+1, or RC 1 after the final Preview, or GA after the final RC) |
 | PR not yet merged | Breaking change docs are for merged PRs only — inform the user |
 | Existing docs issue found | Report the existing issue URL and stop |
 | Cannot determine affected APIs | Review the diff carefully; list the public types/methods in changed files |
