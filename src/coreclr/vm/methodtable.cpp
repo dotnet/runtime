@@ -6835,10 +6835,10 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
             {
                 if (pNullSlotBitvector == NULL || !IsBitVectorEntrySet(pNullSlotBitvector, slot))
                 {
-                    // We reach here if we 've disable the NullSlot optimization (due to an allocation failure),
-                    // or if the slot is not a NullSlot. This indicates that there is an implmentation of the slot, and so
-                    // the GetMethodDescForSlot_NoThrow api will operate in O(1) time (or we're in allocation failure case
-                    // and the performance implications are unimportant).)
+                    // We reach here if we've disabled the null-slot optimization (due to an allocation failure),
+                    // or if the slot is not a null slot. This indicates that there is an implementation for the slot, and so
+                    // the GetMethodDescForSlot_NoThrow API will operate in O(1) time (or we're in the allocation-failure case
+                    // and the performance implications are unimportant).
                     if (m_containsMethodImpl)
                     {
                         // If there is a MethodImpl in the hierarchy, then we will need to skip the optimization of pre-resolving
@@ -6876,8 +6876,8 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         SetEntryDataForSlotIfNotYetSet(slot, pMD);
     }
 
-    // Walk the parent chain until we've processed all of the slots which have not been overriden/called by a subclass.
-    // NOTE: We only run this code for the top level FilEntryDataForAncestor case where (pMT == m_pDeclMT).
+    // Walk the parent chain until we've processed all of the slots that have not been overridden or called by a subclass.
+    // NOTE: We only run this code for the top-level FillEntryDataForAncestor case where (pMT == m_pDeclMT).
     // This check is enforced by unprocessedNonOverriddenSlots only being non-zero in that scenario.
     while (unprocessedNonOverriddenSlots > 0)
     {
