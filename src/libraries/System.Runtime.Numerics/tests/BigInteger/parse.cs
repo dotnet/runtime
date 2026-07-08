@@ -1500,6 +1500,13 @@ namespace System.Numerics.Tests
             Assert.False(BigInteger.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(BigInteger.Zero, result);
             Assert.Equal(0, charsConsumed);
+
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(BigInteger.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(BigInteger.Zero, result);
+            Assert.Equal(0, bytesConsumed);
         }
     }
 }

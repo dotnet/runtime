@@ -2455,19 +2455,19 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
         {
             // Basic Half parsing with trailing invalid characters
-            yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)123.45, 6 };
-            yield return new object[] { "1.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)1.5, 3 };
-            yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)0.123, 5 };
+            yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
+            yield return new object[] { "1.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5, 3 };
+            yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)0.123, 5 };
             
             // With leading whitespace
-            yield return new object[] { "  12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)12.5, 6 };
+            yield return new object[] { "  12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 6 };
             
             // With signs
-            yield return new object[] { "+12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)12.5, 5 };
-            yield return new object[] { "-45.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)(-45.5), 5 };
+            yield return new object[] { "+12.5abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)12.5, 5 };
+            yield return new object[] { "-45.5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)(-45.5), 5 };
             
             // With exponent
-            yield return new object[] { "1.5e2abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)1.5e2, 5 };
+            yield return new object[] { "1.5e2abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)1.5e2, 5 };
             
             // Special values
             yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.PositiveInfinity, 8 };
@@ -2475,7 +2475,7 @@ namespace System.Tests
             yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Half.NaN, 3 };
             
             // Valid number without trailing characters
-            yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, (Half)123.45, 6 };
+            yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, (Half)123.45, 6 };
         }
 
         [Theory]
@@ -2531,10 +2531,10 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
         {
             // Empty string
-            yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
             
             // Only invalid characters (no valid number)
-            yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture };
         }
 
         [Theory]
