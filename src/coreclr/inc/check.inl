@@ -5,7 +5,6 @@
 #define CHECK_INL_
 
 #include "check.h"
-#include "clrhost.h"
 #include "debugmacros.h"
 #include "clrtypes.h"
 

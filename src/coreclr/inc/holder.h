@@ -6,7 +6,7 @@
 #define __HOLDER_H_
 
 #include "cor.h"
-#include "staticcontract.h"
+#include "contract.h"
 #include "volatile.h"
 #include "palclr.h"
 #include <minipal/com/memory.h>
@@ -1023,7 +1023,8 @@ struct ReleaseHolderTraits final
 #else
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
-#endif
+#endif // ENABLE_CONTRACTS_IMPL
+
         if (value != NULL)
             value->Release();
     }
@@ -1392,7 +1393,7 @@ namespace clr
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         //@TODO: Would be good to add runtime validation that the return value is used.
-        return SafeAddRef((ItfT*)pItf);
+        return SafeAddRef(static_cast<ItfT*>(pItf));
     }
 
     namespace detail

@@ -3302,7 +3302,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
     // Now, if it's a cacheable bind we need to re-fetch the result from the cache, as we may have been racing with another
     // thread to store our result. Note that we may throw from here, if there is a cached exception.
     // Note the non-cached result holder above may be released (if any).
-    // Returned cached files are not AddRef'd, so we call AddRef inorder to retain it.
+    // Returned cached files are not AddRef'd, so we call AddRef in order to retain it.
     PEAssemblyHolder result{ FindCachedFile(pSpec) };
     if (result != NULL)
         result->AddRef();
