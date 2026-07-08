@@ -9,6 +9,10 @@ namespace System
 {
     internal static partial class LocalAppContextSwitches
     {
+        // OpenBSD's GSS-API (Heimdal) cannot drive password-based NTLM and reports a
+        // missing Kerberos TGT as a missing credential, so managed NTLM is used there.
+        internal static readonly bool IsOpenBsd = RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
+
         private static int s_disableTlsResume;
         internal static bool DisableTlsResume
         {

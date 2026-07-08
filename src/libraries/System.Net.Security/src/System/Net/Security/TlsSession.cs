@@ -575,10 +575,15 @@ namespace System.Net.Security
             }
             _options.CertificateContext = context;
 
-            // Drop the cached credentials handle (acquired without a client cert) so the
-            // next Handshake re-acquires with the supplied context.
-            _context!.CredentialsHandle?.Dispose();
-            _context!.CredentialsHandle = null;
+            // Acquire a session-local credentials handle so we don't touch the shared
+            // TlsContext.CredentialsHandle, which is used by any concurrent session on
+            // the same context (racing/disposing it can cause handshake failures or
+            // deliver the wrong certificate on SChannel). ActiveCredentialsRef() will
+            // return this session-local handle for subsequent PAL calls. Acquire eagerly
+            // so any AcquireCredentialsHandle failure surfaces here, not from an opaque
+            // PAL call downstream.
+            _sessionCredentialsHandle?.Dispose();
+            _sessionCredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_options, false);
             _resumeAfterCredentials = true;
         }
 
@@ -785,10 +790,9 @@ namespace System.Net.Security
                             {
                                 _clientHelloBytesBuffered = input.Slice(0, frameLength).ToArray();
                             }
-                            else
-                            {
-                                throw new InvalidOperationException($"CAPTURE-DEBUG: fL={frameLength} iL={input.Length}");
-                            }
+                            // If frameLength is out of range (shouldn't happen after a successful
+                            // parse), silently skip capture; the session continues to work,
+                            // GetClientHelloLength just reports 0.
                         }
                         else if (_securityContext is null)
                         {
@@ -1800,6 +1804,28 @@ namespace System.Net.Security
             return true;
         }
 
+        // Grows the pool-rented _socketInBuf to at least newMinCapacity, preserving the
+        // first _socketInUsed bytes. Rents a new array, copies the used prefix, and
+        // returns the old buffer to the shared pool.
+        private void GrowSocketInBuf(int newMinCapacity)
+        {
+            byte[] oldBuf = _socketInBuf!;
+            int newSize = oldBuf.Length;
+            do
+            {
+                newSize *= 2;
+            }
+            while (newSize < newMinCapacity);
+
+            byte[] newBuf = ArrayPool<byte>.Shared.Rent(newSize);
+            if (_socketInUsed > 0)
+            {
+                Buffer.BlockCopy(oldBuf, 0, newBuf, 0, _socketInUsed);
+            }
+            _socketInBuf = newBuf;
+            ArrayPool<byte>.Shared.Return(oldBuf);
+        }
+
         private protected TlsOperationStatus HandshakeSocketCore()
         {
             ThrowIfDisposed();
@@ -1890,7 +1916,7 @@ namespace System.Net.Security
                             if (_socketInUsed >= _socketInBuf.Length)
                             {
                                 // Should not happen with conservative scratch sizing, but guard.
-                                Array.Resize(ref _socketInBuf, _socketInBuf.Length * 2);
+                                GrowSocketInBuf(_socketInUsed + 1);
                             }
                             int received = _socket!.Receive(
                                 _socketInBuf.AsSpan(_socketInUsed),
@@ -1990,7 +2016,7 @@ namespace System.Net.Security
 
                 if (_socketInUsed >= _socketInBuf.Length)
                 {
-                    Array.Resize(ref _socketInBuf, _socketInBuf.Length * 2);
+                    GrowSocketInBuf(_socketInUsed + 1);
                 }
                 int received = _socket!.Receive(
                     _socketInBuf.AsSpan(_socketInUsed),
