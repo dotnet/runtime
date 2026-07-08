@@ -1009,7 +1009,6 @@ private:
     bool    IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallNewobjRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
-    NamedIntrinsic GetNamedIntrinsicFrom(const uint8_t* ip);
     bool    IsRuntimeAsyncCallAsTaskRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallAsTaskRetInAsyncVersionExact(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
