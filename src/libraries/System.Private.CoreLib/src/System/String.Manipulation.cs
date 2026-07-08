@@ -152,7 +152,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            if (values.GetType() == typeof(List<string?>))
+            if (values.GetType() == typeof(List<string?>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
             {
                 return Concat(CollectionsMarshal.AsSpan((List<string?>)values));
             }
