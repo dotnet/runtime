@@ -1884,7 +1884,17 @@ namespace System.Tests
             yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 8 };
             yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NegativeInfinity, 9 };
             yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NaN, 3 };
-            
+
+            // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
+            yield return new object[] { "Infinity   ", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.NaN, 5 };
+
+            // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, double.PositiveInfinity, 10 };
+
             // Valid number without trailing characters
             yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45, 6 };
             
