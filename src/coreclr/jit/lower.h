@@ -627,6 +627,9 @@ private:
     // Check if marking an operand of a node as reg-optional is safe.
     bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;
 
+    // Check if a constant is materialized directly into a register without a memory access.
+    bool IsConstantMaterializableInRegWithoutMemory(GenTree* node) const;
+
     // Checks if it's profitable to optimize an shift and rotate operations to set the zero flag.
     bool IsProfitableToSetZeroFlag(GenTree* op) const;
 
