@@ -963,11 +963,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     endif(CLR_CMAKE_TARGET_BROWSER)
     if(CLR_CMAKE_TARGET_WASI)
         set(WASM_THUNK_SUBDIR wasi)
-        # GetCurrentSP is provided by the emscripten intrinsic on browser; on WASI
-        # it is implemented in getstate.S (reads the wasm __stack_pointer global).
-        list(APPEND VM_SOURCES_WKS_ARCH_ASM
-            ${ARCH_SOURCES_DIR}/getstate.S
-        )
     else()
         set(WASM_THUNK_SUBDIR browser)
     endif()

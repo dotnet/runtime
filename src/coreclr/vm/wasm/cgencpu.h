@@ -7,9 +7,6 @@
 
 #include "stublink.h"
 #include "utilcode.h"
-#if defined(TARGET_BROWSER)
-#include <emscripten/stack.h>
-#endif
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -33,17 +30,17 @@ struct HijackArgs
 {
 };
 
-#if defined(TARGET_BROWSER)
-inline void* GetCurrentSP()
+// Reads the wasm __stack_pointer global (the C stack pointer that LLVM
+// maintains). Shared by browser and WASI: wasi-sdk has no
+// emscripten_stack_get_current() equivalent, and reading the global directly
+// works on both. Naked function: the body is exactly the emitted instructions.
+static __attribute__((naked)) void* GetCurrentSP()
 {
-    WRAPPER_NO_CONTRACT;
-    return (void*)emscripten_stack_get_current();
+    __asm__(
+        ".globaltype __stack_pointer, i32\n"
+        "global.get __stack_pointer\n"
+        "return\n");
 }
-#else // TARGET_WASI
-// Defined in wasm/getstate.S: reads the wasm __stack_pointer global, the portable
-// equivalent of emscripten_stack_get_current() (which wasi-sdk does not provide).
-extern "C" void* GetCurrentSP();
-#endif
 
 extern PCODE GetPreStubEntryPoint();
 
