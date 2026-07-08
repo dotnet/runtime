@@ -106,9 +106,9 @@ static bool is_exe_enabled_for_execution(pal_char_t* app_dll, size_t app_dll_len
     return true;
 }
 
-static void need_newer_framework_error(const pal_char_t* dotnet_root, const pal_char_t* host_path)
+static void report_outdated_framework_error(const pal_char_t* dotnet_root, const pal_char_t* host_path)
 {
-    pal_char_t download_url[1024];
+    pal_char_t download_url[MAX_DOWNLOAD_URL_LEN];
     utils_get_download_url(download_url, ARRAY_SIZE(download_url), NULL, NULL);
 
     trace_error(
@@ -195,11 +195,7 @@ static int exe_start(const int argc, const pal_char_t* argv[])
     }
 #endif
 
-    if (pal_strchr(embedded_app_name, _X('/')) != NULL
-#if defined(_WIN32)
-        || pal_strchr(embedded_app_name, _X('\\')) != NULL
-#endif
-        )
+    if (pal_strchr(embedded_app_name, DIR_SEPARATOR) != NULL)
     {
         requires_hostfxr_startupinfo_interface = true;
     }
@@ -284,7 +280,7 @@ static int exe_start(const int argc, const pal_char_t* argv[])
         else
         {
             trace_error(_X("The required library %s does not support single-file apps."), fxr.fxr_path);
-            need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""), host_path);
+            report_outdated_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""), host_path);
             rc = FrameworkMissingFailure;
         }
     }
@@ -310,7 +306,7 @@ static int exe_start(const int argc, const pal_char_t* argv[])
 
             if (trace_get_error_writer() != NULL && rc == (int)FrameworkMissingFailure && set_error_writer == NULL)
             {
-                need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""), host_path);
+                report_outdated_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""), host_path);
             }
 
             propagate_error_writer_cleanup(&propagate_state);
