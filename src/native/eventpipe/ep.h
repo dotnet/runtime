@@ -168,7 +168,7 @@ ep_requires_lock_not_held (void);
 #endif
 
 EventPipeSessionID
-ep_enable (
+ep_init_session (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
@@ -181,7 +181,7 @@ ep_enable (
 	void *callback_additional_data);
 
 EventPipeSessionID
-ep_enable_2 (
+ep_init_session_2 (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const ep_char8_t *providers,
@@ -194,7 +194,7 @@ ep_enable_2 (
 	EventPipeBufferingMode buffering_mode);
 
 EventPipeSessionID
-ep_enable_3 (
+ep_init_session_3 (
 	const EventPipeSessionOptions *options
 );
 

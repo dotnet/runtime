@@ -1094,7 +1094,7 @@ enable_default_session_via_env_variables (void)
 		output_path = ep_config_output_path ? ep_config_output_path : "trace.nettrace";
 		ep_circular_mb = ep_circular_mb > 0 ? ep_circular_mb : 1;
 
-		uint64_t session_id = ep_enable_2 (
+		uint64_t session_id = ep_init_session_2 (
 			output_path,
 			ep_circular_mb,
 			ep_config,
@@ -1145,7 +1145,7 @@ ep_requires_lock_not_held (void)
 #endif
 
 EventPipeSessionID
-ep_enable (
+ep_init_session (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
@@ -1176,7 +1176,7 @@ ep_enable (
 		0,
 		EP_BUFFERING_MODE_DROP);
 
-	sessionId = ep_enable_3 (&options);
+	sessionId = ep_init_session_3 (&options);
 
 	ep_session_options_fini (&options);
 
@@ -1184,7 +1184,7 @@ ep_enable (
 }
 
 EventPipeSessionID
-ep_enable_2 (
+ep_init_session_2 (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const ep_char8_t *providers_config,
@@ -1265,7 +1265,7 @@ ep_enable_2 (
 		}
 	}
 
-	// Build options directly instead of calling ep_enable, which always defaults to Drop, so the requested
+	// Build options directly instead of calling ep_init_session, which always defaults to Drop, so the requested
 	// buffering mode is carried through. (ep_session_alloc rejects Block for non-streaming session types.)
 	ep_session_options_init (
 		&options,
@@ -1282,7 +1282,7 @@ ep_enable_2 (
 		callback_additional_data,
 		0,
 		buffering_mode);
-	session_id = ep_enable_3 (&options);
+	session_id = ep_init_session_3 (&options);
 	ep_session_options_fini (&options);
 
 ep_on_exit:
@@ -1339,7 +1339,7 @@ ep_session_options_fini (EventPipeSessionOptions* options)
 {}
 
 EventPipeSessionID
-ep_enable_3 (const EventPipeSessionOptions *options)
+ep_init_session_3 (const EventPipeSessionOptions *options)
 {
 	ep_return_zero_if_nok (check_options_valid (options));
 

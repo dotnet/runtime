@@ -170,7 +170,7 @@ event_pipe_enable (
 		}
 	}
 
-	session_id = ep_enable (
+	session_id = ep_init_session (
 		output_path,
 		circular_buffer_size_in_mb,
 		config_providers,
