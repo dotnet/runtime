@@ -13,7 +13,6 @@
     <NativeLib>Static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
     <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
-    <!-- AppleTestRunner.cs uses [LibraryImport], whose generated marshalling stubs require unsafe code. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
