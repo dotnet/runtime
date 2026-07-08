@@ -124,11 +124,12 @@ struct _EventPipeBufferManager_Internal {
 
 	EventPipeBufferingMode buffering_mode;
 #ifndef PERFTRACING_DISABLE_THREADS
-	// Block mode only (NULL otherwise): strict-FIFO queue of producer threads (EventPipeThread*) parked
-	// waiting for buffer budget. Only the front thread may reserve; the reader signals the front (each thread
-	// waits on its own event) when it frees a buffer. Guarded by rt_lock, the buffer manager's existing spin
-	// lock.
-	dn_queue_t *wait_queue;
+	// Block mode only: intrusive strict-FIFO queue of producer threads parked waiting for buffer budget,
+	// threaded through EventPipeThread::buffer_wait_next_thread (head/tail here, so enqueuing never allocates).
+	// Only the front thread may reserve; the reader signals the front (each thread waits on its own event) when
+	// it frees a buffer. Guarded by rt_lock, the buffer manager's existing spin lock.
+	EventPipeThread *wait_queue_head_thread;
+	EventPipeThread *wait_queue_tail_thread;
 #endif // !PERFTRACING_DISABLE_THREADS
 	// Block mode: set once at teardown so parked producers give up and none newly park.
 	volatile uint32_t aborting;
@@ -199,7 +200,8 @@ ep_buffer_manager_write_event (
 
 #ifndef PERFTRACING_DISABLE_THREADS
 // Park the calling producer (front of the FIFO) on its own event until the reader frees capacity or
-// teardown wakes it. The thread must already be enqueued (by the fair reserve on a failed allocation).
+// teardown wakes it. The thread is always enqueued by the fair reserve when it could not immediately reserve
+// budget (enqueuing is allocation-free), so this only needs to wait on the thread's event.
 void
 ep_buffer_manager_writer_wait_for_capacity (
 	EventPipeBufferManager *buffer_manager,

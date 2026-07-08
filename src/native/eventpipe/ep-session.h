@@ -23,8 +23,6 @@ struct _EventPipeSession {
 #else
 struct _EventPipeSession_Internal {
 #endif
-	// When the session is of IPC or FILE stream type, this becomes a reference to the streaming thread.
-	ep_rt_thread_handle_t streaming_thread;
 	// Event object used to signal Disable that the streaming thread is done.
 	ep_rt_wait_event_handle_t rt_thread_shutdown_event;
 	// The set of configurations for each provider in the session.

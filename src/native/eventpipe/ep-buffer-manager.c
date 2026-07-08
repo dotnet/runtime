@@ -102,6 +102,16 @@ buffer_manager_try_reserve_buffer_fair (
 static
 void
 buffer_manager_signal_front_waiter (EventPipeBufferManager *buffer_manager);
+
+static
+void
+buffer_manager_wait_queue_push_back (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThread *thread);
+
+static
+void
+buffer_manager_wait_queue_pop_front (EventPipeBufferManager *buffer_manager);
 #endif // !PERFTRACING_DISABLE_THREADS
 
 // An iterator that can enumerate all the events which have been written into this buffer manager.
@@ -530,9 +540,10 @@ buffer_manager_allocate_buffer_for_thread (
 
 	// Attempt to reserve the necessary buffer size. A normal Block-mode producer reserves through the fair
 	// FIFO path: a failed reserve enqueues it and returns NULL so the caller parks and retries (surfaced
-	// upstream as EP_WRITE_EVENT_RESULT_BLOCKED). Rundown/teardown writers must never park - they are
-	// draining the very session they would wait on - so they take the plain reserve and drop on failure,
-	// exactly as Drop mode does.
+	// upstream as EP_WRITE_EVENT_RESULT_BLOCKED). A rundown writer must never park: rundown runs synchronously
+	// on the teardown thread after the streaming drain thread has already exited, so no drain thread is left to
+	// free capacity and a parked rundown writer would block forever. It takes the plain reserve and drops on
+	// failure, exactly as Drop mode does.
 	EP_ASSERT(buffer_size > 0);
 #ifndef PERFTRACING_DISABLE_THREADS
 	EventPipeThread *writer_thread = ep_thread_session_state_get_thread (thread_session_state);
@@ -915,11 +926,8 @@ ep_buffer_manager_alloc (
 	instance->buffering_mode = buffering_mode;
 	instance->aborting = 0;
 #ifndef PERFTRACING_DISABLE_THREADS
-	instance->wait_queue = NULL;
-	if (buffering_mode == EP_BUFFERING_MODE_BLOCK) {
-		instance->wait_queue = dn_queue_alloc ();
-		ep_raise_error_if_nok (instance->wait_queue != NULL);
-	}
+	instance->wait_queue_head_thread = NULL;
+	instance->wait_queue_tail_thread = NULL;
 #endif // !PERFTRACING_DISABLE_THREADS
 
 	instance->thread_session_state_list_snapshot = dn_list_alloc ();
@@ -981,10 +989,7 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 	ep_rt_wait_event_free (&buffer_manager->rt_wait_event);
 
 #ifndef PERFTRACING_DISABLE_THREADS
-	if (buffer_manager->wait_queue != NULL) {
-		EP_ASSERT (dn_queue_empty (buffer_manager->wait_queue));
-		dn_queue_free (buffer_manager->wait_queue);
-	}
+	EP_ASSERT (buffer_manager->wait_queue_head_thread == NULL);
 #endif // !PERFTRACING_DISABLE_THREADS
 
 	ep_rt_spin_lock_free (&buffer_manager->rt_lock);
@@ -994,6 +999,37 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 
 #ifndef PERFTRACING_DISABLE_THREADS
 
+static
+void
+buffer_manager_wait_queue_push_back (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThread *thread)
+{
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+	EP_ASSERT (ep_thread_get_buffer_wait_queue_next_thread (thread) == NULL);
+
+	if (buffer_manager->wait_queue_tail_thread != NULL)
+		ep_thread_set_buffer_wait_queue_next_thread (buffer_manager->wait_queue_tail_thread, thread);
+	else
+		buffer_manager->wait_queue_head_thread = thread;
+	buffer_manager->wait_queue_tail_thread = thread;
+}
+
+static
+void
+buffer_manager_wait_queue_pop_front (EventPipeBufferManager *buffer_manager)
+{
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+
+	EventPipeThread *front = buffer_manager->wait_queue_head_thread;
+	EP_ASSERT (front != NULL);
+
+	buffer_manager->wait_queue_head_thread = ep_thread_get_buffer_wait_queue_next_thread (front);
+	if (buffer_manager->wait_queue_head_thread == NULL)
+		buffer_manager->wait_queue_tail_thread = NULL;
+	ep_thread_set_buffer_wait_queue_next_thread (front, NULL);
+}
+
 // Block mode: wake the producer at the front of the wait queue - the only one allowed to reserve next.
 static
 void
@@ -1002,10 +1038,10 @@ buffer_manager_signal_front_waiter (EventPipeBufferManager *buffer_manager)
 	EP_ASSERT (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK);
 
 	ep_buffer_manager_requires_lock_held (buffer_manager);
-	if (!dn_queue_empty (buffer_manager->wait_queue)) {
-		EventPipeThread *front = *dn_queue_front_t (buffer_manager->wait_queue, EventPipeThread *);
-		// A thread only ever joins the queue after its park event was successfully allocated (the enqueue in
-		// buffer_manager_try_reserve_buffer_fair is gated on that), so a queued thread's event is always valid.
+	EventPipeThread *front = buffer_manager->wait_queue_head_thread;
+	if (front != NULL) {
+		// A queued thread always has a valid event: it was allocated when the thread got its Block-mode
+		// session state, before it could ever reach the write/park path.
 		EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (front)));
 		ep_rt_wait_event_set (ep_thread_get_buffer_wait_event_ref (front));
 	}
@@ -1025,20 +1061,13 @@ buffer_manager_try_reserve_buffer_fair (
 	EP_ASSERT (thread != NULL);
 	EP_ASSERT (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK);
 	EP_ASSERT (!ep_thread_is_rundown_thread (thread));
+	// The park event is allocated when the thread gets its Block-mode session state, before it could reach
+	// this path, so it is always valid here.
+	EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread)));
 
 	ep_buffer_manager_requires_lock_not_held (buffer_manager);
 
 	bool reserved = false;
-
-	// A parked producer is woken through its own auto-reset event, so it must exist before the thread is
-	// enqueued. Only this thread allocates its own event, so no lock is needed. The allocation can fail under
-	// memory pressure, in which case we do not enqueue or park but continue with the reserve and retry in
-	// write_event_2's loop.
-	bool can_park = ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread));
-	if (!can_park) {
-		ep_rt_wait_event_alloc (ep_thread_get_buffer_wait_event_ref (thread), false, false);
-		can_park = ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread));
-	}
 
 	// The wait queue is guarded by rt_lock (the reader frees budget and wakes the front while already holding
 	// rt_lock, and CoreCLR forbids nesting spin locks, so the queue cannot take a second lock of its own).
@@ -1047,12 +1076,12 @@ buffer_manager_try_reserve_buffer_fair (
 		// We may reserve only if we are at the head of the line: either already the front of the queue, or
 		// the queue is empty (no one is waiting, so we are not barging anyone).
 		bool at_head = enqueued
-			? (!dn_queue_empty (buffer_manager->wait_queue) && *dn_queue_front_t (buffer_manager->wait_queue, EventPipeThread *) == thread)
-			: dn_queue_empty (buffer_manager->wait_queue);
+			? (buffer_manager->wait_queue_head_thread == thread)
+			: (buffer_manager->wait_queue_head_thread == NULL);
 
 		if (at_head && buffer_manager_try_reserve_buffer (buffer_manager, request_size)) {
 			if (enqueued) {
-				dn_queue_pop (buffer_manager->wait_queue);
+				buffer_manager_wait_queue_pop_front (buffer_manager);
 				ep_thread_set_buffer_wait_enqueued (thread, 0);
 			}
 			// We just took budget and left the queue. If more producers are still waiting, wake the new
@@ -1060,14 +1089,13 @@ buffer_manager_try_reserve_buffer_fair (
 			// reserves its slice and wakes the next; the chain stops when a waiter finds no room and re-parks).
 			buffer_manager_signal_front_waiter (buffer_manager);
 			reserved = true;
-		} else if (!enqueued && can_park && ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) == 0) {
+		} else if (!enqueued && ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) == 0) {
 			// Not our turn, or no room yet: take our place in line (strict FIFO) so the reader wakes us when
 			// budget frees. We re-check aborting here under the same rt_lock that teardown drains the queue
 			// under, so we never enqueue after teardown has already woken everyone (which would strand us
-			// waiting for a signal that will never come). If the push fails under memory pressure we stay
-			// un-enqueued; the caller's wait then yields and retries instead of blocking forever.
-			if (dn_queue_push_t (buffer_manager->wait_queue, EventPipeThread *, thread))
-				ep_thread_set_buffer_wait_enqueued (thread, 1);
+			// waiting for a signal that will never come).
+			buffer_manager_wait_queue_push_back (buffer_manager, thread);
+			ep_thread_set_buffer_wait_enqueued (thread, 1);
 		}
 	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
 
@@ -1086,11 +1114,11 @@ ep_buffer_manager_writer_wait_for_capacity (
 	EP_ASSERT (buffer_manager != NULL);
 	EP_ASSERT (thread != NULL);
 
-	// Normal path: we joined the wait queue, so park on our own event until the reader frees a buffer and
-	// wakes us (or teardown aborts and wakes us). If we could NOT join the queue earlier (the park event or
-	// the queue node could not be allocated under memory pressure), nobody will ever signal us - so instead
-	// of blocking forever, yield and let the caller re-attempt the fair reserve. Block mode stays lossless
-	// (the producer keeps retrying) at the cost of briefly spinning until memory frees.
+	// We normally reach here enqueued: the fair reserve enqueues us whenever it cannot immediately reserve, and
+	// enqueuing is allocation-free so it never fails. The only way to be un-enqueued is that teardown drained
+	// the queue between the caller's abort check and now; in that case the caller observes the abort on return,
+	// so there is nothing to wait for. Otherwise park on our own event until the reader frees a buffer and
+	// wakes us (or teardown aborts and wakes us).
 	bool enqueued = false;
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 		enqueued = ep_thread_get_buffer_wait_enqueued (thread) != 0;
@@ -1099,8 +1127,6 @@ ep_buffer_manager_writer_wait_for_capacity (
 	if (enqueued) {
 		EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread)));
 		ep_rt_wait_event_wait (ep_thread_get_buffer_wait_event_ref (thread), EP_INFINITE_WAIT, false);
-	} else {
-		ep_rt_thread_sleep (0);
 	}
 
 ep_on_exit:
@@ -1133,9 +1159,9 @@ ep_buffer_manager_abort_blocked_writers (EventPipeBufferManager *buffer_manager)
 	ep_rt_volatile_store_uint32_t (&buffer_manager->aborting, 1);
 
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
-		while (!dn_queue_empty (buffer_manager->wait_queue)) {
-			EventPipeThread *waiter = *dn_queue_front_t (buffer_manager->wait_queue, EventPipeThread *);
-			dn_queue_pop (buffer_manager->wait_queue);
+		while (buffer_manager->wait_queue_head_thread != NULL) {
+			EventPipeThread *waiter = buffer_manager->wait_queue_head_thread;
+			buffer_manager_wait_queue_pop_front (buffer_manager);
 			ep_thread_set_buffer_wait_enqueued (waiter, 0);
 			// Same invariant as buffer_manager_signal_front_waiter: a queued thread always has a valid event.
 			EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (waiter)));
@@ -1228,6 +1254,19 @@ ep_buffer_manager_write_event (
 	EP_ASSERT ((ep_thread_get_session_use_in_progress (current_thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 	session_state = ep_thread_get_volatile_session_state (current_thread, session);
 	if (session_state == NULL) {
+#ifndef PERFTRACING_DISABLE_THREADS
+		// Block mode parks a producer on its own per-thread event when buffer budget is exhausted. Allocate
+		// that event now - once per thread, when the thread first gets a Block-mode session state - so the
+		// write/park path never allocates and can assume it exists. Any failure folds into the same drop path
+		// as the session-state allocation failure below.
+		if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK) {
+			ep_rt_wait_event_handle_t *wait_event = ep_thread_get_buffer_wait_event_ref (current_thread);
+			if (!ep_rt_wait_event_is_valid (wait_event)) {
+				ep_rt_wait_event_alloc (wait_event, false, false);
+				ep_raise_error_if_nok (ep_rt_wait_event_is_valid (wait_event));
+			}
+		}
+#endif // !PERFTRACING_DISABLE_THREADS
 		// slow path should only happen once per thread per session
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 			// No need to re-check session_state inside the lock, this thread is the only one allowed to create it.

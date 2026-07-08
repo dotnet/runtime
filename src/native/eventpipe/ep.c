@@ -61,7 +61,7 @@ session_init (const EventPipeSessionOptions *options);
 // _Requires_lock_held (ep)
 static
 void
-session_fini (EventPipeSession *session, bool was_enabled);
+session_fini (EventPipeSession *session);
 
 static
 void
@@ -618,37 +618,21 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-// Mirror of session init: unpublishes the session from the array and reclaims it. Runs under the lock. The drain
-// (only when the session was enabled) is bracketed between the unpublish and the close so no producer can observe
-// the session mid-flush. The unpublish, close, and reference drop always run, since even an inert session was
-// allocated and published.
+// Mirror of session init: unpublishes the session from the array and reclaims it. Runs under the lock. Always
+// runs, since even an inert session was allocated and published, so session_init immediately followed by
+// session_fini never leaks the slot. The enable-undo and drain live in disable_holding_lock; by the time an
+// enabled session reaches here it has already been unpublished and drained there.
 static
 void
-session_fini (EventPipeSession *session, bool was_enabled)
+session_fini (EventPipeSession *session)
 {
 	ep_requires_lock_held ();
 
-	// Unpublish (always). Clear the slot before waiting on in-flight ops so a producer either already grabbed the
-	// pointer and finishes its write, or reads NULL and bails.
-	EP_ASSERT (ep_volatile_load_session (ep_session_get_index (session)) == session);
+	// Unpublish: an inert session is still published here; an enabled session was already unpublished by
+	// disable_holding_lock before it drained, so storing NULL again is harmless. Either way the slot ends up NULL.
 	ep_volatile_store_session (ep_session_get_index (session), NULL);
 
-	// Drain (only if enabled): wait out in-flight writers, flush, uncount, write the final sequence point. Must
-	// follow the unpublish so no new events land mid-flush.
-	if (was_enabled) {
-		ep_session_wait_for_inflight_thread_ops (session);
-
-		bool ignored;
-		ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
-
-		ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () - 1);
-
-		// Write a final sequence point to the file now that all events have
-		// been emitted.
-		ep_session_write_sequence_point_unbuffered (session);
-	}
-
-	// Destroy (always). Close quiesces buffers and detaches per-thread states so a session that later reuses this
+	// Destroy: close releases the buffers and detaches per-thread states so a session that later reuses this
 	// slot index is never mistaken for this one; dropping the reference frees at the last ref.
 	ep_session_close (session);
 
@@ -724,11 +708,9 @@ disable_holding_lock (
 	if (is_session_id_in_collection (id)) {
 		EventPipeSession *const session = (EventPipeSession *)(uintptr_t)id;
 
-		// Distinguishes an enabled session from a published-but-still-inert one (see header).
-		const bool was_enabled = (ep_volatile_load_allow_write () & ep_session_get_mask (session)) != 0;
-
-		// Phase 1 - undo enable.
-		if (was_enabled) {
+		// Phase 1 - undo enable. An enabled session has its allow_write bit set; a published-but-still-inert
+		// one (session_init done, not yet started) does not, and skips straight to reclaim in session_fini.
+		if ((ep_volatile_load_allow_write () & ep_session_get_mask (session)) != 0) {
 #ifndef PERFTRACING_DISABLE_THREADS
 			EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
 			if (buffer_manager != NULL)
@@ -768,10 +750,26 @@ disable_holding_lock (
 			}
 
 			ep_volatile_store_allow_write (ep_volatile_load_allow_write () & ~(ep_session_get_mask (session)));
+
+			// Unpublish before draining so no new events land mid-flush, then wait out in-flight writers,
+			// flush the buffers, uncount, and write the final sequence point. An inert session skips all of
+			// this; its unpublish happens in session_fini below.
+			EP_ASSERT (ep_volatile_load_session (ep_session_get_index (session)) == session);
+			ep_volatile_store_session (ep_session_get_index (session), NULL);
+
+			ep_session_wait_for_inflight_thread_ops (session);
+
+			bool ignored;
+			ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
+
+			ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () - 1);
+
+			// Write a final sequence point to the file now that all events have been emitted.
+			ep_session_write_sequence_point_unbuffered (session);
 		}
 
-		// Phase 2 - unpublish, drain, and reclaim the object (mirror of session creation).
-		session_fini (session, was_enabled);
+		// Phase 2 - unpublish (if still published) and reclaim the object (mirror of session creation).
+		session_fini (session);
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.
 		// Allow delete deferred providers to accumulate to mitigate potential use-after-free should
@@ -807,11 +805,7 @@ stop_session (EventPipeSessionID id)
 		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
 
 		EP_LOCK_ENTER (section1)
-			// number_of_sessions counts only enabled sessions. A published-but-not-yet-enabled session is inert,
-			// and when it is the only session number_of_sessions is still 0 - yet it must still be torn down if
-			// disabled in that window (e.g. shutdown racing an in-progress enable), so also gate on it being in
-			// the collection.
-			if (ep_volatile_load_number_of_sessions () > 0 || is_session_id_in_collection (id))
+			if (is_session_id_in_collection (id))
 				disable_holding_lock (id, provider_callback_data_queue);
 		EP_LOCK_EXIT (section1)
 
@@ -934,9 +928,10 @@ write_event_2 (
 				// between the allow-write check and this load; re-loading on each block-mode retry below
 				// also picks up such an unpublish. The first write and every block-mode retry share the
 				// single ep_session_write_event call in this loop.
-#ifndef PERFTRACING_DISABLE_THREADS
 				EventPipeSession *write_session = ep_volatile_load_session (i);
+#ifndef PERFTRACING_DISABLE_THREADS
 				EventPipeBufferManager *buffer_manager = NULL;
+#endif // !PERFTRACING_DISABLE_THREADS
 				while (write_session != NULL) {
 					EventPipeWriteEventResult write_result = ep_session_write_event (
 						write_session,
@@ -950,6 +945,13 @@ write_event_2 (
 					if (write_result != EP_WRITE_EVENT_RESULT_BLOCKED)
 						break;
 
+#ifdef PERFTRACING_DISABLE_THREADS
+					// Single-threaded build: Block parking is unavailable (a single thread cannot block and
+					// still run the cooperative drain), so the Block write-path is compiled out and
+					// ep_session_write_event never returns BLOCKED - a full buffer just drops, exactly like
+					// Drop mode, and this loop makes a single write.
+					EP_UNREACHABLE ("EP_WRITE_EVENT_RESULT_BLOCKED is unreachable when PERFTRACING_DISABLE_THREADS is defined.");
+#else
 					// Block (non-lossy) mode: buffers full but the session is live, so park and retry instead
 					// of dropping. While parked we clear WRITE_BUFFER_IN_USE (keeping the index) so the reader
 					// can drain our full buffer; the retained index pins the buffer manager so teardown waits
@@ -959,10 +961,9 @@ write_event_2 (
 					if (buffer_manager == NULL)
 						buffer_manager = ep_session_get_buffer_manager (write_session);
 
-					// Park: drop the write-buffer bit so the reader can drain our buffer, then wait. In the
-					// common case the fair reserve inside ep_session_write_event enqueued us, so we park on our
-					// own event until the reader (or teardown) wakes us. If enqueueing failed under memory
-					// pressure, writer_wait_for_capacity instead just yields and this loop retries the reserve.
+					// Park: drop the write-buffer bit so the reader can drain our buffer, then wait. The fair
+					// reserve inside ep_session_write_event enqueued us, so we park on our own event until the
+					// reader (or teardown) wakes us.
 					ep_thread_set_session_use_in_progress (current_thread, i);
 					if (ep_buffer_manager_is_aborting (buffer_manager))
 						break; // teardown: give up and drop the event
@@ -973,24 +974,8 @@ write_event_2 (
 					// Retry: re-publish the write-buffer bit and re-load the session before looping.
 					ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
 					write_session = ep_volatile_load_session (i);
-				}
-#else
-				// Single-threaded build: Block parking is unavailable (a single thread cannot block and still
-				// run the cooperative drain), so the Block write-path is compiled out and write_event never
-				// returns BLOCKED. This is a single write that drops on a full buffer, exactly like Drop mode.
-				EventPipeSession *write_session = ep_volatile_load_session (i);
-				if (write_session != NULL) {
-					ep_session_write_event (
-						write_session,
-						thread,
-						ep_event,
-						payload,
-						activity_id,
-						related_activity_id,
-						event_thread,
-						stack);
-				}
 #endif // !PERFTRACING_DISABLE_THREADS
+				}
 			}
 			// Do not reference session past this point; we are signaling the teardown path that it is safe to
 			// delete it.
@@ -1281,7 +1266,7 @@ ep_enable_2 (
 	}
 
 	// Build options directly instead of calling ep_enable, which always defaults to Drop, so the requested
-	// buffering mode is carried through. ep_session_alloc degrades Block to Drop for non-streaming session types.
+	// buffering mode is carried through. (ep_session_alloc rejects Block for non-streaming session types.)
 	ep_session_options_init (
 		&options,
 		output_path,
@@ -1366,9 +1351,9 @@ ep_enable_3 (const EventPipeSessionOptions *options)
 		session_id = session_init (options);
 	EP_LOCK_EXIT (section1)
 
-	// The call above only allocates and publishes the session inert (providers unconfigured, allow_write unset,
-	// uncounted) and returns 0 on failure; on success the streaming-start call below enables it - configures
-	// providers, sets allow_write, bumps the count, starts the drain thread, and dispatches the provider-enable callbacks.
+	// session_init only allocates and publishes the session inert (providers unconfigured, allow_write unset,
+	// uncounted) and returns 0 on failure. A later ep_start_session call enables it - configures providers,
+	// sets allow_write, bumps the count, starts the drain thread, and dispatches the provider-enable callbacks.
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1446,7 +1431,6 @@ ep_start_session (EventPipeSessionID session_id)
 {
 	ep_requires_lock_not_held ();
 
-	bool streaming_started = false;
 	EventPipeSession *const session = (EventPipeSession *)(uintptr_t)session_id;
 	EventPipeProviderCallbackDataQueue callback_data_queue;
 	EventPipeProviderCallbackData provider_callback_data;
@@ -1456,30 +1440,22 @@ ep_start_session (EventPipeSessionID session_id)
 		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id), section1);
 
 		provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
+		ep_raise_error_if_nok_holding_lock (provider_callback_data_queue != NULL, section1);
 
 		// Enable the session under the lock: configure providers, set allow_write, bump number_of_sessions, and
 		// collect the provider-enable callbacks onto the stack-local queue. They are dispatched below - outside
-		// the lock and after the drain thread is running - not fired inline here.
+		// the lock and after the drain thread has been created - not fired inline here.
 		enable_holding_lock (session, provider_callback_data_queue);
 
 		// Session drain threads are native (no managed Thread / GC dependency), so start streaming
 		// immediately even during early startup instead of deferring to ep_finish_init.
 		ep_session_start_streaming (session);
-		streaming_started = true;
 	EP_LOCK_EXIT (section1)
 
-	// If we started the drain thread, wait until it is running before invoking the callbacks. A blocking
-	// GCHeapSnapshot callback forces a stop-the-world heap walk that parks the cooperative producer on a
-	// full buffer; only the drain thread frees capacity, and it drains in preemptive mode so it keeps
-	// consuming through the suspension. Dispatching before it exists would park with no drainer and deadlock.
-	// A startup-parked (deferred) session has no drain thread yet, but its heap walk no-ops until the GC is
-	// initialized, so skipping the wait there can't deadlock.
-	//
-	// The session read below is safe against a concurrent disable freeing it: disable joins the drain thread
-	// before freeing, and the thread sets "started" before exiting, so we observe it first.
-	if (streaming_started)
-		EP_YIELD_WHILE (!ep_session_has_started (session));
-
+	// Dispatch the provider-enable callbacks outside the lock. A blocking GCHeapSnapshot callback can force a
+	// stop-the-world heap walk that fills the buffer and parks the producer on capacity; the drain thread was
+	// already created by ep_session_start_streaming above and drains in preemptive mode, so it frees capacity
+	// and wakes the parked producer whether or not it has finished starting - no pre-wait is needed.
 	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
 		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
 		provider_invoke_callback (&provider_callback_data);
@@ -1705,7 +1681,8 @@ ep_finish_init (void)
 
 	ep_rt_init_finish ();
 
-	// Enable streaming for any deferred sessions
+	// Finish startup: allow threads to start. Session drain threads already start eagerly in ep_start_session,
+	// so this just lets the sample profiler begin sampling and lets the deferred session disables below replay.
 	EP_LOCK_ENTER (section1)
 		_ep_can_start_threads = true;
 		ep_sample_profiler_can_start_sampling ();

@@ -100,13 +100,6 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	if (!ep_session_type_uses_streaming_thread (session->session_type))
 		return 1;
 
-	// A native (non-managed) drain thread has no managed Thread handle (thread == NULL); only validate the
-	// handle when one exists (Mono sets it). A NULL handle (the native CoreCLR drain thread) proceeds.
-	if (thread_params->thread != NULL && !ep_rt_thread_has_started (thread_params->thread))
-		return 1;
-
-	session->streaming_thread = thread_params->thread;
-
 	bool success = true;
 
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
@@ -146,7 +139,6 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 		} else {
 			EP_UNREACHABLE ("Unsupported session type for streaming thread.");
 		}
-		session->streaming_thread = NULL;
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
 	}
 
@@ -162,7 +154,6 @@ static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool events_written = false;
 	bool ok;
 	if (!ep_session_get_streaming_enabled (session)){
-		session->streaming_thread = NULL;
 		ep_session_dec_ref (session);
 		return 1; // done
 	}
@@ -329,10 +320,9 @@ ep_session_alloc (
 	// Block buffering parks a producer until the drain thread frees buffer capacity, so it only works for
 	// session types that have a continuous drain - the ones with a streaming thread (IPCSTREAM, FILESTREAM).
 	// FILE and LISTENER have a buffer manager but no streaming thread (FILE flushes only at disable; LISTENER
-	// is pumped by an in-proc managed poll), so a parked producer would stall until teardown. Degrade Block to
-	// Drop for those rather than risk a hang.
-	if (buffering_mode == EP_BUFFERING_MODE_BLOCK && !ep_session_type_uses_streaming_thread (session_type))
-		buffering_mode = EP_BUFFERING_MODE_DROP;
+	// is pumped by an in-proc managed poll), so a parked producer would stall until teardown. Reject the
+	// unsupported combination rather than silently changing the caller's requested configuration.
+	ep_raise_error_if_nok (buffering_mode != EP_BUFFERING_MODE_BLOCK || ep_session_type_uses_streaming_thread (session_type));
 
 	if (ep_session_type_uses_buffer_manager (session_type)) {
 		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget, buffering_mode);
@@ -947,10 +937,11 @@ ep_session_write_event (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_event != NULL);
 
-	// Paused: skip the write but report WRITTEN (not a drop), so a paused session is not counted as lossy.
-	// This result is not consumed today (callers only act on BLOCKED).
+	// A paused session (toggled by ep_session_pause) skips the write and drops the event. Today only the GC
+	// gen-analysis session pauses: it is created paused and the GC resumes it only for the gen-analysis heap
+	// walk, dropping everything outside that window. The result is inert here - the only caller acts on BLOCKED.
 	if (session->paused)
-		return EP_WRITE_EVENT_RESULT_WRITTEN;
+		return EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 

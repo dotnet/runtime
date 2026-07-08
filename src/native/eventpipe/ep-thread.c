@@ -38,7 +38,9 @@ ep_thread_alloc (void)
 	instance->unregistered = 0;
 
 	instance->buffer_wait_enqueued = 0;
-	// Leave buffer_wait_event zero-initialized (invalid); it is lazily allocated on first park.
+	instance->buffer_wait_queue_next_thread = NULL;
+	// Leave buffer_wait_event zero-initialized (invalid); it is allocated when the thread first gets a
+	// Block-mode session state.
 	memset (&instance->buffer_wait_event, 0, sizeof (instance->buffer_wait_event));
 
 ep_on_exit:
@@ -64,6 +66,7 @@ ep_thread_free (EventPipeThread *thread)
 #endif
 
 	EP_ASSERT (thread->buffer_wait_enqueued == 0);
+	EP_ASSERT (thread->buffer_wait_queue_next_thread == NULL);
 	if (ep_rt_wait_event_is_valid (&thread->buffer_wait_event))
 		ep_rt_wait_event_free (&thread->buffer_wait_event);
 
