@@ -73,7 +73,7 @@ namespace
         }
         CONTRACT_END;
 
-        SafeComHolderAny<IMetaDataDispenserEx> pDispenser;
+        SafeComHolderAnyMode<IMetaDataDispenserEx> pDispenser;
 
         // Get the Dispenser interface.
         CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void**)&pDispenser);
@@ -407,7 +407,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     // add such a reference. Also because the referenced assembly if dynamic strong name, it may
     // not be ready to be hashed!
 
-    SafeComHolderAny<IMetaDataAssemblyEmit> pAssemblyEmit;
+    SafeComHolderAnyMode<IMetaDataAssemblyEmit> pAssemblyEmit;
     DefineEmitScope(
         IID_IMetaDataAssemblyEmit,
         (void**)&pAssemblyEmit);
@@ -1672,7 +1672,7 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
     }
     CONTRACT_END;
 
-    SafeComHolderAny<IMetaDataAssemblyEmit> emitHolder;
+    SafeComHolderAnyMode<IMetaDataAssemblyEmit> emitHolder;
 
     AssemblySpec spec;
     spec.InitializeSpec(refedAssembly->GetPEAssembly());

@@ -710,7 +710,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
     {
         DWORD newFlags = enum_CustomQIRespondsToIMarshal_Inited;
 
-        SafeComHolderAny<IUnknown> pUnk;
+        SafeComHolderAnyMode<IUnknown> pUnk;
         if (GetComIPFromCCW_HandleCustomQI(GetMainWrapper(), IID_IMarshal, NULL, &pUnk))
         {
             newFlags |= enum_CustomQIRespondsToIMarshal;
@@ -2209,7 +2209,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         SyncBlock* pBlock = pWrap->GetSyncBlock();
         _ASSERTE(pBlock);
 
-        SafeComHolderAny<IUnknown> pUnk;
+        SafeComHolderAnyMode<IUnknown> pUnk;
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -2588,7 +2588,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     if ((DefItfType == DefaultInterfaceType_AutoDual) || (DefItfType == DefaultInterfaceType_AutoDispatch))
     {
         // Make sure we release the BasicIP we're about to get.
-        SafeComHolderAny<IUnknown> pBasic{ GetBasicIP() };
+        SafeComHolderAnyMode<IUnknown> pBasic{ GetBasicIP() };
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pBasic);
         pCMT->CheckParentComVisibility();
     }
@@ -2636,7 +2636,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             SyncBlock* pBlock = GetSyncBlock();
             _ASSERTE(pBlock);
 
-            SafeComHolderAny<IDispatch> pDisp;
+            SafeComHolderAnyMode<IDispatch> pDisp;
 
             RCWHolder pRCW(GetThread());
             RCWPROTECT_BEGIN(pRCW, pBlock);

@@ -686,7 +686,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 else
                 {
 #ifdef FEATURE_COMINTEROP
-                    SafeComHolderAny<IErrorInfo> pErrInfo(pException->GetErrorInfo());
+                    SafeComHolderAnyMode<IErrorInfo> pErrInfo(pException->GetErrorInfo());
 
                     if (pErrInfo != NULL)
                     {

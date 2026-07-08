@@ -664,9 +664,9 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     ComMethodTable *pComMT              = NULL;
     MethodTable* pOriginalClass         = pClass;
     HRESULT                 hr          = S_OK;
-    SafeComHolderAny<ITypeLib> pITLB;
-    SafeComHolderAny<ITypeInfo> pTI;
-    SafeComHolderAny<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
+    SafeComHolderAnyMode<ITypeLib> pITLB;
+    SafeComHolderAnyMode<ITypeInfo> pTI;
+    SafeComHolderAnyMode<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
     ComCallWrapperTemplate *pTemplate   = NULL;
 
     GCX_PREEMP();

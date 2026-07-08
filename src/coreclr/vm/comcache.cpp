@@ -899,7 +899,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 
     HRESULT hrCDH = S_OK;
     IUnknown * pUnk = NULL;
-    SafeComHolderAny<IStream> spStream;
+    SafeComHolderAnyMode<IStream> spStream;
 
     CheckValidIUnkEntry();
 

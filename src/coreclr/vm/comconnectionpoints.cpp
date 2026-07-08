@@ -313,7 +313,7 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
     }
     CONTRACTL_END;
 
-    SafeComHolderAny<IUnknown> pEventItf;
+    SafeComHolderAnyMode<IUnknown> pEventItf;
     HRESULT hr;
 
     // Make sure we have a pointer to the interface and not to another IUnknown.

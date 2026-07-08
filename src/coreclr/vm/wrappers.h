@@ -53,7 +53,7 @@ private:
 };
 
 template <typename TYPE>
-struct SafeComHolderAnyTraits final
+struct SafeComHolderAnyModeTraits final
 {
     static_assert(
         std::is_base_of<IUnknown, TYPE>::value,
@@ -78,7 +78,7 @@ struct SafeComHolderAnyTraits final
 // to preemptive internally when required. Use SafeComHolderPreemp instead when
 // the release will always occur in preemptive mode.
 template<typename _TYPE>
-using SafeComHolderAny = LifetimeHolder<SafeComHolderAnyTraits<_TYPE>>;
+using SafeComHolderAnyMode = LifetimeHolder<SafeComHolderAnyModeTraits<_TYPE>>;
 
 template <typename TYPE>
 struct SafeComHolderPreempTraits final
@@ -103,7 +103,7 @@ struct SafeComHolderPreempTraits final
 };
 
 // Use this holder if you're already in preemptive mode for other reasons,
-// use SafeComHolderAny otherwise.
+// use SafeComHolderAnyMode otherwise.
 template<typename _TYPE>
 using SafeComHolderPreemp = LifetimeHolder<SafeComHolderPreempTraits<_TYPE>>;
 

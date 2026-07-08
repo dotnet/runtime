@@ -152,9 +152,9 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
     HRESULT hr = S_OK;
 
-    CONTRACT_VIOLATION(GCViolation);    // SafeComHolderAny goes to preemptive mode, which will trigger a GC
-    SafeComHolderAny<IMDInternalImportENC> pIMDInternalImportENC;
-    SafeComHolderAny<IMetaDataEmit> pEmitter;
+    CONTRACT_VIOLATION(GCViolation);    // SafeComHolderAnyMode goes to preemptive mode, which will trigger a GC
+    SafeComHolderAnyMode<IMDInternalImportENC> pIMDInternalImportENC;
+    SafeComHolderAnyMode<IMetaDataEmit> pEmitter;
 
     // Apply the changes. Note that ApplyEditAndContinue() requires read/write metadata. If the metadata is
     // not already RW, then ApplyEditAndContinue() will perform the conversion, invalidate the current
