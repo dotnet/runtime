@@ -584,6 +584,10 @@ OPT_CONFIG_INTEGER(JitDoLoopHoisting, "JitDoLoopHoisting", 1)   // Perform loop 
 OPT_CONFIG_INTEGER(JitDoLoopInversion, "JitDoLoopInversion", 1) // Perform loop inversion on "for/while" loops
 RELEASE_CONFIG_INTEGER(JitLoopInversionSizeLimit, "JitLoopInversionSizeLimit", 100) // limit inversion to loops with no
                                                                                     // more than this many tree nodes
+// When set, skip inverting a loop that is already bottom-tested (has an exiting BBJ_COND latch) and
+// has no recognized induction variable, unless the loop-continuation test that would be duplicated
+// contains a call or a loop-invariant (hence hoistable) memory load.
+RELEASE_CONFIG_INTEGER(JitLoopInversionRequireBenefitForBottomTested, "JitLoopInversionRequireBenefitForBottomTested", 0)
 OPT_CONFIG_INTEGER(JitDoRangeAnalysis, "JitDoRangeAnalysis", 1)                     // Perform range check analysis
 OPT_CONFIG_INTEGER(JitDoVNBasedDeadStoreRemoval, "JitDoVNBasedDeadStoreRemoval", 1) // Perform VN-based dead store
                                                                                     // removal

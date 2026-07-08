@@ -1949,15 +1949,22 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         return (ivTestBlock != nullptr) && (candidate == ivTestBlock);
     };
 
+    bool sawExitingCondLatch = false;
+
     for (FlowEdge* const backEdge : loop->BackEdges())
     {
         BasicBlock* const latch = backEdge->getSourceBlock();
 
-        if (isExitingCondLatch(latch) && isIvTest(latch))
+        if (isExitingCondLatch(latch))
         {
-            JITDUMP("No loop-inversion for " FMT_LP "; IV-test latch " FMT_BB " already makes it bottom-tested\n",
-                    loop->GetIndex(), latch->bbNum);
-            return false;
+            sawExitingCondLatch = true;
+
+            if (isIvTest(latch))
+            {
+                JITDUMP("No loop-inversion for " FMT_LP "; IV-test latch " FMT_BB " already makes it bottom-tested\n",
+                        loop->GetIndex(), latch->bbNum);
+                return false;
+            }
         }
 
         if (latch->KindIs(BBJ_ALWAYS) && latch->isEmpty())
@@ -1965,13 +1972,96 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             for (FlowEdge* const predEdge : latch->PredEdges())
             {
                 BasicBlock* const pred = predEdge->getSourceBlock();
-                if (loop->ContainsBlock(pred) && isExitingCondLatch(pred) && isIvTest(pred))
+                if (loop->ContainsBlock(pred) && isExitingCondLatch(pred))
                 {
-                    JITDUMP("No loop-inversion for " FMT_LP "; IV-test predecessor " FMT_BB
-                            " of canonical latch " FMT_BB " already makes it bottom-tested\n",
-                            loop->GetIndex(), pred->bbNum, latch->bbNum);
-                    return false;
+                    sawExitingCondLatch = true;
+
+                    if (isIvTest(pred))
+                    {
+                        JITDUMP("No loop-inversion for " FMT_LP "; IV-test predecessor " FMT_BB
+                                " of canonical latch " FMT_BB " already makes it bottom-tested\n",
+                                loop->GetIndex(), pred->bbNum, latch->bbNum);
+                        return false;
+                    }
                 }
+            }
+        }
+    }
+
+    // If the loop is already bottom-tested (has an exiting BBJ_COND latch that is not the IV test)
+    // and no induction variable was recognized, only invert when the block that would be duplicated
+    // (condBlock) contains a call or a loop-invariant memory load worth hoisting out of the test.
+    // Classify condBlock here and record the locals used as bases of its indirections; the size-check
+    // walk below marks whether any such base is assigned in the loop (making the load loop-variant).
+    const bool   checkBenefit = sawExitingCondLatch && (ivTestBlock == nullptr) &&
+                              (JitConfig.JitLoopInversionRequireBenefitForBottomTested() != 0);
+    bool         condHasCall     = false;
+    bool         condHasIndir    = false;
+    bool         condBaseStored  = false;
+    BitVecTraits condTraits(lvaCount, this);
+    BitVec       condIndirBaseLocals(BitVecOps::MakeEmpty(&condTraits));
+    if (checkBenefit)
+    {
+        assert(analyzedIteration);
+
+        struct CondClassifier : GenTreeVisitor<CondClassifier>
+        {
+            BitVecTraits* m_traits;
+            BitVec*       m_baseLocals;
+            bool*         m_hasCall;
+            bool*         m_hasIndir;
+
+            enum
+            {
+                DoPreOrder = true
+            };
+
+            CondClassifier(Compiler* comp, BitVecTraits* traits, BitVec* baseLocals, bool* hasCall, bool* hasIndir)
+                : GenTreeVisitor(comp)
+                , m_traits(traits)
+                , m_baseLocals(baseLocals)
+                , m_hasCall(hasCall)
+                , m_hasIndir(hasIndir)
+            {
+            }
+
+            void CollectLocals(GenTree* tree)
+            {
+                if (tree->OperIsLocal())
+                {
+                    BitVecOps::AddElemD(m_traits, *m_baseLocals, tree->AsLclVarCommon()->GetLclNum());
+                }
+                tree->VisitOperands([&](GenTree* op) -> GenTree::VisitResult {
+                    CollectLocals(op);
+                    return GenTree::VisitResult::Continue;
+                });
+            }
+
+            fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+            {
+                GenTree* n = *use;
+                if (n->IsCall())
+                {
+                    *m_hasCall = true;
+                    return WALK_ABORT;
+                }
+                if (n->OperIsIndir())
+                {
+                    *m_hasIndir = true;
+                    CollectLocals(n->AsIndir()->Addr());
+                }
+                return WALK_CONTINUE;
+            }
+        };
+
+        CondClassifier cc(this, &condTraits, &condIndirBaseLocals, &condHasCall, &condHasIndir);
+        for (Statement* const stmt : condBlock->Statements())
+        {
+            GenTree* root = stmt->GetRootNode();
+            cc.WalkTree(&root, nullptr);
+            if (condHasCall)
+            {
+                break;
             }
         }
     }
@@ -2051,6 +2141,13 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 {
                     *boundsCheckFlag = true;
                 }
+                // Note whether any local used as a base of the condition's indirections is stored in
+                // the loop (making that load loop-variant).
+                if (checkBenefit && !condHasCall && tree->OperIsLocalStore() &&
+                    BitVecOps::IsMember(&condTraits, condIndirBaseLocals, tree->AsLclVarCommon()->GetLclNum()))
+                {
+                    condBaseStored = true;
+                }
                 loopSize++;
                 return 1;
             });
@@ -2078,6 +2175,21 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             // Defer further size-based rejection to estDupCostSz below and to the cloning
             // phase's own size budget.
             JITDUMP(FMT_LP " might benefit from cloning. Continuing.\n", loop->GetIndex());
+        }
+    }
+
+    // Skip the inversion unless the duplicated test carries a benefit: a call, or an indirection off
+    // a base not assigned in the loop (a loop-invariant, hoistable load). condBaseStored is left
+    // conservatively false if the size walk above was skipped or aborted early, keeping the inversion.
+    if (checkBenefit)
+    {
+        const bool keepInverting = condHasCall || (condHasIndir && !condBaseStored);
+        if (!keepInverting)
+        {
+            JITDUMP("No loop-inversion for " FMT_LP "; already bottom-tested with no recognized IV and no "
+                    "hoistable/call benefit in the duplicated condition\n",
+                    loop->GetIndex());
+            return false;
         }
     }
 
