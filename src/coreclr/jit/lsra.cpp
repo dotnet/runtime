@@ -7819,8 +7819,16 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 // memory location.  To properly account max spill for typ we
                 // decrement spill count.
                 assert(RefTypeIsUse(refType));
-                assert(currentSpill[type] > 0);
-                currentSpill[type]--;
+
+                // A coalesced constant interval can have several uses that read the value directly
+                // from a single spill temp. The temp stays live until the final such use, so only
+                // release it on the last use; earlier uses must leave the temp reserved. For all
+                // other (single-use) intervals the use is always the last use, so this is a no-op.
+                if (refPosition->lastUse)
+                {
+                    assert(currentSpill[type] > 0);
+                    currentSpill[type]--;
+                }
             }
             JITDUMP("  Max spill for %s is %d\n", varTypeName(type), maxSpill[type]);
         }
