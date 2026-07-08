@@ -1253,7 +1253,7 @@ namespace System.Xml.Serialization
                     }
                     else if (m is ArrayMapping arrayMapping)
                     {
-                        if (arrayMapping.TypeDesc!.HasDefaultConstructor)
+                        if (arrayMapping.TypeDesc!.HasDefaultConstructor || arrayMapping.TypeDesc.UsesCollectionBuilder)
                         {
                             ilg.InitElseIf();
                             WriteQNameEqual("xsiType", arrayMapping.TypeName, arrayMapping.Namespace);

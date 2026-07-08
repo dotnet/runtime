@@ -279,7 +279,7 @@ namespace System.Xml.Serialization
 
         internal bool CannotNew
         {
-            get { return !HasDefaultConstructor || ConstructorInaccessible; }
+            get { return (!HasDefaultConstructor && !UsesCollectionBuilder) || ConstructorInaccessible; }
         }
 
         internal bool IsAbstract
@@ -396,7 +396,7 @@ namespace System.Xml.Serialization
 
         internal void CheckNeedConstructor()
         {
-            if (!IsValueType && !IsAbstract && !HasDefaultConstructor)
+            if (!IsValueType && !IsAbstract && !HasDefaultConstructor && !UsesCollectionBuilder)
             {
                 _flags |= TypeFlags.Unsupported;
                 _exception = new InvalidOperationException(SR.Format(SR.XmlConstructorInaccessible, FullName));
@@ -1012,15 +1012,12 @@ namespace System.Xml.Serialization
 #pragma warning restore IL3050
                 if (collectionBuilderMethod != null)
                 {
-                    // Builder-backed types never have a usable public parameterless ctor (the whole point of
-                    // [CollectionBuilder] is to funnel construction through the factory method). Setting the
-                    // HasDefaultConstructor flag here is a signal to the rest of the pipeline that we CAN
-                    // produce an instance of this type — the ILGen/Reflection reader paths gated on
-                    // UsesCollectionBuilder short-circuit before any actual `newobj`/`Activator.CreateInstance`
-                    // call and invoke the factory instead. Without this flag various downstream checks
-                    // (e.g. ArrayMapping xsi:type dispatch, read-only member rejection) would incorrectly
-                    // treat the type as unconstructible.
-                    flags |= TypeFlags.UsesCollectionBuilder | TypeFlags.HasDefaultConstructor;
+                    // Builder-backed types don't have (or shouldn't use) a public parameterless ctor —
+                    // that's the whole point of [CollectionBuilder]. Do NOT set HasDefaultConstructor.
+                    // Instead, CannotNew / CheckNeedConstructor now also honor UsesCollectionBuilder so
+                    // downstream checks that ask "can we produce an instance of this?" get the right
+                    // answer while HasDefaultConstructor remains factually accurate.
+                    flags |= TypeFlags.UsesCollectionBuilder;
                     flags &= ~TypeFlags.CtorInaccessible;
                     exception = null; // suppress any earlier exception (e.g., no Add method)
                 }
@@ -1029,6 +1026,7 @@ namespace System.Xml.Serialization
             typeDesc = new TypeDesc(type, CodeIdentifier.MakeValid(TypeName(type)), type.ToString(), kind, null, flags, null);
             typeDesc.Exception = exception;
             typeDesc.CollectionBuilderMethod = collectionBuilderMethod;
+
             if (directReference && (typeDesc.IsClass || kind == TypeKind.Serializable))
                 typeDesc.CheckNeedConstructor();
 
