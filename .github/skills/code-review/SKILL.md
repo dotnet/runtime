@@ -182,7 +182,7 @@ review**, in addition to the process above.
 
 Load, based on the paths in the diff:
 
-- **Always:** `review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Holistic Assessment in your output.
+- **`src/**` changed:** `review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Holistic Assessment in your output.
 - **`**/*.cs` changed:** `review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
 - **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
 - **Test files (`**/tests/**`, `src/tests/**`) changed:** `review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
