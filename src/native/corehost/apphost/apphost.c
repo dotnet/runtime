@@ -362,13 +362,13 @@ int main(const int argc, const pal_char_t* argv[])
 
     if (trace_is_enabled())
     {
-        pal_char_t version_desc[256];
+        trace_info(_X("--- Invoked apphost [version: ")
 #if defined(_WIN32)
-        pal_str_printf(version_desc, ARRAY_SIZE(version_desc), _X("%s"), _STRINGIFY(VER_PRODUCTVERSION_STR));
+            _STRINGIFY(VER_PRODUCTVERSION_STR)
 #else
-        pal_str_printf(version_desc, ARRAY_SIZE(version_desc), _X("%s @Commit: %s"), _STRINGIFY(HOST_VERSION), _STRINGIFY(REPO_COMMIT_HASH));
+            _STRINGIFY(HOST_VERSION) _X(" @Commit: ") _STRINGIFY(REPO_COMMIT_HASH)
 #endif
-        trace_info(_X("--- Invoked apphost [version: %s] main = {"), version_desc);
+            _X("] main = {"));
         for (int i = 0; i < argc; ++i)
         {
             trace_info(_X("%s"), argv[i]);
