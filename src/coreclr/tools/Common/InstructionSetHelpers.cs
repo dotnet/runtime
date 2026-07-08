@@ -301,6 +301,7 @@ namespace System.CommandLine
             {
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("crc");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("cssc");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");

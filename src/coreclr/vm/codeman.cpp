@@ -1687,6 +1687,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Rcpc2);
     }
 
+    if (((cpuFeatures & ARM64IntrinsicConstants_Cssc) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Cssc))
+    {
+        CPUCompileFlags.Set(InstructionSet_Cssc);
+    }
+
     if (((cpuFeatures & ARM64IntrinsicConstants_Crc32) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Crc32))
     {
         CPUCompileFlags.Set(InstructionSet_Crc32);
