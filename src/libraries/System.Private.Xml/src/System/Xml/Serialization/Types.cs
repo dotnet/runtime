@@ -996,9 +996,12 @@ namespace System.Xml.Serialization
             }
 
             // Discover [CollectionBuilder] for Collection/Enumerable types (e.g. System.Collections.Immutable).
-            // This allows XmlSerializer to deserialize immutable collections by accumulating items and
-            // then invoking the static factory method to build the immutable instance.
-            // IDictionary is not supported by XmlSerializer at all, so don't try to handle it here.
+            // This allows XmlSerializer to deserialize immutable collections by accumulating items into a T[]
+            // and then invoking the static factory method to build the immutable instance.
+            //
+            // IDictionary-implementing types are unsupported by XmlSerializer regardless of [CollectionBuilder]
+            // (see GetDefaultIndexer which unconditionally throws for them), so we skip them here to preserve
+            // the pre-existing NotSupportedException behavior instead of silently starting to accept them.
             MethodInfo? collectionBuilderMethod = null;
             if ((kind == TypeKind.Collection || kind == TypeKind.Enumerable) &&
                 arrayElementType != null &&
@@ -1009,6 +1012,14 @@ namespace System.Xml.Serialization
 #pragma warning restore IL3050
                 if (collectionBuilderMethod != null)
                 {
+                    // Builder-backed types never have a usable public parameterless ctor (the whole point of
+                    // [CollectionBuilder] is to funnel construction through the factory method). Setting the
+                    // HasDefaultConstructor flag here is a signal to the rest of the pipeline that we CAN
+                    // produce an instance of this type — the ILGen/Reflection reader paths gated on
+                    // UsesCollectionBuilder short-circuit before any actual `newobj`/`Activator.CreateInstance`
+                    // call and invoke the factory instead. Without this flag various downstream checks
+                    // (e.g. ArrayMapping xsi:type dispatch, read-only member rejection) would incorrectly
+                    // treat the type as unconstructible.
                     flags |= TypeFlags.UsesCollectionBuilder | TypeFlags.HasDefaultConstructor;
                     flags &= ~TypeFlags.CtorInaccessible;
                     exception = null; // suppress any earlier exception (e.g., no Add method)
@@ -1017,12 +1028,7 @@ namespace System.Xml.Serialization
 
             typeDesc = new TypeDesc(type, CodeIdentifier.MakeValid(TypeName(type)), type.ToString(), kind, null, flags, null);
             typeDesc.Exception = exception;
-            if (collectionBuilderMethod != null)
-            {
-                typeDesc.CollectionBuilderMethod = collectionBuilderMethod;
-            }
-
-
+            typeDesc.CollectionBuilderMethod = collectionBuilderMethod;
             if (directReference && (typeDesc.IsClass || kind == TypeKind.Serializable))
                 typeDesc.CheckNeedConstructor();
 

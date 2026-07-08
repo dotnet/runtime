@@ -2166,8 +2166,15 @@ namespace System.Xml.Serialization
                     }
                     else if (member.IsBuilderBacked)
                     {
-                        // Allocate a T[] accumulator local instead of trying to construct the immutable type;
-                        // WriteMemberEnd will invoke the [CollectionBuilder] factory to build the final value.
+                        // Accumulate items into a T[] rather than into a live instance of the target
+                        // collection. This deliberately mirrors the existing xml-array path (declared
+                        // just above) so we can reuse the well-established EnsureArrayIndex / ShrinkArray
+                        // machinery: element-writer IL appends to `a[c++]` via EnsureArrayIndex, which
+                        // geometrically grows the array as needed, and WriteMemberEnd trims it and passes
+                        // it to the [CollectionBuilder] factory. Using a List<T> here instead would still
+                        // require materializing a T[] to hand to the factory (whose signature is
+                        // `Create(T[])` or `Create(ReadOnlySpan<T>)`) and would fork the per-element IL
+                        // emission for no real benefit.
                         TypeDesc elementTypeDesc = typeDesc.ArrayElementTypeDesc!;
                         WriteArrayLocalDecl($"{elementTypeDesc.CSharpName}[]", a, "null", elementTypeDesc);
                         ilg.Ldc(0);
@@ -2712,13 +2719,17 @@ namespace System.Xml.Serialization
 
                         WriteSourceBegin(member.Source);
 
+                        // ShrinkArray trims the accumulator to its exact used length. The array-emitter
+                        // path (WriteMemberBegin above + EnsureArrayIndex on each append) geometrically
+                        // grows `a` so it typically ends up over-sized by up to 2x; ShrinkArray returns a
+                        // right-sized Array (or an empty singleton when count==0 and IsNullable is false).
+                        // We then cast back to T[] before passing it to the [CollectionBuilder] factory.
                         ilg.Ldarg(0);
                         ilg.Ldloc(ilg.GetLocal(a));
                         ilg.Ldloc(ilg.GetLocal(c));
                         ilg.Ldc(elementType);
                         ilg.Ldc(member.IsNullable);
                         ilg.Call(XmlSerializationReader_ShrinkArray);
-                        // ShrinkArray returns Array; cast to T[].
                         ilg.Castclass(arrayType);
 
                         if (isStack)
