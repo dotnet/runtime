@@ -48,6 +48,12 @@ namespace System.IO.Compression
         private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
         private readonly CompressionLevel _compressionLevel;
+        // Set when this entry is produced by ZipStreamReader for forward-only reading.
+        // Such an entry is not attached to a ZipArchive (_archive is null) and exposes a
+        // single-use data stream through Open().
+        private readonly bool _isForwardReadEntry;
+        private readonly Stream? _forwardDataStream;
+        private bool _forwardStreamOpened;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -157,6 +163,62 @@ namespace System.IO.Compression
             {
                 _archive.AcquireArchiveStream(this);
             }
+
+            Changes = ZipArchive.ChangeState.Unchanged;
+        }
+
+        // Initializes a ZipArchiveEntry instance for an entry read sequentially from a
+        // ZipStreamReader. Such an entry is not attached to a ZipArchive (Archive is null),
+        // is populated from the local file header, and exposes a single-use forward-only
+        // data stream through Open().
+        internal ZipArchiveEntry(
+            string fullName,
+            byte[] fullNameBytes,
+            ZipCompressionMethod compressionMethod,
+            DateTimeOffset lastModified,
+            uint crc32,
+            long compressedSize,
+            long uncompressedSize,
+            ushort generalPurposeBitFlag,
+            ushort versionNeeded,
+            Stream? dataStream)
+        {
+            _archive = null!;
+
+            _isForwardReadEntry = true;
+            _originallyInArchive = true;
+            _forwardDataStream = dataStream;
+
+            _diskNumberStart = 0;
+            _versionMadeByPlatform = CurrentZipPlatform;
+            _versionMadeBySpecification = ZipVersionNeededValues.Default;
+            _versionToExtract = (ZipVersionNeededValues)versionNeeded;
+            _generalPurposeBitFlag = (BitFlagValues)generalPurposeBitFlag;
+            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
+            CompressionMethod = compressionMethod;
+            _lastModified = lastModified;
+            _compressedSize = compressedSize;
+            _uncompressedSize = uncompressedSize;
+            _externalFileAttr = 0;
+            _offsetOfLocalHeader = 0;
+            _storedOffsetOfCompressedData = null;
+            _crc32 = crc32;
+
+            _compressedBytes = null;
+            _storedUncompressedData = null;
+            _currentlyOpenForWrite = false;
+            _everOpenedForWrite = false;
+            _outstandingWriteStream = null;
+
+            _storedEntryNameBytes = fullNameBytes;
+            _storedEntryName = fullName;
+            DetectEntryNameVersion();
+
+            _lhUnknownExtraFields = null;
+            _cdUnknownExtraFields = null;
+            _fileComment = Array.Empty<byte>();
+
+            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
 
             Changes = ZipArchive.ChangeState.Unchanged;
         }
@@ -340,6 +402,34 @@ namespace System.IO.Compression
 
         internal long OffsetOfLocalHeader => _offsetOfLocalHeader;
 
+        // True when the local file header set the data-descriptor bit, meaning the CRC-32
+        // and sizes are not known until the entry's data has been fully read.
+        internal bool HasDataDescriptor => (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+
+        // The single-use forward-only data stream for a ZipStreamReader entry, or null when
+        // the entry has no data (for example a directory entry). Null for archive-backed entries.
+        internal Stream? ForwardDataStream => _forwardDataStream;
+
+        // Populates the CRC-32 and sizes of a forward-read data-descriptor entry after its data
+        // has been drained, validating them against the values accumulated while reading.
+        internal void UpdateDataDescriptor(uint crc32, long compressedLength, long length,
+            uint runningCrc, long totalBytesRead)
+        {
+            if (runningCrc != crc32)
+            {
+                throw new InvalidDataException(SR.CrcMismatch);
+            }
+
+            if (totalBytesRead != length)
+            {
+                throw new InvalidDataException(SR.UnexpectedStreamLength);
+            }
+
+            _crc32 = crc32;
+            _compressedSize = compressedLength;
+            _uncompressedSize = length;
+        }
+
         /// <summary>
         /// Deletes the entry from the archive.
         /// </summary>
@@ -373,6 +463,11 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         public Stream Open()
         {
+            if (_isForwardReadEntry)
+            {
+                return OpenForwardReadMode();
+            }
+
             ThrowIfInvalidArchive();
 
             switch (_archive.Mode)
@@ -408,6 +503,16 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         public Stream Open(FileAccess access)
         {
+            if (_isForwardReadEntry)
+            {
+                if (access != FileAccess.Read)
+                {
+                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                }
+
+                return OpenForwardReadMode();
+            }
+
             ThrowIfInvalidArchive();
 
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
@@ -852,6 +957,25 @@ namespace System.IO.Compression
             if (checkOpenable)
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
             return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData());
+        }
+
+        // Returns the forward-only data stream for a ZipStreamReader entry. The stream is
+        // single-use: once returned it is consumed as it is read, and it is invalidated when
+        // the reader advances to the next entry. Directory or empty entries return Stream.Null.
+        private Stream OpenForwardReadMode()
+        {
+            if (_forwardDataStream is null)
+            {
+                return Stream.Null;
+            }
+
+            if (_forwardStreamOpened)
+            {
+                throw new InvalidOperationException(SR.ZipStreamEntryAlreadyConsumed);
+            }
+
+            _forwardStreamOpened = true;
+            return _forwardDataStream;
         }
 
         private CrcValidatingReadStream OpenInReadModeGetDataCompressor(long offsetOfCompressedData)

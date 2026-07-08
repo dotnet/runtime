@@ -171,9 +171,9 @@ namespace System.IO.Compression
         public ushort VersionMadeBy { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
-        public System.IO.Stream Open(FileAccess access) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum ZipArchiveMode
@@ -187,6 +187,15 @@ namespace System.IO.Compression
         Stored = 0,
         Deflate = 8,
         Deflate64 = 9,
+    }
+    public sealed partial class ZipStreamReader : System.IAsyncDisposable, System.IDisposable
+    {
+        public ZipStreamReader(System.IO.Stream stream, bool leaveOpen = false) { }
+        public ZipStreamReader(System.IO.Stream stream, System.Text.Encoding? entryNameEncoding, bool leaveOpen = false) { }
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        public System.IO.Compression.ZipArchiveEntry? GetNextEntry(bool copyData = false) { throw null; }
+        public System.Threading.Tasks.ValueTask<System.IO.Compression.ZipArchiveEntry?> GetNextEntryAsync(bool copyData = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class ZLibCompressionOptions
     {
