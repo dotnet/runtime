@@ -79,6 +79,8 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_fFramesFresh(false),
     m_fFloatStateValid(false),
     m_floatStackTop(0),
+    m_firstFloatReg(-1),
+    m_floatValuesCount(0),
     m_fException(false),
     m_EnCRemapFunctionIP(0),
     m_userState(kInvalidUserState),
@@ -103,15 +105,6 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
 
     m_vmLeftSideContext = VMPTR_CONTEXT::NullPtr();
     m_vmExcepObjHandle = VMPTR_OBJECTHANDLE::NullPtr();
-
-#if defined(_DEBUG)
-    for (unsigned int i = 0;
-         i < (sizeof(m_floatValues) / sizeof(m_floatValues[0]));
-         i++)
-    {
-        m_floatValues[i] = 0;
-    }
-#endif
 
     // Set AppDomain
     m_pAppDomain = pProcess->GetAppDomain();
@@ -154,11 +147,9 @@ void CordbThread::Neuter()
         m_hCachedThread = INVALID_HANDLE_VALUE;
     }
 
-    if( m_pContext != NULL )
-    {
-        delete [] m_pContext;
-        m_pContext = NULL;
-    }
+    // Free the RS context cache buffer now (Neuter), so the destructor's
+    // m_pContext == NULL invariant holds. Clear() releases and resets to NULL.
+    m_pContext.Clear();
 
     ClearStackFrameCache();
 
@@ -313,7 +304,8 @@ BOOL CordbThread::IsThreadExceptionManaged()
 //        chain reason.
 //
 
-void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
+void CordbThread::CreateCordbRegisterSet(const BYTE *            pContext,
+                                         ULONG32                 contextSize,
                                          BOOL                    fLeaf,
                                          CorDebugChainReason     reason,
                                          ICorDebugRegisterSet ** ppRegSet)
@@ -328,11 +320,20 @@ void CordbThread::CreateCordbRegisterSet(DT_CONTEXT *            pContext,
 
     IfFailThrow(EnsureThreadIsAlive());
 
+    // Allocate and populate a CONTEXT buffer that the CordbRegisterSet will own.
+    // The caller passes the target's CONTEXT size (queried from the DAC).
+    NewArrayHolder<BYTE> pContextBuffer(new BYTE[contextSize]);
+    memcpy(pContextBuffer, pContext, contextSize);
+
     // create the CordbRegisterSet
-    RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(this,
-                                                            pContext,
+    RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pContextBuffer,
+                                                            contextSize,
+                                                            this,
                                                             (fLeaf == TRUE),
-                                                            (reason == CHAIN_ENTER_MANAGED)));
+                                                            (reason == CHAIN_ENTER_MANAGED),
+                                                            true));
+    pContextBuffer.SuppressRelease();
+
     pRS.TransferOwnershipExternal(ppRegSet);
 }
 
@@ -1146,15 +1147,21 @@ HRESULT CordbThread::GetRegisterSet(ICorDebugRegisterSet ** ppRegisters)
                 IfFailThrow(hr);
 
                 // retrieve the leaf CONTEXT
-                DT_CONTEXT ctx;
-                hr = pSW->GetContext(CONTEXT_FULL, sizeof(ctx), NULL, reinterpret_cast<BYTE *>(&ctx));
-                IfFailThrow(hr);
+
+                // Allocate and populate a CONTEXT buffer that the CordbRegisterSet will own.
+                // The buffer is sized to the target's CONTEXT layout.
+                ULONG32 contextSize = GetProcess()->GetTargetContextSize();
+                NewArrayHolder<BYTE> pContextBuffer(new BYTE[contextSize]);
+                IfFailThrow(pSW->GetContext(CONTEXT_FULL, contextSize, NULL, pContextBuffer));
 
                 // create the CordbRegisterSet
-                RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(this,
-                                                                        &ctx,
+                RSInitHolder<CordbRegisterSet> pRS(new CordbRegisterSet(pContextBuffer,
+                                                                        contextSize,
+                                                                        this,
                                                                         true,   // active
-                                                                        false));
+                                                                        false,  // !fQuickUnwind
+                                                                        true)); // own context buffer
+                pContextBuffer.SuppressRelease();
 
                 pRS.TransferOwnershipExternal(ppRegisters);
             }
@@ -1413,177 +1420,38 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
 
 
 
-#if defined(CROSS_COMPILE) && (defined(TARGET_ARM64) || defined(TARGET_ARM))
-extern "C" double FPFillR8(void* pFillSlot)
-{
-    _ASSERTE(!"nyi for platform");
-    return 0;
-}
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-extern "C" double FPFillR8(void* pFillSlot);
-#endif
-
-
-#if defined(TARGET_X86)
-
-// CordbThread::Get32bitFPRegisters
-// Converts the values in the floating point register area of the context to real number values. See
-// code:CordbThread::LoadFloatState for more details.
-// Arguments:
-//     input:  pContext
-//     output: none (initializes m_floatValues)
-
-void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
-{
-    // On X86, we get the values by saving our current FPU state, loading
-    // the other thread's FPU state into our own, saving out each
-    // value off the FPU stack, and then restoring our FPU state.
-    //
-    FLOATING_SAVE_AREA floatarea = pContext->FloatSave; // copy FloatSave
-
-    //
-    // Take the TOP out of the FPU status word. Note, our version of the
-    // stack runs from 0->7, not 7->0...
-    //
-    unsigned int floatStackTop = 7 - ((floatarea.StatusWord & 0x3800) >> 11);
-
-    FLOATING_SAVE_AREA currentFPUState;
-
-#ifdef _MSC_VER
-    __asm fnsave currentFPUState // save the current FPU state.
-#else
-    __asm__ __volatile__
-    (
-        "  fnsave %0\n" \
-        : "=m"(currentFPUState)
-    );
-#endif
-
-    floatarea.StatusWord &= 0xFF00; // remove any error codes.
-    floatarea.ControlWord |= 0x3F; // mask all exceptions.
-
-    // the x86 FPU stores real numbers as 10 byte values in IEEE format. Here we use
-    // the hardware to convert these to doubles.
-
-    // @dbgtodo Microsoft crossplat: the conversion from a series of bytes to a floating
-    // point value will need to be done with an explicit conversion routine to unpack
-    // the IEEE format and compute the real number value represented.
-
-#ifdef _MSC_VER
-    __asm
-    {
-        fninit
-        frstor floatarea          ;; reload the threads FPU state.
-    }
-#else
-    __asm__
-    (
-        "  fninit\n" \
-        "  frstor %0\n" \
-        : /* no outputs */
-        : "m"(floatarea)
-    );
-#endif
-
-    unsigned int i;
-
-    for (i = 0; i <= floatStackTop; i++)
-    {
-        double td = 0.0;
-#ifdef _MSC_VER
-        __asm fstp td // copy out the double
-#else
-        __asm("fstpl %0" : "=m" (td));
-#endif
-        m_floatValues[i] = td;
-    }
-
-#ifdef _MSC_VER
-    __asm
-    {
-        fninit
-        frstor currentFPUState    ;; restore our saved FPU state.
-    }
-#else
-    __asm__
-    (
-        "  fninit\n" \
-        "  frstor %0\n" \
-        : /* no outputs */
-        : "m"(currentFPUState)
-    );
-#endif
-
-    m_fFloatStateValid = true;
-    m_floatStackTop = floatStackTop;
-} // CordbThread::Get32bitFPRegisters
-
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-
-// CordbThread::Get64bitFPRegisters
-// Converts the values in the floating point register area of the context to real number values. See
-// code:CordbThread::LoadFloatState for more details.
-// Arguments:
-//     input:  pFPRegisterBase - starting address of the floating point register storage of the CONTEXT
-//             registerSize    - the size of a floating point register
-//             start           - the index into m_floatValues where we start initializing. For amd64, we start
-//                               at the beginning, but for ia64, the first two registers have fixed values,
-//                               so we start at two.
-//             nRegisters      - the number of registers to be initialized
-//     output: none (initializes m_floatValues)
-
-void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters)
-{
-    // make sure no one has changed the type definition for 64-bit FP registers
-    _ASSERTE(sizeof(FPRegister64) == 16);
-    // We convert and copy all the fp registers.
-    for (int reg = start; reg < nRegisters; reg++)
-    {
-        // @dbgtodo Microsoft crossplat: the conversion from a FLOAT128 or M128A struct to a floating
-        // point value will need to be done with an explicit conversion routine instead
-        // of the call to FPFillR8
-        m_floatValues[reg] = FPFillR8(&rgContextFPRegisters[reg - start]);
-    }
-} // CordbThread::Get64bitFPRegisters
-
-#endif // TARGET_X86
-
 // CordbThread::LoadFloatState
-// Initializes the float state members of this instance of CordbThread. This function gets the context and
-// converts the floating point values from their context representation to a real number value. Floating
-// point numbers are represented in IEEE format on all current platforms. We store them in the context as a
-// pair of 64-bit integers (IA64 and AMD64) or a series of bytes (x86). Rather than unpack them explicitly
-// and do the appropriate mathematical operations to produce the corresponding floating point value, we let
-// the hardware do it instead. We load a floating point register with the representation from the context
-// and then store it in m_floatValues. Using the hardware is obviously a huge perf win. If/when we make
-// cross-plat work, we should at least code necessary conversion routines in assembly. Even with cross-plat,
-// we can probably still use the hardware in most cases, as long as the size is appropriate.
 //
-// Arguments: none
-// Return Value: none (initializes data members)
+// Initializes the float state members of this instance of CordbThread by
+// fetching the thread's CONTEXT and decoding its floating-point register area
+// through IDacDbiInterface::ReadFloatRegistersFromContext.
+//
 // Note: Throws
-
 void CordbThread::LoadFloatState()
 {
     THROW_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(GetProcess());
 
-    DT_CONTEXT  tempContext;
-    IfFailThrow(GetProcess()->GetDAC()->GetContext(m_vmThreadToken, &tempContext));
+    IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+    ULONG32 cbContext = GetProcess()->GetTargetContextSize();
+    NewArrayHolder<BYTE> contextBuf(new BYTE[cbContext]);
+    IfFailThrow(pDAC->GetContext(m_vmThreadToken, contextBuf));
 
-#if defined(TARGET_X86)
-    Get32bitFPRegisters((CONTEXT*) &tempContext);
-#elif defined(TARGET_AMD64)
-    // we have no fixed-value registers, so we begin with the first one and initialize all 16
-    Get64bitFPRegisters((FPRegister64*) &(tempContext.Xmm0), 0, 16);
-#elif defined(TARGET_ARM64)
-    Get64bitFPRegisters((FPRegister64*) &(tempContext.V), 0, 32);
-#elif defined (TARGET_ARM)
-    Get64bitFPRegisters((FPRegister64*) &(tempContext.D), 0, 32);
-#else
-    _ASSERTE(!"nyi for platform");
-#endif // !TARGET_X86
+    ULONG32 valuesCount   = 0;
+    int     firstFloatReg = -1;
+    ULONG32 floatStackTop = 0;
+    IfFailThrow(pDAC->ReadFloatRegistersFromContext(
+        contextBuf,
+        cbContext,
+        CORDB_MAX_FLOAT_REGISTERS,
+        m_floatValues,
+        &valuesCount,
+        &firstFloatReg,
+        &floatStackTop));
 
+    m_floatValuesCount = valuesCount;
+    m_firstFloatReg    = firstFloatReg;
+    m_floatStackTop    = floatStackTop;
     m_fFloatStateValid = true;
 } // CordbThread::LoadFloatState
 
@@ -1672,7 +1540,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
 // Get the context from a thread in managed code.
 // This thread should be stopped gracefully by the LS in managed code.
-HRESULT CordbThread::GetManagedContext(DT_CONTEXT ** ppContext)
+HRESULT CordbThread::GetManagedContext(BYTE ** ppContext)
 {
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(GetProcess());
@@ -1685,12 +1553,13 @@ HRESULT CordbThread::GetManagedContext(DT_CONTEXT ** ppContext)
     *ppContext = NULL;
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    // Each CordbThread object allocates the m_pContext's DT_CONTEXT structure only once, the first time GetContext is
-    // invoked.
-    if(m_pContext == NULL)
+    // Each CordbThread object allocates m_pContext only once, the first time
+    // GetContext is invoked. The buffer is sized to the target's CONTEXT
+    // (queried from the DAC); callers treat it as opaque target bytes.
+    if (m_pContext == NULL)
     {
         // Throw if the allocation fails.
-        m_pContext = reinterpret_cast<DT_CONTEXT *>(new BYTE[sizeof(DT_CONTEXT)]);
+        m_pContext = new BYTE[GetProcess()->GetTargetContextSize()];
     }
 
     HRESULT hr = S_OK;
@@ -1711,7 +1580,8 @@ HRESULT CordbThread::GetManagedContext(DT_CONTEXT ** ppContext)
 
             // The thread we're examining IS handling an exception, So grab the CONTEXT of the exception, NOT the
             // currently executing thread's CONTEXT (which would be the context of the exception handler.)
-            hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(), m_pContext);
+            hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(),
+                                                    m_pContext.GetValue());
             IfFailThrow(hr);
         }
 
@@ -1725,12 +1595,12 @@ HRESULT CordbThread::GetManagedContext(DT_CONTEXT ** ppContext)
     return hr;
 }
 
-HRESULT CordbThread::SetManagedContext(DT_CONTEXT * pContext)
+HRESULT CordbThread::SetManagedContext(BYTE * pContext, ULONG32 cbCtx)
 {
     INTERNAL_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
-    if(pContext == NULL)
+    if (pContext == NULL)
     {
         ThrowHR(E_INVALIDARG);
     }
@@ -1753,13 +1623,16 @@ HRESULT CordbThread::SetManagedContext(DT_CONTEXT * pContext)
         //
         // Note: we read the remote context and merge the new one in, then write it back. This ensures that we don't
         // write too much information into the remote process.
-        DT_CONTEXT tempContext = { 0 };
-        hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(), &tempContext);
+        NewArrayHolder<BYTE> tempContext(new BYTE[GetProcess()->GetTargetContextSize()]);
+        hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext.ToLsPtr(), tempContext);
         IfFailThrow(hr);
 
-        CORDbgCopyThreadContext(&tempContext, pContext);
+        // flags == 0: tempContext already carries the target's ContextFlags (read above).
+        IfFailThrow(GetProcess()->GetDAC()->CopyContext(
+            tempContext.GetValue(), GetProcess()->GetTargetContextSize(),
+            pContext, cbCtx, 0));
 
-        hr = GetProcess()->SafeWriteThreadContext(m_vmLeftSideContext.ToLsPtr(), &tempContext);
+        hr = GetProcess()->SafeWriteThreadContext(m_vmLeftSideContext.ToLsPtr(), tempContext.GetValue());
         IfFailThrow(hr);
 
         // @todo - who's updating the regdisplay to guarantee that's in sync w/ our new context?
@@ -1768,7 +1641,7 @@ HRESULT CordbThread::SetManagedContext(DT_CONTEXT * pContext)
     _ASSERTE(SUCCEEDED(hr));
     if (m_fContextFresh && (m_pContext != NULL))
     {
-        *m_pContext = *pContext;
+        memcpy(m_pContext, pContext, cbCtx);
     }
 
     return hr;
@@ -2807,70 +2680,6 @@ HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
     return hr;
 }
 
-/*
-VOID CordbUnmanagedThread::VerifyFSChain()
-{
-#if defined(TARGET_X86)
-    DT_CONTEXT temp;
-    temp.ContextFlags = DT_CONTEXT_FULL;
-    DbiGetThreadContext(m_handle, &temp);
-    LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: 0x%x fs=0x%x TIB=0x%x\n",
-             m_id, temp.SegFs, m_threadLocalBase));
-    REMOTE_PTR pExceptionRegRecordPtr;
-    HRESULT hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(m_threadLocalBase), &pExceptionRegRecordPtr);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: ERROR 0x%x failed to read fs:0 value: computed addr=0x%p err=%x\n",
-             m_id, m_threadLocalBase, hr));
-        _ASSERTE(FALSE);
-        return;
-    }
-    while(pExceptionRegRecordPtr != EXCEPTION_CHAIN_END && pExceptionRegRecordPtr != NULL)
-    {
-        REMOTE_PTR prev;
-        REMOTE_PTR handler;
-        hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pExceptionRegRecordPtr), &prev);
-        if(FAILED(hr))
-        {
-            LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: ERROR 0x%x failed to read prev value: computed addr=0x%p err=%x\n",
-                m_id, pExceptionRegRecordPtr, hr));
-            return;
-        }
-        hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS( (VOID*)((DWORD)pExceptionRegRecordPtr+4) ), &handler);
-        if(FAILED(hr))
-        {
-            LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: ERROR 0x%x failed to read handler value: computed addr=0x%p err=%x\n",
-                m_id, (DWORD)pExceptionRegRecordPtr+4, hr));
-            return;
-        }
-        LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: OK 0x%x record=0x%x prev=0x%x handler=0x%x\n",
-            m_id, pExceptionRegRecordPtr, prev, handler));
-        if(handler == NULL)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: ERROR 0x%x NULL handler found\n", m_id));
-            _ASSERTE(FALSE);
-            return;
-        }
-        if(prev == NULL)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: ERROR 0x%x NULL prev found\n", m_id));
-            _ASSERTE(FALSE);
-            return;
-        }
-        if(prev == pExceptionRegRecordPtr)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: ERROR 0x%x cyclic prev found\n", m_id));
-            _ASSERTE(FALSE);
-            return;
-        }
-        pExceptionRegRecordPtr = prev;
-    }
-
-    LOG((LF_CORDB, LL_INFO1000, "CUT::VFSC: OK 0x%x\n", m_id));
-#endif
-    return;
-}*/
-
 #ifdef TARGET_X86
 HRESULT CordbUnmanagedThread::SaveCurrentLeafSeh()
 {
@@ -3416,7 +3225,7 @@ bool CordbUnmanagedThread::GetEEFrame()
 
 // Gets the thread context as if the thread were unhijacked, regardless
 // of whether it really is
-HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
+HRESULT CordbUnmanagedThread::GetThreadContext(T_CONTEXT* pContext)
 {
     // While hijacked there are 3 potential contexts we could be resuming back to
     // 1) A context provided in SetThreadContext that we defered applying
@@ -3459,9 +3268,9 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
             m_pLeftSideContext.UnsafeGet()));
 
         // Read the context into a temp context then copy to the out param.
-        DT_CONTEXT tempContext = { 0 };
+        T_CONTEXT tempContext = { 0 };
 
-        hr = GetProcess()->SafeReadThreadContext(m_pLeftSideContext, &tempContext);
+        hr = GetProcess()->SafeReadThreadContext(m_pLeftSideContext, reinterpret_cast<BYTE*>(&tempContext));
 
         if (SUCCEEDED(hr))
             CORDbgCopyThreadContext(pContext, &tempContext);
@@ -3489,7 +3298,7 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
 // Sets the thread context as if the thread were unhijacked, regardless
 // of whether it really is. See GetThreadContext above for more details
 // on this abstraction
-HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
+HRESULT CordbUnmanagedThread::SetThreadContext(T_CONTEXT* pContext)
 {
     HRESULT hr = S_OK;
 
@@ -3554,8 +3363,8 @@ VOID CordbUnmanagedThread::BeginStepping()
     _ASSERTE(!IsSSFlagNeeded());
     _ASSERTE(!IsSSFlagHidden());
 
-    DT_CONTEXT tempContext;
-    tempContext.ContextFlags = DT_CONTEXT_FULL;
+    T_CONTEXT tempContext;
+    tempContext.ContextFlags = CONTEXT_FULL;
     BOOL succ = DbiGetThreadContext(m_handle, &tempContext);
     _ASSERTE(succ);
 
@@ -3577,8 +3386,8 @@ VOID CordbUnmanagedThread::EndStepping()
     _ASSERTE(!IsGenericHijacked() && !IsFirstChanceHijacked());
     _ASSERTE(IsSSFlagNeeded());
 
-    DT_CONTEXT tempContext;
-    tempContext.ContextFlags = DT_CONTEXT_FULL;
+    T_CONTEXT tempContext;
+    tempContext.ContextFlags = CONTEXT_FULL;
     BOOL succ = DbiGetThreadContext(m_handle, &tempContext);
     _ASSERTE(succ);
 
@@ -3595,7 +3404,7 @@ VOID CordbUnmanagedThread::EndStepping()
 
 
 // Writes some details of the given context into the debugger log
-VOID CordbUnmanagedThread::LogContext(DT_CONTEXT* pContext)
+VOID CordbUnmanagedThread::LogContext(T_CONTEXT* pContext)
 {
 #if defined(TARGET_X86)
     LOG((LF_CORDB, LL_INFO10000,
@@ -3651,13 +3460,13 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: hijackCtx started as:\n"));
     LogContext(GetHijackCtx());
 
-    // Save the thread's full context + DT_CONTEXT_EXTENDED_REGISTERS
+    // Save the thread's full context + CONTEXT_EXTENDED_REGISTERS
     // to avoid getting incomplete information and corrupt the thread context
-    DT_CONTEXT context;
-#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
+    T_CONTEXT context;
+#if defined(CONTEXT_EXTENDED_REGISTERS)
+    context.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
 #else
-    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
+    context.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
 #endif
     BOOL succ = DbiGetThreadContext(m_handle, &context);
     _ASSERTE(succ);
@@ -3667,10 +3476,10 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
         DWORD error = GetLastError();
         LOG((LF_CORDB, LL_ERROR, "CUT::SFCHFS: DbiGetThreadContext error=0x%x\n", error));
     }
-#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
+#if defined(CONTEXT_EXTENDED_REGISTERS)
+    GetHijackCtx()->ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS;
 #else
-    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
+    GetHijackCtx()->ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
 #endif
     CORDbgCopyThreadContext(GetHijackCtx(), &context);
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Hijacking for sync. Original context is:\n", this));
@@ -3802,7 +3611,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
     _ASSERTE(!IsContextSet());
 
     // Save the thread's full context.
-    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL;
+    GetHijackCtx()->ContextFlags = CONTEXT_FULL;
 
     BOOL succ = DbiGetThreadContext(m_handle, GetHijackCtx());
 
@@ -3930,7 +3739,7 @@ HRESULT CordbUnmanagedThread::FixupFromGenericHijack()
     return S_OK;
 }
 
-DT_CONTEXT * CordbUnmanagedThread::GetHijackCtx()
+T_CONTEXT * CordbUnmanagedThread::GetHijackCtx()
 {
     return &m_context;
 }
@@ -3940,8 +3749,8 @@ DT_CONTEXT * CordbUnmanagedThread::GetHijackCtx()
 // This can only be called after a bp. (because we assume that we executed a bp when we adjust the eip).
 HRESULT CordbUnmanagedThread::EnableSSAfterBP()
 {
-    DT_CONTEXT c;
-    c.ContextFlags = DT_CONTEXT_FULL;
+    T_CONTEXT c;
+    c.ContextFlags = CONTEXT_FULL;
 
     BOOL succ = DbiGetThreadContext(m_handle, &c);
 
@@ -4076,7 +3885,7 @@ void CordbUnmanagedThread::FixupForSkipBreakpoint()
     m_pPatchSkipAddress = NULL;
 }
 
-inline TADDR GetSP(DT_CONTEXT* context)
+inline TADDR GetSP(T_CONTEXT* context)
 {
 #if defined(TARGET_X86)
     return (TADDR)context->Esp;
@@ -4096,10 +3905,10 @@ BOOL CordbUnmanagedThread::GetStackRange(CORDB_ADDRESS *pBase, CORDB_ADDRESS *pL
     if (m_stackBase == 0 && m_stackLimit == 0)
     {
         HANDLE hProc;
-        DT_CONTEXT tempContext;
+        T_CONTEXT tempContext;
         MEMORY_BASIC_INFORMATION mbi;
 
-        tempContext.ContextFlags = DT_CONTEXT_FULL;
+        tempContext.ContextFlags = CONTEXT_FULL;
         if (SUCCEEDED(GetProcess()->GetHandle(&hProc)) &&
             SUCCEEDED(GetThreadContext(&tempContext)) &&
             ::VirtualQueryEx(hProc, (LPCVOID)GetSP(&tempContext), &mbi, sizeof(mbi)) != 0)
@@ -4162,26 +3971,6 @@ Exit:
 #endif // FEATURE_DBGIPC_TRANSPORT
 }
 
-//-----------------------------------------------------------------------------
-// Returns the thread context to the state it was in when it last entered RaiseException
-// This allows the thread to retrigger an exception caused by RaiseException
-//-----------------------------------------------------------------------------
-void CordbUnmanagedThread::HijackToRaiseException()
-{
-    LOG((LF_CORDB, LL_INFO1000, "CP::HTRE: hijacking to RaiseException\n"));
-    _ASSERTE(HasRaiseExceptionEntryCtx());
-    _ASSERTE(!IsRaiseExceptionHijacked());
-    _ASSERTE(!IsGenericHijacked());
-    _ASSERTE(!IsFirstChanceHijacked());
-    _ASSERTE(!IsContextSet());
-
-    BOOL succ = DbiGetThreadContext(m_handle, GetHijackCtx());
-    _ASSERTE(succ);
-    succ = DbiSetThreadContext(m_handle, &m_raiseExceptionEntryContext);
-    _ASSERTE(succ);
-    SetState(CUTS_IsRaiseExceptionHijacked);
-}
-
 //----------------------------------------------------------------------------
 // Returns the context to its unhijacked state.
 //----------------------------------------------------------------------------
@@ -4190,98 +3979,14 @@ void CordbUnmanagedThread::RestoreFromRaiseExceptionHijack()
     LOG((LF_CORDB, LL_INFO1000, "CP::RFREH: ending RaiseException hijack\n"));
     _ASSERTE(IsRaiseExceptionHijacked());
 
-    DT_CONTEXT restoreContext;
-    restoreContext.ContextFlags = DT_CONTEXT_FULL;
+    T_CONTEXT restoreContext;
+    restoreContext.ContextFlags = CONTEXT_FULL;
     HRESULT hr = GetThreadContext(&restoreContext);
     _ASSERTE(SUCCEEDED(hr));
 
     ClearState(CUTS_IsRaiseExceptionHijacked);
     hr = SetThreadContext(&restoreContext);
     _ASSERTE(SUCCEEDED(hr));
-}
-
-//-----------------------------------------------------------------------------
-// Attempts to store the state of a thread currently entering RaiseException
-// This grabs both a full context and enough state to determine what exception
-// RaiseException should be raising. If any of the state can not be retrieved
-// then this entrance to RaiseException is silently ignored
-//-----------------------------------------------------------------------------
-void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
-{
-    _ASSERTE(FALSE); // should be unused now
-    LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: saving raise exception context.\n"));
-    _ASSERTE(!HasRaiseExceptionEntryCtx());
-    _ASSERTE(!IsRaiseExceptionHijacked());
-    HRESULT hr = S_OK;
-    DT_CONTEXT context;
-    context.ContextFlags = DT_CONTEXT_FULL;
-    DbiGetThreadContext(m_handle, &context);
-    // if the flag is set, unset it
-    // we don't want to be single stepping through RaiseException the second time
-    // sending out OOB SS events. Ultimately we will rethrow the exception which would
-    // cleared the SS flag anyways.
-    UnsetSSFlag(&context);
-    memcpy(&m_raiseExceptionEntryContext, &context,  sizeof(DT_CONTEXT));
-
-    // calculate the exception that we would expect to come from this invocation of RaiseException
-    REMOTE_PTR pExceptionInformation = NULL;
-#if defined(TARGET_AMD64)
-    m_raiseExceptionExceptionCode = (DWORD)m_raiseExceptionEntryContext.Rcx;
-    m_raiseExceptionExceptionFlags = (DWORD)m_raiseExceptionEntryContext.Rdx;
-    m_raiseExceptionNumberParameters = (DWORD)m_raiseExceptionEntryContext.R8;
-    pExceptionInformation = (REMOTE_PTR)m_raiseExceptionEntryContext.R9;
-#elif defined(TARGET_ARM64)
-    m_raiseExceptionExceptionCode = (DWORD)m_raiseExceptionEntryContext.X0;
-    m_raiseExceptionExceptionFlags = (DWORD)m_raiseExceptionEntryContext.X1;
-    m_raiseExceptionNumberParameters = (DWORD)m_raiseExceptionEntryContext.X2;
-    pExceptionInformation = (REMOTE_PTR)m_raiseExceptionEntryContext.X3;
-#elif defined(TARGET_X86)
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+4), &m_raiseExceptionExceptionCode);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception code.\n"));
-        return;
-    }
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+8), &m_raiseExceptionExceptionFlags);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception flags.\n"));
-        return;
-    }
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+12), &m_raiseExceptionNumberParameters);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read number of parameters.\n"));
-        return;
-    }
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+16), &pExceptionInformation);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception information pointer.\n"));
-        return;
-    }
-#else
-    _ASSERTE(!"Implement this for your platform");
-    return;
-#endif
-    LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: RaiseException parameters are 0x%x 0x%x 0x%x 0x%p.\n",
-        m_raiseExceptionExceptionCode, m_raiseExceptionExceptionFlags,
-        m_raiseExceptionNumberParameters, pExceptionInformation));
-    TargetBuffer exceptionInfoTargetBuffer(pExceptionInformation, sizeof(REMOTE_PTR)*m_raiseExceptionNumberParameters);
-    EX_TRY
-    {
-        m_pProcess->SafeReadBuffer(exceptionInfoTargetBuffer, (BYTE*)m_raiseExceptionExceptionInformation);
-    }
-    EX_CATCH_HRESULT(hr);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception information.\n"));
-        return;
-    }
-
-    // If everything was successful then set this flag, otherwise none of the above data is considered valid
-    SetState(CUTS_HasRaiseExceptionEntryCtx);
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -4760,6 +4465,21 @@ bool CordbFrame::IsContainedInFrame(FramePointer fp)
     {
         return false;
     }
+}
+
+// Reads an integer register from this frame's CONTEXT buffer via the DAC.
+HRESULT CordbFrame::ReadContextRegister(CorDebugRegister reg, TADDR * pValue) const
+{
+    if (pValue == NULL)
+        return E_POINTER;
+
+    IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+    return pDAC->ReadRegistersFromContext(
+        const_cast<BYTE *>(GetContext()),
+        GetProcess()->GetTargetContextSize(),
+        &reg,
+        1,
+        pValue);
 }
 
 //---------------------------------------------------------------------------------------
@@ -5298,7 +5018,7 @@ BOOL CordbInternalFrame::IsCloserToLeafWorker(ICorDebugFrame * pFrameToCompare)
         // Compare the address of the "this" internal frame to the SP of the stack frame.
         // We can't compare frame pointers because the frame pointer means different things on
         // different platforms.
-        CORDB_ADDRESS stackFrameSP = CORDbgGetSP(pCNativeFrame->GetContext());
+        CORDB_ADDRESS stackFrameSP = pCNativeFrame->GetStackPointer();
         return (thisFrameAddr < stackFrameSP);
     }
 
@@ -5310,8 +5030,9 @@ BOOL CordbInternalFrame::IsCloserToLeafWorker(ICorDebugFrame * pFrameToCompare)
         CordbRuntimeUnwindableFrame * pCRUFrame =
             static_cast<CordbRuntimeUnwindableFrame *>(pRUFrame.GetValue());
 
-        DT_CONTEXT * pResumeContext = const_cast<DT_CONTEXT *>(pCRUFrame->GetContext());
-        CORDB_ADDRESS stackFrameSP = CORDbgGetSP(pResumeContext);
+        TADDR sp = 0;
+        IfFailThrow(pCRUFrame->ReadContextRegister(REGISTER_STACK_POINTER, &sp));
+        CORDB_ADDRESS stackFrameSP = PTR_TO_CORDB_ADDRESS(sp);
         return (thisFrameAddr < stackFrameSP);
     }
 
@@ -5370,10 +5091,12 @@ HRESULT CordbInternalFrame::IsCloserToLeaf(ICorDebugFrame * pFrameToCompare,
 CordbRuntimeUnwindableFrame::CordbRuntimeUnwindableFrame(CordbThread *    pThread,
                                                          FramePointer     fp,
                                                          CordbAppDomain * pCurrentAppDomain,
-                                                         DT_CONTEXT *     pContext)
-  : CordbFrame(pThread, fp, 0, pCurrentAppDomain),
-    m_context(*pContext)
+                                                         BYTE *     pContext)
+  : CordbFrame(pThread, fp, 0, pCurrentAppDomain)
 {
+    ULONG32 contextSize = pThread->GetProcess()->GetTargetContextSize();
+    m_pContextBuffer = new BYTE[contextSize];
+    memcpy(m_pContextBuffer, pContext, contextSize);
 }
 
 void CordbRuntimeUnwindableFrame::Neuter()
@@ -5413,9 +5136,9 @@ HRESULT CordbRuntimeUnwindableFrame::QueryInterface(REFIID id, void ** ppInterfa
 //    Return a pointer to the CONTEXT.
 //
 
-const DT_CONTEXT * CordbRuntimeUnwindableFrame::GetContext() const
+const BYTE * CordbRuntimeUnwindableFrame::GetContext() const
 {
-    return &m_context;
+    return m_pContextBuffer;
 }
 
 
@@ -5447,7 +5170,7 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
                                    TADDR                taAmbientESP,
                                    CordbAppDomain *     pCurrentAppDomain,
                                    CordbMiscFrame *     pMisc /*= NULL*/,
-                                   DT_CONTEXT *         pContext /*= NULL*/)
+                                   BYTE *               pContext /*= NULL*/)
   : CordbFrame(pThread, fp, ip, pCurrentAppDomain),
     m_JITILFrame(NULL),
     m_nativeCode(pNativeCode), // implicit InternalAddRef
@@ -5457,7 +5180,9 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
 
     // Only new CordbNativeFrames created by the new stackwalk contain a CONTEXT.
     _ASSERTE(pContext != NULL);
-    m_context = *pContext;
+    ULONG32 contextSize = GetProcess()->GetTargetContextSize();
+    m_pContextBuffer = new BYTE[contextSize];
+    memcpy(m_pContextBuffer, pContext, contextSize);
 }
 
 /*
@@ -5574,9 +5299,9 @@ HRESULT CordbNativeFrame::GetCode(ICorDebugCode **ppCode)
 //    Return a pointer to the CONTEXT.
 //
 
-const DT_CONTEXT * CordbNativeFrame::GetContext() const
+const BYTE * CordbNativeFrame::GetContext() const
 {
-    return &m_context;
+    return m_pContextBuffer;
 }
 
 //---------------------------------------------------------------------------------------
@@ -5626,20 +5351,43 @@ ULONG32 CordbNativeFrame::GetIPOffset()
     return (ULONG32)m_ip;
 }
 
-TADDR CordbNativeFrame::GetReturnRegisterValue()
+// Reads an integer register from this frame's CONTEXT buffer via the DAC, using
+// the JIT register number. Composes the JIT-RegNum -> CorDebugRegister
+// translation with the generic register read.
+HRESULT CordbNativeFrame::ReadJitRegFromContext(ULONG32 jitRegNum, TADDR * pValue) const
 {
-#if defined(TARGET_X86)
-    return (TADDR)m_context.Eax;
-#elif defined(TARGET_AMD64)
-    return (TADDR)m_context.Rax;
-#elif defined(TARGET_ARM)
-    return (TADDR)m_context.R0;
-#elif defined(TARGET_ARM64)
-    return (TADDR)m_context.X0;
-#else
-    _ASSERTE(!"nyi for platform");
-    return 0;
-#endif
+    if (pValue == NULL)
+        return E_POINTER;
+
+    CorDebugRegister reg;
+    HRESULT hr = GetProcess()->ConvertJitRegNumToCorDebugRegister(jitRegNum, &reg);
+    if (FAILED(hr))
+        return hr;
+
+    return ReadContextRegister(reg, pValue);
+}
+
+// Translates a JIT ICorDebugInfo::RegNum to its CorDebugRegister via the DAC,
+// throwing on failure. See declaration in rspriv.h for full contract.
+CorDebugRegister CordbNativeFrame::ConvertJitRegToCorDebugRegister(ULONG32 jitRegNum) const
+{
+    CorDebugRegister reg = (CorDebugRegister)0;
+    HRESULT hr = GetProcess()->ConvertJitRegNumToCorDebugRegister(jitRegNum, &reg);
+    IfFailThrow(hr);
+    return reg;
+}
+
+// Convenience wrapper around ReadContextRegister for the stack pointer.
+CORDB_ADDRESS CordbNativeFrame::GetStackPointer() const
+{
+    TADDR sp = 0;
+    HRESULT hr = ReadContextRegister(REGISTER_STACK_POINTER, &sp);
+    if (FAILED(hr))
+    {
+        _ASSERTE(!"ReadContextRegister(REGISTER_STACK_POINTER) failed");
+        return (CORDB_ADDRESS)0;
+    }
+    return PTR_TO_CORDB_ADDRESS(sp);
 }
 
 // Determine if we can set IP at this point.  The specified offset is the native offset.
@@ -5702,8 +5450,6 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
     ICorDebugInfo::RegNum regNum,
     signed offset)
 {
-    UINT_PTR *pRegAddr;
-
     CORDB_ADDRESS pRemoteValue;
 
     if (regNum != DBG_TARGET_REGNUM_AMBIENT_SP)
@@ -5714,15 +5460,13 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
         // funclet prolog using the PSP. Thus, we just look up the frame pointer in the
         // current native frame.
 
-        pRegAddr = this->GetAddressOfRegister(
-                ConvertRegNumToCorDebugRegister(regNum));
+        TADDR regVal = 0;
+        HRESULT hr = this->ReadJitRegFromContext(regNum, &regVal);
+        // This should never fail as long as regNum is a member of the RegNum enum.
+        _ASSERTE(SUCCEEDED(hr));
+        IfFailThrow(hr);
 
-        // This should never be null as long as regNum is a member of the RegNum enum.
-        // If it is, an AV dereferencing a null-pointer in retail builds, or an assert in debug
-        // builds is exactly the behavior we want.
-        _ASSERTE(pRegAddr != NULL);
-
-        pRemoteValue = PTR_TO_CORDB_ADDRESS(*pRegAddr + offset);
+        pRemoteValue = PTR_TO_CORDB_ADDRESS(regVal + offset);
     }
     else
     {
@@ -5770,7 +5514,7 @@ HRESULT CordbNativeFrame::GetStackRange(CORDB_ADDRESS *pStart,
         if (pStart)
         {
             // From register set.
-            *pStart = CORDbgGetSP(&m_context);
+            *pStart = GetStackPointer();
         }
 
         if (pEnd)
@@ -5810,8 +5554,9 @@ HRESULT CordbNativeFrame::GetRegisterSet(ICorDebugRegisterSet **ppRegisters)
     EX_TRY
     {
         // allocate a new CordbRegisterSet object
-        RSInitHolder<CordbRegisterSet> pRegisterSet(new CordbRegisterSet(m_pThread,
-                                                                         &m_context,
+        RSInitHolder<CordbRegisterSet> pRegisterSet(new CordbRegisterSet(m_pContextBuffer,
+                                                                         GetProcess()->GetTargetContextSize(),
+                                                                         m_pThread,
                                                                          IsLeafFrame(),
                                                                          false));
 
@@ -5937,7 +5682,9 @@ HRESULT CordbNativeFrame::GetStackParameterSize(ULONG32 * pSize)
 
 #if defined(TARGET_X86)
         IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        IfFailThrow(pDAC->GetStackParameterSize(PTR_TO_CORDB_ADDRESS(CORDbgGetIP(&m_context)), pSize));
+        TADDR ip = 0;
+        IfFailThrow(ReadContextRegister(REGISTER_INSTRUCTION_POINTER, &ip));
+        IfFailThrow(pDAC->GetStackParameterSize(PTR_TO_CORDB_ADDRESS(ip), pSize));
 #else  // !TARGET_X86
         hr = S_FALSE;
         *pSize = 0;
@@ -5948,462 +5695,6 @@ HRESULT CordbNativeFrame::GetStackParameterSize(ULONG32 * pSize)
     return hr;
 }
 
-//
-// GetAddressOfRegister returns the address of the given register in the
-// frame's current register display (eg, a local address). This is usually used to build a
-// ICorDebugValue from.
-//
-UINT_PTR * CordbNativeFrame::GetAddressOfRegister(CorDebugRegister regNum) const
-{
-    UINT_PTR* ret = NULL;
-
-    switch (regNum)
-    {
-#if !defined(TARGET_WASM)
-    case REGISTER_STACK_POINTER:
-        ret = (UINT_PTR*)GetSPAddress(&m_context);
-        break;
-#endif
-
-#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_WASM) // @ARMTODO
-    case REGISTER_FRAME_POINTER:
-        ret = (UINT_PTR*)GetFPAddress(&m_context);
-        break;
-#endif
-
-#if defined(TARGET_X86)
-    case REGISTER_X86_EAX:
-        ret = (UINT_PTR*)&m_context.Eax;
-        break;
-
-    case REGISTER_X86_ECX:
-        ret = (UINT_PTR*)&m_context.Ecx;
-        break;
-
-    case REGISTER_X86_EDX:
-        ret = (UINT_PTR*)&m_context.Edx;
-        break;
-
-    case REGISTER_X86_EBX:
-        ret = (UINT_PTR*)&m_context.Ebx;
-        break;
-
-    case REGISTER_X86_ESI:
-        ret = (UINT_PTR*)&m_context.Esi;
-        break;
-
-    case REGISTER_X86_EDI:
-        ret = (UINT_PTR*)&m_context.Edi;
-        break;
-
-#elif defined(TARGET_AMD64)
-    case REGISTER_AMD64_RBP:
-        ret = (UINT_PTR*)&m_context.Rbp;
-        break;
-
-    case REGISTER_AMD64_RAX:
-        ret = (UINT_PTR*)&m_context.Rax;
-        break;
-
-    case REGISTER_AMD64_RCX:
-        ret = (UINT_PTR*)&m_context.Rcx;
-        break;
-
-    case REGISTER_AMD64_RDX:
-        ret = (UINT_PTR*)&m_context.Rdx;
-        break;
-
-    case REGISTER_AMD64_RBX:
-        ret = (UINT_PTR*)&m_context.Rbx;
-        break;
-
-    case REGISTER_AMD64_RSI:
-        ret = (UINT_PTR*)&m_context.Rsi;
-        break;
-
-    case REGISTER_AMD64_RDI:
-        ret = (UINT_PTR*)&m_context.Rdi;
-        break;
-
-    case REGISTER_AMD64_R8:
-        ret = (UINT_PTR*)&m_context.R8;
-        break;
-
-    case REGISTER_AMD64_R9:
-        ret = (UINT_PTR*)&m_context.R9;
-        break;
-
-    case REGISTER_AMD64_R10:
-        ret = (UINT_PTR*)&m_context.R10;
-        break;
-
-    case REGISTER_AMD64_R11:
-        ret = (UINT_PTR*)&m_context.R11;
-        break;
-
-    case REGISTER_AMD64_R12:
-        ret = (UINT_PTR*)&m_context.R12;
-        break;
-
-    case REGISTER_AMD64_R13:
-        ret = (UINT_PTR*)&m_context.R13;
-        break;
-
-    case REGISTER_AMD64_R14:
-        ret = (UINT_PTR*)&m_context.R14;
-        break;
-
-    case REGISTER_AMD64_R15:
-        ret = (UINT_PTR*)&m_context.R15;
-        break;
-#elif defined(TARGET_ARM)
-    case REGISTER_ARM_R0:
-        ret = (UINT_PTR*)&m_context.R0;
-        break;
-
-    case REGISTER_ARM_R1:
-        ret = (UINT_PTR*)&m_context.R1;
-        break;
-
-    case REGISTER_ARM_R2:
-        ret = (UINT_PTR*)&m_context.R2;
-        break;
-
-    case REGISTER_ARM_R3:
-        ret = (UINT_PTR*)&m_context.R3;
-        break;
-
-    case REGISTER_ARM_R4:
-        ret = (UINT_PTR*)&m_context.R4;
-        break;
-
-    case REGISTER_ARM_R5:
-        ret = (UINT_PTR*)&m_context.R5;
-        break;
-
-    case REGISTER_ARM_R6:
-        ret = (UINT_PTR*)&m_context.R6;
-        break;
-
-    case REGISTER_ARM_R7:
-        ret = (UINT_PTR*)&m_context.R7;
-        break;
-
-    case REGISTER_ARM_R8:
-        ret = (UINT_PTR*)&m_context.R8;
-        break;
-
-    case REGISTER_ARM_R9:
-        ret = (UINT_PTR*)&m_context.R9;
-        break;
-
-    case REGISTER_ARM_R10:
-        ret = (UINT_PTR*)&m_context.R10;
-        break;
-
-    case REGISTER_ARM_R11:
-        ret = (UINT_PTR*)&m_context.R11;
-        break;
-
-    case REGISTER_ARM_R12:
-        ret = (UINT_PTR*)&m_context.R12;
-        break;
-
-    case REGISTER_ARM_LR:
-        ret = (UINT_PTR*)&m_context.Lr;
-        break;
-
-    case REGISTER_ARM_PC:
-        ret = (UINT_PTR*)&m_context.Pc;
-        break;
-#elif defined(TARGET_ARM64)
-    case REGISTER_ARM64_X0:
-    case REGISTER_ARM64_X1:
-    case REGISTER_ARM64_X2:
-    case REGISTER_ARM64_X3:
-    case REGISTER_ARM64_X4:
-    case REGISTER_ARM64_X5:
-    case REGISTER_ARM64_X6:
-    case REGISTER_ARM64_X7:
-    case REGISTER_ARM64_X8:
-    case REGISTER_ARM64_X9:
-    case REGISTER_ARM64_X10:
-    case REGISTER_ARM64_X11:
-    case REGISTER_ARM64_X12:
-    case REGISTER_ARM64_X13:
-    case REGISTER_ARM64_X14:
-    case REGISTER_ARM64_X15:
-    case REGISTER_ARM64_X16:
-    case REGISTER_ARM64_X17:
-    case REGISTER_ARM64_X18:
-    case REGISTER_ARM64_X19:
-    case REGISTER_ARM64_X20:
-    case REGISTER_ARM64_X21:
-    case REGISTER_ARM64_X22:
-    case REGISTER_ARM64_X23:
-    case REGISTER_ARM64_X24:
-    case REGISTER_ARM64_X25:
-    case REGISTER_ARM64_X26:
-    case REGISTER_ARM64_X27:
-    case REGISTER_ARM64_X28:
-        ret = (UINT_PTR*)&m_context.X[regNum - REGISTER_ARM64_X0];
-        break;
-
-    case REGISTER_ARM64_LR:
-        ret = (UINT_PTR*)&m_context.Lr;
-        break;
-
-    case REGISTER_ARM64_PC:
-        ret = (UINT_PTR*)&m_context.Pc;
-        break;
-#elif defined(TARGET_RISCV64)
-    case REGISTER_RISCV64_PC:
-        ret = (UINT_PTR*)&m_context.Pc;
-        break;
-
-    case REGISTER_RISCV64_RA:
-        ret = (UINT_PTR*)&m_context.Ra;
-        break;
-
-    case REGISTER_RISCV64_GP:
-        ret = (UINT_PTR*)&m_context.Gp;
-        break;
-
-    case REGISTER_RISCV64_TP:
-        ret = (UINT_PTR*)&m_context.Tp;
-        break;
-
-    case REGISTER_RISCV64_T0:
-        ret = (UINT_PTR*)&m_context.T0;
-        break;
-
-    case REGISTER_RISCV64_T1:
-        ret = (UINT_PTR*)&m_context.T1;
-        break;
-
-    case REGISTER_RISCV64_T2:
-        ret = (UINT_PTR*)&m_context.T2;
-        break;
-
-    case REGISTER_RISCV64_S1:
-        ret = (UINT_PTR*)&m_context.S1;
-        break;
-
-    case REGISTER_RISCV64_A0:
-        ret = (UINT_PTR*)&m_context.A0;
-        break;
-
-    case REGISTER_RISCV64_A1:
-        ret = (UINT_PTR*)&m_context.A1;
-        break;
-
-    case REGISTER_RISCV64_A2:
-        ret = (UINT_PTR*)&m_context.A2;
-        break;
-
-    case REGISTER_RISCV64_A3:
-        ret = (UINT_PTR*)&m_context.A3;
-        break;
-
-    case REGISTER_RISCV64_A4:
-        ret = (UINT_PTR*)&m_context.A4;
-        break;
-
-    case REGISTER_RISCV64_A5:
-        ret = (UINT_PTR*)&m_context.A5;
-        break;
-
-    case REGISTER_RISCV64_A6:
-        ret = (UINT_PTR*)&m_context.A6;
-        break;
-
-    case REGISTER_RISCV64_A7:
-        ret = (UINT_PTR*)&m_context.A7;
-        break;
-
-    case REGISTER_RISCV64_S2:
-        ret = (UINT_PTR*)&m_context.S2;
-        break;
-
-    case REGISTER_RISCV64_S3:
-        ret = (UINT_PTR*)&m_context.S3;
-        break;
-
-    case REGISTER_RISCV64_S4:
-        ret = (UINT_PTR*)&m_context.S4;
-        break;
-
-    case REGISTER_RISCV64_S5:
-        ret = (UINT_PTR*)&m_context.S5;
-        break;
-
-    case REGISTER_RISCV64_S6:
-        ret = (UINT_PTR*)&m_context.S6;
-        break;
-
-    case REGISTER_RISCV64_S7:
-        ret = (UINT_PTR*)&m_context.S7;
-        break;
-
-    case REGISTER_RISCV64_S8:
-        ret = (UINT_PTR*)&m_context.S8;
-        break;
-
-    case REGISTER_RISCV64_S9:
-        ret = (UINT_PTR*)&m_context.S9;
-        break;
-
-    case REGISTER_RISCV64_S10:
-        ret = (UINT_PTR*)&m_context.S10;
-        break;
-
-    case REGISTER_RISCV64_S11:
-        ret = (UINT_PTR*)&m_context.S11;
-        break;
-
-    case REGISTER_RISCV64_T3:
-        ret = (UINT_PTR*)&m_context.T3;
-        break;
-
-    case REGISTER_RISCV64_T4:
-        ret = (UINT_PTR*)&m_context.T4;
-        break;
-
-    case REGISTER_RISCV64_T5:
-        ret = (UINT_PTR*)&m_context.T5;
-        break;
-
-    case REGISTER_RISCV64_T6:
-        ret = (UINT_PTR*)&m_context.T6;
-        break;
-#elif defined(TARGET_LOONGARCH64)
-    case REGISTER_LOONGARCH64_PC:
-        ret = (UINT_PTR*)&m_context.Pc;
-        break;
-
-    case REGISTER_LOONGARCH64_RA:
-        ret = (UINT_PTR*)&m_context.Ra;
-        break;
-
-    case REGISTER_LOONGARCH64_TP:
-        ret = (UINT_PTR*)&m_context.Tp;
-        break;
-
-    case REGISTER_LOONGARCH64_A0:
-        ret = (UINT_PTR*)&m_context.A0;
-        break;
-
-    case REGISTER_LOONGARCH64_A1:
-        ret = (UINT_PTR*)&m_context.A1;
-        break;
-
-    case REGISTER_LOONGARCH64_A2:
-        ret = (UINT_PTR*)&m_context.A2;
-        break;
-
-    case REGISTER_LOONGARCH64_A3:
-        ret = (UINT_PTR*)&m_context.A3;
-        break;
-
-    case REGISTER_LOONGARCH64_A4:
-        ret = (UINT_PTR*)&m_context.A4;
-        break;
-
-    case REGISTER_LOONGARCH64_A5:
-        ret = (UINT_PTR*)&m_context.A5;
-        break;
-
-    case REGISTER_LOONGARCH64_A6:
-        ret = (UINT_PTR*)&m_context.A6;
-        break;
-
-    case REGISTER_LOONGARCH64_A7:
-        ret = (UINT_PTR*)&m_context.A7;
-        break;
-
-    case REGISTER_LOONGARCH64_T0:
-        ret = (UINT_PTR*)&m_context.T0;
-        break;
-
-    case REGISTER_LOONGARCH64_T1:
-        ret = (UINT_PTR*)&m_context.T1;
-        break;
-
-    case REGISTER_LOONGARCH64_T2:
-        ret = (UINT_PTR*)&m_context.T2;
-        break;
-
-    case REGISTER_LOONGARCH64_T3:
-        ret = (UINT_PTR*)&m_context.T3;
-        break;
-
-    case REGISTER_LOONGARCH64_T4:
-        ret = (UINT_PTR*)&m_context.T4;
-        break;
-
-    case REGISTER_LOONGARCH64_T5:
-        ret = (UINT_PTR*)&m_context.T5;
-        break;
-
-    case REGISTER_LOONGARCH64_T6:
-        ret = (UINT_PTR*)&m_context.T6;
-        break;
-
-    case REGISTER_LOONGARCH64_T7:
-        ret = (UINT_PTR*)&m_context.T7;
-        break;
-
-    case REGISTER_LOONGARCH64_T8:
-        ret = (UINT_PTR*)&m_context.T8;
-        break;
-
-    case REGISTER_LOONGARCH64_X0:
-        ret = (UINT_PTR*)&m_context.X0;
-        break;
-
-    case REGISTER_LOONGARCH64_S0:
-        ret = (UINT_PTR*)&m_context.S0;
-        break;
-
-    case REGISTER_LOONGARCH64_S1:
-        ret = (UINT_PTR*)&m_context.S1;
-        break;
-
-    case REGISTER_LOONGARCH64_S2:
-        ret = (UINT_PTR*)&m_context.S2;
-        break;
-
-    case REGISTER_LOONGARCH64_S3:
-        ret = (UINT_PTR*)&m_context.S3;
-        break;
-
-    case REGISTER_LOONGARCH64_S4:
-        ret = (UINT_PTR*)&m_context.S4;
-        break;
-
-    case REGISTER_LOONGARCH64_S5:
-        ret = (UINT_PTR*)&m_context.S5;
-        break;
-
-    case REGISTER_LOONGARCH64_S6:
-        ret = (UINT_PTR*)&m_context.S6;
-        break;
-
-    case REGISTER_LOONGARCH64_S7:
-        ret = (UINT_PTR*)&m_context.S7;
-        break;
-
-    case REGISTER_LOONGARCH64_S8:
-        ret = (UINT_PTR*)&m_context.S8;
-        break;
-#endif
-
-    default:
-        _ASSERT(!"Invalid register number!");
-    }
-
-    return ret;
-}
 
 //
 // GetLeftSideAddressOfRegister returns the Left Side address of the given register in the frames current register
@@ -6448,8 +5739,9 @@ SIZE_T CordbNativeFrame::GetRegisterOrStackValue(const ICorDebugInfo::NativeVarI
 
     if (pNativeVarInfo->loc.vlType == ICorDebugInfo::VLT_REG)
     {
-        CorDebugRegister reg = ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg);
-        uResult = *(reinterpret_cast<SIZE_T *>(GetAddressOfRegister(reg)));
+        TADDR regVal = 0;
+        IfFailThrow(ReadJitRegFromContext(pNativeVarInfo->loc.vlReg.vlrReg, &regVal));
+        uResult = (SIZE_T)regVal;
     }
     else if (pNativeVarInfo->loc.vlType == ICorDebugInfo::VLT_STK)
     {
@@ -6719,10 +6011,10 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
     }
 #endif
 
-    // The address of the given register is the address of the value
-    // in this process. We have no remote address here.
-    void *pLocalValue = (void*)GetAddressOfRegister(reg);
-    HRESULT hr = S_OK;
+    TADDR regVal = 0;
+    HRESULT hr = ReadContextRegister(reg, &regVal);
+    if (FAILED(hr))
+        return hr;
 
     EX_TRY
     {
@@ -6736,7 +6028,7 @@ HRESULT CordbNativeFrame::GetLocalRegisterValue(CorDebugRegister reg,
                                       pType,
                                       false,
                                       EMPTY_BUFFER,
-                                      MemoryRange(pLocalValue, REG_SIZE),
+                                      MemoryRange(&regVal, REG_SIZE),
                                       pRegHolder,
                                       &pValue);  // throws
 
@@ -7091,7 +6383,13 @@ bool CordbNativeFrame::IsLeafFrame() const
                     if (pNFrame != NULL)
                     {
                         // check if the leaf frame in the leaf chain is "this"
-                        if (CompareControlRegisters(GetContext(), pNFrame->GetContext()))
+                        BOOL fSameControlRegisters = FALSE;
+                        ULONG32 cbContext = GetProcess()->GetTargetContextSize();
+                        IfFailThrow(GetProcess()->GetDAC()->CompareControlRegisters(
+                            GetContext(), cbContext,
+                            pNFrame->GetContext(), cbContext,
+                            &fSameControlRegisters));
+                        if (fSameControlRegisters)
                         {
                             m_optfIsLeafFrame = TRUE;
                         }
@@ -7108,7 +6406,7 @@ bool CordbNativeFrame::IsLeafFrame() const
         {
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
             BOOL isLeaf;
-            IfFailThrow(pDAC->IsLeafFrame(m_pThread->m_vmThreadToken, &m_context, &isLeaf));
+            IfFailThrow(pDAC->IsLeafFrame(m_pThread->m_vmThreadToken, m_pContextBuffer, &isLeaf));
             m_optfIsLeafFrame = (isLeaf == TRUE);
         }
     }
@@ -8235,14 +7533,17 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
     {
     case ICorDebugInfo::VLT_REG:
         hr = m_nativeFrame->GetLocalRegisterValue(
-                                 ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg),
+                                 m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg),
                                  type, ppValue);
         break;
 
     case ICorDebugInfo::VLT_REG_BYREF:
         {
-            CORDB_ADDRESS pRemoteByRefAddr = PTR_TO_CORDB_ADDRESS(
-                *( m_nativeFrame->GetAddressOfRegister(ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg))) );
+            TADDR regVal = 0;
+            IfFailThrow(m_nativeFrame->ReadJitRegFromContext(
+                pNativeVarInfo->loc.vlReg.vlrReg,
+                &regVal));
+            CORDB_ADDRESS pRemoteByRefAddr = PTR_TO_CORDB_ADDRESS(regVal);
 
             hr = m_nativeFrame->GetLocalMemoryValue(pRemoteByRefAddr,
                                                     type,
@@ -8296,8 +7597,8 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 
     case ICorDebugInfo::VLT_REG_REG:
         hr = m_nativeFrame->GetLocalDoubleRegisterValue(
-                            ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg2),
-                            ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg1),
+                            m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg2),
+                            m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlRegReg.vlrrReg1),
                             type, ppValue);
         break;
 
@@ -8308,7 +7609,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 
             hr = m_nativeFrame->GetLocalMemoryRegisterValue(
                           pRemoteValue,
-                          ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlRegStk.vlrsReg),
+                          m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlRegStk.vlrsReg),
                           type, ppValue);
         }
         break;
@@ -8319,7 +7620,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                 pNativeVarInfo->loc.vlStkReg.vlsrStk.vlsrsBaseReg,  pNativeVarInfo->loc.vlStkReg.vlsrStk.vlsrsOffset);
 
             hr = m_nativeFrame->GetLocalRegisterMemoryValue(
-                          ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlStkReg.vlsrReg),
+                          m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlStkReg.vlsrReg),
                           pRemoteValue, type, ppValue);
         }
         break;

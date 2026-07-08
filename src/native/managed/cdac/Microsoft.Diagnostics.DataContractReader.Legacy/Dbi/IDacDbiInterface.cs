@@ -243,7 +243,7 @@ public struct Debugger_STRData
     }
 
     [FieldOffset(0)] public ulong fp;                           // FramePointer
-    [FieldOffset(8)] public ulong ctx;                          // DT_CONTEXT*
+    [FieldOffset(8)] public ulong ctx;                          // BYTE*
     [FieldOffset(16)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
     [FieldOffset(24)] public EType eType;
     [FieldOffset(32)] public DebuggerIPCE_STRData_MethodFrame v;
@@ -407,6 +407,185 @@ public enum CorDebugSetContextFlags
 {
     SET_CONTEXT_FLAG_ACTIVE_FRAME = 0x1,
     SET_CONTEXT_FLAG_UNWIND_FRAME = 0x2,
+}
+
+public enum TargetArchitecture
+{
+    Unknown = 0,
+    X86,
+    AMD64,
+    Arm,
+    Arm64,
+    LoongArch64,
+    RiscV64,
+    Wasm,
+}
+
+public enum TargetOperatingSystem
+{
+    Unknown = 0,
+    Windows,
+    Unix,
+}
+
+public struct TargetInfo
+{
+    public TargetArchitecture Arch;
+    public TargetOperatingSystem OS;
+}
+
+public enum ContextSizeFlags : int
+{
+    Base = 0,
+    ExtendedRegisters,
+}
+
+public enum CorDebugRegister : int
+{
+    REGISTER_INSTRUCTION_POINTER = 0,
+    REGISTER_STACK_POINTER = 1,
+    REGISTER_FRAME_POINTER = 2,
+
+    REGISTER_X86_EIP = 0,
+    REGISTER_X86_ESP = 1,
+    REGISTER_X86_EBP = 2,
+    REGISTER_X86_EAX = 3,
+    REGISTER_X86_ECX = 4,
+    REGISTER_X86_EDX = 5,
+    REGISTER_X86_EBX = 6,
+    REGISTER_X86_ESI = 7,
+    REGISTER_X86_EDI = 8,
+    REGISTER_X86_FPSTACK_0 = 9,
+    REGISTER_X86_FPSTACK_1 = 10,
+    REGISTER_X86_FPSTACK_2 = 11,
+    REGISTER_X86_FPSTACK_3 = 12,
+    REGISTER_X86_FPSTACK_4 = 13,
+    REGISTER_X86_FPSTACK_5 = 14,
+    REGISTER_X86_FPSTACK_6 = 15,
+    REGISTER_X86_FPSTACK_7 = 16,
+
+    REGISTER_AMD64_RIP = 0,
+    REGISTER_AMD64_RSP = 1,
+    REGISTER_AMD64_RBP = 2,
+    REGISTER_AMD64_RAX = 3,
+    REGISTER_AMD64_RCX = 4,
+    REGISTER_AMD64_RDX = 5,
+    REGISTER_AMD64_RBX = 6,
+    REGISTER_AMD64_RSI = 7,
+    REGISTER_AMD64_RDI = 8,
+    REGISTER_AMD64_R8 = 9,
+    REGISTER_AMD64_R9 = 10,
+    REGISTER_AMD64_R10 = 11,
+    REGISTER_AMD64_R11 = 12,
+    REGISTER_AMD64_R12 = 13,
+    REGISTER_AMD64_R13 = 14,
+    REGISTER_AMD64_R14 = 15,
+    REGISTER_AMD64_R15 = 16,
+    REGISTER_AMD64_XMM0 = 17,
+    REGISTER_AMD64_XMM1 = 18,
+    REGISTER_AMD64_XMM2 = 19,
+    REGISTER_AMD64_XMM3 = 20,
+    REGISTER_AMD64_XMM4 = 21,
+    REGISTER_AMD64_XMM5 = 22,
+    REGISTER_AMD64_XMM6 = 23,
+    REGISTER_AMD64_XMM7 = 24,
+    REGISTER_AMD64_XMM8 = 25,
+    REGISTER_AMD64_XMM9 = 26,
+    REGISTER_AMD64_XMM10 = 27,
+    REGISTER_AMD64_XMM11 = 28,
+    REGISTER_AMD64_XMM12 = 29,
+    REGISTER_AMD64_XMM13 = 30,
+    REGISTER_AMD64_XMM14 = 31,
+    REGISTER_AMD64_XMM15 = 32,
+
+    REGISTER_ARM_PC = 0,
+    REGISTER_ARM_SP = 1,
+    REGISTER_ARM_R0 = 2,
+    REGISTER_ARM_R1 = 3,
+    REGISTER_ARM_R2 = 4,
+    REGISTER_ARM_R3 = 5,
+    REGISTER_ARM_R4 = 6,
+    REGISTER_ARM_R5 = 7,
+    REGISTER_ARM_R6 = 8,
+    REGISTER_ARM_R7 = 9,
+    REGISTER_ARM_R8 = 10,
+    REGISTER_ARM_R9 = 11,
+    REGISTER_ARM_R10 = 12,
+    REGISTER_ARM_R11 = 13,
+    REGISTER_ARM_R12 = 14,
+    REGISTER_ARM_LR = 15,
+    REGISTER_ARM_D0 = 16,
+    REGISTER_ARM_D31 = 47,
+
+    REGISTER_ARM64_PC = 0,
+    REGISTER_ARM64_SP = 1,
+    REGISTER_ARM64_FP = 2,
+    REGISTER_ARM64_X0 = 3,
+    REGISTER_ARM64_X1 = 4,
+    REGISTER_ARM64_X2 = 5,
+    REGISTER_ARM64_X3 = 6,
+    REGISTER_ARM64_X4 = 7,
+    REGISTER_ARM64_X5 = 8,
+    REGISTER_ARM64_X6 = 9,
+    REGISTER_ARM64_X7 = 10,
+    REGISTER_ARM64_X8 = 11,
+    REGISTER_ARM64_X9 = 12,
+    REGISTER_ARM64_X10 = 13,
+    REGISTER_ARM64_X11 = 14,
+    REGISTER_ARM64_X12 = 15,
+    REGISTER_ARM64_X13 = 16,
+    REGISTER_ARM64_X14 = 17,
+    REGISTER_ARM64_X15 = 18,
+    REGISTER_ARM64_X16 = 19,
+    REGISTER_ARM64_X17 = 20,
+    REGISTER_ARM64_X18 = 21,
+    REGISTER_ARM64_X19 = 22,
+    REGISTER_ARM64_X20 = 23,
+    REGISTER_ARM64_X21 = 24,
+    REGISTER_ARM64_X22 = 25,
+    REGISTER_ARM64_X23 = 26,
+    REGISTER_ARM64_X24 = 27,
+    REGISTER_ARM64_X25 = 28,
+    REGISTER_ARM64_X26 = 29,
+    REGISTER_ARM64_X27 = 30,
+    REGISTER_ARM64_X28 = 31,
+    REGISTER_ARM64_LR = 32,
+    REGISTER_ARM64_V0 = 33,
+    REGISTER_ARM64_V31 = 64,
+
+    REGISTER_LOONGARCH64_PC = 0,
+    REGISTER_LOONGARCH64_SP = 1,
+    REGISTER_LOONGARCH64_FP = 2,
+    REGISTER_LOONGARCH64_RA = 3,
+    REGISTER_LOONGARCH64_TP = 4,
+    REGISTER_LOONGARCH64_A0 = 5,
+    REGISTER_LOONGARCH64_A7 = 12,
+    REGISTER_LOONGARCH64_T0 = 13,
+    REGISTER_LOONGARCH64_T8 = 21,
+    REGISTER_LOONGARCH64_X0 = 22,
+    REGISTER_LOONGARCH64_S0 = 23,
+    REGISTER_LOONGARCH64_S8 = 31,
+    REGISTER_LOONGARCH64_F0 = 32,
+    REGISTER_LOONGARCH64_F31 = 63,
+
+    REGISTER_RISCV64_PC = 0,
+    REGISTER_RISCV64_SP = 1,
+    REGISTER_RISCV64_FP = 2,
+    REGISTER_RISCV64_RA = 3,
+    REGISTER_RISCV64_GP = 4,
+    REGISTER_RISCV64_TP = 5,
+    REGISTER_RISCV64_T0 = 6,
+    REGISTER_RISCV64_T1 = 7,
+    REGISTER_RISCV64_T2 = 8,
+    REGISTER_RISCV64_S1 = 9,
+    REGISTER_RISCV64_A0 = 10,
+    REGISTER_RISCV64_A7 = 17,
+    REGISTER_RISCV64_S2 = 18,
+    REGISTER_RISCV64_S11 = 27,
+    REGISTER_RISCV64_T3 = 28,
+    REGISTER_RISCV64_T6 = 31,
+    REGISTER_RISCV64_F0 = 32,
+    REGISTER_RISCV64_F31 = 63,
 }
 
 // Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
@@ -801,4 +980,34 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
+
+    [PreserveSig]
+    int GetTargetContextSize(ContextSizeFlags flags, uint* pSize);
+
+    [PreserveSig]
+    int WriteRegistersToContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* values);
+
+    [PreserveSig]
+    int ReadRegistersFromContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* pValues);
+
+    [PreserveSig]
+    int GetAvailableRegistersMask(Interop.BOOL fActive, Interop.BOOL fQuickUnwind, uint regCount, byte* pAvailable);
+
+    [PreserveSig]
+    int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg);
+
+    [PreserveSig]
+    int ReadFloatRegistersFromContext(byte* ctxBuf, uint cb, uint maxValues, double* values, uint* pValuesCount, int* pFirstFloatReg, uint* pFloatStackTop);
+
+    [PreserveSig]
+    int GetTargetInfo(TargetInfo* pTargetInfo);
+
+    [PreserveSig]
+    int ContextHasExtendedRegisters(byte* ctxBuf, uint cb, Interop.BOOL* pResult);
+
+    [PreserveSig]
+    int CompareControlRegisters(byte* ctxBuf1, uint cb1, byte* ctxBuf2, uint cb2, Interop.BOOL* pResult);
+
+    [PreserveSig]
+    int CopyContext(byte* dstCtxBuf, uint cbDst, byte* srcCtxBuf, uint cbSrc, uint flags);
 }

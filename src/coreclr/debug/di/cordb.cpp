@@ -431,18 +431,17 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
     return E_NOTIMPL;
 }
 
-#ifdef TARGET_ARM
 BOOL
 DbiGetThreadContext(HANDLE hThread,
-    DT_CONTEXT *lpContext)
+    T_CONTEXT *lpContext)
 {
     // if we aren't local debugging this isn't going to work
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
     BOOL res = FALSE;
-    if (((ULONG)lpContext) & ~0x10)
+    if (((ULONG_PTR)lpContext) & 0xF)
     {
         CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
         if (ctx)
@@ -450,7 +449,7 @@ DbiGetThreadContext(HANDLE hThread,
             ctx->ContextFlags = lpContext->ContextFlags;
             if (::GetThreadContext(hThread, ctx))
             {
-                *lpContext = *(DT_CONTEXT*)ctx;
+                *lpContext = *(T_CONTEXT*)ctx;
                 res = TRUE;
             }
 
@@ -474,14 +473,14 @@ DbiGetThreadContext(HANDLE hThread,
 
 BOOL
 DbiSetThreadContext(HANDLE hThread,
-    const DT_CONTEXT *lpContext)
+    const T_CONTEXT *lpContext)
 {
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
     BOOL res = FALSE;
-    if (((ULONG)lpContext) & ~0x10)
+    if (((ULONG_PTR)lpContext) & 0xF)
     {
         CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
         if (ctx)
@@ -505,4 +504,3 @@ DbiSetThreadContext(HANDLE hThread,
     return res;
 #endif
 }
-#endif

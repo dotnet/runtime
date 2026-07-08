@@ -59,7 +59,7 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 // respecting the ContextFlags of both contexts.
 //
 
-extern void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc);
+extern void CORDbgCopyThreadContext(T_CONTEXT* pDst, const T_CONTEXT* pSrc);
 
 //---------------------------------------------------------------------------------------
 //

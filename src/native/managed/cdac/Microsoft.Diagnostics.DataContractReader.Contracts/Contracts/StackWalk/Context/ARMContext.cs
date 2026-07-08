@@ -162,6 +162,38 @@ internal struct ARMContext : IPlatformContext
         }
     }
 
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
+
+    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "sp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "lr"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "pc"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cpsr"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r6"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r7"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r8"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r9"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r10"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r11"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r12"),
+    ];
+
+    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<ARMContext>(nameof(Fpscr)), (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr))),
+        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
+            (int)Marshal.OffsetOf<ARMContext>(nameof(Bvr)), (int)Marshal.OffsetOf<ARMContext>(nameof(Wcr)) + sizeof(uint)),
+    ];
+
     // Control flags
 
     [FieldOffset(0x0)]
@@ -237,7 +269,7 @@ internal struct ARMContext : IPlatformContext
     [FieldOffset(0x40)]
     public uint Pc;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x44)]
     public uint Cpsr;
 

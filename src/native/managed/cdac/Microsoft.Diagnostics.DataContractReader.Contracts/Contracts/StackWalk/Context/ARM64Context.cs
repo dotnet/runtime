@@ -238,6 +238,55 @@ internal struct ARM64Context : IPlatformContext
         }
     }
 
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
+
+    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "fp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "lr"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "sp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "pc"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cpsr"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x6"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x7"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x8"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x9"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x10"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x11"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x12"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x13"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x14"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x15"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x16"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x17"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x18"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x19"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x20"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x21"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x22"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x23"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x24"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x25"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x26"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x27"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x28"),
+    ];
+
+    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<ARM64Context>(nameof(V)), (int)Marshal.OffsetOf<ARM64Context>(nameof(Bcr))),
+        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
+            (int)Marshal.OffsetOf<ARM64Context>(nameof(Bcr)), (int)Marshal.OffsetOf<ARM64Context>(nameof(Wvr)) + (ARM64_MAX_WATCHPOINTS * sizeof(ulong))),
+    ];
+
     // Control flags
 
     [FieldOffset(0x0)]
@@ -245,7 +294,7 @@ internal struct ARM64Context : IPlatformContext
 
     #region General registers
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x4)]
     public uint Cpsr;
 

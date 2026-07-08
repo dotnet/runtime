@@ -12,6 +12,8 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public T Context;
 
     public uint Size => Context.Size;
+    public uint SizeWithoutExtendedRegisters => Context.SizeWithoutExtendedRegisters;
+    public uint ExtendedRegistersFlag => Context.ExtendedRegistersFlag;
     public uint ContextControlFlags => Context.ContextControlFlags;
     public uint FullContextFlags => Context.FullContextFlags;
     public uint AllContextFlags => Context.AllContextFlags;
@@ -58,6 +60,9 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public bool TryReadRegister(string fieldName, out TargetNUInt value) => Context.TryReadRegister(fieldName, out value);
     public bool TrySetRegister(int number, TargetNUInt value) => Context.TrySetRegister(number, value);
     public bool TryReadRegister(int number, out TargetNUInt value) => Context.TryReadRegister(number, out value);
+
+    public (uint Flag, string Name)[] GetScalarRegisters() => Context.GetScalarRegisters();
+    public (uint Flag, int Start, int End)[] GetWideSpans() => Context.GetWideSpans();
 
     public bool Equals(ContextHolder<T>? other)
     {

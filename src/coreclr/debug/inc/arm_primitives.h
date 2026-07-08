@@ -66,11 +66,11 @@ inline void CORDbgInsertBreakpointExImpl(UNALIGNED CORDB_ADDRESS_TYPE *address)
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_ARM64)
+#if defined(HOST_ARM64)
     pContext->Pc -= CORDbg_BREAK_INSTRUCTION_SIZE;
 #else
     // @ARMTODO: ARM appears to leave the PC at the start of the breakpoint (at least according to Windbg,

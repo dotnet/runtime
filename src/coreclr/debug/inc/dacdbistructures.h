@@ -539,7 +539,7 @@ struct MSLAYOUT Debugger_JITFuncData
 struct MSLAYOUT Debugger_STRData
 {
     FramePointer            fp;
-    DT_CONTEXT *            ctx;
+    BYTE *                  ctx;   // opaque target CONTEXT bytes (DT_CONTEXT image)
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 

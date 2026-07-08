@@ -958,50 +958,7 @@ struct MSLAYOUT IPCENames // We use a class/struct so that the function can rema
 
 #endif // !DACCESS_COMPILE
 
-//
-// NOTE:  CPU-specific values below!
-// DebuggerIPCE_FloatCount is the number of doubles in the processor's
-// floating point stack.
-
-#if defined(TARGET_X86)
-#define DebuggerIPCE_FloatCount 8
-#elif defined(TARGET_AMD64)
-#define DebuggerIPCE_FloatCount 16
-#elif defined(TARGET_ARM)
-#define DebuggerIPCE_FloatCount 32
-#elif defined(TARGET_ARM64)
-#define DebuggerIPCE_FloatCount 32
-#elif defined(TARGET_LOONGARCH64)
-#define DebuggerIPCE_FloatCount 32
-#elif defined(TARGET_RISCV64)
-#define DebuggerIPCE_FloatCount 32
-#else
-#define DebuggerIPCE_FloatCount 1
-#endif
-
-#if !defined(TARGET_WASM)
-inline LPVOID GetSPAddress(const DT_CONTEXT * context)
-{
-#if defined(TARGET_X86)
-    return (LPVOID)&context->Esp;
-#elif defined(TARGET_AMD64)
-    return (LPVOID)&context->Rsp;
-#else
-    return (LPVOID)&context->Sp;
-#endif
-}
-#endif // !TARGET_WASM
-
-#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_WASM)
-inline LPVOID GetFPAddress(const DT_CONTEXT * context)
-{
-#if defined(TARGET_X86)
-    return (LPVOID)&context->Ebp;
-#else
-    return (LPVOID)&context->Fp;
-#endif
-}
-#endif // !TARGET_AMD64 && !TARGET_ARM && !TARGET_WASM
+#define CORDB_MAX_FLOAT_REGISTERS 32
 
 
 class MSLAYOUT FramePointer

@@ -16,7 +16,7 @@
 // CopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
-void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
+void CORDbgCopyThreadContext(T_CONTEXT* pDst, const T_CONTEXT* pSrc)
 {
     DWORD dstFlags = pDst->ContextFlags;
     DWORD srcFlags = pSrc->ContextFlags;
@@ -24,32 +24,32 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
          "CP::CTC: pDst=0x%08x dstFlags=0x%x, pSrc=0x%08x srcFlags=0x%x\n",
          pDst, dstFlags, pSrc, srcFlags));
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
+    if ((dstFlags & srcFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
         CopyContextChunk(&(pDst->Ebp), &(pSrc->Ebp), pDst->ExtendedRegisters,
-                         DT_CONTEXT_CONTROL);
+                         CONTEXT_CONTROL);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
+    if ((dstFlags & srcFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
         CopyContextChunk(&(pDst->Edi), &(pSrc->Edi), &(pDst->Ebp),
-                         DT_CONTEXT_INTEGER);
+                         CONTEXT_INTEGER);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_SEGMENTS) == DT_CONTEXT_SEGMENTS)
+    if ((dstFlags & srcFlags & CONTEXT_SEGMENTS) == CONTEXT_SEGMENTS)
         CopyContextChunk(&(pDst->SegGs), &(pSrc->SegGs), &(pDst->Edi),
-                         DT_CONTEXT_SEGMENTS);
+                         CONTEXT_SEGMENTS);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_FLOATING_POINT) == DT_CONTEXT_FLOATING_POINT)
+    if ((dstFlags & srcFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
         CopyContextChunk(&(pDst->FloatSave), &(pSrc->FloatSave),
                          (&pDst->FloatSave)+1,
-                         DT_CONTEXT_FLOATING_POINT);
+                         CONTEXT_FLOATING_POINT);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_DEBUG_REGISTERS) ==
-        DT_CONTEXT_DEBUG_REGISTERS)
+    if ((dstFlags & srcFlags & CONTEXT_DEBUG_REGISTERS) ==
+        CONTEXT_DEBUG_REGISTERS)
         CopyContextChunk(&(pDst->Dr0), &(pSrc->Dr0), &(pDst->FloatSave),
-                         DT_CONTEXT_DEBUG_REGISTERS);
+                         CONTEXT_DEBUG_REGISTERS);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_EXTENDED_REGISTERS) ==
-        DT_CONTEXT_EXTENDED_REGISTERS)
+    if ((dstFlags & srcFlags & CONTEXT_EXTENDED_REGISTERS) ==
+        CONTEXT_EXTENDED_REGISTERS)
         CopyContextChunk(pDst->ExtendedRegisters,
                          pSrc->ExtendedRegisters,
                          &(pDst->ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION]),
-                         DT_CONTEXT_EXTENDED_REGISTERS);
+                         CONTEXT_EXTENDED_REGISTERS);
 }

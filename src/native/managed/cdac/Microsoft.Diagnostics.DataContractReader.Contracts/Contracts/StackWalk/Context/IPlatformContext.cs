@@ -6,6 +6,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 public interface IPlatformContext
 {
     uint Size { get; }
+
+    uint SizeWithoutExtendedRegisters => Size;
+
+    uint ExtendedRegistersFlag => 0;
+
     uint ContextControlFlags { get; }
     uint FullContextFlags { get; }
     uint AllContextFlags { get; }
@@ -32,4 +37,6 @@ public interface IPlatformContext
 
     bool TrySetRegister(int number, TargetNUInt value);
     bool TryReadRegister(int number, out TargetNUInt value);
+    (uint Flag, string Name)[] GetScalarRegisters();
+    (uint Flag, int Start, int End)[] GetWideSpans();
 }

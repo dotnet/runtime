@@ -197,6 +197,50 @@ internal struct AMD64Context : IPlatformContext
     }
 
 
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
+
+    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cs"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ss"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eflags"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "rsp"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rax"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rcx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rdx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rbx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rbp"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rsi"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "rdi"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r8"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r9"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r10"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r11"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r12"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r13"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r14"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "r15"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "ds"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "es"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "fs"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "gs"),
+    ];
+
+    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
+    [
+        // Matches native CORDbgCopyThreadContext's CONTROL chunk [Rip, Xmm0), which
+        // copies Rip together with the legacy x87 save area that has no named field here.
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL,
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(Rip)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm))),
+        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(Dr0)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Rax))),
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(MxCsr)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Cs))),
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)), (int)Marshal.OffsetOf<AMD64Context>(nameof(Xmm)) + (16 * 2 * sizeof(ulong))),
+    ];
+
     [FieldOffset(0x0)]
     public ulong P1Home;
 
@@ -218,12 +262,13 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x30)]
     public uint ContextFlags;
 
+    [Register(RegisterType.FloatingPoint)]
     [FieldOffset(0x34)]
     public uint MxCsr;
 
     #region Segment registers
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x38)]
     public ushort Cs;
 
@@ -243,13 +288,13 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x40)]
     public ushort Gs;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x42)]
     public ushort Ss;
 
     #endregion
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x44)]
     public int EFlags;
 
@@ -303,7 +348,7 @@ internal struct AMD64Context : IPlatformContext
     [FieldOffset(0x98)]
     public ulong Rsp;
 
-    [Register(RegisterType.Control | RegisterType.FramePointer)]
+    [Register(RegisterType.General | RegisterType.FramePointer)]
     [FieldOffset(0xa0)]
     public ulong Rbp;
 
@@ -355,33 +400,24 @@ internal struct AMD64Context : IPlatformContext
 
     #region Floating point registers
 
-    // [Register(RegisterType.FloatPoint)]
-    // [FieldOffset(0x100)]
-    // public XmmSaveArea FltSave;
-
-    // [Register(RegisterType.FloatPoint)]
-    // [FieldOffset(0x300)]
-    // public VectorRegisterArea VectorRegisters;
+    [Register(RegisterType.FloatingPoint)]
+    [FieldOffset(0x1a0)]
+    public unsafe fixed ulong Xmm[16 * 2];
 
     #endregion
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4a8)]
     public ulong DebugControl;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4b0)]
     public ulong LastBranchToRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4b8)]
     public ulong LastBranchFromRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4c0)]
     public ulong LastExceptionToRip;
 
-    [Register(RegisterType.Debug)]
     [FieldOffset(0x4c8)]
     public ulong LastExceptionFromRip;
 }

@@ -5584,6 +5584,793 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
+    public int GetTargetContextSize(ContextSizeFlags flags, uint* pSize)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pSize is null)
+                throw new ArgumentNullException(nameof(pSize));
+
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            *pSize = flags switch
+            {
+                ContextSizeFlags.Base => ctx.SizeWithoutExtendedRegisters,
+                ContextSizeFlags.ExtendedRegisters => ctx.Size,
+                _ => throw new ArgumentException($"Invalid context size flags {(int)flags}", nameof(flags)),
+            };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint sizeLocal;
+            int hrLocal = _legacy.GetTargetContextSize(flags, &sizeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pSize == sizeLocal, $"cDAC: {*pSize}, DAC: {sizeLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int GetTargetInfo(TargetInfo* pTargetInfo)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pTargetInfo is null)
+                throw new ArgumentNullException(nameof(pTargetInfo));
+
+            Contracts.IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+
+            pTargetInfo->Arch = runtimeInfo.GetTargetArchitecture() switch
+            {
+                Contracts.RuntimeInfoArchitecture.X86 => TargetArchitecture.X86,
+                Contracts.RuntimeInfoArchitecture.X64 => TargetArchitecture.AMD64,
+                Contracts.RuntimeInfoArchitecture.Arm => TargetArchitecture.Arm,
+                Contracts.RuntimeInfoArchitecture.Arm64 => TargetArchitecture.Arm64,
+                Contracts.RuntimeInfoArchitecture.LoongArch64 => TargetArchitecture.LoongArch64,
+                Contracts.RuntimeInfoArchitecture.RiscV64 => TargetArchitecture.RiscV64,
+                Contracts.RuntimeInfoArchitecture.Wasm => TargetArchitecture.Wasm,
+                _ => TargetArchitecture.Unknown,
+            };
+
+            pTargetInfo->OS = runtimeInfo.GetTargetOperatingSystem() switch
+            {
+                Contracts.RuntimeInfoOperatingSystem.Windows => TargetOperatingSystem.Windows,
+                Contracts.RuntimeInfoOperatingSystem.Unix => TargetOperatingSystem.Unix,
+                Contracts.RuntimeInfoOperatingSystem.Apple => TargetOperatingSystem.Unix,
+                _ => TargetOperatingSystem.Unknown,
+            };
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            TargetInfo targetInfoLocal;
+            int hrLocal = _legacy.GetTargetInfo(&targetInfoLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetInfo->Arch == targetInfoLocal.Arch, $"cDAC: {pTargetInfo->Arch}, DAC: {targetInfoLocal.Arch}");
+                Debug.Assert(pTargetInfo->OS == targetInfoLocal.OS, $"cDAC: {pTargetInfo->OS}, DAC: {targetInfoLocal.OS}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int ContextHasExtendedRegisters(byte* ctxBuf, uint cb, Interop.BOOL* pResult)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ctxBuf is null)
+                throw new ArgumentNullException(nameof(ctxBuf));
+            if (pResult is null)
+                throw new ArgumentNullException(nameof(pResult));
+
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            if (cb < ctx.Size)
+                throw new ArgumentException("Context buffer too small", nameof(cb));
+
+            if (ctx.ExtendedRegistersFlag == 0)
+            {
+                *pResult = Interop.BOOL.FALSE;
+            }
+            else
+            {
+                ctx.FillFromBuffer(new Span<byte>(ctxBuf, (int)cb));
+                bool hasExtended = (ctx.RawContextFlags & ctx.ExtendedRegistersFlag) == ctx.ExtendedRegistersFlag;
+                *pResult = hasExtended ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.ContextHasExtendedRegisters(ctxBuf, cb, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int CompareControlRegisters(byte* ctxBuf1, uint cb1, byte* ctxBuf2, uint cb2, Interop.BOOL* pResult)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ctxBuf1 is null || ctxBuf2 is null)
+                throw new ArgumentNullException(ctxBuf1 is null ? nameof(ctxBuf1) : nameof(ctxBuf2));
+            if (pResult is null)
+                throw new ArgumentNullException(nameof(pResult));
+
+            IPlatformAgnosticContext ctx1 = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            IPlatformAgnosticContext ctx2 = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            if (cb1 < ctx1.Size || cb2 < ctx2.Size)
+                throw new ArgumentException("Context buffer too small");
+
+            ctx1.FillFromBuffer(new Span<byte>(ctxBuf1, (int)cb1));
+            ctx2.FillFromBuffer(new Span<byte>(ctxBuf2, (int)cb2));
+
+            *pResult = ctx1.StackPointer == ctx2.StackPointer
+                && ctx1.InstructionPointer == ctx2.InstructionPointer
+                ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.CompareControlRegisters(ctxBuf1, cb1, ctxBuf2, cb2, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int CopyContext(byte* dstCtxBuf, uint cbDst, byte* srcCtxBuf, uint cbSrc, uint flags)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        // Capture the untouched destination image so the legacy cross-check below can
+        // replay the same copy from an identical starting state.
+        byte[]? originalDst = (dstCtxBuf is not null && cbDst > 0) ? new ReadOnlySpan<byte>(dstCtxBuf, (int)cbDst).ToArray() : null;
+#endif
+        try
+        {
+            if (dstCtxBuf is null || srcCtxBuf is null)
+                throw new ArgumentNullException(dstCtxBuf is null ? nameof(dstCtxBuf) : nameof(srcCtxBuf));
+
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            if (cbDst < ctx.Size || cbSrc < ctx.Size)
+                throw new ArgumentException("Context buffer too small");
+
+            Span<byte> dst = new Span<byte>(dstCtxBuf, (int)cbDst);
+            Span<byte> src = new Span<byte>(srcCtxBuf, (int)cbSrc);
+
+            IPlatformAgnosticContext dstCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            dstCtx.FillFromBuffer(dst);
+            IPlatformAgnosticContext srcCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            srcCtx.FillFromBuffer(src);
+
+            // flags != 0 stamps the destination's ContextFlags so the copy pulls exactly the
+            // requested groups from the source; flags == 0 preserves the destination's flags.
+            if (flags != 0)
+                dstCtx.RawContextFlags = flags;
+
+            uint dstFlags = dstCtx.RawContextFlags;
+            uint srcFlags = srcCtx.RawContextFlags;
+
+            // Integer/control/segment registers copy by name; wide floating-point/debug/
+            // extended state copies as a raw byte span. A group is copied only when its flag
+            // is set in both the source and destination contexts.
+            foreach ((uint flag, string name) in dstCtx.GetScalarRegisters())
+            {
+                if ((dstFlags & srcFlags & flag) == flag && srcCtx.TryReadRegister(name, out TargetNUInt value))
+                    dstCtx.TrySetRegister(name, value);
+            }
+
+            dstCtx.GetBytes().AsSpan(0, (int)ctx.Size).CopyTo(dst);
+
+            foreach ((uint flag, int start, int end) in dstCtx.GetWideSpans())
+            {
+                if ((dstFlags & srcFlags & flag) == flag)
+                    src.Slice(start, end - start).CopyTo(dst.Slice(start));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && originalDst is not null)
+        {
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            byte[] scratchDst = (byte[])originalDst.Clone();
+            byte[] scratchSrc = new ReadOnlySpan<byte>(srcCtxBuf, (int)cbSrc).ToArray();
+            fixed (byte* pScratchDst = scratchDst)
+            fixed (byte* pScratchSrc = scratchSrc)
+            {
+                int hrLocal = _legacy.CopyContext(pScratchDst, cbDst, pScratchSrc, cbSrc, flags);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                    Debug.Assert(new ReadOnlySpan<byte>(dstCtxBuf, (int)ctx.Size).SequenceEqual(scratchDst.AsSpan(0, (int)ctx.Size)),
+                                 "cDAC and DAC produced different copied contexts");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int WriteRegistersToContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* values)
+    {
+        int hr = HResults.S_OK;
+        IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        try
+        {
+            if (ctxBuf is null)
+                throw new ArgumentNullException(nameof(ctxBuf));
+            if (nRegs > 0 && (regs is null || values is null))
+                throw new ArgumentNullException(regs is null ? nameof(regs) : nameof(values));
+            if (cb < ctx.Size)
+                throw new ArgumentException("Context buffer too small", nameof(cb));
+
+            Span<byte> bufSpan = new Span<byte>(ctxBuf, (int)cb);
+            ctx.FillFromBuffer(bufSpan);
+
+            RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+            for (uint i = 0; i < nRegs; i++)
+            {
+                // Registers with no CONTEXT slot (float / SIMD) are skipped.
+                string? name = MapToCdacName(arch, regs[i]);
+                if (name is not null)
+                    ctx.TrySetRegister(name, new TargetNUInt(values[i]));
+            }
+
+            ctx.GetBytes().AsSpan(0, (int)ctx.Size).CopyTo(bufSpan);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            byte[] scratch = new byte[ctx.Size];
+            new ReadOnlySpan<byte>(ctxBuf, (int)ctx.Size).CopyTo(scratch);
+            fixed (byte* pScratch = scratch)
+            {
+                int hrLocal = _legacy.WriteRegistersToContext(pScratch, cb, regs, nRegs, values);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                    Debug.Assert(new ReadOnlySpan<byte>(ctxBuf, (int)ctx.Size).SequenceEqual(scratch),
+                                 "cDAC and DAC produced different mutated contexts");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int ReadRegistersFromContext(byte* ctxBuf, uint cb, CorDebugRegister* regs, uint nRegs, ulong* pValues)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ctxBuf is null)
+                throw new ArgumentNullException(nameof(ctxBuf));
+            if (nRegs > 0 && (regs is null || pValues is null))
+                throw new ArgumentNullException(regs is null ? nameof(regs) : nameof(pValues));
+
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            if (cb < ctx.Size)
+                throw new ArgumentException("Context buffer too small", nameof(cb));
+
+            ctx.FillFromBuffer(new Span<byte>(ctxBuf, (int)cb));
+
+            RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+            for (uint i = 0; i < nRegs; i++)
+            {
+                // Registers with no CONTEXT slot (float / SIMD) read as zero.
+                string? name = MapToCdacName(arch, regs[i]);
+                pValues[i] = (name is not null && ctx.TryReadRegister(name, out TargetNUInt v)) ? v.Value : 0;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong[] valuesLocal = new ulong[nRegs];
+            int hrLocal;
+            fixed (ulong* pValuesLocal = valuesLocal)
+                hrLocal = _legacy.ReadRegistersFromContext(ctxBuf, cb, regs, nRegs, pValuesLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                for (uint i = 0; i < nRegs; i++)
+                    Debug.Assert(pValues[i] == valuesLocal[i], $"reg[{i}] cDAC: {pValues[i]:x}, DAC: {valuesLocal[i]:x}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int GetAvailableRegistersMask(Interop.BOOL fActive, Interop.BOOL fQuickUnwind, uint regCount, byte* pAvailable)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pAvailable is null)
+                throw new ArgumentNullException(nameof(pAvailable));
+            if (regCount == 0)
+                throw new ArgumentException("regCount must be non-zero", nameof(regCount));
+
+            new Span<byte>(pAvailable, (int)regCount).Clear();
+
+            RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+            WriteAvailableRegistersMask(arch, fActive != Interop.BOOL.FALSE, fQuickUnwind != Interop.BOOL.FALSE,
+                                        pAvailable, regCount);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && pAvailable is not null && regCount > 0)
+        {
+            byte[] localBuf = new byte[regCount];
+            int hrLocal;
+            fixed (byte* pLocal = localBuf)
+                hrLocal = _legacy.GetAvailableRegistersMask(fActive, fQuickUnwind, regCount, pLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(new ReadOnlySpan<byte>(pAvailable, (int)regCount).SequenceEqual(localBuf),
+                             "cDAC and DAC produced different availability masks");
+        }
+#endif
+        return hr;
+    }
+
+    public int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pReg is null)
+                throw new ArgumentNullException(nameof(pReg));
+
+            RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+            CorDebugRegister? reg = MapJitRegNumToCorDebugRegister(arch, jitRegNum);
+            if (reg is null)
+                throw new ArgumentException($"Unsupported JIT register {jitRegNum}", nameof(jitRegNum));
+
+            *pReg = reg.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+            if (pReg is not null) *pReg = default;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            CorDebugRegister regLocal;
+            int hrLocal = _legacy.ConvertJitRegNumToCorDebugRegister(jitRegNum, &regLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pReg == regLocal, $"cDAC: {(int)(*pReg)}, DAC: {(int)regLocal}");
+        }
+#endif
+        return hr;
+    }
+
+    public int ReadFloatRegistersFromContext(byte* ctxBuf, uint cb, uint maxValues, double* values, uint* pValuesCount, int* pFirstFloatReg, uint* pFloatStackTop)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ctxBuf is null || values is null || pValuesCount is null ||
+                pFirstFloatReg is null || pFloatStackTop is null || maxValues == 0)
+            {
+                throw new ArgumentException("Invalid argument to ReadFloatRegistersFromContext");
+            }
+
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            if (cb < ctx.Size)
+                throw new ArgumentException("Context buffer too small", nameof(cb));
+
+            ReadOnlySpan<byte> buf = new ReadOnlySpan<byte>(ctxBuf, (int)cb);
+
+            *pValuesCount = 0;
+            *pFirstFloatReg = -1;
+            *pFloatStackTop = 0;
+            new Span<double>(values, (int)maxValues).Clear();
+
+            RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+
+            // Read a little-endian 64-bit reinterpret at the given offset, or 0 if the
+            // requested slot lies beyond the buffer.
+            static double ReadSlot64(ReadOnlySpan<byte> buf, int offset)
+            {
+                if (offset < 0 || offset + sizeof(ulong) > buf.Length)
+                    return 0.0;
+                return BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(buf.Slice(offset)));
+            }
+
+            switch (arch)
+            {
+                case RuntimeInfoArchitecture.X86:
+                {
+                    // FloatSave.StatusWord is at 0x20; the 80-bit ST register area starts at 0x38.
+                    const int StatusWordOffset = 0x20;
+                    const int RegisterAreaOffset = 0x38;
+                    uint statusWord = BinaryPrimitives.ReadUInt32LittleEndian(buf.Slice(StatusWordOffset));
+                    uint rawTop = (statusWord >> 11) & 0x7;
+                    uint floatStackTop = 7 - rawTop;
+                    *pFloatStackTop = floatStackTop;
+                    *pFirstFloatReg = (int)CorDebugRegister.REGISTER_X86_FPSTACK_0;
+
+                    uint count = floatStackTop + 1;
+                    if (count > maxValues)
+                        count = maxValues;
+                    *pValuesCount = count;
+
+                    for (uint i = 0; i < count; i++)
+                    {
+                        uint physIdx = (rawTop + i) & 0x7;
+                        int slot = RegisterAreaOffset + (int)physIdx * 10;
+                        values[i] = (slot + 10 <= buf.Length) ? FloatConversion.X87ExtendedToDouble(buf.Slice(slot, 10)) : 0.0;
+                    }
+                    break;
+                }
+                case RuntimeInfoArchitecture.X64:
+                {
+                    // Xmm0 lives in the FltSave area at offset 0x1a0; 16 registers, 16-byte stride.
+                    const int Xmm0Offset = 0x1a0;
+                    uint count = 16;
+                    if (count > maxValues) count = maxValues;
+                    *pValuesCount = count;
+                    *pFirstFloatReg = (int)CorDebugRegister.REGISTER_AMD64_XMM0;
+                    for (uint i = 0; i < count; i++)
+                        values[i] = ReadSlot64(buf, Xmm0Offset + (int)i * 16);
+                    break;
+                }
+                case RuntimeInfoArchitecture.Arm64:
+                {
+                    const int V0Offset = 0x110;
+                    uint count = 32;
+                    if (count > maxValues) count = maxValues;
+                    *pValuesCount = count;
+                    *pFirstFloatReg = (int)CorDebugRegister.REGISTER_ARM64_V0;
+                    for (uint i = 0; i < count; i++)
+                        values[i] = ReadSlot64(buf, V0Offset + (int)i * 16);
+                    break;
+                }
+                case RuntimeInfoArchitecture.Arm:
+                {
+                    // ARM D registers overlay the Q register area at offset 0x50; 8-byte stride.
+                    const int D0Offset = 0x50;
+                    uint count = 32;
+                    if (count > maxValues) count = maxValues;
+                    *pValuesCount = count;
+                    for (uint i = 0; i < count; i++)
+                        values[i] = ReadSlot64(buf, D0Offset + (int)i * 8);
+                    break;
+                }
+                case RuntimeInfoArchitecture.LoongArch64:
+                {
+                    const int F0Offset = 0x110;
+                    uint count = 32;
+                    if (count > maxValues) count = maxValues;
+                    *pValuesCount = count;
+                    *pFirstFloatReg = (int)CorDebugRegister.REGISTER_LOONGARCH64_F0;
+                    for (uint i = 0; i < count; i++)
+                        values[i] = ReadSlot64(buf, F0Offset + (int)i * 32);
+                    break;
+                }
+                case RuntimeInfoArchitecture.RiscV64:
+                {
+                    const int F0Offset = 0x110;
+                    uint count = 32;
+                    if (count > maxValues) count = maxValues;
+                    *pValuesCount = count;
+                    *pFirstFloatReg = (int)CorDebugRegister.REGISTER_RISCV64_F0;
+                    for (uint i = 0; i < count; i++)
+                        values[i] = ReadSlot64(buf, F0Offset + (int)i * 8);
+                    break;
+                }
+                default:
+                    throw new NotImplementedException($"ReadFloatRegistersFromContext: unsupported architecture {arch}");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && pValuesCount is not null && pFirstFloatReg is not null &&
+            pFloatStackTop is not null && values is not null && maxValues > 0)
+        {
+            double[] valuesLocal = new double[maxValues];
+            uint valuesCountLocal;
+            int firstFloatRegLocal;
+            uint floatStackTopLocal;
+            int hrLocal;
+            fixed (double* pValuesLocal = valuesLocal)
+                hrLocal = _legacy.ReadFloatRegistersFromContext(ctxBuf, cb, maxValues, pValuesLocal,
+                    &valuesCountLocal, &firstFloatRegLocal, &floatStackTopLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pValuesCount == valuesCountLocal, $"count cDAC: {*pValuesCount}, DAC: {valuesCountLocal}");
+                Debug.Assert(*pFirstFloatReg == firstFloatRegLocal, $"firstFloatReg cDAC: {*pFirstFloatReg}, DAC: {firstFloatRegLocal}");
+                Debug.Assert(*pFloatStackTop == floatStackTopLocal, $"floatStackTop cDAC: {*pFloatStackTop}, DAC: {floatStackTopLocal}");
+                for (uint i = 0; i < *pValuesCount && i < maxValues; i++)
+                    Debug.Assert(BitConverter.DoubleToInt64Bits(values[i]) == BitConverter.DoubleToInt64Bits(valuesLocal[i]),
+                                 $"float[{i}] cDAC: {values[i]}, DAC: {valuesLocal[i]}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    private static void WriteAvailableRegistersMask(RuntimeInfoArchitecture arch, bool fActive, bool fQuickUnwind,
+                                                    byte* pAvailable, uint regCount)
+    {
+        void SetBit(int reg)
+        {
+            uint byteIdx = (uint)reg / 8;
+            if (byteIdx < regCount)
+                pAvailable[byteIdx] |= (byte)(1 << (reg % 8));
+        }
+        void SetRange(CorDebugRegister first, CorDebugRegister last)
+        {
+            for (int r = (int)first; r <= (int)last; r++)
+                SetBit(r);
+        }
+        switch (arch)
+        {
+            case RuntimeInfoArchitecture.X86:
+                SetBit((int)CorDebugRegister.REGISTER_X86_EIP);
+                SetBit((int)CorDebugRegister.REGISTER_X86_ESP);
+                SetBit((int)CorDebugRegister.REGISTER_X86_EBP);
+                if (!fQuickUnwind || fActive)
+                    SetRange(CorDebugRegister.REGISTER_X86_EAX, CorDebugRegister.REGISTER_X86_EDI);
+                if (fActive)
+                    SetRange(CorDebugRegister.REGISTER_X86_FPSTACK_0, CorDebugRegister.REGISTER_X86_FPSTACK_7);
+                break;
+
+            case RuntimeInfoArchitecture.X64:
+                SetBit((int)CorDebugRegister.REGISTER_AMD64_RIP);
+                SetBit((int)CorDebugRegister.REGISTER_AMD64_RSP);
+                if (!fQuickUnwind || fActive)
+                    SetRange(CorDebugRegister.REGISTER_AMD64_RBP, CorDebugRegister.REGISTER_AMD64_R15);
+                if (fActive)
+                    SetRange(CorDebugRegister.REGISTER_AMD64_XMM0, CorDebugRegister.REGISTER_AMD64_XMM15);
+                break;
+
+            case RuntimeInfoArchitecture.Arm:
+                SetBit((int)CorDebugRegister.REGISTER_ARM_PC);
+                SetBit((int)CorDebugRegister.REGISTER_ARM_SP);
+                SetRange(CorDebugRegister.REGISTER_ARM_R0, CorDebugRegister.REGISTER_ARM_LR);
+                break;
+
+            case RuntimeInfoArchitecture.Arm64:
+                SetBit((int)CorDebugRegister.REGISTER_ARM64_PC);
+                SetBit((int)CorDebugRegister.REGISTER_ARM64_SP);
+                SetBit((int)CorDebugRegister.REGISTER_ARM64_FP);
+                SetRange(CorDebugRegister.REGISTER_ARM64_X0, CorDebugRegister.REGISTER_ARM64_X28);
+                SetBit((int)CorDebugRegister.REGISTER_ARM64_LR);
+                SetRange(CorDebugRegister.REGISTER_ARM64_V0, CorDebugRegister.REGISTER_ARM64_V31);
+                break;
+
+            case RuntimeInfoArchitecture.LoongArch64:
+                for (int r = (int)CorDebugRegister.REGISTER_LOONGARCH64_PC;
+                         r <= (int)CorDebugRegister.REGISTER_LOONGARCH64_S8; r++)
+                    SetBit(r);
+                SetRange(CorDebugRegister.REGISTER_LOONGARCH64_F0, CorDebugRegister.REGISTER_LOONGARCH64_F31);
+                break;
+
+            case RuntimeInfoArchitecture.RiscV64:
+                for (int r = (int)CorDebugRegister.REGISTER_RISCV64_PC;
+                         r <= (int)CorDebugRegister.REGISTER_RISCV64_T6; r++)
+                    SetBit(r);
+                SetRange(CorDebugRegister.REGISTER_RISCV64_F0, CorDebugRegister.REGISTER_RISCV64_F31);
+                break;
+
+            default:
+                throw new NotImplementedException($"GetAvailableRegistersMask: unsupported architecture {arch}");
+        }
+    }
+
+    private static CorDebugRegister? MapJitRegNumToCorDebugRegister(RuntimeInfoArchitecture arch, uint jitRegNum)
+    {
+        switch (arch)
+        {
+            case RuntimeInfoArchitecture.X86:
+                return jitRegNum switch
+                {
+                    0 => CorDebugRegister.REGISTER_X86_EAX,
+                    1 => CorDebugRegister.REGISTER_X86_ECX,
+                    2 => CorDebugRegister.REGISTER_X86_EDX,
+                    3 => CorDebugRegister.REGISTER_X86_EBX,
+                    4 => CorDebugRegister.REGISTER_X86_ESP,
+                    5 => CorDebugRegister.REGISTER_X86_EBP,
+                    6 => CorDebugRegister.REGISTER_X86_ESI,
+                    7 => CorDebugRegister.REGISTER_X86_EDI,
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.X64:
+                return jitRegNum switch
+                {
+                    0 => CorDebugRegister.REGISTER_AMD64_RAX,
+                    1 => CorDebugRegister.REGISTER_AMD64_RCX,
+                    2 => CorDebugRegister.REGISTER_AMD64_RDX,
+                    3 => CorDebugRegister.REGISTER_AMD64_RBX,
+                    4 => CorDebugRegister.REGISTER_AMD64_RSP,
+                    5 => CorDebugRegister.REGISTER_AMD64_RBP,
+                    6 => CorDebugRegister.REGISTER_AMD64_RSI,
+                    7 => CorDebugRegister.REGISTER_AMD64_RDI,
+                    >= 8 and <= 15 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_AMD64_R8 + (int)(jitRegNum - 8)),
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.Arm:
+                return jitRegNum switch
+                {
+                    <= 12 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_ARM_R0 + (int)jitRegNum),
+                    13 => CorDebugRegister.REGISTER_ARM_SP,
+                    14 => CorDebugRegister.REGISTER_ARM_LR,
+                    15 => CorDebugRegister.REGISTER_ARM_PC,
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.Arm64:
+                return jitRegNum switch
+                {
+                    <= 28 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_ARM64_X0 + (int)jitRegNum),
+                    29 => CorDebugRegister.REGISTER_ARM64_FP,
+                    30 => CorDebugRegister.REGISTER_ARM64_LR,
+                    31 => CorDebugRegister.REGISTER_ARM64_SP,
+                    32 => CorDebugRegister.REGISTER_ARM64_PC,
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.LoongArch64:
+                return jitRegNum switch
+                {
+                    0 => null,
+                    1 => CorDebugRegister.REGISTER_LOONGARCH64_RA,
+                    2 => CorDebugRegister.REGISTER_LOONGARCH64_TP,
+                    3 => CorDebugRegister.REGISTER_LOONGARCH64_SP,
+                    >= 4 and <= 11 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_LOONGARCH64_A0 + (int)(jitRegNum - 4)),
+                    >= 12 and <= 20 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_LOONGARCH64_T0 + (int)(jitRegNum - 12)),
+                    21 => CorDebugRegister.REGISTER_LOONGARCH64_X0,
+                    22 => CorDebugRegister.REGISTER_LOONGARCH64_FP,
+                    >= 23 and <= 31 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_LOONGARCH64_S0 + (int)(jitRegNum - 23)),
+                    32 => CorDebugRegister.REGISTER_LOONGARCH64_PC,
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.RiscV64:
+                return jitRegNum switch
+                {
+                    0 => null,
+                    1 => CorDebugRegister.REGISTER_RISCV64_RA,
+                    2 => CorDebugRegister.REGISTER_RISCV64_SP,
+                    3 => CorDebugRegister.REGISTER_RISCV64_GP,
+                    4 => CorDebugRegister.REGISTER_RISCV64_TP,
+                    >= 5 and <= 7 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_RISCV64_T0 + (int)(jitRegNum - 5)),
+                    8 => CorDebugRegister.REGISTER_RISCV64_FP,
+                    9 => CorDebugRegister.REGISTER_RISCV64_S1,
+                    >= 10 and <= 17 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_RISCV64_A0 + (int)(jitRegNum - 10)),
+                    >= 18 and <= 27 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_RISCV64_S2 + (int)(jitRegNum - 18)),
+                    >= 28 and <= 31 => (CorDebugRegister)((int)CorDebugRegister.REGISTER_RISCV64_T3 + (int)(jitRegNum - 28)),
+                    32 => CorDebugRegister.REGISTER_RISCV64_PC,
+                    _ => null,
+                };
+
+            default:
+                return null;
+        }
+    }
+
+    private static string? MapToCdacName(RuntimeInfoArchitecture arch, CorDebugRegister reg)
+    {
+        int n = (int)reg;
+        switch (arch)
+        {
+            case RuntimeInfoArchitecture.X86:
+                return n switch
+                {
+                    0 => "eip", 1 => "esp", 2 => "ebp",
+                    3 => "eax", 4 => "ecx", 5 => "edx",
+                    6 => "ebx", 7 => "esi", 8 => "edi",
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.X64:
+                return n switch
+                {
+                    0 => "rip", 1 => "rsp", 2 => "rbp",
+                    3 => "rax", 4 => "rcx", 5 => "rdx",
+                    6 => "rbx", 7 => "rsi", 8 => "rdi",
+                    >= 9 and <= 16 => "r" + (n - 9 + 8).ToString(),
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.Arm:
+                return n switch
+                {
+                    0 => "pc",
+                    1 => "sp",
+                    >= 2 and <= 14 => "r" + (n - 2).ToString(),
+                    15 => "lr",
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.Arm64:
+                return n switch
+                {
+                    0 => "pc",
+                    1 => "sp",
+                    2 => "fp",
+                    >= 3 and <= 31 => "x" + (n - 3).ToString(),
+                    32 => "lr",
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.LoongArch64:
+                return n switch
+                {
+                    0 => "pc", 1 => "sp", 2 => "fp", 3 => "ra", 4 => "tp",
+                    >= 5 and <= 12 => "a" + (n - 5).ToString(),
+                    >= 13 and <= 21 => "t" + (n - 13).ToString(),
+                    22 => "x0",
+                    >= 23 and <= 31 => "s" + (n - 23).ToString(),
+                    _ => null,
+                };
+
+            case RuntimeInfoArchitecture.RiscV64:
+                return n switch
+                {
+                    0 => "pc", 1 => "sp", 2 => "fp", 3 => "ra", 4 => "gp", 5 => "tp",
+                    >= 6 and <= 8 => "t" + (n - 6).ToString(),
+                    9 => "s1",
+                    >= 10 and <= 17 => "a" + (n - 10).ToString(),
+                    >= 18 and <= 27 => "s" + (n - 18 + 2).ToString(),
+                    >= 28 and <= 31 => "t" + (n - 28 + 3).ToString(),
+                    _ => null,
+                };
+
+            default:
+                return null;
+        }
+    }
+
     // Fills a DebuggerIPCE_ExpandedTypeData entry for a single type parameter, falling back to System.__Canon on failure.
     private void FillExpandedTypeDataWithCanonFallback(IRuntimeTypeSystem rts, TypeHandle typeHandle, TypeHandle thCanon, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {

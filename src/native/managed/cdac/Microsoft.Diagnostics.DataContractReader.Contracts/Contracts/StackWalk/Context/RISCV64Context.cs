@@ -228,6 +228,51 @@ internal struct RISCV64Context : IPlatformContext
         }
     }
 
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
+
+    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ra"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "sp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "fp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "pc"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "gp"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "tp"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a6"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a7"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s6"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s7"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s8"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s9"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s10"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s11"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t6"),
+    ];
+
+    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<RISCV64Context>(nameof(F)), (int)Marshal.OffsetOf<RISCV64Context>(nameof(Fcsr)) + sizeof(uint)),
+    ];
+
     // Control flags
 
     [FieldOffset(0x0)]
@@ -235,11 +280,11 @@ internal struct RISCV64Context : IPlatformContext
 
     #region General registers
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x8)]
     public ulong Ra;
 
-    [Register(RegisterType.General | RegisterType.StackPointer)]
+    [Register(RegisterType.Control | RegisterType.StackPointer)]
     [FieldOffset(0x10)]
     public ulong Sp;
 
@@ -263,7 +308,7 @@ internal struct RISCV64Context : IPlatformContext
     [FieldOffset(0x38)]
     public ulong T2;
 
-    [Register(RegisterType.General | RegisterType.FramePointer)]
+    [Register(RegisterType.Control | RegisterType.FramePointer)]
     [FieldOffset(0x40)]
     public ulong Fp;
 

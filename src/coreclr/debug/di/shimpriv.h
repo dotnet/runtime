@@ -638,6 +638,10 @@ public:
     ShimChain *       GetChain(UINT32 index);
     ICorDebugFrame *  GetFrame(UINT32 index);
 
+    // The target's CONTEXT size in bytes (forwards to CordbProcess::GetTargetContextSize,
+    // which memoizes it). ShimStackWalk owns no context buffer, so it caches nothing itself.
+    ULONG32           GetContextSize();
+
     // Get the number of frames and chains.
     ULONG             GetChainCount();
     ULONG             GetFrameCount();
@@ -684,13 +688,25 @@ private:
     struct ChainInfo
     {
     public:
-        ChainInfo() : m_rootFP(LEAF_MOST_FRAME), m_reason(CHAIN_NONE), m_fNeedEnterManagedChain(FALSE), m_fLeafNativeContextIsValid(FALSE) {}
+        ChainInfo(ULONG32 contextSize)
+          : m_leafNativeContext(new BYTE[contextSize]),
+            m_leafManagedContext(new BYTE[contextSize]),
+            m_contextSize(contextSize),
+            m_rootFP(LEAF_MOST_FRAME),
+            m_reason(CHAIN_NONE),
+            m_fNeedEnterManagedChain(FALSE),
+            m_fLeafNativeContextIsValid(FALSE) {}
 
         void CancelUMChain() { m_reason = CHAIN_NONE; }
         BOOL IsTrackingUMChain() { return (m_reason == CHAIN_ENTER_UNMANAGED); }
 
-        DT_CONTEXT          m_leafNativeContext;
-        DT_CONTEXT          m_leafManagedContext;
+        BYTE * GetLeafNativeContext()  { return m_leafNativeContext; }
+        BYTE * GetLeafManagedContext() { return m_leafManagedContext; }
+
+        // Leaf CONTEXT buffers, sized at construction to the target's CONTEXT size.
+        NewArrayHolder<BYTE> m_leafNativeContext;
+        NewArrayHolder<BYTE> m_leafManagedContext;
+        ULONG32             m_contextSize;
         FramePointer        m_rootFP;
         CorDebugChainReason m_reason;
         bool                m_fNeedEnterManagedChain;
@@ -776,7 +792,7 @@ private:
     void Clear();
 
     // Get a FramePointer to mark the root boundary of a chain.
-    FramePointer GetFramePointerForChain(DT_CONTEXT * pContext);
+    FramePointer GetFramePointerForChain(const BYTE * pContext);
     FramePointer GetFramePointerForChain(ICorDebugInternalFrame2 * pInternalFrame2);
 
     CorDebugInternalFrameType GetInternalFrameType(ICorDebugInternalFrame2 * pFrame2);
@@ -787,14 +803,14 @@ private:
 
     // Append a chain to the array.
     void AppendChainWorker(StackWalkInfo *     pStackWalkInfo,
-                           DT_CONTEXT *        pLeafContext,
+                           const BYTE *        pLeafContext,
                            FramePointer        fpRoot,
                            CorDebugChainReason chainReason,
                            BOOL                fIsManagedChain);
     void AppendChain(ChainInfo * pChainInfo, StackWalkInfo * pStackWalkInfo);
 
     // Save information on the ChainInfo regarding the current chain.
-    void SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChainInfo, DT_CONTEXT * pContext);
+    void SaveChainContext(ICorDebugStackWalk * pSW, ChainInfo * pChainInfo, BYTE * pContext);
 
     // Check what we are process next, a internal frame or a stack frame.
     BOOL CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
@@ -842,7 +858,7 @@ class ShimChain : public ICorDebugChain
 {
 public:
     ShimChain(ShimStackWalk *     pSW,
-              DT_CONTEXT *        pContext,
+              const BYTE *        pContext,
               FramePointer        fpRoot,
               UINT32              chainIndex,
               UINT32              frameStartIndex,
@@ -898,7 +914,10 @@ private:
     // end of the chain, and a frame pointer where the chain ends (rootmost).  This stack range is exposed
     // publicly via ICDChain::GetStackRange(), and can be used to stitch managed and native stack frames
     // together into a unified stack.
-    DT_CONTEXT          m_context;          // the leaf end of the chain
+    // The CONTEXT is held as an opaque byte buffer sized to the target's CONTEXT (GetTargetContextSize),
+    // so ShimChain keeps no per-arch knowledge of the CONTEXT layout.
+    NewArrayHolder<BYTE> m_pContext;         // the leaf end of the chain
+    ULONG32             m_contextSize;
     FramePointer        m_fpRoot;           // the root end of the chain
 
     ShimStackWalk *     m_pStackWalk;       // the owning ShimStackWalk

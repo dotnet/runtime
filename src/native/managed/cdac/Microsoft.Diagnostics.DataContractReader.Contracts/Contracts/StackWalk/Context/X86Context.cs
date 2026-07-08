@@ -39,6 +39,10 @@ public struct X86Context : IPlatformContext
 
     public readonly uint Size => 0x2cc;
 
+    public readonly uint SizeWithoutExtendedRegisters => 0xcc;
+
+    public readonly uint ExtendedRegistersFlag => (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS;
+
     public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
 
     public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
@@ -176,6 +180,39 @@ public struct X86Context : IPlatformContext
             default: value = default; return false;
         }
     }
+
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
+
+    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ebp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eip"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cs"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eflags"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "esp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ss"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "edi"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "esi"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "ebx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "edx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "ecx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "eax"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "gs"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "fs"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "es"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "ds"),
+    ];
+
+    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
+            (int)Marshal.OffsetOf<X86Context>(nameof(Dr0)), (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord))),
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord)), (int)Marshal.OffsetOf<X86Context>(nameof(Gs))),
+        ((uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS,
+            (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters)), (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters)) + 512),
+    ];
 
     // Control flags
 
@@ -336,11 +373,11 @@ public struct X86Context : IPlatformContext
     [FieldOffset(0xb8)]
     public uint Eip;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xbc)]
     public uint Cs;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xc0)]
     public uint EFlags;
 
@@ -348,12 +385,13 @@ public struct X86Context : IPlatformContext
     [FieldOffset(0xc4)]
     public uint Esp;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xc8)]
     public uint Ss;
 
     #endregion
 
+    [Register(RegisterType.Extended)]
     [FieldOffset(0xcc)]
     public unsafe fixed byte ExtendedRegisters[512];
 }

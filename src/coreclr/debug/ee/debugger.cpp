@@ -13319,7 +13319,7 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
 
     //win32 has a weird property where EIP points after the BP in the debug event
     //so we are adjusting it to point at the BP
-    CORDbgAdjustPCForBreakInstruction((DT_CONTEXT*)pContext);
+    CORDbgAdjustPCForBreakInstruction(pContext);
     LOG((LF_CORDB, LL_INFO1000, "D::M2UHHW: Context ip set to 0x%p\n", GetIP(pContext)));
 
     _ASSERTE(!ISREDIRECTEDTHREAD(pEEThread));
@@ -14956,7 +14956,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread) LOONGARCH64_ARG(pThread)))
+        if (IsSSFlagEnabled(pCtx ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread) LOONGARCH64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.

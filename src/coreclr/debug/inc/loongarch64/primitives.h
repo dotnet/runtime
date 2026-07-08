@@ -83,13 +83,13 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_LOONGARCH64_PC
 };
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID ip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID ip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Pc = (DWORD64)ip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
     return (CORDB_ADDRESS)(context->Sp);
@@ -202,7 +202,7 @@ inline void CORDbgInsertBreakpointExImpl(UNALIGNED CORDB_ADDRESS_TYPE *address)
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
