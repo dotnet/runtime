@@ -13,6 +13,7 @@ public static class FullPdbThrower
     // - NativeAOT to verify line blob creation in ILC supports full PDB inputs.
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("Mono doesn't support full PDB stacktrace info.")]
     public static void ExceptionToString_FullPdb_IncludesSourceLine()
     {
         try
