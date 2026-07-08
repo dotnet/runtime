@@ -68,7 +68,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pPrivAsm != nullptr);
-        *ppAssembly = pPrivAsm.Extract();
+        *ppAssembly = pPrivAsm.Detach();
     }
 
     return hr;

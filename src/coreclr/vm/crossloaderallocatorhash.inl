@@ -831,12 +831,12 @@ CrossLoaderAllocatorHash<TRAITS>::GetDependentTrackerForLoaderAllocator(LoaderAl
     }
 
     NewHolder<LADependentKeyToValuesHash> laDependentKeyToValuesHashHolder = new LADependentKeyToValuesHash();
-    ReleaseHolder<LAHashDependentHashTracker> dependentTrackerHolder =
-        new LAHashDependentHashTracker(pLoaderAllocator, laDependentKeyToValuesHashHolder);
+    ReleaseHolder<LAHashDependentHashTracker> dependentTrackerHolder{
+        new LAHashDependentHashTracker(pLoaderAllocator, laDependentKeyToValuesHashHolder) };
     laDependentKeyToValuesHashHolder.SuppressRelease();
 
     dependentTrackerHash.Add(dependentTrackerHolder);
-    return dependentTrackerHolder.Extract();
+    return dependentTrackerHolder.Detach();
 }
 #endif // !DACCESS_COMPILE
 

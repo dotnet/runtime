@@ -1756,7 +1756,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // where right now...</REVISIT_TODO>
         HRESULT hr = S_OK;
 
-        ComHolderPreemp<ISymUnmanagedBinder> pBinder;
+        ReleaseHolder<ISymUnmanagedBinder> pBinder;
 
         if (g_pDebugInterface == NULL)
         {
@@ -1784,11 +1784,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // hard disk for files.
         ErrorModeHolder errorMode{};
 
-        ComHolderPreemp<ISymUnmanagedReader> pReader;
+        ReleaseHolder<ISymUnmanagedReader> pReader;
 
         if (fInMemorySymbols)
         {
-            ComHolderPreemp<IStream> pIStream( NULL );
+            ReleaseHolder<IStream> pIStream;
 
             // If debug stream is already specified, don't bother to go through fusion
             // This is the common case for case 2 (hosted modules) and case 3 (Ref.Emit).
@@ -1823,7 +1823,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // Call Fusion to ensure that any PDB's are shadow copied before
             // trying to get a symbol reader. This has to be done once per
             // Assembly.
-            ReleaseHolder<IUnknown> pUnk = NULL;
+            ReleaseHolder<IUnknown> pUnk;
             hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
             if (SUCCEEDED(hr))
                 hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
@@ -1890,7 +1890,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     STANDARD_VM_CONTRACT;
 
     // Create a IStream from the memory for the syms.
-    ComHolderPreemp<CGrowableStream> pStream(new CGrowableStream());
+    ReleaseHolder<CGrowableStream> pStream(new CGrowableStream());
 
     // Do not need to AddRef the CGrowableStream because the constructor set it to 1
     // ref count already. The Module will keep a copy for its own use.
@@ -2463,7 +2463,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     }
 
     {
-        PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
+        PEAssemblyHolder pPEAssembly{ GetPEAssembly()->LoadAssembly(kAssemblyRef) };
         AssemblySpec spec;
         spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up

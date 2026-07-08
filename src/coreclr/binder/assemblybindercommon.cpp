@@ -329,7 +329,7 @@ namespace BINDER_SPACE
 
         IF_FAIL_GO(hr);
 
-        *ppSystemAssembly = pSystemAssembly.Extract();
+        *ppSystemAssembly = pSystemAssembly.Detach();
 
     Exit:
         return hr;
@@ -382,7 +382,7 @@ namespace BINDER_SPACE
                                                probeExtensionResult));
         BinderTracing::PathProbed(sCoreLibSatellite, pathSource, hr);
 
-        *ppSystemAssembly = pSystemAssembly.Extract();
+        *ppSystemAssembly = pSystemAssembly.Detach();
 
     Exit:
         return hr;
@@ -790,7 +790,7 @@ namespace BINDER_SPACE
                 }
 
                 // Set any found assembly. It is up to the caller to check the returned HRESULT for errors due to validation
-                *ppAssembly = pAssembly.Extract();
+                *ppAssembly = pAssembly.Detach();
                 if (FAILED(hr))
                     return hr;
 
@@ -1030,7 +1030,7 @@ namespace BINDER_SPACE
         }
 
         // We're done
-        *ppAssembly = pAssembly.Extract();
+        *ppAssembly = pAssembly.Detach();
 
     Exit:
 

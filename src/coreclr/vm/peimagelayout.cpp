@@ -119,7 +119,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     }
 
     // we can use flat layout for this
-    return pFlat.Extract();
+    return pFlat.Detach();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -143,7 +143,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 
                 PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
                 if (pAlloc->GetBase() != NULL)
-                    return pAlloc.Extract();
+                    return pAlloc.Detach();
 
 #if TARGET_WINDOWS
                 // For regular PE files always use OS loader on Windows.

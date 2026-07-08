@@ -111,7 +111,7 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
 
     IF_FAIL_GO(hr);
 
-    *ppAssembly = pCoreCLRFoundAssembly.Extract();
+    *ppAssembly = pCoreCLRFoundAssembly.Detach();
 
 Exit:;
 
@@ -162,7 +162,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                 {
                     if (pCoreCLRFoundAssembly->GetIsInTPA())
                     {
-                        *ppAssembly = pCoreCLRFoundAssembly.Extract();
+                        *ppAssembly = pCoreCLRFoundAssembly.Detach();
                         goto Exit;
                     }
                 }
@@ -172,7 +172,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                     // Return the existing assembly so the caller can provide an informative error message.
                     if (ppExistingAssemblyOnConflict != nullptr)
                     {
-                        *ppExistingAssemblyOnConflict = pExistingAssembly.Extract();
+                        *ppExistingAssemblyOnConflict = pExistingAssembly.Detach();
                     }
                     goto Exit;
                 }
@@ -184,7 +184,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
             pCoreCLRFoundAssembly->SetBinder(this);
-            *ppAssembly = pCoreCLRFoundAssembly.Extract();
+            *ppAssembly = pCoreCLRFoundAssembly.Detach();
         }
 Exit:;
     }
@@ -221,7 +221,7 @@ HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAss
         if (SUCCEEDED(hr))
         {
             _ASSERTE(pAsm != NULL);
-            *ppSystemAssembly = pAsm.Extract();
+            *ppSystemAssembly = pAsm.Detach();
             (*ppSystemAssembly)->SetBinder(this);
         }
 

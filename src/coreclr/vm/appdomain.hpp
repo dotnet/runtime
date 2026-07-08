@@ -1115,7 +1115,7 @@ public:
     void GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain, int maxDepth);
 
 private:
-    PEAssembly* FindCachedFile(AssemblySpec* pSpec, BOOL fThrow = TRUE);
+    PEAssembly* FindCachedFile(AssemblySpec* pSpec);
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 

@@ -3027,7 +3027,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
         (void)pModule; //prevent "unused variable" error from GCC
         _ASSERTE(pModule != NULL);
 
-        ComHolderPreemp<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
+        ReleaseHolder<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
 
         // If we got a reader, use it.
         if (pReader != NULL)

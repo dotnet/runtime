@@ -53,14 +53,14 @@ private:
 };
 
 template <typename TYPE>
-struct ComHolderAnyModeTraits final
+struct ReleaseHolderAnyModeTraits final
 {
     static_assert(
-        std::is_base_of<IUnknown, TYPE>::value,
-        "TYPE must derive from IUnknown");
+        HolderDetail::HasReleaseMethod<TYPE>::value,
+        "TYPE must have a Release() member");
 
     using Type = TYPE*;
-    static constexpr Type Default() { return nullptr; }
+    static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
         CONTRACTL
@@ -74,38 +74,11 @@ struct ComHolderAnyModeTraits final
     }
 };
 
-// Releases the held COM interface regardless of the current GC mode, switching
-// to preemptive internally when required. Use ComHolderPreemp instead when
+// Releases the held type with a Release() method regardless of the current GC mode,
+// switching to preemptive internally when required. Use ReleaseHolder instead when
 // the release will always occur in preemptive mode.
 template<typename _TYPE>
-using ComHolderAnyMode = LifetimeHolder<ComHolderAnyModeTraits<_TYPE>>;
-
-template <typename TYPE>
-struct ComHolderPreempTraits final
-{
-    static_assert(
-        std::is_base_of<IUnknown, TYPE>::value,
-        "TYPE must derive from IUnknown");
-
-    using Type = TYPE*;
-    static constexpr Type Default() { return nullptr; }
-    static void Free(Type value)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
-        } CONTRACTL_END;
-
-        SafeReleasePreemp(value);
-    }
-};
-
-// Use this holder if you're already in preemptive mode for other reasons,
-// use ComHolderAnyMode otherwise.
-template<typename _TYPE>
-using ComHolderPreemp = LifetimeHolder<ComHolderPreempTraits<_TYPE>>;
+using ReleaseHolderAnyMode = LifetimeHolder<ReleaseHolderAnyModeTraits<_TYPE>>;
 
 //--------------------------------------------------------------------------------
 // safe variant helper

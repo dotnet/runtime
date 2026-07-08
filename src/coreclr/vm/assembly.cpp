@@ -73,7 +73,7 @@ namespace
         }
         CONTRACT_END;
 
-        ComHolderAnyMode<IMetaDataDispenserEx> pDispenser;
+        ReleaseHolderAnyMode<IMetaDataDispenserEx> pDispenser;
 
         // Get the Dispenser interface.
         CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void**)&pDispenser);
@@ -407,7 +407,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     // add such a reference. Also because the referenced assembly if dynamic strong name, it may
     // not be ready to be hashed!
 
-    ComHolderAnyMode<IMetaDataAssemblyEmit> pAssemblyEmit;
+    ReleaseHolderAnyMode<IMetaDataAssemblyEmit> pAssemblyEmit;
     DefineEmitScope(
         IID_IMetaDataAssemblyEmit,
         (void**)&pAssemblyEmit);
@@ -902,14 +902,14 @@ void Assembly::CacheFriendAssemblyInfo()
 
     if (m_pFriendAssemblyDescriptor == NULL)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies{ FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly()) };
         _ASSERTE(pFriendAssemblies != NULL);
 
         CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
 
         if (m_pFriendAssemblyDescriptor == NULL)
         {
-            m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
+            m_pFriendAssemblyDescriptor = pFriendAssemblies.Detach();
         }
     }
 } // void Assembly::CacheFriendAssemblyInfo()
@@ -937,7 +937,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
 
     while (true)
     {
-        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly());
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies{ FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetPEAssembly()) };
         FriendAssemblyDescriptor* pFriendAssemblyDescriptorNextLoop = NULL;
 
         {
@@ -948,7 +948,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
                 if (m_pFriendAssemblyDescriptor != NULL)
                     m_pFriendAssemblyDescriptor->Release();
 
-                m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
+                m_pFriendAssemblyDescriptor = pFriendAssemblies.Detach();
                 return;
             }
             else
@@ -2513,7 +2513,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
     }
     CONTRACTL_END
 
-    ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
+    ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies{ new FriendAssemblyDescriptor };
 
     // We're going to do this twice, once for InternalsVisibleTo and once for IgnoresAccessChecks
     IMDInternalImport* pImport = pAssembly->GetMDImport();

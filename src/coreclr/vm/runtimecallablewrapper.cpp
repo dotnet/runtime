@@ -97,8 +97,8 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     CONTRACT_END;
 
     HRESULT hr = S_OK;
-    ComHolderAnyMode<IClassFactory2> pClassFact2;
-    ComHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IClassFactory2> pClassFact2;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
     BSTRHolder bstrKey;
 
     // If the class doesn't support licensing or if it is missing a managed
@@ -254,9 +254,9 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
     _ASSERTE(pMT != NULL);
 #endif
 
-    ComHolderAnyMode<IUnknown>         pOuter;
-    ComHolderAnyMode<IClassFactory>    pClassFact;
-    ComHolderAnyMode<IUnknown>         pUnk;
+    ReleaseHolderAnyMode<IUnknown>         pOuter;
+    ReleaseHolderAnyMode<IClassFactory>    pClassFact;
+    ReleaseHolderAnyMode<IUnknown>         pUnk;
 
     HRESULT hr = S_OK;
     NewRCWHolder pNewRCW;
@@ -268,7 +268,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         cref = (COMOBJECTREF)ComObject::CreateComObjectRef(pMTClass);
 
         //get wrapper for the object, this could enable GC
-        CCWHolder pComWrap =  ComCallWrapper::InlineGetWrapper((OBJECTREF *)&cref);
+        CCWHolder pComWrap{ ComCallWrapper::InlineGetWrapper((OBJECTREF *)&cref) };
 
         DebuggerExitFrame __def;
 
@@ -281,9 +281,10 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
 
         __def.Pop();
 
-        // give up the extra addref that we did in our QI and suppress the auto-release.
+        // give up the extra addref that we did in our QI and relinquish the holder's
+        // auto-release; take a non-owning pointer for the remaining manual releases below.
         pComWrap->Release();
-        pComWrap.SuppressRelease();
+        ComCallWrapper* pComWrapRaw = pComWrap.Detach();
 
         // Here's the scary part.  If we are doing a managed 'new' of the aggregator,
         // then COM really isn't involved.  We should not be counting for our caller
@@ -293,7 +294,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         // Drive the instances count down to 0 -- and rely on the GCPROTECT to keep us
         // alive until we get back to our caller.
         if (ForManaged)
-            pComWrap->Release();
+            pComWrapRaw->Release();
 
         RCWCache* pCache = RCWCache::GetRCWCache();
 
@@ -378,7 +379,7 @@ IUnknown *ComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidC
     }
     CONTRACT_END;
 
-    ComHolderAnyMode<IClassFactory> pClassFactory{ GetIClassFactory() };
+    ReleaseHolderAnyMode<IClassFactory> pClassFactory{ GetIClassFactory() };
     RETURN CreateInstanceFromClassFactory(pClassFactory, pOuter, pfDidContainment);
 }
 
@@ -470,8 +471,8 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
     GCPROTECT_BEGIN(coref)
     {
         {
-            ComHolderAnyMode<IUnknown> pUnk;
-            ComHolderAnyMode<IClassFactory> pClassFact;
+            ReleaseHolderAnyMode<IUnknown> pUnk;
+            ReleaseHolderAnyMode<IClassFactory> pClassFact;
 
             // Create the instance
             pUnk = CreateInstanceInternal(NULL, NULL);
@@ -1247,7 +1248,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     LogInteropAddRef(pUnk, cbRef, "RCWCache::CreateRCW: Addref pUnk because creating new RCW");
 
     // Make sure we release AddRef-ed pUnk in case of exceptions
-    ComHolderPreemp<IUnknown> pUnkHolder{ pUnk };
+    ReleaseHolder<IUnknown> pUnkHolder{ pUnk };
 
     // Log the creation
     LogRCWCreate(pWrap, pUnk);
@@ -1379,7 +1380,7 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     CONTRACTL_END;
 
     // Check whether the COM object can be marshaled. Hence we query for INoMarshal
-    ComHolderPreemp<INoMarshal> pNoMarshal;
+    ReleaseHolder<INoMarshal> pNoMarshal;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_INoMarshal, (IUnknown**)&pNoMarshal);
     LogInteropQI(pUnk, IID_INoMarshal, hr, "RCW::GetMarshalingType: QI for INoMarshal");
 
@@ -1647,7 +1648,7 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
     COMOBJECTREF NewWrapperObj = (COMOBJECTREF)ComObject::CreateComObjectRef(pNewMT);
     GCPROTECT_BEGIN(NewWrapperObj)
     {
-        ComHolderAnyMode<IUnknown> pAutoUnk;
+        ReleaseHolderAnyMode<IUnknown> pAutoUnk;
 
         // Retrieve the RCWCache to use.
         RCWCache* pCache = RCWCache::GetRCWCache();
@@ -1706,7 +1707,7 @@ IUnknown* RCW::GetComIPFromRCW(REFIID iid)
     }
     CONTRACT_END;
 
-    ComHolderAnyMode<IUnknown> pRet;
+    ReleaseHolderAnyMode<IUnknown> pRet;
     HRESULT hr = S_OK;
 
     hr = SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pRet);
@@ -1865,7 +1866,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     // GetIUnknown_NoAddRef() hands back a pointer we do not own; only the
     // GetIUnknown() fallback below returns a ref that must be released.
     IUnknown* pUnk = GetIUnknown_NoAddRef();
-    ComHolderAnyMode<IUnknown> pOwnedUnk;
+    ReleaseHolderAnyMode<IUnknown> pOwnedUnk;
     if (pUnk == NULL)
     {
         // if we are not on the right thread we get a proxy which we need to keep AddRef'ed
@@ -2017,7 +2018,7 @@ BOOL RCW::SupportsIProvideClassInfo()
     CONTRACTL_END;
 
     BOOL bSupportsIProvideClassInfo = FALSE;
-    ComHolderAnyMode<IUnknown> pProvClassInfo;
+    ReleaseHolderAnyMode<IUnknown> pProvClassInfo;
 
     // QI for IProvideClassInfo on the COM object.
     HRESULT hr = SafeQueryInterfaceRemoteAware(IID_IProvideClassInfo, &pProvClassInfo);
@@ -2180,7 +2181,7 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
     }
     CONTRACTL_END
 
-    ComHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
     HRESULT hr;
     BOOL bSupportsItf = FALSE;
 
@@ -2225,8 +2226,8 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
             MethodTable *pSrcItfClass = NULL;
             MethodTable *pEvProvClass = NULL;
             GUID SrcItfIID;
-            ComHolderAnyMode<IConnectionPointContainer> pCPC;
-            ComHolderAnyMode<IConnectionPoint> pCP;
+            ReleaseHolderAnyMode<IConnectionPointContainer> pCPC;
+            ReleaseHolderAnyMode<IConnectionPoint> pCP;
 
             // Retrieve the IID of the source interface associated with this
             // event interface.
@@ -2326,7 +2327,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
     }
     CONTRACT_END;
 
-    ComHolderAnyMode<IUnknown> pItf;
+    ReleaseHolderAnyMode<IUnknown> pItf;
     HRESULT hr = S_OK;
     IID *pNativeIID = NULL;
     GUID iid;
@@ -2471,7 +2472,7 @@ IUnknown *ComObject::GetComIPFromRCW(OBJECTREF *pObj, MethodTable* pIntfTable)
     }
     CONTRACT_END;
 
-    ComHolderAnyMode<IUnknown> pIUnk;
+    ReleaseHolderAnyMode<IUnknown> pIUnk;
 
     RCWHolder pRCW(GetThread());
     RCWPROTECT_BEGIN(pRCW, *pObj);
