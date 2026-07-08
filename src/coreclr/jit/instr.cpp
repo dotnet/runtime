@@ -1072,7 +1072,10 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
     unsigned varNum = BAD_VAR_NUM;
     uint16_t offset = UINT16_MAX;
 
-    if (op->isUsedFromSpillTemp())
+    // A rematerializable constant that LSRA spilled and whose use consumes it directly from
+    // memory (GTF_NOREG_AT_USE) has no stack spill temp (see genProduceReg); it is emitted
+    // from its data-section home instead, handled by the constant cases below.
+    if (op->isUsedFromSpillTemp() && !isRematerializableConstant(op))
     {
         assert(op->IsRegOptional());
 

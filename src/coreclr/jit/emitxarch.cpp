@@ -6515,7 +6515,12 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         assert(!dst->isUsedFromMemory());
         otherOp = dst;
 
-        if ((src->IsCnsIntOrI() || src->IsCnsFltOrDbl()) && !src->isUsedFromSpillTemp())
+        // A floating-point constant is always emitted from its data-section home. When it is
+        // contained it has no spill temp, and a rematerializable constant that LSRA spilled with
+        // its use consuming the value from memory (GTF_NOREG_AT_USE) likewise has no spill temp
+        // (see genProduceReg), so route both to the constant (data section) path below rather
+        // than trying to read a spill temp that was never created.
+        if ((src->IsCnsIntOrI() && !src->isUsedFromSpillTemp()) || src->IsCnsFltOrDbl())
         {
             assert(!src->isUsedFromMemory() || src->IsCnsFltOrDbl());
             cnsOp = src;

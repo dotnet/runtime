@@ -1549,22 +1549,35 @@ bool CodeGen::isRematerializableConstant(GenTree* tree)
 //
 // Return Value:
 //    True if 'tree' is a rematerializable constant whose definition is spilled immediately
-//    (GTF_SPILL) and every reload will rematerialize the value rather than consume it from
-//    a spill temp (GTF_NOREG_AT_USE).
+//    (GTF_SPILL) and whose value never needs to live in a stack spill temp, so both the store
+//    and the register definition can be elided.
 //
 // Notes:
 //    GTF_SPILL on a definition carries spill-after semantics: LSRA stores the value right
 //    after it is produced and frees the register, so there is no in-register use of the
-//    definition and every consumer reloads it. When such a value is rematerializable, the
-//    reload is replaced by rematerialization (see genUnspillRegIfNeeded) and the stack store
-//    is skipped (see genProduceReg). In that case the definition itself only materializes a
-//    value into a register that is never read, so callers use this predicate to also elide
-//    the definition. GTF_NOREG_AT_USE means the value is consumed directly from the spill
-//    temp as a contained memory operand, which still requires the definition and its store.
+//    definition. When such a value is rematerializable, the stack store is skipped (see
+//    genProduceReg) and the definition itself only materializes a value into a register that
+//    is never read, so callers use this predicate to also elide the definition.
+//
+//    A reload that needs the value in a register rematerializes it (see genUnspillRegIfNeeded).
+//    A use that instead consumes the value directly from memory is marked GTF_NOREG_AT_USE; on
+//    xarch that memory operand can be the constant's data-section home (see genOperandDesc and
+//    emitInsBinary), so the definition and its spill store are still unnecessary. Targets that
+//    cannot encode the constant as a memory operand must materialize it into a register at the
+//    use, so there the definition and its store are retained for the GTF_NOREG_AT_USE case.
 //
 bool CodeGen::isRematerializedConstantSpill(GenTree* tree)
 {
-    return ((tree->gtFlags & (GTF_SPILL | GTF_NOREG_AT_USE)) == GTF_SPILL) && isRematerializableConstant(tree);
+    if (((tree->gtFlags & GTF_SPILL) == 0) || !isRematerializableConstant(tree))
+    {
+        return false;
+    }
+
+#if defined(TARGET_XARCH)
+    return true;
+#else
+    return (tree->gtFlags & GTF_NOREG_AT_USE) == 0;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -2390,10 +2403,11 @@ void CodeGen::genProduceReg(GenTree* tree)
             {
                 // Floating-point, SIMD, and mask constants have no GC liveness and (on the targets
                 // for which isRematerializableConstant is enabled) can be rematerialized cheaply
-                // without a scratch register. Rather than spilling such a value to the stack and
-                // reloading it, skip creating the spill temp and emitting the store;
-                // genUnspillRegIfNeeded will rematerialize it at the reload point. The definition
-                // that produced this value is likewise elided at the definition site (see
+                // without a scratch register. Rather than spilling such a value to the stack, skip
+                // creating the spill temp and emitting the store; a reload rematerializes it into a
+                // register (see genUnspillRegIfNeeded) and, on xarch, a use that consumes it from
+                // memory reads the constant's data-section home directly (see genOperandDesc). The
+                // definition that produced this value is likewise elided at the definition site (see
                 // genCodeForTreeNode), so nothing reads the register here.
                 if (isRematerializedConstantSpill(tree))
                 {
