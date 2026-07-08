@@ -161,11 +161,9 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         {
             descriptor.eightByteClassifications1 = (SystemVClassificationType)info.EightByteClassification1;
             descriptor.eightByteSizes1 = info.EightByteSize1;
-            descriptor.eightByteOffsets1 = SystemVEightByteSizeInBytes;
+            descriptor.eightByteOffsets1 = SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR.SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
         }
     }
-
-    private const int SystemVEightByteSizeInBytes = 8;
 
     public FpStructInRegistersInfo GetFpStructInRegistersInfo(Internal.TypeSystem.TargetArchitecture architecture)
     {
