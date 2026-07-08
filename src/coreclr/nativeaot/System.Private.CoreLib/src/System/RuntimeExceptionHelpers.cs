@@ -33,12 +33,12 @@ namespace System
         private enum FatalErrorProperty
         {
             FatalErrorLogFunc = 0x1,
-            Address,
-            WindowsExceptionRecord,
-            WindowsContextRecord,
-            UContext,
-            PosixSigInfo,
-            MachExceptionInfo,
+            Address = 0x2,
+            WindowsExceptionRecord = 0x3,
+            WindowsContextRecord = 0x4,
+            UContext = 0x5,
+            PosixSigInfo = 0x6,
+            MachExceptionInfo = 0x7,
         }
 
         // Native exception state surfaced to the handler through the property getter,

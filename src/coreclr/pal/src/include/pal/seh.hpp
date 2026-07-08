@@ -152,23 +152,26 @@ extern int g_hardware_exception_context_locvar_offset;
 // This offset is relative to the frame pointer.
 extern int g_inject_activation_context_locvar_offset;
 
-// Stash the platform-native exception information for retrieval by
-// PAL_GetFatalErrorPlatformProperty from the fatal error handler API. Used by the
-// Mach exception path (macOS), which does not go through common_signal_handler.
+// Accessors for stashed platform-native exception information.
+void PAL_GetNativeExceptionPointers(void** info, void** context);
 void PAL_SetNativeExceptionPointers(void* info, void* context);
 
 // RAII helper that stashes the platform-native exception information for the
 // duration of an exception dispatch.
 struct NativeExceptionPointerHolder
 {
+    void* m_previousInfo;
+    void* m_previousContext;
+
     NativeExceptionPointerHolder(void* info, void* context)
     {
+        PAL_GetNativeExceptionPointers(&m_previousInfo, &m_previousContext);
         PAL_SetNativeExceptionPointers(info, context);
     }
 
     ~NativeExceptionPointerHolder() noexcept
     {
-        PAL_SetNativeExceptionPointers(NULL, NULL);
+        PAL_SetNativeExceptionPointers(m_previousInfo, m_previousContext);
     }
 };
 

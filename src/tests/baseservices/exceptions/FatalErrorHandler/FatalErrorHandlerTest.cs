@@ -184,8 +184,8 @@ unsafe class FatalErrorHandlerTest
         var (exitCode, stderr) = LaunchChild("skip-handler");
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        // SkipDefaultHandler suppresses the runtime's crash log output but the
-        // process still terminates via the normal fatal path (Abort/RaiseFailFastException).
+        // SkipDefaultHandler suppresses the runtime's crash log output, but the
+        // process still terminates.
         bool noRuntimeOutput = !stderr.Contains("Process terminated.");
         bool exited = exitCode != 0;
 

@@ -736,31 +736,31 @@ using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPro
 void* s_fatalErrorHandler = NULL;
 
 // Stored crash context for on-demand replay by GetFatalErrorLogFunc.
-static UINT s_crashExitCode;
-static LPCWSTR s_crashMessage;
-static PEXCEPTION_POINTERS s_crashExceptionInfo;
-static LPCWSTR s_crashErrorSource;
-static LPCWSTR s_crashExceptionString;
+static thread_local UINT t_crashExitCode;
+static thread_local LPCWSTR t_crashMessage;
+static thread_local PEXCEPTION_POINTERS t_crashExceptionInfo;
+static thread_local LPCWSTR t_crashErrorSource;
+static thread_local LPCWSTR t_crashExceptionString;
 
 // Native exception state surfaced to the handler through the property getter.
 // The crash address is platform-agnostic; the Windows exception records are
 // captured here because there is no PAL to hold them (on other platforms the
 // live signal/Mach state is served directly by the PAL).
-static void* s_crashAddress;
+static thread_local void* t_crashAddress;
 
 #ifdef TARGET_WINDOWS
-static PEXCEPTION_RECORD s_crashExceptionRecord;
-static PCONTEXT s_crashContextRecord;
+static thread_local PEXCEPTION_RECORD t_crashExceptionRecord;
+static thread_local PCONTEXT t_crashContextRecord;
 #endif // TARGET_WINDOWS
 
 static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     LIMITED_METHOD_CONTRACT;
-    s_crashExitCode = exitCode;
-    s_crashMessage = pszMessage;
-    s_crashExceptionInfo = pExceptionInfo;
-    s_crashErrorSource = errorSource;
-    s_crashExceptionString = argExceptionString;
+    t_crashExitCode = exitCode;
+    t_crashMessage = pszMessage;
+    t_crashExceptionInfo = pExceptionInfo;
+    t_crashErrorSource = errorSource;
+    t_crashExceptionString = argExceptionString;
 }
 
 static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogAction, void* userContext)
@@ -773,7 +773,7 @@ static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogActio
     // Build a callback writer that streams crash info as UTF-8 to the user's callback.
     CallbackState state = { pfnLogAction, userContext };
     CrashInfoWriter writer = { CallbackWriteA, CallbackWriteW, &state };
-    EmitCrashInfo(writer, s_crashExitCode, s_crashMessage, s_crashExceptionInfo, s_crashErrorSource, s_crashExceptionString);
+    EmitCrashInfo(writer, t_crashExitCode, t_crashMessage, t_crashExceptionInfo, t_crashErrorSource, t_crashExceptionString);
 }
 
 // Serves the platform-specific fatal error properties. On Windows the native
@@ -787,15 +787,15 @@ static int32_t GetFatalErrorPlatformProperty(FatalErrorProperty prop, const void
     switch (prop)
     {
     case FEP_WindowsExceptionRecord:
-        if (s_crashExceptionRecord == nullptr)
+        if (t_crashExceptionRecord == nullptr)
             return 0;
-        *value = s_crashExceptionRecord;
+        *value = t_crashExceptionRecord;
         return 1;
 
     case FEP_WindowsContextRecord:
-        if (s_crashContextRecord == nullptr)
+        if (t_crashContextRecord == nullptr)
             return 0;
-        *value = s_crashContextRecord;
+        *value = t_crashContextRecord;
         return 1;
 
     default:
@@ -824,9 +824,9 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
         return 1;
 
     case FEP_Address:
-        if (s_crashAddress == nullptr)
+        if (t_crashAddress == nullptr)
             return 0;
-        *value = s_crashAddress;
+        *value = t_crashAddress;
         return 1;
 
     default:
@@ -848,12 +848,12 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
     // exception records are captured here from the exception pointers; on other
     // platforms the live signal (Linux) or Mach (Apple) state is served on demand
     // by the PAL, so there is nothing to capture here.
-    s_crashAddress = reinterpret_cast<void*>(address);
+    t_crashAddress = reinterpret_cast<void*>(address);
 #ifdef TARGET_WINDOWS
     if (pExceptionInfo != NULL)
     {
-        s_crashExceptionRecord = pExceptionInfo->ExceptionRecord;
-        s_crashContextRecord = pExceptionInfo->ContextRecord;
+        t_crashExceptionRecord = pExceptionInfo->ExceptionRecord;
+        t_crashContextRecord = pExceptionInfo->ContextRecord;
     }
 #endif // TARGET_WINDOWS
 

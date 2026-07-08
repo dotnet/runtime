@@ -57,23 +57,23 @@ enum FatalErrorProperty : int32_t
 
     // Value: void*. Code location correlated with the failure (for example,
     // the address where FailFast was called). May be unavailable.
-    FEP_Address,
+    FEP_Address = 0x2,
 
     // Value: PEXCEPTION_RECORD. Windows exception record for the failure.
-    FEP_WindowsExceptionRecord,
+    FEP_WindowsExceptionRecord = 0x3,
 
     // Value: PCONTEXT. Windows thread context at the point of failure.
-    FEP_WindowsContextRecord,
+    FEP_WindowsContextRecord = 0x4,
 
     // Value: ucontext_t*. Thread context on signal-based Unix platforms.
-    FEP_UContext,
+    FEP_UContext = 0x5,
 
     // Value: siginfo_t*. Signal information on signal-based Unix platforms.
-    FEP_PosixSigInfo,
+    FEP_PosixSigInfo = 0x6,
 
     // Value: Mach thread state for the current architecture
     // (arm_thread_state64_t* on arm64, x86_thread_state64_t* on x64).
-    FEP_MachExceptionInfo,
+    FEP_MachExceptionInfo = 0x7,
 };
 
 // Property-getter callback passed to the fatal error handler. The handler

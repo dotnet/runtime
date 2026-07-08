@@ -123,6 +123,14 @@ struct sigaction g_previous_sigabrt;
 static thread_local void* t_lastSiginfo = NULL;
 static thread_local void* t_lastSigcontext = NULL;
 
+void PAL_GetNativeExceptionPointers(void** info, void** context)
+{
+    _ASSERTE(info != NULL);
+    _ASSERTE(context != NULL);
+    *info = t_lastSiginfo;
+    *context = t_lastSigcontext;
+}
+
 void PAL_SetNativeExceptionPointers(void* info, void* context)
 {
     t_lastSiginfo = info;
