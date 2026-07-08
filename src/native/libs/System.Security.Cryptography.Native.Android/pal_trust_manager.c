@@ -158,7 +158,7 @@ cleanup:
 // The managed side decides how to combine this with its own X509Chain.Build result.
 // platformValidationError carries the platform's textual rejection reason, or NULL when
 // the platform trusts the chain.
-ARGS_NON_NULL(1, 2) jboolean DotnetProxyTrustManager_VerifyRemoteCertificate(
+ARGS_NON_NULL(1, 2) JNIEXPORT jboolean JNICALL Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
     JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle, jstring platformValidationError)
 {
     RemoteCertificateValidationCallback verify = atomic_load(&verifyRemoteCertificate);

@@ -1107,7 +1107,7 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     // convention symbol lookup. This is required for NativeAOT static linking,
     // but works for all runtimes and avoids depending on exported symbol names.
     JNINativeMethod trustManagerMethods[] = {
-        { "verifyRemoteCertificate", "(JLjava/lang/String;)Z", (void*)DotnetProxyTrustManager_VerifyRemoteCertificate },
+        { "verifyRemoteCertificate", "(JLjava/lang/String;)Z", (void*)Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate },
     };
     jint registerResult = (*env)->RegisterNatives(env, g_DotnetProxyTrustManager, trustManagerMethods, 1);
     abort_unless(registerResult == JNI_OK, "RegisterNatives for DotnetProxyTrustManager.verifyRemoteCertificate failed (error: %d)", registerResult);

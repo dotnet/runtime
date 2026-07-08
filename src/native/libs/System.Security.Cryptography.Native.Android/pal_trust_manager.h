@@ -13,5 +13,5 @@ PALEXPORT void AndroidCryptoNative_ReleasePlatformValidationError(jstring platfo
 
 jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const char* targetHost);
 
-jboolean DotnetProxyTrustManager_VerifyRemoteCertificate(
+JNIEXPORT jboolean JNICALL Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
     JNIEnv *env, jobject thisHandle, jlong sslStreamProxyHandle, jstring platformValidationError);
