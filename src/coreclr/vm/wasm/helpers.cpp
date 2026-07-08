@@ -1493,11 +1493,11 @@ static TADDR GetWasmFramePointerFromStackPointer_Internal(TADDR sp)
     }
     else
     {
-        if (*(int*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == STACK_WALK_INDIRECT_TO_FRAMEPOINTER)
+        if (*(int32_t*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == STACK_WALK_INDIRECT_TO_FRAMEPOINTER)
         {
             sp = *(TADDR*)(sp + WASM_STACKFRAME_INDIRECT_TO_FRAMEPOINTER_OFFSET);
         }
-        if (*(int*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == TERMINATE_R2R_STACK_WALK)
+        if (*(int32_t*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == TERMINATE_R2R_STACK_WALK)
         {
             return 0;
         }
@@ -1513,7 +1513,7 @@ static TADDR GetWasmFramePointerFromStackPointer_Internal(TADDR sp)
 // reached after natively unwinding a funclet that the VM invoked via CallFunclet).
 TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp)
 {
-    _ASSERTE(*(int*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == TERMINATE_R2R_STACK_WALK);
+    _ASSERTE(*(int32_t*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == TERMINATE_R2R_STACK_WALK);
     return *(TADDR*)(sp + TERMINATE_R2R_STACK_WALK_FP_OFFSET);
 }
 
@@ -1575,7 +1575,7 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
 
         WasmUnwindStackFrameCore(&sp, &controlPC, uImageBase, pFunctionEntry);
 
-        if (*(int*)sp == TERMINATE_R2R_STACK_WALK)
+        if (*(int32_t*)sp == TERMINATE_R2R_STACK_WALK)
         {
             // The funclet was invoked by the VM through CallFuncletWith[out]Throwable, so native
             // unwinding terminates at that synthetic frame before reaching the method's own frame.
