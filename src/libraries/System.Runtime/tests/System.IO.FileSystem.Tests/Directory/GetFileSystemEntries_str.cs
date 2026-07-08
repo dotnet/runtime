@@ -213,8 +213,17 @@ namespace System.IO.Tests
                 {
                     case '/':
                     case '\\':
-                    case ':':
                         Assert.Throws<DirectoryNotFoundException>(() => GetEntries(badPath));
+                        break;
+                    case ':':
+                        if (SupportsAlternateDataStreams)
+                        {
+                            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(badPath));
+                        }
+                        else
+                        {
+                            Assert.Throws<IOException>(() => GetEntries(badPath));
+                        }
                         break;
                     case '\0':
                         Assert.Throws<ArgumentException>(() => GetEntries(badPath));

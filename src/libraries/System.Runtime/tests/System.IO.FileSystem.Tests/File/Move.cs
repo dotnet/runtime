@@ -325,11 +325,11 @@ namespace System.IO.Tests
 
         }
 
-        [Theory,
-            InlineData("", ":bar"),
-            InlineData("", ":bar:$DATA"),
-            InlineData("::$DATA", ":bar"),
-            InlineData("::$DATA", ":bar:$DATA")]
+        [ConditionalTheory(typeof(FileSystemTest), nameof(FileSystemTest.SupportsAlternateDataStreams))]
+        [InlineData("", ":bar")]
+        [InlineData("", ":bar:$DATA")]
+        [InlineData("::$DATA", ":bar")]
+        [InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStreamMove(string defaultStream, string alternateStream)
         {
