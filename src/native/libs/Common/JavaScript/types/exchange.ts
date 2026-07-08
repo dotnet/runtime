@@ -26,6 +26,7 @@ import type { abortInteropTimers } from "../../../System.Runtime.InteropServices
 import type { installNativeSymbols, symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
 import type { SystemJS_ScheduleDiagnosticServer } from "../../../System.Native.Browser/native";
 import type { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "../../../System.Native.Browser/diagnostics/diagnostic-server";
+import type { ds_rt_browser_performance_measure } from "../../../System.Native.Browser/diagnostics/browser-profiler";
 
 
 type getWasmMemoryType = () => WebAssembly.Memory;
@@ -149,12 +150,14 @@ export type NativeBrowserExports = {
     getWasmMemory: getWasmMemoryType,
     getWasmTable: getWasmTableType,
     SystemJS_ScheduleDiagnosticServer: typeof SystemJS_ScheduleDiagnosticServer,
+    SystemJS_GetMethodName: EmsAmbientSymbolsType["_SystemJS_GetMethodName"],
 }
 
 export type NativeBrowserExportsTable = [
     getWasmMemoryType,
     getWasmTableType,
     typeof SystemJS_ScheduleDiagnosticServer,
+    EmsAmbientSymbolsType["_SystemJS_GetMethodName"],
 ]
 
 export type BrowserUtilsExports = {
@@ -197,6 +200,7 @@ export type DiagnosticsExportsTable = [
     typeof ds_rt_websocket_poll,
     typeof ds_rt_websocket_recv,
     typeof ds_rt_websocket_close,
+    typeof ds_rt_browser_performance_measure,
 ]
 
 export type DiagnosticsExports = {
@@ -207,4 +211,5 @@ export type DiagnosticsExports = {
     ds_rt_websocket_poll: typeof ds_rt_websocket_poll,
     ds_rt_websocket_recv: typeof ds_rt_websocket_recv,
     ds_rt_websocket_close: typeof ds_rt_websocket_close,
+    ds_rt_browser_performance_measure: typeof ds_rt_browser_performance_measure,
 }

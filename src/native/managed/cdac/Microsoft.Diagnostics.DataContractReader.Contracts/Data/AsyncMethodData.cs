@@ -3,15 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class AsyncMethodData : IData<AsyncMethodData>
+[CdacType(nameof(DataType.AsyncMethodData))]
+internal sealed partial class AsyncMethodData : IData<AsyncMethodData>
 {
-    static AsyncMethodData IData<AsyncMethodData>.Create(Target target, TargetPointer address) => new AsyncMethodData(target, address);
-    public AsyncMethodData(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.AsyncMethodData);
-
-        Flags = target.ReadField<uint>(address, type, nameof(Flags));
-    }
-
-    public uint Flags { get; init; }
+    [Field] public uint Flags { get; }
 }

@@ -136,6 +136,44 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        public async Task ServerAsyncAuthenticate_SniCallback_ReceivesSupportedVersionsFromExtension()
+        {
+            // Regression test: ensure that when a ServerOptionDelegate (SNI callback) is used,
+            // the supported_versions extension from the ClientHello is parsed and exposed via
+            // SslClientHelloInfo.SslProtocols. TLS 1.3 advertises its version only via that
+            // extension (the record-layer / legacy_version field still reports TLS 1.2), so
+            // without parsing the extension the callback would not see Tls13.
+            var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = _serverCertificate, EnabledSslProtocols = SslProtocols.Tls13 };
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = _serverCertificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false),
+                EnabledSslProtocols = SslProtocols.Tls13,
+            };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+            SslProtocols observedProtocols = SslProtocols.None;
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(
+                    (stream, clientHelloInfo, userState, cancellationToken) =>
+                    {
+                        observedProtocols = clientHelloInfo.SslProtocols;
+                        return new ValueTask<SslServerAuthenticationOptions>(serverOptions);
+                    },
+                    null, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+            }
+
+            Assert.True((observedProtocols & SslProtocols.Tls13) == SslProtocols.Tls13,
+                $"Expected SslClientHelloInfo.SslProtocols to include Tls13, got '{observedProtocols}'.");
+        }
+
         private async Task<SslServerAuthenticationOptions> FailedTask()
         {
             await Task.Yield();

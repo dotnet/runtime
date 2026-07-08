@@ -260,7 +260,7 @@ namespace R2RDump
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
-                if (_model.Raw && !isWasm)
+                if (_model.Raw)
                 {
                     DumpBytes(rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
                 }
@@ -271,15 +271,28 @@ namespace R2RDump
         private void DumpWasmDisasm(RuntimeFunction rtf)
         {
             var webcilReader = (WebcilImageReader)_r2r.CompositeReader;
-            var body = webcilReader.GetWasmFunctionBody(rtf.StartAddress);
+
+            // The function table index for this runtime function is minFunctionTableIndex + rtf.Id.
+            // The elem section maps table indices to global function indices.
+            uint minTableIndex = _r2r.WasmMinFunctionTableIndex;
+            uint tableIndex = checked(minTableIndex + (uint)rtf.Id);
+            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+
+            if (functionIndex < 0)
+            {
+                _writer.WriteLine($"    ; WASM table index: {tableIndex} (could not resolve to function body)");
+                return;
+            }
+
+            var body = webcilReader.GetWasmFunctionBody(functionIndex);
             if (body is null)
             {
-                _writer.WriteLine($"    ; WASM function index: {rtf.StartAddress} (function body not found)");
+                _writer.WriteLine($"    ; WASM table index: {tableIndex}, function index: {functionIndex} (function body not found)");
                 return;
             }
 
             var info = body.Value;
-            _writer.WriteLine($"    ; WASM function index: {rtf.StartAddress}");
+            _writer.WriteLine($"    ; WASM table index: {tableIndex}, function index: {functionIndex}");
 
             // Print parameters with their local indices
             int localIdx = 0;
@@ -316,8 +329,17 @@ namespace R2RDump
             }
 
             _writer.WriteLine();
-            var disasm = new WasmDisassembler(info.Image, info.InstructionOffset, info.InstructionLength);
+            var disasm = new WasmDisassembler(info.Image, info.InstructionOffset, info.InstructionLength, TryGetImportName);
             _writer.Write(disasm.Disassemble());
+        }
+
+        private string TryGetImportName(int rva)
+        {
+            if (_r2r.ImportSignatures.TryGetValue(rva, out ReadyToRunSignature signature))
+            {
+                return signature.ToString(_model.SignatureFormattingOptions);
+            }
+            return null;
         }
 
         private static IEnumerable<string> FormatValTypes(IReadOnlyList<byte> types)
@@ -487,20 +509,47 @@ namespace R2RDump
                     int rtfOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     int rtfEndOffset = rtfOffset + section.Size;
                     int rtfIndex = 0;
-                    _writer.WriteLine("  Index | StartRVA |  EndRVA  | UnwindRVA");
-                    _writer.WriteLine("-----------------------------------------");
+                    bool isWasmRtf = _r2r.Machine == WasmMachine.Wasm32;
+                    if (isWasmRtf)
+                    {
+                        _writer.WriteLine("  Index | VirtualIP  | Funclet | UnwindRVA");
+                        _writer.WriteLine("-------------------------------------------");
+                    }
+                    else
+                    {
+                        _writer.WriteLine("  Index | StartRVA |  EndRVA  | UnwindRVA");
+                        _writer.WriteLine("-----------------------------------------");
+                    }
                     while (rtfOffset < rtfEndOffset)
                     {
                         int startRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                        int endRva = -1;
-                        if (_r2r.Machine == Machine.Amd64)
+                        if (isWasmRtf)
                         {
-                            endRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                            bool isFunclet = (startRva & unchecked((int)0x80000000)) != 0;
+                            int virtualIP = startRva & 0x7FFFFFFF;
+                            int unwindRvaW = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                            _writer.WriteLine($"{rtfIndex,7} | {virtualIP,10} | {(isFunclet ? "  yes  " : "  no   ")} | {unwindRvaW:X8}");
                         }
-                        int unwindRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
-                        string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
-                        _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
+                        else
+                        {
+                            int endRva = -1;
+                            if (_r2r.Machine == Machine.Amd64)
+                            {
+                                endRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                            }
+                            int unwindRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                            string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
+                            _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
+                        }
                         rtfIndex++;
+                    }
+                    if (isWasmRtf)
+                    {
+                        // After the section, read sentinel (0xFFFFFFFF) and the min function table index
+                        int sentinel = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                        int minFuncTableIndex = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                        _writer.WriteLine($"Sentinel: 0x{sentinel:X8}");
+                        _writer.WriteLine($"MinFunctionTableIndex: {minFuncTableIndex}");
                     }
                     break;
                 case ReadyToRunSectionType.CompilerIdentifier:

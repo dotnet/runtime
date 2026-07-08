@@ -122,7 +122,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (methodDescAddr != TargetPointer.Null)
             {
                 SOSDacImpl.EnumMethodInstances emi = new(_target, methodDescAddr, TargetPointer.Null);
-                emi.LegacyHandle = legacyHandle;
+                emi.LegacyHandle = (nuint)legacyHandle;
 
                 hr = emi.Start();
                 if (hr == HResults.S_OK)
@@ -181,7 +181,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
             hrLocal = _legacyImpl.EnumInstance(&legacyHandle, legacyMethodOut);
             legacyMethod = legacyMethodOut.Interface;
-            emi.LegacyHandle = legacyHandle;
+            emi.LegacyHandle = (nuint)legacyHandle;
         }
 
         try
@@ -236,7 +236,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             ((IEnum<MethodDescHandle>)emi).Dispose();
             gcHandle.Free();
 
-            if (_legacyImpl is not null && emi.LegacyHandle != TargetPointer.Null)
+            if (_legacyImpl is not null && emi.LegacyHandle != 0)
             {
                 int hrLocal = _legacyImpl.EndEnumInstances(emi.LegacyHandle);
                 if (hrLocal < 0)

@@ -465,44 +465,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
         switch (blkNode->gtBlkOpKind)
         {
-            case GenTreeBlk::BlkOpKindCpObjUnroll:
-            {
-                // We don't need to materialize the struct size but we still need
-                // a temporary register to perform the sequence of loads and stores.
-                // We can't use the special Write Barrier registers, so exclude them from the mask
-                SingleTypeRegSet internalIntCandidates =
-                    allRegs(TYP_INT) &
-                    ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF).GetRegSetForType(IntRegisterType);
-                buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
-
-                if (size >= 2 * REGSIZE_BYTES)
-                {
-                    // We will use ldp/stp to reduce code size and improve performance
-                    // so we need to reserve an extra internal register
-                    buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
-                }
-
-                if (size >= 4 * REGSIZE_BYTES)
-                {
-                    // We can use 128-bit SIMD ldp/stp for larger block sizes
-                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                }
-
-                // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
-
-                // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
-                // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
-                // which is killed by a StoreObj (and thus needn't be reserved).
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF.GetIntRegSet();
-                }
-            }
-            break;
-
             case GenTreeBlk::BlkOpKindUnroll:
             {
                 buildInternalIntRegisterDefForNode(blkNode);

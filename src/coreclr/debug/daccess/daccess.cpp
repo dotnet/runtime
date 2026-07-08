@@ -2836,12 +2836,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     {
         m_fEnableTargetConsistencyAsserts = true;
     }
-
-    // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
-    // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
-    // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch,
-    // see ClrDataAccess::VerifyDlls for details.
-    m_fEnableDllVerificationAsserts = false;
 #endif
 }
 
@@ -5189,9 +5183,6 @@ ClrDataAccess::Initialize(void)
     // DAC is now setup and ready to use
     //
 
-    // Do some validation
-    IfFailRet(VerifyDlls());
-
     // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
     // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
     // if an exception was raised by a given instance of the runtime or not.
@@ -5937,6 +5928,27 @@ ClrDataAccess::GetHostJitNotificationTable()
 }
 
 /* static */ bool
+ClrDataAccess::GetMetaDataFileInfoFromModule(Module *pModule,
+                                             DWORD &dwTimeStamp,
+                                             DWORD &dwSize,
+                                             DWORD &dwDataSize,
+                                             DWORD &dwRvaHint,
+                                             _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                             const DWORD cchFilePath)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+
+    if (pModule == NULL)
+        return false;
+
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
+        return false;
+
+    return ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly, dwTimeStamp, dwSize, dwDataSize, dwRvaHint, wszFilePath, cchFilePath);
+}
+
+/* static */ bool
 ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,
@@ -6250,16 +6262,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return m_fEnableTargetConsistencyAsserts;
-}
-
-//
-// VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
-// Only done on Windows and Mac builds at the moment.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-//
-HRESULT ClrDataAccess::VerifyDlls()
-{
-    return S_OK;
 }
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
@@ -7976,7 +7978,7 @@ void DacFreeRegionEnumerator::AddSingleSegment(const dac_heap_segment &curr, Fre
 
 void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeRegionKind kind, int heap)
 {
-    int iterationMax = 2048;
+    int iterationMax = 65536;
 
     DPTR(dac_heap_segment) curr = start;
     while (curr != nullptr)

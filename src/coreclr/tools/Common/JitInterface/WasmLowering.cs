@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
-    public static class WasmLowering
+    public static partial class WasmLowering
     {
         // The Wasm "basic C ABI" passes structs that contain one
         // primitive field as that primitive field.

@@ -503,7 +503,7 @@ namespace System.Globalization
             // Change span to lower and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> lowerChars = stackalloc char[2];
+                Span<char> lowerChars = ['\0', '\0'];
                 ToLower(valueChars, lowerChars);
                 return new Rune(lowerChars[0], lowerChars[1]);
             }
@@ -525,7 +525,7 @@ namespace System.Globalization
             // Change span to upper and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> upperChars = stackalloc char[2];
+                Span<char> upperChars = ['\0', '\0'];
                 ToUpper(valueChars, upperChars);
                 return new Rune(upperChars[0], upperChars[1]);
             }
@@ -713,7 +713,7 @@ namespace System.Globalization
             return inputIndex;
         }
 
-        private unsafe int AddTitlecaseLetter(ref StringBuilder result, ref string input, int inputIndex, int charLen)
+        private int AddTitlecaseLetter(ref StringBuilder result, ref string input, int inputIndex, int charLen)
         {
             Debug.Assert(charLen == 1 || charLen == 2, "[TextInfo.AddTitlecaseLetter] CharUnicodeInfo.InternalGetUnicodeCategory returned an unexpected charLen!");
 
@@ -729,7 +729,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    Span<char> dst = stackalloc char[2];
+                    Span<char> dst = ['\0', '\0'];
                     ChangeCaseToUpper(src, dst);
                     result.Append(dst);
                 }

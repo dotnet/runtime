@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;

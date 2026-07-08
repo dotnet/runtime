@@ -254,7 +254,9 @@ bool hasRex2Prefix(code_t code)
 #endif
 }
 
-bool IsExtendedGPReg(regNumber reg) const;
+static bool IsExtendedReg(regNumber reg);
+static bool IsExtendedReg(regNumber reg, emitAttr attr);
+bool        IsExtendedGPReg(regNumber reg) const;
 
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
@@ -659,7 +661,7 @@ void SetEvexDFVIfNeeded(instrDesc* id, insOpts instOptions)
     if ((instOptions & INS_OPTS_EVEX_dfv_MASK) != 0)
     {
         assert(UsePromotedEVEXEncoding());
-        assert(IsCCMP(id->idIns()));
+        assert(IsCCMP(id->idIns()) || IsCTEST(id->idIns()));
         id->idSetEvexDFV(instOptions);
     }
 #endif
@@ -765,6 +767,7 @@ void SetContainsCallNeedingVzeroupper(bool value)
 bool        IsDstDstSrcAVXInstruction(instruction ins) const;
 bool        IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool        IsThreeOperandAVXInstruction(instruction ins) const;
+bool        IsAvxCommutative(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
@@ -777,8 +780,12 @@ static bool IsRexW1Instruction(instruction ins);
 static bool IsRexWXInstruction(instruction ins);
 static bool IsRexW1EvexInstruction(instruction ins);
 
+static bool  IsApxConditionalInstruction(instruction ins);
 static bool  IsCCMP(instruction ins);
-static insCC GetCCFromCCMP(instruction ins);
+static bool  IsCTEST(instruction ins);
+static bool  IsCFCMOV(instruction ins);
+static bool  ImmCanUseSByteEncoding(instruction ins, ssize_t val);
+static insCC GetCCFromCCMPOrCTEST(instruction ins);
 
 bool isAvx512Blendv(instruction ins)
 {
@@ -891,7 +898,7 @@ inline emitAttr emitDecodeScale(unsigned ensz) const
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, bool isRemovableJmpCandidate = false);
+void emitIns_J(instruction ins, BasicBlock* dst, bool keepShort = false, bool isRemovableJmpCandidate = false);
 
 /************************************************************************/
 /*           The public entry points to output instructions             */
@@ -967,7 +974,13 @@ void emitIns_R_R_A(instruction   ins,
                    GenTreeIndir* indir,
                    insOpts       instOptions = INS_OPTS_NONE);
 
-void emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs);
+void emitIns_R_R_AR(instruction ins,
+                    emitAttr    attr,
+                    regNumber   reg1,
+                    regNumber   reg2,
+                    regNumber   base,
+                    int         offs,
+                    insOpts     instOptions = INS_OPTS_NONE);
 
 void emitIns_R_AR_R(instruction ins,
                     emitAttr    attr,
@@ -1095,7 +1108,12 @@ void emitIns_R_C(instruction          ins,
 
 void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs);
 
-void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs, int val);
+void emitIns_C_I(instruction          ins,
+                 emitAttr             attr,
+                 CORINFO_FIELD_HANDLE fldHnd,
+                 int                  offs,
+                 int                  val,
+                 insOpts              instOptions = INS_OPTS_NONE);
 
 void emitIns_IJ(emitAttr attr, regNumber reg, unsigned base);
 

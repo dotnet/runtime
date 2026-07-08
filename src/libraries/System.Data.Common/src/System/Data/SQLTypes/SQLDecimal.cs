@@ -477,7 +477,7 @@ namespace System.Data.SqlTypes
             _data4 = s_uiZero;
         }
 
-        public unsafe SqlDecimal(decimal value)
+        public SqlDecimal(decimal value)
         {
             // set the null bit
             _bStatus = s_bNotNull;
@@ -490,7 +490,7 @@ namespace System.Data.SqlTypes
             // m_data1 = *pInt++; // lo part
             // m_data2 = *pInt++; // mid part
 
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.GetBits(value, bits);
             uint sgnscl;
 

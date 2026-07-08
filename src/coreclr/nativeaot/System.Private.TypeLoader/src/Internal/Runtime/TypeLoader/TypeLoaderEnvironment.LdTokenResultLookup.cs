@@ -57,8 +57,9 @@ namespace Internal.Runtime.TypeLoader
             private RuntimeTypeHandle _declaringType;
             private MethodHandle _handle;
             private RuntimeTypeHandle[] _genericArgs;
+            private bool _isAsyncVariant;
 
-            public RuntimeMethodHandleKey(RuntimeTypeHandle declaringType, MethodHandle handle, RuntimeTypeHandle[] genericArgs)
+            public RuntimeMethodHandleKey(RuntimeTypeHandle declaringType, MethodHandle handle, RuntimeTypeHandle[] genericArgs, bool isAsyncVariant)
             {
                 // genericArgs will be null if this is a (typical or not) method definition
                 // genericArgs are non-null only for instantiated generic methods.
@@ -67,6 +68,7 @@ namespace Internal.Runtime.TypeLoader
                 _declaringType = declaringType;
                 _handle = handle;
                 _genericArgs = genericArgs;
+                _isAsyncVariant = isAsyncVariant;
             }
 
             public override bool Equals(object obj)
@@ -81,6 +83,9 @@ namespace Internal.Runtime.TypeLoader
             public bool Equals(RuntimeMethodHandleKey other)
             {
                 if (!_declaringType.Equals(other._declaringType) || !_handle.Equals(other._handle))
+                    return false;
+
+                if (_isAsyncVariant != other._isAsyncVariant)
                     return false;
 
                 if ((_genericArgs == null) != (other._genericArgs == null))
@@ -100,9 +105,15 @@ namespace Internal.Runtime.TypeLoader
             }
 
             public override int GetHashCode()
-                => _handle.GetHashCode() ^ (_genericArgs == null
-                ? _declaringType.GetHashCode()
-                : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs));
+            {
+                int declaringTypeHashCode = _genericArgs == null
+                    ? _declaringType.GetHashCode()
+                    : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs);
+                int hashCode = _handle.GetHashCode() ^ declaringTypeHashCode;
+                return _isAsyncVariant
+                    ? unchecked((int)VersionResilientHashCode.CombineTwoValuesIntoHash((uint)hashCode, 1))
+                    : hashCode;
+            }
         }
 
         private LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle> _runtimeFieldHandles = new LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle>();
@@ -157,7 +168,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs, bool isAsyncVariant)
         {
-            RuntimeMethodHandleKey key = new RuntimeMethodHandleKey(declaringTypeHandle, handle, genericMethodArgs);
+            RuntimeMethodHandleKey key = new RuntimeMethodHandleKey(declaringTypeHandle, handle, genericMethodArgs, isAsyncVariant);
 
             lock (_runtimeMethodHandles)
             {
