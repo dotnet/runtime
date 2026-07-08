@@ -96,15 +96,16 @@ namespace AppHost.Bundle.Tests
         private static string? FindToolInPath(string tool)
         {
             string? pathEnv = Environment.GetEnvironmentVariable("PATH");
-            if (pathEnv is not null)
+            if (string.IsNullOrEmpty(pathEnv))
+                return null;
+
+            foreach (string dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
             {
-                foreach (string dir in pathEnv.Split(Path.PathSeparator))
-                {
-                    string fullPath = Path.Combine(dir, tool);
-                    if (File.Exists(fullPath))
-                        return tool;
-                }
+                string fullPath = Path.Combine(dir, tool);
+                if (File.Exists(fullPath))
+                    return fullPath;
             }
+
             return null;
         }
     }
