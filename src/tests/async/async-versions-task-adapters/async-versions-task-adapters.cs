@@ -19,12 +19,17 @@ public class Async2TaskAdapters
         try
         {
             SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-            WrapTaskInValueTask().GetAwaiter().GetResult();
+            WrapTaskInValueTaskCaller().GetAwaiter().GetResult();
         }
         finally
         {
             SynchronizationContext.SetSynchronizationContext(prevContext);
         }
+    }
+
+    private static async Task WrapTaskInValueTaskCaller()
+    {
+        await WrapTaskInValueTask();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -48,12 +53,17 @@ public class Async2TaskAdapters
         try
         {
             SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-            ConvertSourceToTask().GetAwaiter().GetResult();
+            ConvertSourceToTaskCaller().GetAwaiter().GetResult();
         }
         finally
         {
             SynchronizationContext.SetSynchronizationContext(prevContext);
         }
+    }
+
+    private static async Task ConvertSourceToTaskCaller()
+    {
+        await ConvertSourceToTask();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -85,7 +95,7 @@ public class Async2TaskAdapters
         // constructor, so the ValueTask holds it as an already-available value. The ValueTask is
         // completed even while the inner Task<int> is still suspended.
         TaskCompletionSource valueGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        ValueTask<Task<int>> valueCase = WrapTaskValue(valueGate);
+        ValueTask<Task<int>> valueCase = WrapTaskValueCaller(valueGate);
         Assert.True(valueCase.IsCompletedSuccessfully);
         Task<int> innerFromValue = await valueCase;
         Assert.False(innerFromValue.IsCompleted);
@@ -96,17 +106,27 @@ public class Async2TaskAdapters
         // constructor, so the ValueTask is backed by that task and is not completed until the outer
         // task completes.
         TaskCompletionSource asyncGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        ValueTask<Task<int>> asyncCase = WrapTaskTask(asyncGate);
+        ValueTask<Task<int>> asyncCase = WrapTaskTaskCaller(asyncGate);
         Assert.False(asyncCase.IsCompleted);
         asyncGate.SetResult();
         Task<int> innerFromAsync = await asyncCase;
         Assert.Equal(123, await innerFromAsync);
     }
 
+    private static async ValueTask<Task<int>> WrapTaskValueCaller(TaskCompletionSource gate)
+    {
+        return await WrapTaskValue(gate);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ValueTask<Task<int>> WrapTaskValue(TaskCompletionSource gate)
     {
         return new ValueTask<Task<int>>(TaskOfIntReturningFunction(gate));
+    }
+
+    private static async ValueTask<Task<int>> WrapTaskTaskCaller(TaskCompletionSource gate)
+    {
+        return await WrapTaskTask(gate);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
