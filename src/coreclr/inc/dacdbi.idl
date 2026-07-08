@@ -133,7 +133,7 @@ typedef struct { void *pList; int nEntries; } DacDbiArrayList_CORDB_ADDRESS;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_GUID;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_SEGMENT;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_MEMORY_RANGE;
-typedef struct { int arch; int os; } TargetInfo;
+typedef struct { int arch; int os; ULONG32 pointerSize; } TargetInfo;
 
 cpp_quote("#endif")
 
@@ -447,7 +447,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);
 
     // Context size queries
-    HRESULT GetTargetContextSize([in] int flags, [out] ULONG32 * pSize);
+    HRESULT GetTargetContextSize([in] ULONG32 contextFlags, [out] ULONG32 * pSize);
 
     // CONTEXT register accessors.
     HRESULT WriteRegistersToContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [in] const TADDR * values);
@@ -475,9 +475,6 @@ interface IDacDbiInterface : IUnknown
         [in]  const BYTE * pValue,
         [in]  ULONG32 valueSize);
 
-    // Returns the target's processor architecture and OS family.
-    HRESULT GetTargetInfo([out] struct TargetInfo * pTargetInfo);
-
     HRESULT ContextHasExtendedRegisters([in] ContextBuffer contextBuffer, [out] BOOL * pResult);
 
     HRESULT CompareControlRegisters([in] ContextBuffer contextBuffer1, [in] ContextBuffer contextBuffer2, [out] BOOL * pResult);
@@ -487,4 +484,6 @@ interface IDacDbiInterface : IUnknown
     // pulls exactly the requested chunks from the source; flags == 0 preserves
     // the destination's existing ContextFlags.
     HRESULT CopyContext([in] ContextBuffer destinationContext, [in] ContextBuffer sourceContext, [in] ULONG32 flags);
+    // Returns the target's processor architecture and OS family.
+    HRESULT GetTargetInfo([out] struct TargetInfo * pTargetInfo);
 };
