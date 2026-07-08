@@ -30,7 +30,9 @@
       <Code Type="Fragment" Language="cs"><![CDATA[
         static string EscapeArgument(string argument)
         {
-            if (argument.IndexOfAny(new[] { ' ', '\t', '"' }) < 0)
+            if (argument.IndexOf(' ') < 0 &&
+                argument.IndexOf('\t') < 0 &&
+                argument.IndexOf('"') < 0)
             {
                 return argument;
             }
@@ -51,7 +53,12 @@
                 UseShellExecute = false,
             };
 
-            using Process process = Process.Start(startInfo)!;
+            using Process? process = Process.Start(startInfo);
+            if (process is null)
+            {
+                return (1, string.Empty, "Failed to start the git process.");
+            }
+
             string stdOut = process.StandardOutput.ReadToEnd();
             string stdErr = process.StandardError.ReadToEnd();
             process.WaitForExit();
@@ -65,7 +72,7 @@
             bytes[1] == 0xBB &&
             bytes[2] == 0xBF;
 
-        static bool ContainsNullByte(byte[] bytes) => Array.IndexOf(bytes, (byte)0) >= 0;
+        static bool ContainsNullCharacter(byte[] bytes) => Array.IndexOf(bytes, (byte)0) >= 0;
 
         var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -165,7 +172,7 @@
                     continue;
                 }
 
-                if (ContainsNullByte(bytes))
+                if (ContainsNullCharacter(bytes))
                 {
                     Log.LogError($"File '{displayPath}' contains NUL bytes and is not valid UTF-8 text for the repository .editorconfig charset rules.");
                     succeeded = false;
