@@ -463,7 +463,9 @@ private:
         size_t cgroupPathLength = strlen(s_memory_cgroup_path);
 
         // Iterate over the directory hierarchy representing the cgroup hierarchy until reaching the 
-        // mount directory. The mount directory doesn't contain the memory.max.
+// Iterate over the directory hierarchy representing the cgroup hierarchy until reaching the 
+// mount directory. The mount directory can also contain the memory.max in case it
+// is not the global root cgroup.
         do
         {
             if (ReadMemoryValueFromFile(mem_limit_filename, &limit))
