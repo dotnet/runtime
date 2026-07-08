@@ -215,7 +215,8 @@ static int exe_start(const int argc, const pal_char_t* argv[])
         return AppPathFindFailure;
     }
 
-    if (bundle_marker_is_bundle())
+    const bool is_bundle = bundle_marker_is_bundle();
+    if (is_bundle)
     {
         trace_info(_X("Detected Single-File app bundle"));
     }
@@ -255,7 +256,7 @@ static int exe_start(const int argc, const pal_char_t* argv[])
         return rc;
     }
 
-    if (bundle_marker_is_bundle())
+    if (is_bundle)
     {
         hostfxr_main_bundle_startupinfo_fn hostfxr_main_bundle_startupinfo = hostfxr_resolver_resolve_main_bundle_startupinfo(&fxr);
         if (hostfxr_main_bundle_startupinfo != NULL)

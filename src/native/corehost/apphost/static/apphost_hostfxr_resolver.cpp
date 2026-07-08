@@ -13,7 +13,6 @@
 
 #include <assert.h>
 #include <cstdlib>
-#include <cstring>
 
 // Statically linked hostfxr functions
 extern "C"
@@ -65,9 +64,8 @@ extern "C" void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_ch
 
     trace_info(_X("Using internal fxr"));
 
-    size_t size = (pal_strlen(app_root) + 1) * sizeof(pal_char_t);
-    pal_char_t* dotnet_root = static_cast<pal_char_t*>(malloc(size));
-    pal_char_t* fxr_path = static_cast<pal_char_t*>(malloc(size));
+    pal_char_t* dotnet_root = pal_strdup(app_root);
+    pal_char_t* fxr_path = pal_strdup(app_root);
     if (dotnet_root == nullptr || fxr_path == nullptr)
     {
         free(dotnet_root);
@@ -76,8 +74,6 @@ extern "C" void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_ch
         return;
     }
 
-    memcpy(dotnet_root, app_root, size);
-    memcpy(fxr_path, app_root, size);
     resolver->dotnet_root = dotnet_root;
     resolver->fxr_path = fxr_path;
 }
