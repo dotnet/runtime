@@ -14,7 +14,7 @@ namespace System.Net.Http
     /// The instance is only valid for the duration of the callback invocation; it must not be cached or used after
     /// the callback returns. <see cref="Age"/> reflects the elapsed time at the moment it is read.
     /// </remarks>
-    [Experimental(Experimentals.SocketsHttpHandlerConnectionEvictionDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+    [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class SocketsHttpConnectionEvictionContext
     {
         private readonly long _creationTickCount;

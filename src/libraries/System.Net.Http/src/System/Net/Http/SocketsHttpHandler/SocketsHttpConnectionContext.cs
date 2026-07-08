@@ -39,7 +39,7 @@ namespace System.Net.Http
         /// <see cref="SocketsHttpHandler.ShouldEvictConnection"/>. It can be used to associate caller state (for
         /// example, the resolved address used) with the connection so it can be recovered when deciding on eviction.
         /// </summary>
-        [Experimental(Experimentals.SocketsHttpHandlerConnectionEvictionDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public long ConnectionId => _connectionId;
     }
 }

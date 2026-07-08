@@ -450,7 +450,7 @@ namespace System.Net.Http
         /// retain otherwise healthy connections rather than recycling them purely to observe address changes.
         /// </para>
         /// </remarks>
-        [Experimental(Experimentals.SocketsHttpHandlerConnectionEvictionDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>>? ShouldEvictConnection
         {
             get => _settings._shouldEvictConnection;

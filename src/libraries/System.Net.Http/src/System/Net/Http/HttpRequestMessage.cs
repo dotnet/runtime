@@ -122,6 +122,25 @@ namespace System.Net.Http
         /// </summary>
         public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
 
+        /// <summary>
+        /// Gets or sets the identifier of the connection that this request was most recently sent on, or <see langword="null"/>
+        /// if it has not been sent over a <see cref="SocketsHttpHandler"/> connection.
+        /// </summary>
+        /// <remarks>
+        /// The value matches the connection id reported through EventSource telemetry, and the id surfaced to
+        /// <see cref="SocketsHttpHandler.ConnectCallback"/> and <see cref="SocketsHttpHandler.ShouldEvictConnection"/>,
+        /// allowing a caller to correlate a request with the connection that served it. When a request is sent over
+        /// multiple connections (for example after a redirect or a retry), the value reflects the most recent attempt.
+        /// <para>
+        /// This property is intended to be read after the request has been sent. Assigning a value before the request
+        /// is sent has no effect on how the request is handled: it does not request or influence the use of a particular
+        /// connection, and any value set by the caller is overwritten with the id of the connection that actually serves
+        /// the request.
+        /// </para>
+        /// </remarks>
+        [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public long? ConnectionId { get; set; }
+
         public HttpRequestMessage()
             : this(HttpMethod.Get, (Uri?)null)
         {

@@ -263,6 +263,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamAvailable, CancellationToken cancellationToken)
         {
+            request.ConnectionId = Id;
+
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;

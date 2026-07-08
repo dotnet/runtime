@@ -2911,6 +2911,103 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)] // Successful response
+        [InlineData(true)]  // Malformed response produces an HttpRequestException
+        public async Task ConnectionId_SetOnRequest_MatchesConnectCallbackId(bool requestFails)
+        {
+            long connectCallbackId = -1;
+
+            using var handler = new SocketsHttpHandler();
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                connectCallbackId = context.ConnectionId;
+                var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                await socket.ConnectAsync(context.DnsEndPoint, ct);
+                return new NetworkStream(socket, ownsSocket: true);
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                Assert.Null(request.ConnectionId);
+
+                Task<HttpResponseMessage> requestTask = client.SendAsync(request);
+
+                if (requestFails)
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        // A malformed status line makes the client throw a (non-retryable) HttpRequestException.
+                        await connection.SendResponseAsync("INVALID RESPONSE LINE\r\n\r\n");
+                    });
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => requestTask);
+                }
+                else
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "hello");
+                    using HttpResponseMessage response = await requestTask;
+                }
+
+                // The connection id is stamped on the request regardless of whether the send succeeded.
+                Assert.NotNull(request.ConnectionId);
+                Assert.Equal(connectCallbackId, request.ConnectionId.Value);
+            });
+        }
+
+        [Fact]
+        public async Task ConnectionId_GracefulRetryTimesOutWhileConnecting_ConnectionIdCleared()
+        {
+            var retryConnecting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            int connectAttempts = 0;
+            using var cts = new CancellationTokenSource();
+
+            using var handler = new SocketsHttpHandler();
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                if (Interlocked.Increment(ref connectAttempts) == 1)
+                {
+                    var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                    await socket.ConnectAsync(context.DnsEndPoint, ct);
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
+
+                // The retry's connection never completes: signal the test and block until the request is canceled.
+                retryConnecting.TrySetResult();
+                await Task.Delay(Timeout.Infinite, ct);
+                throw new UnreachableException();
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                Task<HttpResponseMessage> requestTask = client.SendAsync(request, cts.Token);
+
+                // First attempt: read the request, then close the connection so the request is gracefully retried.
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAsync();
+                });
+
+                // Wait until the request is stuck establishing the next connection, then cancel it.
+                await retryConnecting.Task;
+                cts.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => requestTask);
+
+                // The first connection was abandoned by the graceful retry and the retry never produced a
+                // connection, so the request must not still point at the first connection.
+                Assert.Null(request.ConnectionId);
+            });
+        }
+
         [Fact]
         public void Properties_Roundtrips()
         {

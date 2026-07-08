@@ -403,6 +403,11 @@ namespace System.Net.Http
             int retryCount = 0;
             while (true)
             {
+                // Reset any connection id stamped by a previous attempt. Each connection sets it again in its
+                // SendAsync, so if this attempt is abandoned (e.g. we time out while waiting for the next
+                // connection after a graceful retry) the request won't point at a connection that didn't serve it.
+                request.ConnectionId = null;
+
                 HttpConnectionWaiter<HttpConnection>? http11ConnectionWaiter = null;
                 HttpConnectionWaiter<Http2Connection?>? http2ConnectionWaiter = null;
                 try
