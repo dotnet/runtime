@@ -1075,8 +1075,8 @@ namespace System.Numerics
             // This implementation is based on the DirectX Math Library XMVector3Rotate method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            Vector128<float> conjuagate = Quaternion.Conjugate(rotation);
-            Vector128<float> temp = Quaternion.Concatenate(conjuagate, value);
+            Vector128<float> conjugate = Quaternion.Conjugate(rotation);
+            Vector128<float> temp = Quaternion.Concatenate(conjugate, value);
             return Quaternion.Concatenate(temp, rotation);
         }
 
