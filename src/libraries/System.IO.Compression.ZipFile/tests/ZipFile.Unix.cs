@@ -116,6 +116,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void UnixExtractIgnoresUnixPermissionBitsForWindowsMadeEntries()
         {
             const string permissions = "777";
@@ -124,7 +125,7 @@ namespace System.IO.Compression.Tests
             using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
             using (ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
             {
-                ZipArchiveEntry entry = archive.CreateEntry("file.txt");
+                ZipArchiveEntry entry = archive.CreateEntry("file.txt", CompressionLevel.NoCompression);
                 entry.ExternalAttributes = Convert.ToInt32(permissions, 8) << 16;
                 using Stream stream = entry.Open();
                 stream.Write("contents"u8);
