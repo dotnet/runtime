@@ -15,6 +15,9 @@ public class InvalidFriendAssemblyName
     [Fact]
     public static void TestEntryPoint()
     {
+        // Calling the protected Object.MemberwiseClone (defined in a different assembly) forces the
+        // runtime to run an accessibility check against this assembly, which parses its InternalsVisibleTo
+        // metadata. Because that metadata is invalid, parsing throws and surfaces the FileLoadException.
         FileLoadException exception = Assert.Throws<FileLoadException>(() => new InvalidFriendAssemblyName().GetCopy());
 
         // The outer exception identifies the assembly that declared the invalid friend reference.
