@@ -161,11 +161,12 @@ namespace System.Diagnostics
         /// On macOS, the process is started with the <c>POSIX_SPAWN_START_SUSPENDED</c> flag.
         /// </para>
         /// <para>
+        /// On other Unix platforms, the child process raises <c>SIGSTOP</c> against itself before calling <c>execve</c>.
+        /// </para>
+        /// <para>
         /// This property cannot be used together with <see cref="UseShellExecute" /> set to <see langword="true" />.
         /// </para>
         /// </remarks>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("macos")]
         public bool StartSuspended { get; set; }
 
         /// <summary>
@@ -473,17 +474,10 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
-#pragma warning disable CA1416 // StartSuspended getter works on all platforms; the attribute guards the actual effect
-            if (StartSuspended && !OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             if (StartSuspended && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
             }
-#pragma warning restore CA1416
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {

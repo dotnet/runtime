@@ -12,7 +12,6 @@ using Xunit;
 namespace System.Diagnostics.Tests
 {
     [ConditionalClass(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
     public class StartSuspendedTests : ProcessTestBase
     {
         [ConditionalFact]
@@ -174,17 +173,6 @@ namespace System.Diagnostics.Tests
                 ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             }
-        }
-    }
-
-    public class StartSuspendedTests_NonWindowsNonMacOS : ProcessTestBase
-    {
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Resume is supported on Windows and macOS, and SafeProcessHandle.Open is not supported on iOS and tvOS")]
-        public void Resume_OnNonSupportedOS_ThrowsPlatformNotSupportedException()
-        {
-            using SafeProcessHandle handle = SafeProcessHandle.Open(Environment.ProcessId);
-            Assert.Throws<PlatformNotSupportedException>(() => handle.Resume());
         }
     }
 }

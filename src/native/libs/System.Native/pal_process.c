@@ -729,13 +729,6 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
 #if HAVE_FORK
-    if (startSuspended)
-    {
-        // POSIX_SPAWN_START_SUSPENDED is only available in the posix_spawn() path (macOS, !setCredentials).
-        // The fork() path does not support startSuspended.
-        errno = ENOTSUP;
-        return -1;
-    }
     bool success = true;
     int waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;
@@ -811,11 +804,23 @@ static int32_t ForkAndExecProcessInternal(
     // on another thread while a vfork() child is still pending, bad things are possible; however we
     // do not do that.
 
+    // When startSuspended is true, we must use fork() instead of vfork() because we need to
+    // stop the child process before calling execve(), which is not safe with vfork() (the parent
+    // is blocked until the child calls execve or exits).
+
 #if defined (__GLIBC__)
-    if ((processId = vfork()) == 0) // processId == 0 if this is child process
+    if (startSuspended)
+    {
+        processId = fork();
+    }
+    else
+    {
+        processId = vfork();
+    }
+    if (processId == 0)
 #else
     // musl libc has an undocumented failure mode around setuid(); we must exclude it.
-    if (setCredentials)
+    if (setCredentials || startSuspended)
     {
         processId = fork();
     }
@@ -932,6 +937,22 @@ static int32_t ForkAndExecProcessInternal(
             }
         }
 #endif
+
+        // If startSuspended is requested, stop the child process before exec.
+        // The parent will send SIGCONT (via Resume()) when ready.
+        if (startSuspended)
+        {
+            // Close the write end of the exec-waiting pipe before stopping.
+            // This signals to the parent that the child has been set up successfully
+            // (no error written to the pipe), allowing the parent to return the child PID.
+            // When the child is later resumed with SIGCONT, it will proceed to execve.
+            close(waitForChildToExecPipe[WRITE_END_OF_PIPE]);
+            waitForChildToExecPipe[WRITE_END_OF_PIPE] = -1;
+
+            // Send SIGSTOP to the current process. raise() sends the signal to the
+            // calling thread. This is safe because after fork the child is single-threaded.
+            raise(SIGSTOP);
+        }
 
         // Finally, execute the new process.  execve will not return if it's successful.
         execve(filename, argv, envp);
