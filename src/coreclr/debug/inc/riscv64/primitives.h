@@ -220,13 +220,13 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 
 class Thread;
 // Enable single stepping.
-void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void SetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Disable single stepping
-void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void UnsetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
+bool IsSSFlagEnabled(T_CONTEXT *pCtx, Thread *pThread);
 
 
 inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)
