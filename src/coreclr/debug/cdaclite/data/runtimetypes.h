@@ -208,6 +208,7 @@ namespace data
     {
         PEImage() : Struct("PEImage") {}
         CDAC_PTR(LoadedImageLayout)
+        CDAC_OPT_PTR(FlatImageLayout) // m_pLayouts[IMAGE_FLAT], used for reading metadata
     };
 
     struct PEImageLayout : Struct

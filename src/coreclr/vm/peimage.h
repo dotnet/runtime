@@ -326,6 +326,8 @@ private:
 template<>
 struct cdac_data<PEImage>
 {
+    // The flat PEImageLayout is m_pLayouts[IMAGE_FLAT] (used for reading metadata).
+    static constexpr size_t FlatImageLayout = offsetof(PEImage, m_pLayouts);
     // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
     static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
     static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
