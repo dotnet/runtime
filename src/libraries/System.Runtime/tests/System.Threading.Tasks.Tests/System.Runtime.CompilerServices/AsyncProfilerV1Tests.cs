@@ -1541,9 +1541,12 @@ namespace System.Threading.Tasks.Tests
             AssertTrue(stream, createCount >= 1,
                 $"Expected at least one CreateStateMachineAsyncContext event, got {createCount}");
 
-            // Each created dispatcher and each resume ends in exactly one suspend or one complete.
-            AssertEqual(stream, createCount, completeCount + suspendCount);
+            // Each resume cycle ends in exactly one suspend or one complete (model-agnostic).
             AssertEqual(stream, resumeCount, completeCount + suspendCount);
+
+            // With dispatcher reuse a single dispatcher spans all of a method's yields: it may suspend
+            // multiple times (interior) but is created and completed exactly once, so creates == completes.
+            AssertEqual(stream, createCount, completeCount);
 
             AssertTrue(stream, createCount >= 3,
                 $"Expected fan-out chain to produce at least 3 CreateStateMachineAsyncContext events (root + 2 child wraps), got {createCount}");
@@ -2507,9 +2510,11 @@ namespace System.Threading.Tasks.Tests
                 AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Outer_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
-            // The Outer frame resumes after resumeGate and then RE-SUSPENDS on finalGate, so its dispatcher must
-            // emit a Suspend and must NOT emit a Complete at that point. A mis-attributed inline completion of
-            // Inner flips CurrentContinuationCompleted on this frame and produces a (wrong) Complete instead.
+            // The Outer frame resumes after resumeGate, fires Inner's inline completion, then RE-SUSPENDS on
+            // finalGate before finally completing. With dispatcher reuse this is one dispatcher that Suspends
+            // (interior) and later Completes. A mis-attributed inline completion of Inner would flip
+            // CurrentContinuationCompleted on the Outer frame during its first resume, making it Complete
+            // before (or instead of) that Suspend. So: Outer must re-suspend, and its Complete must come after.
             var markerDispatcherIds = markerCallstacks.Select(c => c.DispatcherId).Distinct().ToList();
 
             bool foundReSuspend = false;
@@ -2527,8 +2532,8 @@ namespace System.Threading.Tasks.Tests
                 {
                     foundReSuspend = true;
                     int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
-                    AssertTrue(stream, completeIdx < 0,
-                        "Outer re-suspending frame emitted a Complete; inline inner completion was mis-attributed to it");
+                    AssertTrue(stream, completeIdx > suspendIdx,
+                        "Outer did not complete after it re-suspended; inline inner completion was mis-attributed to it");
                 }
             }
 
