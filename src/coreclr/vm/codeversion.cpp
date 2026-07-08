@@ -892,16 +892,16 @@ RejitFlags ILCodeVersion::GetRejitState() const
     }
 }
 
-bool ILCodeVersion::IsReJIT() const
+CodeVersionSource ILCodeVersion::GetSource() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     if (m_storageKind == StorageKind::Explicit)
     {
-        return AsNode()->GetSource() == CodeVersionSource::kReJIT;
+        return AsNode()->GetSource();
     }
     else
     {
-        return false;
+        return CodeVersionSource::kUnknown;
     }
 }
 
@@ -2364,7 +2364,7 @@ void CodeVersionManager::ReportCodePublishError(Module* pModule, mdMethodDef met
     {
         LockHolder codeVersioningLockHolder;
         ILCodeVersion codeVersion = GetActiveILCodeVersion(pModule, methodDef);
-        isRejitted = !codeVersion.IsDefaultVersion() && codeVersion.IsReJIT();
+        isRejitted = !codeVersion.IsDefaultVersion() && codeVersion.GetSource() == CodeVersionSource::kReJIT;
     }
 
     // this isn't perfect, we might be activating a tiered jitting variation of a rejitted

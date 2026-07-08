@@ -604,7 +604,7 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsReJIT_ExcludesEnCAndDefault(MockTarget.Architecture arch)
+    public void GetSource_ReturnsSourceForEnCAndDefault(MockTarget.Architecture arch)
     {
         uint methodRowId = 0x25; // arbitrary
         var builder = new MockCodeVersions(arch);
@@ -653,17 +653,17 @@ public class CodeVersionsTests
         var codeVersions = target.Contracts.CodeVersions;
         Assert.NotNull(codeVersions);
 
-        // The active explicit version is an EnC edit, so it is not a ReJIT version.
+        // The active explicit version is an EnC edit, so its source is EnC (not ReJIT).
         ILCodeVersionHandle active = codeVersions.GetActiveILCodeVersion(methodDescAddress);
         Assert.True(active.IsExplicit);
-        Assert.False(codeVersions.IsReJIT(active));
+        Assert.Equal(CodeVersionSource.EnC, codeVersions.GetSource(active));
 
-        // The synthetic (default) version has no backing node -> never a ReJIT version.
+        // The synthetic (default) version has no backing node -> Unknown source.
         List<ILCodeVersionHandle> all = codeVersions.GetILCodeVersions(methodDescAddress).ToList();
         ILCodeVersionHandle synthetic = all.Find(v => !v.Equals(active));
         Assert.True(synthetic.IsValid);
         Assert.False(synthetic.IsExplicit);
-        Assert.False(codeVersions.IsReJIT(synthetic));
+        Assert.Equal(CodeVersionSource.Unknown, codeVersions.GetSource(synthetic));
     }
 
     [Theory]

@@ -952,6 +952,10 @@ public:
 
     COR_ILMETHOD* GetILHeader();
 
+    COR_ILMETHOD* GetActiveILHeader();
+
+    COR_ILMETHOD* GetILHeaderForNativeCode(PCODE nativeCodeStartAddress);
+
     BOOL HasStoredSig()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1218,7 +1222,7 @@ public:
     bool IsVersionable()
     {
         WRAPPER_NO_CONTRACT;
-        return IsEligibleForTieredCompilation() || IsEligibleForReJIT() || (InEnCEnabledModule() && IsIL() && !IsWrapperStub());
+        return IsEligibleForTieredCompilation() || IsEligibleForReJIT() || IsEligibleForEnC();
     }
 
     // True iff all calls to the method should funnel through a Precode which can be updated to point to the current method
@@ -1259,6 +1263,18 @@ public:
 #else // FEATURE_REJIT
         return false;
 #endif
+    }
+
+    bool IsEligibleForEnC()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return
+            InEnCEnabledModule() &&
+
+            // EnC edits are expressed as IL, wrapper stubs have no editable IL body
+            IsIL() &&
+            !IsWrapperStub();
     }
 
 public:

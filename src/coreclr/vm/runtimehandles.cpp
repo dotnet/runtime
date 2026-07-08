@@ -2039,7 +2039,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
         if (pMethod->IsWrapperStub())
             pMethodIL = pMethod->GetWrappedMethodDesc();
 
-        pILHeader = pMethodIL->GetILHeader();
+        pILHeader = pMethodIL->GetActiveILHeader();
     }
 
     if (pILHeader)

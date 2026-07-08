@@ -2112,6 +2112,26 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode) = 0;
 
+    // Retrieves the IL code buffer and local variable signature token for a specific EnC version
+    // of a method, if that version exists.
+    //
+    //
+    // Arguments:
+    //    vmModule       - The module to search in
+    //    methodTk       - The methodDef token indicates the method within the module to check
+    //    enCVersion     - The EnC version number to look up
+    //    pCodeInfo      - [out] The target address and size of the IL code for the requested version.
+    //                     Cleared (pAddress == 0) if no matching version is found (for example the
+    //                     default version, which has no explicit node).
+    //    pLocalSigToken - [out] The local variable signature token for the requested version, or
+    //                     mdSignatureNil if none / not found.
+    //
+    // Returns:
+    //    S_OK regardless of whether a matching version is found, as long as the answer is certain
+    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
+    //
+    virtual HRESULT STDMETHODCALLTYPE GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, OUT TargetBuffer * pCodeInfo, OUT mdSignature * pLocalSigToken) = 0;
+
     // Retrieves the NativeCodeVersionNode for a given MethodDesc/code address, if it exists.
     // NOTE: The initial (default) code generated for a MethodDesc is a valid MethodDesc/code address pair but it won't have a corresponding
     // NativeCodeVersionNode.

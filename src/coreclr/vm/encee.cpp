@@ -374,9 +374,6 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
         }
     }
 
-    // Notify the JIT that we've got new IL for this method
-    // This will ensure that all new calls to the method will go to the new version.
-    // The runtime does this by never backpatching the methodtable slots in EnC-enabled modules.
     LOG((LF_ENC, LL_INFO100000, "EACM::UM: Updating function %s::%s to version %d\n",
         pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName, m_applyChangesCount));
 
@@ -614,7 +611,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
                              .GetActiveNativeCodeVersion(pMD).GetNativeCode();
         }
 #else
-        jittedCode = pMD->GetNativeCode();
+        _ASSERTE(!"This code should be unreachable without FEATURE_CODE_VERSIONING");
 #endif
     } EX_CATCH {
 #ifdef _DEBUG

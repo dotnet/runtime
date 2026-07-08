@@ -2512,7 +2512,7 @@ public sealed unsafe partial class SOSDacImpl
 
         TargetCodePointer nativeCode = cv.GetNativeCode(nativeCodeVersion);
         pReJitData->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode).Value;
-        if (!cv.IsReJIT(ilCodeVersion))
+        if (cv.GetSource(ilCodeVersion) != CodeVersionSource.ReJIT)
         {
             pReJitData->rejitID = 0;
             pReJitData->flags = DacpReJitData.Flags.kActive;
@@ -5474,7 +5474,7 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
             Contracts.ILCodeVersionHandle activeILCodeVersion = codeVersionsContract.GetActiveILCodeVersion(methodDescPtr);
 
-            if (!activeILCodeVersion.IsValid || !codeVersionsContract.IsReJIT(activeILCodeVersion))
+            if (!activeILCodeVersion.IsValid || codeVersionsContract.GetSource(activeILCodeVersion) != CodeVersionSource.ReJIT)
             {
                 throw new ArgumentException();
             }
@@ -5520,7 +5520,7 @@ public sealed unsafe partial class SOSDacImpl
                 .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
                     ILCodeVersionHandle.Invalid);
 
-            if (!ilCodeVersion.IsValid || !cv.IsReJIT(ilCodeVersion))
+            if (!ilCodeVersion.IsValid || cv.GetSource(ilCodeVersion) != CodeVersionSource.ReJIT)
                 throw new ArgumentException();
             else
             {
@@ -5593,7 +5593,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ILCodeVersionHandle activeILCodeVersion = cv.GetActiveILCodeVersion(methodDescPtr);
 
             // rejit in progress or rejit applied?
-            if ((rejit.GetRejitState(activeILCodeVersion) != RejitState.Active || !cv.HasDefaultIL(activeILCodeVersion)) && cv.IsReJIT(activeILCodeVersion))
+            if ((rejit.GetRejitState(activeILCodeVersion) != RejitState.Active || !cv.HasDefaultIL(activeILCodeVersion)) && cv.GetSource(activeILCodeVersion) == CodeVersionSource.ReJIT)
             {
                 pILData->type = DacpProfilerILData.ModificationType.ReJITModified;
                 pILData->rejitID = (uint)rejit.GetRejitId(activeILCodeVersion).Value;
@@ -5659,7 +5659,7 @@ public sealed unsafe partial class SOSDacImpl
                     if ((rejit.GetRejitState(activeILCodeVersion) != RejitState.Active ||
                         !cv.HasDefaultIL(activeILCodeVersion) ||
                         loader.GetDynamicIL(moduleHandle, token) != 0) &&
-                        cv.IsReJIT(activeILCodeVersion))
+                        cv.GetSource(activeILCodeVersion) == CodeVersionSource.ReJIT)
                     {
                         methodDescs[*pcMethodDescs] = md.ToClrDataAddress(_target);
                         (*pcMethodDescs)++;

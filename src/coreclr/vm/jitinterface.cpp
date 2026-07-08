@@ -9594,7 +9594,36 @@ void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::
 #ifdef DEBUGGING_SUPPORTED
     if (g_pDebugInterface)
     {
-        g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers);
+        g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers, NULL);
+    }
+    else
+    {
+        *cVars = 0;
+        *vars = NULL;
+
+        // Just tell the JIT to extend everything.
+        *extendOthers = true;
+    }
+#endif // DEBUGGING_SUPPORTED
+
+    EE_TO_JIT_TRANSITION();
+}
+
+void CEECodeGenInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
+                         bool *extendOthers)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef DEBUGGING_SUPPORTED
+    if (g_pDebugInterface)
+    {
+        g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers, m_ILHeader);
     }
     else
     {

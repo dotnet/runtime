@@ -1029,28 +1029,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     // If a MethodDesc is provided, it has to be consistent with the MethodDef token and the RVA.
     _ASSERTE((pMD == NULL) || ((pMD->GetMemberDef() == mdMethodToken) && (pMD->GetRVA() == methodRVA)));
 
-    TADDR pTargetIL = 0; // target address of start of IL blob
-
-#ifdef FEATURE_CODE_VERSIONING
-    // For a method that has been edited via EnC, the current IL (and its local variable
-    // signature token) lives on the active EnC IL code version rather than in the dynamic
-    // IL table, so fetch it from there.
-    {
-        CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
-        ILCodeVersion activeVersion =
-            pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_Module>(pModule), mdMethodToken);
-        if (!activeVersion.IsNull() && !activeVersion.IsReJIT())
-        {
-            pTargetIL = dac_cast<TADDR>(activeVersion.GetIL());
-        }
-    }
-    if (pTargetIL == 0)
-#endif // FEATURE_CODE_VERSIONING
-    {
-        // This works for methods in dynamic modules, and methods overridden by a profiler.
-        pTargetIL = pModule->GetDynamicIL(mdMethodToken);
-    }
+    TADDR pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
@@ -7070,7 +7049,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(V
     // manager's active IL version hasn't yet asked the profiler for the IL body to use, in which case we want to filter it
     //  out from the return in this method.
     ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
-    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive || !activeILVersion.IsReJIT())
+    if (activeILVersion.IsNull() || activeILVersion.IsDefaultVersion() || activeILVersion.GetRejitState() != RejitFlags::kStateActive || activeILVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7109,7 +7088,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_Native
 #ifdef FEATURE_REJIT
     NativeCodeVersionNode* pNativeCodeVersionNode = vmNativeCodeVersionNode.GetDacPtr();
     ILCodeVersion ilCodeVersion = pNativeCodeVersionNode->GetILCodeVersion();
-    if (ilCodeVersion.IsDefaultVersion() || !ilCodeVersion.IsReJIT())
+    if (ilCodeVersion.IsDefaultVersion() || ilCodeVersion.GetSource() != CodeVersionSource::kReJIT)
     {
         pVmILCodeVersionNode->SetDacTargetPtr(0);
     }
@@ -7122,6 +7101,59 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNode(VMPTR_Native
     _ASSERTE(!"You shouldn't be calling this - rejit is not supported in this build");
     pVmILCodeVersionNode->SetDacTargetPtr(0);
 #endif
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, TargetBuffer * pCodeInfo, mdSignature * pLocalSigToken)
+{
+    DD_ENTER_MAY_THROW;
+    if (pCodeInfo == NULL || pLocalSigToken == NULL)
+        return E_INVALIDARG;
+
+    pCodeInfo->Clear();
+    *pLocalSigToken = mdSignatureNil;
+
+    PTR_Module pModule = vmModule.GetDacPtr();
+    CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
+
+    TADDR pTargetIL = 0; // target address of start of IL blob for the requested EnC version
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        // Find the explicit EnC IL code version stamped with the requested EnC version. The default
+        // version has no explicit node (it represents the original, unedited IL), so it is skipped.
+        ILCodeVersionCollection ilCodeVersions = pCodeVersionManager->GetILCodeVersions(pModule, methodTk);
+        for (ILCodeVersionIterator cur = ilCodeVersions.Begin(), end = ilCodeVersions.End(); cur != end; cur++)
+        {
+            ILCodeVersion ilCodeVersion = *cur;
+            if (!ilCodeVersion.IsDefaultVersion() &&
+                ilCodeVersion.GetSource() == CodeVersionSource::kEnC &&
+                ilCodeVersion.GetEnCVersion() == enCVersion)
+            {
+                pTargetIL = dac_cast<TADDR>(ilCodeVersion.GetIL());
+                break;
+            }
+        }
+    }
+
+    if (pTargetIL != 0)
+    {
+        // Bring the IL blob over to the host and extract the code buffer and local var sig token.
+        // We need the target address of the IL itself (beyond the header), so we add the offset from
+        // the beginning of the host IL blob (the header) to the beginning of the IL to the target
+        // address of the blob.
+        COR_ILMETHOD * pHostIL = DacGetIlMethod(pTargetIL);
+        COR_ILMETHOD_DECODER header(pHostIL);
+
+        pCodeInfo->pAddress = pTargetIL + ((SIZE_T)(header.Code) - (SIZE_T)pHostIL);
+        pCodeInfo->cbSize = header.GetCodeSize();
+
+        if (header.LocalVarSigTok != mdTokenNil)
+        {
+            *pLocalSigToken = header.GetLocalVarSigTok();
+        }
+    }
+
     return S_OK;
 }
 

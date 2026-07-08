@@ -40,7 +40,8 @@ public interface ICodeVersions : IContract
     public virtual bool TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries) => throw new NotImplementedException();
 
     public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
-    public virtual bool IsReJIT(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+    public virtual CodeVersionSource GetSource(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+    public virtual TargetNUInt GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
 }
 
 public readonly struct ILCodeVersionHandle

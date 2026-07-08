@@ -2013,7 +2013,8 @@ public:
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers);
+                 bool *extendOthers,
+                 COR_ILMETHOD_DECODER * pILHeader);
 
     DebuggerMethodInfo *GetOrCreateMethodInfo(Module *pModule, mdMethodDef token);
 

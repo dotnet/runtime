@@ -143,8 +143,8 @@ public class ReJITTests
         mockCodeVersions.Setup(cv => cv.GetILCodeVersions(methodDesc))
             .Returns(ilCodeVersionHandles);
         // Explicit versions in this test are ReJIT versions; the synthetic version is not.
-        mockCodeVersions.Setup(cv => cv.IsReJIT(It.IsAny<ILCodeVersionHandle>()))
-            .Returns((ILCodeVersionHandle h) => h.IsExplicit);
+        mockCodeVersions.Setup(cv => cv.GetSource(It.IsAny<ILCodeVersionHandle>()))
+            .Returns((ILCodeVersionHandle h) => h.IsExplicit ? CodeVersionSource.ReJIT : CodeVersionSource.Unknown);
         ReJITContractContext context = CreateReJITContract(
             arch,
             rejitBuilder =>

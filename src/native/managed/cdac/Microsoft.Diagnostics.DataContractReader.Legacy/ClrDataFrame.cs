@@ -520,7 +520,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         TargetPointer ilHeader = TargetPointer.Null;
         ICodeVersions cv = _target.Contracts.CodeVersions;
         ILCodeVersionHandle activeVersion = cv.GetActiveILCodeVersion(mdh.Address);
-        if (activeVersion.IsValid && activeVersion.IsExplicit && !cv.IsReJIT(activeVersion))
+        if (activeVersion.IsValid && activeVersion.IsExplicit && cv.GetSource(activeVersion) != CodeVersionSource.ReJIT)
             ilHeader = cv.GetIL(activeVersion);
 
         if (ilHeader == TargetPointer.Null)

@@ -3543,9 +3543,13 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 
     EX_TRY
     {
+        // Only ReJIT versions are reported with a non-zero IL code version id; EnC (and the
+        // default version) report 0. This retains compatibility with how EnC updates were
+        // reported before EnC edits were modeled as IL code versions - historically they were
+        // not given unique IL code version IDs in these events.
         ReJITID ilCodeVersionId = 0;
 #ifdef FEATURE_CODE_VERSIONING
-        if (pConfig->GetCodeVersion().GetILCodeVersion().IsReJIT())
+        if (pConfig->GetCodeVersion().GetILCodeVersion().GetSource() == CodeVersionSource::kReJIT)
         {
             ilCodeVersionId = pConfig->GetCodeVersion().GetILCodeVersionId();
         }
@@ -5061,7 +5065,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
             else
             {
                 nativeCodeVersionId = nativeCodeVersion.GetVersionId();
-                ilCodeId = nativeCodeVersion.GetILCodeVersion().IsReJIT() ? nativeCodeVersion.GetILCodeVersionId() : 0;
+                ilCodeId = nativeCodeVersion.GetILCodeVersion().GetSource() == CodeVersionSource::kReJIT ? nativeCodeVersion.GetILCodeVersionId() : 0;
             }
         }
         else

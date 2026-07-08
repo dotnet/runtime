@@ -1254,22 +1254,6 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 
     Module *pModule = GetModule();
 
-#ifdef FEATURE_CODE_VERSIONING
-    if (InEnCEnabledModule())
-    {
-        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
-        if (pCodeVersionManager->GetILCodeVersioningState(dac_cast<PTR_Module>(pModule), GetMemberDef()) != NULL)
-        {
-            CodeVersionManager::LockHolder codeVersioningLockHolder;
-            ILCodeVersion activeVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
-            if (!activeVersion.IsNull() && !activeVersion.IsReJIT())
-            {
-                return activeVersion.GetIL();
-            }
-        }
-    }
-#endif // FEATURE_CODE_VERSIONING
-
     // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
     // Profilers can attach dynamic IL to methods with zero RVA.
     TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
@@ -1298,6 +1282,65 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 #else // !DACCESS_COMPILE
     return PTR_COR_ILMETHOD(pIL);
 #endif // !DACCESS_COMPILE
+}
+
+COR_ILMETHOD* MethodDesc::GetActiveILHeader()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(MayHaveILHeader());
+    }
+    CONTRACTL_END
+
+#ifdef FEATURE_CODE_VERSIONING
+    if (InEnCEnabledModule())
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        if (pCodeVersionManager->GetILCodeVersioningState(dac_cast<PTR_Module>(GetModule()), GetMemberDef()) != NULL)
+        {
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ILCodeVersion activeVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
+            if (!activeVersion.IsNull() && activeVersion.GetSource() != CodeVersionSource::kReJIT)
+            {
+                return activeVersion.GetIL();
+            }
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
+    return GetILHeader();
+}
+
+COR_ILMETHOD* MethodDesc::GetILHeaderForNativeCode(PCODE nativeCodeStartAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(MayHaveILHeader());
+    }
+    CONTRACTL_END
+
+#ifdef FEATURE_CODE_VERSIONING
+    if (IsVersionable() && nativeCodeStartAddress != (PCODE)NULL)
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(PTR_MethodDesc(this), nativeCodeStartAddress);
+        if (!nativeCodeVersion.IsNull())
+        {
+            ILCodeVersion ilCodeVersion = nativeCodeVersion.GetILCodeVersion();
+            if (!ilCodeVersion.IsNull() && ilCodeVersion.GetSource() != CodeVersionSource::kReJIT)
+            {
+                return ilCodeVersion.GetIL();
+            }
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
+    return GetILHeader();
 }
 
 #if defined(TARGET_X86) && defined(HAVE_GCCOVER)

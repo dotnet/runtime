@@ -171,9 +171,11 @@ enum class RejitFlags : uint32_t
     // and call GetReJITParameters() again.
     kStateGettingReJITParameters = 0x00000001,
 
-    // We have asked the profiler about this method via ICorProfilerFunctionControl,
+    // This is set in two scenarios:
+    // 1. We have asked the profiler about this method via ICorProfilerFunctionControl,
     // and have thus stored the IL and codegen flags the profiler specified.
     // [cDAC] [ReJIT]: Contract depends on this value.
+    // 2. This method and its IL has been updated via EnC.
     kStateActive = 0x00000002,
 
     // [cDAC] [ReJIT]: Contract depends on this value.
@@ -212,7 +214,7 @@ public:
 #endif
     PTR_COR_ILMETHOD GetIL() const;
     DWORD GetJitFlags() const;
-    bool IsReJIT() const;
+    CodeVersionSource GetSource() const;
     SIZE_T GetEnCVersion() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
 

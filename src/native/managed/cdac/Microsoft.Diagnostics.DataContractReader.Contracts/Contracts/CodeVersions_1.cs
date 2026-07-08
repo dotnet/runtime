@@ -11,6 +11,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
+    // Initial value for EnC versions (matches native CorDB_DEFAULT_ENC_FUNCTION_VERSION).
+    private const ulong CorDBDefaultEnCVersion = 1;
+
     private readonly Target _target;
 
     public CodeVersions_1(Target target)
@@ -408,12 +411,20 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
     }
 
-    bool ICodeVersions.IsReJIT(ILCodeVersionHandle ilCodeVersionHandle)
+    CodeVersionSource ICodeVersions.GetSource(ILCodeVersionHandle ilCodeVersionHandle)
     {
-        // The synthetic (default) version has no backing node and is never a ReJIT version.
+        // The synthetic (default) version has no backing node and has no explicit source.
         if (!ilCodeVersionHandle.IsExplicit)
-            return false;
-        return (CodeVersionSource)AsNode(ilCodeVersionHandle).Source == CodeVersionSource.ReJIT;
+            return CodeVersionSource.Unknown;
+        return (CodeVersionSource)AsNode(ilCodeVersionHandle).Source;
+    }
+
+    TargetNUInt ICodeVersions.GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        // The synthetic (default) version represents the original, unedited IL.
+        if (!ilCodeVersionHandle.IsExplicit)
+            return new TargetNUInt(CorDBDefaultEnCVersion);
+        return AsNode(ilCodeVersionHandle).EnCVersion;
     }
 
     bool ICodeVersions.TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries)

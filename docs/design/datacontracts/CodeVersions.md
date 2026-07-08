@@ -68,8 +68,11 @@ public virtual bool TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHan
 // Gets the optimization tier for a native code version
 public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
 
-// Determines whether an IL code version was produced by ReJIT (as opposed to EnC or the default)
-public virtual bool IsReJIT(ILCodeVersionHandle ilCodeVersionHandle);
+// Gets what produced an IL code version (ReJIT, EnC, or Unknown for the default version)
+public virtual CodeVersionSource GetSource(ILCodeVersionHandle ilCodeVersionHandle);
+
+// Gets the EnC version number of an IL code version
+public virtual TargetNUInt GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle);
 ```
 
 ### Extension Methods
@@ -409,14 +412,25 @@ bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle)
 }
 ```
 
-### Determining whether an IL code version was produced by ReJIT
+### Getting what produced an IL code version
 
 ```csharp
-bool ICodeVersions.IsReJIT(ILCodeVersionHandle ilCodeVersionHandle)
+CodeVersionSource ICodeVersions.GetSource(ILCodeVersionHandle ilCodeVersionHandle)
 {
     if (!ilCodeVersionHandle.IsExplicit)
-        return false;
-    return // node Source is ReJIT
+        return CodeVersionSource.Unknown;
+    return // node Source
+}
+```
+
+### Getting the EnC version of an IL code version
+
+```csharp
+TargetNUInt ICodeVersions.GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsExplicit)
+        return // CorDB_DEFAULT_ENC_FUNCTION_VERSION
+    return // node EnCVersion
 }
 ```
 
