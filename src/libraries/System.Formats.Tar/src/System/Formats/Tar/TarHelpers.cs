@@ -504,7 +504,7 @@ namespace System.Formats.Tar
 
         // We delayed creating some symbolic links because they might target locations outside the destination.
         // Any symlink that is in the destination directory at call time is either one that points in the destination or one that we are allowed to follow outside.
-        public static void CreatePendingLinks(string destinationDirectoryFullPath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)> pendingLinks)
+        internal static void CreatePendingLinks(string destinationDirectoryFullPath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)> pendingLinks)
         {
             Debug.Assert(destinationDirectoryFullPath[^1] == Path.DirectorySeparatorChar);
 

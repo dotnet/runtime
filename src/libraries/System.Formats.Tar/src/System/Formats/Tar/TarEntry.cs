@@ -217,8 +217,8 @@ namespace System.Formats.Tar
             {
                 throw new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
-            // HardLink entries are rejected above. hardLinkMode will not be used.
-            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink);
+
+            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, pendingLinks: null);
         }
 
         /// <summary>
@@ -252,8 +252,8 @@ namespace System.Formats.Tar
             {
                 return Task.FromException(new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
             }
-            // HardLink entries are rejected above. hardLinkMode will not be used.
-            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, cancellationToken);
+
+            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, pendingLinks: null, cancellationToken);
         }
 
         /// <summary>
@@ -341,7 +341,7 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, extractState.PendingModes);
-                ExtractToFileInternal(destinationFullPath, linkTargetPath, overwrite, extractState.HardLinkMode);
+                ExtractToFileInternal(destinationFullPath, linkTargetPath, overwrite, extractState.HardLinkMode, extractState.PendingLinks);
             }
         }
 
@@ -374,7 +374,7 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, extractState.PendingModes);
-                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, overwrite, extractState.HardLinkMode, cancellationToken);
+                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, overwrite, extractState.HardLinkMode, extractState.PendingLinks, cancellationToken);
             }
         }
 
@@ -605,9 +605,9 @@ namespace System.Formats.Tar
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.
-        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite, TarHardLinkMode hardLinkMode)
+        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite, TarHardLinkMode hardLinkMode, Dictionary<FileId, (string, string)>? pendingLinks)
         {
-            VerifyDestinationPath(filePath, overwrite);
+            VerifyDestinationPath(filePath, overwrite, pendingLinks);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
             {
@@ -620,13 +620,13 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
-        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, TarHardLinkMode hardLinkMode, CancellationToken cancellationToken)
+        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, TarHardLinkMode hardLinkMode, Dictionary<FileId, (string, string)>? pendingLinks, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            VerifyDestinationPath(filePath, overwrite);
+            VerifyDestinationPath(filePath, overwrite, pendingLinks);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
             {
@@ -710,7 +710,7 @@ namespace System.Formats.Tar
         }
 
         // Verifies there's a writable destination.
-        private static void VerifyDestinationPath(string filePath, bool overwrite)
+        private static void VerifyDestinationPath(string filePath, bool overwrite, Dictionary<FileId, (string, string)>? pendingLinks)
         {
             string? directoryPath = Path.GetDirectoryName(filePath);
             // If the destination contains a directory segment, need to check that it exists
@@ -735,6 +735,15 @@ namespace System.Formats.Tar
             {
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, filePath));
             }
+
+            // If this path is a deferred symlink placeholder, drop its pending entry so it is not
+            // materialized later and clobber the entry that is overwriting it. Use the no-follow
+            // file id (TryGetPathInfo) so we match the placeholder itself, not a symlink's target.
+            if (pendingLinks is { Count: > 0 } && TarHelpers.TryGetPathInfo(filePath, out FileId placeholderId, out _))
+            {
+                pendingLinks.Remove(placeholderId);
+            }
+
             File.Delete(filePath);
         }
 

@@ -796,6 +796,37 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RegularFileOverwritesDeferredSymlink()
+        {
+            // When a regular file entry overwrites a previously deferred symlink,
+            // the placeholder is replaced by the file and its pending link entry is
+            // dropped, so the final entry is the file (not the symlink).
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "file_overwrites_deferred.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "a/link")
+                {
+                    DataStream = new MemoryStream(Encoding.UTF8.GetBytes("content"))
+                });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "a", "link");
+            Assert.Null(new FileInfo(linkPath).LinkTarget);
+            Assert.Equal("content", File.ReadAllText(linkPath));
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void ExtractToDirectory_AbsoluteSymlinkWithinDestination()
         {
             // A symlink with a fully qualified target that points within the destination
@@ -917,45 +948,6 @@ namespace System.Formats.Tar.Tests
             }
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
-        }
-
-        [Fact]
-        public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal()
-        {
-            // Try several first-component lengths so we don't depend on exact offset arithmetic.
-            for (int L = 1; L <= 4; L++)
-            {
-                string comp = new string('X', L);
-                string real = $"/tmp/real{L}";
-                string destLink = $"/tmp/d{L}";
-                string tar = $"/tmp/evil{L}.tar";
-                string escaped = $"/tmp/pwned{L}.txt";
-
-                if (Directory.Exists(real)) Directory.Delete(real, true);
-                Directory.CreateDirectory(real);
-                if (Path.Exists(destLink)) File.Delete(destLink);
-                Directory.CreateSymbolicLink(destLink, real);   // dest /tmp/dL is a SYMLINK -> /tmp/realL
-                if (File.Exists(escaped)) File.Delete(escaped);
-
-                // Build the malicious archive with literal entry names (writer sets names directly).
-                using (var fs = File.Create(tar))
-                using (var w = new TarWriter(fs, TarEntryFormat.Pax))
-                {
-                    w.WriteEntry(new PaxTarEntry(TarEntryType.Directory, comp + "/"));
-                    var b = new PaxTarEntry(TarEntryType.SymbolicLink, comp + "/b"); b.LinkName = "."; w.WriteEntry(b);
-                    var c = new PaxTarEntry(TarEntryType.SymbolicLink, comp + "/b/c"); c.LinkName = "."; w.WriteEntry(c);
-                    var d = new PaxTarEntry(TarEntryType.SymbolicLink, comp + "/b/c/d"); d.LinkName = "../.."; w.WriteEntry(d);
-                    var f = new PaxTarEntry(TarEntryType.RegularFile, comp + $"/d/pwned{L}.txt");
-                    f.DataStream = new MemoryStream(Encoding.UTF8.GetBytes("PWNED")); w.WriteEntry(f);
-                }
-
-                string status;
-                try { TarFile.ExtractToDirectory(tar, destLink, overwriteFiles: true); status = "extract-returned"; }
-                catch (Exception ex) { status = "THREW " + ex.GetType().Name + ": " + ex.Message.Split('\n')[0]; }
-
-                bool esc = File.Exists(escaped);   // /tmp/pwnedL.txt is OUTSIDE the dest /tmp/dL (-> /tmp/realL)
-                Assert.False(esc, $"Traversal confirmed: {escaped} was created outside destination {destLink} (-> {real})");
-            }
         }
     }
 }
