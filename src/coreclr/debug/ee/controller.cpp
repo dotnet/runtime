@@ -8325,7 +8325,7 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
         {
             // If we're at either a patch or SS, we'll have a context.
             CONTEXT *context = g_pEEInterface->GetThreadFilterContext(GetThread());
-            if (context == NULL)
+            if (context != NULL)
             {
                 void * pIP = CORDbgGetIP(context);
 
