@@ -1685,8 +1685,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 configurePolicy?.Invoke(chain.ChainPolicy);
 
                 bool result = chain.Build(endEntityCertificate);
+                bool expected = expectedFlags == X509ChainStatusFlags.NoError;
                 X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
-                Assert.True(result == (expectedFlags == X509ChainStatusFlags.NoError), $"chain.Build ({actualFlags})");
+                int depth = chain.ChainElements?.Count ?? 0;
+                Assert.True(result == expected, $"chain.Build returned {result} with flags ({actualFlags}) and depth {depth} when ({expectedFlags}) with depth 4 was expected");
 
                 Assert.True(
                     actualFlags.HasFlag(expectedFlags),
@@ -1712,8 +1714,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 configurePolicy?.Invoke(chain.ChainPolicy);
 
                 bool result = chain.Build(endEntityCertificate);
+                bool expected = expectedFlags == X509ChainStatusFlags.NoError;
                 X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
-                Assert.True(result == (expectedFlags == X509ChainStatusFlags.NoError), $"chain.Build ({actualFlags})");
+                int depth = chain.ChainElements?.Count ?? 0;
+                Assert.True(result == expected, $"chain.Build returned {result} with flags ({actualFlags}) and depth {depth} when ({expectedFlags}) with depth 3 was expected");
 
                 Assert.True(
                     actualFlags.HasFlag(expectedFlags),
