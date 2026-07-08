@@ -43,7 +43,7 @@ on:
         required: true
         type: number
 
-if: ${{ !github.event.repository.fork }}
+if: (!github.event.repository.fork)
 
 # ###############################################################
 # Select a PAT from the pool and override COPILOT_GITHUB_TOKEN.
