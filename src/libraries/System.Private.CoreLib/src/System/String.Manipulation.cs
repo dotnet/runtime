@@ -12,7 +12,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
-using System.Text.Unicode;
 
 namespace System
 {
