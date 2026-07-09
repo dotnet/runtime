@@ -60,6 +60,15 @@ namespace System.Net.Security
 
         private ArrayBuffer _pendingBuffer = new ArrayBuffer(initialSize: 0, usePool: true);
 
+        // Server-side only: SNI-resolved host name captured from the client's
+        // ClientHello. Kept session-local so parallel sessions built from a
+        // deferred TlsContext (SNI-dispatching bootstrap) cannot race on the
+        // shared _options bag. Empty until the first ClientHello has parsed.
+        // On client-side sessions the target host lives on _options.TargetHost
+        // (immutable after SetContext, set by the caller via
+        // SslClientAuthenticationOptions).
+        private string _sessionTargetHost = string.Empty;
+
         private byte[]? _decryptScratch;
 
         private bool _isHandshakeComplete;
@@ -143,8 +152,23 @@ namespace System.Net.Security
 
         public string? TargetHostName
         {
-            get { ThrowIfContextNotSet(); return _options.TargetHost; }
-            set { ThrowIfContextNotSet(); _options.TargetHost = value ?? string.Empty; }
+            get
+            {
+                ThrowIfContextNotSet();
+                return _context!.IsServer ? _sessionTargetHost : _options.TargetHost;
+            }
+            set
+            {
+                ThrowIfContextNotSet();
+                if (_context!.IsServer)
+                {
+                    _sessionTargetHost = value ?? string.Empty;
+                }
+                else
+                {
+                    _options.TargetHost = value ?? string.Empty;
+                }
+            }
         }
 
         public SslProtocols NegotiatedProtocol
@@ -781,7 +805,7 @@ namespace System.Net.Security
                             _clientHelloInfo = parsed;
                             if (!string.IsNullOrEmpty(parsed.Value.ServerName))
                             {
-                                _options.TargetHost = parsed.Value.ServerName;
+                                _sessionTargetHost = parsed.Value.ServerName;
                             }
                             if (frameLength > 0 && frameLength <= input.Length)
                             {
@@ -1486,7 +1510,7 @@ namespace System.Net.Security
 
             if (!string.IsNullOrEmpty(frameInfo.TargetName))
             {
-                _options.TargetHost = frameInfo.TargetName;
+                _sessionTargetHost = frameInfo.TargetName;
             }
 
             ServerCertificateSelectionCallback? selector = _options.ServerCertSelectionDelegate;
@@ -1495,7 +1519,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            X509Certificate? selected = selector(this, _options.TargetHost);
+            X509Certificate? selected = selector(this, _sessionTargetHost);
             if (selected is null)
             {
                 throw new AuthenticationException(SR.net_ssl_io_no_server_cert);

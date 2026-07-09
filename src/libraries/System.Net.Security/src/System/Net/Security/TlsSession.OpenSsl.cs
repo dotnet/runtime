@@ -161,7 +161,7 @@ namespace System.Net.Security
                 _clientHelloInfo = parsed;
                 if (!string.IsNullOrEmpty(parsed.Value.ServerName))
                 {
-                    _options.TargetHost = parsed.Value.ServerName;
+                    _sessionTargetHost = parsed.Value.ServerName;
                 }
             }
 
