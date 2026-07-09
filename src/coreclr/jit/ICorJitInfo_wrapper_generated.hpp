@@ -1269,6 +1269,15 @@ CorInfoWasmType WrapICorJitInfo::getWasmLowering(
     return temp;
 }
 
+bool WrapICorJitInfo::isEnumerableAndEnumerator(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isEnumerableAndEnumerator);
+    bool temp = wrapHnd->isEnumerableAndEnumerator(cls);
+    API_LEAVE(isEnumerableAndEnumerator);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {

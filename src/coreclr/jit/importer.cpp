@@ -6867,6 +6867,51 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             JITDUMP("V%02u value is IEnumerator<T> via GDV\n", lclNum);
                             lvaTable[lclNum].lvIsEnumerator = true;
+
+                            if (call->IsGuardedDevirtualizationCandidate())
+                            {
+                                GenTree* receiver = nullptr;
+                                CallArg* thisArg  = call->gtArgs.FindWellKnownArg(WellKnownArg::ThisPointer);
+                                if (thisArg != nullptr)
+                                {
+                                    receiver = thisArg->GetEarlyNode();
+                                }
+
+                                for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
+                                {
+                                    InlineCandidateInfo* const inlineInfo  = call->GetGDVCandidateInfo(i);
+                                    CORINFO_CLASS_HANDLE const likelyClass = inlineInfo->guardedClassHandle;
+                                    if (likelyClass != NO_CLASS_HANDLE)
+                                    {
+                                        JITDUMP("Remembering iterator class %s is interesting for GetEnumerator GDV\n",
+                                                eeGetClassName(likelyClass));
+                                        IteratorGdvInfo gdvInfo;
+                                        gdvInfo.m_likelihood = inlineInfo->likelihood;
+                                        gdvInfo.m_enumeratorLocal = lclNum;
+
+                                        IteratorGdvInfo existingInfo;
+                                        ClassHandleToIteratorGdvInfoMap* const gdvInfoMap = getImpIteratorGdvInfoMap();
+                                        if (gdvInfoMap->Lookup(likelyClass, &existingInfo) &&
+                                            (existingInfo.m_enumeratorLocal != lclNum))
+                                        {
+                                            gdvInfo.m_enumeratorLocal = BAD_VAR_NUM;
+                                        }
+
+                                        gdvInfoMap->Set(likelyClass, gdvInfo,
+                                                        ClassHandleToIteratorGdvInfoMap::Overwrite);
+
+                                        if ((receiver != nullptr) && receiver->OperIs(GT_LCL_VAR))
+                                        {
+                                            const unsigned receiverLcl = receiver->AsLclVarCommon()->GetLclNum();
+                                            JITDUMP("Remembering GetEnumerator receiver V%02u produces V%02u\n",
+                                                    receiverLcl, lclNum);
+                                            getImpGetEnumeratorReceiverToEnumeratorMap()->Set(receiverLcl, lclNum,
+                                                                                             VarToUnsignedMap::Overwrite);
+                                        }
+                                    }
+                                }
+                            }
+
                             JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(call), lclNum);
                             getImpEnumeratorGdvLocalMap()->Set(call, lclNum);
                             Metrics.EnumeratorGDV++;
@@ -8981,6 +9026,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                         }
 
+                        const bool isEnumerableAndEnumerator =
+                            opts.OptimizationEnabled() &&
+                            info.compCompHnd->isEnumerableAndEnumerator(resolvedToken.hClass);
+
                         // Flag if this allocation happens within a method that uses the static empty
                         // pattern (if we stack allocate this object, we can optimize the empty side away)
                         //
@@ -8993,6 +9042,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // If the method being imported is an inlinee, and the original call was flagged
                         // for possible enumerator cloning, flag the allocation as well.
                         //
+                        bool isInlineeEnumeratorCloneAllocation = false;
                         if (compIsForInlining() && hasImpEnumeratorGdvLocalMap())
                         {
                             NodeToUnsignedMap* const map           = getImpEnumeratorGdvLocalMap();
@@ -9000,10 +9050,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             GenTreeCall* const       call          = impInlineInfo->iciCall;
                             if (map->Lookup(call, &enumeratorLcl))
                             {
-                                JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(op1),
-                                        enumeratorLcl);
                                 map->Remove(call);
-                                map->Set(op1, enumeratorLcl);
+                                if (isEnumerableAndEnumerator)
+                                {
+                                    JITDUMP("Not flagging iterator Clone allocation [%06u] for enumerator cloning\n",
+                                            dspTreeID(op1));
+                                    isInlineeEnumeratorCloneAllocation = true;
+                                }
+                                else
+                                {
+                                    JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(op1),
+                                            enumeratorLcl);
+                                    map->Set(op1, enumeratorLcl);
+                                }
                             }
                         }
 
@@ -9026,6 +9085,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lvaTable[lclNum].lvSingleDef = 1;
                         JITDUMP("Marked V%02u as a single def local\n", lclNum);
                         lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+
+                        if (isEnumerableAndEnumerator && !isInlineeEnumeratorCloneAllocation)
+                        {
+                            JITDUMP("V%02u value implements IEnumerable<T> and IEnumerator<T>\n", lclNum);
+                            lvaTable[lclNum].lvIsEnumerator = true;
+                        }
 
                         newObjThisPtr = gtNewLclvNode(lclNum, TYP_REF);
                     }

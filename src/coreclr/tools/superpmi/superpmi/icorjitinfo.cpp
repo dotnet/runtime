@@ -250,6 +250,12 @@ bool MyICJI::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
     return jitInstance->mc->repIsIntrinsicType(classHnd) ? true : false;
 }
 
+bool MyICJI::isEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isEnumerableAndEnumerator");
+    return jitInstance->mc->repIsEnumerableAndEnumerator(cls);
+}
+
 // return the entry point calling convention for any of the following
 // - a P/Invoke
 // - a method marked with UnmanagedCallersOnly

@@ -8574,6 +8574,59 @@ bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 }
 
 /*********************************************************************/
+bool CEEInfo::isEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(cls);
+    MethodTable* pMT = th.GetMethodTable();
+
+    MethodTable* pIEnumerableMT = CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
+    MethodTable* pIEnumeratorMT = CoreLibBinder::GetClass(CLASS__IENUMERATORGENERIC);
+
+    MethodTable::InterfaceMapIterator enumerableIterator = pMT->IterateInterfaceMap();
+    while (!result && enumerableIterator.Next())
+    {
+        MethodTable* pInterfaceMT = enumerableIterator.GetInterface(pMT);
+        if ((pInterfaceMT == nullptr) || !pInterfaceMT->HasInstantiation() || !pInterfaceMT->HasSameTypeDefAs(pIEnumerableMT))
+        {
+            continue;
+        }
+
+        TypeHandle enumerableTypeArg = pInterfaceMT->GetInstantiation()[0];
+
+        MethodTable::InterfaceMapIterator enumeratorIterator = pMT->IterateInterfaceMap();
+        while (enumeratorIterator.Next())
+        {
+            MethodTable* pOtherInterfaceMT = enumeratorIterator.GetInterface(pMT);
+            if ((pOtherInterfaceMT == nullptr) || !pOtherInterfaceMT->HasInstantiation() ||
+                !pOtherInterfaceMT->HasSameTypeDefAs(pIEnumeratorMT))
+            {
+                continue;
+            }
+
+            if (pOtherInterfaceMT->GetInstantiation()[0] == enumerableTypeArg)
+            {
+                result = true;
+                break;
+            }
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
                                      unsigned * pOffsetAfterIndirection,

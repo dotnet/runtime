@@ -274,6 +274,7 @@ private:
     // Conditionally escaping allocation support
     //
     void     CheckForGuardedAllocationOrCopy(BasicBlock* block, Statement* stmt, GenTree** use, unsigned lclNum);
+    bool     IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tree, unsigned lclNum);
     bool     CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsigned lclNum);
     bool     CheckForEnumeratorUse(unsigned lclNum, unsigned dstLclNum);
     bool     IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info, bool testOutcome);

@@ -914,6 +914,12 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
     return original_ICorJitInfo->getWasmLowering(structHnd);
 }
 
+bool interceptor_ICJI::isEnumerableAndEnumerator(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isEnumerableAndEnumerator(cls);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {

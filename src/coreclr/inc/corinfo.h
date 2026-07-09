@@ -3190,6 +3190,13 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    // Return true if the given class implements both IEnumerable<T> and IEnumerator<T>
+    // for some T. This is a candidate signal only; it does not imply GetEnumerator
+    // returns "this".
+    virtual bool isEnumerableAndEnumerator(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
 };
 
 /*****************************************************************************
