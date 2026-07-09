@@ -17,10 +17,9 @@ namespace System.Formats.Tar.Tests
 
         public static IEnumerable<object[]> Get_Boolean_Data() => Booleans.Select(b => new object[] { b });
 
-        protected static async Task<TarReader> CreateTarReader(Stream archiveStream, bool leaveOpen = false, bool async = false)
+        protected static TarReader CreateTarReader(Stream archiveStream, bool leaveOpen = false)
         {
-            _ = async; // TarReader constructor is always synchronous
-            return await Task.FromResult(new TarReader(archiveStream, leaveOpen));
+            return new TarReader(archiveStream, leaveOpen);
         }
 
         protected static async Task DisposeTarReader(TarReader reader, bool async = false)
@@ -42,10 +41,9 @@ namespace System.Formats.Tar.Tests
                 : reader.GetNextEntry(copyData);
         }
 
-        protected static async Task<TarWriter> CreateTarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false, bool async = false)
+        protected static TarWriter CreateTarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
         {
-            _ = async; // TarWriter constructor is always synchronous
-            return await Task.FromResult(new TarWriter(archiveStream, format, leaveOpen));
+            return new TarWriter(archiveStream, format, leaveOpen);
         }
 
         protected static async Task DisposeTarWriter(TarWriter writer, bool async = false)

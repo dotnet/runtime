@@ -15,7 +15,7 @@ namespace System.Formats.Tar.Tests
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream archiveStream = GetStrangeTarMemoryStream("prefixDotSlashAndCurrentFolderEntry");
-            TarReader reader = await CreateTarReader(archiveStream, leaveOpen: false, async: async);
+            TarReader reader = CreateTarReader(archiveStream, leaveOpen: false);
             try
             {
                 string rootPath = Path.TrimEndingDirectorySeparator(root.Path);

@@ -31,7 +31,7 @@ namespace System.Formats.Tar.Tests
                     Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultFileMode));
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, expectedFormat, leaveOpen: true, async: isAsync);
+                    TarWriter writer = CreateTarWriter(archive, expectedFormat, leaveOpen: true);
                     try
                     {
                         await WriteEntry(writer, fifoPath, fifoName, isAsync);
@@ -42,7 +42,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     archive.Seek(0, SeekOrigin.Begin);
-                    TarReader reader = await CreateTarReader(archive, async: isAsync);
+                    TarReader reader = CreateTarReader(archive);
                     try
                     {
                         PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
@@ -86,7 +86,7 @@ namespace System.Formats.Tar.Tests
                     Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultFileMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, expectedFormat, leaveOpen: true, async: isAsync);
+                    TarWriter writer = CreateTarWriter(archive, expectedFormat, leaveOpen: true);
                     try
                     {
                         await WriteEntry(writer, blockDevicePath, AssetBlockDeviceFileName, isAsync);
@@ -97,7 +97,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     archive.Seek(0, SeekOrigin.Begin);
-                    TarReader reader = await CreateTarReader(archive, async: isAsync);
+                    TarReader reader = CreateTarReader(archive);
                     try
                     {
                         PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
@@ -143,7 +143,7 @@ namespace System.Formats.Tar.Tests
                     Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultFileMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, expectedFormat, leaveOpen: true, async: isAsync);
+                    TarWriter writer = CreateTarWriter(archive, expectedFormat, leaveOpen: true);
                     try
                     {
                         await WriteEntry(writer, characterDevicePath, AssetCharacterDeviceFileName, isAsync);
@@ -154,7 +154,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     archive.Seek(0, SeekOrigin.Begin);
-                    TarReader reader = await CreateTarReader(archive, async: isAsync);
+                    TarReader reader = CreateTarReader(archive);
                     try
                     {
                         PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
@@ -213,7 +213,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: isAsync);
+                    TarWriter writer = CreateTarWriter(archive, format, leaveOpen: true);
                     try
                     {
                         await WriteEntry(writer, filePath, fileName, isAsync);
@@ -224,7 +224,7 @@ namespace System.Formats.Tar.Tests
                     }
                     archive.Seek(0, SeekOrigin.Begin);
 
-                    TarReader reader = await CreateTarReader(archive, leaveOpen: false, async: isAsync);
+                    TarReader reader = CreateTarReader(archive, leaveOpen: false);
                     try
                     {
                         PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
@@ -279,7 +279,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: isAsync);
+                    TarWriter writer = CreateTarWriter(archive, format, leaveOpen: true);
                     try
                     {
                         await WriteEntry(writer, filePath, fileName, isAsync);
@@ -290,7 +290,7 @@ namespace System.Formats.Tar.Tests
                     }
                     archive.Seek(0, SeekOrigin.Begin);
 
-                    TarReader reader = await CreateTarReader(archive, leaveOpen: false, async: isAsync);
+                    TarReader reader = CreateTarReader(archive, leaveOpen: false);
                     try
                     {
                         PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
@@ -357,7 +357,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: isAsync);
+                    TarWriter writer = CreateTarWriter(archive, format, leaveOpen: true);
                     try
                     {
                         await WriteEntry(writer, filePath, fileName, isAsync);
@@ -368,7 +368,7 @@ namespace System.Formats.Tar.Tests
                     }
                     archive.Seek(0, SeekOrigin.Begin);
 
-                    TarReader reader = await CreateTarReader(archive, leaveOpen: false, async: isAsync);
+                    TarReader reader = CreateTarReader(archive, leaveOpen: false);
                     try
                     {
                         PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;

@@ -30,7 +30,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
             Assert.True(MountHelper.CreateJunction(junctionPath, targetPath));
 
             using MemoryStream archive = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
+            TarWriter writer = CreateTarWriter(archive, format, leaveOpen: true);
             try
             {
                 await WriteEntry(writer, junctionPath, junctionPath, async);
@@ -41,7 +41,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
             }
 
             archive.Position = 0;
-            TarReader reader = await CreateTarReader(archive, async: async);
+            TarReader reader = CreateTarReader(archive);
             try
             {
                 TarEntry entry = await GetNextEntry(reader, async: async);
@@ -79,7 +79,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
         foreach (bool async in Booleans)
         {
             using MemoryStream archive = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archive, format, async: async);
+            TarWriter writer = CreateTarWriter(archive, format);
             try
             {
                 if (async)

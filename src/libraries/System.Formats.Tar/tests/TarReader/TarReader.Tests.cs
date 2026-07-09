@@ -28,7 +28,7 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            TarReader reader = await CreateTarReader(ms, leaveOpen: false, async: async);
+            TarReader reader = CreateTarReader(ms, leaveOpen: false);
             try
             {
                 TarEntry entry;
@@ -60,7 +60,7 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            TarReader reader = await CreateTarReader(ms, leaveOpen: true, async: async);
+            TarReader reader = CreateTarReader(ms, leaveOpen: true);
             try
             {
                 TarEntry entry;
@@ -93,7 +93,7 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            TarReader reader = await CreateTarReader(ms, leaveOpen: false, async: async);
+            TarReader reader = CreateTarReader(ms, leaveOpen: false);
             try
             {
                 TarEntry entry;

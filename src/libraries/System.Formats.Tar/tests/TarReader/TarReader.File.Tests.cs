@@ -379,7 +379,7 @@ namespace System.Formats.Tar.Tests
         public async Task Throw_FifoContainsNonZeroDataSection(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "hdr-only");
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 Assert.NotNull(await GetNextEntry(reader, async: async));
@@ -411,7 +411,7 @@ namespace System.Formats.Tar.Tests
         public async Task Throw_SingleExtendedAttributesEntryWithNoActualEntry(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-path-hdr");
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 if (async)
@@ -445,7 +445,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, folderName, testCaseName);
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     TarEntry entry;
@@ -475,7 +475,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     if (async)
@@ -499,7 +499,7 @@ namespace System.Formats.Tar.Tests
         public async Task Throw_ArchiveIsShort(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big");
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 if (async)
@@ -522,7 +522,7 @@ namespace System.Formats.Tar.Tests
         public async Task GarbageEntryChecksumZeroReturnNull(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 Assert.Null(await GetNextEntry(reader, async: async));
@@ -538,7 +538,7 @@ namespace System.Formats.Tar.Tests
         public async Task InvalidChecksum_ThrowsInvalidDataException(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "node-tar", "bad-cksum");
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 await GetNextEntry(reader, async: async); // first entry is okay
@@ -569,7 +569,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, testFolderName, testCaseName);
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     if (async)
@@ -604,7 +604,7 @@ namespace System.Formats.Tar.Tests
             bool archiveIsExpected = ms.ToArray().IndexOf(Encoding.UTF8.GetBytes(FileNameWithDataPastTrailingNull)) != -1;
             Assert.True(archiveIsExpected);
 
-            TarReader reader = await CreateTarReader(ms, leaveOpen: true, async: async);
+            TarReader reader = CreateTarReader(ms, leaveOpen: true);
             try
             {
                 TarEntry firstEntry = await GetNextEntry(reader, async: async);
@@ -621,7 +621,7 @@ namespace System.Formats.Tar.Tests
         public async Task DirectoryListRegularFileAndSparse(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "gnu-incremental");
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 TarEntry directoryList = await GetNextEntry(reader, async: async);
@@ -652,7 +652,7 @@ namespace System.Formats.Tar.Tests
         public async Task PaxSizeLargerThanMaxAllowedByStream(bool async)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big-long");
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 if (async)
@@ -685,7 +685,7 @@ namespace System.Formats.Tar.Tests
 
         private static async Task VerifyDataStreamOfTarInternal(Stream archiveStream, bool copyData, bool async)
         {
-            TarReader reader = await CreateTarReader(archiveStream, async: async);
+            TarReader reader = CreateTarReader(archiveStream);
             try
             {
                 TarEntry entry;

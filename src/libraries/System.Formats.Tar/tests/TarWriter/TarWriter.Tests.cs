@@ -101,7 +101,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream inner = new MemoryStream();
             using WrappedStream wrapped = new WrappedStream(inner, canRead: true, canWrite: true, canSeek: false);
 
-            TarWriter writer = await CreateTarWriter(wrapped, TarEntryFormat.Pax, leaveOpen: true, async: async);
+            TarWriter writer = CreateTarWriter(wrapped, TarEntryFormat.Pax, leaveOpen: true);
             try
             {
                 PaxTarEntry paxEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt");
@@ -115,7 +115,7 @@ namespace System.Formats.Tar.Tests
 
             inner.Seek(0, SeekOrigin.Begin); // Rewind the base stream (wrapped cannot be rewound)
 
-            TarReader reader = await CreateTarReader(wrapped, async: async);
+            TarReader reader = CreateTarReader(wrapped);
             try
             {
                 TarEntry entry = await GetNextEntry(reader, async: async);
@@ -283,7 +283,7 @@ namespace System.Formats.Tar.Tests
             {
                 using MemoryStream archive = new MemoryStream();
                 int expectedChecksum;
-                TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archive, format, leaveOpen: true);
                 try
                 {
                     TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, testEpoch, out expectedChecksum);
@@ -296,7 +296,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                TarReader reader = await CreateTarReader(archive, async: async);
+                TarReader reader = CreateTarReader(archive);
                 try
                 {
                     TarEntry readEntry = await GetNextEntry(reader, async: async);

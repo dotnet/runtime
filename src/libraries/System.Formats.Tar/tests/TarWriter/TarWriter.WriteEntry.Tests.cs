@@ -17,7 +17,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteEntry_AfterDispose_Throws(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async: async);
+            TarWriter writer = CreateTarWriter(archiveStream);
             await DisposeTarWriter(writer, async);
 
             PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -62,7 +62,7 @@ namespace System.Formats.Tar.Tests
                 using WrappedStream unseekable = new WrappedStream(source, canRead: true, canWrite: true, canSeek: false);
 
                 using MemoryStream destination = new MemoryStream();
-                TarReader reader1 = await CreateTarReader(unseekable, async: async);
+                TarReader reader1 = CreateTarReader(unseekable);
                 try
                 {
                     TarEntry entry = await GetNextEntry(reader1, async: async);
@@ -70,7 +70,7 @@ namespace System.Formats.Tar.Tests
                     Assert.NotNull(entry.DataStream);
                     entry.DataStream.ReadByte();
 
-                    TarWriter writer = await CreateTarWriter(destination, format, leaveOpen: true, async: async);
+                    TarWriter writer = CreateTarWriter(destination, format, leaveOpen: true);
                     try
                     {
                         await WriteEntry(writer, entry, async);
@@ -88,7 +88,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 destination.Seek(0, SeekOrigin.Begin);
-                TarReader reader2 = await CreateTarReader(destination, async: async);
+                TarReader reader2 = CreateTarReader(destination);
                 try
                 {
                     TarEntry entry = await GetNextEntry(reader2, async: async);
@@ -131,7 +131,7 @@ namespace System.Formats.Tar.Tests
                 File.Create(path).Dispose();
 
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, expectedFormat, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, expectedFormat, leaveOpen: true);
                 try
                 {
                     await WriteEntry(writer, path, "file.txt", async);
@@ -142,7 +142,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archiveStream.Position = 0;
-                TarReader reader = await CreateTarReader(archiveStream, leaveOpen: false, async: async);
+                TarReader reader = CreateTarReader(archiveStream, leaveOpen: false);
                 try
                 {
                     TarEntry entry = await GetNextEntry(reader, async: async);
@@ -167,7 +167,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archive = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archive, TarEntryFormat.V7, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archive, TarEntryFormat.V7, leaveOpen: true);
                 try
                 {
                     TarEntry entry = entryFormat switch
@@ -186,7 +186,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                TarReader reader = await CreateTarReader(archive, async: async);
+                TarReader reader = CreateTarReader(archive);
                 try
                 {
                     TarEntry entry = await GetNextEntry(reader, async: async);
@@ -224,7 +224,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archive = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archive, writerFormat, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archive, writerFormat, leaveOpen: true);
                 try
                 {
                     V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
@@ -236,7 +236,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                TarReader reader = await CreateTarReader(archive, async: async);
+                TarReader reader = CreateTarReader(archive);
                 try
                 {
                     TarEntry entry = await GetNextEntry(reader, async: async);
@@ -269,7 +269,7 @@ namespace System.Formats.Tar.Tests
                 };
 
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
                 try
                 {
                     PaxGlobalExtendedAttributesTarEntry gea1 = new PaxGlobalExtendedAttributesTarEntry(attrs);
@@ -290,7 +290,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archiveStream.Position = 0;
-                TarReader reader = await CreateTarReader(archiveStream, leaveOpen: false, async: async);
+                TarReader reader = CreateTarReader(archiveStream, leaveOpen: false);
                 try
                 {
                     VerifyGlobalExtendedAttributesEntry(await GetNextEntry(reader, async: async), attrs);
@@ -327,7 +327,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
                 try
                 {
                     await WriteEntry(writer, entry, async);
@@ -338,7 +338,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archiveStream.Position = 0;
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     TarEntry readEntry = await GetNextEntry(reader, async: async);
@@ -371,7 +371,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(value, entry.Uid);
 
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
                 try
                 {
                     await WriteEntry(writer, entry, async);
@@ -382,7 +382,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archiveStream.Position = 0;
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     TarEntry readEntry = await GetNextEntry(reader, async: async);
@@ -409,7 +409,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(value, entry.Gid);
 
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
                 try
                 {
                     await WriteEntry(writer, entry, async);
@@ -420,7 +420,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archiveStream.Position = 0;
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     TarEntry readEntry = await GetNextEntry(reader, async: async);
@@ -453,7 +453,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(value, entry.DeviceMajor);
 
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
                 try
                 {
                     await WriteEntry(writer, entry, async);
@@ -464,7 +464,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archiveStream.Position = 0;
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     PosixTarEntry? readEntry = await GetNextEntry(reader, async: async) as PosixTarEntry;
@@ -497,7 +497,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(value, entry.DeviceMinor);
 
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
                 try
                 {
                     await WriteEntry(writer, entry, async);
@@ -508,7 +508,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archiveStream.Position = 0;
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     PosixTarEntry? readEntry = await GetNextEntry(reader, async: async) as PosixTarEntry;
@@ -601,7 +601,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream);
                 try
                 {
                     TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
@@ -644,7 +644,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream);
                 try
                 {
                     TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
@@ -686,7 +686,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream);
                 try
                 {
                     TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
@@ -716,7 +716,7 @@ namespace System.Formats.Tar.Tests
             foreach (bool async in Booleans)
             {
                 using MemoryStream archiveStream = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archiveStream, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream);
                 try
                 {
                     TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
@@ -768,10 +768,10 @@ namespace System.Formats.Tar.Tests
                 Stream source = new WrappedStream(msSource, msSource.CanRead, msSource.CanWrite, canSeek: !unseekableStream);
                 Stream destination = new WrappedStream(msDestination, msDestination.CanRead, msDestination.CanWrite, canSeek: !unseekableStream);
 
-                TarReader reader = await CreateTarReader(source, async: async);
+                TarReader reader = CreateTarReader(source);
                 try
                 {
-                    TarWriter writer = await CreateTarWriter(destination, async: async);
+                    TarWriter writer = CreateTarWriter(destination);
                     try
                     {
                         TarEntry entry;
@@ -809,7 +809,7 @@ namespace System.Formats.Tar.Tests
                 using MemoryStream internalArchiveStream = new();
                 using WrappedStream unseekableArchiveStream = new(internalArchiveStream, canRead: true, canWrite: true, canSeek: false);
 
-                TarWriter writer = await CreateTarWriter(unseekableArchiveStream, async: async);
+                TarWriter writer = CreateTarWriter(unseekableArchiveStream);
                 try
                 {
                     TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, GetTarEntryTypeForTarEntryFormat(TarEntryType.RegularFile, entryFormat), "file.txt");
@@ -860,7 +860,7 @@ namespace System.Formats.Tar.Tests
                 entry2.DataStream = unseekableDataStream2;
 
                 using MemoryStream archiveStream = new();
-                TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
+                TarWriter writer = CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
                 try
                 {
                     await WriteEntry(writer, entry1, async);
@@ -873,7 +873,7 @@ namespace System.Formats.Tar.Tests
 
                 archiveStream.Position = 0;
                 byte[] actualBytes = new byte[] { 0, 0, 0, 0, 0 };
-                TarReader reader = await CreateTarReader(archiveStream, async: async);
+                TarReader reader = CreateTarReader(archiveStream);
                 try
                 {
                     TarEntry readEntry = await GetNextEntry(reader, async: async);

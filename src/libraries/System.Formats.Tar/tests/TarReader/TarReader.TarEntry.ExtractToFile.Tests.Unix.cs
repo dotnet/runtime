@@ -18,7 +18,7 @@ namespace System.Formats.Tar.Tests
             using TempDirectory root = new TempDirectory();
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
 
-            TarReader reader = await CreateTarReader(ms, leaveOpen: false, async: async);
+            TarReader reader = CreateTarReader(ms, leaveOpen: false);
             try
             {
                 string path = Path.Join(root.Path, "output");

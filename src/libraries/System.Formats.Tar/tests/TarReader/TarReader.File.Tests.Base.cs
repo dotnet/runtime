@@ -18,7 +18,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -43,7 +43,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file_hardlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -72,7 +72,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file_symlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -100,7 +100,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "folder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -128,7 +128,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "folder_file_utf8";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -156,7 +156,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "folder_subfolder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -187,7 +187,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "foldersymlink_folder_subfolder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -221,7 +221,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "many_small_files";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -264,7 +264,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "longpath_splitable_under255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -295,7 +295,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "specialfiles";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -326,7 +326,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "file_longsymlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -362,7 +362,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "longfilename_over100_under255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
@@ -389,7 +389,7 @@ namespace System.Formats.Tar.Tests
             string testCaseName = "longpath_over255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
 
-            TarReader reader = await CreateTarReader(ms, async: async);
+            TarReader reader = CreateTarReader(ms);
             try
             {
                 if (testFormat is TestTarFormat.pax_gea)
