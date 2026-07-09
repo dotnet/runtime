@@ -931,10 +931,10 @@ private:
     void Widen(BasicBlock* block, GenTree* tree, Range* pRange);
 
     // Is the binary operation increasing the value.
-    bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNegativeConst, bool* pRequiresNonNegative);
+    bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop);
 
     // Given an expression trace its value to check if it is monotonically increasing.
-    bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst, bool* pRequiresNonNegative);
+    bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst);
 
     // We allocate a budget to avoid walking long UD chains. When traversing each link in the UD
     // chain, we decrement the budget. When the budget hits 0, then no more range check optimization

@@ -301,16 +301,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
     if (range.LowerLimit().IsDependent() || range.LowerLimit().IsUnknown())
     {
         // To determine the lower bound, ask if the loop increases monotonically.
-        bool requiresNonNegative = false;
-        bool increasing          = IsMonotonicallyIncreasing(tree, false, &requiresNonNegative);
-        if (increasing && requiresNonNegative)
-        {
-            // Apply the requirement from the root so it reaches phi initial values regardless
-            // of whether they are visited before or after the backedge that introduced it.
-            ClearSearchPath();
-            increasing = IsMonotonicallyIncreasing(tree, true, &requiresNonNegative);
-        }
-
+        bool increasing = IsMonotonicallyIncreasing(tree, false);
         if (increasing)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
@@ -320,10 +311,15 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
     }
 }
 
-bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNegativeConst, bool* pRequiresNonNegative)
+bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
     assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
-    assert(pRequiresNonNegative != nullptr);
+
+    if (!binop->OperIs(GT_ADD))
+    {
+        JITDUMP("Not monotonically increasing because operation is not addition\n");
+        return false;
+    }
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -332,7 +328,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNeg
             Compiler::dspTreeID(op2));
 
     // Check if we have a var + const or var * const.
-    if (binop->OperIs(GT_ADD, GT_MUL) && op2->OperIs(GT_LCL_VAR))
+    if (op2->OperIs(GT_LCL_VAR))
     {
         std::swap(op1, op2);
     }
@@ -345,34 +341,17 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNeg
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            // When adding/multiplying/shifting two local variables, we also must ensure that any constant is
-            // non-negative.
-            *pRequiresNonNegative = true;
-            return IsMonotonicallyIncreasing(op1, true, pRequiresNonNegative) &&
-                   IsMonotonicallyIncreasing(op2, true, pRequiresNonNegative);
+            // When adding two local variables, we also must ensure that any constant is non-negative.
+            return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
-        {
-            const ssize_t constant = op2->AsIntConCommon()->IconValue();
-            if (constant < 0)
+            if (op2->AsIntConCommon()->IconValue() < 0)
             {
                 JITDUMP("Not monotonically increasing because of encountered negative constant\n");
                 return false;
             }
 
-            if (binop->OperIs(GT_MUL) && (constant == 0))
-            {
-                JITDUMP("Not monotonically increasing because of multiplication by zero\n");
-                return false;
-            }
-
-            // Multiplication and non-identity left shifts only increase non-negative values.
-            const bool operationRequiresNonNegative =
-                binop->OperIs(GT_MUL) || (binop->OperIs(GT_LSH) && (constant != 0));
-            *pRequiresNonNegative |= operationRequiresNonNegative;
-            return IsMonotonicallyIncreasing(op1, rejectNegativeConst || operationRequiresNonNegative,
-                                             pRequiresNonNegative);
-        }
+            return IsMonotonicallyIncreasing(op1, false);
 
         default:
             JITDUMP("Not monotonically increasing because expression is not recognized.\n");
@@ -380,11 +359,9 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNeg
     }
 }
 
-// rejectNegativeConst is true when all constants contributing to the expression must be non-negative.
-bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeConst, bool* pRequiresNonNegative)
+// The parameter rejectNegativeConst is true when we are adding two local vars (see above)
+bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeConst)
 {
-    assert(pRequiresNonNegative != nullptr);
-
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
     if (IsOverBudget())
@@ -430,12 +407,11 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     else if (expr->IsLocal())
     {
         LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
-        return (ssaDef != nullptr) &&
-               IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst, pRequiresNonNegative);
+        return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst);
     }
     else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
     {
-        return IsBinOpMonotonicallyIncreasing(expr->AsOp(), rejectNegativeConst, pRequiresNonNegative);
+        return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
     else if (expr->OperIs(GT_PHI))
     {
@@ -446,7 +422,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
             {
                 continue;
             }
-            if (!IsMonotonicallyIncreasing(use.GetNode(), rejectNegativeConst, pRequiresNonNegative))
+            if (!IsMonotonicallyIncreasing(use.GetNode(), rejectNegativeConst))
             {
                 JITDUMP("Phi argument not monotonically increasing\n");
                 return false;
@@ -456,7 +432,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     }
     else if (expr->OperIs(GT_COMMA))
     {
-        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst, pRequiresNonNegative);
+        return IsMonotonicallyIncreasing(expr->gtEffectiveVal(), rejectNegativeConst);
     }
     JITDUMP("Unknown tree type\n");
     return false;
