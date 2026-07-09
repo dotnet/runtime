@@ -15,6 +15,7 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#include <poll.h>
 #include <new>
 #include <unistd.h>
 #include <string.h>
@@ -151,7 +152,7 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
 // just less compact for that frame.
 //
 // Single-instance because CreateReport is one-shot per process (guarded by
-// the ``s_generating`` InterlockedCompareExchange in CreateReport).
+// the ``s_generatingThreadId`` InterlockedCompareExchange64 in CreateReport).
 
 static constexpr int MAX_MODULES_IN_TABLE = 256;
 
@@ -603,10 +604,24 @@ InProcCrashReporter::CreateReport(
     int signal,
     void* context)
 {
-    static LONG s_generating = 0;
-    if (InterlockedCompareExchange(&s_generating, 1, 0) != 0)
+    static LONGLONG s_generatingThreadId = 0;
+
+    // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
+    const int PollWaitForever = -1;
+
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    LONGLONG previousThreadId = InterlockedCompareExchange64(&s_generatingThreadId, currentThreadId, 0);
+    if (previousThreadId != 0)
     {
-        return;
+        if (previousThreadId == currentThreadId)
+        {
+            return;
+        }
+
+        while (true)
+        {
+            poll(nullptr, 0, PollWaitForever);
+        }
     }
 
     m_reportFilePath[0] = '\0';
