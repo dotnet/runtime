@@ -144,11 +144,11 @@ namespace System.IO.Compression
             // We don't apply UnixFileMode.None because .zip files created on Windows and .zip files created
             // with previous versions of .NET don't include permissions.
             UnixFileMode mode = (UnixFileMode)(source.ExternalAttributes >> 16) & OwnershipPermissions;
-            // Value 3 is defined in the ZIP specification (APPNOTE.TXT, section 4.4.2.2) as the Unix platform identifier.
-            const byte UnixMadeByPlatform = 3;
+            // The upper byte of VersionMadeBy identifies the host system (platform). System.IO.Compression treats any non-Windows value as Unix on Unix.
+            const byte WindowsMadeByPlatform = 0;
             byte versionMadeByPlatform = (byte)(source.VersionMadeBy >> 8);
-            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows() && versionMadeByPlatform == UnixMadeByPlatform)
-            {
+            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows() && versionMadeByPlatform != WindowsMadeByPlatform)
+            { 
                 fileStreamOptions.UnixCreateMode = mode;
             }
         }
