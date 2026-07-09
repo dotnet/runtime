@@ -21,6 +21,13 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
+        // The XML specification defines whitespace as exactly these four characters (#x20, #x9,
+        // #xA, #xD). Splitting whitespace-separated list text on this set is the default; it matches
+        // the XSD list/NMTOKENS definition and lets items contain other Unicode whitespace. The
+        // UseLegacyXmlListSeparation switch restores splitting on .NET's broader char.IsWhiteSpace()
+        // set (String.Split with a null separator).
+        private static readonly char[] s_xmlListWhitespace = [' ', '\t', '\n', '\r'];
+
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
@@ -696,14 +703,25 @@ namespace System.Xml.Serialization
                 {
                     if (anyTextMapping.TypeDesc!.IsArrayLike)
                     {
-                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        string stringValue = text.Mapping!.TypeDesc!.CollapseWhitespace
+                            ? CollapseWhitespace(Reader.ReadString())
+                            : Reader.ReadString();
+
+                        if (text.IsList)
                         {
-                            value = CollapseWhitespace(Reader.ReadString());
+                            // The text content is a whitespace-separated list; split it and add each
+                            // value to the array-like member (mirrors [XmlAttribute] list handling).
+                            // See s_xmlListWhitespace for the default vs. legacy whitespace behavior.
+                            char[]? separators = System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
+                            foreach (string item in stringValue.Split(separators, StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                anyText.Source!(item);
+                            }
+
+                            return true;
                         }
-                        else
-                        {
-                            value = Reader.ReadString();
-                        }
+
+                        value = stringValue;
                     }
                     else
                     {
@@ -1992,10 +2010,10 @@ namespace System.Xml.Serialization
                 {
                     if (attr is not XmlAttribute xmlAttribute)
                     {
-                         if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
-                         {
-                             member.CheckSpecifiedSource?.Invoke(null);
-                         }
+                        if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
+                        {
+                            member.CheckSpecifiedSource?.Invoke(null);
+                        }
 
                         return;
                     }
@@ -2010,7 +2028,9 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     string listValues = Reader.Value;
-                    string[] vals = listValues.Split(null);
+                    // See s_xmlListWhitespace for the default vs. legacy whitespace behavior.
+                    char[]? separators = System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation ? null : s_xmlListWhitespace;
+                    string[] vals = listValues.Split(separators);
                     Array arrayValue = Array.CreateInstance(member.Mapping.TypeDesc!.Type!.GetElementType()!, vals.Length);
                     for (int i = 0; i < vals.Length; i++)
                     {

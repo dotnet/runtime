@@ -3582,6 +3582,11 @@ namespace System.Xml.Serialization
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
 
+            // When the member is an array-like value serialized as XML text (e.g. [XmlText] string[]),
+            // its items are written as a single whitespace-separated list so that the value round-trips.
+            bool isListText = text != null && text.IsList && elements.Length == 0;
+            string listSepName = $"{arrayName}NeedsSep";
+
             if (arrayTypeDesc.IsEnumerable)
             {
                 Writer.Write(typeof(IEnumerator).FullName);
@@ -3627,11 +3632,20 @@ namespace System.Xml.Serialization
                     Writer.Write(RaCodeGen.GetStringForMethodInvoke(arrayName, arrayTypeDesc.CSharpName, "GetEnumerator", arrayTypeDesc.UseReflection));
                     Writer.WriteLine(";");
                 }
+                if (isListText)
+                {
+                    Writer.WriteLine($"bool {listSepName} = false;");
+                }
                 Writer.WriteLine("if (e != null)");
                 Writer.WriteLine("while (e.MoveNext()) {");
                 Writer.Indent++;
                 string arrayTypeFullName = arrayElementTypeDesc.CSharpName;
                 WriteLocalDecl(arrayTypeFullName, $"{arrayName}i", "e.Current", arrayElementTypeDesc.UseReflection);
+                if (isListText)
+                {
+                    Writer.WriteLine($"if ({listSepName}) WriteValue(\" \");");
+                    Writer.WriteLine($"{listSepName} = true;");
+                }
                 WriteElements($"{arrayName}i", $"{choiceName}i", elements, text, choice, $"{arrayName}a", true, true);
             }
             else
@@ -3672,6 +3686,10 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
+                    if (isListText)
+                    {
+                        Writer.WriteLine($"if (i{arrayName} != 0) WriteValue(\" \");");
+                    }
                     WriteElements(RaCodeGen.GetStringForArrayMember(arrayName, $"i{arrayName}", arrayTypeDesc), elements, text, choice, $"{arrayName}a", true, arrayElementTypeDesc.IsNullable);
                 }
             }

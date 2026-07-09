@@ -2385,6 +2385,25 @@ namespace SerializationTypes
             return obj;
         }
     }
+
+    public class TypeWithXmlAttributeOnArray
+    {
+        [XmlAttribute("values")]
+        public string[] Values;
+    }
+
+    public class TypeWithMixedTextAndElementArray
+    {
+        [XmlText(typeof(string))]
+        [XmlElement("num", typeof(int))]
+        public object[] Items;
+    }
+
+    public class TypeWithXmlTextOnListOfString
+    {
+        [XmlText]
+        public List<string> Text = new List<string>();
+    }
 }
 
 namespace DuplicateTypeNamesTest.ns1

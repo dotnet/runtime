@@ -3873,7 +3873,12 @@ namespace System.Xml.Serialization
                 if (attribute.IsList)
                 {
                     Writer.WriteLine("string listValues = Reader.Value;");
-                    Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    // By default split attribute list values on exactly the four XML whitespace
+                    // characters (#x20, #x9, #xA, #xD); UseLegacyXmlListSeparation restores the
+                    // previous broader char.IsWhiteSpace() splitting via Split(null).
+                    Writer.WriteLine(System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation
+                        ? "string[] vals = listValues.Split(null);"
+                        : "string[] vals = listValues.Split(new char[] { ' ', '\\t', '\\n', '\\r' });");
                     Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
                     Writer.Indent++;
 
@@ -4135,6 +4140,30 @@ namespace System.Xml.Serialization
             }
             else
             {
+                if (member.IsArrayLike && text.IsList)
+                {
+                    // The text content is a whitespace-separated list; split it and add each value to
+                    // the array-like member (mirrors [XmlAttribute] list handling). By default we split
+                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
+                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
+                    // Unicode whitespace. The UseLegacyXmlListSeparation switch restores the previous
+                    // behavior of splitting on .NET's broader char.IsWhiteSpace() set (Split(null)).
+                    Writer.Write("string listValues = ");
+                    Writer.WriteLine(text.Mapping!.TypeDesc!.CollapseWhitespace ? "CollapseWhitespace(Reader.ReadString());" : "Reader.ReadString();");
+                    Writer.WriteLine(System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation
+                        ? "string[] vals = listValues.Split(default(char[]), System.StringSplitOptions.RemoveEmptyEntries);"
+                        : "string[] vals = listValues.Split(new char[] { ' ', '\\t', '\\n', '\\r' }, System.StringSplitOptions.RemoveEmptyEntries);");
+                    Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
+                    Writer.Indent++;
+                    WriteSourceBegin(member.ArraySource);
+                    Writer.Write("vals[i]");
+                    WriteSourceEnd(member.ArraySource);
+                    Writer.WriteLine(";");
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                    return;
+                }
+
                 if (member.IsArrayLike)
                 {
                     WriteSourceBegin(member.ArraySource);

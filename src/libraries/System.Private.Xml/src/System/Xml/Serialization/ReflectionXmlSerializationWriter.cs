@@ -152,6 +152,10 @@ namespace System.Xml.Serialization
 
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, object o, object? choiceSources)
         {
+            // When the member is an array-like value serialized as XML text (e.g. [XmlText] string[]),
+            // its items are written as a single whitespace-separated list so that the value round-trips.
+            bool isListText = text != null && text.IsList && elements.Length == 0;
+
             var arr = o as IList;
 
             if (arr != null)
@@ -159,6 +163,16 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < arr.Count; i++)
                 {
                     object? ai = arr[i];
+                    if (isListText && i > 0)
+                    {
+                        // Separate list items with a single space. The separator is written purely by
+                        // position, even when an item serializes to empty (e.g. a null string). Per the
+                        // XSD list rules, whitespace in list content is normalized on read (runs collapse
+                        // and leading/trailing whitespace is trimmed), so empty items cannot survive a
+                        // round-trip regardless; callers must not rely on null/empty items in a text list.
+                        WriteValue(" ");
+                    }
+
                     var choiceSource = ((Array?)choiceSources)?.GetValue(i);
                     WriteElements(ai, choiceSource, elements, text, choice, true, true);
                 }
@@ -175,6 +189,11 @@ namespace System.Xml.Serialization
                     while (e.MoveNext())
                     {
                         object ai = e.Current;
+                        if (isListText && c > 0)
+                        {
+                            WriteValue(" ");
+                        }
+
                         var choiceSource = ((Array?)choiceSources)?.GetValue(c++);
                         WriteElements(ai, choiceSource, elements, text, choice, true, true);
                     }

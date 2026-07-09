@@ -1637,6 +1637,20 @@ namespace System.Xml.Serialization
                         if (!(text.Mapping is SpecialMapping) && targetTypeDesc != _typeScope.GetTypeDesc(typeof(string)))
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextAttribute, accessorName));
 
+                        // By default, an array-like member serialized as XML text is treated as a
+                        // whitespace-separated list (matching [XmlAttribute] and the xs:list spec) so that
+                        // it round-trips. The legacy behavior concatenated the values with no separator.
+                        // The switch lets callers opt back into the legacy concatenation behavior.
+                        // Only pure-text arrays are treated as a list; mixed-content arrays (text combined
+                        // with elements) keep each text run intact so the reader and writer stay consistent.
+                        // This is derived from the mapping's own list state (text.Mapping.IsList, true for
+                        // the primitive string mapping and false for a SpecialMapping) so the accessor flag
+                        // can never contradict the mapping it describes.
+                        text.IsList = text.Mapping!.IsList
+                            && a.XmlElements.Count == 0
+                            && a.XmlAnyElements.Count == 0
+                            && !System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation;
+
                         accessor.Text = text;
                     }
                     if (a.XmlText == null && a.XmlElements.Count == 0 && a.XmlAnyElements.Count == 0)
