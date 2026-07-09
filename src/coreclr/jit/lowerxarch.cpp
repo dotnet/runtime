@@ -2180,15 +2180,15 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             if ((count_s == 0) && op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe))
             {
                 GenTreeHWIntrinsic* createScalar = op2->AsHWIntrinsic();
-                GenTree*            scalarOp      = createScalar->Op(1);
+                GenTree*            scalarOp     = createScalar->Op(1);
 
                 if (scalarOp->OperIsHWIntrinsic() && (genTypeSize(scalarOp->AsHWIntrinsic()->GetSimdBaseType()) == 4))
                 {
                     GenTreeHWIntrinsic* extract   = scalarOp->AsHWIntrinsic();
                     NamedIntrinsic      extractId = extract->GetHWIntrinsicId();
 
-                    GenTree* srcVec = nullptr;
-                    GenTree* srcIdx = nullptr;
+                    GenTree* srcVec      = nullptr;
+                    GenTree* srcIdx      = nullptr;
                     ssize_t  count_s_new = 0;
 
                     if (extractId == NI_Vector_ToScalar)
@@ -2212,8 +2212,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     // the element offset in the address) and rewriting it to the register form
                     // would instead force a full vector load.
 
-                    if ((srcVec != nullptr) && !srcVec->isContained() && (count_s_new >= 0) &&
-                        (count_s_new <= 3) && IsInvariantInRange(srcVec, node))
+                    if ((srcVec != nullptr) && !srcVec->isContained() && (count_s_new >= 0) && (count_s_new <= 3) &&
+                        IsInvariantInRange(srcVec, node))
                     {
                         count_s = count_s_new;
 
