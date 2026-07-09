@@ -201,6 +201,95 @@ namespace System.Numerics.Tests
             }
         }
 
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            // value, expectedReal, expectedImaginary, expectedCharsConsumed
+            yield return new object[] { "<1.5; 2.5>", 1.5, 2.5, 10 };
+            yield return new object[] { "<1.5; 2.5>abc", 1.5, 2.5, 10 };
+            yield return new object[] { "<0; 0>xyz", 0.0, 0.0, 6 };
+            yield return new object[] { "<-1.5; -2.5>!!!", -1.5, -2.5, 12 };
+
+            // A trailing separator followed by another value stops after the first closing bracket.
+            yield return new object[] { "<100; 200>; <300; 400>", 100.0, 200.0, 10 };
+
+            // Leading whitespace is included in the consumed count (absolute index of the closing bracket).
+            yield return new object[] { "  <1; 2>abc", 1.0, 2.0, 8 };
+
+            // Trailing whitespace before an invalid character is consumed when AllowTrailingWhite is set (part of NumberStyles.Float).
+            yield return new object[] { "<1; 2>  x", 1.0, 2.0, 8 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, double expectedReal, double expectedImaginary, int expectedCharsConsumed)
+        {
+            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            IFormatProvider provider = CultureInfo.InvariantCulture;
+
+            Complex expected = new Complex(expectedReal, expectedImaginary);
+            Complex result;
+            int charsConsumed;
+
+            Assert.True(Complex.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            Assert.True(Complex.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(Complex.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.Equal(expected, result);
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            // Empty and non-complex inputs
+            yield return new object[] { "" };
+            yield return new object[] { "not a complex" };
+
+            // Missing structural characters
+            yield return new object[] { "<1; 2" };
+            yield return new object[] { "1; 2>" };
+            yield return new object[] { "<1, 2>" };
+
+            // An invalid character within a component is never allowed, even with AllowTrailingInvalidCharacters,
+            // because the components are delimited by ';' and '>'.
+            yield return new object[] { "<1.5x; 2.5>" };
+            yield return new object[] { "<1.5; 2.5x>" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value)
+        {
+            const NumberStyles Style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+            IFormatProvider provider = CultureInfo.InvariantCulture;
+
+            Complex result;
+            int charsConsumed;
+
+            Assert.False(Complex.TryParse(value, Style, provider, out result, out charsConsumed));
+            Assert.Equal(Complex.Zero, result);
+            Assert.Equal(0, charsConsumed);
+
+            Assert.False(Complex.TryParse(value.AsSpan(), Style, provider, out result, out charsConsumed));
+            Assert.Equal(Complex.Zero, result);
+            Assert.Equal(0, charsConsumed);
+
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.False(Complex.TryParse(utf8Value.AsSpan(), Style, provider, out result, out bytesConsumed));
+            Assert.Equal(Complex.Zero, result);
+            Assert.Equal(0, bytesConsumed);
+        }
+
         public static IEnumerable<object[]> Valid_2_TestData()
         {
             foreach (double real in s_validDoubleValues)
