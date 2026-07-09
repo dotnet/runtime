@@ -23,11 +23,11 @@ Data descriptors used:
 | --- | --- | --- |
 | `Module` | `Base` | Pointer to start of PE file in memory |
 | `Module` | `DynamicMetadata` | Pointer to saved metadata for reflection emit modules |
-| `Module` | `MetadataGeneration` | Counter incremented each time a dynamic module re-serializes its saved metadata copy |
+| `Module` | `MetadataGeneration` | Counter incremented each time a module's metadata changes |
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
 | `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
-| `PEAssembly` | `MDImport` | An `MDInternalRW` when `MetadataGeneration` is non-zero and module is not dynamic |
+| `PEAssembly` | `MDImport` | An `MDInternalRW` when module has writable metadata |
 | `MDInternalRW` | `Stgdb` | Pointer to the read-write storage database |
 | `CLiteWeightStgdbRW` | `MiniMd` | Address of the embedded `CMiniMdRW` model |
 | `CLiteWeightStgdbRW` | `MetadataAddress` | Pointer to the metadata image |
