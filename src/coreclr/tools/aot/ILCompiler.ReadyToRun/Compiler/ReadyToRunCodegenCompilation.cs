@@ -459,6 +459,12 @@ namespace ILCompiler
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
+                        if (_format == ReadyToRunContainerFormat.Wasm)
+                        {
+                            // For wasm, component stubs are webcil-in-wasm modules loaded by name
+                            // as "<assembly>.wasm" (matching the browser/wasi external-assembly probe).
+                            standaloneMsilOutputFile = Path.ChangeExtension(standaloneMsilOutputFile, ".wasm");
+                        }
                         RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
                     }
                 }
@@ -519,6 +525,13 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
             }
 
+            // Component (per-assembly forwarding) stubs use the same container format as the
+            // composite image. Windows and Apple both emit PE stubs that forward to the native
+            // composite; wasm emits webcil-in-wasm stubs to match the browser/wasi loading model,
+            // since the PE/COFF writer does not support the Wasm32 architecture.
+            ReadyToRunContainerFormat componentFormat =
+                _format == ReadyToRunContainerFormat.Wasm ? ReadyToRunContainerFormat.Wasm : ReadyToRunContainerFormat.PE;
+
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
@@ -533,7 +546,7 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags: flags,
                 nodeFactoryOptimizationFlags: optimizationFlags,
-                format: ReadyToRunContainerFormat.PE,
+                format: componentFormat,
                 imageBase: _nodeFactory.ImageBase,
                 associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
@@ -569,7 +582,7 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                ReadyToRunContainerFormat.PE,
+                componentFormat,
                 customPESectionAlignment: 0,
                 _logger);
         }
