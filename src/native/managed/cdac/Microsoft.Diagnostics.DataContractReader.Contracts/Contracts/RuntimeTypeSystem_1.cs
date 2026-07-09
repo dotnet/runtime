@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -1268,7 +1269,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule;
         if (corElementType == CorElementType.FnPtr)
-            loaderModule = FindFnPtrLoaderModule(typeArguments);
+            loaderModule = ComputeLoaderModule(TargetPointer.Null, typeArguments);
+        else if (corElementType == CorElementType.GenericInst)
+            loaderModule = ComputeLoaderModule(GetModule(typeHandle), typeArguments);
         else
             loaderModule = GetLoaderModule(typeHandle);
 
@@ -1302,52 +1305,75 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return new TypeHandle(TargetPointer.Null);
     }
 
-    // Mirrors the native algorithm
-    // ClassLoader::ComputeLoaderModuleForFunctionPointer: the loader module is the collectible
-    // ret/arg type's loader module with the largest LoaderAllocator creation number, or CoreLib's
-    // loader module if none of the ret/arg types are collectible.
-    private TargetPointer FindFnPtrLoaderModule(ImmutableArray<TypeHandle> retAndArgTypes)
+    // See https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78
+    private TargetPointer ComputeLoaderModule(TargetPointer definitionModule, ImmutableArray<TypeHandle> inst)
     {
         ILoader loaderContract = _target.Contracts.Loader;
-
-        TargetPointer loaderModulePtr = TargetPointer.Null;
+        TargetPointer latestLoaderModule = TargetPointer.Null;
+        // Use the definition module as the loader module by default.
+        TargetPointer loaderModule = definitionModule;
         ulong latestFoundNumber = 0;
-        bool anyCollectible = false;
 
-        foreach (TypeHandle arg in retAndArgTypes)
+        if (TryGetCollectibleLoaderAllocator(definitionModule, out Data.LoaderAllocator? definitionLoaderAllocator))
+        {
+            latestLoaderModule = definitionModule;
+            latestFoundNumber = definitionLoaderAllocator.CreationNumber;
+        }
+
+        bool anyCollectible = false;
+        foreach (TypeHandle arg in inst)
         {
             if (arg.Address == TargetPointer.Null)
                 continue;
 
-            TargetPointer argModulePtr = GetLoaderModule(arg);
-            if (argModulePtr == TargetPointer.Null)
-                continue;
-
-            ModuleHandle argModuleHandle = loaderContract.GetModuleHandleFromModulePtr(argModulePtr);
-            TargetPointer argLoaderAllocator = loaderContract.GetLoaderAllocator(argModuleHandle);
-            if (argLoaderAllocator == TargetPointer.Null)
-                continue;
-
-            Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(argLoaderAllocator);
-            if (!loaderAllocator.IsCollectible)
-                continue;
-
-            if (!anyCollectible || loaderAllocator.CreationNumber > latestFoundNumber)
+            TargetPointer argModule = GetLoaderModule(arg);
+            if (TryGetCollectibleLoaderAllocator(argModule, out Data.LoaderAllocator? argLoaderAllocator) &&
+                argLoaderAllocator.CreationNumber > latestFoundNumber)
             {
                 anyCollectible = true;
-                latestFoundNumber = loaderAllocator.CreationNumber;
-                loaderModulePtr = argModulePtr;
+                latestLoaderModule = argModule;
+                latestFoundNumber = argLoaderAllocator.CreationNumber;
             }
+            if (loaderModule == TargetPointer.Null)
+                loaderModule = argModule;
         }
 
         if (!anyCollectible)
         {
-            TargetPointer systemAssembly = loaderContract.GetSystemAssembly();
-            ModuleHandle coreLibModuleHandle = loaderContract.GetModuleHandleFromAssemblyPtr(systemAssembly);
-            loaderModulePtr = loaderContract.GetModule(coreLibModuleHandle);
+            if (loaderModule == TargetPointer.Null)
+            {
+                TargetPointer systemAssembly = loaderContract.GetSystemAssembly();
+                ModuleHandle coreLibModuleHandle = loaderContract.GetModuleHandleFromAssemblyPtr(systemAssembly);
+                loaderModule = loaderContract.GetModule(coreLibModuleHandle);
+            }
+            return loaderModule;
         }
 
-        return loaderModulePtr;
+        // If nothing was found, then by default we use the definition module.
+        if (latestLoaderModule != TargetPointer.Null)
+            loaderModule = latestLoaderModule;
+
+        return loaderModule;
+    }
+
+    private bool TryGetCollectibleLoaderAllocator(TargetPointer modulePtr, [NotNullWhen(true)] out Data.LoaderAllocator? loaderAllocator)
+    {
+        loaderAllocator = null;
+        if (modulePtr == TargetPointer.Null)
+            return false;
+
+        ILoader loaderContract = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
+        TargetPointer loaderAllocatorPtr = loaderContract.GetLoaderAllocator(moduleHandle);
+        if (loaderAllocatorPtr == TargetPointer.Null)
+            return false;
+
+        Data.LoaderAllocator candidate = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPtr);
+        if (!candidate.IsCollectible)
+            return false;
+
+        loaderAllocator = candidate;
+        return true;
     }
 
     TypeHandle IRuntimeTypeSystem.GetPrimitiveType(CorElementType typeCode)

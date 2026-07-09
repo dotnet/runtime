@@ -897,7 +897,7 @@ namespace Internal.JitInterface
 
             // Varargs are not supported in .NET Core
             if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
-                ThrowHelper.ThrowBadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
