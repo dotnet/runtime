@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -14,19 +15,19 @@ namespace ILCompiler
     {
         public NameMangler NameMangler;
 
-        protected const string GenericDictionaryNamePrefix = "__GenericDict_";
+        protected static readonly Utf8String GenericDictionaryNamePrefix = new Utf8String("__GenericDict_");
 
         // Mangled name of boxed version of a type
-        public abstract string MangledBoxedTypeName(TypeDesc type);
+        public abstract Utf8String MangledBoxedTypeName(TypeDesc type);
 
-        public abstract string MethodTable(TypeDesc type);
-        public abstract string GCStatics(TypeDesc type);
-        public abstract string NonGCStatics(TypeDesc type);
-        public abstract string ThreadStatics(TypeDesc type);
-        public abstract string ThreadStaticsIndex(TypeDesc type);
-        public abstract string TypeGenericDictionary(TypeDesc type);
-        public abstract string MethodGenericDictionary(MethodDesc method);
-        public abstract string ExternMethod(string unmangledName, MethodDesc method);
-        public abstract string ExternVariable(string unmangledName);
+        public abstract Utf8String MethodTable(TypeDesc type);
+        public abstract Utf8String GCStatics(TypeDesc type);
+        public abstract Utf8String NonGCStatics(TypeDesc type);
+        public abstract Utf8String ThreadStatics(TypeDesc type);
+        public abstract Utf8String ThreadStaticsIndex(TypeDesc type);
+        public abstract Utf8String TypeGenericDictionary(TypeDesc type);
+        public abstract Utf8String MethodGenericDictionary(MethodDesc method);
+        public abstract Utf8String ExternMethod(Utf8String unmangledName, MethodDesc method);
+        public abstract Utf8String ExternVariable(Utf8String unmangledName);
     }
 }

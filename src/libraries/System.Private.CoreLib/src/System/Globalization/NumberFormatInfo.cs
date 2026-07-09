@@ -798,21 +798,21 @@ namespace System.Globalization
             return info;
         }
 
-        // private const NumberStyles InvalidNumberStyles = unchecked((NumberStyles) 0xFFFFFC00);
+        // private const NumberStyles InvalidNumberStyles = unchecked((NumberStyles) 0xFFFFF000);
         private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
-                                                           | NumberStyles.AllowBinarySpecifier);
+                                                           | NumberStyles.AllowBinarySpecifier | NumberStyles.AllowTrailingInvalidCharacters);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ValidateParseStyleInteger(NumberStyles style)
         {
-            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite.
+            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite/AllowTrailingInvalidCharacters.
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0 &&
-                (style & ~NumberStyles.HexNumber) != 0 &&
-                (style & ~NumberStyles.BinaryNumber) != 0)
+                (style & ~(NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0 &&
+                (style & ~(NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0)
             {
                 ThrowInvalid(style);
 
@@ -827,7 +827,30 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
-            // Check for undefined flags or hex number
+            // Check for undefined flags, AllowBinarySpecifier (never valid for float), or AllowHexSpecifier with anything
+            // other than HexFloat flags (optionally combined with AllowTrailingInvalidCharacters).
+            // When AllowHexSpecifier is specified, AllowExponent must also be specified; this reserves
+            // AllowHexSpecifier without AllowExponent for possible future use (e.g. optional p exponent).
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowBinarySpecifier | NumberStyles.AllowHexSpecifier)) != 0 &&
+                ((style & ~(NumberStyles.HexFloat | NumberStyles.AllowTrailingInvalidCharacters)) != 0 ||
+                 (style & NumberStyles.AllowHexSpecifier) != 0 && (style & NumberStyles.AllowExponent) == 0))
+            {
+                ThrowInvalid(style);
+
+                static void ThrowInvalid(NumberStyles value)
+                {
+                    throw new ArgumentException(
+                        (value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles :
+                        (value & NumberStyles.AllowBinarySpecifier) != 0 ? SR.Arg_BinaryStyleNotSupported :
+                        SR.Arg_InvalidHexFloatStyle,
+                        nameof(style));
+                }
+            }
+        }
+
+        internal static void ValidateParseStyleDecimal(NumberStyles style)
+        {
+            // Check for undefined flags or hex/binary specifiers.
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
             {
                 ThrowInvalid(style);

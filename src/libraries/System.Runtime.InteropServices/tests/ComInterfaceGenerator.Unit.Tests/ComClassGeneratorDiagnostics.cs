@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Xunit;
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComClassGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComClassGenerator, Microsoft.Interop.Analyzers.ComClassGeneratorDiagnosticsAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -27,7 +27,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComClass]
                 internal class {|#0:C|} : INativeAPI {}
-
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(
@@ -54,7 +53,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     [GeneratedComClass]
                     internal partial class {|#0:C|} : INativeAPI {}
                 }
-
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(
@@ -72,7 +70,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task UnsafeCodeNotEnabledWarns()
+        public async Task UnsafeCodeNotEnabledErrors()
         {
             string source = """
                 using System.Runtime.InteropServices;
@@ -88,15 +86,52 @@ namespace ComInterfaceGenerator.Unit.Tests
                     [GeneratedComClass]
                     internal partial class {|#0:C|} : INativeAPI {}
                 }
-
                 """;
 
-            var test = new UnsafeBlocksNotAllowedTest(false);
-            test.TestState.Sources.Add(source);
-            test.ExpectedDiagnostics.Add(
-                new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
-                    .WithLocation(0)
-                    .WithArguments("Test.C"));
+            var test = new UnsafeBlocksNotAllowedTest(false)
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                        .WithLocation(0)
+                }
+            };
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task UnsafeCodeNotEnabledAndNoPartialModifierProducesBothErrors()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                public partial class Test
+                {
+                    [GeneratedComInterface]
+                    internal partial interface INativeAPI
+                    {
+                    }
+                
+                    [GeneratedComClass]
+                    internal class {|#0:C|} : INativeAPI {}
+                }
+                """;
+
+            var test = new UnsafeBlocksNotAllowedTest(false)
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                        .WithLocation(0),
+                    new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier)
+                        .WithLocation(0)
+                        .WithArguments("Test.C")
+                }
+            };
 
             await test.RunAsync();
         }
@@ -116,12 +151,65 @@ namespace ComInterfaceGenerator.Unit.Tests
                     [GeneratedComClass]
                     internal partial class {|#0:C|} : INativeAPI {}
                 }
-
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(
                 source,
                 new DiagnosticResult(GeneratorDiagnostics.ClassDoesNotImplementAnyGeneratedComInterface)
+                    .WithLocation(0)
+                    .WithArguments("Test.C"));
+        }
+
+        [Fact]
+        public async Task NoWarningIfErrorIsAlreadyPresent_UnsafeCodeNotEnabledError()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                public partial class Test{
+                    internal interface INativeAPI
+                    {
+                    }
+
+                    [GeneratedComClass]
+                    internal partial class {|#0:C|} : INativeAPI {}
+                }
+                """;
+
+            var test = new UnsafeBlocksNotAllowedTest(false)
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                        .WithLocation(0)
+                }
+            };
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task NoWarningIfErrorIsAlreadyPresent_NotPartialContextError()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                public partial class Test{
+                    internal interface INativeAPI
+                    {
+                    }
+
+                    [GeneratedComClass]
+                    internal class {|#0:C|} : INativeAPI {}
+                }
+                """;
+
+            await VerifyCS.VerifySourceGeneratorAsync(
+                source,
+                new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier)
                     .WithLocation(0)
                     .WithArguments("Test.C"));
         }

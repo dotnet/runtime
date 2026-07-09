@@ -8134,8 +8134,22 @@ mono_runtime_run_startup_hooks (void)
 	if (!method)
 		return;
 
+	gchar *startup_hooks_env = g_getenv ("DOTNET_STARTUP_HOOKS");
+	MonoString *startup_hooks_arg;
+	if (startup_hooks_env) {
+		startup_hooks_arg = mono_string_new_checked (startup_hooks_env, error);
+		g_free (startup_hooks_env);
+		if (!is_ok (error)) {
+			g_warning ("Failed to process $DOTNET_STARTUP_HOOKS environment variable");
+			mono_error_cleanup (error);
+			return;
+		}
+	} else {
+		startup_hooks_arg = mono_string_empty_internal (mono_domain_get ());
+	}
+
 	gpointer args [1];
-	args[0] = mono_string_empty_internal (mono_domain_get ());
+	args[0] = startup_hooks_arg;
 
 	mono_runtime_invoke_checked (method, NULL, args, error);
 	// runtime hooks design doc says not to catch exceptions from the hooks

@@ -434,7 +434,173 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 }
 
-#if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
+                if (!RegexHelpers.IsNonBacktracking(engine)) // balancing groups aren't supported
+                {
+                    // ExpressionConditional with balancing groups inside a loop, auto-numbered capture groups
+
+                    // Balancing group conditional with auto-numbered capture group and dot
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(.)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("b", 1, 1),
+                            new CaptureData("c", 2, 1),
+                        }
+                    };
+
+                    // Balancing group conditional with auto-numbered capture group and literal
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(a)+)+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+
+                    // Alternation in no-branch with empty second branch, no match expected
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'.)+|()))+(?!(?'-1'))", "a", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // Balancing group conditional with quantified pop {2}
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'){2})|((?'1'a)+))+(?!(?'-1'))", "aa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                        }
+                    };
+
+                    // ExpressionConditional with balancing groups inside a loop
+
+                    // Balancing group conditional with alternation in no-branch, no match
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'\S)+|(?'1'\s)))+(?!(?'-1'))", "abc", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // Balancing group conditional with nested captures in alternation
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'){6})|((?'1'(?'2'\S))+|(?'1'(?'2'\s))))+(?!(?'-1'))", "it not", RegexOptions.None, new[]
+                        {
+                            new CaptureData("it ", 0, 3),
+                            new CaptureData("not", 3, 3),
+                        }
+                    };
+
+                    // Alternation in capturing group in no-branch, no match expected
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'a)+|(?'1'b)))+(?!(?'-1'))", "abc", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'a)+|(?'1'b)))+(?!(?'-1'))", "aaa", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // No-branch with quantifier but no wrapping capture group
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'\S)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("b", 1, 1),
+                            new CaptureData("c", 2, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'a)+)+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+
+                    // No-branch with quantifier inside wrapping capture group
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'\S)+))+(?!(?'-1'))", "abc", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // Non-capturing group wrapping alternation in no-branch
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?:(?'1'a)+|(?'1'b)))+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?:(?'1'a)+|(?'1'b)))+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("b", 1, 1),
+                        }
+                    };
+
+                    // Balancing group conditional with single char in no-branch
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'a))+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+
+                    // Balancing group conditional with multi-word input
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'\S)+)+(?!(?'-1'))", "hello world", RegexOptions.None, new[]
+                        {
+                            new CaptureData("h", 0, 1),
+                            new CaptureData("e", 1, 1),
+                            new CaptureData("l", 2, 1),
+                            new CaptureData("l", 3, 1),
+                            new CaptureData("o", 4, 1),
+                            new CaptureData("w", 6, 1),
+                            new CaptureData("o", 7, 1),
+                            new CaptureData("r", 8, 1),
+                            new CaptureData("l", 9, 1),
+                            new CaptureData("d", 10, 1),
+                        }
+                    };
+
+                    // Yes-only expression conditional with prefix capture feeding the condition, inside a loop
+                    yield return new object[]
+                    {
+                        engine, @"((?'1'.)(?((?'-1'))(?'1'.)))+", "abcd", RegexOptions.None, new[]
+                        {
+                            new CaptureData("abcd", 0, 4),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"((?'1'.)(?((?'-1'))(?'1'.)))+", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("ab", 0, 2),
+                        }
+                    };
+                }
+
+#if !NETFRAMEWORK // these tests currently fail on .NET Framework
                 yield return new object[]
                 {
                     engine, "@(a*)+?", "@", RegexOptions.None, new[]
@@ -459,6 +625,18 @@ namespace System.Text.RegularExpressions.Tests
                         engine, @"anyexpress1(?<=(.(any express|(any express)*)+?)anyexpress1)", "anystring anyexpress1", RegexOptions.None, new[]
                         {
                             new CaptureData("anyexpress1", 10, 11),
+                        }
+                    };
+
+                    // ExpressionConditional with only a yes-branch (no no-branch) inside a loop (empty matches differ on .NET Framework: https://github.com/dotnet/runtime/issues/24894)
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))(?'1'.)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("", 0, 0),
+                            new CaptureData("", 1, 0),
+                            new CaptureData("", 2, 0),
+                            new CaptureData("", 3, 0),
                         }
                     };
                 }
@@ -549,9 +727,9 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1), TimeSpan.FromSeconds(1)));
 
-            // 0x400 is new NonBacktracking mode that is now valid, 0x800 is still invalid
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x800));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x800, TimeSpan.FromSeconds(1)));
+            // 0x800 is new AnyNewLine mode that is now valid, 0x1000 is still invalid
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x1000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x1000, TimeSpan.FromSeconds(1)));
 
             // MatchTimeout is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.Matches("input", "pattern", RegexOptions.None, TimeSpan.Zero));

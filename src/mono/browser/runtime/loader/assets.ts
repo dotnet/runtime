@@ -27,7 +27,6 @@ const worker_empty_prefix = "          -    ";
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-threads": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
@@ -186,6 +185,17 @@ export async function mono_download_assets (): Promise<void> {
 
         const instantiate = async (downloadPromise: Promise<AssetEntryInternal>) => {
             const asset = await downloadPromise;
+            const headersOnly = skipBufferByAssetTypes[asset.behavior];
+
+            if (headersOnly) {
+                if (asset.behavior === "symbols") {
+                    await runtimeHelpers.instantiate_symbols_asset(asset);
+                    cleanupAsset(asset);
+                }
+                ++loaderHelpers.actual_downloaded_assets_count;
+                return;
+            }
+
             if (asset.buffer) {
                 if (!skipInstantiateByAssetTypes[asset.behavior]) {
                     mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
@@ -202,24 +212,12 @@ export async function mono_download_assets (): Promise<void> {
                     runtimeHelpers.instantiate_asset(asset, url, data);
                 }
             } else {
-                const headersOnly = skipBufferByAssetTypes[asset.behavior];
-                if (!headersOnly) {
-                    mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                    if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                        loaderHelpers.expected_downloaded_assets_count--;
-                    }
-                    if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
-                        loaderHelpers.expected_instantiated_assets_count--;
-                    }
-                } else {
-                    if (asset.behavior === "symbols") {
-                        await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    }
-
-                    if (skipBufferByAssetTypes[asset.behavior]) {
-                        ++loaderHelpers.actual_downloaded_assets_count;
-                    }
+                mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
+                if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    loaderHelpers.expected_downloaded_assets_count--;
+                }
+                if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                    loaderHelpers.expected_instantiated_assets_count--;
                 }
             }
         };
@@ -295,15 +293,11 @@ export function prepareAssets () {
         mono_assert(resources.wasmNative, "resources.wasmNative must be defined");
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
-        mono_assert(!WasmEnableThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (resources.jsModuleDiagnostics) {
             convert_single_asset(modulesAssets, resources.jsModuleDiagnostics, "js-module-diagnostics");
-        }
-        if (WasmEnableThreads) {
-            convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
         const addAsset = (asset: Asset, behavior: AssetBehaviors, isCore: boolean) => {
@@ -400,7 +394,7 @@ export function prepareAssets () {
                     name: configUrl,
                     behavior: "vfs",
                     // TODO what should be the virtualPath ?
-                    noCache: true,
+                    cache: "no-cache",
                     useCredentials: true
                 });
             }
@@ -529,9 +523,7 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
                 ok: true,
                 arrayBuffer: () => buffer,
                 json: () => JSON.parse(new TextDecoder("utf-8").decode(buffer)),
-                text: () => {
-                    throw new Error("NotImplementedException");
-                },
+                text: () => new TextDecoder("utf-8").decode(buffer),
                 headers: {
                     get: () => undefined,
                 }
@@ -673,12 +665,16 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     }
 
     const fetchOptions: RequestInit = {};
-    if (!loaderHelpers.config.disableNoCacheFetch) {
-        // FIXME: "no-cache" is how blazor works in Net7, but this prevents caching on HTTP level
-        // if we would like to get rid of our own cache and only use HTTP cache, we need to remove this
+
+    if (asset.cache) {
+        // If the asset definition specifies a cache mode, use it.
+        fetchOptions.cache = asset.cache;
+    } else if (!loaderHelpers.config.disableNoCacheFetch) {
+        // Otherwise, for backwards compatibility use "no-cache" setting unless disabled by the user.
         // https://github.com/dotnet/runtime/issues/74815
         fetchOptions.cache = "no-cache";
     }
+
     if (asset.useCredentials) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
@@ -703,8 +699,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "dotnetwasm": "dotnetwasm",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
-    "js-module-runtime": "dotnetjs",
-    "js-module-threads": "dotnetjs"
+    "js-module-runtime": "dotnetjs"
 };
 
 function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
@@ -776,11 +771,10 @@ export async function streamingCompileWasm () {
 
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
-    const jsModuleWorker = resolve_single_asset_path("js-module-threads");
     const loadingWorkers = [];
     for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
         const workerNumber = loaderHelpers.workerNextNumber++;
-        const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
+        const worker: Partial<PThreadWorker> = new Worker(loaderHelpers.scriptUrl, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
             type: "module",
         });
@@ -792,6 +786,9 @@ export function preloadWorkers () {
             threadPrefix: worker_empty_prefix,
             threadName: "emscripten-pool",
         } as any;
+        worker.queue = [];
+        worker.handler = (ev) => worker.queue!.push(ev);
+        worker.addEventListener!("message", worker.handler);
         loadingWorkers.push(worker as any);
     }
     loaderHelpers.loadingWorkers.promise_control.resolve(loadingWorkers);

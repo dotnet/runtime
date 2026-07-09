@@ -1144,7 +1144,7 @@ namespace System.Xml
         }
 
         // use AllDateTimeFormats property to access the formats
-        private static volatile string[]? s_allDateTimeFormats;
+        private static string[]? s_allDateTimeFormats;
 
         // NOTE: Do not use this property for reference comparison. It may not be unique.
         private static string[] AllDateTimeFormats

@@ -27,7 +27,7 @@ namespace System.IO.Ports.Tests
         private enum ThrowAt { Set, Open };
 
         #region Test Cases
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -47,14 +47,14 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_None_BeforeOpen()
         {
             Debug.WriteLine("Verifying None Parity before open");
             VerifyParityBeforeOpen((int)Parity.None, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Even_BeforeOpen()
         {
             Debug.WriteLine("Verifying Even Parity before open");
@@ -62,84 +62,84 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Odd_BeforeOpen()
         {
             Debug.WriteLine("Verifying Odd Parity before open");
             VerifyParityBeforeOpen((int)Parity.Odd, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Mark_BeforeOpen()
         {
             Debug.WriteLine("Verifying Mark Parity before open");
             VerifyParityBeforeOpen((int)Parity.Mark, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Space_BeforeOpen()
         {
             Debug.WriteLine("Verifying Space before open");
             VerifyParityBeforeOpen((int)Parity.Space, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_None_AfterOpen()
         {
             Debug.WriteLine("Verifying None Parity after open");
             VerifyParityAfterOpen((int)Parity.None, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Even_AfterOpen()
         {
             Debug.WriteLine("Verifying Even Parity after open");
             VerifyParityAfterOpen((int)Parity.Even, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Odd_AfterOpen()
         {
             Debug.WriteLine("Verifying Odd Parity after open");
             VerifyParityAfterOpen((int)Parity.Odd, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Mark_AfterOpen()
         {
             Debug.WriteLine("Verifying Mark Parity after open");
             VerifyParityAfterOpen((int)Parity.Mark, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Space_AfterOpen()
         {
             Debug.WriteLine("Verifying Space Parity after open");
             VerifyParityAfterOpen((int)Parity.Space, DEFAULT_BYTE_SIZE);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasOneSerialPort))]
         public void Parity_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue Parity");
             VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasOneSerialPort))]
         public void Parity_Neg1()
         {
             Debug.WriteLine("Verifying -1 Parity");
             VerifyException(-1, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasOneSerialPort))]
         public void Parity_Int32MaxValue()
         {
             Debug.WriteLine("Verifying Int32.MaxValue Parity");
             VerifyException(int.MaxValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Even_Odd()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -162,7 +162,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Odd_Even()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -185,7 +185,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Parity_Property), nameof(HasNullModem))]
         public void Parity_Odd_Mark()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

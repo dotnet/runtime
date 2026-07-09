@@ -51,6 +51,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool IsPolymorphic { get; init; }
 
+        public required PolymorphismOptionsSpec? PolymorphismOptions { get; init; }
+
         public required bool IsValueTuple { get; init; }
 
         public required JsonNumberHandling? NumberHandling { get; init; }
@@ -69,6 +71,16 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public required ImmutableEquatableArray<int>? FastPathPropertyIndices { get; init; }
 
+        /// <summary>
+        /// List of case specs for compiler union metadata generation.
+        /// </summary>
+        public required ImmutableEquatableArray<UnionCaseSpec> UnionCaseSpecs { get; init; }
+
+        /// <summary>
+        /// Per-type classifier factory specified via <see cref="JsonUnionAttribute.TypeClassifier"/> annotations.
+        /// </summary>
+        public required TypeRef? UnionClassifierFactoryType { get; init; }
+
         public required ImmutableEquatableArray<ParameterGenerationSpec> CtorParamGenSpecs { get; init; }
 
         public required ImmutableEquatableArray<PropertyInitializerGenerationSpec> PropertyInitializerSpecs { get; init; }
@@ -82,6 +94,19 @@ namespace System.Text.Json.SourceGeneration
         public required ObjectConstructionStrategy ConstructionStrategy { get; init; }
 
         public required bool ConstructorSetsRequiredParameters { get; init; }
+
+        /// <summary>
+        /// Whether the deserialization constructor is inaccessible from the generated context.
+        /// When true, UnsafeAccessor or reflection is used to invoke the constructor.
+        /// </summary>
+        public required bool ConstructorIsInaccessible { get; init; }
+
+        /// <summary>
+        /// Whether UnsafeAccessors can be used for the constructor.
+        /// This is true for non-generic types on .NET 8+ and for generic types on .NET 9+
+        /// (using a generic wrapper class). False when <c>UnsafeAccessorAttribute</c> is not available.
+        /// </summary>
+        public required bool CanUseUnsafeAccessorForConstructor { get; init; }
 
         public required TypeRef? NullableUnderlyingType { get; init; }
 
@@ -97,8 +122,21 @@ namespace System.Text.Json.SourceGeneration
 
         public required string? ImmutableCollectionFactoryMethod { get; init; }
 
+        /// <summary>
+        /// The distinct set of <c>[Experimental]</c> diagnostic IDs referenced by this type's generated code
+        /// (the type itself, its serialized members and their types, its constructor and parameters,
+        /// its polymorphic derived types, and its converters). Sorted for stable incremental-cache equality.
+        /// The generated file for this type suppresses each of these IDs.
+        /// </summary>
+        public required ImmutableEquatableArray<string> ExperimentalDiagnosticIds { get; init; }
+
         public bool IsFastPathSupported()
         {
+            if (ClassType is ClassType.Union)
+            {
+                return false;
+            }
+
             if (IsPolymorphic)
             {
                 return false;

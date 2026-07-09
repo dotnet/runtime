@@ -12,7 +12,4 @@
     <WasmNativeStrip>false</WasmNativeStrip>
 
   </PropertyGroup>
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="main.js" />
-  </ItemGroup>
 </Project>

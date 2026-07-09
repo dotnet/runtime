@@ -14,7 +14,7 @@ EXECUTION_DIR=$(dirname "$0")
 RUNTIME_PATH=''
 RSP_FILE=''
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(echo "${1}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     --help|-h)
@@ -44,9 +44,6 @@ if [[ -z "$RUNTIME_PATH" ]]; then
   usage
   exit -1
 fi
-
-# Don't use a globally installed SDK.
-export DOTNET_MULTILEVEL_LOOKUP=0
 
 exitcode_list[0]="Exited Successfully"
 exitcode_list[130]="SIGINT  Ctrl-C occurred. Likely tests timed out."
@@ -80,7 +77,7 @@ function invoke_xunitlogchecker {
 
   total_dumps=$(find $dump_folder -name "*.dmp" | wc -l)
 
-  if [[ $total_dumps > 0 ]]; then
+  if [[ $total_dumps -gt 0 ]]; then
     echo "Total dumps found in $dump_folder: $total_dumps"
     xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker"
 
@@ -225,6 +222,25 @@ if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
   # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
   if [[ $test_exitcode -ne 1 ]]; then
     dmesg | tail -50
+
+    # For exit code 137 (SIGKILL, typically OOM killer), check cgroup v2 memory.events
+    # as a fallback to confirm whether the OOM killer fired (e.g., if dmesg is unavailable).
+    # Silent no-op on macOS, cgroup v1, or any system without /proc/self/cgroup.
+    if [[ $test_exitcode -eq 137 && -f /proc/self/cgroup ]]; then
+      # /proc/self/cgroup contains colon-delimited lines; on cgroup v2, a single line like:
+      #   0::/system.slice/helix-agent.service
+      # Extract field 3 (the cgroup path) from the line where field1=="0" and field2==""
+      cg_path=$(awk -F: '$1=="0" && $2=="" {print $3; exit}' /proc/self/cgroup)
+      cg_path=${cg_path#/}  # strip leading slash for path concatenation
+      # Prefer the process-specific cgroup path (more relevant), fall back to root cgroup
+      for memevents in ${cg_path:+/sys/fs/cgroup/$cg_path/memory.events} /sys/fs/cgroup/memory.events; do
+        if [[ -f "$memevents" ]]; then
+          echo "cgroup memory.events ($memevents):"
+          cat "$memevents"
+          break
+        fi
+      done
+    fi
   fi
 
 fi

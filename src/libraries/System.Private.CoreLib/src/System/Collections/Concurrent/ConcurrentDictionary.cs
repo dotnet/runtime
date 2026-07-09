@@ -789,7 +789,7 @@ namespace System.Collections.Concurrent
                 int count = GetCountNoLocks();
                 if (count == 0)
                 {
-                    return Array.Empty<KeyValuePair<TKey, TValue>>();
+                    return [];
                 }
 
                 var array = new KeyValuePair<TKey, TValue>[count];

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
-
+using ILCompiler.ReadyToRun.TypeSystem;
 using Internal;
 using Internal.NativeFormat;
 using Internal.ReadyToRunConstants;
@@ -60,15 +60,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            Dictionary<EcmaMethod, HashSet<EcmaMethod>> inlineeToInliners = new Dictionary<EcmaMethod, HashSet<EcmaMethod>>();
+            Dictionary<MethodDesc, HashSet<MethodDesc>> inlineeToInliners = new Dictionary<MethodDesc, HashSet<MethodDesc>>();
 
             // Build a map from inlinee to the list of inliners
             // We are only interested in the generic definitions of these.
             foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.All))
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
+                if (inlinees.Length == 0)
+                {
+                    continue;
+                }
                 MethodDesc inliner = methodNode.Method;
-                EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetTypicalMethodDefinition();
+                EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
                 if (inlinerDefinition.IsNonVersionable())
                 {
@@ -84,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (MethodDesc inlinee in inlinees)
                 {
                     MethodDesc inlineeDefinition = inlinee.GetTypicalMethodDefinition();
-                    if (!(inlineeDefinition is EcmaMethod ecmaInlineeDefinition))
+                    if (!(inlineeDefinition is EcmaMethod or AsyncMethodVariant))
                     {
                         // We don't record non-ECMA methods because they don't have tokens that
                         // diagnostic tools could reason about anyway.
@@ -105,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (!inlinerReportAllVersionsWithInlinee)
                         {
-                            // We'll won't report this method
+                            // We won't report this method
                             continue;
                         }
                     }
@@ -114,17 +118,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         Debug.Assert(factory.CompilationModuleGroup.CrossModuleInlineable(inlineeDefinition));
                         if (_inlineInfoType != InfoType.CrossModuleInliningForCrossModuleDataOnly)
                         {
-                            // We'll won't report this method
+                            // We won't report this method
                             continue;
                         }
                     }
 
-                    if (!inlineeToInliners.TryGetValue(ecmaInlineeDefinition, out HashSet<EcmaMethod> inliners))
+                    if (!inlineeToInliners.TryGetValue(inlineeDefinition, out HashSet<MethodDesc> inliners))
                     {
-                        inliners = new HashSet<EcmaMethod>();
-                        inlineeToInliners.Add(ecmaInlineeDefinition, inliners);
+                        inliners = new HashSet<MethodDesc>();
+                        inlineeToInliners.Add(inlineeDefinition, inliners);
                     }
-                    inliners.Add((EcmaMethod)inlinerDefinition);
+                    inliners.Add(inlinerDefinition);
                 }
             }
 
@@ -137,8 +141,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (var inlineeWithInliners in inlineeToInliners)
             {
-                EcmaMethod inlinee = inlineeWithInliners.Key;
-                int inlineeRid = MetadataTokens.GetRowNumber(inlinee.Handle);
+                MethodDesc inlinee = inlineeWithInliners.Key;
+                EcmaMethod ecmaInlinee = (EcmaMethod)inlinee.GetPrimaryMethodDesc();
+                int inlineeRid = MetadataTokens.GetRowNumber(ecmaInlinee.Handle);
                 int hashCode;
 
                 if (AllowCrossModuleInlines)
@@ -149,7 +154,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 else
                 {
                     // InliningInfo2 format
-                    hashCode = VersionResilientHashCode.ModuleNameHashCode(inlinee.Module);
+                    hashCode = VersionResilientHashCode.ModuleNameHashCode(ecmaInlinee.Module);
                     hashCode ^= inlineeRid;
                 }
 
@@ -164,14 +169,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     //    Followed by inliner RIDs deltas with flag in the lowest bit
                     //    - if flag is set, followed by module ID
                     Debug.Assert(_module != null);
-                    bool isForeignInlinee = inlinee.Module != _module;
+                    bool isForeignInlinee = ecmaInlinee.Module != _module;
                     sig.Append(new UnsignedConstant((uint)(inlineeRid << 1 | (isForeignInlinee ? 1 : 0))));
                     if (isForeignInlinee)
                     {
-                        sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(inlinee.Module)));
+                        sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(ecmaInlinee.Module)));
                     }
 
-                    List<EcmaMethod> sortedInliners = new List<EcmaMethod>(inlineeWithInliners.Value);
+                    // We're only concerned with metadata here, so we can convert all to EcmaMethod and lose info about AsyncVariant vs Task-Returning
+                    List<EcmaMethod> sortedInliners = new List<EcmaMethod>(inlineeWithInliners.Value.Count);
+                    foreach (var inliner in inlineeWithInliners.Value)
+                    {
+                        sortedInliners.Add((EcmaMethod)inliner.GetPrimaryMethodDesc());
+                    }
                     sortedInliners.MergeSort((a, b) =>
                     {
                         if (a == b)
@@ -293,7 +303,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
-                            indexOfInlinee = (uint)MetadataTokens.GetRowNumber(inlinee.Handle);
+                            indexOfInlinee = (uint)MetadataTokens.GetRowNumber(ecmaInlinee.Handle);
                         }
 
                         encodedInlinee = indexOfInlinee << (int)ReadyToRunCrossModuleInlineFlags.CrossModuleInlinerIndexShift;
@@ -306,7 +316,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         sig.Append(new UnsignedConstant(encodedInlinee));
                         if (crossModuleMultiModuleFormat && !isCrossModuleInlinee)
-                            sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(inlinee.Module)));
+                            sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(ecmaInlinee.Module)));
 
                         int inlinerIndex = 0;
                         if (crossModuleInlinerCount > 0)
@@ -330,7 +340,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             uint inlinerRid = (uint)MetadataTokens.GetRowNumber(inliner.Handle);
                             uint ridDelta = inlinerRid - baseRid;
                             baseRid = inlinerRid;
-                            bool isForeignInliner = inliner.Module != inlinee.Module;
+                            bool isForeignInliner = inliner.Module != ecmaInlinee.Module;
                             Debug.Assert(!isForeignInliner || crossModuleMultiModuleFormat);
 
                             if (crossModuleMultiModuleFormat)

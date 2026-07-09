@@ -349,6 +349,19 @@ namespace System.Security.Cryptography.Csp.Tests
         }
 
         [Fact]
+        public static void Decrypt_InvalidDataSize_Throws()
+        {
+            using (var rsa = new RSACryptoServiceProvider())
+            {
+                byte[] data = new byte[rsa.KeySize / 8 - 1];
+                Assert.Throws<CryptographicException>(() => rsa.Decrypt(data, RSAEncryptionPadding.Pkcs1));
+#pragma warning disable SYSLIB0064 // Decrypt with Boolean parameter is obsolete
+                Assert.Throws<CryptographicException>(() => rsa.Decrypt(data, fOAEP: false));
+#pragma warning restore SYSLIB0064
+            }
+        }
+
+        [Fact]
         public static void Sign_InvalidPaddingMode_Throws()
         {
             using (var rsa = new RSACryptoServiceProvider())

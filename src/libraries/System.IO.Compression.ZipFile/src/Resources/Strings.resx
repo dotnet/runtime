@@ -100,6 +100,9 @@
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the path '{0}' is denied.</value>
   </data>
+  <data name="IO_DirectoryNotAllowed" xml:space="preserve">
+    <value>The specified path '{0}' is a directory, which is not allowed in this operation.</value>
+  </data>
   <data name="ZipUnsupportedFile" xml:space="preserve">
     <value>The file type of '{0}' is not supported for zip archiving.</value>
   </data>

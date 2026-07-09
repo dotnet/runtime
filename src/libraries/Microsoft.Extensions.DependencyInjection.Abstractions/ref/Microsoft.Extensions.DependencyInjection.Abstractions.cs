@@ -29,6 +29,16 @@ namespace Microsoft.Extensions.DependencyInjection
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
+    public sealed partial class EmptyServiceProvider : Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider, Microsoft.Extensions.DependencyInjection.IServiceProviderIsKeyedService, Microsoft.Extensions.DependencyInjection.IServiceProviderIsService, System.IServiceProvider
+    {
+        internal EmptyServiceProvider() { }
+        public static Microsoft.Extensions.DependencyInjection.EmptyServiceProvider Instance { get { throw null; } }
+        object? Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider.GetKeyedService(System.Type serviceType, object? serviceKey) { throw null; }
+        object Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider.GetRequiredKeyedService(System.Type serviceType, object? serviceKey) { throw null; }
+        bool Microsoft.Extensions.DependencyInjection.IServiceProviderIsKeyedService.IsKeyedService(System.Type serviceType, object? serviceKey) { throw null; }
+        bool Microsoft.Extensions.DependencyInjection.IServiceProviderIsService.IsService(System.Type serviceType) { throw null; }
+        object? System.IServiceProvider.GetService(System.Type serviceType) { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter)]
     public partial class FromKeyedServicesAttribute : System.Attribute
     {
@@ -155,6 +165,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public object? ImplementationInstance { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type? ImplementationType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, "ServiceKey")]
         public bool IsKeyedService { get { throw null; } }
         public System.Func<System.IServiceProvider, object?, object>? KeyedImplementationFactory { get { throw null; } }
         public object? KeyedImplementationInstance { get { throw null; } }

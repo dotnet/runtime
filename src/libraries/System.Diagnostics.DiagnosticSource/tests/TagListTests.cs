@@ -3,6 +3,7 @@
 
 using Xunit;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace System.Diagnostics.Tests
 {
@@ -81,6 +82,9 @@ namespace System.Diagnostics.Tests
                 ValidateTags(tagList, array);
                 array = new KeyValuePair<string, object?>[tagList.Count];
                 tagList.CopyTo(array);
+                ValidateTags(tagList, array);
+                array = new KeyValuePair<string, object?>[tagList.Count];
+                ((ICollection<KeyValuePair<string, object?>>)tagList).CopyTo(array, 0);
                 ValidateTags(tagList, array);
             }
         }
@@ -275,6 +279,31 @@ namespace System.Diagnostics.Tests
                 Assert.Equal("NewKey" + i, tagList[i].Key);
                 Assert.Equal(i, tagList[i].Value);
             }
+        }
+
+        [Fact]
+        public void TestEmptyTagListCopyTo()
+        {
+            TagList emptyList = new TagList();
+            Assert.Equal(0, emptyList.Count);
+
+            KeyValuePair<string, object?>[] emptyArray = Array.Empty<KeyValuePair<string, object?>>();
+            emptyList.CopyTo(emptyArray, 0);
+            emptyList.CopyTo(emptyArray.AsSpan());
+            emptyList.CopyTo(emptyArray);
+
+            KeyValuePair<string, object?>[] nonEmptyArray = new KeyValuePair<string, object?>[3];
+            emptyList.CopyTo(nonEmptyArray, 0);
+            emptyList.CopyTo(nonEmptyArray, 2);
+            emptyList.CopyTo(nonEmptyArray, 3);
+            emptyList.CopyTo(nonEmptyArray.AsSpan());
+            emptyList.CopyTo(nonEmptyArray);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => emptyList.CopyTo(nonEmptyArray, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => emptyList.CopyTo(nonEmptyArray, 4));
+
+            KeyValuePair<string, object?>[] result = emptyList.ToArray();
+            Assert.Empty(result);
         }
 
         [Fact]

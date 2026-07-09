@@ -13,11 +13,12 @@ namespace NetClient
         private readonly Server.Contract.Servers.ColorTesting server;
         public ColorTests()
         {
-            this.server = (Server.Contract.Servers.ColorTesting)new Server.Contract.Servers.ColorTestingClass();
+            this.server = new Server.Contract.Servers.ColorTesting();
         }
 
         public void Run()
         {
+            Console.WriteLine(nameof(ColorTests));
             this.VerifyColorMarshalling();
             this.VerifyGetRed();
         }

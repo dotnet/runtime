@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b87285;
+
 using System;
 using Xunit;
 public unsafe class test1
@@ -37,6 +40,7 @@ public unsafe class test1
         double retval = Convert.ToDouble((-1.0000000018626452 + *a3 + val_1) * clstatic.a0 + clstatic.a0 + val2 - val_3 + 0.0 + clstatic.a2);
         return retval;
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

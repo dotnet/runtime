@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace DefaultNamespace
+namespace b06859
 {
     using System;
     using System.Collections;
@@ -40,6 +40,7 @@ namespace DefaultNamespace
             }
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

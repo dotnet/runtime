@@ -14,8 +14,16 @@
 
 
   <ItemGroup>
-    <!-- string.Concat("_", string.Copy("%(Filename)").Replace("-", "_").Replace(".", "_")) -->
-    <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;).Replace(&quot;.&quot;,&quot;_&quot;))))" />
+    <!--
+      Derive a unique identifier from the project's relative directory + filename.
+      This ensures that projects with the same filename in different directories
+      (e.g., COOL/finally.csproj vs simple/finally.csproj) get unique aliases,
+      preventing alias collisions in the merged runner.
+
+      Regex.Replace("%(RelativeDir)%(Filename)", "[^a-zA-Z0-9]", "_")
+    -->
+    <MergedWrapperProjectReference Update="**"
+        Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.Text.RegularExpressions.Regex]::Replace(&quot;%(RelativeDir)%(Filename)&quot;, &quot;[^a-zA-Z0-9]&quot;, &quot;_&quot;))))" />
 
     <!--
       If the merged test runner was specified to be built as Standalone, don't force the referenced projects to be built that way as well.

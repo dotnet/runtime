@@ -55,7 +55,7 @@ struct LookupStub
 
 private:
     friend struct LookupHolder;
-    const static int entryPointLen = 4;
+    const static int entryPointLen = 6;
 
     WORD    _entryPoint[entryPointLen];
     PCODE   _resolveWorkerTarget;   // xx xx xx xx               target address
@@ -231,8 +231,8 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 32;
-    const static int slowEntryPointLen = 4;
+    const static int resolveEntryPointLen = 30;
+    const static int slowEntryPointLen = 6;
     const static int failEntryPointLen = 14;
 
     WORD _resolveEntryPoint[resolveEntryPointLen];
@@ -288,8 +288,8 @@ struct VTableCallStub
 
         size_t cbSize = 4;                                      // First ldr instruction
 
-        // If we never save r0 to the red zone, we have the short version of the stub
-        if (*(UINT32*)(&pStubCode[cbSize]) != 0x0c04f84d)
+        // If we never save r0 to the stack, we have the short version of the stub
+        if (*(UINT32*)(&pStubCode[cbSize]) != 0x0d04f84d)
         {
             return
                 4 +         // ldr r12,[r0]
@@ -299,7 +299,7 @@ struct VTableCallStub
                 4;          // Slot value (data storage, not a real instruction)
         }
 
-        cbSize += 4;                                                    // Saving r0 into red zone
+        cbSize += 4;                                                    // Saving r0 (push)
         cbSize += (*(WORD*)(&pStubCode[cbSize]) == 0xf8dc ? 4 : 12);    // Loading of vtable into r12
         cbSize += (*(WORD*)(&pStubCode[cbSize]) == 0xf8dc ? 4 : 12);    // Loading of targe address into r12
 
@@ -335,7 +335,7 @@ struct VTableCallHolder
 
         int indirectionsSize = (offsetOfIndirection > 0xFFF ? 12 : 4) + (offsetAfterIndirection > 0xFFF ? 12 : 4);
         if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
-            indirectionsSize += 8;    // Save/restore r0 using red zone
+            indirectionsSize += 8;    // Save/restore r0 (push/pop)
 
         return 6 + indirectionsSize + 4;
     }
@@ -365,8 +365,6 @@ extern size_t g_mono_miss_counter;
 extern size_t g_poly_call_counter;
 extern size_t g_poly_miss_counter;
 #endif
-
-TADDR StubDispatchFrame_MethodFrameVPtr;
 
 LookupHolder* LookupHolder::FromLookupEntry(PCODE lookupEntry)
 {
@@ -431,8 +429,8 @@ void VTableCallHolder::Initialize(unsigned slot)
 
     if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
     {
-        // str r0, [sp, #-4]. Save r0 in the red zone
-        *(UINT32*)p = 0x0c04f84d; p += 4;
+        // str r0, [sp, #-4]!
+        *(UINT32*)p = 0x0d04f84d; p += 4;
     }
 
     if (offsetOfIndirection > 0xFFF)
@@ -465,8 +463,8 @@ void VTableCallHolder::Initialize(unsigned slot)
 
     if (offsetOfIndirection > 0xFFF || offsetAfterIndirection > 0xFFF)
     {
-        // ldr r0, [sp, #-4]. Restore r0 from the red zone.
-        *(UINT32*)p = 0x0c04f85d; p += 4;
+        // ldr r0, [sp], #4
+        *(UINT32*)p = 0x0b04f85d; p += 4;
     }
 
     // bx r12

@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
     internal static class NumericsHelpers
     {
-        private const int kcbitUint = 32;
-
         public static void GetDoubleParts(double dbl, out int sign, out int exp, out ulong man, out bool fFinite)
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(dbl);
@@ -24,7 +20,9 @@ namespace System.Numerics
                 // Denormalized number.
                 fFinite = true;
                 if (man != 0)
+                {
                     exp = -1074;
+                }
             }
             else if (exp == 0x7FF)
             {
@@ -53,9 +51,14 @@ namespace System.Numerics
                 // Normalize so that 0x0010 0000 0000 0000 is the highest bit set.
                 int cbitShift = BitOperations.LeadingZeroCount(man) - 11;
                 if (cbitShift < 0)
+                {
                     man >>= -cbitShift;
+                }
                 else
+                {
                     man <<= cbitShift;
+                }
+
                 exp -= cbitShift;
                 Debug.Assert((man & 0xFFF0000000000000) == 0x0010000000000000);
 
@@ -91,14 +94,15 @@ namespace System.Numerics
             }
 
             if (sign < 0)
+            {
                 bits |= 0x8000000000000000;
+            }
 
             return BitConverter.UInt64BitsToDouble(bits);
         }
 
-        // Do an in-place two's complement. "Dangerous" because it causes
-        // a mutation and needs to be used with care for immutable types.
-        public static void DangerousMakeTwosComplement(Span<uint> d)
+        /// <summary>Performs an in-place two's complement. Use with care for immutable types.</summary>
+        public static void DangerousMakeTwosComplement(Span<nuint> d)
         {
             // Given a number:
             //     XXXXXXXXXXXY00000
@@ -116,7 +120,7 @@ namespace System.Numerics
             }
 
             // Make the first non-zero element to be two's complement
-            d[i] = (uint)(-(int)d[i]);
+            d[i] = (nuint)(-(nint)d[i]);
             d = d.Slice(i + 1);
 
             if (d.IsEmpty)
@@ -127,9 +131,8 @@ namespace System.Numerics
             DangerousMakeOnesComplement(d);
         }
 
-        // Do an in-place one's complement. "Dangerous" because it causes
-        // a mutation and needs to be used with care for immutable types.
-        public static void DangerousMakeOnesComplement(Span<uint> d)
+        /// <summary>Performs an in-place one's complement. Use with care for immutable types.</summary>
+        public static void DangerousMakeOnesComplement(Span<nuint> d)
         {
             // Given a number:
             //     XXXXXXXXXXX
@@ -138,48 +141,39 @@ namespace System.Numerics
             //     AAAAAAAAAAA
             // where A = ~X
 
-            int offset = 0;
-            ref uint start = ref MemoryMarshal.GetReference(d);
-
-            while (Vector512.IsHardwareAccelerated && d.Length - offset >= Vector512<uint>.Count)
+            while (Vector512.IsHardwareAccelerated && d.Length >= Vector512<nuint>.Count)
             {
-                Vector512<uint> complement = ~Vector512.LoadUnsafe(ref start, (nuint)offset);
-                Vector512.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector512<uint>.Count;
+                Vector512<nuint> complement = ~Vector512.Create(d);
+                complement.CopyTo(d);
+                d = d.Slice(Vector512<nuint>.Count);
             }
 
-            while (Vector256.IsHardwareAccelerated && d.Length - offset >= Vector256<uint>.Count)
+            while (Vector256.IsHardwareAccelerated && d.Length >= Vector256<nuint>.Count)
             {
-                Vector256<uint> complement = ~Vector256.LoadUnsafe(ref start, (nuint)offset);
-                Vector256.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector256<uint>.Count;
+                Vector256<nuint> complement = ~Vector256.Create(d);
+                complement.CopyTo(d);
+                d = d.Slice(Vector256<nuint>.Count);
             }
 
-            while (Vector128.IsHardwareAccelerated && d.Length - offset >= Vector128<uint>.Count)
+            while (Vector128.IsHardwareAccelerated && d.Length >= Vector128<nuint>.Count)
             {
-                Vector128<uint> complement = ~Vector128.LoadUnsafe(ref start, (nuint)offset);
-                Vector128.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector128<uint>.Count;
+                Vector128<nuint> complement = ~Vector128.Create(d);
+                complement.CopyTo(d);
+                d = d.Slice(Vector128<nuint>.Count);
             }
 
-            for (; offset < d.Length; offset++)
+            for (int i = 0; i < d.Length; i++)
             {
-                d[offset] = ~d[offset];
+                d[i] = ~d[i];
             }
         }
 
-        public static ulong MakeUInt64(uint uHi, uint uLo)
+        /// <summary>Branchless abs: arithmetic right shift produces 0 (positive) or -1 (negative) mask,
+        /// then XOR-and-subtract flips negative values without branching.</summary>
+        public static nuint Abs(int a)
         {
-            return ((ulong)uHi << kcbitUint) | uLo;
-        }
-
-        public static uint Abs(int a)
-        {
-            unchecked
-            {
-                uint mask = (uint)(a >> 31);
-                return ((uint)a ^ mask) - mask;
-            }
+            nuint mask = (nuint)(a >> 31);
+            return ((nuint)a ^ mask) - mask;
         }
     }
 }

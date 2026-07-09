@@ -7,13 +7,9 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    [EventSource(Name = NetEventSourceName)]
-    internal sealed class NetEventSource : EventSource
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.NetworkInformation")]
+    internal sealed partial class NetEventSource : EventSource
     {
-        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.NetworkInformation";
-
-        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
-
         public static readonly NetEventSource Log = new NetEventSource();
 
         private const int ErrorEventId = 2;

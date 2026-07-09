@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -379,6 +379,44 @@ namespace System.Text
         {
             this.Length = 0;
             return this;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="StringBuilder"/> instance initialized to the same state as
+        /// <paramref name="source"/>, and resets <paramref name="source"/> to an empty, usable state
+        /// with no allocated buffers.
+        /// </summary>
+        /// <param name="source">The <see cref="StringBuilder"/> whose chunks should be moved to the
+        /// returned instance.</param>
+        /// <returns>A new <see cref="StringBuilder"/> instance that owns the chunks previously held
+        /// by <paramref name="source"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        /// <remarks>
+        /// <para>
+        /// In contrast to <see cref="Clear"/>, which retains the existing internal buffer,
+        /// this method releases all internal buffers from <paramref name="source"/>. Ownership of
+        /// the chunks is transferred in O(1) to the returned <see cref="StringBuilder"/>; the
+        /// underlying character data is not copied.
+        /// </para>
+        /// <para>
+        /// After the call, <paramref name="source"/> has <see cref="Length"/> and
+        /// <see cref="Capacity"/> of zero but retains its original <see cref="MaxCapacity"/>.
+        /// It remains fully usable; subsequent append or insert operations will allocate new
+        /// buffers as needed.
+        /// </para>
+        /// </remarks>
+        public static StringBuilder MoveChunks(StringBuilder source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            StringBuilder destination = new StringBuilder(source);
+
+            source.m_ChunkChars = [];
+            source.m_ChunkPrevious = null;
+            source.m_ChunkLength = 0;
+            source.m_ChunkOffset = 0;
+
+            return destination;
         }
 
         /// <summary>
@@ -1042,7 +1080,7 @@ namespace System.Text
         /// </summary>
         /// <param name="value">The UTF-32-encoded code unit to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder Append(Rune value)
+        public unsafe StringBuilder Append(Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -1357,7 +1395,7 @@ namespace System.Text
         /// <param name="index">The position in this instance where insertion begins.</param>
         /// <param name="value">The value to insert.</param>
         /// <returns>A reference to this instance after the insert operation has completed.</returns>
-        public StringBuilder Insert(int index, Rune value)
+        public unsafe StringBuilder Insert(int index, Rune value)
         {
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -1448,7 +1486,7 @@ namespace System.Text
             return this;
         }
 
-        private StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
+        private unsafe StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
         {
             Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
 
@@ -1470,14 +1508,12 @@ namespace System.Text
 
         public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            TwoObjects two = new TwoObjects(arg0, arg1);
-            return AppendFormat(null, format, (ReadOnlySpan<object?>)two);
+            return AppendFormat(null, format, [arg0, arg1]);
         }
 
         public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return AppendFormat(null, format, (ReadOnlySpan<object?>)three);
+            return AppendFormat(null, format, [arg0, arg1, arg2]);
         }
 
         public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -1518,14 +1554,12 @@ namespace System.Text
 
         public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            TwoObjects two = new TwoObjects(arg0, arg1);
-            return AppendFormat(provider, format, (ReadOnlySpan<object?>)two);
+            return AppendFormat(provider, format, [arg0, arg1]);
         }
 
         public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return AppendFormat(provider, format, (ReadOnlySpan<object?>)three);
+            return AppendFormat(provider, format, [arg0, arg1, arg2]);
         }
 
         public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -2116,7 +2150,7 @@ namespace System.Text
         /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count)
+        public unsafe StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count)
         {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
@@ -2309,7 +2343,7 @@ namespace System.Text
         /// A reference to this instance with <paramref name="oldRune"/> replaced by <paramref name="newRune"/> in the range
         /// from <paramref name="startIndex"/> to <paramref name="startIndex"/> + <paramref name="count"/> - 1.
         /// </returns>
-        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        public unsafe StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
         {
             // Convert oldRune to span
             ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -3160,7 +3194,7 @@ namespace System.Text
             }
 
             /// <summary>Formats into temporary space and then appends the result into the StringBuilder.</summary>
-            private void AppendFormattedWithTempSpace<T>(T value, int alignment, string? format)
+            private unsafe void AppendFormattedWithTempSpace<T>(T value, int alignment, string? format)
             {
                 // It's expected that either there's not enough space in the current chunk to store this formatted value,
                 // or we have a non-0 alignment that could require padding inserted. So format into temporary space and

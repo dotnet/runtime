@@ -23,7 +23,7 @@ public enum RuntimeFlavorEnum
 
 public partial class ApkBuilder
 {
-    private const string DefaultMinApiLevel = "21";
+    private const string DefaultMinApiLevel = "24";
     private const string DefaultTargetApiLevel = "31";
 
     public string? ProjectName { get; set; }
@@ -49,6 +49,7 @@ public partial class ApkBuilder
     public bool IsLibraryMode { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] ExtraNativeSources { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
     public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
 
@@ -357,10 +358,17 @@ public partial class ApkBuilder
                 "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
             string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
 
+            var extraSources = new StringBuilder();
+            foreach (ITaskItem item in ExtraNativeSources)
+            {
+                extraSources.AppendLine($"    \"{NormalizePathToUnix(item.GetMetadata("FullPath"))}\"");
+            }
+
             string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
                 .Replace("%RuntimeInclude%", runtimeInclude)
                 .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
                 .Replace("%MONODROID_SOURCE%", monodroidSource)
+                .Replace("%ExtraSources%", extraSources.ToString().TrimEnd())
                 .Replace("%AotSources%", NormalizePathToUnix(aotSources))
                 .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
                 .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
@@ -416,7 +424,7 @@ public partial class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
-        Regex checkNumerics = DotNumberRegex();
+        Regex checkNumerics = DotNumberRegex;
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
@@ -666,7 +674,7 @@ public partial class ApkBuilder
     }
 
     [GeneratedRegex(@"\.(\d)")]
-    private static partial Regex DotNumberRegex();
+    private static partial Regex DotNumberRegex { get; }
 
     private string RenderMonodroidCoreClrTemplate(string monodroidContent)
     {

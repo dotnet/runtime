@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <R2RModes>Jit</R2RModes>
+    <!-- Selectively interpret MethodA/B/C while Main and CoreLib remain JIT'd,
+         producing a mixed stack with InterpreterFrame transition boundaries.
+         Follows the canonical pattern from src/tests/JIT/interpreter/InterpreterTester.cs. -->
+    <EnvironmentVariables>DOTNET_Interpreter=MethodA</EnvironmentVariables>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Trampoline is a separate assembly so its methods are NOT in g_interpModule
+         and will be JIT'd, creating interleaved JIT/interpreter frame regions. -->
+    <ProjectReference Include="Trampoline\Trampoline.csproj" />
+  </ItemGroup>
+</Project>

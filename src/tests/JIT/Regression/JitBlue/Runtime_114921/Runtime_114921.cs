@@ -5,6 +5,9 @@
 // Debug: Outputs <0, 0, 0, 0, 0, 0, 0, 0>
 // Release: Outputs <0, 0, 0, 0, -1, -1, -1, -1>
 
+
+namespace Runtime_114921;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
@@ -16,14 +19,11 @@ public class Runtime_114921
     public static Vector512<long> s_4 = Vector512.Create<long>(-1);
     public static Vector128<long> s_8;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
     public static void Problem()
     {
-        if (Avx512F.IsSupported)
-        {
-            var vr1 = Vector512.Create<long>(0);
-            s_4 = Avx512F.BlendVariable(s_4, Avx512F.InsertVector128(vr1, s_8, 0), s_4);
-            Assert.Equal(Vector512<long>.Zero, s_4);
-        }
+        var vr1 = Vector512.Create<long>(0);
+        s_4 = Avx512F.BlendVariable(s_4, Avx512F.InsertVector128(vr1, s_8, 0), s_4);
+        Assert.Equal(Vector512<long>.Zero, s_4);
     }
 }

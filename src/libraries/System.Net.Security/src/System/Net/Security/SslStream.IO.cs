@@ -85,24 +85,6 @@ namespace System.Net.Security
             }
         }
 
-        private ProtocolToken EncryptData(ReadOnlyMemory<byte> buffer)
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            lock (_handshakeLock)
-            {
-                if (_handshakeWaiter != null)
-                {
-                    ProtocolToken token = default;
-                    // avoid waiting under lock.
-                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
-                    return token;
-                }
-
-                return Encrypt(buffer);
-            }
-        }
-
         //
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
@@ -392,6 +374,14 @@ namespace System.Net.Security
                             throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), token.GetException());
                         }
 
+                        if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationFailed && token.GetException() is Exception certException)
+                        {
+                            // The cert-validation path carries the user-visible exception directly;
+                            // throw it without wrapping to preserve parity with the SendAuthResetSignal
+                            // path used after handshake completion on all platforms.
+                            ExceptionDispatchInfo.Throw(certException);
+                        }
+
                         throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
                     else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -457,14 +447,25 @@ namespace System.Net.Security
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
 #pragma warning restore CS0618
                     {
-                        TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
-                                                                    TlsFrameHelper.ProcessingOptions.All :
-                                                                    TlsFrameHelper.ProcessingOptions.ServerName;
+                        TlsFrameHelper.ProcessingOptions options = TlsFrameHelper.ProcessingOptions.ServerName;
+
                         if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
                         {
                             // macOS cannot process ALPN on server at the moment.
                             // We fallback to our own process similar to SNI bellow.
+                            // This will allocate.
                             options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
+                        }
+
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            options |= TlsFrameHelper.ProcessingOptions.ApplicationProtocol | TlsFrameHelper.ProcessingOptions.Versions;
+                        }
+
+                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        {
+                            // We need to process supported versions extension to pass it to user callback.
+                            options |= TlsFrameHelper.ProcessingOptions.Versions;
                         }
 
                         // Process SNI from Client Hello message
@@ -504,6 +505,21 @@ namespace System.Net.Security
                     }
                     break;
 
+            }
+
+            // Per TLS spec, the first message from the client must be ClientHello.
+            // If we are the server and haven't started the security context yet
+            // (_securityContext == null), reject any frame that is not a ClientHello.
+            if (_sslAuthenticationOptions!.IsServer && _securityContext == null)
+            {
+#pragma warning disable CS0618
+                bool isClientHello = _lastFrame.Header.Type == TlsContentType.Handshake &&
+                    _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello;
+#pragma warning restore CS0618
+                if (!isClientHello)
+                {
+                    throw new AuthenticationException(SR.net_ssl_io_frame);
+                }
             }
 
             return frameSize;
@@ -601,11 +617,35 @@ namespace System.Net.Security
             }
 #endif
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+#pragma warning disable CS0162 // unreachable code on some platforms
+            if (!SslStreamPal.CertValidationInCallback)
             {
-                _handshakeCompleted = false;
-                return false;
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                {
+                    _handshakeCompleted = false;
+                    return false;
+                }
             }
+            else if (_remoteCertificate is null)
+            {
+                // CertVerifyCallback was not called during the handshake. This happens when:
+                // 1. The session was resumed — the cert is available from the SSL handle
+                //    but OpenSSL skips the verify callback.
+                // 2. The peer didn't provide a certificate at all.
+                // In both cases, run VerifyRemoteCertificate to invoke the user's callback
+                // and perform full validation.
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+                {
+                    _handshakeCompleted = false;
+                    return false;
+                }
+            }
+            else
+            {
+                sslPolicyErrors = SslPolicyErrors.None;
+                chainStatus = X509ChainStatusFlags.NoError;
+            }
+#pragma warning restore CS0162 // unreachable code on some platforms
 
             _handshakeCompleted = true;
             return true;
@@ -616,21 +656,26 @@ namespace System.Net.Security
             ProtocolToken alertToken = default;
             if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
             {
-                if (sslAuthenticationOptions!.CertValidationDelegate != null)
-                {
-                    // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
-                }
-                else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
-                {
-                    // We failed only because of chain and we have some insight.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
-                }
-                else
-                {
-                    // Simple add sslPolicyErrors as crude info.
-                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
-                }
+                SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(CreateCertificateValidationException(sslAuthenticationOptions, sslPolicyErrors, chainStatus)));
+            }
+        }
+
+        internal static Exception CreateCertificateValidationException(SslAuthenticationOptions options, SslPolicyErrors sslPolicyErrors, X509ChainStatusFlags chainStatus)
+        {
+            if (options.CertValidationDelegate != null)
+            {
+                // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null));
+            }
+            else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
+            {
+                // We failed only because of chain and we have some insight.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null));
+            }
+            else
+            {
+                // Simple add sslPolicyErrors as crude info.
+                return ExceptionDispatchInfo.SetCurrentStackTrace(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null));
             }
         }
 
@@ -754,6 +799,7 @@ namespace System.Net.Security
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken, int estimatedSize)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -801,47 +847,8 @@ namespace System.Net.Security
             return frameSize;
         }
 
-        private SecurityStatusPal DecryptData(int frameSize)
-        {
-            SecurityStatusPal status;
-
-            lock (_handshakeLock)
-            {
-                ThrowIfExceptionalOrNotAuthenticated();
-
-                // Decrypt will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-                status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
-                _buffer.OnDecrypted(decryptedOffset, decryptedCount, frameSize);
-
-                if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
-                {
-                    // The status indicates that peer wants to renegotiate. (Windows only)
-                    // In practice, there can be some other reasons too - like TLS1.3 session creation
-                    // of alert handling. We need to pass the data to lsass and it is not safe to do parallel
-                    // write any more as that can change TLS state and the EncryptData() can fail in strange ways.
-
-                    // To handle this we call DecryptData() under lock and we create TCS waiter.
-                    // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
-                    // Instead it will wait synchronously or asynchronously and it will try again after the wait.
-                    // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
-                    // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
-                    // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
-
-                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
-                    {
-                        // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
-                        // Tls1.3 does not have renegotiation. However on Windows this error code is used
-                        // for session management e.g. anything lsass needs to see.
-                        // We also allow it when explicitly requested using RenegotiateAsync().
-                        _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    }
-                }
-            }
-
-            return status;
-        }
-
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -900,7 +907,13 @@ namespace System.Net.Security
                         break;
                     }
 
-                    SecurityStatusPal status = DecryptData(payloadBytes);
+                    // Pass the user buffer to DecryptData so PALs that support it can decrypt directly
+                    // into the destination, avoiding a CopyDecryptedData memcpy. When the renegotiate
+                    // path is in flight we suppress the direct path by passing an empty span - the PAL
+                    // will fall back to in-place decrypt and the existing CopyDecryptedData path runs.
+                    Span<byte> destination = _handshakeWaiter == null ? buffer.Span : default;
+                    SecurityStatusPal status = DecryptData(payloadBytes, destination, out int directWritten);
+
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;
@@ -935,7 +948,16 @@ namespace System.Net.Security
                         }
                     }
 
-                    if (_buffer.DecryptedLength > 0)
+                    if (directWritten > 0)
+                    {
+                        processedLength += directWritten;
+                        buffer = buffer.Slice(directWritten);
+                        if (buffer.IsEmpty)
+                        {
+                            break;
+                        }
+                    }
+                    else if (_buffer.DecryptedLength > 0)
                     {
                         // This will either copy data from rented buffer or adjust final buffer as needed.
                         // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.

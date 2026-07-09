@@ -5,12 +5,10 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
-.assembly 'mcc_i01' {}
-
-
-.namespace MCCTest
+.namespace mcc_i01
 {
   .class public MyClass
   {
@@ -20,18 +18,15 @@
 
     .method public static int32 Main()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
-      .entrypoint
+            .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [mscorlib]System.Type, string[]) = {
+            type([TestLibrary]TestLibrary.PlatformDetection)
+            string[1] ('IsVarArgSupported')
+        }
       .maxstack  1
-      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
-      brtrue.s   DoTest
-      ldc.i4     100
-      ret
+
 
     DoTest:
-      call       int32 MCCTest.MyClass::Test()
+      call       int32 mcc_i01.MyClass::Test()
       ret
     }
 
@@ -57,7 +52,7 @@
       ldc.i8 12
       ldc.i8 1
       neg
-      ldftn   vararg valuetype MCCTest.VType0 MCCTest.MyClass::Sum(unsigned int64)
+      ldftn   vararg valuetype MCCTest.VType0 mcc_i01.MyClass::Sum(unsigned int64)
       calli   vararg valuetype MCCTest.VType0(unsigned int64, ...,
                                                 unsigned int64,
                                                 unsigned int64,
@@ -85,4 +80,4 @@
 
   } // end of class MyClass
 
-} // end of namespace MCCTest
+} // end of namespace mcc_i01

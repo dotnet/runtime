@@ -189,6 +189,31 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunMultiplyAllBitSet()
+        {
+            Random random = new Random(s_seed);
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
+
+            // Multiply Method - One Large BigInteger
+            for (int i = 0; i < s_samples; i++)
+            {
+                tempByteArray1 = new byte[random.Next(40, 1028)];
+                tempByteArray2 = new byte[random.Next(40, 1028)];
+
+                tempByteArray1.AsSpan().Fill(byte.MaxValue);
+                tempByteArray2.AsSpan().Fill(byte.MaxValue);
+
+                tempByteArray1[^1] = 0;
+                tempByteArray2[^1] = 0;
+
+                VerifyMultiplyString(Print(tempByteArray1) + Print(tempByteArray2) + "bMultiply");
+
+                VerifyMultiplyString(Print(tempByteArray1) + "uMultiply");
+            }
+        }
+
+        [Fact]
         public static void RunMultiplyKaratsubaBoundary()
         {
             Random random = new Random(s_seed);
@@ -284,17 +309,37 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunMultiply_TwoLargeBigIntegers()
         {
-            // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, multiplyTest.RunMultiply_TwoLargeBigIntegers)
-            );
+            // with karatuba
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, int.MaxValue, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, multiplyTest.RunMultiply_TwoLargeBigIntegers));
 
-            // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, () =>
-                    BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.StackAllocThreshold, 8, multiplyTest.RunMultiply_TwoLargeBigIntegers)
-                )
-            );
+            // with toom3
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, 9, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 9, multiplyTest.RunMultiply_TwoLargeBigIntegers));
+        }
+
+        [Fact]
+        public static void RunMultiplyAllBitSet()
+        {
+            // with karatuba
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, int.MaxValue, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, multiplyTest.RunMultiplyAllBitSet));
+
+            // with toom3
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, 9, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 9, multiplyTest.RunMultiplyAllBitSet));
+        }
+
+        [Fact]
+        public static void RunMultiplyKaratsubaBoundary()
+        {
+            // with karatuba
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, int.MaxValue, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, multiplyTest.RunMultiplyKaratsubaBoundary));
+
+            // with toom3
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyToom3Threshold, 9, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 9, multiplyTest.RunMultiplyKaratsubaBoundary));
         }
     }
 }

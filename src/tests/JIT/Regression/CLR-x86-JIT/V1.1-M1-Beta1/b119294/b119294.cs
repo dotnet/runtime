@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b119294;
+
 using System;
 using System.Collections;
 //using System.Windows.Forms;
@@ -14,6 +17,7 @@ public class Test_b119294
     public int[,] m_nSourceDestMap;
     public static int m_coSourceLength = 100;
     public static int m_coDestLength = 100;
+    [OuterLoop]
     [Fact]
     static public void TestEntryPoint()
     {

@@ -41,6 +41,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\ActivityLink.cs" />
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
+    <Compile Include="System\Diagnostics\ActivitySourceFactory.cs" />
     <Compile Include="System\Diagnostics\ActivitySourceOptions.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
@@ -132,6 +133,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DoublePolyfills.cs" Link="Common\Polyfills\DoublePolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">

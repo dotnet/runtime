@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -432,7 +432,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
+        private unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 

@@ -15,7 +15,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Event_Close_Stress), nameof(HasNullModem))]
         public void PinChanged_Close_Stress()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -47,7 +47,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Event_Close_Stress), nameof(HasNullModem))]
         public void DataReceived_Close_Stress()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -82,7 +82,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Event_Close_Stress), nameof(HasNullModem))]
         public void ErrorReceived_Close_Stress()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

@@ -5,6 +5,7 @@ using System;
 using System.Reflection.Metadata;
 
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
@@ -13,6 +14,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedMethodILNode : ObjectNode, ISymbolDefinitionNode
     {
+        // Sentinel body for stripped IL methods: tiny header (0x0A) + invalid opcode 0xFE 0x24.
+        // Invalid IL so it can never collide with a real method body.
+        private static readonly byte[] s_minimalILBody = [0x0A, 0xFE, 0x24];
+
         EcmaMethod _method;
 
         public CopiedMethodILNode(EcmaMethod method)
@@ -22,7 +27,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _method = method.GetTypicalMethodDefinition();
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            return ObjectNodeSection.ReadOnlyDataSection;
+        }
 
         public override bool IsShareable => false;
 
@@ -48,11 +56,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
+            if (factory.OptimizationFlags.StripILBodies
+                && factory.OptimizationFlags.CompiledMethodDefs.Contains(_method)
+                && !MayNeedILAtRuntime(_method))
+            {
+                return new ObjectData(s_minimalILBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+            }
+
             var rva = _method.MetadataReader.GetMethodDefinition(_method.Handle).RelativeVirtualAddress;
-            var reader = _method.Module.PEReader.GetSectionData(rva).GetReader();
+            var peReader = _method.Module.PEReader;
+            var reader = peReader.GetSectionData(rva).GetReader();
             int size = MethodBodyBlock.Create(reader).Size;
-            
-            return new ObjectData(reader.ReadBytes(size), Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+            byte[] bodyBytes = peReader.GetSectionData(rva).GetReader().ReadBytes(size);
+
+            return new ObjectData(bodyBytes, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+        }
+
+        private static bool MayNeedILAtRuntime(MethodDesc method)
+        {
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
+            {
+                // IL may be needed for new instantiations
+                return true;
+            }
+
+            if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask() && !method.IsAsync)
+            {
+                // IL may be needed for async version of non-async Task-returning method
+                return true;
+            }
+
+            return false;
         }
 
         public override int ClassCode => 541651465;

@@ -197,7 +197,6 @@ CONFIG_DWORD_INFO(INTERNAL_EnCResolveField, W("EnCResolveField"), 0, "Allows bre
 CONFIG_DWORD_INFO(INTERNAL_EncResumeInUpdatedFunction, W("EncResumeInUpdatedFunction"), 0, "Allows breaking when execution resumes in a new EnC version of a function")
 CONFIG_DWORD_INFO(INTERNAL_DbgAssertOnDebuggeeDebugBreak, W("DbgAssertOnDebuggeeDebugBreak"), 0, "If non-zero causes the managed-only debugger to assert on unhandled breakpoints in the debuggee")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DbgDontResumeThreadsOnUnhandledException, W("UNSUPPORTED_DbgDontResumeThreadsOnUnhandledException"), 0, "If non-zero, then don't try to unsuspend threads after continuing a 2nd-chance native exception")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DbgSkipStackCheck, W("DbgSkipStackCheck"), 0, "Skip the stack pointer check during stackwalking")
 #ifdef DACCESS_COMPILE
 CONFIG_DWORD_INFO(INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget, W("IntentionallyCorruptDataFromTarget"), 0, "Intentionally fakes bad data retrieved from target to try and break dump generation.")
 #endif
@@ -222,9 +221,7 @@ CONFIG_DWORD_INFO(INTERNAL_ContinueOnAssert, W("ContinueOnAssert"), 0, "If set, 
 CONFIG_DWORD_INFO(INTERNAL_InjectFatalError, W("InjectFatalError"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_InjectFault, W("InjectFault"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_SuppressChecks, W("SuppressChecks"),0,  "")
-#ifdef FEATURE_EH_FUNCLETS
 CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLockViolationsOnReentryFromOS"), 0, "64 bit OOM tests re-enter the CLR via RtlVirtualUnwind.  This indicates whether to suppress resulting locking violations.")
-#endif // FEATURE_EH_FUNCLETS
 
 ///
 /// Exception Handling
@@ -244,11 +241,11 @@ CONFIG_DWORD_INFO(INTERNAL_FastGCCheckStack, W("FastGCCheckStack"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_FastGCStress, W("FastGCStress"), 0, "Reduce the number of GCs done by enabling GCStress")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCBreakOnOOM, W("GCBreakOnOOM"), 0, "Does a DebugBreak at the soonest time we detect an OOM")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConcurrent, W("gcConcurrent"), (DWORD)-1, "Enables/Disables concurrent GC")
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_UseGCWriteBarrierCopy, W("UseGCWriteBarrierCopy"), 0, "Use a copy of the write barrier for the GC. This is somewhat faster and for optimizations where the barrier is mutated as the program runs. Setting this to 0 removes scenarios where the write barrier is ever mutable.")
 #else
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_UseGCWriteBarrierCopy, W("UseGCWriteBarrierCopy"), 1, "Use a copy of the write barrier for the GC. This is somewhat faster and for optimizations where the barrier is mutated as the program runs. Setting this to 0 removes scenarios where the write barrier is ever mutable.")
-#endif // defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#endif // !defined(FEATURE_DYNAMIC_CODE_COMPILED)
 
 #ifdef FEATURE_CONSERVATIVE_GC
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConservative, W("gcConservative"), 0, "Enables/Disables conservative GC")
@@ -349,6 +346,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitNoProfileGather, W("MultiCoreJitNo
 
 #endif
 
+#ifdef TARGET_ARM64
+// This feature is for development of SVE acceleration and should be removed once complete.
+CONFIG_DWORD_INFO(INTERNAL_JitUseScalableVectorT, W("JitUseScalableVectorT"), 0, "Accelerate Vector<T> with SVE if available.")
+#endif
+
 ///
 /// Loader heap
 ///
@@ -383,7 +385,7 @@ CONFIG_DWORD_INFO(INTERNAL_MD_MiniMDBreak, W("MD_MiniMDBreak"), 0, "ASSERT when 
 CONFIG_DWORD_INFO(INTERNAL_MD_PreSaveBreak, W("MD_PreSaveBreak"), 0, "ASSERT when calling CMiniMdRw::PreSave")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaBreak, W("MD_RegMetaBreak"), 0, "ASSERT when creating RegMeta class")
 CONFIG_DWORD_INFO(INTERNAL_MD_RegMetaDump, W("MD_RegMetaDump"), 0, "Dump MD in 4 functions (?)")
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, W("MODIFIABLE_ASSEMBLIES"), "Enables hot reload on debug built assemblies with the 'debug' keyword", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue);
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, W("MODIFIABLE_ASSEMBLIES"), "Enables hot reload on debug built assemblies with the 'debug' keyword, 'none' explicitly disables it even when debugger is attached", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue);
 
 // Metadata - mscordbi only - this flag is only intended to mitigate potential issues in bug fix 458597.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MD_PreserveDebuggerMetadataMemory, W("MD_PreserveDebuggerMetadataMemory"), 0, "Save all versions of metadata memory in the debugger when debuggee metadata is updated")
@@ -398,24 +400,23 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinLimitProcCap, W("SpinLimitProcCap"), 0xFFF
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinLimitProcFactor, W("SpinLimitProcFactor"), 0x4E20, "Hex value specifying the multiplier on NumProcs to use when calculating the maximum spin duration")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinLimitConstant, W("SpinLimitConstant"), 0x0, "Hex value specifying the constant to add when calculating the maximum spin duration")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SpinRetryCount, W("SpinRetryCount"), 0xA, "Hex value specifying the number of times the entire spin process is repeated (when applicable)")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_Monitor_SpinCount, W("Monitor_SpinCount"), 0x1e, "Hex value specifying the maximum number of spin iterations Monitor may perform upon contention on acquiring the lock before waiting.")
 
 ///
 /// Profiling API / ETW
 ///
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_PROFILING, W("CORECLR_ENABLE_PROFILING"), 0, "CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER, W("CORECLR_PROFILER"), "CoreCLR only: Specifies GUID of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH, W("CORECLR_PROFILER_PATH"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_32, W("CORECLR_PROFILER_PATH_32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_64, W("CORECLR_PROFILER_PATH_64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM32, W("CORECLR_PROFILER_PATH_ARM32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM32 process", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM64, W("CORECLR_PROFILER_PATH_ARM64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM64 process", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS, W("CORECLR_ENABLE_NOTIFICATION_PROFILERS"), 0, "Set to 0 to disable loading notification profilers.", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, W("CORECLR_NOTIFICATION_PROFILERS"), "A semi-colon separated list of notification profilers to load into currently running process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, W("CORECLR_NOTIFICATION_PROFILERS_32"), "A semi-colon separated list of notification profilers to load into currently running 32 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, W("CORECLR_NOTIFICATION_PROFILERS_64"), "A semi-colon separated list of notification profilers to load into currently running 64 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM32, W("CORECLR_NOTIFICATION_PROFILERS_ARM32"), "A semi-colon separated list of notification profilers to load into currently running ARM32 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
-RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, W("CORECLR_NOTIFICATION_PROFILERS_ARM64"), "A semi-colon separated list of notification profilers to load into currently running ARM64 process in the form \"path={guid}\"", CLRConfig::LookupOptions::DontPrependPrefix)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_PROFILING, W("ENABLE_PROFILING"), 0, "CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER, W("PROFILER"), "CoreCLR only: Specifies GUID of profiler to load into currently running process", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH, W("PROFILER_PATH"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_32, W("PROFILER_PATH_32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_64, W("PROFILER_PATH_64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM32, W("PROFILER_PATH_ARM32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM32 process", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_ARM64, W("PROFILER_PATH_ARM64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running ARM64 process", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS, W("ENABLE_NOTIFICATION_PROFILERS"), 0, "Set to 0 to disable loading notification profilers.", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, W("NOTIFICATION_PROFILERS"), "A semi-colon separated list of notification profilers to load into currently running process in the form \"path={guid}\"", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, W("NOTIFICATION_PROFILERS_32"), "A semi-colon separated list of notification profilers to load into currently running 32 process in the form \"path={guid}\"", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, W("NOTIFICATION_PROFILERS_64"), "A semi-colon separated list of notification profilers to load into currently running 64 process in the form \"path={guid}\"", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM32, W("NOTIFICATION_PROFILERS_ARM32"), "A semi-colon separated list of notification profilers to load into currently running ARM32 process in the form \"path={guid}\"", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, W("NOTIFICATION_PROFILERS_ARM64"), "A semi-colon separated list of notification profilers to load into currently running ARM64 process in the form \"path={guid}\"", CLRConfig::LookupOptions::CoreclrFallbackPrefix)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_ProfAPI_ProfilerCompatibilitySetting, W("ProfAPI_ProfilerCompatibilitySetting"), "Specifies the profiler loading policy (the default is not to load a V2 profiler in V4)", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ProfAPI_DetachMinSleepMs, W("ProfAPI_DetachMinSleepMs"), 0, "The minimum time, in milliseconds, the CLR will wait before checking whether a profiler that is in the process of detaching is ready to be unloaded.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ProfAPI_DetachMaxSleepMs, W("ProfAPI_DetachMaxSleepMs"), 0, "The maximum time, in milliseconds, the CLR will wait before checking whether a profiler that is in the process of detaching is ready to be unloaded.")
@@ -432,7 +433,7 @@ RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec, W
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux and macOS to enable writing /tmp/perf-$pid.map. It is disabled by default")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapIgnoreSignal, W("PerfMapIgnoreSignal"), 0, "When perf map is enabled, this option will configure the specified signal to be accepted and ignored as a marker in the perf logs.  It is disabled by default")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapShowOptimizationTiers, W("PerfMapShowOptimizationTiers"), 1, "Shows optimization tiers in the perf map for methods, as part of the symbol name. Useful for seeing separate stack frames for different optimization tiers of each method.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapStubGranularity, W("PerfMapStubGranularity"), 0, "Report stubs with varying amounts of granularity (low bit being zero indicates attempt to group all stubs of a type together) (second lowest bit being non-zero records stubs at individual allocation sites, which is more expensive, but also more accurate).")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapStubGranularity, W("PerfMapStubGranularity"), 0, "Report stubs with varying amounts of granularity (low bit being zero indicates attempt to group all stubs of a type together) (second lowest bit being non-zero records stubs at individual allocation sites, which is more expensive, but also more accurate) (third lowest bit disables stub logging).")
 #endif
 
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_StartupDelayMS, W("StartupDelayMS"), "")
@@ -441,7 +442,7 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_StartupDelayMS, W("StartupDelayMS"), "")
 /// Stress
 ///
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StressLog, W("StressLog"), 0, "Turns on the stress log.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ForceEnc, W("ForceEnc"), 0, "Forces Edit and Continue to be on for all eligible modules.")
+
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StressLogSize, W("StressLogSize"), 0, "Stress log size in bytes per thread.")
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_StressLogFilename, W("StressLogFilename"), "Stress log filename for memory mapped stress log.")
 CONFIG_DWORD_INFO(INTERNAL_stressSynchronized, W("stressSynchronized"), 0, "Unknown if or where this is used; unless a test is specifically depending on this, it can be removed.")
@@ -558,11 +559,11 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_VirtualCallStubLogging, W("VirtualCallStubLogg
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubMissCount, W("VirtualCallStubMissCount"), 100, "Used only when STUB_LOGGING is defined, which by default is not.")
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubResetCacheCounter, W("VirtualCallStubResetCacheCounter"), 0, "Used only when STUB_LOGGING is defined, which by default is not.")
 CONFIG_DWORD_INFO(INTERNAL_VirtualCallStubResetCacheIncr, W("VirtualCallStubResetCacheIncr"), 0, "Used only when STUB_LOGGING is defined, which by default is not.")
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
 CONFIG_DWORD_INFO(INTERNAL_UseCachedInterfaceDispatch, W("UseCachedInterfaceDispatch"), 1, "If cached interface dispatch is compiled in, use that instead of virtual stub dispatch")
 #else
 CONFIG_DWORD_INFO(INTERNAL_UseCachedInterfaceDispatch, W("UseCachedInterfaceDispatch"), 0, "If cached interface dispatch is compiled in, use that instead of virtual stub dispatch")
-#endif // defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#endif // !defined(FEATURE_DYNAMIC_CODE_COMPILED)
 ///
 /// Watson
 ///
@@ -575,16 +576,16 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgEnableMiniDump, W("DbgEnableMiniDump"), 0, 
 RETAIL_CONFIG_STRING_INFO(INTERNAL_DbgMiniDumpName, W("DbgMiniDumpName"), "Crash dump name")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgMiniDumpType, W("DbgMiniDumpType"), 0, "Crash dump type: 1 normal, 2 withheap, 3 triage, 4 full")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CreateDumpDiagnostics, W("CreateDumpDiagnostics"), 0, "Enable crash dump generation diagnostic logging")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrashReportBeforeSignalChaining, W("CrashReportBeforeSignalChaining"), 0, "Enable crash report generation before chaining to previous signal handler")
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_CrashReportFrameLimitPerThread, W("CrashReportFrameLimitPerThread"), 32, "Maximum number of managed stack frames per thread to emit in the in-proc crash report's compact log; 0 disables the limit; remaining frames are summarized as '... +N more frames'", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+RETAIL_CONFIG_STRING_INFO(INTERNAL_CrashReportRootPath, W("CrashReportRootPath"), "Root path for lifecycle-managed in-proc crash report JSON files")
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_CrashReportMaxFileCount, W("CrashReportMaxFileCount"), 32, "Maximum number of lifecycle-managed in-proc crash report JSON files to retain (positive integer); default 32", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 
 ///
 /// R2R
 ///
 RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 0, "Enable/disable use of ReadyToRun native code") // Off by default for Apple mobile
-#else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
-#endif // defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunExcludeList, W("ReadyToRunExcludeList"), "List of assemblies that cannot use Ready to Run images")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunLogFile, W("ReadyToRunLogFile"), "Name of file to log success/failure of using Ready to Run images")
 
@@ -611,11 +612,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"),
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 1, "Enable/disable streaming for trace file set in DOTNET_EventPipeOutputPath.  Non-zero values enable streaming.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeEnableStackwalk, W("EventPipeEnableStackwalk"), 1, "Set to 0 to disable collecting stacks for EventPipe events.")
-
-#ifdef FEATURE_AUTO_TRACE
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_AutoTrace_N_Tracers, W("AutoTrace_N_Tracers"), 0, "", CLRConfig::LookupOptions::ParseIntegerAsBase10)
-RETAIL_CONFIG_STRING_INFO(INTERNAL_AutoTrace_Command, W("AutoTrace_Command"), "")
-#endif // FEATURE_AUTO_TRACE
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeThreadSamplingRate, W("EventPipeThreadSamplingRate"), 0, "Desired sample interval in milliseconds for EventPipe thread time sampling profiler. 0 means use the default.")
 
 //
 // Generational Aware Analysis
@@ -678,12 +675,13 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntri
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX,                    W("EnableAVX"),                 1, "Allows AVX and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX2,                   W("EnableAVX2"),                1, "Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512,                 W("EnableAVX512"),              1, "Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512,                 W("EnableAVX512"),              1, "Allows AVX512 F+BW+CD+DQ+VL and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BMM,              W("EnableAVX512BMM"),           1, "Allows AVX512BMM and dependent hardware intrinsics to be disabled")
 
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v2,               W("EnableAVX512v2"),            1, "Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v3,               W("EnableAVX512v3"),            1, "Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v1,                W("EnableAVX10v1"),             1, "Allows AVX10v1 and depdendent hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v2,                W("EnableAVX10v2"),             0, "Allows AVX10v2 and depdendent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v2,               W("EnableAVX512v2"),            1, "Allows AVX512 IFMA+VBMI and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v3,               W("EnableAVX512v3"),            1, "Allows AVX512 BITALG+VBMI2+VPOPCNTDQ+VNNI and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v1,                W("EnableAVX10v1"),             1, "Allows AVX10v1 and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX10v2,                W("EnableAVX10v2"),             0, "Allows AVX10v2 and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAPX,                    W("EnableAPX"),                 0, "Allows APX and dependent features to be disabled")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,                    W("EnableAES"),                 1, "Allows AES, PCLMULQDQ, and dependent hardware intrinsics to be disabled")
@@ -707,15 +705,18 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha1,              W("EnableArm64Sh
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sha256"),         1, "Allows Arm64 Sha256+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc2,             W("EnableArm64Rcpc2"),          1, "Allows Arm64 Rcpc2+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sve2"),           1, "Allows Arm64 SVE2 hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sve2"),           1, "Allows Arm64 SVE2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha3,              W("EnableArm64Sha3"),           1, "Allows Arm64 Sha3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sm4,               W("EnableArm64Sm4"),            1, "Allows Arm64 Sm4+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveAes,            W("EnableArm64SveAes"),         1, "Allows Arm64 SveAes+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveSha3,           W("EnableArm64SveSha3"),        1, "Allows Arm64 SveSha3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveSm4,            W("EnableArm64SveSm4"),         1, "Allows Arm64 SveSm4+ hardware intrinsics to be disabled")
 #elif defined(TARGET_RISCV64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbs,             W("EnableRiscV64Zbs"),          1, "Allows RiscV64 Zbs hardware intrinsics to be disabled")
 #endif
-
-// Runtime-async
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RuntimeAsync, W("RuntimeAsync"), 0, "Enables runtime async method support")
 
 ///
 /// Uncategorized
@@ -746,6 +747,9 @@ CONFIG_STRING_INFO(INTERNAL_PerfTypesToLog, W("PerfTypesToLog"), "Log facility L
 CONFIG_STRING_INFO(INTERNAL_PrestubGC, W("PrestubGC"), "")
 CONFIG_STRING_INFO(INTERNAL_PrestubHalt, W("PrestubHalt"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStressFailFast, W("CdacStressFailFast"), 0, "If nonzero, assert on cDAC/runtime GC ref mismatch during cDAC stress verification.")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_CdacStressLogFile, W("CdacStressLogFile"), "Log file path for cDAC stress verification results.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStress, W("CdacStress"), 0, "Enable cDAC stress verification.")
 CONFIG_DWORD_INFO(INTERNAL_ReturnSourceTypeForTesting, W("ReturnSourceTypeForTesting"), 0, "Allows returning the (internal only) source type of an IL to Native mapping for debugging purposes")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RSStressLog, W("RSStressLog"), 0, "Allows turning on logging for RS startup")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnNewIndex, W("SBDumpOnNewIndex"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
@@ -753,7 +757,6 @@ CONFIG_DWORD_INFO(INTERNAL_SBDumpOnResize, W("SBDumpOnResize"), 0, "Used for Syn
 CONFIG_DWORD_INFO(INTERNAL_SBDumpStyle, W("SBDumpStyle"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_SleepOnExit, W("SleepOnExit"), 0, "Used for lrak detection. I'd say deprecated by umdh.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_SuccessExit, W("SuccessExit"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TestDataConsistency, W("TestDataConsistency"), FALSE, "Allows ensuring the left side is not holding locks (and may thus be in an inconsistent state) when inspection occurs")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThreadGuardPages, W("ThreadGuardPages"), 0, "")
 
 #ifdef _DEBUG

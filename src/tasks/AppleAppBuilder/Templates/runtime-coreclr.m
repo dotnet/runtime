@@ -3,6 +3,7 @@
 
 #import <Foundation/Foundation.h>
 #include "coreclrhost.h"
+#include "host_runtime_contract.h"
 #include <TargetConditionals.h>
 #import <os/log.h>
 #include <sys/stat.h>
@@ -68,11 +69,7 @@ compute_trusted_platform_assemblies ()
     return strdup([joined UTF8String]);
 }
 
-// Forward declarations for System.Native
-extern void SystemNative_Log(uint8_t* buffer, int32_t length);
-extern void SystemNative_LogError(uint8_t* buffer, int32_t length);
-
-void*
+const void*
 pinvoke_override (const char *libraryName, const char *entrypointName)
 {
     if (!strcmp (libraryName, "__Internal"))
@@ -80,15 +77,76 @@ pinvoke_override (const char *libraryName, const char *entrypointName)
         return dlsym (RTLD_DEFAULT, entrypointName);
     }
 
-    if (!strcmp(libraryName, "libSystem.Native"))
+    return NULL;
+}
+
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
+size_t get_image_size(const struct mach_header_64* header)
+{
+    const struct load_command* cmd = (const struct load_command*)((const char*)header + sizeof(struct mach_header_64));
+
+    size_t image_size = 0;
+    for (uint32_t j = 0; j < header->ncmds; ++j)
     {
-        if (!strcmp(entrypointName, "SystemNative_Log"))
-            return (void*)SystemNative_Log;
-        if (!strcmp(entrypointName, "SystemNative_LogError"))
-            return (void*)SystemNative_LogError;
+        if (cmd->cmd == LC_SEGMENT_64)
+        {
+            const struct segment_command_64* seg = (const struct segment_command_64*)cmd;
+            size_t end_addr = (size_t)(seg->vmaddr + seg->vmsize);
+            if (end_addr > image_size)
+                image_size = end_addr;
+        }
+
+        cmd = (const struct load_command*)((const char*)cmd + cmd->cmdsize);
     }
 
-    return NULL;
+    return image_size;
+}
+
+bool get_native_code_data(const struct host_runtime_contract_native_code_context* context, struct host_runtime_contract_native_code_data* data)
+{
+    if (!context || !data || !context->assembly_path || !context->owner_composite_name)
+        return false;
+
+    // Look for the owner composite R2R image in the same directory as the assembly
+    char r2r_path[PATH_MAX];
+    const char *last_slash = strrchr(context->assembly_path, '/');
+    size_t dir_len = last_slash ? (size_t)(last_slash - context->assembly_path) : 0;
+    if (dir_len >= sizeof(r2r_path) - 1)
+        return false;
+
+    strncpy(r2r_path, context->assembly_path, dir_len);
+    int written = snprintf(r2r_path + dir_len, sizeof(r2r_path) - dir_len, "/%s", context->owner_composite_name);
+    if (written <= 0 || (size_t)written >= sizeof(r2r_path) - dir_len)
+        return false;
+
+    void* handle = dlopen(r2r_path, RTLD_LAZY | RTLD_LOCAL);
+    if (handle == NULL)
+        return false;
+
+    void* r2r_header = dlsym(handle, "RTR_HEADER");
+    if (r2r_header == NULL)
+    {
+        dlclose(handle);
+        return false;
+    }
+
+    Dl_info info;
+    if (dladdr(r2r_header, &info) == 0)
+    {
+        dlclose(handle);
+        return false;
+    }
+
+    // The base address points to the Mach header
+    void* base_address = info.dli_fbase;
+    const struct mach_header_64* header = (const struct mach_header_64*)base_address;
+
+    data->size = sizeof(struct host_runtime_contract_native_code_data);
+    data->r2r_header_ptr = r2r_header;
+    data->image_size = get_image_size(header);
+    data->image_base = base_address;
+    return true;
 }
 
 void
@@ -128,28 +186,42 @@ mono_ios_runtime_init (void)
 #endif
     assert (res > 0);
 
-    char pinvoke_override_addr [16];
-    sprintf (pinvoke_override_addr, "%p", &pinvoke_override);
+    // Contract lasts the lifetime of the app. The app exists before the end of this function.
+    struct host_runtime_contract host_contract = {
+        .size = sizeof(struct host_runtime_contract),
+        .pinvoke_override = &pinvoke_override,
+        .get_native_code_data = &get_native_code_data
+    };
 
-    // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-    const char *appctx_keys [] = {
-        "RUNTIME_IDENTIFIER",
-        "APP_CONTEXT_BASE_DIRECTORY",
-        "TRUSTED_PLATFORM_ASSEMBLIES",
-        "PINVOKE_OVERRIDE",
-#if !defined(INVARIANT_GLOBALIZATION)
-        "ICU_DAT_FILE_PATH"
+    char contract_str[19]; // 0x + 16 hex digits + '\0'
+    snprintf(contract_str, 19, "0x%zx", (size_t)(&host_contract));
+
+#if defined(INVARIANT_GLOBALIZATION)
+#define PROPERTY_COUNT %AppContextPropertyCount_InvariantGlobalization%
+#else
+#define PROPERTY_COUNT %AppContextPropertyCount%
 #endif
-    };
-    const char *appctx_values [] = {
-        APPLE_RUNTIME_IDENTIFIER,
-        bundle,
-        compute_trusted_platform_assemblies(),
-        pinvoke_override_addr,
+
+    // Hardcoded properties + runtime config properties (generated at build time)
+    const char *appctx_keys[PROPERTY_COUNT];
+    appctx_keys[0] = "RUNTIME_IDENTIFIER";
+    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
+    appctx_keys[2] = "TRUSTED_PLATFORM_ASSEMBLIES";
+    appctx_keys[3] = "HOST_RUNTIME_CONTRACT";
 #if !defined(INVARIANT_GLOBALIZATION)
-        icu_dat_path
+    appctx_keys[4] = "ICU_DAT_FILE_PATH";
 #endif
-    };
+%AppContextKeys%
+
+    const char *appctx_values[PROPERTY_COUNT];
+    appctx_values[0] = APPLE_RUNTIME_IDENTIFIER;
+    appctx_values[1] = bundle;
+    appctx_values[2] = compute_trusted_platform_assemblies();
+    appctx_values[3] = contract_str;
+#if !defined(INVARIANT_GLOBALIZATION)
+    appctx_values[4] = icu_dat_path;
+#endif
+%AppContextValues%
 
     const char* executable = "%EntryPointLibName%";
     const char *executablePath = [[[[NSBundle mainBundle] executableURL] path] UTF8String];

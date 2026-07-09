@@ -7,12 +7,16 @@
     <!-- Expected COR_E_EXECUTIONENGINE -->
     <CLRTestExitCode>134</CLRTestExitCode>
     <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146233082</CLRTestExitCode>
+    <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">-1073740286</CLRTestExitCode>
     <CLRTestPriority>1</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />
     <Compile Include="SuppressGCTransitionNegativeTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />

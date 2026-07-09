@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -55,15 +56,12 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 #if TARGET_WINDOWS
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
 #endif
             GC.SuppressFinalize(this);
 
-            Thread.ThrowIfNoThreadStart();
             _waitHandle = waitHandle.SafeWaitHandle;
             _callbackHelper = callbackHelper;
             _signedMillisecondsTimeout = millisecondsTimeout;

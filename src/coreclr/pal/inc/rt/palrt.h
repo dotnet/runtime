@@ -557,14 +557,6 @@ typedef unsigned int ALG_ID;
 #define LCMAP_LOWERCASE           0x00000100
 #define LCMAP_UPPERCASE           0x00000200
 
-// 8 characters for language
-// 8 characters for region
-// 64 characters for suffix (script)
-// 2 characters for '-' separators
-// 2 characters for prefix like "i-" or "x-"
-// 1 null termination
-#define LOCALE_NAME_MAX_LENGTH   85
-
 
 #ifdef __cplusplus
 /*
@@ -584,7 +576,6 @@ The wrappers below are simple implementations that may not be as robust as compl
 Remember to fix the errcode definition in safecrt.h.
 */
 
-#define _wfopen_s _wfopen_unsafe
 #define fopen_s _fopen_unsafe
 
 #define _vscprintf _vscprintf_unsafe
@@ -613,17 +604,6 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
             return ret;
 
         guess *= 2;
-    }
-}
-
-inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
-{
-    FILE *result = _wfopen(fileName, mode);
-    if(result == 0) {
-        return 1;
-    } else {
-        *ff = result;
-        return 0;
     }
 }
 

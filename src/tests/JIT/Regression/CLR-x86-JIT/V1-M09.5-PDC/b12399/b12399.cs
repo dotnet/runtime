@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b12399;
+
 using System;
 using Xunit;
 
@@ -9,6 +12,7 @@ public class foo
 {
     static double nan = 0.0 / 0.0;
     static double d = 1.1;
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

@@ -81,10 +81,10 @@ CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 CDAC_GLOBAL_POINTER(ManagedThreadStore, &g_managedThreadStore)
-#if FEATURE_EH_FUNCLETS
-CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
-CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
 #endif
 CDAC_GLOBAL(SomeMagicNumber, uint32, 42)
 CDAC_GLOBALS_END()

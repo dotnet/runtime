@@ -13,5 +13,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="thread-race.cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

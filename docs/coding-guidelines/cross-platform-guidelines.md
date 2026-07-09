@@ -19,9 +19,9 @@ It's a case-by-case basis. In some cases, entire contracts that are platform-spe
 
 Partial classes is the approach we're currently taking when the managed code needs to diverge based on underlying platform. There are a few cases where we've decided to go a different route, but even in some of those cases we may move back towards partial classes.
 
-#### How should the platform-specific files be named (e.g. FileStream.Windows.cs? Win32FileStream.cs?)
+#### How should the platform-specific files be named (e.g. FileStream.Windows.cs? WindowsFileStream.cs?)
 
-When the whole type is for a particular platform, we've been using the prefix, e.g. PlatformFileStream.cs. When the file contains a partial class specialized for a particular platform, we've been using the *.Platform.cs suffix.
+When the whole type is for a particular platform, we've been using the prefix, e.g. PlatformFileStream.cs. When the file contains a partial class specialized for a particular platform, we've been using the *.Platform.cs suffix (e.g. FileStream.Windows.cs, FileStream.Unix.cs).
 
 #### When should define statements be used rather than including different source files in the build environment?
 

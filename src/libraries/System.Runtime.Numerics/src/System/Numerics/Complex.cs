@@ -30,13 +30,14 @@ namespace System.Numerics
                                                          | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                          | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                          | NumberStyles.AllowThousands | NumberStyles.AllowExponent
-                                                         | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
+                                                         | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
+                                                         | NumberStyles.AllowTrailingInvalidCharacters);
 
-        public static readonly Complex Zero = new Complex(0.0, 0.0);
-        public static readonly Complex One = new Complex(1.0, 0.0);
-        public static readonly Complex ImaginaryOne = new Complex(0.0, 1.0);
-        public static readonly Complex NaN = new Complex(double.NaN, double.NaN);
-        public static readonly Complex Infinity = new Complex(double.PositiveInfinity, double.PositiveInfinity);
+        public static readonly Complex Zero = new(0.0, 0.0);
+        public static readonly Complex One = new(1.0, 0.0);
+        public static readonly Complex ImaginaryOne = new(0.0, 1.0);
+        public static readonly Complex NaN = new(double.NaN, double.NaN);
+        public static readonly Complex Infinity = new(double.PositiveInfinity, double.PositiveInfinity);
 
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
@@ -395,8 +396,7 @@ namespace System.Numerics
 
         public static Complex Asin(Complex value)
         {
-            double b, bPrime, v;
-            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out b, out bPrime, out v);
+            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out double b, out double bPrime, out double v);
 
             double u;
             if (bPrime < 0.0)
@@ -428,8 +428,7 @@ namespace System.Numerics
 
         public static Complex Acos(Complex value)
         {
-            double b, bPrime, v;
-            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out b, out bPrime, out v);
+            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out double b, out double bPrime, out double v);
 
             double u;
             if (bPrime < 0.0)
@@ -483,7 +482,7 @@ namespace System.Numerics
 
         public static Complex Atan(Complex value)
         {
-            Complex two = new Complex(2.0, 0.0);
+            Complex two = new(2.0, 0.0);
             return (ImaginaryOne / two) * (Log(One - ImaginaryOne * value) - Log(One + ImaginaryOne * value));
         }
 
@@ -908,7 +907,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static Complex IAdditiveIdentity<Complex, Complex>.AdditiveIdentity => new Complex(0.0, 0.0);
+        static Complex IAdditiveIdentity<Complex, Complex>.AdditiveIdentity => new(0.0, 0.0);
 
         //
         // IDecrementOperators
@@ -929,20 +928,20 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
-        static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new Complex(1.0, 0.0);
+        static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new(1.0, 0.0);
 
         //
         // INumberBase
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static Complex INumberBase<Complex>.One => new Complex(1.0, 0.0);
+        static Complex INumberBase<Complex>.One => new(1.0, 0.0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
         static int INumberBase<Complex>.Radix => 2;
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
+        static Complex INumberBase<Complex>.Zero => new(0.0, 0.0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static Complex INumberBase<Complex>.Abs(Complex value) => Abs(value);
@@ -2132,13 +2131,25 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result);
+            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out _);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result)
-            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result);
+            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out _);
 
-        private static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex result)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
+            => TryParse(s.AsSpan(), style, provider, out result, out charsConsumed);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result, out int bytesConsumed)
+            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out bytesConsumed);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
+            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out charsConsumed);
+
+        private static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             ValidateParseStyleFloatingPoint(style);
@@ -2153,25 +2164,33 @@ namespace System.Numerics
                 // We also expect a to find an open bracket, a semicolon, and a closing bracket in that order
 
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
 
-            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !text.Slice(0, openBracket).IsWhiteSpace()))
+            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !text.Slice(0, openBracket).IsWhiteSpace(out _)))
             {
                 // The opening bracket wasn't the first and we either didn't allow leading whitespace
                 // or one of the leading characters wasn't whitespace at all.
 
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
+
+            // The real and imaginary components are exactly delimited by the ';' and '>' separators,
+            // so AllowTrailingInvalidCharacters only applies after the closing bracket, not within a
+            // component. Otherwise something like "<1.5x;2>" would incorrectly parse as (1.5, 2).
+            NumberStyles componentStyle = style & ~NumberStyles.AllowTrailingInvalidCharacters;
 
             ReadOnlySpan<TChar> slice = text.Slice(openBracket + 1, semicolon - openBracket - 1);
 
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double real)
-                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out real))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), componentStyle, provider, out double real)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), componentStyle, provider, out real))
             {
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
 
@@ -2188,23 +2207,41 @@ namespace System.Numerics
             slice = text.Slice(semicolon + 1, closeBracket - semicolon - 1);
 
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double imaginary)
-                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out imaginary))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), componentStyle, provider, out double imaginary)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), componentStyle, provider, out imaginary))
             {
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
 
-            if ((closeBracket != (text.Length - 1)) && (((style & NumberStyles.AllowTrailingWhite) == 0) || !text.Slice(closeBracket).IsWhiteSpace()))
-            {
-                // The closing bracket wasn't the last and we either didn't allow trailing whitespace
-                // or one of the trailing characters wasn't whitespace at all.
+            int trailingWhiteLength = 0;
 
-                result = default;
-                return false;
+            if (closeBracket != (text.Length - 1))
+            {
+                bool isInvalid = true;
+
+                if ((style & NumberStyles.AllowTrailingWhite) != 0)
+                {
+                    if (text.Slice(closeBracket + 1).IsWhiteSpace(out trailingWhiteLength))
+                    {
+                        isInvalid = false;
+                    }
+                }
+
+                if (isInvalid && ((style & NumberStyles.AllowTrailingInvalidCharacters) == 0))
+                {
+                    // The closing bracket wasn't the last and we either didn't allow trailing whitespace
+                    // or one of the trailing characters wasn't whitespace at all.
+
+                    result = default;
+                    elementsConsumed = 0;
+                    return false;
+                }
             }
 
             result = new Complex(real, imaginary);
+            elementsConsumed = closeBracket + 1 + trailingWhiteLength;
             return true;
         }
 
@@ -2230,11 +2267,6 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result)
         {
-            if (s is null)
-            {
-                result = default;
-                return false;
-            }
             return TryParse(s.AsSpan(), style, provider, out result);
         }
 
@@ -2253,7 +2285,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
-        static Complex ISignedNumber<Complex>.NegativeOne => new Complex(-1.0, 0.0);
+        static Complex ISignedNumber<Complex>.NegativeOne => new(-1.0, 0.0);
 
         //
         // ISpanFormattable

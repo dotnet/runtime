@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b119538b;
+
 using System;
 using Xunit;
 class C

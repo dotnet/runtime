@@ -7,8 +7,9 @@
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 
-#include "coreclrremotedebugginginterfaces.h"
-
+#ifdef HOST_UNIX
+#include <pthread.h>
+#endif
 
 // TODO: Ideally we'd like to remove this class and don't do any process related book keeping in DBI.
 
@@ -17,8 +18,7 @@
 // It also handles things like creating and killing a process.
 
 // Usual lifecycle looks like this:
-// Debug a new process:
-// * CreateProcess(&pid)
+// Debug an existing process:
 // * On Mac, Optionally obtain an application group ID from a user
 // * Create a ProcessDescriptor pd
 // * GetTransportForProcess(&pd, &transport)
@@ -45,18 +45,6 @@ public:
     // connection at this point).
     void ReleaseTransport(DbgTransportSession *pTransport);
 
-    // When and if the process starts the runtime will be told to halt and wait for a debugger attach.
-    HRESULT CreateProcess(LPCWSTR lpApplicationName,
-                          LPCWSTR lpCommandLine,
-                          LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                          LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                          BOOL bInheritHandles,
-                          DWORD dwCreationFlags,
-                          LPVOID lpEnvironment,
-                          LPCWSTR lpCurrentDirectory,
-                          LPSTARTUPINFOW lpStartupInfo,
-                          LPPROCESS_INFORMATION lpProcessInformation);
-
     // Kill the process identified by PID.
     void KillProcess(DWORD dwPID);
 
@@ -68,12 +56,24 @@ private:
     {
         ProcessEntry           *m_pNext;            // Next entry in the list
         DWORD                   m_dwPID;            // Process ID for this entry
-        HANDLE                  m_hProcess;         // Process handle
+        HANDLE                  m_hProcessExited;   // Waitable handle that becomes signaled when the
+                                                    // process exits. On HOST_WINDOWS this is the process
+                                                    // handle itself; on HOST_UNIX it is a manual-reset
+                                                    // event signaled by the poller thread below.
         DbgTransportSession    *m_transport;        // Debugger's connection to the process
         DWORD                   m_cProcessRef;      // Ref count
+#ifdef HOST_UNIX
+        pthread_t               m_pollerThread;     // Thread that polls m_dwPID for exit
+        bool                    m_fPollerStarted;   // True once m_pollerThread has been created
+        Volatile<bool>          m_fStopPoller;      // Set to true to ask the poller thread to exit
+#endif // HOST_UNIX
 
         ~ProcessEntry();
     };
+
+#ifdef HOST_UNIX
+    static void *ProcessExitPollerThread(void *arg);
+#endif
 
     ProcessEntry           *m_pProcessList;         // Head of list of currently alive processes (unsorted)
     RSLock                  m_sLock;                // Lock protecting read and write access to the target list
@@ -82,7 +82,7 @@ private:
     ProcessEntry *LocateProcessByPID(DWORD dwPID);
 };
 
-extern DbgTransportTarget *g_pDbgTransportTarget;
+extern DbgTransportTarget g_DbgTransportTarget;
 
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 

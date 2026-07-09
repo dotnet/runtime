@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull, MainToWorkerMessageType } from "./types/internal";
-import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
+import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, mono_assert, browserVirtualAppBase } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -25,9 +25,9 @@ import { mono_log_debug, mono_log_error, mono_log_info, mono_log_warn } from "./
 // threads
 import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
-import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
+import { update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-import { localHeapViewU8, malloc, setU32 } from "./memory";
+import { localHeapViewU8, malloc, setU32, fixupPointer } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
@@ -80,15 +80,15 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
         mono_log_warn(`The threads of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads} is different from the version of dotnet.runtime.js ${WasmEnableThreads}!`);
     }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
-        mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
-        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.featureWasmFinalEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
     module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
-    // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
-    // when user set configSrc or config, we are running our default startup sequence.
+    // these all could be overridden on DotnetModuleConfig, we are chaining them to async below, as opposed to emscripten
+    // when the user sets config, we are running our default startup sequence.
     const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any) = module.instantiateWasm;
     const userPreRun: ((module:EmscriptenModule) => void)[] = !module.preRun ? [] : typeof module.preRun === "function" ? [module.preRun] : module.preRun as any;
     const userpostRun: ((module:EmscriptenModule) => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;
@@ -144,8 +144,10 @@ async function instantiateWasmWorker (
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
     const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
-    successCallback(instance, undefined);
     Module.wasmModule = null;
+
+    successCallback(instance, undefined);
+    preRunWorker();
 }
 
 
@@ -157,7 +159,6 @@ export function preRunWorker () {
         mono_log_debug("preRunWorker");
         init_c_exports();
         cwraps_internal(INTERNAL);
-        jiterpreter_allocate_tables(); // this will return quickly if already allocated
         runtimeHelpers.nativeExit = nativeExit;
         runtimeHelpers.nativeAbort = nativeAbort;
         runtimeHelpers.runtimeReady = true;
@@ -197,6 +198,7 @@ async function preRunAsync (userPreRun: ((module:EmscriptenModule) => void)[]) {
 }
 
 async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:EmscriptenModule) => void) {
+    let keepAlivePushed = false;
     try {
         // wait for previous stage
         await runtimeHelpers.afterPreRun.promise;
@@ -218,25 +220,19 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
-            const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-            try {
-                const wds = FS.stat(cwd);
-                if (!wds) {
-                    Module.FS_createPath("/", cwd, true, true);
-                } else {
-                    mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
-                }
-            } catch (e) {
-                Module.FS_createPath("/", cwd, true, true);
-            }
-            FS.chdir(cwd);
+            FS.createPath("/", browserVirtualAppBase, true, true);
+            FS.createPath("/", runtimeHelpers.config.virtualWorkingDirectory, true, true);
+            FS.chdir(runtimeHelpers.config.virtualWorkingDirectory);
         }
 
         if (runtimeHelpers.config.interpreterPgo)
             setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
 
 
+        // this push is unbalanced for short while until runtimeReady = true. Accepted trade-off.
         Module.runtimeKeepalivePush();
+        keepAlivePushed = true;
+
         if (WasmEnableThreads && BuildConfiguration === "Debug" && globalThis.setInterval) globalThis.setInterval(() => {
             mono_log_info("UI thread is alive!");
         }, 3000);
@@ -300,7 +296,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
         await mono_wasm_after_user_runtime_initialized();
         endMeasure(mark, MeasuredBlock.onRuntimeInitialized);
     } catch (err) {
-        Module.runtimeKeepalivePop();
+        if (keepAlivePushed && !runtimeHelpers.runtimeReady) Module.runtimeKeepalivePop();
         mono_log_error("onRuntimeInitializedAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
@@ -350,7 +346,6 @@ export function postRunWorker () {
 
         // signal next stage
         runtimeHelpers.runtimeReady = false;
-        runtimeHelpers.afterPreRun = createPromiseController<void>();
         endMeasure(mark, MeasuredBlock.postRunWorker);
     } catch (err) {
         mono_log_error("postRunWorker() failed", err);
@@ -429,10 +424,10 @@ async function instantiate_wasm_module (
 async function ensureUsedWasmFeatures () {
     const simd = loaderHelpers.simd();
     const relaxedSimd = loaderHelpers.relaxedSimd();
-    const exceptions = loaderHelpers.exceptions();
+    const exceptions = loaderHelpers.exceptionsFinal();
     runtimeHelpers.featureWasmSimd = await simd;
     runtimeHelpers.featureWasmRelaxedSimd = await relaxedSimd;
-    runtimeHelpers.featureWasmEh = await exceptions;
+    runtimeHelpers.featureWasmFinalEh = await exceptions;
 }
 
 export async function start_runtime () {
@@ -478,7 +473,7 @@ export async function start_runtime () {
             monoThreadInfo.isAttached = true;
             monoThreadInfo.isRunning = true;
             monoThreadInfo.isRegistered = true;
-            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = tcwraps.pthread_self();
             update_thread_info();
             runtimeHelpers.isManagedRunningOnCurrentThread = true;
         }
@@ -594,12 +589,12 @@ export function mono_wasm_asm_loaded (assembly_name: CharPtr, assembly_ptr: numb
         return;
     const heapU8 = localHeapViewU8();
     const assembly_name_str = assembly_name !== CharPtrNull ? utf8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(heapU8.buffer, assembly_ptr, assembly_len);
+    const assembly_data = new Uint8Array(heapU8.buffer, fixupPointer(assembly_ptr, 0), assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
     if (pdb_ptr) {
-        const pdb_data = new Uint8Array(heapU8.buffer, pdb_ptr, pdb_len);
+        const pdb_data = new Uint8Array(heapU8.buffer, fixupPointer(pdb_ptr, 0), pdb_len);
         pdb_b64 = toBase64StringImpl(pdb_data);
     }
 

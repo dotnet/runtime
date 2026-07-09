@@ -155,7 +155,10 @@ namespace System.Net.Test.Common
             }
             catch (Exception)
             {
-                closableWrapper?.Close();
+                if (closableWrapper is not null)
+                {
+                    await closableWrapper.CloseAsync().ConfigureAwait(false);
+                }
                 throw;
             }
         }
@@ -579,25 +582,20 @@ namespace System.Net.Test.Common
             {
                 byte[] buffer = new byte[BufferSize];
                 int offset = 0;
-                int totalLength = 0;
                 int bytesRead;
 
                 do
                 {
                     bytesRead = await ReadAsync(buffer, offset, buffer.Length - offset).ConfigureAwait(false);
-                    totalLength += bytesRead;
                     offset += bytesRead;
 
-                    if (bytesRead == buffer.Length)
+                    if (offset == buffer.Length)
                     {
-                        byte[] newBuffer = new byte[buffer.Length + BufferSize];
-                        buffer.CopyTo(newBuffer, 0);
-                        offset = buffer.Length;
-                        buffer = newBuffer;
+                        Array.Resize(ref buffer, buffer.Length * 2);
                     }
                 } while (bytesRead > 0);
 
-                return System.Text.Encoding.ASCII.GetString(buffer, 0, totalLength);
+                return System.Text.Encoding.ASCII.GetString(buffer, 0, offset);
             }
 
             public string ReadLine()
@@ -628,17 +626,16 @@ namespace System.Net.Test.Common
                         // In either case, read more.
                         if (_readEnd + 2 > _readBuffer.Length)
                         {
-                            // We no longer have space to read CRLF. Allocate new buffer and start over.
-                            byte[] newBuffer = new byte[_readBuffer.Length + BufferSize];
+                            // We no longer have space to read CRLF. Compact and/or grow the buffer.
                             int dataLength = _readEnd - _readStart;
                             if (dataLength > 0)
                             {
-                                Array.Copy(_readBuffer, _readStart, newBuffer, 0, dataLength);
-                                _readStart = 0;
-                                _readEnd = dataLength;
-                                _readBuffer = newBuffer;
-                                startSearch = dataLength;
+                                Array.Copy(_readBuffer, _readStart, _readBuffer, 0, dataLength);
                             }
+                            _readStart = 0;
+                            _readEnd = dataLength;
+                            startSearch = dataLength;
+                            Array.Resize(ref _readBuffer, _readBuffer.Length * 2);
                         }
 
                         int bytesRead = await _stream.ReadAsync(_readBuffer, _readEnd, _readBuffer.Length - _readEnd).ConfigureAwait(false);
@@ -679,7 +676,10 @@ namespace System.Net.Test.Common
                     // This seems to help avoid connection reset issues caused by buffered data
                     // that has not been sent/acked when the graceful shutdown timeout expires.
                     // This may throw if the socket was already closed, so eat any exception.
-                    _socket?.Shutdown(SocketShutdown.Send);
+                    if (_socket is not null)
+                    {
+                        await _socket.ShutdownAsync(SocketShutdown.Send).ConfigureAwait(false);
+                    }
                 }
                 catch (Exception) { }
 

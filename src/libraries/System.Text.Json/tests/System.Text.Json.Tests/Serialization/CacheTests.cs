@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Tests
 
             void DeserializeObjectMinimal()
             {
-                SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""MyDecimal"" : 3.3}", options);
+                SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>("""{"MyDecimal" : 3.3}""", options);
             };
 
             void DeserializeObjectFlipped()

@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
+using TestLibrary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 8, Size = 8)]
 struct MyVector64<T> where T : struct { }
@@ -118,7 +119,6 @@ public unsafe partial class StructPacking
 
     [Fact]
     [SkipOnMono("needs triage")]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/181", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         bool succeeded = true;

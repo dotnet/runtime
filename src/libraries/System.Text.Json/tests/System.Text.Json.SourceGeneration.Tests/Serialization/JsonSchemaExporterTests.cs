@@ -72,6 +72,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(bool?))]
         [JsonSerializable(typeof(int?))]
         [JsonSerializable(typeof(double?))]
+        [JsonSerializable(typeof(float?))]
+#if NET
+        [JsonSerializable(typeof(Half?))]
+#endif
         [JsonSerializable(typeof(Guid?))]
         [JsonSerializable(typeof(JsonElement?))]
         [JsonSerializable(typeof(IntEnum?))]
@@ -87,6 +91,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoWithCustomNaming))]
         [JsonSerializable(typeof(PocoWithCustomNumberHandling))]
         [JsonSerializable(typeof(PocoWithCustomNumberHandlingOnProperties))]
+        [JsonSerializable(typeof(PocoWithNullableFloatingPoint))]
         [JsonSerializable(typeof(PocoWithRecursiveMembers))]
         [JsonSerializable(typeof(PocoWithRecursiveCollectionElement))]
         [JsonSerializable(typeof(PocoWithRecursiveDictionaryValue))]

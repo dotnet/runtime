@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="polyrec.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

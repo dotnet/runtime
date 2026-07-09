@@ -1,11 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Test unsupported outside of windows (type equivalence) -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-  </PropertyGroup>
-  <PropertyGroup>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
@@ -14,5 +8,6 @@
     <ProjectReference Include="base.csproj">
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </ProjectReference>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

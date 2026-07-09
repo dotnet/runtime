@@ -47,6 +47,7 @@ namespace System.Runtime.InteropServices
         public struct ComInterfaceDispatch
         {
             public IntPtr Vtable;
+
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 throw new PlatformNotSupportedException();

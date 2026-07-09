@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
@@ -9,8 +11,10 @@
     <ProjectReference Include="cctor/misc/testlib_misc.csproj" />
     <ProjectReference Include="Boxing/xlang/sinlib_cs.csproj" Aliases="sinlib_cs" />
     <ProjectReference Include="Boxing/xlang/sinlib_il.ilproj" Aliases="sinlib_il" />
+    <ProjectReference Include="int64/unsigned/implicit_promotion_il.ilproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BypassReadyToRunAttribute.cs" />
     <Compile Include="Arrays\lcs\lcs.cs" />
     <Compile Include="Arrays\lcs\lcs2.cs" />
     <Compile Include="Arrays\lcs\lcsbas.cs" />
@@ -81,6 +85,7 @@
     <Compile Include="eh\basics\throwinfinallyerrpathfn.cs" />
     <Compile Include="eh\basics\throwoutside.cs" />
     <Compile Include="eh\basics\trycatch.cs" />
+    <Compile Include="eh\interp\interpr2rfunclets.cs" />
     <Compile Include="eh\basics\trycatchtrycatch.cs" />
     <Compile Include="eh\basics\tryfinally.cs" />
     <Compile Include="eh\basics\tryfinallytrycatch.cs" />
@@ -183,6 +188,7 @@
     <Compile Include="int64\signed\s_muldiv.cs" />
     <Compile Include="int64\superlong\superlong.cs" />
     <Compile Include="int64\unsigned\addsub.cs" />
+    <Compile Include="int64\unsigned\implicit_promotion.cs" />
     <Compile Include="int64\unsigned\ldc_mul.cs" />
     <Compile Include="int64\unsigned\ldc_mulovf.cs" />
     <Compile Include="int64\unsigned\ldfld_mul.cs" />

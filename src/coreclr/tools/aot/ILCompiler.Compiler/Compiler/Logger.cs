@@ -41,6 +41,8 @@ namespace ILCompiler
 
         public bool IsVerbose { get; }
 
+        public bool HasLoggedErrors { get; private set; }
+
         public Logger(
             ILogWriter writer,
             ILProvider ilProvider,
@@ -93,14 +95,22 @@ namespace ILCompiler
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, origin, subcategory);
             if (warning.HasValue)
+            {
+                if (warning.Value.Category == MessageCategory.WarningAsError)
+                    HasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
+            }
         }
 
         public void LogWarning(MessageOrigin origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, origin, id, args);
             if (warning.HasValue)
+            {
+                if (warning.Value.Category == MessageCategory.WarningAsError)
+                    HasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
+            }
         }
 
         public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
@@ -137,14 +147,20 @@ namespace ILCompiler
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(text, code, subcategory, origin);
             if (error.HasValue)
+            {
+                HasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
+            }
         }
 
         public void LogError(MessageOrigin? origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(origin, id, args);
             if (error.HasValue)
+            {
+                HasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
+            }
         }
 
         public void LogError(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
@@ -211,12 +227,18 @@ namespace ILCompiler
         private static string GetModuleFileName(ModuleDesc module)
         {
             string assemblyName = module.Assembly.GetName().Name;
+#if ILTRIM
+            var context = (ILTrimTypeSystemContext)module.Context;
+            if (context.ReferenceFilePaths.TryGetValue(assemblyName, out string result))
+                return result;
+#else
             var context = (CompilerTypeSystemContext)module.Context;
             if (context.ReferenceFilePaths.TryGetValue(assemblyName, out string result)
                 || context.InputFilePaths.TryGetValue(assemblyName, out result))
             {
                 return result;
             }
+#endif
             return assemblyName;
         }
 

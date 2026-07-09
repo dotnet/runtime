@@ -7,6 +7,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Base<T>{}
 
@@ -21,6 +22,7 @@ public class CMain
   		Bar b = new Bar();
 	}
 
+   [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
   	[Fact]
   	public static int TestEntryPoint()
 	{

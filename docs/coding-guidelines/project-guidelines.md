@@ -25,7 +25,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net10.0`
+- `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net11.0`
 - `$(TargetOS) -> windows | linux | osx | freebsd | ... | [defaults to running OS when empty]`
 - `$(Configuration) -> Debug | Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
@@ -59,7 +59,7 @@ A cross-targeting project which targets specific platform with `$(NetCoreAppCurr
 A full or individual project build is centered around BuildTargetFramework, TargetOS, Configuration and TargetArchitecture.
 
 1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(TargetArchitecture)` can individually be passed in to change the default values.
-2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net10.0-[TargetOS Running On]-Debug-x64`.
+2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net11.0-[TargetOS Running On]-Debug-x64`.
 3. When building an individual project (either from the CLI or an IDE), all target frameworks are built.
 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
@@ -192,7 +192,7 @@ The `UseCompilerGeneratedDocXmlFile` property controls how XML documentation fil
 </PropertyGroup>
 ```
 
-Setting `UseCompilerGeneratedDocXmlFile` to `false` is typically done for stable APIs where manually curated documentation exists that should be preferred over compiler-generated documentation.
+See the [Documentation](adding-api-guidelines.md#documentation) section in the API guidelines for more details about the documentation workflow.
 
 If a project sets this to `false` but the Microsoft.Private.Intellisense package doesn't have documentation for the assembly, a warning is shown suggesting to remove the property to let the compiler generate the file.
 

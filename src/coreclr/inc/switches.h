@@ -12,9 +12,6 @@
 
 #define GC_CONFIG_DRIVEN
 
-// define this to test data safety for the DAC. See code:DataTest::TestDataSafety.
-#define TEST_DATA_CONSISTENCY
-
 #if !defined(STRESS_LOG) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #define STRESS_LOG
 #endif
@@ -87,6 +84,10 @@
 #define HAVE_GCCOVER
 #endif
 
+#if defined(_DEBUG)
+#define CDAC_STRESS
+#endif
+
 // Some platforms may see spurious AVs when GcCoverage is enabled because of races.
 // Enable further processing to see if they recur.
 #if defined(HAVE_GCCOVER) && (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
@@ -117,10 +118,6 @@
 #endif // PROFILING_SUPPORTED
 
 #endif // _DEBUG
-
-// MUST NEVER CHECK IN WITH THIS ENABLED.
-// This is just for convenience in doing performance investigations in a checked-out enlistment.
-// #define FEATURE_ENABLE_NO_RANGE_CHECKS
 
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled
@@ -165,12 +162,15 @@
 #define CHAIN_LOOKUP
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-#if !defined(FEATURE_PORTABLE_ENTRYPOINTS) && !defined(TARGET_X86)
+// FEATURE_PORTABLE_SHUFFLE_THUNKS depends on CPUSTUBLINKER that is de-facto JIT
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED) && !defined(TARGET_X86)
 #define FEATURE_PORTABLE_SHUFFLE_THUNKS
 #endif
 
-#if defined(TARGET_UNIX) || !defined(TARGET_X86)
-#define FEATURE_INSTANTIATINGSTUB_AS_IL
+// Dispatch interface calls via resolve helper followed by an indirect call.
+// Slow functional implementation, only used for stress-testing of DOTNET_JitForceControlFlowGuard=1.
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#define FEATURE_RESOLVE_HELPER_DISPATCH
 #endif
 
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior

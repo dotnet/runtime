@@ -1,3 +1,5 @@
+include_directories(${RUNTIME_DIR})
+
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     add_subdirectory(clretwrc)
 endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)

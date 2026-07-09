@@ -2634,10 +2634,8 @@ int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
     }
 }
 
-#ifndef TARGET_WASM
 // Instantiate the encoder so other files can use it
 template class TGcInfoEncoder<TargetGcInfoEncoding>;
-#endif // !TARGET_WASM
 
 #ifdef FEATURE_INTERPRETER
 template class TGcInfoEncoder<InterpreterGcInfoEncoding>;

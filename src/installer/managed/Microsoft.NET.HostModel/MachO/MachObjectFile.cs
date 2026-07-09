@@ -38,6 +38,8 @@ internal unsafe partial class MachObjectFile
 
     internal EmbeddedSignatureBlob? EmbeddedSignatureBlob => _codeSignatureBlob;
 
+    internal MachHeader Header => _header;
+
     private MachObjectFile(
         MachHeader header,
         (LinkEditLoadCommand Command, long FileOffset) codeSignatureLC,
@@ -106,7 +108,7 @@ internal unsafe partial class MachObjectFile
     public bool HasSignature => !_codeSignatureLoadCommand.Command.IsDefault;
 
     /// <summary>
-    /// Adds or replaces the code signature load command and modifies the __LINKEDIT segment size to accomodate the signature.
+    /// Adds or replaces the code signature load command and modifies the __LINKEDIT segment size to accommodate the signature.
     /// Writes the EmbeddedSignature blob to the file.
     /// Returns the new size of the file (the end of the signature blob).
     /// </summary>
@@ -189,19 +191,6 @@ internal unsafe partial class MachObjectFile
         return (MachMagic)magic is MachMagic.MachHeaderCurrentEndian or MachMagic.MachHeaderOppositeEndian
             or MachMagic.MachHeader64CurrentEndian or MachMagic.MachHeader64OppositeEndian
             or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
-    }
-
-    public static bool IsMachOImage(string filePath)
-    {
-        using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
-        {
-            if (reader.BaseStream.Length < 256) // Header size
-            {
-                return false;
-            }
-            uint magic = reader.ReadUInt32();
-            return Enum.IsDefined(typeof(MachMagic), magic);
-        }
     }
 
     /// <summary>
@@ -441,7 +430,7 @@ internal unsafe partial class MachObjectFile
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {
-            // Update the header to accomodate the new code signature load command
+            // Update the header to accommodate the new code signature load command
             _header.NumberOfCommands += 1;
             _header.SizeOfCommands += (uint)sizeof(LinkEditLoadCommand);
             if (_header.SizeOfCommands > _lowestSectionOffset)

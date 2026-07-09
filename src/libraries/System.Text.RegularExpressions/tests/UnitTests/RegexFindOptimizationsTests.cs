@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -120,11 +121,111 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?<=cd)ab", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abc")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        // Capture groups should be transparent to ordinal case-insensitive prefix extraction
+        [InlineData(@"(abc)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        [InlineData(@"\b(in)\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "in")]
+        [InlineData(@"\b(from).+(to)\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "from")]
+        // Partial capture: inner Concatenate not fully consumed, followed by non-letter One('(')
+        [InlineData(@"(abcde|abcfg)\(", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        // Partial capture: inner Concatenate not fully consumed, followed by letter Set([Ee])
+        [InlineData(@"(abc|abd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Adjacent captures: both fully consumed via inner Concatenate recursion, extraction continues across capture boundaries
+        [InlineData(@"(ab)(cd)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        // Non-capture content before capture: tests Set processing then Capture unwrap in same Concatenate iteration
+        [InlineData(@"ab(cd)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        // Single-char capture unwraps to Set (not Concatenate), exercises direct Set handling after Capture unwrap
+        [InlineData(@"a(b)c", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        // Empty capture unwraps to Empty node, which is skipped; extraction continues with subsequent content
+        [InlineData(@"()ab", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Atomic groups inside a Concatenate are unwrapped like Capture (atomicity only affects backtracking, not what's matched)
+        [InlineData(@"ab(?>cd)ef", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcdef")]
+        // Capture wrapping Atomic (and vice versa): while loop peels multiple wrapper layers
+        [InlineData(@"a((?>bc))d", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        [InlineData(@"a(?>(bc))d", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        // Capture containing fixed-count repeater: Setloop with M==N is extractable
+        [InlineData(@"(ab{3}c)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abbbc")]
+        // Alternation branches differing by one trailing character: prefix extraction should include all shared characters
+        [InlineData(@"(?:http|https)://foo", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "http")]
+        [InlineData(@"(?:http|https)://foo", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "http")]
+        // Alternation where shorter branch is just the shared prefix
+        [InlineData(@"(?:ab|abc)d", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Alternation where branches differ by more than one character
+        [InlineData(@"(?:abc|abcdef)g", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        [InlineData(@"(?:abc|abcdef)g", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abc")]
+        // Three-branch alternation with shared prefix and different lengths
+        [InlineData(@"(?:ab|abc|abcd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        [InlineData(@"(?:ab|abc|abcd)e", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
+        // Three-branch alternation with shared prefix and different trailing characters
+        [InlineData(@"(?:ab|abc|abd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        [InlineData(@"(?:ab|abc|abd)e", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
+        // Case-sensitive alternation with branches differing by one (handled by ExtractCommonPrefixText, not Node, but verifies no regression)
+        [InlineData(@"(?:ab|abc)d", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
+        // Four-branch alternation mixing single-node and Concat branches after IgnoreCase prefix extraction
+        [InlineData(@"(?:abc|abcd|abce|abcfg)h", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        [InlineData(@"(?:abc|abcd|abce|abcfg)h", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abc")]
         public void LeadingPrefix(string pattern, int options, int expectedMode, string expectedPrefix)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
             Assert.Equal((FindNextStartingPositionMode)expectedMode, opts.FindMode);
             Assert.Equal(expectedPrefix, opts.LeadingPrefix);
+        }
+
+        [Fact]
+        [OuterLoop("Stress test for deep nesting")]
+        public void LeadingPrefix_DeepCaptureNesting_DoesNotStackOverflow()
+        {
+            // Deeply nested pure captures like (((((...ab...))))) exercise the iterative
+            // Capture-walking loop in FindPrefixOrdinalCaseInsensitive. Verify it doesn't SO.
+            const int Depth = 2000;
+            string pattern = new string('(', Depth) + "ab" + new string(')', Depth);
+            RegexFindOptimizations opts = ComputeOptimizations(pattern, RegexOptions.IgnoreCase);
+            Assert.Equal(FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, opts.FindMode);
+            Assert.Equal("ab", opts.LeadingPrefix);
+        }
+
+        [Theory]
+        [OuterLoop("Stress test for deep nesting")]
+        [InlineData(5, "(", ")")]
+        [InlineData(5_000, "(", ")")]
+        [InlineData(5, "(?>", ")")]
+        [InlineData(5_000, "(?>", ")")]
+        public void LeadingPrefix_InterleavedNesting_DoesNotStackOverflow(int depth, string open, string close)
+        {
+            // Build a pattern that interleaves group and Concatenate nodes, e.g.: (…(ab)ab…)ab
+            // or (?>…(?>ab)ab…)ab. This exercises the recursive unwrapping and inner-Concatenate
+            // recursion in TryGetOrdinalCaseInsensitiveString for both Capture and Atomic groups.
+            // At small depths, extraction should succeed. At very large depths, the stack guard
+            // may bail out, which is fine — the important thing is no crash.
+            var sb = new StringBuilder(depth * (open.Length + close.Length + 2) + 2);
+            for (int i = 0; i < depth; i++)
+            {
+                sb.Append(open);
+            }
+            sb.Append("ab");
+            for (int i = 0; i < depth; i++)
+            {
+                sb.Append(close);
+                sb.Append("ab");
+            }
+
+            string pattern = sb.ToString();
+
+            RegexFindOptimizations opts = ComputeOptimizations(pattern, RegexOptions.IgnoreCase);
+            if (depth <= 5)
+            {
+                // At small depths, extraction must succeed.
+                Assert.Equal(FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, opts.FindMode);
+            }
+            if (opts.FindMode == FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight)
+            {
+                // Each nesting level plus the innermost contributes "ab" to the prefix.
+                var expected = new StringBuilder();
+                for (int i = 0; i <= depth; i++)
+                {
+                    expected.Append("ab");
+                }
+                Assert.Equal(expected.ToString(), opts.LeadingPrefix);
+            }
         }
 
         [Theory]
@@ -138,6 +239,12 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"ab|cd|ef|gh", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "bdfh")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", (int)(RegexOptions.IgnoreCase | RegexOptions.RightToLeft), (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "Cc")]
         [InlineData(@"ab|(abc)|(abcd)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "bcd")]
+        // Non-IgnoreCase Set-node branch: single-node branch after prefix extraction of character class
+        [InlineData(@"(?:[ab][0-9]|[ab])x", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "ab")]
+        // Single-node before Concat branch (reversed order)
+        [InlineData(@"(?:[ab]|[ab][0-9])x", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "ab")]
+        // IgnoreCase Set-node branch: prefix extraction across set-expanded branches
+        [InlineData(@"(?:a|ab)c", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]
         public void LeadingSet(string pattern, int options, int expectedMode, string expectedChars)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
@@ -169,6 +276,24 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(expectedStringComparison, opts.LiteralAfterLoop.Value.Literal.StringComparison);
             Assert.Equal(expectedChar, opts.LiteralAfterLoop.Value.Literal.Char);
             Assert.Equal(expectedSet, opts.LiteralAfterLoop.Value.Literal.Chars);
+        }
+
+        [Theory]
+        // Best FixedDistanceSet has high-frequency chars (avg freq >> 0.6) → LeadingStrings preferred
+        [InlineData(@"abc|def|ghi", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.LeadingStrings_LeftToRight)]
+        [InlineData(@"agggtaaa|tttaccct", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.LeadingStrings_LeftToRight)]
+        // Best FixedDistanceSet has low-frequency chars (avg freq < 0.6) → FixedDistanceSets preferred
+        [InlineData(@"ABC|DEF|GHI", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
+        [InlineData(@"Sherlock|Holmes|Watson|Irene|Adler|John|Baker", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
+        // Best FixedDistanceSet has a single char → IndexOf is faster than multi-string search regardless of frequency
+        [InlineData(@"Sherlock|Street", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
+        // Best FixedDistanceSet has non-ASCII chars → falls through (no frequency data)
+        [InlineData("\u00e9lan|\u00e8re", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
+        // Without Compiled (interpreter), LeadingStrings is not used
+        [InlineData(@"abc|def|ghi", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight)]
+        public void LeadingStrings_FrequencyHeuristic(string pattern, int options, int expectedMode)
+        {
+            Assert.Equal((FindNextStartingPositionMode)expectedMode, ComputeOptimizations(pattern, (RegexOptions)options).FindMode);
         }
 
         [Theory]

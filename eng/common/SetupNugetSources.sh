@@ -40,6 +40,11 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+# This script only consumes helper functions from tools.sh to configure NuGet feeds.
+# Skip importing configure-toolset.sh so that repo-specific toolset setup (e.g. acquiring
+# a bootstrap SDK) is not triggered as a side effect of feed configuration.
+disable_configure_toolset_import=1
+
 . "$scriptroot/tools.sh"
 
 if [ ! -f "$ConfigFile" ]; then
@@ -66,10 +71,8 @@ EnableInternalPackageSource() {
     grep -i "<add key=\"$PackageSourceName\" value=\"true\"" "$ConfigFile" > /dev/null
     if [ "$?" == "0" ]; then
         echo "Enabling internal source '$PackageSourceName'."
-        # Remove the disabled entry
-        local OldDisableValue="<add key=\"$PackageSourceName\" value=\"true\" />"
-        local NewDisableValue="<!-- Reenabled for build : $PackageSourceName -->"
-        sed -i.bak "s|$OldDisableValue|$NewDisableValue|" "$ConfigFile"
+        # Remove the disabled entry (including any surrounding comments or whitespace on the same line)
+        sed -i.bak "/<add key=\"$PackageSourceName\" value=\"true\" \/>/d" "$ConfigFile"
         
         # Add the source name to PackageSources for credential handling
         PackageSources+=("$PackageSourceName")

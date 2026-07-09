@@ -8,6 +8,9 @@
 //    File: /Users/runner/work/1/s/src/coreclr/jit/codegencommon.cpp Line: 133
 
 
+
+namespace Runtime_108609;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

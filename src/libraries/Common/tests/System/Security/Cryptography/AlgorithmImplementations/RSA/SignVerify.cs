@@ -1022,7 +1022,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 modulus2048Signature);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public void VerifyExpectedSignature_PssSha256_RSA16384()
         {
             byte[] modulus2048Signature = (
@@ -1098,7 +1098,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 modulus2048Signature);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public void VerifyExpectedSignature_PssSha384()
         {
             byte[] bigModulusSignature = (
@@ -1337,7 +1337,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsPss))]
+        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
         public void PssSignature_WrongHashAlgorithm()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;
@@ -1350,7 +1350,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsPss))]
+        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PssVerifyHash_MismatchedHashSize()
         {
@@ -1373,7 +1373,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsPss))]
+        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PssSignHash_MismatchedHashSize()
         {
@@ -1397,7 +1397,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsPss))]
+        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
         public void PssSignature_WrongData()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;
@@ -1412,7 +1412,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsPss))]
+        [ConditionalFact(typeof(SignVerify), nameof(SupportsPss))]
         public void PssSignature_WrongLength()
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;

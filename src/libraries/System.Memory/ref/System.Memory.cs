@@ -160,6 +160,34 @@ namespace System.Buffers
         public bool TryReadExact(int count, out System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
     }
 }
+namespace System.Buffers
+{
+    public sealed partial class ReadOnlySequenceStream : System.IO.Stream
+    {
+        public ReadOnlySequenceStream(System.Buffers.ReadOnlySequence<byte> source) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+}
 namespace System.Runtime.InteropServices
 {
     public static partial class SequenceMarshal
@@ -285,6 +313,7 @@ namespace System
         public static bool ContainsAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static bool ContainsAnyWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static void CopyTo<T>(this T[]? source, System.Memory<T> destination) { }
         public static void CopyTo<T>(this T[]? source, System.Span<T> destination) { }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
@@ -353,6 +382,7 @@ namespace System
         public static int IndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int IndexOfAnyExceptWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
@@ -364,6 +394,7 @@ namespace System
         public static int IndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int IndexOfAnyWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static bool IsWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int LastIndexOf(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
@@ -403,6 +434,7 @@ namespace System
         public static int LastIndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int LastIndexOfAnyExceptWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
@@ -414,6 +446,11 @@ namespace System
         public static int LastIndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int LastIndexOfAnyWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
+        public static T? Max<T>(this System.ReadOnlySpan<T> span) { throw null; }
+        public static T? Max<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
+        public static T? Min<T>(this System.ReadOnlySpan<T> span) { throw null; }
+        public static T? Min<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
@@ -574,6 +611,8 @@ namespace System.Buffers.Binary
 {
     public static partial class BinaryPrimitives
     {
+        public static System.Numerics.BFloat16 ReadBFloat16BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Numerics.BFloat16 ReadBFloat16LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static double ReadDoubleBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static double ReadDoubleLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Half ReadHalfBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
@@ -643,6 +682,8 @@ namespace System.Buffers.Binary
         public static void ReverseEndianness(System.ReadOnlySpan<ulong> source, System.Span<ulong> destination) { }
         [System.CLSCompliant(false)]
         public static void ReverseEndianness(System.ReadOnlySpan<ushort> source, System.Span<ushort> destination) { }
+        public static bool TryReadBFloat16BigEndian(System.ReadOnlySpan<byte> source, out System.Numerics.BFloat16 value) { throw null; }
+        public static bool TryReadBFloat16LittleEndian(System.ReadOnlySpan<byte> source, out System.Numerics.BFloat16 value) { throw null; }
         public static bool TryReadDoubleBigEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadDoubleLittleEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadHalfBigEndian(System.ReadOnlySpan<byte> source, out System.Half value) { throw null; }
@@ -679,6 +720,8 @@ namespace System.Buffers.Binary
         public static bool TryReadUIntPtrBigEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryReadUIntPtrLittleEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
+        public static bool TryWriteBFloat16BigEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
+        public static bool TryWriteBFloat16LittleEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
         public static bool TryWriteDoubleBigEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteDoubleLittleEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteHalfBigEndian(System.Span<byte> destination, System.Half value) { throw null; }
@@ -715,6 +758,8 @@ namespace System.Buffers.Binary
         public static bool TryWriteUIntPtrBigEndian(System.Span<byte> destination, nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteUIntPtrLittleEndian(System.Span<byte> destination, nuint value) { throw null; }
+        public static void WriteBFloat16BigEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { }
+        public static void WriteBFloat16LittleEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { }
         public static void WriteDoubleBigEndian(System.Span<byte> destination, double value) { }
         public static void WriteDoubleLittleEndian(System.Span<byte> destination, double value) { }
         public static void WriteHalfBigEndian(System.Span<byte> destination, System.Half value) { }

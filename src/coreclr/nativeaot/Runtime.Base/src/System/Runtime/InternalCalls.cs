@@ -101,7 +101,7 @@ namespace System.Runtime
 
         [RuntimeImport(RuntimeLibrary, "RhpNewArrayFast")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, int length);
+        internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, nint length);
 
 #if FEATURE_64BIT_ALIGNMENT
         [RuntimeImport(RuntimeLibrary, "RhpNewFastAlign8")]
@@ -114,16 +114,12 @@ namespace System.Runtime
 
         [RuntimeImport(RuntimeLibrary, "RhpNewArrayFastAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object RhpNewArrayFastAlign8(MethodTable* pEEType, int length);
+        internal static extern unsafe object RhpNewArrayFastAlign8(MethodTable* pEEType, nint length);
 
         [RuntimeImport(RuntimeLibrary, "RhpNewFastMisalign")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewFastMisalign(MethodTable * pEEType);
 #endif // FEATURE_64BIT_ALIGNMENT
-
-        [RuntimeImport(RuntimeLibrary, "RhpAssignRef")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpAssignRef(ref object? address, object? obj);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpGcSafeZeroMemory")]
@@ -149,18 +145,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
-
-        [RuntimeImport(RuntimeLibrary, "RhpGetDispatchCellInfo")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
-
-        [RuntimeImport(RuntimeLibrary, "RhpSearchDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpSearchDispatchCellCache(IntPtr pCell, MethodTable* pInstanceType);
-
-        [RuntimeImport(RuntimeLibrary, "RhpUpdateDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, MethodTable* pInstanceType, ref DispatchCellInfo newCellInfo);
 
         [RuntimeImport(RuntimeLibrary, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]

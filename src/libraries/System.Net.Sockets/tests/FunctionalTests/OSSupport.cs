@@ -37,6 +37,14 @@ namespace System.Net.Sockets.Tests
             static void RunTest()
             {
                 Assert.False(Socket.OSSupportsIPv6);
+
+                // related to https://github.com/dotnet/runtime/issues/122435
+                var listenSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                listenSocket.DualMode = true;
+
+                listenSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                listenSocket.Listen(1);
+                listenSocket.Close();
             }
         }
 

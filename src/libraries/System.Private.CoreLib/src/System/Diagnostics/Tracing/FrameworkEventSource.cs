@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 {
     [EventSource(Guid = "8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1", Name = "System.Diagnostics.Eventing.FrameworkEventSource")]
-    [EventSourceAutoGenerate]
     internal sealed partial class FrameworkEventSource : EventSource
     {
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
@@ -29,10 +28,6 @@ namespace System.Diagnostics.Tracing
             /// <summary>Send / Receive - begin transfer/end transfer</summary>
             public const EventTask ThreadTransfer = (EventTask)3;
         }
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private FrameworkEventSource(int _) { }
 
         // optimized for common signatures (used by the ThreadTransferSend/Receive events)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

@@ -1214,6 +1214,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        static char IBinaryInteger<char>.Log10(char value) => (char)uint.Log10(value);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         static char IBinaryInteger<char>.PopCount(char value) => (char)BitOperations.PopCount(value);
 
@@ -1251,24 +1254,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(char));
-
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16BigEndian(source.Slice(source.Length - sizeof(char)));
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 
@@ -1301,22 +1295,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(char))
                 {
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<char>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = (char)BinaryPrimitives.ReadUInt16LittleEndian(source);
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = (char)sourceRef;
+                    result = (char)source[0];
                 }
             }
 
@@ -1971,6 +1958,45 @@ namespace System
         static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
+
+        static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        {
+            if (TryParse(s, out result))
+            {
+                charsConsumed = 1;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result, out int charsConsumed)
+        {
+            if (TryParse(s, out result))
+            {
+                charsConsumed = 1;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out char result, out int bytesConsumed)
+        {
+            if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out bytesConsumed) != Buffers.OperationStatus.Done ||
+                bytesConsumed != utf8Text.Length ||
+                !rune.IsBmp)
+            {
+                result = '\0';
+                bytesConsumed = 0;
+                return false;
+            }
+
+            result = (char)rune.Value;
+            return true;
+        }
 
         //
         // IParsable

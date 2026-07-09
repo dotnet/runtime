@@ -3,14 +3,20 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct GC_1 : IGC
+internal struct GC_1 : IGC
 {
     private const uint WRK_HEAP_COUNT = 1;
+
+    // Safety caps to limit traversals in case of memory corruption, matching native DAC.
+    private const int MaxHandleTableRegions = 8192;
+    private const int MaxBookkeepingRegions = 32;
+    private const int MaxSegmentListIterations = 65536;
 
     private enum GCType
     {
@@ -19,11 +25,46 @@ internal readonly struct GC_1 : IGC
         Server,
     }
 
+    private enum HandleType_1
+    {
+        WeakShort = 0,
+        WeakLong = 1,
+        Strong = 2,
+        Pinned = 3,
+        RefCounted = 5,
+        Dependent = 6,
+        WeakInteriorPointer = 10,
+        CrossReference = 11
+    }
+
     private readonly Target _target;
+    private readonly uint _handlesPerBlock;
+    private readonly byte _blockInvalid;
+    private readonly TargetPointer _debugDestroyedHandleValue;
+    private readonly uint _handleMaxInternalTypes;
+    private readonly uint _handleSegmentSize;
+    private readonly uint _heapSegmentFlagsReadonly = 1;
+    private readonly uint _smallObjectHeapAlignment;
+    private readonly uint _largeObjectHeapAlignment = 7;
+
+    private List<AllocContext>? _allocContexts;
+
+    private readonly record struct AllocContext(TargetPointer Pointer, TargetPointer Limit);
+
+    public void Flush()
+    {
+        _allocContexts = null;
+    }
 
     internal GC_1(Target target)
     {
         _target = target;
+        _handlesPerBlock = target.ReadGlobal<uint>(Constants.Globals.HandlesPerBlock);
+        _blockInvalid = target.ReadGlobal<byte>(Constants.Globals.BlockInvalid);
+        _debugDestroyedHandleValue = target.ReadGlobalPointer(Constants.Globals.DebugDestroyedHandleValue);
+        _handleMaxInternalTypes = target.ReadGlobal<uint>(Constants.Globals.HandleMaxInternalTypes);
+        _handleSegmentSize = target.ReadGlobal<uint>(Constants.Globals.HandleSegmentSize);
+        _smallObjectHeapAlignment = (uint)target.PointerSize - 1;
     }
 
     string[] IGC.GetGCIdentifiers()
@@ -142,10 +183,10 @@ internal readonly struct GC_1 : IGC
 
         return new GCHeapData()
         {
-            MarkArray = heap.MarkArray,
-            NextSweepObject = heap.NextSweepObj,
-            BackGroundSavedMinAddress = heap.BackgroundMinSavedAddr,
-            BackGroundSavedMaxAddress = heap.BackgroundMaxSavedAddr,
+            MarkArray = heap.MarkArray ?? TargetPointer.Null,
+            NextSweepObject = heap.NextSweepObj ?? TargetPointer.Null,
+            BackGroundSavedMinAddress = heap.BackgroundMinSavedAddr ?? TargetPointer.Null,
+            BackGroundSavedMaxAddress = heap.BackgroundMaxSavedAddr ?? TargetPointer.Null,
             AllocAllocated = heap.AllocAllocated,
             EphemeralHeapSegment = heap.EphemeralHeapSegment,
             CardTable = heap.CardTable,
@@ -249,6 +290,14 @@ internal readonly struct GC_1 : IGC
             LohP = oomHistory.LohP != 0,
         };
 
+    void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
+    {
+        TargetPointer globalAllocContextAddress = _target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
+        Data.EEAllocContext eeAllocContext = _target.ProcessedData.GetOrAdd<Data.EEAllocContext>(globalAllocContextAddress);
+        allocPtr = eeAllocContext.GCAllocationContext.Pointer;
+        allocLimit = eeAllocContext.GCAllocationContext.Limit;
+    }
+
     private GCType GetGCType()
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
@@ -276,5 +325,622 @@ internal readonly struct GC_1 : IGC
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
         return identifiers.Contains(GCIdentifiers.DynamicHeapCount);
+    }
+
+    List<HandleData> IGC.GetHandles(HandleType[] types)
+    {
+        List<HandleType> typesList = types.ToList();
+        typesList.Sort();
+        List<HandleData> handles = new();
+        TargetPointer handleTableMap = _target.ReadGlobalPointer(Constants.Globals.HandleTableMap);
+        GCType gcType = GetGCType();
+        uint tableCount = gcType switch
+        {
+            GCType.Workstation => 1,
+            GCType.Server => _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.TotalCpuCount)),
+            _ => 0 // unknown
+        };
+        while (handleTableMap != TargetPointer.Null)
+        {
+            Data.HandleTableMap handleTableData = _target.ProcessedData.GetOrAdd<Data.HandleTableMap>(handleTableMap);
+            foreach (TargetPointer bucketPtr in handleTableData.BucketsPtr)
+            {
+                if (bucketPtr == TargetPointer.Null)
+                    continue;
+
+                Data.HandleTableBucket bucket = _target.ProcessedData.GetOrAdd<Data.HandleTableBucket>(bucketPtr);
+                for (uint j = 0; j < tableCount; j++)
+                {
+                    TargetPointer handleTablePtr = _target.ReadPointer(bucket.Table + (ulong)(j * _target.PointerSize));
+                    if (handleTablePtr == TargetPointer.Null)
+                        continue;
+
+                    Data.HandleTable handleTable = _target.ProcessedData.GetOrAdd<Data.HandleTable>(handleTablePtr);
+                    if (handleTable.SegmentList == TargetPointer.Null)
+                        continue;
+                    foreach (HandleType type in typesList)
+                    {
+                        TargetPointer segmentPtr = handleTable.SegmentList;
+                        do
+                        {
+                            Data.TableSegment tableSegment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentPtr);
+                            segmentPtr = tableSegment.NextSegment;
+                            GetHandlesForSegment(tableSegment, type, handles);
+                        } while (segmentPtr != TargetPointer.Null);
+                    }
+                }
+            }
+            handleTableMap = handleTableData.Next;
+        }
+        return handles;
+    }
+
+    IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments(GCHeapData heapData)
+    {
+        // The generation table is laid out as gen0, gen1, gen2, LOH, POH (plus optional extras).
+        IReadOnlyList<GCGenerationData> gens = heapData.GenerationTable;
+        if (gens.Count < 5)
+            throw new InvalidOperationException($"Expected at least 5 generations in the generation table, got {gens.Count}.");
+
+        bool regions = ((IGC)this).GetGCIdentifiers().Contains(GCIdentifiers.Regions);
+
+        TargetPointer ephemeralSegment = heapData.EphemeralHeapSegment;
+        TargetPointer allocAllocated = heapData.AllocAllocated;
+
+        if (regions)
+        {
+            // In regions mode each generation has its own segment list. Readonly entries on the
+            // gen2 list represent non-GC (e.g. frozen) regions and are reported as NonGC.
+            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[2].StartSegment))
+            {
+                GCSegmentClassification type = (seg.Flags.Value & _heapSegmentFlagsReadonly) != 0
+                    ? GCSegmentClassification.NonGC
+                    : GCSegmentClassification.Gen2;
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type);
+            }
+            foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[1].StartSegment))
+            {
+                yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.Gen1);
+            }
+            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gens[0].StartSegment))
+            {
+                // For the gen0 segment that matches the ephemeral_heap_segment, end is alloc_allocated.
+                TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+                yield return new GCHeapSegmentInfo(seg.Mem, end, GCSegmentClassification.Gen0);
+            }
+        }
+        else
+        {
+            // In segments mode the gen2 list contains every SOH segment.
+            foreach ((Data.HeapSegment seg, TargetPointer segAddr) in WalkSegmentList(gens[2].StartSegment))
+            {
+                GCSegmentClassification type;
+                if (segAddr == ephemeralSegment)
+                    type = GCSegmentClassification.Ephemeral;
+                else if ((seg.Flags.Value & _heapSegmentFlagsReadonly) != 0)
+                    type = GCSegmentClassification.NonGC;
+                else
+                    type = GCSegmentClassification.Gen2;
+
+                TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+                yield return new GCHeapSegmentInfo(seg.Mem, end, type);
+            }
+        }
+
+        // Large object heap segments.
+        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[3].StartSegment))
+        {
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.LOH);
+        }
+
+        // Pinned object heap segments.
+        foreach ((Data.HeapSegment seg, TargetPointer _) in WalkSegmentList(gens[4].StartSegment))
+        {
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.POH);
+        }
+    }
+
+    private IEnumerable<(Data.HeapSegment Segment, TargetPointer Address)> WalkSegmentList(TargetPointer startSegment)
+    {
+        int iterationMax = MaxSegmentListIterations;
+        TargetPointer current = startSegment;
+        while (current != TargetPointer.Null)
+        {
+            Data.HeapSegment seg = _target.ProcessedData.GetOrAdd<Data.HeapSegment>(current);
+            yield return (seg, current);
+            current = seg.Next;
+            if (iterationMax-- <= 0)
+                throw new InvalidOperationException($"Segment list exceeded {MaxSegmentListIterations} iterations; possible cycle.");
+        }
+    }
+
+    TargetPointer IGC.GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment)
+    {
+        TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
+
+        if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
+            return next;
+
+        ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
+        foreach (AllocContext context in GetAllocContexts())
+        {
+            if (next == context.Pointer)
+                return new TargetPointer(context.Limit.Value + minObjSize);
+        }
+        return next;
+    }
+
+    private List<AllocContext> GetAllocContexts()
+    {
+        if (_allocContexts is not null)
+            return _allocContexts;
+
+        List<AllocContext> contexts = new();
+
+        IThread thread = _target.Contracts.Thread;
+        ThreadStoreData store = thread.GetThreadStoreData();
+        TargetPointer current = store.FirstThread;
+        int safety = store.ThreadCount;
+        while (current != TargetPointer.Null && safety-- > 0)
+        {
+            ThreadData td = thread.GetThreadData(current);
+            if (td.AllocContextPointer != TargetPointer.Null)
+                contexts.Add(new AllocContext(td.AllocContextPointer, td.AllocContextLimit));
+            current = td.NextThread;
+        }
+
+        IGC gc = _target.Contracts.GC;
+        gc.GetGlobalAllocationContext(out TargetPointer gAllocPtr, out TargetPointer gAllocLimit);
+        if (gAllocPtr != TargetPointer.Null)
+            contexts.Add(new AllocContext(gAllocPtr, gAllocLimit));
+
+        string[] gcIdentifiers = gc.GetGCIdentifiers();
+        IEnumerable<GCHeapData> heaps = gcIdentifiers.Contains(GCIdentifiers.Workstation)
+            ? new[] { gc.GetHeapData() }
+            : EnumerateServerHeaps(gc);
+        foreach (GCHeapData heap in heaps)
+        {
+            if (heap.GenerationTable.Count > 0)
+            {
+                TargetPointer ptr = heap.GenerationTable[0].AllocationContextPointer;
+                TargetPointer limit = heap.GenerationTable[0].AllocationContextLimit;
+                if (ptr != TargetPointer.Null)
+                    contexts.Add(new AllocContext(ptr, limit));
+            }
+        }
+
+        _allocContexts = contexts;
+        return contexts;
+    }
+
+    private static IEnumerable<GCHeapData> EnumerateServerHeaps(IGC gc)
+    {
+        foreach (TargetPointer heapAddress in gc.GetGCHeaps())
+            yield return gc.GetHeapData(heapAddress);
+    }
+
+    ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)
+    {
+        return generation is GCSegmentClassification.LOH or GCSegmentClassification.POH
+            ? AlignForLargeObject(size)
+            : AlignForSmallObject(size);
+    }
+
+    // SOH alignment: pointer-sized (4 on 32-bit, 8 on 64-bit). Mirrors gcpriv.h Align().
+    private ulong AlignForSmallObject(ulong size)
+    {
+        return (size + _smallObjectHeapAlignment) & ~_smallObjectHeapAlignment;
+    }
+
+    // LOH/POH alignment: always 8-byte. Mirrors dacimpl.h DacHeapWalker::AlignLarge().
+    private ulong AlignForLargeObject(ulong size) => (size + _largeObjectHeapAlignment) & ~_largeObjectHeapAlignment;
+
+    HandleType[] IGC.GetSupportedHandleTypes()
+    {
+        List<HandleType> supportedTypes =
+        [
+            HandleType.WeakShort,
+            HandleType.WeakLong,
+            HandleType.Strong,
+            HandleType.Pinned,
+            HandleType.Dependent,
+            HandleType.WeakInteriorPointer
+        ];
+        IFeatureFlags featureFlags = _target.Contracts.FeatureFlags;
+        if (featureFlags.IsEnabled(RuntimeFeature.COMInterop) || featureFlags.IsEnabled(RuntimeFeature.ComWrappers) || featureFlags.IsEnabled(RuntimeFeature.ObjCMarshal))
+        {
+            supportedTypes.Add(HandleType.RefCounted);
+        }
+        if (featureFlags.IsEnabled(RuntimeFeature.JavaMarshal))
+        {
+            supportedTypes.Add(HandleType.CrossReference);
+        }
+        return supportedTypes.ToArray();
+    }
+
+    HandleType[] IGC.GetHandleTypes(uint[] types)
+    {
+        List<HandleType> handleTypes = new();
+        foreach (uint type in types)
+        {
+            if (type >= _handleMaxInternalTypes)
+                continue;
+
+            HandleType? mappedType = type switch
+            {
+                (uint)HandleType_1.WeakShort => HandleType.WeakShort,
+                (uint)HandleType_1.WeakLong => HandleType.WeakLong,
+                (uint)HandleType_1.Strong => HandleType.Strong,
+                (uint)HandleType_1.Pinned => HandleType.Pinned,
+                (uint)HandleType_1.RefCounted => HandleType.RefCounted,
+                (uint)HandleType_1.Dependent => HandleType.Dependent,
+                (uint)HandleType_1.WeakInteriorPointer => HandleType.WeakInteriorPointer,
+                (uint)HandleType_1.CrossReference => HandleType.CrossReference,
+                _ => null,
+            };
+
+            if (mappedType is HandleType concreteType)
+            {
+                handleTypes.Add(concreteType);
+            }
+        }
+        return handleTypes.ToArray();
+    }
+
+    private static uint GetInternalHandleType(HandleType type)
+    {
+        return type switch
+        {
+            HandleType.WeakShort => (uint)HandleType_1.WeakShort,
+            HandleType.WeakLong => (uint)HandleType_1.WeakLong,
+            HandleType.Strong => (uint)HandleType_1.Strong,
+            HandleType.Pinned => (uint)HandleType_1.Pinned,
+            HandleType.Dependent => (uint)HandleType_1.Dependent,
+            HandleType.WeakInteriorPointer => (uint)HandleType_1.WeakInteriorPointer,
+            HandleType.RefCounted => (uint)HandleType_1.RefCounted,
+            HandleType.CrossReference => (uint)HandleType_1.CrossReference,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+    }
+
+    private void GetHandlesForSegment(Data.TableSegment tableSegment, HandleType type, List<HandleData> handles)
+    {
+        Debug.Assert(GetInternalHandleType(type) < _handleMaxInternalTypes);
+        byte uBlock = tableSegment.RgTail[(int)GetInternalHandleType(type)];
+        if (uBlock == _blockInvalid)
+            return;
+        uBlock = tableSegment.RgAllocation[uBlock];
+        byte uHead = uBlock;
+        // for each block in the segment for the given handle type
+        do
+        {
+            GetHandlesForBlock(tableSegment, uBlock, type, handles);
+            uBlock = tableSegment.RgAllocation[uBlock];
+        } while (uBlock != uHead);
+    }
+
+    private void GetHandlesForBlock(Data.TableSegment tableSegment, byte uBlock, HandleType type, List<HandleData> handles)
+    {
+        for (uint k = 0; k < _handlesPerBlock; k++)
+        {
+            uint offset = uBlock * _handlesPerBlock + k;
+            TargetPointer handleAddress = tableSegment.RgValue + offset * (uint)_target.PointerSize;
+            TargetPointer handle = _target.ReadPointer(handleAddress);
+            if (handle == TargetPointer.Null || handle == _debugDestroyedHandleValue)
+                continue;
+            handles.Add(CreateHandleData(handleAddress, uBlock, k, tableSegment, type));
+        }
+    }
+
+    private static bool IsStrongReference(HandleType type) => type == HandleType.Strong || type == HandleType.Pinned;
+    private static bool HasSecondary(HandleType type) => type == HandleType.Dependent || type == HandleType.WeakInteriorPointer || type == HandleType.CrossReference;
+    private static bool IsRefCounted(HandleType type) => type == HandleType.RefCounted;
+
+    private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, uint intraBlockIndex, Data.TableSegment tableSegment, HandleType type)
+    {
+        HandleData handleData = default;
+        handleData.Handle = handleAddress;
+        handleData.Type = GetInternalHandleType(type);
+        handleData.JupiterRefCount = 0;
+        handleData.IsPegged = false;
+        handleData.StrongReference = IsStrongReference(type);
+        if (HasSecondary(type))
+        {
+            byte blockIndex = tableSegment.RgUserData[uBlock];
+            if (blockIndex == _blockInvalid)
+                handleData.Secondary = 0;
+            else
+            {
+                uint offset = blockIndex * _handlesPerBlock + intraBlockIndex;
+                handleData.Secondary = _target.ReadPointer(tableSegment.RgValue + offset * (uint)_target.PointerSize);
+            }
+        }
+        else
+        {
+            handleData.Secondary = 0;
+        }
+
+        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop) && IsRefCounted(type))
+        {
+            IObject obj = _target.Contracts.Object;
+            TargetPointer handle = _target.ReadPointer(handleAddress);
+            obj.GetBuiltInComData(handle, out _, out TargetPointer ccw, out _);
+            if (ccw != TargetPointer.Null)
+            {
+                IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;
+                SimpleComCallWrapperData sccwData = builtInCOM.GetSimpleComCallWrapperData(ccw);
+                handleData.RefCount = (uint)sccwData.RefCount;
+                handleData.StrongReference = handleData.StrongReference || (handleData.RefCount > 0 && !sccwData.IsHandleWeak);
+            }
+        }
+
+        return handleData;
+    }
+
+    IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
+    {
+        List<GCMemoryRegionData> regions = new();
+        uint handleSegmentSize = _handleSegmentSize;
+        uint tableCount = GetGCType() switch
+        {
+            GCType.Workstation => 1,
+            GCType.Server => _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.TotalCpuCount)),
+            _ => 0
+        };
+
+        int maxRegions = MaxHandleTableRegions;
+        TargetPointer handleTableMap = _target.ReadGlobalPointer(Constants.Globals.HandleTableMap);
+        while (handleTableMap != TargetPointer.Null && maxRegions > 0)
+        {
+            Data.HandleTableMap map = _target.ProcessedData.GetOrAdd<Data.HandleTableMap>(handleTableMap);
+            foreach (TargetPointer bucketPtr in map.BucketsPtr)
+            {
+                if (bucketPtr == TargetPointer.Null)
+                    continue;
+
+                Data.HandleTableBucket bucket = _target.ProcessedData.GetOrAdd<Data.HandleTableBucket>(bucketPtr);
+                for (uint j = 0; j < tableCount; j++)
+                {
+                    TargetPointer handleTablePtr = _target.ReadPointer(bucket.Table + (ulong)(j * _target.PointerSize));
+                    if (handleTablePtr == TargetPointer.Null)
+                        continue;
+
+                    Data.HandleTable handleTable = _target.ProcessedData.GetOrAdd<Data.HandleTable>(handleTablePtr);
+                    if (handleTable.SegmentList == TargetPointer.Null)
+                        continue;
+
+                    TargetPointer segmentPtr = handleTable.SegmentList;
+                    TargetPointer firstSegment = segmentPtr;
+                    int segmentIterations = MaxSegmentListIterations;
+                    do
+                    {
+                        Data.TableSegment segment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentPtr);
+                        regions.Add(new GCMemoryRegionData
+                        {
+                            Start = segmentPtr,
+                            Size = handleSegmentSize,
+                            Heap = (int)j,
+                        });
+                        segmentPtr = segment.NextSegment;
+                    } while (segmentPtr != TargetPointer.Null && segmentPtr != firstSegment && --segmentIterations > 0);
+                }
+            }
+            handleTableMap = map.Next;
+            maxRegions--;
+        }
+
+        return regions;
+    }
+
+    IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
+    {
+        List<GCMemoryRegionData> regions = new();
+
+        TargetPointer bookkeepingStartGlobal = _target.ReadGlobalPointer(Constants.Globals.BookkeepingStart);
+        if (bookkeepingStartGlobal == TargetPointer.Null)
+            throw new InvalidOperationException("BookkeepingStart global pointer is null");
+
+        TargetPointer bookkeepingStart = _target.ReadPointer(bookkeepingStartGlobal);
+        if (bookkeepingStart == TargetPointer.Null)
+            throw new InvalidOperationException("bookkeeping_start is null");
+
+        uint cardTableInfoSize = _target.ReadGlobal<uint>(Constants.Globals.CardTableInfoSize);
+        Data.CardTableInfo cardTableInfo = _target.ProcessedData.GetOrAdd<Data.CardTableInfo>(bookkeepingStart);
+
+        if (cardTableInfo.Recount != 0 && cardTableInfo.Size.Value != 0)
+        {
+            regions.Add(new GCMemoryRegionData
+            {
+                Start = bookkeepingStart,
+                Size = cardTableInfo.Size.Value,
+            });
+        }
+
+        TargetPointer next = cardTableInfo.NextCardTable;
+        TargetPointer firstNext = next;
+        int maxRegions = MaxBookkeepingRegions;
+
+        // This comparison guards against underflow when subtracting cardTableInfoSize from `next`.
+        // If `next` is a corrupted or small value, the subtraction would underflow.
+        // This matches the native DAC: `while (next > card_table_info_size)`.
+        while (next != TargetPointer.Null && next > cardTableInfoSize && maxRegions > 0)
+        {
+            TargetPointer ctAddr = next - cardTableInfoSize;
+            Data.CardTableInfo ct = _target.ProcessedData.GetOrAdd<Data.CardTableInfo>(ctAddr);
+
+            if (ct.Recount != 0 && ct.Size.Value != 0)
+            {
+                regions.Add(new GCMemoryRegionData
+                {
+                    Start = ctAddr,
+                    Size = ct.Size.Value,
+                });
+            }
+
+            next = ct.NextCardTable;
+            if (next == firstNext)
+                break;
+
+            maxRegions--;
+        }
+
+        return regions;
+    }
+
+    IReadOnlyList<GCMemoryRegionData> IGC.GetGCFreeRegions()
+    {
+        List<GCMemoryRegionData> regions = new();
+
+        // CountFreeRegionKinds and RegionFreeList are only available on regions GC builds.
+        // On segment GC builds, we still enumerate freeable segments (BACKGROUND_GC).
+        int countFreeRegionKinds = 0;
+        uint regionFreeListSize = 0;
+        if (_target.TryReadGlobal<uint>(Constants.Globals.CountFreeRegionKinds, out uint? freeRegionKindsValue))
+        {
+            countFreeRegionKinds = Math.Min((int)freeRegionKindsValue.Value, 16);
+            regionFreeListSize = _target.GetTypeInfo(DataType.RegionFreeList).Size
+                ?? throw new InvalidOperationException("RegionFreeList type has no size");
+        }
+
+        // Global free huge regions
+        if (_target.TryReadGlobalPointer(Constants.Globals.GlobalFreeHugeRegions, out TargetPointer? globalFreeHugePtr))
+        {
+            AddFreeList(globalFreeHugePtr.Value, FreeRegionKind.FreeGlobalHugeRegion, regions);
+        }
+
+        // Global regions to decommit
+        if (_target.TryReadGlobalPointer(Constants.Globals.GlobalRegionsToDecommit, out TargetPointer? globalDecommitPtr))
+        {
+            for (int i = 0; i < countFreeRegionKinds; i++)
+            {
+                TargetPointer listAddr = globalDecommitPtr.Value + (ulong)(i * regionFreeListSize);
+                AddFreeList(listAddr, FreeRegionKind.FreeGlobalRegion, regions);
+            }
+        }
+
+        if (GetGCType() == GCType.Server)
+        {
+            uint heapCount = ((IGC)this).GetGCHeapCount();
+            TargetPointer heapTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.Heaps));
+            for (uint i = 0; i < heapCount; i++)
+            {
+                TargetPointer heapAddress = _target.ReadPointer(heapTable + (i * (uint)_target.PointerSize));
+                if (heapAddress == TargetPointer.Null)
+                    continue;
+
+                Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(heapAddress);
+
+                if (heap.FreeRegions is TargetPointer freeRegionsBase && freeRegionsBase != TargetPointer.Null)
+                {
+                    for (int j = 0; j < countFreeRegionKinds; j++)
+                    {
+                        TargetPointer listAddr = freeRegionsBase + (ulong)(j * regionFreeListSize);
+                        AddFreeList(listAddr, FreeRegionKind.FreeRegion, regions, (int)i);
+                    }
+                }
+
+                if (heap.FreeableSohSegment is TargetPointer freeableSoh && freeableSoh != TargetPointer.Null)
+                    AddSegmentList(freeableSoh, FreeRegionKind.FreeSohSegment, regions, (int)i);
+
+                if (heap.FreeableUohSegment is TargetPointer freeableUoh && freeableUoh != TargetPointer.Null)
+                    AddSegmentList(freeableUoh, FreeRegionKind.FreeUohSegment, regions, (int)i);
+            }
+        }
+        else
+        {
+            // Workstation GC: free regions from globals
+            if (_target.TryReadGlobalPointer(Constants.Globals.GCHeapFreeRegions, out TargetPointer? freeRegionsPtr))
+            {
+                for (int i = 0; i < countFreeRegionKinds; i++)
+                {
+                    TargetPointer listAddr = freeRegionsPtr.Value + (ulong)(i * regionFreeListSize);
+                    AddFreeList(listAddr, FreeRegionKind.FreeRegion, regions);
+                }
+            }
+
+            if (_target.TryReadGlobalPointer(Constants.Globals.GCHeapFreeableSohSegment, out TargetPointer? freeableSohPtr))
+            {
+                TargetPointer segPtr = _target.ReadPointer(freeableSohPtr.Value);
+                if (segPtr != TargetPointer.Null)
+                    AddSegmentList(segPtr, FreeRegionKind.FreeSohSegment, regions);
+            }
+
+            if (_target.TryReadGlobalPointer(Constants.Globals.GCHeapFreeableUohSegment, out TargetPointer? freeableUohPtr))
+            {
+                TargetPointer segPtr = _target.ReadPointer(freeableUohPtr.Value);
+                if (segPtr != TargetPointer.Null)
+                    AddSegmentList(segPtr, FreeRegionKind.FreeUohSegment, regions);
+            }
+        }
+
+        return regions;
+    }
+
+    TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
+    {
+        // Compute the segment base address by aligning the handle address down to the segment size.
+        // Segments are always allocated aligned to HandleSegmentSize.
+        ulong segmentMask = ~((ulong)_handleSegmentSize - 1);
+        TargetPointer segmentBase = handle & segmentMask;
+
+        Data.TableSegment tableSegment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentBase);
+
+        // The RgValue offset within the segment equals the header size.
+        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.TableSegment);
+        uint rgValueOffset = (uint)typeInfo.Fields[nameof(Data.TableSegment.RgValue)].Offset;
+
+        // Compute the handle index within the segment's value area.
+        uint handleIndex = (uint)((ulong)(handle - segmentBase) - rgValueOffset) / (uint)_target.PointerSize;
+
+        uint block = handleIndex / _handlesPerBlock;
+        uint intraBlockIndex = handleIndex % _handlesPerBlock;
+
+        byte userDataBlock = tableSegment.RgUserData[block];
+        if (userDataBlock == _blockInvalid)
+            return new TargetNUInt(0);
+
+        uint offset = userDataBlock * _handlesPerBlock + intraBlockIndex;
+        TargetPointer extraInfoAddress = tableSegment.RgValue + offset * (uint)_target.PointerSize;
+
+        return _target.ReadNUInt(extraInfoAddress);
+    }
+
+    private void AddFreeList(TargetPointer freeListAddr, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+    {
+        Data.RegionFreeList freeList = _target.ProcessedData.GetOrAdd<Data.RegionFreeList>(freeListAddr);
+        if (freeList.HeadFreeRegion != TargetPointer.Null)
+            AddSegmentList(freeList.HeadFreeRegion, kind, regions, heap);
+    }
+
+    private void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+    {
+        int iterationMax = MaxSegmentListIterations;
+        TargetPointer curr = start;
+        while (curr != TargetPointer.Null)
+        {
+            Data.HeapSegment segment = _target.ProcessedData.GetOrAdd<Data.HeapSegment>(curr);
+            if (segment.Mem != TargetPointer.Null)
+            {
+                ulong size = 0;
+                if (segment.Mem < segment.Committed)
+                    size = segment.Committed - segment.Mem;
+                regions.Add(new GCMemoryRegionData
+                {
+                    Start = segment.Mem,
+                    Size = size,
+                    ExtraData = (ulong)kind,
+                    Heap = heap,
+                });
+            }
+
+            curr = segment.Next;
+            if (curr == start)
+                break;
+            if (iterationMax-- <= 0)
+                break;
+        }
     }
 }

@@ -63,20 +63,17 @@ public:
     virtual void AppDomainCreated(AppDomain * pAppDomain) = 0;
 
     // Called when a module is being loaded into an AppDomain.
-    // This includes when a domain neutral module is loaded into a new AppDomain.
     // This is called only when a debugger is attached, and will occur after the
     // related LoadAssembly calls and before any
     // LoadClass calls for this module.
     virtual void LoadModule(Module *     pRuntimeModule,  // the module being loaded
                             LPCWSTR      psModuleName,    // module file name
-                            DWORD        dwModuleName,    // number of characters in file name excludign null
+                            DWORD        dwModuleName,    // number of characters in file name excluding null
                             Assembly *   pAssembly,       // the assembly the module belongs to
-                            DomainAssembly * pDomainAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
 
     // Called for all modules in an AppDomain when the AppDomain is unloaded.
-    // This includes domain neutral modules that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // calls and before any UnloadAssembly or RemoveAppDomainFromIPCBlock calls realted
     // to this module.  On CLR shutdown, we are not guaranteed to get UnloadModule calls for
@@ -248,24 +245,9 @@ public:
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
-    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
-
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    virtual void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    ) = 0;
+    virtual void SendCustomDebuggerNotification(Thread * pThread, Assembly * pAssembly, mdTypeDef classToken) = 0;
 
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
-
-    virtual void SendLogSwitchSetting (int iLevel,
-                                       int iReason,
-                                       _In_z_ LPCWSTR pLogSwitchName,
-                                       _In_z_ LPCWSTR pParentSwitchName) = 0;
 
     virtual bool IsLoggingEnabled (void) = 0;
 
@@ -292,12 +274,11 @@ public:
     virtual DWORD GetHelperThreadID(void ) = 0;
 
     // Called for all assemblies in an AppDomain when the AppDomain is unloaded.
-    // This includes domain neutral assemblies that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // and UnloadModule calls and before any RemoveAppDomainFromIPCBlock calls realted
     // to this assembly.  On CLR shutdown, we are not guaranteed to get UnloadAssembly calls for
     // all outstanding loaded assemblies.
-    virtual void UnloadAssembly(DomainAssembly * pDomainAssembly) = 0;
+    virtual void UnloadAssembly(Assembly * pAssembly) = 0;
 
     virtual HRESULT SetILInstrumentedCodeMap(MethodDesc *fd,
                                              BOOL fStartJit,
@@ -358,10 +339,9 @@ public:
     // and with whatever granularity (per-module, per-class, per-function, etc).
     virtual DWORD* GetJMCFlagAddr(Module * pModule) = 0;
 
-    // notification for SQL fiber debugging support
-    virtual void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName) = 0;
-    virtual void DestroyConnection(CONNID dwConnectionId) = 0;
-    virtual void ChangeConnection(CONNID dwConnectionId) = 0;
+    // Returns true if any stepper/controller has enabled method-enter callbacks.
+    // Used by the interpreter to avoid calling OnMethodEnter when not stepping.
+    virtual bool IsMethodEnterEnabled() = 0;
 
     //
     // This function is used to identify the helper thread.
@@ -398,6 +378,10 @@ public:
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
     virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
     virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
+    virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;
+
+    virtual void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread) = 0;
+
 #endif //DACCESS_COMPILE
 };
 

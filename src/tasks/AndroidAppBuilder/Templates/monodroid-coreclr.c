@@ -190,6 +190,7 @@ mono_droid_runtime_init (const char* executable)
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
+    setenv ("DOTNET_CrashReportBeforeSignalChaining", "1", true);
 
     if (bundle_executable_path(executable, g_bundle_path, &g_executable_path) < 0)
     {

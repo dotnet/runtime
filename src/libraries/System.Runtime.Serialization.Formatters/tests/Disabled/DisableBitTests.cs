@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         private const string MoreInfoUrl = "https://aka.ms/binaryformatter";
 
-        [ConditionalFact(nameof(IsBinaryFormatterSuppressedOnThisPlatform))]
+        [ConditionalFact(typeof(DisableBitTests), nameof(IsBinaryFormatterSuppressedOnThisPlatform))]
         public static void DisabledAlwaysInBrowser()
         {
             // First, test serialization
@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
         }
 
-        [ConditionalFact(nameof(ShouldRunFullFeatureSwitchEnablementChecks))]
+        [ConditionalFact(typeof(DisableBitTests), nameof(ShouldRunFullFeatureSwitchEnablementChecks))]
         public static void EnabledThroughFeatureSwitch()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             RunRemoteTest(options, TestConfiguration.IsBinaryFormatterSupported);
         }
 
-        [ConditionalFact(nameof(ShouldRunFullFeatureSwitchEnablementChecks))]
+        [ConditionalFact(typeof(DisableBitTests), nameof(ShouldRunFullFeatureSwitchEnablementChecks))]
         public static void DisabledThroughFeatureSwitch()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();

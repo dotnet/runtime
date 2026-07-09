@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         private readonly FileInfo _fileInfo;
 
         /// <summary>
-        /// Initializes instance of <see cref="FileInfoWrapper" /> to wrap the specified object <see cref="System.IO.FileInfo" />.
+        /// Initializes a new instance of the <see cref="FileInfoWrapper" /> class to wrap the specified <see cref="System.IO.FileInfo" />.
         /// </summary>
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo" /></param>
         public FileInfoWrapper(FileInfo fileInfo)
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// The full path of the file. (Overrides <see cref="FileSystemInfoBase.FullName" />).
         /// </summary>
         /// <remarks>
-        /// Equals the value of <see cref="System.IO.FileSystemInfo.Name" />.
+        /// Equals the value of <see cref="System.IO.FileSystemInfo.FullName" />.
         /// </remarks>
         public override string FullName => _fileInfo.FullName;
 

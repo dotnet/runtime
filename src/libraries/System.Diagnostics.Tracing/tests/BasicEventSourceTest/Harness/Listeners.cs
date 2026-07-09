@@ -11,27 +11,69 @@ using Xunit;
 namespace BasicEventSourceTests
 {
     /// <summary>
-    /// A listener can represent an out of process ETW listener (real time or not) or an EventListener
+    /// A listener can represent an out of process ETW listener (real time or not), an EventPipe listener, or an EventListener
     /// </summary>
     public abstract class Listener : IDisposable
     {
         public Action<Event> OnEvent;           // Called when you get events.
         public abstract void Dispose();
+
         /// <summary>
-        /// Send a command to an eventSource.   Be careful this is async.  You may wish to do a WaitForEnable
+        /// Send a command to an eventSource. If this is called before Start(), the command will be queued. If called after Start()
+        /// it will throw if !IsDynamicConfigChangeSupported
         /// </summary>
         public abstract void EventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null);
 
+        /// <summary>
+        /// Start listening for events
+        /// </summary>
+        public abstract void Start();
+
+        /// <summary>
+        /// True if this listener supports dynamic config changes (i.e. EventSourceCommand) after Start() has been called.
+        /// ETW and EventListener support this, EventPipe does not.
+        /// </summary>
+        public abstract bool IsDynamicConfigChangeSupported { get; }
+
+        /// <summary>
+        /// Does this listener support nullable types in event payloads for self-describing EventSources?
+        /// Ideally all of them would but EventPipe NetTrace V5 format can't emit the metadata for a Boolean8 HasValue field that self-describing events use.
+        /// </summary>
+        public virtual bool IsSelfDescribingNullableSupported { get { return true; } }
+
+        /// <summary>
+        /// The TraceLogging serializer doesn't support null arguments in self-describing events.
+        /// (Sigh, ideally all of them would behave the same way but EventListener does support this and for backwards compatibility we aren't going to change it)
+        /// </summary>
+        public virtual bool IsSelfDescribingNullArgSupported { get { return false; } }
+
+        public virtual bool IsEventPipe { get { return false; } }
+
         public void EventSourceSynchronousEnable(EventSource eventSource, FilteringOptions options = null)
         {
-            EventSourceCommand(eventSource.Name, EventCommand.Enable, options);
-            WaitForEnable(eventSource);
-        }
-        public void WaitForEnable(EventSource logger)
-        {
-            if (!SpinWait.SpinUntil(() => logger.IsEnabled(), TimeSpan.FromSeconds(10)))
+            if (!IsDynamicConfigChangeSupported)
             {
-                throw new InvalidOperationException("EventSource not enabled after 5 seconds");
+                throw new InvalidOperationException("This listener does not support dynamic config changes");
+            }
+            EventSourceCommand(eventSource.Name, EventCommand.Enable, options);
+            WaitForEventSourceStateChange(eventSource, true);
+        }
+
+        public void EventSourceSynchronousDisable(EventSource eventSource)
+        {
+            if (!IsDynamicConfigChangeSupported)
+            {
+                throw new InvalidOperationException("This listener does not support dynamic config changes");
+            }
+            EventSourceCommand(eventSource.Name, EventCommand.Disable);
+            WaitForEventSourceStateChange(eventSource, false);
+        }
+
+        public void WaitForEventSourceStateChange(EventSource logger, bool targetState)
+        {
+            if (!SpinWait.SpinUntil(() => logger.IsEnabled() == targetState, TimeSpan.FromSeconds(10)))
+            {
+                throw new InvalidOperationException("EventSource not enabled after 10 seconds");
             }
         }
 
@@ -65,8 +107,12 @@ namespace BasicEventSourceTests
     /// </summary>
     public abstract class Event
     {
-        public virtual bool IsEtw { get { return false; } }
         public virtual bool IsEventListener { get { return false; } }
+        // Note: Observationally I am seeing that EventListener events treat enum values differently in the WriteEvent vs. Write case but
+        // I'm not sure whether that is the determining factor or its just correlated with other details of how the tests are emitting the events.
+        public virtual bool IsEnumValueStronglyTyped(bool selfDescribing, bool writeEvent) => false;
+
+        public virtual bool IsSizeAndPointerCoallescedIntoSingleArg => false;
         public abstract string ProviderName { get; }
         public abstract string EventName { get; }
         public abstract object PayloadValue(int propertyIndex, string propertyName);
@@ -80,13 +126,13 @@ namespace BasicEventSourceTests
                 StringBuilder sb = new StringBuilder();
                 sb.Append("{");
                 bool first = true;
-                foreach (var key in asDict.Keys)
+                foreach (var keyValue in asDict)
                 {
                     if (!first)
                         sb.Append(",");
                     first = false;
-                    var value = asDict[key];
-                    sb.Append(key).Append(":").Append(value != null ? value.ToString() : "NULL");
+                    var value = keyValue.Value;
+                    sb.Append(keyValue.Key).Append(":").Append(value != null ? value.ToString() : "NULL");
                 }
                 sb.Append("}");
                 return sb.ToString();
@@ -131,6 +177,8 @@ namespace BasicEventSourceTests
         private EventListener _listener;
         private Action<EventSource> _onEventSourceCreated;
 
+        public override bool IsSelfDescribingNullArgSupported => true;
+
         public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated
         {
             add
@@ -161,7 +209,13 @@ namespace BasicEventSourceTests
 
         public EventListenerListener(bool useEventsToListen = false)
         {
-            if (useEventsToListen)
+            _useEventsToListen = useEventsToListen;
+            _pendingCommands = new List<(string eventSourceName, EventCommand command, FilteringOptions options)>();
+        }
+
+        public override void Start()
+        {
+            if (_useEventsToListen)
             {
                 _listener = new HelperEventListener(null);
                 _listener.EventSourceCreated += (sender, eventSourceCreatedEventArgs)
@@ -172,7 +226,13 @@ namespace BasicEventSourceTests
             {
                 _listener = new HelperEventListener(this);
             }
+            foreach (var cmd in _pendingCommands)
+            {
+                ApplyEventSourceCommand(cmd.eventSourceName, cmd.command, cmd.options);
+            }
         }
+
+        public override bool IsDynamicConfigChangeSupported => true;
 
         public override void Dispose()
         {
@@ -198,6 +258,18 @@ namespace BasicEventSourceTests
 
         public override void EventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null)
         {
+            if (_listener == null)
+            {
+                _pendingCommands.Add((eventSourceName, command, options));
+            }
+            else
+            {
+                ApplyEventSourceCommand(eventSourceName, command, options);
+            }
+        }
+
+        private void ApplyEventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null)
+        {
             EventTestHarness.LogWriteLine("Sending command {0} to EventSource {1} Options {2}", eventSourceName, command, options);
 
             if (options == null)
@@ -221,6 +293,8 @@ namespace BasicEventSourceTests
                 }
             };
         }
+
+        public override string ToString() => $"EventListener(UseEventsToListen={_useEventsToListen})";
 
         private void mListenerEventWritten(object sender, EventWrittenEventArgs eventData)
         {
@@ -261,6 +335,7 @@ namespace BasicEventSourceTests
             internal EventListenerEvent(EventWrittenEventArgs data) => Data = data;
 
             public override bool IsEventListener { get { return true; } }
+            public override bool IsEnumValueStronglyTyped(bool selfDescribing, bool isWriteEvent) => !isWriteEvent;
 
             public override string ProviderName { get { return Data.EventSource.Name; } }
 
@@ -282,6 +357,8 @@ namespace BasicEventSourceTests
             }
         }
 
+        private List<(string eventSourceName, EventCommand command, FilteringOptions options)> _pendingCommands;
+        private bool _useEventsToListen = false;
         private bool _disposed;
     }
 }

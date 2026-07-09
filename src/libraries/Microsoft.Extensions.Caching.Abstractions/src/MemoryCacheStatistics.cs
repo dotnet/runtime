@@ -35,5 +35,15 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets the total number of cache hits.
         /// </summary>
         public long TotalHits { get; init; }
+
+        /// <summary>
+        /// Gets the total number of cache evictions.
+        /// </summary>
+        /// <remarks>
+        /// This count includes entries removed due to cache eviction policies such as expiration or capacity limits.
+        /// It does not include entries removed explicitly by user code (for example, via <c>Remove</c> or <c>Clear</c>),
+        /// and does not include entries that were replaced by new values.
+        /// </remarks>
+        public long TotalEvictions { get; init; }
     }
 }

@@ -354,8 +354,35 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOpt(
     }
     IfFailRet(sigPtr.GetData(NULL)); // arg count
 
+#ifdef DEBUG
     PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
+#endif
+
+    return TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType(
+        pModule,
+        sigPtr,
+        builder,
+        errorResID);
+}
+
+HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType(
+    _In_ CORINFO_MODULE_HANDLE pModule,
+    _In_ SigPointer sig,
+    _Inout_ CallConvBuilder* builder,
+    _Out_ UINT* errorResID)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(builder != NULL);
+        PRECONDITION(errorResID != NULL);
+    }
+    CONTRACTL_END;
+    PCCOR_SIGNATURE pSig;
+    uint32_t cSig;
+    sig.GetSignature(&pSig, &cSig);
+    PCCOR_SIGNATURE pWalk = pSig;
 
     CallConvBuilder& callConvBuilder = *builder;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD) || (*pWalk == ELEMENT_TYPE_CMOD_INTERNAL)))
@@ -523,7 +550,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
 
     // UnmanagedCallersOnly each
     // have optional named arguments.
-    CaNamedArg namedArgs[2];
+    CaNamedArg namedArgs[3];
 
     // For the UnmanagedCallersOnly scenario.
     CaType caCallConvs;
@@ -535,6 +562,9 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     // Define common optional named properties
     CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
     namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
+
+    CaTypeCtor caAssociatedSourceType(SERIALIZATION_TYPE_TYPE);
+    namedArgs[2].Init("AssociatedSourceType", SERIALIZATION_TYPE_TYPE, caAssociatedSourceType);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     Assembly* assembly = pMD->GetLoaderModule()->GetAssembly();

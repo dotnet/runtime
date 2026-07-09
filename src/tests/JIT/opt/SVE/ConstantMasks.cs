@@ -82,7 +82,6 @@ public class ConstantMasks
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedTrueMask(Vector<int> op1, Vector<int> op2) {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movprfx {{z[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: movz {{.*}}
         Vector<int> result = Sve.ConditionalSelect(Sve.CreateTrueMaskInt32(), Sve.AbsoluteDifference(op1, op2), op1);
@@ -92,7 +91,6 @@ public class ConstantMasks
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedAllBits(Vector<int> op1, Vector<int> op2) {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movprfx {{z[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: movz {{.*}}
         Vector<int> result = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.AbsoluteDifference(op1, op2), op1);
