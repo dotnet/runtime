@@ -44,8 +44,6 @@
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
     <!-- bionic (linux-bionic-*) and android target the same compiler OS; normalize linux-bionic to android -->
     <_targetOS Condition="'$(_linuxLibcFlavor)' == 'bionic'">android</_targetOS>
-
-    <_targetArchitectureWithAbi>$(_targetArchitecture)</_targetArchitectureWithAbi>
   </PropertyGroup>
 
   <PropertyGroup>
