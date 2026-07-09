@@ -116,7 +116,7 @@ namespace System.Net
             }
 
             // Strip trailing dot if present (FQDN notation).
-            if (name[^1] == '.')
+            if (name.EndsWith('.'))
             {
                 name = name[..^1];
             }
@@ -152,7 +152,7 @@ namespace System.Net
                     return OperationStatus.InvalidData;
                 }
 
-                if (!isAce && labelLen >= 4)
+                if (!isAce)
                 {
                     isAce = IsAceLabel(label);
                 }
@@ -193,41 +193,42 @@ namespace System.Net
             }
 
             // Strip trailing dot from the comparison name.
-            if (name.Length > 0 && name[^1] == '.')
+            if (name.EndsWith('.'))
             {
                 name = name[..^1];
             }
 
             DnsLabelEnumerator enumerator = EnumerateLabels();
-            int nameIdx = 0;
+            bool first = true;
 
             while (enumerator.MoveNext())
             {
                 ReadOnlySpan<byte> label = enumerator.Current;
 
-                if (nameIdx > 0)
+                if (!first)
                 {
-                    // Expect a dot separator.
-                    if (nameIdx >= name.Length || name[nameIdx] != '.')
+                    // Expect a dot separator between labels.
+                    if (!name.StartsWith('.'))
                     {
                         return false;
                     }
-                    nameIdx++;
+                    name = name.Slice(1);
                 }
+                first = false;
 
-                if (nameIdx + label.Length > name.Length)
+                if (label.Length > name.Length)
                 {
                     return false;
                 }
 
-                if (!Ascii.EqualsIgnoreCase(label, name.Slice(nameIdx, label.Length)))
+                if (!Ascii.EqualsIgnoreCase(label, name.Slice(0, label.Length)))
                 {
                     return false;
                 }
-                nameIdx += label.Length;
+                name = name.Slice(label.Length);
             }
 
-            return nameIdx == name.Length;
+            return name.IsEmpty;
         }
 
         // Decodes the domain name into the destination buffer as a dotted string.
@@ -244,7 +245,7 @@ namespace System.Net
 
             // For ACE names, the ASCII intermediate may be longer than the final
             // Unicode form. Decode to a local buffer first, then convert.
-            Span<char> ascii = stackalloc char[256];
+            Span<char> ascii = stackalloc char[MaxEncodedLength + 1];
             if (!TryDecodeAscii(ascii, out int asciiWritten))
             {
                 return false;
@@ -252,11 +253,8 @@ namespace System.Net
 
             try
             {
-                string unicode = s_idnMapping.GetUnicode(new string(ascii[..asciiWritten]));
-                if (unicode.Length <= destination.Length)
+                if (s_idnMapping.TryGetUnicode(ascii[..asciiWritten], destination, out charsWritten))
                 {
-                    unicode.AsSpan().CopyTo(destination);
-                    charsWritten = unicode.Length;
                     return true;
                 }
             }
@@ -272,6 +270,7 @@ namespace System.Net
                 return true;
             }
 
+            charsWritten = 0;
             return false;
         }
 
@@ -289,7 +288,7 @@ namespace System.Net
             if (_isAce)
             {
                 // ACE names need full IDN conversion to determine the Unicode length.
-                Span<char> chars = stackalloc char[256];
+                Span<char> chars = stackalloc char[MaxEncodedLength + 1];
                 bool success = TryDecode(chars, out int charsWritten);
                 Debug.Assert(success);
                 return charsWritten;
@@ -362,7 +361,7 @@ namespace System.Net
 
         public override unsafe string ToString()
         {
-            Span<char> chars = stackalloc char[256];
+            Span<char> chars = stackalloc char[MaxEncodedLength + 1];
             bool success = TryDecode(chars, out int charsWritten);
             Debug.Assert(success);
             return new string(chars[..charsWritten]);
@@ -524,7 +523,7 @@ namespace System.Net
                    label.Length <= 63 &&
                    label[0] != (byte)'-' &&
                    label[^1] != (byte)'-' &&
-                   label.IndexOfAnyExcept(s_ldhBytes) < 0;
+                   !label.ContainsAnyExcept(s_ldhBytes);
         }
     }
 

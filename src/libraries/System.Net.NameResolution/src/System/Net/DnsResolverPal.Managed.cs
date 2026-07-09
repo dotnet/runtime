@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -40,6 +41,22 @@ namespace System.Net
 
         // ---- Public PAL entry points (one per record type) ----
 
+        // Validates the configured DNS servers. The managed resolver honors custom ports
+        // and per-server address families (each query targets its server's endpoint over a
+        // socket of the matching family), so unlike the Windows PAL it accepts non-default
+        // ports and mixed IPv4/IPv6 lists. Only address families it can open a socket for
+        // (InterNetwork / InterNetworkV6) are supported.
+        public static void ValidateServers(IPEndPoint[] servers)
+        {
+            foreach (IPEndPoint server in servers)
+            {
+                if (server.AddressFamily is not (AddressFamily.InterNetwork or AddressFamily.InterNetworkV6))
+                {
+                    throw new ArgumentException(SR.net_dns_unsupported_address_family, nameof(DnsResolverOptions.Servers));
+                }
+            }
+        }
+
         public static async Task<DnsResult<AddressRecord>> ResolveAddresses(IList<IPEndPoint> servers, bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
         {
             if (addressFamily == AddressFamily.Unspecified)
@@ -66,93 +83,44 @@ namespace System.Net
 
         public static async Task<DnsResult<SrvRecord>> ResolveSrv(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.SRV, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseSrv(response.Span);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+            using DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.SRV, cancellationToken).ConfigureAwait(false);
+            return ParseSrv(response.Span);
         }
 
         public static async Task<DnsResult<MxRecord>> ResolveMx(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.MX, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseMx(response.Span);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+            using DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.MX, cancellationToken).ConfigureAwait(false);
+            return ParseMx(response.Span);
         }
 
         public static async Task<DnsResult<TxtRecord>> ResolveTxt(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.TXT, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseTxt(response.Span);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+            using DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.TXT, cancellationToken).ConfigureAwait(false);
+            return ParseTxt(response.Span);
         }
 
         public static async Task<DnsResult<CNameRecord>> ResolveCName(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.CNAME, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseCName(response.Span);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+            using DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.CNAME, cancellationToken).ConfigureAwait(false);
+            return ParseCName(response.Span);
         }
 
         public static async Task<DnsResult<PtrRecord>> ResolvePtr(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.PTR, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParsePtr(response.Span);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+            using DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.PTR, cancellationToken).ConfigureAwait(false);
+            return ParsePtr(response.Span);
         }
 
         public static async Task<DnsResult<NsRecord>> ResolveNs(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
         {
-            DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.NS, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseNs(response.Span);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+            using DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.NS, cancellationToken).ConfigureAwait(false);
+            return ParseNs(response.Span);
         }
 
         private static async Task<DnsResult<AddressRecord>> QueryAddresses(IList<IPEndPoint> servers, bool async, string name, DnsRecordType qtype, CancellationToken cancellationToken)
         {
-            DnsResponse response = await SendQuery(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
-            try
-            {
-                return ParseAddresses(response.Span, qtype);
-            }
-            finally
-            {
-                response.Dispose();
-            }
+            using DnsResponse response = await SendQuery(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
+            return ParseAddresses(response.Span, qtype);
         }
 
         private static DnsRecordType AddressFamilyToQueryType(AddressFamily addressFamily) =>
@@ -240,11 +208,8 @@ namespace System.Net
                 {
                     string owner = record.Name.ToString();
                     glue ??= new Dictionary<string, List<AddressRecord>>(StringComparer.OrdinalIgnoreCase);
-                    if (!glue.TryGetValue(owner, out List<AddressRecord>? list))
-                    {
-                        list = new List<AddressRecord>();
-                        glue[owner] = list;
-                    }
+                    ref List<AddressRecord>? list = ref CollectionsMarshal.GetValueRefOrAddDefault(glue, owner, out _);
+                    list ??= new List<AddressRecord>();
                     list.Add(new AddressRecord(address, TimeSpan.FromSeconds(record.TimeToLive)));
                 }
             }
@@ -398,16 +363,7 @@ namespace System.Net
         {
             if (a.Records.Count > 0 || b.Records.Count > 0)
             {
-                AddressRecord[] merged = new AddressRecord[a.Records.Count + b.Records.Count];
-                int idx = 0;
-                for (int i = 0; i < a.Records.Count; i++)
-                {
-                    merged[idx++] = a.Records[i];
-                }
-                for (int i = 0; i < b.Records.Count; i++)
-                {
-                    merged[idx++] = b.Records[i];
-                }
+                AddressRecord[] merged = [.. a.Records, .. b.Records];
                 return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, TimeSpan.Zero);
             }
 
