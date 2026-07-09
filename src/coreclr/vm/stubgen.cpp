@@ -1988,32 +1988,6 @@ void ILCodeStream::EmitLoadNullPtr()
     EmitCONV_I();
 }
 
-void ILCodeStream::EmitArgIteratorCreateAndLoad()
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // we insert the ArgIterator in the same spot that the VASigCookie will go for sanity
-    //
-    LocalDesc   aiLoc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
-    int         aiLocNum;
-
-    aiLocNum = NewLocal(aiLoc);
-
-    EmitLDLOCA(aiLocNum);
-    EmitDUP();
-    EmitARGLIST();
-    EmitLoadNullPtr();
-    EmitCALL(METHOD__ARG_ITERATOR__CTOR2, 2, 0);
-
-    aiLoc.ElementType[0]    = ELEMENT_TYPE_BYREF;
-    aiLoc.ElementType[1]    = ELEMENT_TYPE_INTERNAL;
-    aiLoc.cbType            = 2;
-    aiLoc.InternalToken     = CoreLibBinder::GetClass(CLASS__ARG_ITERATOR);
-
-    SetStubTargetArgType(&aiLoc, false);
-}
-
 DWORD ILStubLinker::NewLocal(CorElementType typ)
 {
     CONTRACTL
@@ -2041,9 +2015,13 @@ void StubSigBuilder::EnsureEnoughQuickBytes(size_t cbToAppend)
     STANDARD_VM_CONTRACT;
 
     SIZE_T cbBuffer = m_qbSigBuffer.Size();
-    if ((m_cbSig + cbToAppend) >= cbBuffer)
+    if ((cbBuffer - m_cbSig) < cbToAppend)
     {
-        m_qbSigBuffer.ReSizeThrows(2 * cbBuffer);
+        SIZE_T cbNew = max((SIZE_T)(m_cbSig + cbToAppend), 2 * cbBuffer);
+        // Detect integer overflow
+        if ((cbNew - m_cbSig) < cbToAppend)
+            COMPlusThrowHR(COR_E_OVERFLOW);
+        m_qbSigBuffer.ReSizeThrows(cbNew);
         m_pbSigCursor = ((BYTE*)m_qbSigBuffer.Ptr()) + m_cbSig;
     }
 }

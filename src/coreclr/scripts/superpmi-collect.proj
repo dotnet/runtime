@@ -145,10 +145,19 @@
     <InputKind>-assemblies</InputKind>
   </PropertyGroup>
 
+  <!-- For crossgen2 collections, pass the target OS/arch to superpmi.py so it cross-targets.
+       For other collection types this is a no-op (target defaults to host). -->
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(TargetOS)' != '' and '$(TargetArchitecture)' != '' ">
+    <TargetArgs>-target_os $(TargetOS) -target_arch $(TargetArchitecture)</TargetArgs>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' != 'crossgen2' ">
+    <TargetArgs></TargetArgs>
+  </PropertyGroup>
+
   <!-- Define the Helix work item command and timeout for each collection type -->
 
   <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet2'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) $(InputKind) $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi.py collect --clean -log_level DEBUG --$(CollectionType) $(PmiArguments) $(InputKind) $(AssembliesDirectoryOnHelix) -arch $(Architecture) -build_type $(BuildConfig) -core_root $(SuperPMIDirectory) $(TargetArgs)</WorkItemCommand>
     <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -200,6 +209,12 @@
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'osx'">osx-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <!-- For cross-target crossgen2 collections whose target OS doesn't have a .NET runtime
+         (e.g., browser/wasm), fall back to a host-OS runtime. crossgen2 runs on the host;
+         the downloaded runtime is currently unused by the work item but must be a valid RID. -->
+    <HelixRuntimeRid Condition="'$(HelixRuntimeRid)' == '' and '$(AGENT_OS)' == 'Windows_NT'">win-$(Architecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(HelixRuntimeRid)' == '' and '$(AGENT_OS)' == 'Darwin'">osx-$(Architecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(HelixRuntimeRid)' == ''">linux-$(Architecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' ">

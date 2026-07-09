@@ -14,7 +14,7 @@ ValueNumFuncDef(BitCast, 2, false, false)            // Args: 0: VN of the arg, 
 ValueNumFuncDef(ZeroObj, 1, false, false)            // Args: 0: VN of the class handle.
 
 ValueNumFuncDef(PtrToLoc, 2, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
-ValueNumFuncDef(PtrToArrElem, 4, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
+ValueNumFuncDef(PtrToArrElem, 4, false, true)        // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
 ValueNumFuncDef(PtrToStatic, 3, false, true)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
                                                                    // Args: 0: (VN of) the box's address if the static is "boxed",
                                                                    //       1: (VN of) the field sequence,
@@ -65,6 +65,7 @@ ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false) // Array bounds check, Args
 ValueNumFuncDef(InvalidCastExc, 2, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to
 ValueNumFuncDef(R2RInvalidCastExc, 2, false, false)  // CastClass check, Args: 0: ref value being cast; 1: entry point of R2R cast helper
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false)  // Raises Integer overflow when Arg 0 is negative
+ValueNumFuncDef(NewStringOverflowExc, 1, false, false) // Raises Integer overflow when Arg 0 is negative or bigger than CORINFO_String_MaxLength
 ValueNumFuncDef(DynamicClassInitExc, 1, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of DynamicStaticsInfo
 ValueNumFuncDef(ThreadClassInitExc, 1, false, false)       // Represents exceptions thrown by static constructor for class. Args: 0: VN of ThreadStaticsInfo
 ValueNumFuncDef(R2RClassInitExc, 1, false, false)    // Represents exceptions thrown by static constructor for class. Args: 0: VN of R2R entry point
@@ -113,8 +114,6 @@ ValueNumFuncDef(LeadingZeroCount, 1, false, false)
 ValueNumFuncDef(TrailingZeroCount, 1, false, false)
 ValueNumFuncDef(PopCount, 1, false, false)
 
-ValueNumFuncDef(ManagedThreadId, 0, false, false)
-
 ValueNumFuncDef(ObjGetType, 1, false, true)
 ValueNumFuncDef(GetGcstaticBase, 1, false, true)
 ValueNumFuncDef(GetNongcstaticBase, 1, false, true)
@@ -162,6 +161,7 @@ ValueNumFuncDef(JitNewMdArr, 4, false, true)
 ValueNumFuncDef(JitReadyToRunNew, 2, false, true)
 ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true)
 ValueNumFuncDef(JitReadyToRunNewLclArr, 3, false, true)
+ValueNumFuncDef(StrFastAllocate, 3, false, true) // Args: 0: MethodTable, 1: length, 2: unique VN.
 ValueNumFuncDef(Box, 3, false, true)
 ValueNumFuncDef(BoxNullable, 3, false, false)
 
@@ -189,39 +189,26 @@ ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compos
 
 // In VN all HW intrinsics encode an extra arg for the base type (except when
 // they are variadic), hence the +1 to the arg count below here.
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
+ValueNumFuncDef(HWI_INTRINSIC_START, -1, false, false)
+
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for x86/x64
-#include "hwintrinsiclistxarch.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
-#define VNF_HWI_LAST  VNF_HWI_AVX512_XnorMask
+#include "hwintrinsiclist.h"
 
-#elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for arm64
-#include "hwintrinsiclistarm64.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
-#define VNF_HWI_LAST  VNF_HWI_Sve_ReverseElement_Predicates
+ValueNumFuncDef(HWI_INTRINSIC_END, -1, false, false)
 
-#elif defined(TARGET_ARM)
-// No Hardware Intrinsics on ARM32
+#define VNF_HWI_FIRST (VNF_HWI_INTRINSIC_START + 1)
+#define VNF_HWI_LAST  (VNF_HWI_INTRINSIC_END - 1)
+#endif // FEATURE_HW_INTRINSICS
 
-#elif defined(TARGET_LOONGARCH64)
-    //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
-
-#elif defined (TARGET_RISCV64)
+#if defined(TARGET_RISCV64)
     // Signed/Unsigned integer min/max intrinsics
     ValueNumFuncDef(MinInt, 2, true, false)
     ValueNumFuncDef(MaxInt, 2, true, false)
     ValueNumFuncDef(MinInt_UN, 2, true, false)
     ValueNumFuncDef(MaxInt_UN, 2, true, false)
-
-#elif defined(TARGET_WASM)
-// No hardware intrinsics on WASM yet.
-
-#else
-#error Unsupported platform
-#endif
+#endif // TARGET_RISCV64
 
 // clang-format on
 

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics
@@ -143,33 +141,30 @@ namespace System.Numerics
             //     AAAAAAAAAAA
             // where A = ~X
 
-            int offset = 0;
-            ref nuint start = ref MemoryMarshal.GetReference(d);
-
-            while (Vector512.IsHardwareAccelerated && d.Length - offset >= Vector512<nuint>.Count)
+            while (Vector512.IsHardwareAccelerated && d.Length >= Vector512<nuint>.Count)
             {
-                Vector512<nuint> complement = ~Vector512.LoadUnsafe(ref start, (nuint)offset);
-                Vector512.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector512<nuint>.Count;
+                Vector512<nuint> complement = ~Vector512.Create(d);
+                complement.CopyTo(d);
+                d = d.Slice(Vector512<nuint>.Count);
             }
 
-            while (Vector256.IsHardwareAccelerated && d.Length - offset >= Vector256<nuint>.Count)
+            while (Vector256.IsHardwareAccelerated && d.Length >= Vector256<nuint>.Count)
             {
-                Vector256<nuint> complement = ~Vector256.LoadUnsafe(ref start, (nuint)offset);
-                Vector256.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector256<nuint>.Count;
+                Vector256<nuint> complement = ~Vector256.Create(d);
+                complement.CopyTo(d);
+                d = d.Slice(Vector256<nuint>.Count);
             }
 
-            while (Vector128.IsHardwareAccelerated && d.Length - offset >= Vector128<nuint>.Count)
+            while (Vector128.IsHardwareAccelerated && d.Length >= Vector128<nuint>.Count)
             {
-                Vector128<nuint> complement = ~Vector128.LoadUnsafe(ref start, (nuint)offset);
-                Vector128.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector128<nuint>.Count;
+                Vector128<nuint> complement = ~Vector128.Create(d);
+                complement.CopyTo(d);
+                d = d.Slice(Vector128<nuint>.Count);
             }
 
-            for (; offset < d.Length; offset++)
+            for (int i = 0; i < d.Length; i++)
             {
-                d[offset] = ~d[offset];
+                d[i] = ~d[i];
             }
         }
 

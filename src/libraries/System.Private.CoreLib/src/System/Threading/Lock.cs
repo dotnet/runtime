@@ -52,7 +52,39 @@ namespace System.Threading
         private short _spinCount;
 
         private ushort _waiterStartTimeMs;
-        private AutoResetEvent? _waitEvent;
+
+        private object? _waitEventOrCondition;
+        private AutoResetEvent? WaitEvent
+        {
+            get
+            {
+                object? weoc = _waitEventOrCondition;
+                if (weoc is Condition c)
+                    return c._waitEvent;
+
+                return (AutoResetEvent?)weoc;
+            }
+        }
+
+        internal Condition GetOrCreateCondition()
+        {
+            // The loop terminates as _waitEventOrCondition has limited number of
+            // state transitions with no cycles.
+            while (true)
+            {
+                object? weoc = _waitEventOrCondition;
+                if (weoc is Condition c)
+                    return c;
+
+                Condition newCondition = new Condition(this);
+                newCondition._waitEvent = WaitEvent;
+
+                if (Interlocked.CompareExchange(ref _waitEventOrCondition, newCondition, weoc) == weoc)
+                {
+                    return newCondition;
+                }
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lock"/> class.
@@ -240,7 +272,7 @@ namespace System.Threading
         public bool TryEnter(TimeSpan timeout) => TryEnter_Outlined(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs) != UninitializedThreadId;
+        internal bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs) != UninitializedThreadId;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int TryEnter_Inlined(int timeoutMs)
@@ -513,7 +545,8 @@ namespace System.Threading
                 NativeRuntimeEventSource.Log.IsEnabled(
                     EventLevel.Informational,
                     NativeRuntimeEventSource.Keywords.ContentionKeyword);
-            AutoResetEvent waitEvent = _waitEvent ?? CreateWaitEvent(areContentionEventsEnabled);
+
+            AutoResetEvent waitEvent = WaitEvent ?? CreateWaitEvent(areContentionEventsEnabled);
             if (State.TryLockBeforeWait(this))
             {
                 // Lock was acquired and a waiter was not registered
@@ -652,8 +685,13 @@ namespace System.Threading
         private AutoResetEvent CreateWaitEvent(bool areContentionEventsEnabled)
         {
             var newWaitEvent = new AutoResetEvent(false);
-            AutoResetEvent? waitEventBeforeUpdate = Interlocked.CompareExchange(ref _waitEvent, newWaitEvent, null);
-            if (waitEventBeforeUpdate == null)
+            object? weocBeforeUpdate = Interlocked.CompareExchange(ref _waitEventOrCondition, newWaitEvent, null);
+            if (weocBeforeUpdate is Condition c)
+            {
+                weocBeforeUpdate = Interlocked.CompareExchange(ref c._waitEvent, newWaitEvent, null);
+            }
+
+            if (weocBeforeUpdate == null)
             {
                 // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
                 if (areContentionEventsEnabled && NativeRuntimeEventSource.Log.IsEnabled())
@@ -665,7 +703,7 @@ namespace System.Threading
             }
 
             newWaitEvent.Dispose();
-            return waitEventBeforeUpdate;
+            return (AutoResetEvent)weocBeforeUpdate;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -674,8 +712,8 @@ namespace System.Threading
             if (State.TrySetIsWaiterSignaledToWake(this, state))
             {
                 // Signal a waiter to wake
-                Debug.Assert(_waitEvent != null);
-                bool signaled = _waitEvent.Set();
+                Debug.Assert(WaitEvent != null);
+                bool signaled = WaitEvent.Set();
                 Debug.Assert(signaled);
             }
         }
@@ -695,14 +733,14 @@ namespace System.Threading
         }
 
         internal static long ContentionCount => s_contentionCount;
-        internal void Dispose() => _waitEvent?.Dispose();
+        internal void Dispose() => WaitEvent?.Dispose();
 
         internal nint LockIdForEvents
         {
             get
             {
-                Debug.Assert(_waitEvent != null);
-                return _waitEvent.SafeWaitHandle.DangerousGetHandle();
+                Debug.Assert(WaitEvent != null);
+                return WaitEvent.SafeWaitHandle.DangerousGetHandle();
             }
         }
 
@@ -879,7 +917,6 @@ namespace System.Threading
 
 #if CORECLR
         [System.Runtime.InteropServices.UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InitializeForMonitor(Lock* pLock, int managedThreadId, uint recursionCount, Exception* pException)
         {
             try
@@ -926,6 +963,28 @@ namespace System.Threading
             }
 
             return (short)-adaptiveSpinPeriod;
+        }
+
+        internal bool Wait(int millisecondsTimeout)
+        {
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+            return Wait(millisecondsTimeout, this);
+#pragma warning restore CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+        }
+
+        internal bool Wait(int millisecondsTimeout, object associatedObject)
+        {
+            return GetOrCreateCondition().Wait(millisecondsTimeout, associatedObject);
+        }
+
+        internal void Pulse()
+        {
+            GetOrCreateCondition().SignalOne();
+        }
+
+        internal void PulseAll()
+        {
+            GetOrCreateCondition().SignalAll();
         }
 
         private struct State : IEquatable<State>

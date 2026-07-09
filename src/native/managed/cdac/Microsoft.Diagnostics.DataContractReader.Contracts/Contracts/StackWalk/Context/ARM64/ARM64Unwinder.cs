@@ -51,11 +51,16 @@ internal class ARM64Unwinder(Target target)
 
     public bool Unwind(ref ARM64Context context)
     {
-        if (_eman.GetCodeBlockHandle(context.InstructionPointer.Value) is not CodeBlockHandle cbh)
+        if (_eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
             return false;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
+        TargetPointer unwindInfoAddr = _eman.GetUnwindInfo(cbh);
+
+        if (unwindInfoAddr == TargetPointer.Null)
+            return false;
+
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfoAddr);
 
         ulong startingPc = context.Pc;
         ulong startingSp = context.Sp;
@@ -757,6 +762,9 @@ internal class ARM64Unwinder(Target target)
                     // invalid sequence
                     return false;
                 }
+
+                // TODO-PAC: Enable processing PAC-enabled return address
+                // context.Lr &= 0x0000FFFFFFFFFFFF;
 
                 //
                 // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.

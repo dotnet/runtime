@@ -51,6 +51,10 @@
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) ALIGN_UP(val,align)
 
+extern void ep_rt_coreclr_sample_profiler_enabled (EventPipeEvent *sampling_event);
+extern void ep_rt_coreclr_sample_profiler_session_enabled (void);
+extern void ep_rt_coreclr_sample_profiler_disabled (void);
+
 static
 inline
 ep_rt_lock_handle_t *
@@ -434,19 +438,21 @@ ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+#ifdef FEATURE_EVENT_TRACE
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (UCHAR) ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
 	}
+#endif
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef TARGET_UNIX
 extern "C" void InitProvidersAndEvents ();
-#else
+#else // TARGET_UNIX
 extern void InitProvidersAndEvents ();
-#endif
+#endif // TARGET_UNIX
 
 static
 void
@@ -469,9 +475,13 @@ ep_rt_providers_validate_all_disabled (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+#ifdef FEATURE_EVENT_TRACE
 	return (!MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled &&
 		!MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled &&
 		!MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+#else
+	return true;
+#endif
 }
 
 static
@@ -572,6 +582,15 @@ ep_rt_config_value_get_enable_stackwalk (void)
 	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeEnableStackwalk) != 0;
 }
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeThreadSamplingRate);
+}
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -595,7 +614,7 @@ void
 ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_enabled (sampling_event);
 }
 
 static
@@ -604,7 +623,7 @@ void
 ep_rt_sample_profiler_session_enabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_session_enabled ();
 }
 
 static
@@ -613,7 +632,7 @@ void
 ep_rt_sample_profiler_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // no-op
+    ep_rt_coreclr_sample_profiler_disabled ();
 }
 
 static
@@ -622,13 +641,12 @@ void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(PROFILING_SUPPORTED)
 		// Let the profiler know the provider has been created so it can register if it wants to
 		BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
 		(&g_profControlBlock)->EventPipeProviderCreated (provider);
 		END_PROFILER_CALLBACK ();
-#endif // DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && PROFILING_SUPPORTED
 }
 
 /*
@@ -658,6 +676,8 @@ ep_rt_byte_array_free (uint8_t *ptr)
 /*
  * Event.
  */
+
+#ifndef PERFTRACING_DISABLE_THREADS
 
 static
 void
@@ -757,6 +777,79 @@ ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 	return wait_event->event->IsValid ();
 }
 
+#else // PERFTRACING_DISABLE_THREADS
+
+// In single-threaded mode, wait events are no-ops. INVALID_HANDLE_VALUE is used as
+// the "allocated" sentinel (distinguishing allocated from freed/NULL).
+
+static
+inline
+void
+ep_rt_wait_event_alloc (
+	ep_rt_wait_event_handle_t *wait_event,
+	bool manual,
+	bool initial)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (wait_event != NULL);
+	wait_event->event = (CLREventStatic *)INVALID_HANDLE_VALUE;
+}
+
+static
+inline
+void
+ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	wait_event->event = NULL;
+}
+
+static
+inline
+bool
+ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return true;
+}
+
+static
+inline
+int32_t
+ep_rt_wait_event_wait (
+	ep_rt_wait_event_handle_t *wait_event,
+	uint32_t timeout,
+	bool alertable)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (wait_event != NULL && wait_event->event == (CLREventStatic *)INVALID_HANDLE_VALUE);
+	return (int32_t)0;
+}
+
+static
+inline
+EventPipeWaitHandle
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (wait_event != NULL);
+	return (EventPipeWaitHandle)wait_event->event;
+}
+
+static
+inline
+bool
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	if (wait_event == NULL || wait_event->event == NULL || wait_event->event != (CLREventStatic *)INVALID_HANDLE_VALUE)
+		return false;
+	return true;
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
+
+
 /*
  * Misc.
  */
@@ -843,6 +936,7 @@ typedef struct _rt_coreclr_thread_params_internal_t {
 #undef EP_RT_DEFINE_THREAD_FUNC
 #define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t WINAPI name (LPVOID data)
 
+#ifndef PERFTRACING_DISABLE_THREADS
 EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_coreclr_start_func)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -926,8 +1020,47 @@ ep_rt_queue_job (
 	void *job_func,
 	void *params)
 {
-    EP_UNREACHABLE ("Not implemented in CoreCLR");
+	EP_UNREACHABLE ("Not implemented in multi-threaded");
+	return false;
 }
+
+#else // PERFTRACING_DISABLE_THREADS
+
+static
+inline
+bool
+ep_rt_thread_create (
+	void *thread_func,
+	void *params,
+	EventPipeThreadType thread_type,
+	void *id)
+{
+	EP_UNREACHABLE ("Not implemented in single-threaded");
+	return false;
+}
+
+#ifdef HOST_BROWSER
+#include "wasm/entrypoints.h"
+typedef size_t (*ep_rt_job_cb_t)(void *data);
+#endif
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+#ifdef HOST_BROWSER
+	// In single-threaded mode the job runs on the browser event loop
+	SystemJS_DiagnosticServerQueueJob ((ep_rt_job_cb_t)job_func, params);
+	return true;
+#else
+	EP_UNREACHABLE ("Not implemented on this platform");
+	return false;
+#endif
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 static
 inline
@@ -942,6 +1075,7 @@ inline
 void
 ep_rt_thread_sleep (uint64_t ns)
 {
+#ifndef PERFTRACING_DISABLE_THREADS
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
@@ -950,6 +1084,7 @@ ep_rt_thread_sleep (uint64_t ns)
 	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
 	ClrSleepEx (static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS), FALSE);
 #endif //TARGET_UNIX
+#endif // PERFTRACING_DISABLE_THREADS
 }
 
 static
@@ -1604,7 +1739,9 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
+	// This value is an approximation of the command line for diagnostic purposes, and it may not match
+	// the actual command line used to launch the process.
+	// This value can change over time, specifically before vs after suspension in diagnostics server.
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.

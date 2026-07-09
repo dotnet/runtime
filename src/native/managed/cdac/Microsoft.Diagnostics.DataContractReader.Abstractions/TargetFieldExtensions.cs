@@ -80,6 +80,19 @@ public static class TargetFieldExtensions
     }
 
     /// <summary>
+    /// Read a native signed integer field from the target with type validation.
+    /// </summary>
+    public static TargetNInt ReadNIntField(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName)
+    {
+        Target.FieldInfo field = typeInfo.Fields[fieldName];
+        Debug.Assert(
+            field.TypeName is null or "" or "nint",
+            $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected nint");
+
+        return target.ReadNInt(address + (ulong)field.Offset);
+    }
+
+    /// <summary>
     /// Read a code pointer field from the target with type validation.
     /// </summary>
     public static TargetCodePointer ReadCodePointerField(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName)
@@ -144,6 +157,49 @@ public static class TargetFieldExtensions
         return target.ProcessedData.GetOrAdd<T>(pointer);
     }
 
+    /// <summary>
+    /// Write a primitive integer field to the target with type validation.
+    /// </summary>
+    public static T WriteField<T>(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName, T value)
+        where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        Target.FieldInfo field = typeInfo.Fields[fieldName];
+        AssertPrimitiveType<T>(field, fieldName);
+
+        target.Write<T>(address + (ulong)field.Offset, value);
+        return value;
+    }
+
+    /// <summary>
+    /// Write a native unsigned integer field to the target with type validation.
+    /// Returns the value written for convenient single-line backing-field updates.
+    /// </summary>
+    public static TargetNUInt WriteNUIntField(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName, TargetNUInt value)
+    {
+        Target.FieldInfo field = typeInfo.Fields[fieldName];
+        Debug.Assert(
+            field.TypeName is null or "" or "nuint",
+            $"Type mismatch writing field '{fieldName}': declared as '{field.TypeName}', expected nuint");
+
+        ulong addr = address + (ulong)field.Offset;
+        target.WriteNUInt(addr, value);
+        return value;
+    }
+
+    /// <summary>
+    /// Write a pointer field to the target with type validation.
+    /// Returns the value written for convenient single-line backing-field updates.
+    /// </summary>
+    public static TargetPointer WritePointerField(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName, TargetPointer value)
+    {
+        Target.FieldInfo field = typeInfo.Fields[fieldName];
+        AssertPointerType(field, fieldName);
+
+        ulong addr = address + (ulong)field.Offset;
+        target.WritePointer(addr, value);
+        return value;
+    }
+
     [Conditional("DEBUG")]
     private static void AssertPrimitiveType<T>(Target.FieldInfo field, string fieldName)
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
@@ -156,8 +212,12 @@ public static class TargetFieldExtensions
     [Conditional("DEBUG")]
     private static void AssertPointerType(Target.FieldInfo field, string fieldName)
     {
+        // Managed field signatures report IntPtr/UIntPtr as native ints, which the contract descriptor maps to
+        // "nint"/"nuint" (as distinct from raw pointer element types which map to "pointer").
+        // Accept those in addition to "pointer" so pointer-valued fields on managed types can be
+        // read via ReadPointer, which reads the value unsigned at full pointer width.
         Debug.Assert(
-            field.TypeName is null or "" or "pointer",
+            field.TypeName is null or "" or "pointer" or "nint" or "nuint",
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected pointer");
     }
 

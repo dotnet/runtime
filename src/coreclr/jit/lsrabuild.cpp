@@ -261,15 +261,30 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CONFLICT));
 
-    if (defRefPosition->treeNode->IsMultiRegNode())
+    // If the defRefPosition is multireg then we cannot change any of its
+    // register assignments. That could cause us to require a parallel
+    // assignment during codegen that could have cycles in it. For example,
+    // x64 DivRem always defines into RAX and RDX, so it would be a problem
+    // to change the register assignments to RDX and RAX respectively.
+    bool canChangeDef = !defRefPosition->treeNode->IsMultiRegNode();
+
+    // Avoid changing the def reg away from its assignment if that register is
+    // currently busy. The reason is that we have a number of places in LSRA
+    // that assume that BuildDef(tree, SRBM_REG) means that SRBM_REG will be
+    // spilled if necessary, so they do not bother to kill SRBM_REG explicitly.
+    // However, that spilling happens only if we actually assign the def to
+    // SRBM_REG.
+    // A slightly better way would be to also unassign the fixed reg always,
+    // but this is mostly a stress-only case because the presence of the fixed
+    // reg on the def should make most intervals prefer not to be allocated to
+    // that register.
+    if (canChangeDef && defRefPosition->isFixedRegRef)
     {
-        // If the defRefPosition is multireg then we cannot change any of its
-        // register assignments. That could cause us to require a parallel
-        // assignment during codegen that could have cycles in it. For example,
-        // x64 DivRem always defines into RAX and RDX, so it would be a problem
-        // to change the register assignments to RDX and RAX respectively.
+        RegRecord* defRegRecord = getRegisterRecord(defRefPosition->assignedReg());
+        canChangeDef = (defRegRecord->assignedInterval == nullptr) || !defRegRecord->assignedInterval->isActive;
     }
-    else
+
+    if (canChangeDef)
     {
         if (useRefPosition->isFixedRegRef)
         {
@@ -629,11 +644,7 @@ RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
     // codegen. Mark these as modified here, so when we do final frame
     // layout, we'll know about all these registers. This is especially
     // important if mask contains callee-saved registers, which affect the
-    // frame size since we need to save/restore them. In the case where we
-    // have a copyBlk with GC pointers, can need to call the
-    // CORINFO_HELP_ASSIGN_BYREF helper, which kills callee-saved RSI and
-    // RDI, if LSRA doesn't assign RSI/RDI, they wouldn't get marked as
-    // modified until codegen, which is too late.
+    // frame size since we need to save/restore them.
     m_compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
@@ -857,45 +868,11 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIsStoreBlk());
-    regMaskTP killMask = RBM_NONE;
 
-    bool isCopyBlk = varTypeIsStruct(blkNode->Data());
-    switch (blkNode->gtBlkOpKind)
-    {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-#ifdef TARGET_XARCH
-        case GenTreeBlk::BlkOpKindCpObjRepInstr:
-#endif // TARGET_XARCH
-            assert(isCopyBlk && blkNode->AsBlk()->GetLayout()->HasGCPtr());
-            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
-            break;
-
-#ifdef TARGET_XARCH
-        case GenTreeBlk::BlkOpKindRepInstr:
-            if (isCopyBlk)
-            {
-                // rep movs kills RCX, RDI and RSI
-                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI DEBUG_ARG(RBM_ALLINT));
-            }
-            else
-            {
-                // rep stos kills RCX and RDI.
-                // (Note that the Data() node, if not constant, will be assigned to
-                // RCX, but it's find that this kills it, as the value is not available
-                // after this node in any case.)
-                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX DEBUG_ARG(RBM_ALLINT));
-            }
-            break;
-#endif
-        case GenTreeBlk::BlkOpKindUnrollMemmove:
-        case GenTreeBlk::BlkOpKindUnroll:
-        case GenTreeBlk::BlkOpKindLoop:
-        case GenTreeBlk::BlkOpKindInvalid:
-            // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
-            break;
-    }
-
-    return killMask;
+    // After removing BlkOpKindRepInstr, the remaining block-store kinds
+    // (BlkOpKindUnroll, BlkOpKindUnrollMemmove, BlkOpKindLoop, BlkOpKindInvalid)
+    // don't kill any fixed registers; helper calls handle their own kill sets.
+    return RBM_NONE;
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -1055,6 +1032,14 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             killMask = getKillSetForHWIntrinsic(tree->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
+
+        case GT_PATCHPOINT:
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT);
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED);
+            break;
 
         default:
             // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE
@@ -4352,11 +4337,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-#ifdef TARGET_AMD64
                         useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#else
-                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
-#endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
                         useCandidates = RBM_LNGRET.GetIntRegSet();

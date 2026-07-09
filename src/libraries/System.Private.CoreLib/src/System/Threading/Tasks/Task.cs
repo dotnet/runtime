@@ -171,6 +171,10 @@ namespace System.Threading.Tasks
 
         // A private flag that would be set (only) by the debugger
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
+        // The debugger sets this field together with the AsyncInstrumentation.Flags.Synchronize bit in
+        // AsyncInstrumentation's active flags (this field first, then the Synchronize bit) so the next instrumentation
+        // checkpoint re-syncs and observes the AsyncDebugger client. Do not change this field's name or the way the
+        // Synchronize bit is composed without coordinating with the debugger; see AsyncInstrumentation.SynchronizeFlags.
         internal static bool s_asyncDebuggingEnabled; // false by default
 
         // This dictionary relates the task id, from an operation id located in the Async Causality log to the actual
@@ -255,21 +259,6 @@ namespace System.Threading.Tasks
             long timestamp = Stopwatch.GetTimestamp();
             lock (continuationTimestamps)
             {
-                Continuation? nc = continuationChain;
-                while (nc != null)
-                {
-                    continuationTimestamps.TryAdd(nc, timestamp);
-                    nc = nc.Next;
-                }
-            }
-        }
-
-        internal static void TryAddRuntimeAsyncContinuationChainTimestamps(Continuation continuationChain, Continuation timestampSource)
-        {
-            var continuationTimestamps = GetOrCreateRuntimeAsyncContinuationTimestamps();
-            lock (continuationTimestamps)
-            {
-                long timestamp = continuationTimestamps.TryGetValue(timestampSource, out long timestampVal) ? timestampVal : Stopwatch.GetTimestamp();
                 Continuation? nc = continuationChain;
                 while (nc != null)
                 {
@@ -1626,7 +1615,11 @@ namespace System.Threading.Tasks
         internal static readonly Task<VoidTaskResult> s_cachedCompleted = new Task<VoidTaskResult>(false, default, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         /// <summary>Gets a task that's already been completed successfully.</summary>
-        public static Task CompletedTask => s_cachedCompleted;
+        public static Task CompletedTask
+        {
+            [Intrinsic]
+            get => s_cachedCompleted;
+        }
 
         /// <summary>
         /// Provides an event that can be used to wait for completion.
@@ -2423,12 +2416,13 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// ThreadPool's entry point into the Task.  The base behavior is simply to
-        /// use the entry point that's not protected from double-invoke; derived internal tasks
-        /// can override to customize their behavior, which is usually done by promises
-        /// that want to reuse the same object as a queued work item.
+        /// This is used internally to execute the Task directly. ThreadPool uses this,
+        /// and it is also used to invoke runtime async tasks directly.
+        /// The base behavior is simply to use the entry point that's not protected from
+        /// double-invoke; derived internal tasks can override to customize their behavior,
+        /// which is usually done by promises that want to reuse the same object as a queued work item.
         /// </summary>
-        internal virtual void ExecuteFromThreadPool(Thread threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
+        internal virtual void ExecuteDirectly(Thread? threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
 
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
         {
@@ -3632,10 +3626,22 @@ namespace System.Threading.Tasks
 
             switch (continuationObject)
             {
+#if !MONO
+                // Runtime async continuation is very cheap to check for since
+                // it is sealed. Its semantics cannot be described by
+                // ITaskCompletionAction because it should be inlined when
+                // there is only one, but run in parallel when there are
+                // multiple.
+                case RuntimeAsyncTaskContinuation tc:
+                    tc.Execute(canInline: canInlineContinuations);
+                    LogFinishCompletionNotification();
+                    return;
+#endif
+
                 // Handle the single IAsyncStateMachineBox case.  This could be handled as part of the ITaskCompletionAction
                 // but we want to ensure that inlining is properly handled in the face of schedulers, so its behavior
-                // needs to be customized ala raw Actions.  This is also the most important case, as it represents the
-                // most common form of continuation, so we check it first.
+                // needs to be customized ala raw Actions.  This is also one of the most important cases, as it represents the
+                // most common form of continuation, so we check it early.
                 case IAsyncStateMachineBox stateMachineBox:
                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                     LogFinishCompletionNotification();
@@ -3712,6 +3718,12 @@ namespace System.Threading.Tasks
                                 log.RunningContinuationList(Id, i, currentContinuation);
                             switch (currentContinuation)
                             {
+#if !MONO
+                                case RuntimeAsyncTaskContinuation tc:
+                                    tc.Execute(canInline: false);
+                                    break;
+#endif
+
                                 case IAsyncStateMachineBox stateMachineBox:
                                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
                                     break;
@@ -3745,6 +3757,12 @@ namespace System.Threading.Tasks
 
                 switch (currentContinuation)
                 {
+#if !MONO
+                    case RuntimeAsyncTaskContinuation tc:
+                        tc.Execute(canInlineContinuations);
+                        break;
+#endif
+
                     case IAsyncStateMachineBox stateMachineBox:
                         AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                         break;
@@ -4779,7 +4797,7 @@ namespace System.Threading.Tasks
 
         // Record a continuation task or action.
         // Return true if and only if we successfully queued a continuation.
-        private bool AddTaskContinuation(object tc, bool addBeforeOthers)
+        internal bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null);
 
@@ -5531,6 +5549,7 @@ namespace System.Threading.Tasks
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
+        [Intrinsic]
         public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
@@ -7213,6 +7232,8 @@ namespace System.Threading.Tasks
 
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
+
+        internal object? ContinuationForDiagnostics => m_continuationObject != this ? m_continuationObject : null;
 
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {

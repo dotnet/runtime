@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/context.h
 
 Abstract:
-
     Header file for thread context utility functions.
-
-
-
 --*/
 
 #ifndef _PAL_CONTEXT_H_
@@ -41,6 +33,15 @@ typedef ucontext_t native_context_t;
 #else   // HAVE_UCONTEXT_T
 #error Native context type is not known on this platform!
 #endif  // HAVE_UCONTEXT_T
+
+// Helper to obtain the machine-register container from a native_context_t pointer.
+// On most platforms the registers live in the uc_mcontext sub-structure. On OpenBSD
+// native_context_t is an alias for struct sigcontext and holds the registers directly.
+#ifdef TARGET_OPENBSD
+#define MCONTEXT_FROM_NATIVE(ucontextPtr)  (*(ucontextPtr))
+#else
+#define MCONTEXT_FROM_NATIVE(ucontextPtr)  ((ucontextPtr)->uc_mcontext)
+#endif
 
 #if !HAVE_MACH_EXCEPTIONS
 
@@ -1007,6 +1008,44 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 
 #define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc).fp_fxsave.xmm[index])
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc).fp_fxsave.fp[index].value)
+#elif defined(TARGET_OPENBSD)
+
+    // On OpenBSD, ucontext_t is an alias for struct sigcontext and the registers
+    // are stored directly in it (accessed here via MCONTEXT_FROM_NATIVE).
+#define MCREG_Rbp(mc)       ((mc).sc_rbp)
+#define MCREG_Rip(mc)       ((mc).sc_rip)
+#define MCREG_Rsp(mc)       ((mc).sc_rsp)
+#define MCREG_Rsi(mc)       ((mc).sc_rsi)
+#define MCREG_Rdi(mc)       ((mc).sc_rdi)
+#define MCREG_Rbx(mc)       ((mc).sc_rbx)
+#define MCREG_Rdx(mc)       ((mc).sc_rdx)
+#define MCREG_Rcx(mc)       ((mc).sc_rcx)
+#define MCREG_Rax(mc)       ((mc).sc_rax)
+#define MCREG_R8(mc)        ((mc).sc_r8)
+#define MCREG_R9(mc)        ((mc).sc_r9)
+#define MCREG_R10(mc)       ((mc).sc_r10)
+#define MCREG_R11(mc)       ((mc).sc_r11)
+#define MCREG_R12(mc)       ((mc).sc_r12)
+#define MCREG_R13(mc)       ((mc).sc_r13)
+#define MCREG_R14(mc)       ((mc).sc_r14)
+#define MCREG_R15(mc)       ((mc).sc_r15)
+#define MCREG_EFlags(mc)    ((mc).sc_rflags)
+#define MCREG_SegCs(mc)     ((mc).sc_cs)
+
+  // from machine/fpu.h: struct fxsave64, referenced via sigcontext::sc_fpstate
+#define FPSTATE(uc)             ((struct fxsave64*)((uc)->sc_fpstate))
+#define FPREG_ControlWord(uc)   FPSTATE(uc)->fx_fcw
+#define FPREG_StatusWord(uc)    FPSTATE(uc)->fx_fsw
+#define FPREG_TagWord(uc)       FPSTATE(uc)->fx_ftw
+#define FPREG_MxCsr(uc)         FPSTATE(uc)->fx_mxcsr
+#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc)->fx_mxcsr_mask
+#define FPREG_ErrorOffset(uc)   *(DWORD*) &(FPSTATE(uc)->fx_rip)
+#define FPREG_ErrorSelector(uc) *((WORD*) &(FPSTATE(uc)->fx_rip) + 2)
+#define FPREG_DataOffset(uc)    *(DWORD*) &(FPSTATE(uc)->fx_rdp)
+#define FPREG_DataSelector(uc)  *((WORD*) &(FPSTATE(uc)->fx_rdp) + 2)
+
+#define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->fx_xmm[index])
+#define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->fx_st[index])
 #else //__APPLE__
 
     // For FreeBSD, as found in x86/ucontext.h
@@ -1622,21 +1661,6 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
 
 #endif  // HAVE_MACH_EXCEPTIONS else
 
-#if defined(HOST_ARM64)
-/*++
-Function :
-    CONTEXT_GetSveLengthFromOS
-
-    Gets the SVE vector length
-Parameters :
-    None
-Return value :
-    The SVE vector length in bytes
---*/
-DWORD64
-CONTEXT_GetSveLengthFromOS(
-    );
-#endif // HOST_ARM64
 
 #ifdef __cplusplus
 }

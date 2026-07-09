@@ -90,7 +90,7 @@ namespace ILCompiler.Dataflow
 
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
-                referencedModules, needsAssemblyName, out bool failedBecauseNotFullyQualified);
+                referencedModules, needsAssemblyName, fallbackToCoreLib: true, out bool failedBecauseNotFullyQualified);
             if (foundType == null)
             {
                 if (failedBecauseNotFullyQualified)
@@ -121,11 +121,11 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, [NotNullWhen(true)] out TypeDesc? type)
+        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, bool fallbackToCoreLib, [NotNullWhen(true)] out TypeDesc? type)
         {
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, assembly, assembly.Context,
-                referencedModules, needsAssemblyName: false, out _);
+                referencedModules, needsAssemblyName: false, fallbackToCoreLib, out _);
             if (foundType == null)
             {
                 type = default;

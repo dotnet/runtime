@@ -251,7 +251,6 @@ namespace System.Runtime.InteropServices
         /// <remarks>The returned span does not include the null terminator.</remarks>
         /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) =>
             value != null ? new ReadOnlySpan<char>(value, string.wcslen(value)) :
             default;
@@ -262,7 +261,6 @@ namespace System.Runtime.InteropServices
         /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF-8 data.</remarks>
         /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) =>
             value != null ? new ReadOnlySpan<byte>(value, string.strlen(value)) :
             default;

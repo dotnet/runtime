@@ -1519,7 +1519,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void EncryptedKey_InfiniteLoopXsltTransform()
         {
             using RSA rsa = RSA.Create(2048);
@@ -1585,7 +1585,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("The specified cryptographic transform is not supported.", ex.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void EncryptedXml_BillionLaughsXsltTransform()
         {
             XmlDocument doc = new();

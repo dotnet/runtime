@@ -1218,10 +1218,16 @@ namespace System.Collections.Generic
         }
 
         /// <inheritdoc/>
-        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item) =>
-            TryGetValue(item.Key, out TValue? value) &&
-            EqualityComparer<TValue>.Default.Equals(value, item.Value) &&
-            Remove(item.Key);
+        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
+        {
+            if (TryGetValue(item.Key, out TValue? value, out int index) && EqualityComparer<TValue>.Default.Equals(value, item.Value))
+            {
+                RemoveAt(index);
+                return true;
+            }
+
+            return false;
+        }
 
         /// <inheritdoc/>
         void IDictionary.Add(object key, object? value)
@@ -1235,11 +1241,6 @@ namespace System.Collections.Generic
             if (key is not TKey tkey)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
-            }
-
-            if (default(TValue) is not null)
-            {
-                ArgumentNullException.ThrowIfNull(value);
             }
 
             TValue tvalue = default!;

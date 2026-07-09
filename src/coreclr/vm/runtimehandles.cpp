@@ -31,6 +31,7 @@
 #include "castcache.h"
 #include "encee.h"
 #include "finalizerthread.h"
+#include "pregeneratedstringthunks.h"
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -1798,6 +1799,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
     DynamicMethodDesc* pDynamicMethodDesc = pMethod->AsDynamicMethodDesc();
 
     {
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        ClearPendingThunkResolutionUnderLock(pDynamicMethodDesc);
+#endif
+
         GCX_COOP();
 
         // Destroy should be called only if the managed part is gone.

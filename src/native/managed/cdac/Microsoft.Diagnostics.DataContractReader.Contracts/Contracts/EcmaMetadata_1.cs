@@ -13,15 +13,20 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
-    private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
+    private readonly Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = [];
+    private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _metadata.Clear();
+        _readOnlyMetadataAddress.Clear();
     }
 
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
+        if (_readOnlyMetadataAddress.TryGetValue(handle, out TargetSpan cached))
+            return cached;
+
         ILoader loader = target.Contracts.Loader;
 
         if (!loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint imageFlags))
@@ -32,12 +37,14 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         PEStreamOptions isLoaded = isMapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default;
 
         TargetStream stream = new(target, baseAddress, size);
-        using PEReader peReader = new PEReader(stream, PEStreamOptions.PrefetchMetadata | isLoaded);
+        using PEReader peReader = new PEReader(stream, isLoaded);
 
         int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
         int metadataSize = peReader.PEHeaders.MetadataSize;
 
-        return new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
+        TargetSpan result = new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
+        _readOnlyMetadataAddress[handle] = result;
+        return result;
     }
 
     public MetadataReader? GetMetadata(ModuleHandle handle)

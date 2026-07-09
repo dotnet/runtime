@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -16,7 +16,7 @@ namespace System
 {
     public static partial class Environment
     {
-        private static string CurrentDirectoryCore
+        private static unsafe string CurrentDirectoryCore
         {
             get
             {
@@ -70,7 +70,7 @@ namespace System
             return info.dwPageSize;
         }
 
-        private static string ExpandEnvironmentVariablesCore(string name)
+        private static unsafe string ExpandEnvironmentVariablesCore(string name)
         {
             var builder = new ValueStringBuilder(stackalloc char[128]);
 
@@ -126,7 +126,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
         private static int GetProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
 
-        private static string? GetProcessPath()
+        private static unsafe string? GetProcessPath()
         {
             var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
 
@@ -166,7 +166,7 @@ namespace System
 
         public static string SystemDirectory => s_systemDirectory ??= GetSystemDirectory();
 
-        private static string GetSystemDirectory()
+        private static unsafe string GetSystemDirectory()
         {
             // Normally this will be C:\Windows\System32
             var builder = new ValueStringBuilder(stackalloc char[32]);
@@ -502,7 +502,7 @@ namespace System
             return baseKey.OpenSubKey(keyName, writable: writable);
         }
 
-        public static string UserName
+        public static unsafe string UserName
         {
             get
             {
@@ -549,7 +549,7 @@ namespace System
             builder.Length = (int)size;
         }
 
-        public static string UserDomainName
+        public static unsafe string UserDomainName
         {
             get
             {

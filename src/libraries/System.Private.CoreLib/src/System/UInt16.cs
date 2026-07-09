@@ -152,19 +152,13 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-
-            if (s is null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         //
@@ -318,24 +312,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(ushort))
                 {
-                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - sizeof(ushort));
-
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<ushort>(ref sourceRef);
-
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt16BigEndian(source.Slice(source.Length - sizeof(ushort)));
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = sourceRef;
+                    result = source[0];
                 }
             }
 
@@ -368,22 +353,15 @@ namespace System
                     return false;
                 }
 
-                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-
                 if (source.Length >= sizeof(ushort))
                 {
                     // We have at least 2 bytes, so just read the ones we need directly
-                    result = Unsafe.ReadUnaligned<ushort>(ref sourceRef);
-
-                    if (!BitConverter.IsLittleEndian)
-                    {
-                        result = BinaryPrimitives.ReverseEndianness(result);
-                    }
+                    result = BinaryPrimitives.ReadUInt16LittleEndian(source);
                 }
                 else
                 {
                     // We only have 1-byte so read it directly
-                    result = sourceRef;
+                    result = source[0];
                 }
             }
 
@@ -1125,6 +1103,27 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ushort result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ushort result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out ushort result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
         //
         // IParsable
         //
@@ -1197,7 +1196,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

@@ -23,6 +23,8 @@ using System.Runtime.InteropServices;
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("E", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target5), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget5[]))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("F", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target6), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget6[]))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("G", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target7), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget7[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("H", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target8), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget8[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("I", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target9), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget9[,]))]
 
 class DeadCodeElimination
 {
@@ -1387,6 +1389,8 @@ class DeadCodeElimination
         public struct TrimTarget5;
         public struct TrimTarget6;
         public struct TrimTarget7;
+        public struct TrimTarget8;
+        public class TrimTarget9;
         public class Target1;
         public class Target2;
         public class Target3;
@@ -1394,6 +1398,8 @@ class DeadCodeElimination
         public class Target5;
         public class Target6;
         public class Target7;
+        public class Target8;
+        public class Target9;
         public class Atom;
 
         public static unsafe object[] MakeGenerics<T>()
@@ -1414,18 +1420,36 @@ class DeadCodeElimination
         [MethodImpl(MethodImplOptions.NoInlining)]
         static object GetUnknown() => null;
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static object MakeSharedGeneric<T>()
+            => new T[1,1];
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TestSharedGeneric<T>()
+            => MakeSharedGeneric<T>() is T[,];
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetTrimTarget9() => typeof(TrimTarget9);
+
         public static void Run()
         {
             if (GetUnknown() is TrimTarget7[])
             {
                 Console.WriteLine("Unexpected");
             }
+            if (GetUnknown() is TrimTarget8)
+            {
+                Console.WriteLine("Unexpected");
+            }
 
             typeof(TestInteropMapArrayTrimming).GetMethod(nameof(MakeGenerics)).MakeGenericMethod([GetAtom()]).Invoke(null, []);
+
+            typeof(TestInteropMapArrayTrimming).GetMethod(nameof(TestSharedGeneric)).MakeGenericMethod([GetTrimTarget9()]).Invoke(null, []);
 
             var map = TypeMapping.GetOrCreateExternalTypeMapping<TestInteropMapArrayTrimming>();
 
             // A, B, C, F, G: trim target element type is reachable — entries must be present
+            // I: trim target can be constructed at runtime using type loader
             if (!map.TryGetValue("A", out Type typeA) || typeA.Name != nameof(Target1))
                 throw new Exception("Expected entry A");
             ThrowIfUsableMethodTable(typeA);
@@ -1446,11 +1470,17 @@ class DeadCodeElimination
                 throw new Exception("Expected entry G");
             ThrowIfUsableMethodTable(typeG);
 
-            // D, E: element type is unreachable — entries must be absent
+            if (!map.TryGetValue("I", out Type typeI) || typeI.Name != nameof(Target9))
+                throw new Exception("Expected entry I");
+            ThrowIfUsableMethodTable(typeI);
+
+            // D, E: trim target element type is unreachable. H: element is reachable, but TrimTarget8[] is unreachable.
             if (map.TryGetValue("D", out _))
                 throw new Exception("Unexpected entry D");
             if (map.TryGetValue("E", out _))
                 throw new Exception("Unexpected entry E");
+            if (map.TryGetValue("H", out _))
+                throw new Exception("Unexpected entry H");
         }
     }
 

@@ -57,7 +57,11 @@ else() # WASI
     )
 endif()
 
-if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD)
+if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
+    # These platforms do not support robust mutexes.
+    # Keep an OS list instead of CMake configure checks since we also need to synchronize this with
+    # the compile-time guards on the managed code side at
+    # src/libraries/System.Private.CoreLib/src/System/Threading/NamedMutex.Unix.cs.
     list (APPEND NATIVE_SOURCES
         pal_crossprocessmutex_unsupported.c)
 else()
@@ -115,14 +119,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVE_LIBS_EXTRA)
 append_extra_system_libs(NATIVE_LIBS_EXTRA)
-
-if (CLR_CMAKE_TARGET_ANDROID AND NOT HAVE_GETIFADDRS)
-    add_definitions(-DANDROID_GETIFADDRS_WORKAROUND)
-    add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
-
-    list (APPEND NATIVE_LIBS_EXTRA -llog)
-    list (APPEND NATIVE_SOURCES pal_ifaddrs.c)
-endif ()
 
 if (GEN_SHARED_LIB)
     add_library(System.Native

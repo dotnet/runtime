@@ -15,6 +15,7 @@ add_library(
     SHARED
     %MONODROID_SOURCE%
     %AotModulesSource%
+    %ExtraSources%
 )
 
 %AotSources%

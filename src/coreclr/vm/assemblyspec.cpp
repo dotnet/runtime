@@ -703,6 +703,38 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
     }
 }
 
+// Caller must hold DomainCacheCrst.
+// The binding cache may contain multiple entries for the same assembly
+// (bound under different AssemblySpecs), possibly with a different parent.
+// The first match found during iteration wins, so the map is best-effort.
+void AssemblySpecBindingCache::GetParentAssemblyMap(MapSHash<Assembly*, Assembly*> &parentMap)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    PtrHashMap::PtrIterator i = m_map.begin();
+    while (!i.end())
+    {
+        AssemblyBinding *b = (AssemblyBinding*) i.GetValue();
+        if (!b->IsError())
+        {
+            Assembly *pAssembly = b->GetAssembly();
+            Assembly *pParent = b->GetParentAssembly();
+            if (pAssembly != NULL && pParent != NULL)
+            {
+                if (parentMap.LookupPtr(pAssembly) == NULL)
+                    parentMap.Add(pAssembly, pParent);
+            }
+        }
+        ++i;
+    }
+}
+
 
 class AssemblyBindingHolder
 {
@@ -1041,6 +1073,10 @@ BOOL AssemblySpecBindingCache::RemoveAssembly(Assembly* pAssembly)
                 entry->~AssemblyBinding();
 
             result = TRUE;
+        }
+        else if (entry->GetParentAssembly() == pAssembly)
+        {
+            entry->ClearParentAssembly();
         }
         ++i;
     }

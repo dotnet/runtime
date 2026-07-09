@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 namespace JitTest_call_cs
 {
@@ -63,6 +64,7 @@ namespace JitTest_call_cs
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127426", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         [OuterLoop]
         public static int TestEntryPoint()
         {

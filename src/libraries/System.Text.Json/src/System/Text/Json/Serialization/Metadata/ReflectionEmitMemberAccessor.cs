@@ -178,6 +178,69 @@ namespace System.Text.Json.Serialization.Metadata
             CreateDelegate<JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>>(
                 CreateParameterizedConstructor(constructor, typeof(TArg0), typeof(TArg1), typeof(TArg2), typeof(TArg3)));
 
+        public override Func<object?, T> CreateSingleParameterConstructor<T>(ConstructorInfo constructor) =>
+            CreateDelegate<Func<object?, T>>(CreateSingleParameterConstructor(constructor));
+
+        private static DynamicMethod CreateSingleParameterConstructor(ConstructorInfo constructor)
+        {
+            Type? type = constructor.DeclaringType;
+
+            Debug.Assert(type != null);
+            Debug.Assert(!type.IsAbstract);
+            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
+
+            ParameterInfo[] parameters = constructor.GetParameters();
+            Debug.Assert(parameters.Length == 1);
+
+            Type parameterType = parameters[0].ParameterType;
+            Debug.Assert(!parameterType.IsByRef);
+
+            var dynamicMethod = new DynamicMethod(
+                ConstructorInfo.ConstructorName,
+                type,
+                new[] { JsonTypeInfo.ObjectType },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+            EmitObjectArgument(generator, parameterType);
+            generator.Emit(OpCodes.Newobj, constructor);
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod;
+        }
+
+        private static void EmitObjectArgument(ILGenerator generator, Type parameterType)
+        {
+            Type? nullableUnderlyingType = Nullable.GetUnderlyingType(parameterType);
+            if (nullableUnderlyingType is not null)
+            {
+                Label notNull = generator.DefineLabel();
+                Label done = generator.DefineLabel();
+                LocalBuilder nullableLocal = generator.DeclareLocal(parameterType);
+
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Brtrue_S, notNull);
+
+                generator.Emit(OpCodes.Ldloca_S, nullableLocal);
+                generator.Emit(OpCodes.Initobj, parameterType);
+                generator.Emit(OpCodes.Ldloc, nullableLocal);
+                generator.Emit(OpCodes.Br_S, done);
+
+                generator.MarkLabel(notNull);
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Unbox_Any, nullableUnderlyingType);
+                generator.Emit(OpCodes.Newobj, parameterType.GetConstructor(new[] { nullableUnderlyingType })!);
+
+                generator.MarkLabel(done);
+            }
+            else
+            {
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(parameterType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, parameterType);
+            }
+        }
+
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor, Type parameterType1, Type parameterType2, Type parameterType3, Type parameterType4)
         {
             Type? type = constructor.DeclaringType;
@@ -346,6 +409,9 @@ namespace System.Text.Json.Serialization.Metadata
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
             CreateDelegate<Func<object, TProperty>>(CreatePropertyGetter(propertyInfo, typeof(TProperty)));
 
+        public override Func<TDeclaringType, TProperty> CreatePropertyGetter<TDeclaringType, TProperty>(PropertyInfo propertyInfo) =>
+            CreateDelegate<Func<TDeclaringType, TProperty>>(CreatePropertyGetter(propertyInfo, typeof(TDeclaringType), typeof(TProperty)));
+
         private static DynamicMethod CreatePropertyGetter(PropertyInfo propertyInfo, Type runtimePropertyType)
         {
             MethodInfo? realMethod = propertyInfo.GetMethod;
@@ -379,6 +445,57 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Not supported scenario: possible if declaredPropertyType == int? and runtimePropertyType == int
                 // We should catch that particular case earlier in converter generation.
+                Debug.Assert(!runtimePropertyType.IsValueType);
+
+                generator.Emit(OpCodes.Box, declaredPropertyType);
+            }
+
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod;
+        }
+
+        private static DynamicMethod CreatePropertyGetter(PropertyInfo propertyInfo, Type declaringType, Type runtimePropertyType)
+        {
+            MethodInfo? realMethod = propertyInfo.GetMethod;
+            Debug.Assert(realMethod != null);
+
+            Type? propertyDeclaringType = propertyInfo.DeclaringType;
+            Debug.Assert(propertyDeclaringType != null);
+            Debug.Assert(propertyDeclaringType.IsAssignableFrom(declaringType));
+
+            Type declaredPropertyType = propertyInfo.PropertyType;
+
+            DynamicMethod dynamicMethod = CreateGetterMethod(propertyInfo.Name, declaringType, runtimePropertyType);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            if (declaringType.IsValueType)
+            {
+                generator.Emit(OpCodes.Ldarga_S, 0);
+                if (propertyDeclaringType.IsInterface)
+                {
+                    generator.Emit(OpCodes.Constrained, declaringType);
+                    generator.Emit(OpCodes.Callvirt, realMethod);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Call, realMethod);
+                }
+            }
+            else
+            {
+                generator.Emit(OpCodes.Ldarg_0);
+
+                if (declaringType != propertyDeclaringType)
+                {
+                    generator.Emit(OpCodes.Castclass, propertyDeclaringType);
+                }
+
+                generator.Emit(OpCodes.Callvirt, realMethod);
+            }
+
+            if (declaredPropertyType != runtimePropertyType && declaredPropertyType.IsValueType)
+            {
                 Debug.Assert(!runtimePropertyType.IsValueType);
 
                 generator.Emit(OpCodes.Box, declaredPropertyType);
@@ -492,11 +609,103 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
+        public override UnionTryGetValueAccessor<TUnion> CreateUnionTryGetValueAccessor<TUnion>(IReadOnlyList<KeyValuePair<Type, MethodInfo>> entries) =>
+            CreateDelegate<UnionTryGetValueAccessor<TUnion>>(CreateUnionTryGetValueAccessor(typeof(TUnion), entries));
+
+        private static DynamicMethod CreateUnionTryGetValueAccessor(Type unionType, IReadOnlyList<KeyValuePair<Type, MethodInfo>> entries)
+        {
+            Debug.Assert(entries.Count > 0, "Should not build a chained accessor for an empty entry list.");
+
+            // Emit a single DynamicMethod that chains the user-declared
+            // 'bool TUnion.TryGetValue(out CaseType)' overloads in caller-supplied order.
+            // First successful overload sets the out parameters and returns true; if none
+            // match, the trailer writes null/null and returns false. Producing one piece of
+            // IL avoids per-entry closure or delegate hop and keeps the dispatch O(chainLength)
+            // with no managed allocations on the hot path.
+            DynamicMethod dynamicMethod = new DynamicMethod(
+                "UnionTryGetValueAccessor",
+                typeof(bool),
+                new[] { unionType, typeof(Type).MakeByRefType(), typeof(object).MakeByRefType() },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+            bool unionIsValueType = unionType.IsValueType;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                KeyValuePair<Type, MethodInfo> entry = entries[i];
+                Type caseType = entry.Key;
+                MethodInfo method = entry.Value;
+                LocalBuilder extracted = generator.DeclareLocal(caseType);
+                Label nextEntry = generator.DefineLabel();
+
+                // if (!union.TryGetValue(out extracted)) goto nextEntry;
+                if (unionIsValueType)
+                {
+                    generator.Emit(OpCodes.Ldarga_S, (byte)0);
+                    generator.Emit(OpCodes.Ldloca_S, extracted);
+                    generator.Emit(OpCodes.Call, method);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Ldarg_0);
+                    generator.Emit(OpCodes.Ldloca_S, extracted);
+                    generator.Emit(OpCodes.Callvirt, method);
+                }
+                generator.Emit(OpCodes.Brfalse, nextEntry);
+
+                // caseType = typeof(CaseType);
+                generator.Emit(OpCodes.Ldarg_1);
+                generator.Emit(OpCodes.Ldtoken, caseType);
+                generator.Emit(OpCodes.Call, s_getTypeFromHandleMethod);
+                generator.Emit(OpCodes.Stind_Ref);
+
+                // value = (object?)extracted;
+                generator.Emit(OpCodes.Ldarg_2);
+                generator.Emit(OpCodes.Ldloc, extracted);
+                if (caseType.IsValueType)
+                {
+                    generator.Emit(OpCodes.Box, caseType);
+                }
+                generator.Emit(OpCodes.Stind_Ref);
+
+                // return true;
+                generator.Emit(OpCodes.Ldc_I4_1);
+                generator.Emit(OpCodes.Ret);
+
+                generator.MarkLabel(nextEntry);
+            }
+
+            // No overload matched: caseType = null; value = null; return false;
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Ldnull);
+            generator.Emit(OpCodes.Stind_Ref);
+            generator.Emit(OpCodes.Ldarg_2);
+            generator.Emit(OpCodes.Ldnull);
+            generator.Emit(OpCodes.Stind_Ref);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod;
+        }
+
+        private static readonly MethodInfo s_getTypeFromHandleMethod =
+            typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) })!;
+
         private static DynamicMethod CreateGetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Getter",
                 memberType,
                 new[] { JsonTypeInfo.ObjectType },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+        private static DynamicMethod CreateGetterMethod(string memberName, Type declaringType, Type memberType) =>
+            new DynamicMethod(
+                memberName + "Getter",
+                memberType,
+                new[] { declaringType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 

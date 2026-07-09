@@ -191,7 +191,7 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr || refPos->getInterval()->firstRefPosition->singleDefSpill)
+                if (varDsc->IsLiveInOutOfHandler() || refPos->getInterval()->firstRefPosition->singleDefSpill)
                 {
                     // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
@@ -953,13 +953,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableIntRegs &= ~RBM_FPBASE.GetIntRegSet();
 #endif // ETW_EBP_FRAMED
 
-#ifdef TARGET_AMD64
     availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#else
-    availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
-    availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#endif
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();
@@ -1580,7 +1575,7 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         unsigned   varNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
-        assert(varDsc->lvLiveInOutOfHndlr);
+        assert(varDsc->IsLiveInOutOfHandler());
 
         if (varTypeIsGC(varDsc) && VarSetOps::IsMember(m_compiler, finallyVars, varIndex) && !varDsc->lvIsParam &&
             !varDsc->lvIsParamRegTarget)
@@ -1759,6 +1754,8 @@ void LinearScan::identifyCandidates()
         // the same register assignment throughout
         varDsc->lvRegister = false;
 
+        checkForDNER(lclNum, varDsc);
+
         if (!isRegCandidate(varDsc))
         {
             varDsc->lvLRACandidate = 0;
@@ -1819,7 +1816,7 @@ void LinearScan::identifyCandidates()
                 newInt->isStructField = true;
             }
 
-            if (varDsc->lvLiveInOutOfHndlr)
+            if (varDsc->IsLiveInOutOfHandler())
             {
                 newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);
@@ -2600,6 +2597,16 @@ void LinearScan::setFrameType()
         removeMask |= RBM_SAVED_LOCALLOC_SP.GetIntRegSet();
     }
 #endif // TARGET_ARM
+
+#if defined(TARGET_ARM64)
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        // We reserve x19 for addressing vector and mask locals on the UnknownSizeFrame.
+        m_compiler->codeGen->regSet.rsMaskResvd |= RBM_UNKBASE;
+        JITDUMP("  Reserved REG_UNKBASE (%s) due to presence of UnknownSizeFrame\n", getRegName(REG_UNKBASE));
+        removeMask |= RBM_UNKBASE.GetIntRegSet();
+    }
+#endif
 
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {
@@ -5890,17 +5897,25 @@ void LinearScan::allocateRegisters()
                 RefPosition* nextRefPosition        = currentRefPosition.nextRefPosition;
                 bool         isExtraUpperVectorSave = currentRefPosition.IsExtraUpperVectorSave();
 
-                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave ||
+                bool profHookUpperHalfPreserved = CanSkipUpperVectorSave(&currentRefPosition, lclVarInterval);
+
+                if ((lclVarInterval->physReg == REG_NA) || isExtraUpperVectorSave || profHookUpperHalfPreserved ||
                     (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
-                    if (!currentRefPosition.liveVarUpperSave)
+                    if (!currentRefPosition.liveVarUpperSave || profHookUpperHalfPreserved)
                     {
                         if (isExtraUpperVectorSave)
                         {
-                            // If this was just an extra upperVectorSave that do not have corresponding
+                            // If this was just an extra upperVectorSave that does not have a corresponding
                             // upperVectorRestore, we do not need to mark this as isPartiallySpilled
                             // or need to insert the save/restore.
                             currentRefPosition.skipSaveRestore = true;
+                        }
+                        else if (profHookUpperHalfPreserved)
+                        {
+                            currentRefPosition.skipSaveRestore = true;
+                            assert(nextRefPosition->refType == RefTypeUpperVectorRestore);
+                            nextRefPosition->skipSaveRestore = true;
                         }
 
                         if (assignedRegister != REG_NA)
@@ -7392,6 +7407,32 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
 }
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//------------------------------------------------------------------------
+// CanSkipUpperVectorSave: Determine whether an UpperVectorSave ref position doesn't actually require a save.
+//
+// Arguments:
+//    refPosition             - The RefTypeUpperVectorSave RefPosition.
+//    lclVarInterval          - The Interval for the local variable whose upper vector half might be saved.
+//
+bool LinearScan::CanSkipUpperVectorSave(RefPosition* refPosition, Interval* lclVarInterval)
+{
+    assert(refPosition->refType == RefTypeUpperVectorSave);
+
+#ifdef TARGET_ARM64
+    // PROF_HOOK preserves upper halves of q0-q7, LSRA must be told explicitly that saving these is not needed
+    // So skip the save if reg is assigned, ref is a PROF_HOOK, kill set does not contain reg, and reg is not
+    // a upper-half-only-callee saved reg
+    return (lclVarInterval->physReg != REG_NA) && (refPosition->treeNode != nullptr) &&
+           refPosition->treeNode->OperIs(GT_PROF_HOOK) &&
+           !getKillSetForProfilerHook().IsRegNumInMask(lclVarInterval->physReg) &&
+           !RBM_FLT_CALLEE_SAVED.IsRegNumInMask(lclVarInterval->physReg);
+#else
+    // Tail call profiler stub for amd64 target explicitly calls out that upper halves of ymm registers are not
+    // preserved
+    return false;
+#endif
+}
+
 //------------------------------------------------------------------------
 // insertUpperVectorSave: Insert code to save the upper half of a vector that lives
 //                        in a callee-save register at the point of a kill (the upper half is

@@ -187,6 +187,9 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary runtime { get; set; }
 
+    /// <remarks>
+    /// Removed in .NET 11; kept for compatibility when the .NET 11 SDK builds projects targeting earlier TFMs.
+    /// </remarks>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 

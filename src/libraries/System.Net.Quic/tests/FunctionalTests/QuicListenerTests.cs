@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotAzureLinux3VM))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicListenerTests : QuicTestBase
     {
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }

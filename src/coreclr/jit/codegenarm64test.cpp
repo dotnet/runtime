@@ -9140,23 +9140,37 @@ void CodeGen::genArm64EmitterUnitTestsPac()
 
     genDefineTempLabel(genCreateTempLabel());
 
+    // IF_BR_0A
+    theEmitter->emitIns(INS_retaa); // RETAA
+    theEmitter->emitIns(INS_retab); // RETAB
+
     // IF_PC_0A
     theEmitter->emitIns(INS_autia1716); // AUTIA1716
     theEmitter->emitIns(INS_autiasp);   // AUTIASP
+    theEmitter->emitIns(INS_autib1716); // AUTIB1716
+    theEmitter->emitIns(INS_autibsp);   // AUTIBSP
+    theEmitter->emitIns(INS_autibz);    // AUTIBZ
     theEmitter->emitIns(INS_autiaz);    // AUTIAZ
     theEmitter->emitIns(INS_pacia1716); // PACIA1716
     theEmitter->emitIns(INS_paciasp);   // PACIASP
     theEmitter->emitIns(INS_paciaz);    // PACIAZ
+    theEmitter->emitIns(INS_pacib1716); // PACIB1716
+    theEmitter->emitIns(INS_pacibsp);   // PACIBSP
+    theEmitter->emitIns(INS_pacibz);    // PACIBZ
     theEmitter->emitIns(INS_xpaclri);   // XPACLRI
 
     // IF_PC_1A
     theEmitter->emitIns_R(INS_autiza, EA_8BYTE, REG_R1); // AUTIZA <Xd>
+    theEmitter->emitIns_R(INS_autizb, EA_8BYTE, REG_R2); // AUTIZB <Xd>
     theEmitter->emitIns_R(INS_paciza, EA_8BYTE, REG_R8); // PACIZA <Xd>
+    theEmitter->emitIns_R(INS_pacizb, EA_8BYTE, REG_R9); // PACIZB <Xd>
     theEmitter->emitIns_R(INS_xpacd, EA_8BYTE, REG_R10); // XPACD <Xd>
     theEmitter->emitIns_R(INS_xpaci, EA_8BYTE, REG_R12); // XPACI <Xd>
 
     // IF_PC_2A
     theEmitter->emitIns_R_R(INS_autia, EA_8BYTE, REG_R20, REG_SP); // AUTIA <Xd>, <Xn|SP>
+    theEmitter->emitIns_R_R(INS_autib, EA_8BYTE, REG_R21, REG_SP); // AUTIB <Xd>, <Xn|SP>
     theEmitter->emitIns_R_R(INS_pacia, EA_8BYTE, REG_R27, REG_SP); // PACIA <Xd>, <Xn|SP>
+    theEmitter->emitIns_R_R(INS_pacib, EA_8BYTE, REG_R28, REG_SP); // PACIB <Xd>, <Xn|SP>
 }
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

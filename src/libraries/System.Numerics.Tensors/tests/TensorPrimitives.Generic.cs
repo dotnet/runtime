@@ -455,7 +455,10 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
-            T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+            // Even with FMA, ARM64 vectorized trig can diverge a few tens of ULPs from scalar.
+            T? trigTolerance = IsFmaSupported
+                ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f)
+                : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
@@ -571,7 +574,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
@@ -1805,6 +1807,38 @@ namespace System.Numerics.Tensors.Tests
                 x[^1] = T.MinValue;
 
                 Assert.Throws<OverflowException>(() => TensorPrimitives.SumOfMagnitudes<T>(x.Span));
+            });
+        }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(One);
+                    x[expected] = MinValue;
+                    x[tensorLength - 1] = MinValue;
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_HandlesMinValue()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                    x.Span.Fill(MinValue);
+                    x[expected] = One;
+                    x[tensorLength - 1] = One;
+                    Assert.Equal(expected, IndexOfMinMagnitude(x));
+                }
             });
         }
     }

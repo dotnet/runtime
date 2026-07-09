@@ -33,7 +33,6 @@ namespace BINDER_SPACE
             IDENTITY_FLAG_PROCESSOR_ARCHITECTURE = 0x040,
             IDENTITY_FLAG_RETARGETABLE           = 0x080,
             IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL  = 0x100,
-            IDENTITY_FLAG_CONTENT_TYPE           = 0x800,
             IDENTITY_FLAG_FULL_NAME              = (IDENTITY_FLAG_SIMPLE_NAME |
                                                     IDENTITY_FLAG_VERSION)
         };
@@ -42,7 +41,6 @@ namespace BINDER_SPACE
         {
             m_dwIdentityFlags = IDENTITY_FLAG_EMPTY;
             m_kProcessorArchitecture = peNone;
-            m_kContentType = AssemblyContentType_Default;
 
             // Need to pre-populate SBuffers because of bogus asserts
             static const BYTE byteArr[] = { 0 };
@@ -78,7 +76,6 @@ namespace BINDER_SPACE
         SString             m_cultureOrLanguage;
         SBuffer             m_publicKeyOrTokenBLOB;
         PEKIND              m_kProcessorArchitecture;
-        AssemblyContentType m_kContentType;
         DWORD               m_dwIdentityFlags;
     };
 };

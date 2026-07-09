@@ -64,6 +64,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task RootedForwarderWithExportedTypesIsHandled()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task SecurityAttributeScope()
         {
             return RunTest(allowMissingWarnings: true);
@@ -203,6 +209,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task UsedForwarderIsRemovedWhenLink()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
+        public Task UsedForwarderIsRemovedWhenReferencedByRootedAssembly()
         {
             return RunTest(allowMissingWarnings: true);
         }

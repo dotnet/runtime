@@ -45,11 +45,6 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
     m_pInterfaceMD = PTR_MethodDesc(pInterfaceMD);
     m_pILStub = NULL;
 
-#ifdef TARGET_X86
-    m_dwSlotInfo = 0;
-    m_pwStubStackSlotOffsets = NULL;
-#endif // TARGET_X86
-
     // Initialize the native type information size of native stack, native retval flags, etc).
     InitNativeInfo();
 }
@@ -65,11 +60,6 @@ void ComCallMethodDesc::InitField(FieldDesc* pFD, BOOL isGetter)
 
     m_pFD = pFD;
     m_pILStub = NULL;
-
-#ifdef TARGET_X86
-    m_dwSlotInfo = 0;
-    m_pwStubStackSlotOffsets = NULL;
-#endif // TARGET_X86
 
     m_flags = enum_IsFieldCall; // mark the attribute as a field
     m_flags |= isGetter ? enum_IsGetter : 0;
@@ -92,11 +82,10 @@ void ComCallMethodDesc::InitNativeInfo()
     }
     CONTRACT_END;
 
-    m_StackBytes = (UINT16)-1;
-
     EX_TRY
     {
 #ifdef TARGET_X86
+        m_StackBytes = (UINT16)-1;
         // On x86, this method has to compute size of arguments because we need to know size of the native stack
         // to be able to return back to unmanaged code
         UINT16 nativeArgSize;
@@ -480,22 +469,12 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
 
     *ppStubMD = pStubMD;
 
+    _ASSERTE(pStubMD->IsILStub());
+
 #ifdef TARGET_X86
     // make sure our native stack computation in code:ComCallMethodDesc.InitNativeInfo is right
     _ASSERTE(HasMarshalError() || !pStubMD->IsILStub() || pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() == m_StackBytes);
-#else // TARGET_X86
-
-    if (pStubMD->IsILStub())
-    {
-        m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
-        _ASSERTE(m_StackBytes == pStubMD->SizeOfArgStack());
-    }
-    else
-    {
-        UINT size = pStubMD->SizeOfArgStack();
-        _ASSERTE(size <= USHRT_MAX);
-        m_StackBytes = (UINT16)size;
-    }
+    m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
 #endif // TARGET_X86
 
     RETURN JitILStub(pStubMD);
