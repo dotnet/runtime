@@ -1360,7 +1360,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (pFixedArgCount != null)
                 *pFixedArgCount = GetArgCount(vmMethodDesc);
 
-            if (fpVarInfoCallback != null)
+            bool hasDebugInfo = debugInfo.HasDebugInfo(codePointer);
+            if (!hasDebugInfo && (fpVarInfoCallback != null || fpSeqPointCallback != null))
+            {
+                hr = HResults.E_FAIL;
+            }
+
+            if (fpVarInfoCallback != null && hasDebugInfo)
             {
                 IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out _);
                 foreach (DebugVarInfo varInfo in varInfos)
@@ -1369,7 +1375,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 }
             }
 
-            if (fpSeqPointCallback != null)
+            if (fpSeqPointCallback != null && hasDebugInfo)
             {
                 IEnumerable<Contracts.OffsetMapping> sequencePoints = debugInfo.GetMethodNativeMap(codePointer, preferUninstrumented: true, out _);
                 foreach (Contracts.OffsetMapping mapping in sequencePoints)
