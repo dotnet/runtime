@@ -271,7 +271,7 @@ namespace ILLink.CodeFix
                 ? SyntaxFactory.TriviaList(leading[leading.Count - 1])
                 : default;
 
-            var newLine = SyntaxFactory.EndOfLine("\n");
+            var newLine = SyntaxFactory.ElasticCarriageReturnLineFeed;
             var declarationStatement = SyntaxFactory.LocalDeclarationStatement(
                     SyntaxFactory.VariableDeclaration(
                         declaredType,
