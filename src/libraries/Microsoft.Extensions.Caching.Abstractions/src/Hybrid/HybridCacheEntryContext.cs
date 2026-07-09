@@ -10,9 +10,11 @@ namespace Microsoft.Extensions.Caching.Hybrid;
 /// supplied to a factory callback so that it can adjust those options based on the result of the data fetch.
 /// </summary>
 /// <remarks>
-/// The properties are initialized to the effective values for the operation (composed from the per-call and any
-/// global options). A factory can change them to influence how the resulting value is cached. Implementations can
-/// use <see cref="Revision"/> to detect whether the factory changed any value.
+/// When a <see cref="HybridCache"/> implementation constructs the context for a factory callback, it seeds the
+/// properties from the effective options for the operation (composed from the per-call and any global options), so
+/// the factory observes the current values and can change them to influence how the resulting value is cached.
+/// A context constructed directly reflects only whatever <see cref="HybridCacheEntryOptions"/> were supplied to
+/// its constructor. Implementations can use <see cref="Revision"/> to detect whether the factory changed any value.
 /// </remarks>
 public sealed class HybridCacheEntryContext
 {
