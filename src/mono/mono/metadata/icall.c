@@ -6253,7 +6253,8 @@ ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError 
 gpointer
 ves_icall_RuntimeMethodHandle_GetNativeCode (MonoMethod *method, MonoError *error)
 {
-	return mono_get_runtime_callbacks ()->get_method_code_start (method);
+	MonoRuntimeCallbacks *callbacks = mono_get_runtime_callbacks ();
+	return callbacks->get_method_code_start ? callbacks->get_method_code_start (method) : NULL;
 }
 
 void*
