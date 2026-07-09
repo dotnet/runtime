@@ -819,11 +819,17 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out _);
+        {
+            Unsafe.SkipInit(out result);
+            return Complex<double>.TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out _);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result)
-            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out _);
+        {
+            Unsafe.SkipInit(out result);
+            return Complex<double>.TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out _);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
@@ -831,125 +837,16 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result, out int bytesConsumed)
-            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out bytesConsumed);
+        {
+            Unsafe.SkipInit(out result);
+            return Complex<double>.TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out bytesConsumed);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out charsConsumed);
-
-        private static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex result, out int elementsConsumed)
-            where TChar : unmanaged, IUtfChar<TChar>
         {
-            ValidateParseStyleFloatingPoint(style);
-
-            int openBracket = text.IndexOf(TChar.CastFrom('<'));
-            int semicolon = text.IndexOf(TChar.CastFrom(';'));
-            int closeBracket = text.IndexOf(TChar.CastFrom('>'));
-
-            if ((text.Length < 5) || (openBracket == -1) || (semicolon == -1) || (closeBracket == -1) || (openBracket > semicolon) || (openBracket > closeBracket) || (semicolon > closeBracket))
-            {
-                // We need at least 5 characters for `<0;0>`
-                // We also expect a to find an open bracket, a semicolon, and a closing bracket in that order
-
-                result = default;
-                elementsConsumed = 0;
-                return false;
-            }
-
-            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !text.Slice(0, openBracket).IsWhiteSpace(out _)))
-            {
-                // The opening bracket wasn't the first and we either didn't allow leading whitespace
-                // or one of the leading characters wasn't whitespace at all.
-
-                result = default;
-                elementsConsumed = 0;
-                return false;
-            }
-
-            // The real and imaginary components are exactly delimited by the ';' and '>' separators,
-            // so AllowTrailingInvalidCharacters only applies after the closing bracket, not within a
-            // component. Otherwise something like "<1.5x;2>" would incorrectly parse as (1.5, 2).
-            NumberStyles componentStyle = style & ~NumberStyles.AllowTrailingInvalidCharacters;
-
-            ReadOnlySpan<TChar> slice = text.Slice(openBracket + 1, semicolon - openBracket - 1);
-
-            if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), componentStyle, provider, out double real)
-                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), componentStyle, provider, out real))
-            {
-                result = default;
-                elementsConsumed = 0;
-                return false;
-            }
-
-            if (Number.DecodeFromUtfChar(text[(semicolon + 1)..], out Rune rune, out int elemsConsumed) == OperationStatus.Done)
-            {
-                if (Rune.IsWhiteSpace(rune))
-                {
-                    // We allow a single whitespace after the semicolon regardless of style, this is so that
-                    // the output of `ToString` can be correctly parsed by default and values will roundtrip.
-                    semicolon += elemsConsumed;
-                }
-            }
-
-            slice = text.Slice(semicolon + 1, closeBracket - semicolon - 1);
-
-            if ((typeof(TChar) == typeof(Utf8Char))
-                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), componentStyle, provider, out double imaginary)
-                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), componentStyle, provider, out imaginary))
-            {
-                result = default;
-                elementsConsumed = 0;
-                return false;
-            }
-
-            int trailingWhiteLength = 0;
-
-            if (closeBracket != (text.Length - 1))
-            {
-                bool isInvalid = true;
-
-                if ((style & NumberStyles.AllowTrailingWhite) != 0)
-                {
-                    if (text.Slice(closeBracket + 1).IsWhiteSpace(out trailingWhiteLength))
-                    {
-                        isInvalid = false;
-                    }
-                }
-
-                if (isInvalid && ((style & NumberStyles.AllowTrailingInvalidCharacters) == 0))
-                {
-                    // The closing bracket wasn't the last and we either didn't allow trailing whitespace
-                    // or one of the trailing characters wasn't whitespace at all.
-
-                    result = default;
-                    elementsConsumed = 0;
-                    return false;
-                }
-            }
-
-            result = new Complex(real, imaginary);
-            elementsConsumed = closeBracket + 1 + trailingWhiteLength;
-            return true;
-        }
-
-        private static void ValidateParseStyleFloatingPoint(NumberStyles style)
-        {
-            // Check for undefined flags or hex number
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
-            {
-                ThrowInvalid(style);
-
-                static void ThrowInvalid(NumberStyles value)
-                {
-                    if ((value & InvalidNumberStyles) != 0)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-                    }
-
-                    throw new ArgumentException(SR.Arg_HexStyleNotSupported);
-                }
-            }
+            Unsafe.SkipInit(out result);
+            return Complex<double>.TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out Unsafe.As<Complex, Complex<double>>(ref result), out charsConsumed);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf)" />

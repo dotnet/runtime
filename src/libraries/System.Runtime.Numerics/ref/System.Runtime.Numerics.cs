@@ -476,6 +476,7 @@ namespace System.Numerics
         public static System.Numerics.Complex<T> operator /(System.Numerics.Complex<T> left, T right) { throw null; }
         public static System.Numerics.Complex<T> operator /(System.Numerics.Complex<T> left, System.Numerics.Complex<T> right) { throw null; }
         public static bool operator ==(System.Numerics.Complex<T> left, System.Numerics.Complex<T> right) { throw null; }
+        public static implicit operator System.Numerics.Complex<T>(T value) { throw null; }
         public static System.Numerics.Complex<T> operator ++(System.Numerics.Complex<T> value) { throw null; }
         public static bool operator !=(System.Numerics.Complex<T> left, System.Numerics.Complex<T> right) { throw null; }
         public static System.Numerics.Complex<T> operator *(T left, System.Numerics.Complex<T> right) { throw null; }
@@ -527,6 +528,8 @@ namespace System.Numerics
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.Complex<T> result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex<T> result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Numerics.Complex<T> result) { throw null; }
-        public static implicit operator System.Numerics.Complex<T>(T value) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex<T> result, out int charsConsumed) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex<T> result, out int bytesConsumed) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex<T> result, out int charsConsumed) { throw null; }
     }
 }
