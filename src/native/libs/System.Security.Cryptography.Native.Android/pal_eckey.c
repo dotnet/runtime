@@ -153,14 +153,23 @@ int32_t AndroidCryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
         return FAIL;
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    int32_t size = 0;
+    INIT_LOCALS(loc, curve, field);
 
-    jobject curve = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurve);
-    jobject field = (*env)->CallObjectMethod(env, curve, g_EllipticCurveGetField);
-    *keySize = (*env)->CallIntMethod(env, field, g_ECFieldGetFieldSize);
+    loc[curve] = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurve);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[field] = (*env)->CallObjectMethod(env, loc[curve], g_EllipticCurveGetField);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    size = (*env)->CallIntMethod(env, loc[field], g_ECFieldGetFieldSize);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    ReleaseLRef(env, field);
-    ReleaseLRef(env, curve);
-    return SUCCESS;
+    *keySize = size;
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curveName)

@@ -101,6 +101,7 @@ int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jint certCount = (*env)->CallIntMethod(env, loc[certs], g_CollectionSize);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     bool insufficientBuffer = *outLen < certCount;
     *outLen = certCount;
 
@@ -164,6 +165,7 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
     // foreach (Certificate cert in certs)
     //     certList.add(cert);
     loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, certsLen);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     for (int i = 0; i < certsLen; ++i)
     {
         (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, certs[i]);

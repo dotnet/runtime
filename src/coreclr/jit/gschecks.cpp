@@ -602,7 +602,7 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
                 shadowLclNum);
         CORINFO_METHOD_HANDLE copyHelper =
             info.compCompHnd->getSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
-        GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
+        GenTreeCall* call = gtNewUserCallNode(copyHelper, TYP_VOID);
 
         GenTree* src = gtNewLclVarAddrNode(lclNum);
         GenTree* dst = gtNewLclVarAddrNode(shadowLclNum);
