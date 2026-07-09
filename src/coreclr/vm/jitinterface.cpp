@@ -12400,7 +12400,69 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	"IsHandleRedirected",
 	"IsCompletedMethod",
 	"get_Value",
-	"GetRawStringData"
+	"GetRawStringData",
+
+	"GetExtendedString",
+        "ReleaseHandle",
+        "AllBytesInUInt32AreAscii",
+        "GetBucket",
+        "Close",
+        "GetNumber",
+        "EventSource_GetClrConfig",
+        "set_Capacity",
+        "GetMethodTable",
+        "get_Name",
+        "get_Instance",
+        "get_Log",
+        "get_IsMeterSupported",
+        "get_Out",
+        "ReadUnaligned",
+        "WriteUnaligned",
+        "_Memmove",
+        "set_Item",
+        "InitializeIsMeterSupported",
+        "GetClrConfig",
+        "Contains",
+        "get_Term",
+        "ReadInt",
+
+        "IsEntered",
+        "AreSameType",
+        "AreSame",
+        "IsBitwiseEquatable",
+        "get_IsOutputRedirected"
+        "GetTypeFromHandle",
+        "AsPointer",
+        "GetUnderlyingNativeHandle",
+        "Unregister",
+	
+	"IsNullOrWhiteSpace",
+       	"IndexOfAnyChar",
+       	"InitializeIsSupported",
+	"CountHexDigits",
+ 	"NegateIfNeeded",
+	"IsAsciiLetter",
+      	"Max",
+        "RoundUpToEven",
+        "Min",
+	"IsEventSourceLoggingEnabled",
+ 	"Log2",
+  	"IndexOfChar",
+       	"IsNullRef",
+       	"LoadNUInt",
+       	"AsRef",
+ 
+	"get_CanWrite",
+       	"get_CanSeek",
+       	"get_HasLeftoverData",
+       	"get_State",
+       	"get_BufferSize",
+       	"get_Path"
+        "ThrowIfInvalid",
+       	"GetHandleValue",
+       	"InternalFree"
+
+
     };
 
     struct JitInclusionEntry
@@ -12577,7 +12639,30 @@ interpreterFallback = ShouldUseInterpreterFallback(ftnDesc, ftnName);
  
             fclose(fp);
         }
- 
+
+        /*static char filename[64];
+        static bool logFileInitialized = false;
+
+        if (!logFileInitialized)
+        {
+                std::time_t now = std::time(nullptr);
+                std::strftime(filename,sizeof(filename),"./log-%d-%m-%y-%H:%M.log",std::localtime(&now));
+                logFileInitialized = true;
+        }
+
+        FILE* fp = fopen(filename, "a");
+        if (fp != nullptr)
+        {
+                if (interpreterFallback)
+                {
+                        fprintf(fp,"Jitting -> %s:%s\n",ftnDesc->m_pszDebugClassName,ftnName);
+                }
+                else
+                {
+                        fprintf(fp,"Interpreting -> %s:%s\n",ftnDesc->m_pszDebugClassName,ftnName);
+                }
+                fclose(fp);
+        }*/
 #endif
 
     if (interpreterFallback == false)
