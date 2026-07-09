@@ -1674,7 +1674,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return true;
     }
 
-    public bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    private bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 

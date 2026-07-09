@@ -232,9 +232,6 @@ partial interface IRuntimeTypeSystem : IContract
     // A no metadata method is also a StoredSigMethodDesc
     public virtual bool IsNoMetadataMethod(MethodDescHandle methodDesc, out string methodName);
 
-    // A StoredSigMethodDesc is a MethodDesc for which the signature isn't found in metadata.
-    public virtual bool IsStoredSigMethodDesc(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature);
-
     // Return true for a MethodDesc that describes a method represented by the System.Reflection.Emit.DynamicMethod class
     // A DynamicMethod is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsDynamicMethod(MethodDescHandle methodDesc);
@@ -1728,30 +1725,6 @@ And the various apis are implemented with the following algorithms
         TargetPointer methodNamePointer = // Read MethodName field from DynamicMethodDesc contract using address methodDescHandle.Address
 
         methodName = // ReadBuffer from target of a utf8 null terminated string, starting at address methodNamePointer
-        return true;
-    }
-
-    public bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
-    {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-
-        switch (methodDesc.Classification)
-        {
-            case MethodDescClassification.Dynamic:
-            case MethodDescClassification.EEImpl:
-            case MethodDescClassification.Array:
-                break; // These have stored sigs
-
-            default:
-                signature = default;
-                return false;
-        }
-
-        TargetPointer Sig = // Read Sig field from StoredSigMethodDesc contract using address methodDescHandle.Address
-        uint cSig = // Read cSig field from StoredSigMethodDesc contract using address methodDescHandle.Address
-
-        TargetPointer methodNamePointer = // Read S field from DynamicMethodDesc contract using address methodDescHandle.Address
-        signature = // Read buffer from target memory starting at address Sig, with cSig bytes in it.
         return true;
     }
 

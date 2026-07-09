@@ -159,7 +159,6 @@ public class MethodDescTests
         TargetPointer gcStressCodeCopy = rts.GetGCStressCodeCopy(handle);
         Assert.Equal(TargetPointer.Null, gcStressCodeCopy);
 
-        Assert.False(rts.IsStoredSigMethodDesc(handle, out _));
         Assert.False(rts.IsNoMetadataMethod(handle, out _));
         Assert.False(rts.IsDynamicMethod(handle));
         Assert.False(rts.IsILStub(handle));
@@ -202,7 +201,6 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(arrayMethods[i]);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
-            Assert.True(rts.IsStoredSigMethodDesc(handle, out _));
             Assert.True(rts.IsArrayMethod(handle, out ArrayFunctionType functionType));
 
             ArrayFunctionType expectedFunctionType = i <= (byte)ArrayFunctionType.Constructor
@@ -248,7 +246,6 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(dynamicMethod);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
-            Assert.True(rts.IsStoredSigMethodDesc(handle, out _));
             Assert.True(rts.IsNoMetadataMethod(handle, out _));
             Assert.True(rts.IsDynamicMethod(handle));
             Assert.False(rts.IsILStub(handle));
@@ -256,7 +253,6 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(ilStubMethod);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
-            Assert.True(rts.IsStoredSigMethodDesc(handle, out _));
             Assert.True(rts.IsNoMetadataMethod(handle, out _));
             Assert.False(rts.IsDynamicMethod(handle));
             Assert.True(rts.IsILStub(handle));

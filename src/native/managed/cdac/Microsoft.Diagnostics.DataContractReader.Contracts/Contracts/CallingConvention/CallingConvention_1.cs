@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using Internal.CallingConvention;
 using Internal.CorConstants;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -290,27 +289,17 @@ internal sealed class CallingConvention_1 : ICallingConvention
         RuntimeSignatureDecoder<TypeHandle, MethodSigContext> decoder = new(
             provider, _target, mdReader, context);
 
-        if (rts.IsStoredSigMethodDesc(methodDesc, out ReadOnlySpan<byte> storedSig))
+        if (!rts.TryGetMethodSignature(methodDesc, out ReadOnlySpan<byte> methodSig))
+            throw new InvalidOperationException("Method has no signature");
+
+        unsafe
         {
-            unsafe
+            fixed (byte* pSig = methodSig)
             {
-                fixed (byte* pStoredSig = storedSig)
-                {
-                    BlobReader blobReader = new(pStoredSig, storedSig.Length);
-                    return decoder.DecodeMethodSignature(ref blobReader);
-                }
+                BlobReader blobReader = new(pSig, methodSig.Length);
+                return decoder.DecodeMethodSignature(ref blobReader);
             }
         }
-
-        uint methodToken = rts.GetMethodToken(methodDesc);
-        if (methodToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
-            throw new InvalidOperationException("Method has no token");
-
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle(
-            (int)EcmaMetadataUtils.GetRowId(methodToken));
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-        BlobReader sigReader = mdReader.GetBlobReader(methodDef.Signature);
-        return decoder.DecodeMethodSignature(ref sigReader);
     }
 
     // Re-decode the method signature using a wrapper provider that records
@@ -338,29 +327,17 @@ internal sealed class CallingConvention_1 : ICallingConvention
         RuntimeSignatureDecoder<TrackedType, MethodSigContext> decoder = new(
             provider, _target, mdReader, context);
 
-        MethodSignature<TrackedType> sig;
-        if (rts.IsStoredSigMethodDesc(methodDesc, out ReadOnlySpan<byte> storedSig))
-        {
-            unsafe
-            {
-                fixed (byte* pStoredSig = storedSig)
-                {
-                    BlobReader blobReader = new(pStoredSig, storedSig.Length);
-                    sig = decoder.DecodeMethodSignature(ref blobReader);
-                }
-            }
-        }
-        else
-        {
-            uint methodToken = rts.GetMethodToken(methodDesc);
-            if (methodToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
-                return new ParamTypeInfo[paramCount];
+        if (!rts.TryGetMethodSignature(methodDesc, out ReadOnlySpan<byte> methodSig))
+            return new ParamTypeInfo[paramCount];
 
-            MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle(
-                (int)EcmaMetadataUtils.GetRowId(methodToken));
-            MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-            BlobReader sigReader = mdReader.GetBlobReader(methodDef.Signature);
-            sig = decoder.DecodeMethodSignature(ref sigReader);
+        MethodSignature<TrackedType> sig;
+        unsafe
+        {
+            fixed (byte* pSig = methodSig)
+            {
+                BlobReader blobReader = new(pSig, methodSig.Length);
+                sig = decoder.DecodeMethodSignature(ref blobReader);
+            }
         }
 
         ParamTypeInfo[] result = new ParamTypeInfo[paramCount];
