@@ -80,107 +80,6 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
 //----------------------------------------------------------------------------------------------
-// AllComponentsEitherZeroOrAllBitsSet: Check if a SIMD VN has per-element boolean values.
-//
-// Arguments:
-//    comp     - The compiler instance
-//    vn       - The value number
-//    baseType - The expected SIMD element base type
-//
-// Return Value:
-//    True if every SIMD element is known to be either all-bits-set or zero.
-//
-static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var_types baseType)
-{
-    if (vn == ValueNumStore::NoVN)
-    {
-        return false;
-    }
-
-    vn = comp->vnStore->VNNormalValue(vn);
-
-    if (comp->vnStore->IsVNConstant(vn))
-    {
-        switch (comp->vnStore->TypeOfVN(vn))
-        {
-            case TYP_SIMD8:
-            {
-                simd8_t val = comp->vnStore->GetConstantSimd8(vn);
-                return val.IsAllBitsSet() || val.IsZero();
-            }
-
-            case TYP_SIMD16:
-            {
-                simd16_t val = comp->vnStore->GetConstantSimd16(vn);
-                return val.IsAllBitsSet() || val.IsZero();
-            }
-
-            default:
-            {
-                return false;
-            }
-        }
-    }
-
-    VNFuncApp      funcApp;
-    NamedIntrinsic intrinsicId;
-    unsigned       simdSize;
-    var_types      intrinsicSimdBaseType;
-
-    if (!comp->vnStore->IsVNHWIntrinsicFunc(vn, &funcApp, &intrinsicId, &simdSize, &intrinsicSimdBaseType))
-    {
-        return false;
-    }
-
-    if ((simdSize != 8) && (simdSize != 16))
-    {
-        return false;
-    }
-
-    bool       isScalar = false;
-    genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, baseType, &isScalar);
-
-    if (isScalar)
-    {
-        return false;
-    }
-
-    switch (oper)
-    {
-        case GT_EQ:
-        case GT_NE:
-        case GT_GT:
-        case GT_GE:
-        case GT_LE:
-        case GT_LT:
-        {
-            // The comparison intrinsic may have used a wider unsigned base type to produce the
-            // per-element mask, e.g. a TYP_BYTE compare can be implemented as TYP_UBYTE.
-            return varTypeIsIntegral(baseType) && (genTypeSize(baseType) <= genTypeSize(intrinsicSimdBaseType));
-        }
-
-        case GT_NOT:
-        {
-            return AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.GetArg(0), baseType);
-        }
-
-        case GT_OR:
-        case GT_AND:
-        case GT_XOR:
-        case GT_AND_NOT:
-        {
-            return AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.GetArg(0), baseType) &&
-                   AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.GetArg(1), baseType);
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-}
-
-//----------------------------------------------------------------------------------------------
 // optAssertionProp_HWIntrinsic: Propagate VN-derived facts to hwintrinsic tree flags.
 //
 // Arguments:
@@ -208,8 +107,23 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
     ValueNum op1VN = comp->vnStore->VNConservativeNormalValue(op1->gtVNPair);
 
     auto vnVisitor = [comp, tree](ValueNum vn) -> ValueNumStore::VNVisit {
-        return AllComponentsEitherZeroOrAllBitsSet(comp, vn, tree->GetSimdBaseType()) ? ValueNumStore::VNVisit::Continue
-                                                                                      : ValueNumStore::VNVisit::Abort;
+        if (vn == ValueNumStore::NoVN)
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        vn                 = comp->vnStore->VNNormalValue(vn);
+        var_types type     = comp->vnStore->TypeOfVN(vn);
+        unsigned  simdSize = tree->GetSimdSize();
+
+        if (!varTypeIsSIMD(type) || (genTypeSize(type) != simdSize))
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        return comp->vnStore->IsVectorPerElementMask(vn, tree->GetSimdBaseType(), simdSize)
+                   ? ValueNumStore::VNVisit::Continue
+                   : ValueNumStore::VNVisit::Abort;
     };
 
     if (comp->vnStore->VNVisitReachingVNs(op1VN, vnVisitor) == ValueNumStore::VNVisit::Continue)
