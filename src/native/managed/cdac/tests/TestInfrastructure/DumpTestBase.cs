@@ -179,9 +179,10 @@ public abstract class DumpTestBase : IDisposable
             {
                 if (loader.IsDynamic(handle))
                     continue;
-                if (!loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out _)
+                if (!loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
                     || baseAddress == TargetPointer.Null || size == 0)
                     continue;
+                bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED
 
                 string fileName = loader.GetPath(handle);
                 if (string.IsNullOrEmpty(fileName))
@@ -193,7 +194,7 @@ public abstract class DumpTestBase : IDisposable
                 // verify the on-disk file matches the module captured in the dump.
                 loader.GetFileHeadersInfo(handle, out uint timeStamp, out uint imageSize);
 
-                modules.Add(new ClrMdDumpHost.ManagedModuleImage(baseAddress, size, fileName, timeStamp, imageSize));
+                modules.Add(new ClrMdDumpHost.ManagedModuleImage(baseAddress, size, isMapped, fileName, timeStamp, imageSize));
             }
             catch (System.Exception)
             {

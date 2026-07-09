@@ -30,14 +30,15 @@ public sealed class ClrMdDumpHost : IDisposable
 
     /// <summary>
     /// Describes a managed module's loaded image mapping, sourced from the cDAC Loader contract:
-    /// the loaded (converted) image base, the image size, the on-disk assembly path, and the PE
-    /// identity key (COFF <c>TimeDateStamp</c> and optional-header <c>SizeOfImage</c>) used to
-    /// verify that the on-disk file matches the module captured in the dump.
+    /// the loaded image base, the image size, whether that layout is mapped (loaded/converted) or
+    /// flat (file layout), the on-disk assembly path, and the PE identity key (COFF
+    /// <c>TimeDateStamp</c> and optional-header <c>SizeOfImage</c>) used to verify that the on-disk
+    /// file matches the module captured in the dump.
     /// </summary>
-    public readonly record struct ManagedModuleImage(ulong Base, ulong Size, string FileName, uint TimeStamp, uint ImageSize);
+    public readonly record struct ManagedModuleImage(ulong Base, ulong Size, bool IsMapped, string FileName, uint TimeStamp, uint ImageSize);
 
     /// <summary>A module mapping whose on-disk file has already been located and key-verified.</summary>
-    private readonly record struct ResolvedModule(ulong Base, ulong Size, string? FilePath);
+    private readonly record struct ResolvedModule(ulong Base, ulong Size, bool IsMapped, string? FilePath);
 
     private ClrMdDumpHost(string dumpPath, DataTarget dataTarget, string[] searchPaths)
     {
@@ -85,7 +86,7 @@ public sealed class ClrMdDumpHost : IDisposable
                 return -1;
             }
 
-            return FillFromImage(module.Value.FilePath, module.Value.Base, address, buffer, bytesRead);
+            return FillFromImage(module.Value.FilePath, module.Value.Base, module.Value.IsMapped, address, buffer, bytesRead);
         }
         catch
         {
@@ -103,29 +104,43 @@ public sealed class ClrMdDumpHost : IDisposable
         return null;
     }
 
-    private static int FillFromImage(string foundFile, ulong moduleBase, ulong address, Span<byte> buffer, int bytesRead)
+    private static int FillFromImage(string foundFile, ulong moduleBase, bool isMapped, ulong address, Span<byte> buffer, int bytesRead)
     {
         using FileStream fs = File.OpenRead(foundFile);
         using PEReader peReader = new PEReader(fs);
-
-        int sizeOfHeaders = peReader.PEHeaders.PEHeader?.SizeOfHeaders ?? 0;
-        PEMemoryBlock wholeImage = default;
-        bool wholeImageLoaded = false;
+        PEMemoryBlock wholeImage = peReader.GetEntireImage();
 
         int filled = bytesRead;
         ulong current = address + (ulong)bytesRead;
         while (filled < buffer.Length)
         {
-            long rvaLong = (long)(current - moduleBase);
-            if (rvaLong < 0 || rvaLong > int.MaxValue)
+            long offsetLong = (long)(current - moduleBase);
+            if (offsetLong < 0 || offsetLong > int.MaxValue)
             {
                 return -1;
             }
-            int rva = (int)rvaLong;
+            int offset = (int)offsetLong;
 
-            // GetSectionData maps a (loaded-layout) RVA to the raw section bytes in the on-disk
-            // file, so this works whether the requested address is in the flat or loaded layout.
-            PEMemoryBlock block = peReader.GetSectionData(rva);
+            if (!isMapped)
+            {
+                // Flat (file) layout: the runtime reports addresses as base + file offset, so the
+                // computed offset is already a file offset into the raw image -- read it directly.
+                if (offset >= wholeImage.Length)
+                    return -1;
+                int toCopy = Math.Min(wholeImage.Length - offset, buffer.Length - filled);
+                unsafe
+                {
+                    new ReadOnlySpan<byte>(wholeImage.Pointer + offset, toCopy).CopyTo(buffer.Slice(filled));
+                }
+                filled += toCopy;
+                current += (ulong)toCopy;
+                continue;
+            }
+
+            // Mapped (loaded/converted) layout: the offset is a virtual RVA. GetSectionData maps it
+            // to the raw section bytes in the on-disk file.
+            int sizeOfHeaders = peReader.PEHeaders.PEHeader?.SizeOfHeaders ?? 0;
+            PEMemoryBlock block = peReader.GetSectionData(offset);
             if (block.Length > 0)
             {
                 int toCopy = Math.Min(block.Length, buffer.Length - filled);
@@ -136,24 +151,17 @@ public sealed class ClrMdDumpHost : IDisposable
                 filled += toCopy;
                 current += (ulong)toCopy;
             }
-            else if (rva >= 0 && rva < sizeOfHeaders)
+            else if (offset >= 0 && offset < sizeOfHeaders)
             {
-                // PE header region (before the first section): GetSectionData doesn't cover it.
-                // For a loaded image the headers sit at file offset == RVA, so serve them from
-                // the raw file image (needed to read a module's PE/COR headers when the dump
-                // doesn't capture them, e.g. cdac-lite Normal dumps without the legacy DAC).
-                if (!wholeImageLoaded)
-                {
-                    wholeImage = peReader.GetEntireImage();
-                    wholeImageLoaded = true;
-                }
-                int available = Math.Min(sizeOfHeaders, wholeImage.Length) - rva;
+                // PE header region (before the first section): GetSectionData doesn't cover it, and
+                // in a loaded image the headers sit at file offset == RVA, so serve from the raw image.
+                int available = Math.Min(sizeOfHeaders, wholeImage.Length) - offset;
                 int toCopy = Math.Min(available, buffer.Length - filled);
                 if (toCopy <= 0)
                     return -1;
                 unsafe
                 {
-                    new ReadOnlySpan<byte>(wholeImage.Pointer + rva, toCopy).CopyTo(buffer.Slice(filled));
+                    new ReadOnlySpan<byte>(wholeImage.Pointer + offset, toCopy).CopyTo(buffer.Slice(filled));
                 }
                 filled += toCopy;
                 current += (ulong)toCopy;
@@ -180,7 +188,7 @@ public sealed class ClrMdDumpHost : IDisposable
         _modules.Clear();
         foreach (ManagedModuleImage module in modules)
         {
-            _modules.Add(new ResolvedModule(module.Base, module.Size, ResolveFile(module)));
+            _modules.Add(new ResolvedModule(module.Base, module.Size, module.IsMapped, ResolveFile(module)));
         }
     }
 
