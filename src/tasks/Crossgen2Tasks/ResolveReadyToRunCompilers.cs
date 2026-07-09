@@ -207,16 +207,19 @@ namespace Microsoft.NET.Build.Tasks
             // may only have the full target rid and not an OS-only rid for non-portable target rids
             // added by our source-build partners.
             var runtimeGraph = new RuntimeGraphCache(this).GetRuntimeGraph(RuntimeGraphPath);
+            // Include "linux-bionic" before "linux" so linux-bionic-* RIDs match linux-bionic rather than linux.
+            // linux-bionic (Android Bionic) is equivalent to android from the compiler's perspective.
             string portablePlatform = NuGetUtils.GetBestMatchingRid(
                     runtimeGraph,
                     _targetRuntimeIdentifier,
-                    new[] { "linux", "android", "osx", "win", "freebsd", "illumos" },
+                    new[] { "linux-bionic", "linux", "android", "osx", "win", "freebsd", "illumos" },
                     out _);
 
             targetOS = portablePlatform switch
             {
                 "linux" => "linux",
                 "android" => "android",
+                "linux-bionic" => "android",  // bionic is equivalent to android for the compiler
                 "osx" => "osx",
                 "win" => "windows",
                 "freebsd" => "freebsd",
