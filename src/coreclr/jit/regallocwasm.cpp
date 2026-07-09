@@ -709,9 +709,11 @@ void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* nod
         return;
     }
 
-    for (GenTree* op : node->Operands())
+    // All operands are marked multiply used, so we consume a temporary register for each operand
+    // in reverse (wasm stack) order.
+    for (size_t i = node->GetOperandCount(); i >= 1; i--)
     {
-        ConsumeTemporaryRegForOperand(op DEBUGARG("hardware intrinsic jump-table operand"));
+        ConsumeTemporaryRegForOperand(node->Op(i) DEBUGARG("hardware intrinsic fallback"));
     }
 }
 
