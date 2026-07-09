@@ -15,7 +15,7 @@ namespace System.Formats.Tar.Tests
         public async Task ThrowIf_AddFile_AfterDispose(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async);
+            TarWriter writer = await CreateTarWriter(archiveStream, async: async);
             await DisposeTarWriter(writer, async);
 
             if (async)
@@ -33,7 +33,7 @@ namespace System.Formats.Tar.Tests
         public async Task FileName_NullOrEmpty(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async);
+            TarWriter writer = await CreateTarWriter(archiveStream, async: async);
             try
             {
                 if (async)
@@ -69,7 +69,7 @@ namespace System.Formats.Tar.Tests
             File.Create(file2Path).Dispose();
 
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Pax, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true, async: async);
             try
             {
                 await WriteEntry(writer, file1Path, null, async);
@@ -81,18 +81,18 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Seek(0, SeekOrigin.Begin);
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                TarEntry first = await GetNextEntry(reader, async);
+                TarEntry first = await GetNextEntry(reader, async: async);
                 Assert.NotNull(first);
                 Assert.Equal(file1Name, first.Name);
 
-                TarEntry second = await GetNextEntry(reader, async);
+                TarEntry second = await GetNextEntry(reader, async: async);
                 Assert.NotNull(second);
                 Assert.Equal(file2Name, second.Name);
 
-                Assert.Null(await GetNextEntry(reader, async));
+                Assert.Null(await GetNextEntry(reader, async: async));
             }
             finally
             {
@@ -120,7 +120,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 using MemoryStream archive = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archive, async, format, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, filePath, fileName, async);
@@ -131,10 +131,10 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                TarReader reader = await CreateTarReader(archive, async);
+                TarReader reader = await CreateTarReader(archive, async: async);
                 try
                 {
-                    TarEntry entry = await GetNextEntry(reader, async);
+                    TarEntry entry = await GetNextEntry(reader, async: async);
                     Assert.NotNull(entry);
                     Assert.Equal(format, entry.Format);
                     Assert.Equal(fileName, entry.Name);
@@ -151,7 +151,7 @@ namespace System.Formats.Tar.Tests
 
                     VerifyPlatformSpecificMetadata(filePath, entry);
 
-                    Assert.Null(await GetNextEntry(reader, async));
+                    Assert.Null(await GetNextEntry(reader, async: async));
                 }
                 finally
                 {
@@ -184,7 +184,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 using MemoryStream archive = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archive, async, format, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, dirPath, dirName, async);
@@ -195,10 +195,10 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                TarReader reader = await CreateTarReader(archive, async);
+                TarReader reader = await CreateTarReader(archive, async: async);
                 try
                 {
-                    TarEntry entry = await GetNextEntry(reader, async);
+                    TarEntry entry = await GetNextEntry(reader, async: async);
                     Assert.Equal(format, entry.Format);
 
                     Assert.NotNull(entry);
@@ -208,7 +208,7 @@ namespace System.Formats.Tar.Tests
 
                     VerifyPlatformSpecificMetadata(dirPath, entry);
 
-                    Assert.Null(await GetNextEntry(reader, async));
+                    Assert.Null(await GetNextEntry(reader, async: async));
                 }
                 finally
                 {
@@ -245,7 +245,7 @@ namespace System.Formats.Tar.Tests
                 linkInfo.CreateAsSymbolicLink(targetName);
 
                 using MemoryStream archive = new MemoryStream();
-                TarWriter writer = await CreateTarWriter(archive, async, format, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, linkPath, linkName, async);
@@ -256,10 +256,10 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                TarReader reader = await CreateTarReader(archive, async);
+                TarReader reader = await CreateTarReader(archive, async: async);
                 try
                 {
-                    TarEntry entry = await GetNextEntry(reader, async);
+                    TarEntry entry = await GetNextEntry(reader, async: async);
                     Assert.Equal(format, entry.Format);
 
                     Assert.NotNull(entry);
@@ -270,7 +270,7 @@ namespace System.Formats.Tar.Tests
 
                     VerifyPlatformSpecificMetadata(linkPath, entry);
 
-                    Assert.Null(await GetNextEntry(reader, async));
+                    Assert.Null(await GetNextEntry(reader, async: async));
                 }
                 finally
                 {

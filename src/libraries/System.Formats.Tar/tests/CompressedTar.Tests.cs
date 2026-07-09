@@ -32,7 +32,7 @@ namespace System.Formats.Tar.Tests
             using (FileStream streamToCompress = File.Open(archivePath, createOptions))
             using (GZipStream compressorStream = new GZipStream(streamToCompress, CompressionMode.Compress))
             {
-                TarWriter writer = await CreateTarWriter(compressorStream, async);
+                TarWriter writer = await CreateTarWriter(compressorStream, async: async);
                 try
                 {
                     await WriteEntry(writer, filePath, fileName, async);
@@ -57,14 +57,14 @@ namespace System.Formats.Tar.Tests
             using (FileStream streamToDecompress = File.Open(archivePath, readOptions))
             using (GZipStream decompressorStream = new GZipStream(streamToDecompress, CompressionMode.Decompress))
             {
-                TarReader reader = await CreateTarReader(decompressorStream, async);
+                TarReader reader = await CreateTarReader(decompressorStream, async: async);
                 try
                 {
-                    TarEntry entry = await GetNextEntry(reader, async);
+                    TarEntry entry = await GetNextEntry(reader, async: async);
                     Assert.NotNull(entry);
                     Assert.Equal(TarEntryFormat.Pax, entry.Format);
                     Assert.Equal(fileName, entry.Name);
-                    Assert.Null(await GetNextEntry(reader, async));
+                    Assert.Null(await GetNextEntry(reader, async: async));
                 }
                 finally
                 {

@@ -68,7 +68,7 @@ namespace System.Formats.Tar.Tests
             string fileWithTwoSegments = Path.Join(secondSegment, "c.txt");
 
             using MemoryStream archive = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archive, async, TarEntryFormat.Ustar, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true, async: async);
             try
             {
                 UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, fileWithTwoSegments)
@@ -234,7 +234,7 @@ namespace System.Formats.Tar.Tests
                 using MemoryStream archive = new MemoryStream();
                 using (GZipStream compressor = new GZipStream(archive, CompressionMode.Compress, leaveOpen: true))
                 {
-                    TarWriter writer = await CreateTarWriter(compressor, async);
+                    TarWriter writer = await CreateTarWriter(compressor, async: async);
                     try
                     {
                         var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file")
@@ -272,7 +272,7 @@ namespace System.Formats.Tar.Tests
             string path2 = Path.Join(sharedRootFolders, "entry 2 with spaces.txt");
 
             using MemoryStream stream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(stream, async, TarEntryFormat.Pax, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(stream, TarEntryFormat.Pax, leaveOpen: true, async: async);
             try
             {
                 PaxTarEntry entry1 = new PaxTarEntry(TarEntryType.RegularFile, path1);
@@ -492,7 +492,7 @@ namespace System.Formats.Tar.Tests
         private async Task ExtractRootDirMatch_Verify_Throws(bool async, TarEntryFormat format, TarEntryType entryType, string destinationFolderPath, string entryFilePath, string? linkTargetPath)
         {
             using MemoryStream archive = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archive, async, format, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
             try
             {
                 TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, entryFilePath);
