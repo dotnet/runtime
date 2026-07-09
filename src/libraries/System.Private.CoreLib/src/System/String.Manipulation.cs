@@ -2171,7 +2171,7 @@ namespace System
                     }
                 }
 
-                while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count)
+                while ((uint)remaining.Length > (uint)Vector512<ushort>.Count)
                 {
                     Vector512<ushort> vector = Vector512.Create(remaining);
                     Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
