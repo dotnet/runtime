@@ -3118,8 +3118,8 @@ static gpointer
 get_method_code_start (MonoMethod *method)
 {
 	MonoJitInfo *ji = NULL;
-	mono_jit_search_all_backends_for_jit_info (method, &ji);
-	return ji ? mono_jit_info_get_code_start (ji) : NULL;
+	gpointer code = mono_jit_search_all_backends_for_jit_info (method, &ji);
+	return ji ? mono_jit_info_get_code_start (ji) : code;
 }
 
 gpointer

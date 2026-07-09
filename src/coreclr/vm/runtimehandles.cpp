@@ -2024,14 +2024,13 @@ extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod
     // report, so the id symbolicates uniformly whether the method is JITted, R2R, or interpreted (0 if none).
     if (pMethod->IsUnboxingStub())
     {
-        MethodDesc* pUnboxed = pMethod->GetExistingWrappedMethodDesc();
-        if (pUnboxed != NULL)
-        {
-            pMethod = pUnboxed;
-        }
+        pMethod = pMethod->GetWrappedMethodDesc();
     }
 
-    result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
+    if (pMethod != NULL)
+    {
+        result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
+    }
 
     END_QCALL;
 
