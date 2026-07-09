@@ -1270,7 +1270,7 @@ namespace System.Threading.Tasks.Tests
                 await StateMachineAsync_InnerThrows();
             }
             catch (InvalidOperationException) { }
-            await RuntimeAsync_SingleYield();
+            await StateMachineAsync_SingleYield();
             await Task.Delay(50);
         }
 
