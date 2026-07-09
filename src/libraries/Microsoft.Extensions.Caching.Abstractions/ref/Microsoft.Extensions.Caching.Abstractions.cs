@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.Caching.Hybrid
     }
     public sealed class HybridCacheEntryContext
     {
-        public HybridCacheEntryContext() { }
+        public HybridCacheEntryContext(HybridCacheEntryOptions? options) { }
         public System.TimeSpan? Expiration { get { throw null; } set { } }
         public System.TimeSpan? LocalCacheExpiration { get { throw null; } set { } }
         public HybridCacheEntryFlags? Flags { get { throw null; } set { } }

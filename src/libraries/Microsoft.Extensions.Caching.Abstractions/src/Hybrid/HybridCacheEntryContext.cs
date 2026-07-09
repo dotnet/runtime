@@ -22,17 +22,18 @@ public sealed class HybridCacheEntryContext
     private long? _localSize;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="HybridCacheEntryContext"/> class with default (unset) values.
+    /// Initializes a new instance of the <see cref="HybridCacheEntryContext"/> class, seeding its values from
+    /// the supplied options.
     /// </summary>
+    /// <param name="options">
+    /// The options to seed the context from, or <see langword="null"/> to start with unset values. This is
+    /// typically the effective options for the operation, so that the factory callback observes the current values.
+    /// </param>
     /// <remarks>
     /// This is primarily intended for <see cref="HybridCache"/> implementations that need to construct a context
     /// to pass to a factory callback.
     /// </remarks>
-    public HybridCacheEntryContext()
-    {
-    }
-
-    internal HybridCacheEntryContext(HybridCacheEntryOptions? options)
+    public HybridCacheEntryContext(HybridCacheEntryOptions? options)
     {
         if (options is not null)
         {
