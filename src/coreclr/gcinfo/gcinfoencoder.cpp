@@ -719,13 +719,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetStack
     _ASSERTE( regNum != NO_STACK_BASE_REGISTER );
     _ASSERTE(GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
     _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
-#if defined(TARGET_LOONGARCH64)
-    // Note that the regNum == 0 only occurs under interpreter.
-    assert(regNum == 3 || 22 == regNum || 0 == regNum);
-#elif defined(TARGET_RISCV64)
-    // Note that the regNum == 0 only occurs under interpreter.
-    assert(regNum == 2 || 8 == regNum || 0 == regNum);
-#endif
     m_StackBaseRegister = regNum;
 }
 
@@ -962,13 +955,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         // Slim encoding means nothing special, partially interruptible, maybe a default frame register
         GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // Slim encoding
-#if defined(TARGET_LOONGARCH64)
-        // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister || 0 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister || 0 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
     }
     else
@@ -979,13 +965,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, 0 /* unused - was hasPSPSymStackSlot */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
-#if defined(TARGET_LOONGARCH64)
-        // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister || 0 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister || 0 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE(m_Info1, ((m_StackBaseRegister != NO_STACK_BASE_REGISTER) ? 1 : 0), 1, FlagsSize);
 #ifdef TARGET_AMD64
         GCINFO_WRITE(m_Info1, (m_WantsReportOnlyLeaf ? 1 : 0), 1, FlagsSize);
@@ -1065,13 +1044,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(!slimHeader && (m_StackBaseRegister != NO_STACK_BASE_REGISTER))
     {
-#if defined(TARGET_LOONGARCH64)
-        // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister || 0 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        // Note that the m_StackBaseRegister == 0 only occurs under interpreter.
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister || 0 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }
 
