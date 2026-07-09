@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Internal.CallingConvention;
 using Internal.CorConstants;
+using Internal.JitInterface;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
@@ -222,7 +223,25 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 }
 
                 if (argOffset == TransitionBlock.StructInRegsOffset)
-                    throw new NotImplementedException("SystemV AMD64 struct-in-registers is not yet supported by the cDAC.");
+                {
+                    // SystemV-AMD64 struct-in-registers.
+                    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR sysvDesc;
+                    parameterTypes[argIndex].GetSystemVAmd64PassStructInRegisterDescriptor(out sysvDesc);
+                    ArgLocDesc loc = argit.GetArgLoc(argOffset) ?? throw new InvalidOperationException("ArgIterator returned null ArgLocDesc for struct-in-registers argument");
+
+                    arguments.Add(new ArgumentLocation
+                    {
+                        Offset = argOffset,
+                        ElementType = elemType,
+                        TypeHandle = methodSig.ParameterTypes[argIndex],
+                        IsStructPassedInRegs = true,
+                        SysVEightByteDescriptor = sysvDesc,
+                        SysVIdxGenReg = loc.m_idxGenReg,
+                        OpenGenericType = paramInfo[argIndex].OpenGenericType,
+                    });
+                    argIndex++;
+                    continue;
+                }
 
                 bool passedByRef = elemType == CdacCorElementType.ValueType
                     && transitionBlock.IsArgPassedByRef(parameterTypes[argIndex]);
@@ -602,6 +621,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         bool isX86 = arch is RuntimeInfoArchitecture.X86;
 
         int pointerSize = _target.PointerSize;
+        TransitionBlock tb = BuildTransitionBlock(runtimeInfo);
 
         SortedDictionary<int, GCRefMapToken> tokens = new();
         ArgumentLayout enumeration = GetArgumentLayout(methodDesc);
@@ -618,6 +638,33 @@ internal sealed class CallingConvention_1 : ICallingConvention
             else if (arg.IsVASigCookie)
             {
                 token = GCRefMapToken.VASigCookie;
+            }
+            else if (arg.IsStructPassedInRegs)
+            {
+                // Mirrors ArgDestination::ReportPointersFromStructInRegisters
+                // in src/coreclr/vm/argdestination.h.
+                int genRegOffset = tb.OffsetOfArgumentRegisters + arg.SysVIdxGenReg * pointerSize;
+                for (int i = 0; i < arg.SysVEightByteDescriptor.eightByteCount; i++)
+                {
+                    SystemVClassificationType cls = (i == 0)
+                        ? arg.SysVEightByteDescriptor.eightByteClassifications0
+                        : arg.SysVEightByteDescriptor.eightByteClassifications1;
+                    int size = (i == 0)
+                        ? arg.SysVEightByteDescriptor.eightByteSizes0
+                        : arg.SysVEightByteDescriptor.eightByteSizes1;
+
+                    // SSE eightbytes go to XMM regs; don't advance genRegOffset.
+                    if (cls == SystemVClassificationType.SystemVClassificationTypeSSE)
+                        continue;
+
+                    if (cls == SystemVClassificationType.SystemVClassificationTypeIntegerReference)
+                        tokens[genRegOffset] = GCRefMapToken.Ref;
+                    else if (cls == SystemVClassificationType.SystemVClassificationTypeIntegerByRef)
+                        tokens[genRegOffset] = GCRefMapToken.Interior;
+
+                    genRegOffset += size;
+                }
+                continue;
             }
             else if (arg.IsParamType)
             {
@@ -741,7 +788,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // the lowest positions). On non-x86 the mapping is monotonic so we
         // could iterate the offset map directly, but using OffsetFromGCRefMapPos
         // for both keeps the code path uniform.
-        TransitionBlock tb = BuildTransitionBlock(runtimeInfo);
 
         // For x86 we need to know how many slot positions exist (we'd otherwise
         // miss high-pos register slots when the offset map's max is on the

@@ -10330,6 +10330,20 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+
+void SoftwareExceptionFrame::SetContext(T_CONTEXT *pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context = *pContext;
+
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+}
+
 #ifdef TARGET_X86
 
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)

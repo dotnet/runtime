@@ -117,10 +117,8 @@ public unsafe partial class StructPacking
     const int Pass = 100;
     const int Fail = 0;
 
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/181", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [SkipOnMono("needs triage")]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/181", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         bool succeeded = true;

@@ -406,6 +406,20 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
+    bool IExecutionManager.IsGcSafe(TargetCodePointer instructionPointer)
+    {
+        IExecutionManager eman = this;
+        if (eman.GetCodeBlockHandle(instructionPointer) is not CodeBlockHandle cbh)
+            return false; // not managed code
+
+        TargetNUInt relativeOffset = eman.GetRelativeOffset(cbh);
+        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
+        IGCInfoHandle handle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+
+        uint offset = (uint)relativeOffset.Value;
+        return _target.Contracts.GCInfo.IsGcSafe(handle, offset);
+    }
+
     uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)
     {
         IExecutionManager eman = this;
