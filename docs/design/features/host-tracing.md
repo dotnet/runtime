@@ -44,7 +44,7 @@ The host components implement two routes for outputting errors:
 void hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer)
 ```
 
-`hostpolicy` also exposes `corehost_set_error_writer(DOTNET_HOST_error_writer_fn error_writer)` which is used by the `hostfxr` to propagate the custom error writer to the `hostpolicy` when called.
+`hostpolicy` also exposes `corehost_set_error_writer(corehost_error_writer_fn error_writer)` which is used by the `hostfxr` to propagate the custom error writer to the `hostpolicy` when called.
 
 The functions behave exactly the same in both components. The `error_writer` parameter can be:
 
