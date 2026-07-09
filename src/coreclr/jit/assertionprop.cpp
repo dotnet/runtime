@@ -289,7 +289,13 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
             }
 
             int64_t constValue = node->AsIntConCommon()->IntegralValue();
+            if (constValue < 0)
+            {
+                // We don't try and reason about lower bounds here to simplify the logic.
+                break;
+            }
 
+            // For a non-negative constant, try and find a tighter upper bound
             if (constValue <= UINT16_MAX)
             {
                 if (constValue <= UINT8_MAX)
@@ -334,11 +340,7 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
                 }
             }
 
-            if (constValue >= 0)
-            {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-            }
-            break;
+            return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
         }
 
         case GT_QMARK:
