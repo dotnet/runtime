@@ -1727,6 +1727,31 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector_GetLower:
+        {
+            // GetLower narrows a Vector128 by reading only its low 64 bits. At the register level
+            // this is a no-op: the value already occupies the low bits of the register (a Q register
+            // and its low D register alias), so the consumer can read op1 directly at its own size.
+            // Remove the node, which avoids a register-to-register copy when the source is still live
+            // and keeps the node out of LIR entirely.
+            //
+            // The consumer reads op1 from a register at its own size; nothing observes the node for
+            // sizing, and containment performs its own size check (operandSize >= expectedSize), so
+            // op1 can never be read from an undersized contained memory operand.
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                GenTree* op1  = node->Op(1);
+                GenTree* next = node->gtNext;
+
+                use.ReplaceWith(op1);
+                BlockRange().Remove(node);
+                return next;
+            }
+            break;
+        }
+
         case NI_AdvSimd_FusedMultiplyAddScalar:
             LowerHWIntrinsicFusedMultiplyAddScalar(node);
             break;
