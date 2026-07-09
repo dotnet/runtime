@@ -55,14 +55,17 @@ buffer_manager_try_peek_sequence_point (
 
 // Allocate a new buffer for the specified thread.
 // This function will store the buffer in the thread's buffer list for future use and also return it here.
-// A NULL return value means that a buffer could not be allocated.
+// Returns NULL if a buffer could not be allocated. *should_block is set true only when the failure was
+// buffer-capacity exhaustion (the writer was enqueued on the fair wait queue, so a reader will wake it and
+// the caller may park); it stays false for every other failure (e.g. OOM allocating the buffer bytes),
+// which the caller must drop - there is no wakeup for those.
 static
 EventPipeBuffer *
 buffer_manager_allocate_buffer_for_thread (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeThreadSessionState *thread_session_state,
 	uint32_t request_size,
-	bool *write_suspended);
+	bool *should_block);
 
 static
 void
@@ -500,11 +503,16 @@ buffer_manager_allocate_buffer_for_thread (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeThreadSessionState *thread_session_state,
 	uint32_t request_size,
-	bool *write_suspended)
+	bool *should_block)
 {
 	EP_ASSERT (buffer_manager != NULL);
 	EP_ASSERT (thread_session_state != NULL);
 	EP_ASSERT (request_size > 0);
+	EP_ASSERT (should_block != NULL);
+
+	// Set true only on the fair-reserve (capacity) failure path below, where the writer is enqueued for a
+	// wakeup; every other NULL return leaves it false so the caller drops.
+	*should_block = false;
 
 	EventPipeBuffer *new_buffer = NULL;
 	EventPipeSequencePoint* sequence_point = NULL;
@@ -548,8 +556,13 @@ buffer_manager_allocate_buffer_for_thread (
 #ifndef PERFTRACING_DISABLE_THREADS
 	EventPipeThread *writer_thread = ep_thread_session_state_get_thread (thread_session_state);
 	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK && !ep_thread_is_rundown_thread (writer_thread)) {
-		if (!buffer_manager_try_reserve_buffer_fair (buffer_manager, writer_thread, buffer_size))
+		if (!buffer_manager_try_reserve_buffer_fair (buffer_manager, writer_thread, buffer_size)) {
+			// Capacity is full and we were enqueued on the fair wait queue, so a reader will wake us: tell
+			// the caller it may park. Any allocation failure below is not enqueued, leaving should_block
+			// false, so the caller drops it instead.
+			*should_block = true;
 			return NULL;
+		}
 	} else
 #endif // !PERFTRACING_DISABLE_THREADS
 	{
@@ -1312,19 +1325,15 @@ ep_buffer_manager_write_event (
 	// Check to see if we need to allocate a new buffer, and if so, do it here.
 	if (alloc_new_buffer) {
 		uint32_t request_size = sizeof (EventPipeEventInstance) + ep_event_payload_get_size (payload);
-		bool write_suspended = false;
-		buffer = buffer_manager_allocate_buffer_for_thread (buffer_manager, session_state, request_size, &write_suspended);
+		bool should_block = false;
+		buffer = buffer_manager_allocate_buffer_for_thread (buffer_manager, session_state, request_size, &should_block);
 		if (!buffer) {
-			// We treat this as the write_event call occurring after this session stopped listening for events, effectively the
-			// same as if ep_event_is_enabled test above returned false.
-			ep_raise_error_if_nok (!write_suspended);
-
-			// In block mode, notify the caller that they should park and retry, unless the session is closing,
-			// or rundown is enabled, in which case we cannot block without deadlocking.
 #ifndef PERFTRACING_DISABLE_THREADS
-			if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK &&
-				!ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) &&
-				!ep_thread_is_rundown_thread (current_thread)) {
+			// Park only when the pool was full and the fair-reserve path enqueued this writer (should_block),
+			// and teardown is not aborting - a reader will wake it when capacity frees. Every other allocation
+			// failure (e.g. OOM allocating the buffer bytes) has no wakeup, so it drops: Block is non-lossy up
+			// to buffer capacity, not against host memory exhaustion.
+			if (should_block && !ep_rt_volatile_load_uint32_t (&buffer_manager->aborting)) {
 				result = EP_WRITE_EVENT_RESULT_BLOCKED;
 			} else
 #endif // !PERFTRACING_DISABLE_THREADS
