@@ -9,11 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class FileVersionInfoTest : FileCleanupTestBase
     {
-        // On Apple mobile NativeAOT the app bundler strips managed .dll files from the .app bundle,
-        // so the test assembly is deployed with a .exe extension there (see the .csproj).
-        private static readonly string TestAssemblyFileName = PlatformDetection.IsAppleMobile && PlatformDetection.IsNativeAot ?
-            "System.Diagnostics.FileVersionInfo.TestAssembly.exe" :
-            "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
+        private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
         // On Unix the internal name's extension is .exe if OutputType is exe even though the TargetExt is .dll.
         private readonly string OriginalTestAssemblyInternalName = PlatformDetection.IsWindows ?
             "System.Diagnostics.FileVersionInfo.TestAssembly.dll" :
@@ -21,12 +17,26 @@ namespace System.Diagnostics.Tests
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
+        // The test assembly and Assembly1.cs are embedded as managed resources (see the .csproj) and written to a temp
+        // file at run time. This keeps the tests independent of those files being deployed next to the test app, which
+        // does not happen on NativeAOT Apple mobile where the app bundler strips managed .dll files from the .app bundle.
+        private string WriteEmbeddedResourceToFile(string resourceName)
+        {
+            string path = GetTestFilePath();
+            using (Stream source = typeof(FileVersionInfoTest).Assembly.GetManifestResourceStream(resourceName))
+            using (FileStream destination = File.Create(path))
+            {
+                source.CopyTo(destination);
+            }
+
+            return path;
+        }
+
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void FileVersionInfo_CustomManagedAssembly()
         {
-            // Assembly1.dll
-            VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), new MyFVI()
+            string filePath = WriteEmbeddedResourceToFile(TestAssemblyFileName);
+            VerifyVersionInfo(filePath, new MyFVI()
             {
                 Comments = "Have you played a Contoso amusement device today?",
                 CompanyName = "The name of the company.",
@@ -34,7 +44,7 @@ namespace System.Diagnostics.Tests
                 FileDescription = "My File",
                 FileMajorPart = 4,
                 FileMinorPart = 3,
-                FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName),
+                FileName = filePath,
                 FilePrivatePart = 1,
                 FileVersion = "4.3.2.1",
                 InternalName = OriginalTestAssemblyInternalName,
@@ -59,11 +69,10 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
         public void FileVersionInfo_EmptyFVI()
         {
-            // Assembly1.cs
-            VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), new MyFVI()
+            string filePath = WriteEmbeddedResourceToFile(TestCsFileName);
+            VerifyVersionInfo(filePath, new MyFVI()
             {
                 Comments = null,
                 CompanyName = null,
@@ -71,7 +80,7 @@ namespace System.Diagnostics.Tests
                 FileDescription = null,
                 FileMajorPart = 0,
                 FileMinorPart = 0,
-                FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName),
+                FileName = filePath,
                 FilePrivatePart = 0,
                 FileVersion = null,
                 InternalName = null,
