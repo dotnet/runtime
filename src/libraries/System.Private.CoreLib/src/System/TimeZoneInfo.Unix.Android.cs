@@ -107,7 +107,7 @@ namespace System
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime: true);
             }
-            if (name.Length >= 4 && name[0] == 'G' && name[1] == 'M' && name[2] == 'T' && (name[3] == '+' || name[3] == '-'))
+            if (name.Length > 4 && name[0] == 'G' && name[1] == 'M' && name[2] == 'T' && (name[3] == '+' || name[3] == '-'))
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime: true);
             }
