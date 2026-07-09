@@ -195,7 +195,7 @@ public struct Debugger_JITFuncData
     public ulong vmNativeCodeMethodDescToken;
     public Interop.BOOL fIsFilterFrame;
     public ulong parentNativeOffset;
-    public ulong fpParentOrSelf;                   // FramePointer (CORDB_ADDRESS)
+    public ulong fpParentOrSelf;
     public Interop.BOOL isInstantiatedGeneric;
     public Interop.BOOL justAfterILThrow;
 }
