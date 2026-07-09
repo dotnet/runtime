@@ -153,6 +153,8 @@ CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ThrownObject, offsetof(ExInfo, m_excep
 CDAC_TYPE_FIELD(ExceptionInfo, T_UINT32, ExceptionFlags, cdac_data<ExInfo>::ExceptionFlagsValue)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackLowBound, cdac_data<ExInfo>::StackLowBound)
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, StackHighBound, cdac_data<ExInfo>::StackHighBound)
+CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ExceptionRecord, cdac_data<ExInfo>::ExceptionRecord)
+CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ContextRecord, cdac_data<ExInfo>::ContextRecord)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
 #endif // TARGET_UNIX
@@ -570,7 +572,26 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumStaticFields, cdac_data<EEClass>::NumStati
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
+CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(EEClassOptionalFields)
+CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_FIELD(EEClassOptionalFields, TYPE(SystemVEightByteRegistersInfo), EightByteRegistersInfo, cdac_data<EEClassOptionalFields>::EightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
+CDAC_TYPE_END(EEClassOptionalFields)
+
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_BEGIN(SystemVEightByteRegistersInfo)
+CDAC_TYPE_INDETERMINATE(SystemVEightByteRegistersInfo)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, NumEightBytes, cdac_data<SystemVEightByteRegistersInfo>::NumEightBytes)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification0, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification1, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification1)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize0, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize1, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize1)
+CDAC_TYPE_END(SystemVEightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
@@ -649,7 +670,6 @@ CDAC_TYPE_END(ThreadStressLog)
 
 CDAC_TYPE_BEGIN(StressLogChunk)
 CDAC_TYPE_SIZE(sizeof(StressLogChunk))
-CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Prev, offsetof(StressLogChunk, prev))
 CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Next, offsetof(StressLogChunk, next))
 CDAC_TYPE_FIELD(StressLogChunk, T_ARRAY(T_UINT8), Buf, offsetof(StressLogChunk, buf))
 CDAC_TYPE_FIELD(StressLogChunk, T_UINT32, Sig1, offsetof(StressLogChunk, dwSig1))
@@ -1160,8 +1180,6 @@ CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CodePointer), ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
-// Offset to where stack arguments begin (just past the end of the TransitionBlock)
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgs, sizeof(TransitionBlock))
 // Offset to argument registers and first GCRefMap slot (platform-specific)
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegisters, sizeof(TransitionBlock))
@@ -1203,6 +1221,11 @@ CDAC_TYPE_BEGIN(ExternalMethodFrame)
 CDAC_TYPE_SIZE(sizeof(ExternalMethodFrame))
 CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, Indirection, cdac_data<ExternalMethodFrame>::Indirection)
 CDAC_TYPE_END(ExternalMethodFrame)
+
+CDAC_TYPE_BEGIN(PInvokeCalliFrame)
+CDAC_TYPE_SIZE(sizeof(PInvokeCalliFrame))
+CDAC_TYPE_FIELD(PInvokeCalliFrame, T_POINTER, VASigCookiePtr, cdac_data<PInvokeCalliFrame>::VASigCookiePtr)
+CDAC_TYPE_END(PInvokeCalliFrame)
 
 CDAC_TYPE_BEGIN(DynamicHelperFrame)
 CDAC_TYPE_SIZE(sizeof(DynamicHelperFrame))

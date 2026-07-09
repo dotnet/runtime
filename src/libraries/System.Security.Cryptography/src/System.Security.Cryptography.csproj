@@ -466,6 +466,10 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellman.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellman.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanCng.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9AttributeObject.cs"
              Link="Common\System\Security\Cryptography\Pkcs\Pkcs9AttributeObject.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs\Pkcs9ContentType.cs"
@@ -687,8 +691,6 @@
     <Compile Include="System\Security\Cryptography\UniversalCryptoEncryptor.cs" />
     <Compile Include="System\Security\Cryptography\UniversalCryptoDecryptor.cs" />
     <Compile Include="System\Security\Cryptography\UniversalCryptoOneShot.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellman.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\XmlKeyHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
@@ -887,7 +889,8 @@
     <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.Managed.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.NotSupported.cs" />
@@ -1943,10 +1946,10 @@
              Link="Common\System\Security\Cryptography\RSACng.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\X25519WindowsHelpers.cs"
-             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\X25519WindowsHelpers.cs"
+             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
@@ -2032,8 +2035,10 @@
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X25519DiffieHellmanOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.cs" />
@@ -2063,7 +2068,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.StackTrace\src\System.Diagnostics.StackTrace.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.MemoryMappedFiles\src\System.IO.MemoryMappedFiles.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />

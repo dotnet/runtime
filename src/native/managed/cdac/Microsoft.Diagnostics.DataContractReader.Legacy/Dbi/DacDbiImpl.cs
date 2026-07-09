@@ -695,8 +695,69 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
+    // EXCEPTION_MAXIMUM_PARAMETERS from the Windows SDK.
+    private const int ExceptionMaximumParameters = 15;
+
+    // Full size of a native EXCEPTION_RECORD for the target's pointer size: the header
+    // (two DWORDs + two pointers + NumberParameters DWORD, aligned up to the pointer size)
+    // followed by the fixed ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS] array.
+    private static int ExceptionRecordFullSize(int ptrSize)
+    {
+        int unaligned = sizeof(uint) + sizeof(uint) + ptrSize + ptrSize + sizeof(uint);
+        int header = (unaligned + (ptrSize - 1)) & ~(ptrSize - 1);
+        return header + (ExceptionMaximumParameters * ptrSize);
+    }
+
     public int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.Hijack(vmThread, dwThreadId, pRecord, pOriginalContext, cbSizeContext, reason, pUserData, pRemoteContextAddr) : HResults.E_NOTIMPL;
+    {
+        // Hijack mutates live target state (it writes to the thread's stack and sets the thread context).
+        // It therefore cannot be cross-checked against the legacy implementation in DEBUG builds.
+        // See https://github.com/dotnet/runtime/blob/0d1a20fb14109f277df06ebee3f83c964f9dcc61/src/coreclr/debug/daccess/dacdbiimpl.cpp#L4907 for more algorithm detail.
+        int hr = HResults.S_OK;
+        try
+        {
+            // Read the thread's current context.
+            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            byte[] contextBuffer = new byte[ctx.Size];
+            if (!_target.TryGetThreadContext(dwThreadId, ctx.AllContextFlags, contextBuffer))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            // If the caller requested it, copy back the original (pre-hijack) context.
+            if (pOriginalContext != 0)
+            {
+                if (cbSizeContext != contextBuffer.Length)
+                    throw Marshal.GetExceptionForHR(HResults.E_INVALIDARG)!;
+                contextBuffer.AsSpan().CopyTo(new Span<byte>((void*)pOriginalContext, (int)cbSizeContext));
+            }
+
+            byte[]? recordBytes = null;
+            if (pRecord != 0)
+            {
+                int recordSize = ExceptionRecordFullSize(_target.PointerSize);
+                recordBytes = new byte[recordSize];
+                new ReadOnlySpan<byte>((void*)pRecord, recordSize).CopyTo(recordBytes);
+            }
+
+            TargetPointer espContext = _target.Contracts.Debugger.PrepareExceptionHijack(
+                contextBuffer,
+                new TargetPointer(vmThread),
+                recordBytes,
+                reason,
+                new TargetPointer((ulong)pUserData));
+
+            if (pRemoteContextAddr is not null)
+                *pRemoteContextAddr = espContext.Value;
+
+            // Commit the modified context to the thread.
+            if (!_target.TrySetThreadContext(dwThreadId, contextBuffer))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
 
     public int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
     {
@@ -932,7 +993,45 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetUserState(ulong vmThread, int* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pRetVal = default;
+            CorDebugUserState partialState;
+            hr = GetPartialUserState(vmThread, &partialState);
+            if (hr != HResults.S_OK)
+                throw Marshal.GetExceptionForHR(hr)!;
+
+            CorDebugUserState result = partialState;
+
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPtr);
+
+            IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            byte[] contextBytes = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, context.FullContextFlags);
+            context.FillFromBuffer(contextBytes);
+            if (!_target.Contracts.ExecutionManager.IsGcSafe(context.InstructionPointer))
+                result |= CorDebugUserState.USER_UNSAFE_POINT;
+
+            *pRetVal = (int)result;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int retValLocal;
+            int hrLocal = _legacy.GetUserState(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal)
     {
@@ -1815,17 +1914,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #endif
         return hr;
-    }
-
-    public int GetFramePointer(nuint pSFIHandle, ulong* pRetVal)
-    {
-        if (pSFIHandle == 0)
-            return HResults.E_INVALIDARG;
-
-        nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
-            ? _legacy.GetFramePointer(legacyHandle, pRetVal)
-            : HResults.E_NOTIMPL;
     }
 
     private static nuint TryGetLegacyHandle(nuint pSFIHandle)

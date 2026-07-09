@@ -809,6 +809,12 @@ namespace System.Numerics.Tests
             // Overflow to infinity
             yield return new object[] { "0x1p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-0x1p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+
+            // Special values (Infinity/NaN) are supported with HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.HexFloat, invariantFormat, float.NaN };
         }
 
         [Theory]
@@ -889,8 +895,6 @@ namespace System.Numerics.Tests
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
             yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
             yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
-            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
-            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
