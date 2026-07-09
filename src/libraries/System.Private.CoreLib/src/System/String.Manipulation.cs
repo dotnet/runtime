@@ -2390,7 +2390,7 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (!Sse.IsSupported || remaining.Count > 0)
+                if (!Sse.IsSupported || remaining.Length > 0)
                 {
                     Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
