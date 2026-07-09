@@ -83,7 +83,7 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
-        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
+        mono_assert(runtimeHelpers.featureWasmFinalEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
     module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
@@ -146,8 +146,8 @@ async function instantiateWasmWorker (
     const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
     Module.wasmModule = null;
 
-    preRunWorker();
     successCallback(instance, undefined);
+    preRunWorker();
 }
 
 
@@ -424,10 +424,10 @@ async function instantiate_wasm_module (
 async function ensureUsedWasmFeatures () {
     const simd = loaderHelpers.simd();
     const relaxedSimd = loaderHelpers.relaxedSimd();
-    const exceptions = loaderHelpers.exceptions();
+    const exceptions = loaderHelpers.exceptionsFinal();
     runtimeHelpers.featureWasmSimd = await simd;
     runtimeHelpers.featureWasmRelaxedSimd = await relaxedSimd;
-    runtimeHelpers.featureWasmEh = await exceptions;
+    runtimeHelpers.featureWasmFinalEh = await exceptions;
 }
 
 export async function start_runtime () {

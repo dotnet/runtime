@@ -19,7 +19,7 @@ internal class ARMUnwinder(Target target)
 
     public bool Unwind(ref ARMContext context)
     {
-        if (_eman.GetCodeBlockHandle(context.InstructionPointer.Value) is not CodeBlockHandle cbh)
+        if (_eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
         {
             return false;
         }

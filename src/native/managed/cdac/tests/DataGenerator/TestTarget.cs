@@ -256,6 +256,7 @@ internal sealed class TestTarget : Target
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
     public override bool IsAlignedToPointerSize(TargetPointer pointer) => throw new NotImplementedException();
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer) => throw new NotImplementedException();
+    public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context) => throw new NotImplementedException();
 
     // --- Stub ContractRegistry -------------------------------------
 

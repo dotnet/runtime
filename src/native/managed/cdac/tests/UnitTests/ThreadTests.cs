@@ -102,7 +102,11 @@ public unsafe class ThreadTests
     {
         const uint id = 1;
         const ulong osId = 1234;
-        const uint state = (uint)(ThreadState.WaitSleepJoin | ThreadState.Background);
+        // Wrapped bits (Background, WaitSleepJoin, CoInitialized, DebugSuspendPending) plus an
+        // unwrapped runtime bit (TS_Dead = 0x800) to verify only the wrapped bits are exposed.
+        const uint wrapped = (uint)(ThreadState.Background | ThreadState.WaitSleepJoin | ThreadState.CoInitialized | ThreadState.DebugSuspendPending);
+        const uint unwrapped = 0x00000800; // TS_Dead - not part of the contract enum
+        const uint state = wrapped | unwrapped;
         MockThread? thread = null;
 
         TestPlaceholderTarget target = CreateTarget(
@@ -115,9 +119,13 @@ public unsafe class ThreadTests
 
         IThread contract = target.Contracts.Thread;
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.Equal(wrapped, (uint)data.State);
         Assert.True(data.State.HasFlag(ThreadState.Background));
         Assert.True(data.State.HasFlag(ThreadState.WaitSleepJoin));
+        Assert.True(data.State.HasFlag(ThreadState.CoInitialized));
+        Assert.True(data.State.HasFlag(ThreadState.DebugSuspendPending));
         Assert.False(data.State.HasFlag(ThreadState.Stopped));
+        Assert.Equal(0u, (uint)data.State & unwrapped);
     }
 
     [Theory]
@@ -350,6 +358,58 @@ public unsafe class ThreadTests
         IThread contract = target.Contracts.Thread;
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
         Assert.Equal(lastThrownHandle, data.LastThrownObjectHandle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_ExceptionInProgress_ExposesOSRecords(MockTarget.Architecture arch)
+    {
+        // When an exception is in progress (non-null tracker), GetThreadData exposes the
+        // OS EXCEPTION_RECORD and CONTEXT pointers stored on the current ExInfo.
+        MockThread? thread = null;
+        TargetPointer osExceptionRecord = new(0xAAAA_0001);
+        TargetPointer osContextRecord = new(0xBBBB_0001);
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                MockExceptionInfo exceptionInfo = threadBuilder.GetExceptionInfo(thread);
+                exceptionInfo.ExceptionRecord = (ulong)osExceptionRecord;
+                exceptionInfo.ContextRecord = (ulong)osContextRecord;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+
+        Assert.True(data.IsExceptionInProgress);
+        Assert.Equal(osExceptionRecord, data.OSExceptionRecord);
+        Assert.Equal(osContextRecord, data.OSExceptionContextRecord);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_NoExceptionInProgress_OSRecordsNull(MockTarget.Architecture arch)
+    {
+        // When there is no current exception tracker, no exception is in progress and the
+        // OS record pointers are null.
+        MockThread? thread = null;
+
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder =>
+            {
+                thread = threadBuilder.AddThread(1, 1234);
+                thread.ExceptionTracker = 0;
+            });
+
+        IThread contract = target.Contracts.Thread;
+        ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+
+        Assert.False(data.IsExceptionInProgress);
+        Assert.Equal(TargetPointer.Null, data.OSExceptionRecord);
+        Assert.Equal(TargetPointer.Null, data.OSExceptionContextRecord);
     }
 
     [Theory]

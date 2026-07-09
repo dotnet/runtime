@@ -372,13 +372,6 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     _ASSERTE(pMetaDataLookup != NULL);
     _ASSERTE(pAllocator != NULL);
     _ASSERTE(pTarget != NULL);
-
-#ifdef _DEBUG
-    // Enable verification asserts in ICorDebug scenarios.  ICorDebug never guesses at the DAC path, so any
-    // mismatch should be fatal, and so always of interest to the user.
-    // This overrides the assignment in the base class ctor (which runs first).
-    m_fEnableDllVerificationAsserts = true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -520,26 +513,6 @@ STDMETHODIMP_(ULONG)
 DacDbiInterfaceImpl::Release(THIS)
 {
     return ClrDataAccess::Release();
-}
-
-// Check whether the version of the DBI matches the version of the runtime.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckDbiVersion(const DbiVersion * pVersion)
-{
-    DD_ENTER_MAY_THROW;
-
-    if (pVersion->m_dwFormat != kCurrentDbiVersionFormat)
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    if ((pVersion->m_dwProtocolBreakingChangeCounter != kCurrentDacDbiProtocolBreakingChangeCounter) ||
-        (pVersion->m_dwReservedMustBeZero1 != 0))
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    return S_OK;
 }
 
 // Flush the DAC cache. This should be called when target memory changes.
@@ -1111,7 +1084,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 }
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleMetaDataFileInfo(VMPTR_Module vmModule, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult)
 {
     if (pTimeStamp == NULL || pImageSize == NULL || pStrFilename == NULL || pResult == NULL)
         return E_POINTER;
@@ -1124,9 +1097,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMP
 
         DWORD dwDataSize;
         DWORD dwRvaHint;
-        PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
-        _ASSERTE(pPEAssembly != NULL);
-        if (pPEAssembly == NULL)
+        Module * pModule = vmModule.GetDacPtr();
+        _ASSERTE(pModule != NULL);
+        if (pModule == NULL)
         {
             *pResult = FALSE;
             return E_FAIL;
@@ -1135,7 +1108,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMP
         {
         WCHAR wszFilePath[MAX_LONGPATH] = {0};
         DWORD cchFilePath = MAX_LONGPATH;
-        bool ret = ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly,
+        bool ret = ClrDataAccess::GetMetaDataFileInfoFromModule(pModule,
                                                                 *pTimeStamp,
                                                                 *pImageSize,
                                                                 dwDataSize,
@@ -3267,8 +3240,7 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
     if (invocationCount == 0)
     {
         // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
-        // Special case: This might fail in a VSD delegate (instance open virtual)...
-        // TODO: There is the special signatures cases missing.
+        // This does not handle open virtual delegates correctly.
         TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
         if (targetMethodPtr == (TADDR)NULL)
         {
@@ -5576,6 +5548,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
                                                     | DT_CONTEXT_INTEGER
     #endif
                         ;
+#ifdef FEATURE_INTERPRETER
+                        EECodeInfo codeInfo(GetIP(&tmpContext));
+                        if (codeInfo.IsInterpretedCode())
+                        {
+                            pContextBuffer->ContextFlags |= DT_CONTEXT_INTEGER;
+                        }
+#endif // FEATURE_INTERPRETER
                         return S_OK;
                     }
                     frame = frame->Next();
@@ -6767,11 +6746,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS obj, 
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask)
 {
     DD_ENTER_MAY_THROW;
 
-    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask, TRUE);
+    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, handleWalkMask, TRUE);
 
     if (walker == NULL)
         return E_OUTOFMEMORY;
@@ -7315,9 +7294,11 @@ static BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
     return new (nothrow) BYTE[cBytes];
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
+
+    _ASSERTE(fpCallback != NULL);
 
     HRESULT hr = S_OK;
     EX_TRY
@@ -7370,13 +7351,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAsyncLocals(VMPTR_MethodDesc v
         }
 
         UINT32 varCount = asyncSuspensionPoints[state].NumContinuationVars;
-        pAsyncLocals->Alloc(varCount);
 
         _ASSERTE(varBeginIndex + varCount <= cAsyncVars);
         for (UINT32 i = 0; i < varCount; i++)
         {
-            (*pAsyncLocals)[i].offset = asyncVars[varBeginIndex + i].Offset;
-            (*pAsyncLocals)[i].ilVarNum = asyncVars[varBeginIndex + i].VarNumber;
+            AsyncLocalData local;
+            local.offset   = asyncVars[varBeginIndex + i].Offset;
+            local.ilVarNum = asyncVars[varBeginIndex + i].VarNumber;
+            fpCallback(&local, pUserData);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7410,9 +7392,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     return S_OK;
 }
 
-DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)
-    : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),
-      mResolvePointers(resolvePointers), mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
+DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
+    : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
+      mResolvePointers(resolvePointers), mHandleWalker(NULL)
 {
 }
 
@@ -7504,21 +7486,6 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
 
             if (FAILED(hr))
                 return hr;
-        }
-    }
-
-    if (total < celt)
-    {
-        while (total < celt && mFQCurr < mFQEnd)
-        {
-            DacGcReference &ref = roots[total++];
-
-            ref.vmDomain = VMPTR_AppDomain::NullPtr();
-            ref.objHnd.SetDacTargetPtr(mFQCurr.GetAddr());
-            ref.dwType = (DWORD)CorReferenceFinalizer;
-            ref.i64ExtraData = 0;
-
-            mFQCurr++;
         }
     }
 

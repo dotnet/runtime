@@ -133,7 +133,7 @@ void Compiler::createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR
 
 void Compiler::unwindPushPopCFI(regNumber reg)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
@@ -182,7 +182,7 @@ typedef jitstd::vector<CFI_CODE> CFICodeVector;
 
 void Compiler::unwindBegPrologCFI()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -234,10 +234,10 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 
 void Compiler::unwindAllocStackCFI(unsigned size)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = 0;
-    if (compGeneratingProlog)
+    if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
     {
         cbProlog = unwindGetCurrentOffset(func);
     }
@@ -253,7 +253,7 @@ void Compiler::unwindAllocStackCFI(unsigned size)
 //
 void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
@@ -425,7 +425,7 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
 //
 UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     emitLocation* loc = func->startLoc;
     insGroup*     ig  = (loc != nullptr) ? loc->GetIG() : nullptr;
     assert((ig == nullptr) || (loc->GetInsOffset() == 0));

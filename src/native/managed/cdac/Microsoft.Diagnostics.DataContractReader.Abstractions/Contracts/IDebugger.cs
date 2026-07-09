@@ -28,6 +28,7 @@ public interface IDebugger : IContract
     TargetPointer GetDebuggerControlBlockAddress() => throw new NotImplementedException();
     void EnableGCNotificationEvents(bool fEnable) => throw new NotImplementedException();
     HijackKind GetHijackKind(TargetCodePointer controlPC) => throw new NotImplementedException();
+    TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData) => throw new NotImplementedException();
 }
 
 public readonly struct Debugger : IDebugger
