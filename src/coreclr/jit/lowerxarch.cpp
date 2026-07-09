@@ -1281,6 +1281,23 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
     {
         GenTree* arg = node->Op(i);
 
+        if (isScalar && arg->OperIs(GT_NEG))
+        {
+            // For scalar FMA the CreateScalarUnsafe wrapper around each argument has already been
+            // removed during lowering (floating-point CreateScalarUnsafe is a no-op), so a negated
+            // scalar argument now appears as a bare GT_NEG. Fold that negation into the FMA variant
+            // and drop the GT_NEG node.
+
+            GenTree* negOp = arg->gtGetOp1();
+            BlockRange().Remove(arg);
+
+            negOp->ClearContained();
+            node->Op(i) = negOp;
+
+            negatedArgs[i - 1] ^= true;
+            continue;
+        }
+
         if (!arg->OperIsHWIntrinsic())
         {
             continue;
@@ -1288,62 +1305,36 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
 
         GenTreeHWIntrinsic* hwArg = arg->AsHWIntrinsic();
 
-        switch (hwArg->GetHWIntrinsicId())
+        bool       isScalarArg = false;
+        genTreeOps oper        = hwArg->GetOperForHWIntrinsicId(&isScalarArg);
+
+        if (oper != GT_XOR)
         {
-            case NI_Vector_CreateScalarUnsafe:
-            {
-                GenTree*& argOp = hwArg->Op(1);
+            continue;
+        }
 
-                if (argOp->OperIs(GT_NEG))
-                {
-                    BlockRange().Remove(argOp);
+        GenTree* argOp = hwArg->Op(2);
 
-                    argOp = argOp->gtGetOp1();
-                    argOp->ClearContained();
-                    ContainCheckHWIntrinsic(arg->AsHWIntrinsic());
+        if (!argOp->isContained())
+        {
+            // A constant should have already been contained
+            continue;
+        }
 
-                    negatedArgs[i - 1] ^= true;
-                }
+        // xor is bitwise and the actual xor node might be a different base type
+        // from the FMA node, so we check if its negative zero using the FMA base
+        // type since that's what the end negation would end up using
 
-                break;
-            }
+        if (argOp->IsVectorNegativeZero(node->GetSimdBaseType()))
+        {
+            BlockRange().Remove(hwArg);
+            BlockRange().Remove(argOp);
 
-            default:
-            {
-                bool       isScalarArg = false;
-                genTreeOps oper        = hwArg->GetOperForHWIntrinsicId(&isScalarArg);
+            argOp = hwArg->Op(1);
+            argOp->ClearContained();
+            node->Op(i) = argOp;
 
-                if (oper != GT_XOR)
-                {
-                    break;
-                }
-
-                GenTree* argOp = hwArg->Op(2);
-
-                if (!argOp->isContained())
-                {
-                    // A constant should have already been contained
-                    break;
-                }
-
-                // xor is bitwise and the actual xor node might be a different base type
-                // from the FMA node, so we check if its negative zero using the FMA base
-                // type since that's what the end negation would end up using
-
-                if (argOp->IsVectorNegativeZero(node->GetSimdBaseType()))
-                {
-                    BlockRange().Remove(hwArg);
-                    BlockRange().Remove(argOp);
-
-                    argOp = hwArg->Op(1);
-                    argOp->ClearContained();
-                    node->Op(i) = argOp;
-
-                    negatedArgs[i - 1] ^= true;
-                }
-
-                break;
-            }
+            negatedArgs[i - 1] ^= true;
         }
     }
 
@@ -1994,6 +1985,48 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector_ToScalar:
         {
             return LowerHWIntrinsicToScalar(node);
+        }
+
+        case NI_Vector_CreateScalarUnsafe:
+        {
+            // A floating-point CreateScalarUnsafe is a pure reinterpret: the scalar value already
+            // resides in the lowest element of a SIMD register and the upper elements are explicitly
+            // undefined ("Unsafe"). There is therefore nothing for codegen to do, so we remove the
+            // node here in LIR and let its user consume the underlying scalar directly.
+            //
+            // The scalar is intentionally left at its natural (scalar) type - retyping it to a SIMD
+            // type would corrupt spill and memory-access sizes for other consumers. Correctness is
+            // preserved because any consumer that reads the value from a register sees the full SIMD
+            // register (with the undefined upper elements matching the Unsafe contract), while any
+            // consumer that could fold the scalar as a memory operand is gated by the width-aware
+            // containment logic in IsContainableHWIntrinsicOp (a 4/8-byte scalar cannot be contained
+            // where a wider operand is required).
+            //
+            // Integral scalars (and decomposed longs) still require an explicit movd/movq to move the
+            // value from a general-purpose register into a SIMD register, so those keep the
+            // CreateScalarUnsafe node and fall through to standard containment.
+
+            if (varTypeIsFloating(node->GetSimdBaseType()))
+            {
+                LIR::Use use;
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    GenTree* op1      = node->Op(1);
+                    GenTree* nextNode = node->gtNext;
+
+                    use.ReplaceWith(op1);
+                    BlockRange().Remove(node);
+                    return nextNode;
+                }
+
+                // A node with no use is either already dead (and marked unused) or a transient
+                // CreateScalarUnsafe that Vector.Create lowering creates and lowers before wiring it
+                // to its parent. Leaving it in place is harmless: the dead case is DCE'd, and the
+                // transient builder case still produces the same code it does today. Removing the
+                // duplicative Vector.Create lowering (so it no longer manufactures these) is tracked
+                // as separate work.
+            }
+            break;
         }
 
         case NI_X86Base_Extract:
