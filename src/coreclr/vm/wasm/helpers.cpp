@@ -494,12 +494,13 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     pRD->IsCallerContextValid = FALSE;
 
-    if (m_CallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
+    if (dac_cast<TADDR>(m_pCallerReturnAddress) == INLINED_PINVOKE_FROM_R2R)
     {
-        pRD->pCurrentContext->InterpreterSP = m_pCallSiteSP;
-        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(m_pCallSiteSP);
+        TADDR callSiteSP = dac_cast<TADDR>(m_pCallSiteSP);
+        pRD->pCurrentContext->InterpreterSP = callSiteSP;
+        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(callSiteSP);
         _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
-        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(m_pCallSiteSP, pRD->pCurrentContext->InterpreterIP);
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(callSiteSP, pRD->pCurrentContext->InterpreterIP);
     }
     else
     {
@@ -725,7 +726,7 @@ extern "C" __attribute__((naked)) void JIT_PInvokeBegin(void* sp, InlinedCallFra
 
 #ifdef DEBUG
 // Debug variant of these apis tests that sp and __stack_pointer are in sync
-EXTERN_C void* JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
+EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
 {
     _ASSERTE(sp == stack_pointer_global_value);
     Thread* pThread = (Thread*)pFrame->m_pThread;
@@ -737,9 +738,12 @@ EXTERN_C void* JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, In
 
 extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-    asm("local.get 0\n"                /* sp */
-        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
-        "local.get 1\n"                /* pFrame */
+    // Unlike JIT_PInvokeBegin, the debug variant does NOT reset the __stack_pointer global; it
+    // reads the current global and passes it alongside sp so JIT_PInvokeEndImpl can validate that
+    // R2R codegen kept sp == __stack_pointer across the call.
+    asm("local.get 0\n"                /* sp (arg1) */
+        "global.get __stack_pointer\n" /* current __stack_pointer global (arg2) */
+        "local.get 1\n"                /* pFrame (arg3) */
         "call %0\n"
         "return" ::"i"(JIT_PInvokeEndImpl));
 }
