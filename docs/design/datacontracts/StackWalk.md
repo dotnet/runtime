@@ -136,6 +136,7 @@ This contract depends on the following descriptors:
 | `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
 | `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
+| `FuncEvalFrame` | `ReturnAddress` | Return address of the frame |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalUsesHijack` | Flag used in processing FuncEvalFrame |
 | `DebuggerEval` | `MethodToken` | Metadata token of the method being evaluated |

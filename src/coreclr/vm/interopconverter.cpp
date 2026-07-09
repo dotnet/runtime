@@ -93,7 +93,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
 
     BOOL        fReleaseWrapper     = false;
     HRESULT     hr                  = E_NOINTERFACE;
-    SafeComHolder<IUnknown> pUnk    = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
     size_t      ul                  = 0;
 
     if (*poref == NULL)
@@ -145,8 +145,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
     if (pUnk == NULL)
         COMPlusThrowHR(hr);
 
-    pUnk.SuppressRelease();
-    RETURN pUnk;
+    RETURN pUnk.Detach();
 }
 
 
@@ -348,7 +347,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     }
     else
     {
-        SafeComHolder<IUnknown> pUnkHolder;
+        ComHolderAnyMode<IUnknown> pUnkHolder;
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -358,7 +357,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 
         RCWPROTECT_END(pRCW);
 
-        pUnk = pUnkHolder.Extract();
+        pUnk = pUnkHolder.Detach();
     }
 
     if (throwIfNoComIP && pUnk == NULL)
@@ -408,7 +407,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     Thread * pThread = GetThread();
 
     IUnknown* pOuter = pUnk;
-    SafeComHolder<IUnknown> pAutoOuterUnk = NULL;
+    ComHolderAnyMode<IUnknown> pAutoOuterUnk;
 
     if (pUnk != NULL)
     {

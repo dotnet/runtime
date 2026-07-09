@@ -28,4 +28,3 @@ namespace System.Memory.Tests
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData) => Task.FromResult<Stream?>(null);
     }
 }
-

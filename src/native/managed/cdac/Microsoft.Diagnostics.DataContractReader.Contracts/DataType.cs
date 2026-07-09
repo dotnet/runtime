@@ -62,6 +62,8 @@ public enum DataType
     MethodTable,
     DynamicStaticsInfo,
     EEClass,
+    EEClassOptionalFields,
+    SystemVEightByteRegistersInfo,
     CoreLibBinder,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
@@ -178,6 +180,7 @@ public enum DataType
     ExternalMethodFrame,
     DynamicHelperFrame,
     InterpreterFrame,
+    PInvokeCalliFrame,
 
     ComCallWrapper,
     SimpleComCallWrapper,

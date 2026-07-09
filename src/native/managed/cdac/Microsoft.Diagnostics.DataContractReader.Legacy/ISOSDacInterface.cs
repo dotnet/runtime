@@ -1266,4 +1266,8 @@ public unsafe partial interface ISOSDacInterface17
         ClrDataAddress threadStressLogAddress,
         DacComNullableByRef<ISOSStressLogMsgEnum> ppEnum);
 
+    [PreserveSig]
+    int GetStressLogMemoryRanges(
+        DacComNullableByRef<ISOSMemoryEnum> ppEnum);
+
 }
