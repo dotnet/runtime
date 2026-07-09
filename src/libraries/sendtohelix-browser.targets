@@ -129,14 +129,13 @@
     <HelixPreCommand Include="$(EnvVarCommand) XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
+  <!-- Diagnostic: probe the login keychain state before dev-certs runs. -->
   <ItemGroup Condition="'$(BrowserHost)' == 'osx' and '$(IsRunningLibraryTests)' == 'true'">
     <HelixPreCommand Include="$(EnvVarCommand) LOGIN_KEYCHAIN=$HOME/Library/Keychains/login.keychain-db" />
-    <HelixPreCommand Include="security delete-keychain &quot;$LOGIN_KEYCHAIN&quot; || true" />
-    <HelixPreCommand Include="security create-keychain -p &quot;&quot; &quot;$LOGIN_KEYCHAIN&quot;" />
-    <HelixPreCommand Include="security default-keychain -s &quot;$LOGIN_KEYCHAIN&quot;" />
-    <HelixPreCommand Include="security list-keychains -d user -s &quot;$LOGIN_KEYCHAIN&quot;" />
-    <HelixPreCommand Include="security unlock-keychain -p &quot;&quot; &quot;$LOGIN_KEYCHAIN&quot;" />
-    <HelixPreCommand Include="security set-keychain-settings &quot;$LOGIN_KEYCHAIN&quot;" />
+    <HelixPreCommand Include="ls -la &quot;$HOME/Library/Keychains/&quot; || true" />
+    <HelixPreCommand Include="security default-keychain || true" />
+    <HelixPreCommand Include="security list-keychains || true" />
+    <HelixPreCommand Include="security show-keychain-info &quot;$LOGIN_KEYCHAIN&quot; || true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
