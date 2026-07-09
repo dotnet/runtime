@@ -441,6 +441,8 @@ namespace Internal.TypeSystem
             if (method == null)
                 return method;
 
+            Debug.Assert(method.GetMethodDefinition() == method);
+
             DefType currentType = method.OwningType.BaseType;
 
             // Loop until a newslot method is found
