@@ -327,7 +327,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
             Compiler::dspTreeID(op2));
 
-    // Check if we have a var + const or var * const.
+    // Canonicalize to (lclVar + {lclVar|const}).
     if (op2->OperIs(GT_LCL_VAR))
     {
         std::swap(op1, op2);
