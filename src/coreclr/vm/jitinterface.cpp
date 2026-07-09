@@ -12460,7 +12460,21 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        	"get_Path"
         "ThrowIfInvalid",
        	"GetHandleValue",
-       	"InternalFree"
+       	"InternalFree",
+
+	"get_Default",
+	"get_Ordinal",
+      	"get_OrdinalIgnoreCase",
+      	"GetStringComparer",
+      	"wcslen",
+      	"ByteOffset",
+      	"GetBucket",
+        "get_Attributes",
+        "get_Keys",
+        "get_IsCompleted",
+        "get_IsClosed",
+        "ThrowIfNegative",
+
 
 
     };
