@@ -23,12 +23,12 @@ public sealed class HybridCacheEntryOptions
     private DistributedCacheEntryOptions? _dc;
 
     /// <summary>
-    /// Gets the overall cache duration of this entry, passed to the backend distributed cache.
+    /// Gets or sets the overall cache duration of this entry, passed to the backend distributed cache.
     /// </summary>
     public TimeSpan? Expiration { get; init; }
 
     /// <summary>
-    /// Gets the expiration for the local (in-process) cache entry.
+    /// Gets or sets the expiration for the local (in-process) cache entry.
     /// </summary>
     /// <remarks>
     /// When retrieving a cached value from an external cache store, this value will be used to calculate the local
@@ -37,12 +37,12 @@ public sealed class HybridCacheEntryOptions
     public TimeSpan? LocalCacheExpiration { get; init; }
 
     /// <summary>
-    /// Gets additional flags that apply to the requested operation.
+    /// Gets or sets additional flags that apply to the requested operation.
     /// </summary>
     public HybridCacheEntryFlags? Flags { get; init; }
 
     /// <summary>
-    /// Gets the size to assign to entries in the local (in-process) cache.
+    /// Gets or sets the size to assign to entries in the local (in-process) cache.
     /// </summary>
     /// <remarks>
     /// The units are determined by the underlying local cache implementation. When the local cache
