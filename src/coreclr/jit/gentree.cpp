@@ -22169,13 +22169,6 @@ bool GenTree::isContainableHWIntrinsic() const
             return node->GetSimdSize() == 16;
         }
 
-        case NI_Vector_CreateScalar:
-        case NI_Vector_CreateScalarUnsafe:
-        {
-            // These HWIntrinsic operations are contained as part of scalar ops
-            return true;
-        }
-
         case NI_X86Base_LoadAndDuplicateToVector128:
         case NI_X86Base_MoveAndDuplicate:
         case NI_AVX_BroadcastScalarToVector128:
