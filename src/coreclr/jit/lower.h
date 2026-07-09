@@ -361,7 +361,7 @@ private:
         GenTree*     index            = nullptr;
         GenTree*     value            = nullptr;
         uint32_t     scale            = 1;
-        int          offset           = 0;
+        ssize_t      offset           = 0;
         unsigned     accessSize       = 0;
         unsigned     lclNum           = BAD_VAR_NUM;
         GenTreeFlags storeFlags       = GTF_EMPTY;
@@ -521,6 +521,7 @@ private:
     void     StoreFFRValue(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_WASM)
     GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
                                                  GenTree*  op1,

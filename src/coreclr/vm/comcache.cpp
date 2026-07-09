@@ -899,7 +899,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 
     HRESULT hrCDH = S_OK;
     IUnknown * pUnk = NULL;
-    SafeComHolder<IStream> spStream;
+    ComHolderAnyMode<IStream> spStream;
 
     CheckValidIUnkEntry();
 
@@ -938,7 +938,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
         // GetInterface for the current context
         HRESULT hr;
         hr = CoUnmarshalInterface(spStream, IID_IUnknown, reinterpret_cast<void**>(&pUnk));
-        spStream.Release();
+        spStream.Free();
 
         if (FAILED(hr))
         {
@@ -1020,7 +1020,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     CONTRACTL_END;
 
     // First see if the object implements the IAgileObject marker interface
-    SafeComHolderPreemp<IAgileObject> pAgileObject;
+    ComHolderPreemp<IAgileObject> pAgileObject;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IAgileObject, (IUnknown**)&pAgileObject);
     LogInteropQI(pUnk, IID_IAgileObject, hr, "IUnkEntry::IsComponentFreeThreaded: QI for IAgileObject");
 
@@ -1030,7 +1030,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     }
     else
     {
-        SafeComHolderPreemp<IMarshal> pMarshal = NULL;
+        ComHolderPreemp<IMarshal> pMarshal;
 
         // If not, then we can try to determine if the component aggregates the FTM via IMarshal.
         hr = SafeQueryInterfacePreemp(pUnk, IID_IMarshal, (IUnknown **)&pMarshal);
@@ -1321,7 +1321,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     CallbackInfo.m_UserCallbackHR = E_FAIL;
 
     // Retrieve the IContextCallback interface from the IObjectContext.
-    SafeComHolderPreemp<IContextCallback> pCallback;
+    ComHolderPreemp<IContextCallback> pCallback;
     hr = SafeQueryInterfacePreemp(m_pObjCtx, IID_IContextCallback, (IUnknown**)&pCallback);
     LogInteropQI(m_pObjCtx, IID_IContextCallback, hr, "QI for IID_IContextCallback");
     _ASSERTE(SUCCEEDED(hr) && pCallback);
@@ -1346,7 +1346,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     {
         // If the transition failed because of an aborted func eval, simply propagate
         // the HRESULT/IErrorInfo back to the caller as we cannot throw here.
-        SafeComHolder<IErrorInfo> pErrorInfo = CheckForFuncEvalAbortNoThrow(hr);
+        ComHolderPreemp<IErrorInfo> pErrorInfo{ CheckForFuncEvalAbortNoThrow(hr) };
         if (pErrorInfo != NULL)
         {
             LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the debugger is blocking it\n", m_pCtxCookie));

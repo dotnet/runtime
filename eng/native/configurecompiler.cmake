@@ -40,12 +40,10 @@ endif()
 #-----------------------------------------------------
 
 if (CLR_CMAKE_HOST_UNIX)
+    add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-conversion)
-        add_compile_options(-glldb)
-    else()
-        add_compile_options(-g)
     endif()
 endif()
 
