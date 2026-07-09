@@ -554,11 +554,19 @@ namespace System
                 skipDefault = (handlerResult == 1);
             }
 
-            if (!skipDefault)
+            if (skipDefault)
             {
-                // Write the crash log to stderr when default handling is active.
-                WriteCrashLogToStdErr();
+                // The handler took ownership of the failure and asked the runtime to skip its
+                // default handling.
+#if TARGET_WINDOWS
+                Interop.Kernel32.TerminateProcess(Interop.Kernel32.GetCurrentProcess(), errorCode);
+#else
+                Interop.Sys.Abort();
+#endif
             }
+
+            // Write the crash log to stderr as part of the runtime's default handling.
+            WriteCrashLogToStdErr();
 
             EXCEPTION_RECORD exceptionRecord;
             // STATUS_STACK_BUFFER_OVERRUN is a "transport" exception code required by Watson to trigger the proper analyzer/provider for bucketing
@@ -575,10 +583,7 @@ namespace System
 #if TARGET_WINDOWS
             Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
 #else
-            if (!skipDefault)
-            {
-                RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord));
-            }
+            RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord));
             Interop.Sys.Abort();
 #endif
         }

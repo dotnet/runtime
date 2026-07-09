@@ -32,7 +32,9 @@ enum FatalErrorHandlerResult : int32_t
 
 // Callback signature for receiving crash log text. The runtime may invoke
 // pfnLogAction multiple times, each time passing a UTF-8 encoded fragment
-// of the crash log.
+// of the crash log. The logString pointer is valid only for the duration of
+// the callback; the handler must copy the text if it needs to retain it after
+// the callback returns.
 typedef void (DOTNET_CALLCONV *FatalErrorLogAction)(const char* logString, void* userContext);
 
 // Function pointer retrieved through the property getter as the value of
@@ -80,6 +82,8 @@ enum FatalErrorProperty : int32_t
 // calls it with a FatalErrorProperty value and a pointer that receives the
 // property's value. The retrieved value is a pointer to read-only crash state
 // owned by the runtime or callbacks. The handler must not modify pointed-to data.
+// Any returned pointer is valid only until the fatal error handler returns and
+// must not be cached.
 // Returns a nonzero value if the property is available (and *value has been
 // written), or 0 if the property is not available.
 typedef int32_t (DOTNET_CALLCONV *FatalErrorPropertyGetter)(FatalErrorProperty prop, const void** value);

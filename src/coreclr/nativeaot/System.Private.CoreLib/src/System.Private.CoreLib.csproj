@@ -275,6 +275,12 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs">
       <Link>Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.TerminateProcess.cs">
+      <Link>Interop\Windows\Kernel32\Interop.TerminateProcess.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoInitializeEx.cs">
       <Link>Interop\Windows\Ole32\Interop.CoInitializeEx.cs</Link>
     </Compile>
