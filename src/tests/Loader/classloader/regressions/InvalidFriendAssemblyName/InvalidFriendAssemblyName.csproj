@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="InvalidFriendAssemblyName.cs" />
     <ProjectReference Include="$(TestLibraryProjectPath)" />
