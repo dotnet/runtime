@@ -21,7 +21,6 @@ namespace System.Net.Http
     [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class BrotliCompressedContent : System.Net.Http.HttpContent
     {
-        public BrotliCompressedContent(System.Net.Http.HttpContent content) { }
         public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.BrotliCompressionOptions compressionOptions) { }
         public BrotliCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
         protected override void Dispose(bool disposing) { }
@@ -32,7 +31,6 @@ namespace System.Net.Http
     }
     public sealed partial class GZipCompressedContent : System.Net.Http.HttpContent
     {
-        public GZipCompressedContent(System.Net.Http.HttpContent content) { }
         public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZLibCompressionOptions compressionOptions) { }
         public GZipCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
         protected override void Dispose(bool disposing) { }
@@ -45,7 +43,6 @@ namespace System.Net.Http
     [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class ZstandardCompressedContent : System.Net.Http.HttpContent
     {
-        public ZstandardCompressedContent(System.Net.Http.HttpContent content) { }
         public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
         public ZstandardCompressedContent(System.Net.Http.HttpContent content, System.IO.Compression.CompressionLevel compressionLevel = System.IO.Compression.CompressionLevel.Optimal) { }
         protected override void Dispose(bool disposing) { }

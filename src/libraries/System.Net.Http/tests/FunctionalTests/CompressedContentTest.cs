@@ -248,7 +248,7 @@ namespace System.Net.Http.Functional.Tests
                 base.Dispose(disposing);
             }
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) => Task.CompletedTask;
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) => Task.CompletedTask;
 
             protected override bool TryComputeLength(out long length)
             {

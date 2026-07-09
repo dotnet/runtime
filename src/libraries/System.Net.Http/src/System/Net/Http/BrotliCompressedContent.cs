@@ -24,19 +24,6 @@ namespace System.Net.Http
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BrotliCompressedContent"/> class that compresses the
-        /// provided content using the Brotli content coding with default compression settings.
-        /// </summary>
-        /// <param name="content">The HTTP content to compress.</param>
-        public BrotliCompressedContent(HttpContent content)
-        {
-            ArgumentNullException.ThrowIfNull(content);
-
-            _core = new CompressedContentCore(content, CreateCompressionStream);
-            CompressedContentCore.InitializeHeaders(this, content, Encoding);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BrotliCompressedContent"/> class that compresses the
         /// provided content using the Brotli content coding at the specified compression level.
         /// </summary>
         /// <param name="content">The HTTP content to compress.</param>

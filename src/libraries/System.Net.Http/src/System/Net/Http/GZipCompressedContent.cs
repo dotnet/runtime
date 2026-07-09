@@ -21,19 +21,6 @@ namespace System.Net.Http
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GZipCompressedContent"/> class that compresses the
-        /// provided content using the gzip content coding with default compression settings.
-        /// </summary>
-        /// <param name="content">The HTTP content to compress.</param>
-        public GZipCompressedContent(HttpContent content)
-        {
-            ArgumentNullException.ThrowIfNull(content);
-
-            _core = new CompressedContentCore(content, CreateCompressionStream);
-            CompressedContentCore.InitializeHeaders(this, content, Encoding);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GZipCompressedContent"/> class that compresses the
         /// provided content using the gzip content coding at the specified compression level.
         /// </summary>
         /// <param name="content">The HTTP content to compress.</param>
