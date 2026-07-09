@@ -2194,17 +2194,20 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (remaining.Length > 0)
+                if (!Avx512BW.IsSupported || remaining.Length > 0)
                 {
                     Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
                     Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
-                    ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector512<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
+                        ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
                 return;
@@ -2266,7 +2269,7 @@ namespace System
                     }
                 }
 
-                while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count)
+                while ((uint)remaining.Length > (uint)Vector256<ushort>.Count)
                 {
                     Vector256<ushort> vector = Vector256.Create(remaining);
                     Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
@@ -2289,17 +2292,20 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (remaining.Length > 0)
+                if (!Avx2.IsSupported || remaining.Length > 0)
                 {
                     Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
                     Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector256<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
                 return;
@@ -2384,17 +2390,20 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
-                Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
-                if (cmp != Vector128<byte>.Zero)
+                if (!Sse.IsSupported || remaining.Count > 0)
                 {
-                    int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
+                    if (cmp != Vector128<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
                 return;
