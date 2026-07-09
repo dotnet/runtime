@@ -340,7 +340,9 @@ struct RangeOps
                 }
 
                 static_assert(CheckedOps::Unsigned == true);
-                if (!CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd))
+                if (!CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd) &&
+                    (!unsignedAdd ||
+                     !CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed)))
                 {
                     if (a.IsConstant() && b.IsConstant())
                     {
