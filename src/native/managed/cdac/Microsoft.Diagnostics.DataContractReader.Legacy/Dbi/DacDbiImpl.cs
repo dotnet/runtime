@@ -993,7 +993,45 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetUserState(ulong vmThread, int* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pRetVal = default;
+            CorDebugUserState partialState;
+            hr = GetPartialUserState(vmThread, &partialState);
+            if (hr != HResults.S_OK)
+                throw Marshal.GetExceptionForHR(hr)!;
+
+            CorDebugUserState result = partialState;
+
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPtr);
+
+            IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            byte[] contextBytes = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, context.FullContextFlags);
+            context.FillFromBuffer(contextBytes);
+            if (!_target.Contracts.ExecutionManager.IsGcSafe(context.InstructionPointer))
+                result |= CorDebugUserState.USER_UNSAFE_POINT;
+
+            *pRetVal = (int)result;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int retValLocal;
+            int hrLocal = _legacy.GetUserState(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal)
     {
@@ -1946,17 +1984,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #endif
         return hr;
-    }
-
-    public int GetFramePointer(nuint pSFIHandle, ulong* pRetVal)
-    {
-        if (pSFIHandle == 0)
-            return HResults.E_INVALIDARG;
-
-        nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
-            ? _legacy.GetFramePointer(legacyHandle, pRetVal)
-            : HResults.E_NOTIMPL;
     }
 
     private static nuint TryGetLegacyHandle(nuint pSFIHandle)

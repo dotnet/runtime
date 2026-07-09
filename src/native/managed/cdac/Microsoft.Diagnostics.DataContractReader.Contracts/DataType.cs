@@ -62,6 +62,8 @@ public enum DataType
     MethodTable,
     DynamicStaticsInfo,
     EEClass,
+    EEClassOptionalFields,
+    SystemVEightByteRegistersInfo,
     CoreLibBinder,
     MethodTableAuxiliaryData,
     GenericsDictInfo,

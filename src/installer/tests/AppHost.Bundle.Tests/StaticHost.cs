@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -61,13 +62,25 @@ namespace AppHost.Bundle.Tests
             else
             {
                 // Use nm to check for exported defined symbols.
-                // On macOS, -gUj shows external defined symbol names only.
-                // On Linux, -D --defined-only shows defined dynamic symbols.
-                Command command = OperatingSystem.IsMacOS()
-                    ? Command.Create("nm", "-gUj", singleFileHostPath)
-                    : Command.Create("nm", "-D", "--defined-only", singleFileHostPath);
+                string tool;
+                string[] args;
+                if (OperatingSystem.IsMacOS())
+                {
+                    // On macOS, -gUj shows external defined symbol names only.
+                    tool = "nm";
+                    args = ["-gUj", singleFileHostPath];
+                }
+                else
+                {
+                    // On Linux, -D --defined-only shows defined dynamic symbols.
+                    // Fall back to llvm-nm (e.g., on musl/Alpine environments that have llvm but not binutils).
+                    string? nmTool = FindToolInPath("nm") ?? FindToolInPath("llvm-nm");
+                    Assert.SkipUnless(nmTool is not null, "nm or llvm-nm is not available");
+                    tool = nmTool!;
+                    args = ["-D", "--defined-only", singleFileHostPath];
+                }
 
-                CommandResult result = command
+                CommandResult result = Command.Create(tool, args)
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute();
@@ -78,6 +91,22 @@ namespace AppHost.Bundle.Tests
                     Assert.Contains(exportName, result.StdOut);
                 }
             }
+        }
+
+        private static string? FindToolInPath(string tool)
+        {
+            string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (string.IsNullOrEmpty(pathEnv))
+                return null;
+
+            foreach (string dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string fullPath = Path.Combine(dir, tool);
+                if (File.Exists(fullPath))
+                    return fullPath;
+            }
+
+            return null;
         }
     }
 }

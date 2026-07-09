@@ -3367,9 +3367,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         dprintf (3, ("mark_list not used"));
     }
 
-#ifdef FEATURE_BASICFREEZE
     sweep_ro_segments();
-#endif //FEATURE_BASICFREEZE
 
 #ifndef MULTIPLE_HEAPS
     int condemned_gen_index = get_stop_generation_index (condemned_gen_number);

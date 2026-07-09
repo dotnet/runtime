@@ -577,7 +577,26 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumStaticFields, cdac_data<EEClass>::NumStati
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
+CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(EEClassOptionalFields)
+CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_FIELD(EEClassOptionalFields, TYPE(SystemVEightByteRegistersInfo), EightByteRegistersInfo, cdac_data<EEClassOptionalFields>::EightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
+CDAC_TYPE_END(EEClassOptionalFields)
+
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_BEGIN(SystemVEightByteRegistersInfo)
+CDAC_TYPE_INDETERMINATE(SystemVEightByteRegistersInfo)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, NumEightBytes, cdac_data<SystemVEightByteRegistersInfo>::NumEightBytes)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification0, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification1, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification1)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize0, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize1, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize1)
+CDAC_TYPE_END(SystemVEightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
@@ -656,7 +675,6 @@ CDAC_TYPE_END(ThreadStressLog)
 
 CDAC_TYPE_BEGIN(StressLogChunk)
 CDAC_TYPE_SIZE(sizeof(StressLogChunk))
-CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Prev, offsetof(StressLogChunk, prev))
 CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Next, offsetof(StressLogChunk, next))
 CDAC_TYPE_FIELD(StressLogChunk, T_ARRAY(T_UINT8), Buf, offsetof(StressLogChunk, buf))
 CDAC_TYPE_FIELD(StressLogChunk, T_UINT32, Sig1, offsetof(StressLogChunk, dwSig1))

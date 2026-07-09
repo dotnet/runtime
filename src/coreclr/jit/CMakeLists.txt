@@ -368,6 +368,7 @@ set( JIT_HEADERS
   host.h
   hostallocator.h
   hwintrinsic.h
+  hwintrinsiclist.h
   ICorJitInfo_names_generated.h
   ICorJitInfo_wrapper_generated.hpp
   inline.h
@@ -432,6 +433,7 @@ set( JIT_HEADERS
   varset.h
   vartype.h
   vartypesdef.h
+  wellknownargs.h
 )
 
 # Arch specific headers

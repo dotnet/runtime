@@ -6080,7 +6080,7 @@ public:
     // Converts the values in the floating point register area of the context to real number values.
     void Get32bitFPRegisters(CONTEXT * pContext);
 
-#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     // Converts the values in the floating point register area of the context to real number values.
     void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
 
@@ -6386,12 +6386,6 @@ private:
 
     // cached flag used for refreshing a CordbStackWalk
     CorDebugSetContextFlag m_cachedSetContextFlag;
-
-    // We unwind one frame ahead of time to get the FramePointer on x86.
-    // These fields are used for the bookkeeping.
-    RSSmartPtr<CordbFrame> m_pCachedFrame;
-    HRESULT m_cachedHR;
-    bool m_fIsOneFrameAhead;
 };
 
 

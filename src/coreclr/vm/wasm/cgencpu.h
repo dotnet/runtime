@@ -112,7 +112,7 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return context->InterpreterFP;
 }
 
-#define ENUM_CALLEE_SAVED_REGISTERS()
+#define ENUM_CALLEE_SAVED_REGISTERS() CALLEE_SAVED_REGISTER(InterpreterFP)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS()
 
@@ -157,5 +157,7 @@ inline TADDR GetSecondArgReg(T_CONTEXT *context)
     PORTABILITY_ASSERT("GetSecondArgReg is not implemented on wasm");
     return 0;
 }
+
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC);
 
 #endif // __cgenwasm_h__

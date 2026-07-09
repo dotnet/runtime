@@ -914,6 +914,12 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
     return original_ICorJitInfo->getWasmLowering(structHnd);
 }
 
+uint32_t interceptor_ICJI::getAddressAlignment(
+          void* address)
+{
+    return original_ICorJitInfo->getAddressAlignment(address);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {
