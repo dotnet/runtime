@@ -511,7 +511,7 @@ bool pal_is_path_fully_qualified(const pal_char_t* path)
     return len >= 3 && path[1] == VOLUME_SEPARATOR && is_dir_separator(path[2]);
 }
 
-bool pal_load_library(const pal_char_t* path, void** dll)
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
 {
     *dll = NULL;
 

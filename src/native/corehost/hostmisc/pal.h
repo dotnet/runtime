@@ -60,8 +60,7 @@ typedef FARPROC pal_proc_t;
 #define PATH_SEPARATOR L';'
 #define PATH_MAX MAX_PATH
 
-// String operation macros (pal_char_t-based). Equivalent to the corresponding
-// pal:: namespace inline functions, but usable from C source files.
+// String operation macros (pal_char_t-based).
 #define pal_strlen(s) wcslen(s)
 #define pal_strchr(s, c) wcschr(s, c)
 #define pal_strrchr(s, c) wcsrchr(s, c)
@@ -135,7 +134,7 @@ pal_char_t* pal_get_own_executable_path(void);
 
 bool pal_directory_exists(const pal_char_t* path);
 
-// Returns true if the file or directory exists. Equivalent to pal::file_exists.
+// Returns true if the file or directory exists.
 bool pal_file_exists(const pal_char_t* path);
 
 // Returns a heap-allocated, null-terminated copy of the given string, or
@@ -210,12 +209,11 @@ pal_char_t* pal_get_default_installation_dir(void);
 pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 
 // Returns true if path is fully qualified (absolute).
-// Equivalent to pal::is_path_fully_qualified.
 bool pal_is_path_fully_qualified(const pal_char_t* path);
 
 // Load the dynamic library at path. On success, stores the library handle in
-// *dll and returns true; returns false on failure. Equivalent to pal::load_library.
-bool pal_load_library(const pal_char_t* path, void** dll);
+// *dll and returns true; returns false on failure.
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll);
 
 // Unload a library previously loaded with pal_load_library.
 void pal_unload_library(void* library);
@@ -334,7 +332,6 @@ namespace pal
     typedef std::wstringstream stringstream_t;
     typedef HRESULT hresult_t;
     typedef HMODULE dll_t;
-    typedef FARPROC proc_t;
 
     // Lockable object backed by CRITICAL_SECTION such that it does not pull in ConcRT.
     class mutex_t
@@ -425,7 +422,6 @@ namespace pal
     typedef std::stringstream stringstream_t;
     typedef int hresult_t;
     typedef void* dll_t;
-    typedef void* proc_t;
     typedef std::mutex mutex_t;
 
     inline const pal::char_t* exe_suffix() { return nullptr; }
@@ -576,7 +572,7 @@ namespace pal
 
     bool get_loaded_library(const char_t* library_name, const char* symbol_name, /*out*/ dll_t* dll, /*out*/ string_t* path);
     bool load_library(const string_t* path, dll_t* dll);
-    proc_t get_symbol(dll_t library, const char* name);
+    pal_proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 
     bool is_running_in_wow64();

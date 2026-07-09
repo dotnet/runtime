@@ -16,7 +16,7 @@
 //  - dotnet_root and fxr_path are allocated by hostfxr_resolver_init and freed by hostfxr_resolver_cleanup.
 typedef struct hostfxr_resolver
 {
-    void* hostfxr_dll;
+    pal_dll_t hostfxr_dll;
     pal_char_t* dotnet_root;  // dynamically allocated, NULL if not set
     pal_char_t* fxr_path;     // dynamically allocated, NULL if not set
     int status_code; // StatusCode enum value

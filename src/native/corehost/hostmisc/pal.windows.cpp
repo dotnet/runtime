@@ -266,12 +266,12 @@ bool pal::get_loaded_library(
 
 bool pal::load_library(const string_t* in_path, dll_t* dll)
 {
-    return pal_load_library(in_path->c_str(), reinterpret_cast<void**>(dll));
+    return pal_load_library(in_path->c_str(), dll);
 }
 
-pal::proc_t pal::get_symbol(dll_t library, const char* name)
+pal_proc_t pal::get_symbol(dll_t library, const char* name)
 {
-    return reinterpret_cast<proc_t>(pal_get_symbol(library, name));
+    return pal_get_symbol(library, name);
 }
 
 void pal::unload_library(dll_t library)

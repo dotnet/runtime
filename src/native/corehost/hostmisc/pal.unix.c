@@ -312,7 +312,7 @@ bool pal_is_path_fully_qualified(const pal_char_t* path)
     return path != NULL && path[0] == DIR_SEPARATOR;
 }
 
-bool pal_load_library(const pal_char_t* path, void** dll)
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
 {
     *dll = dlopen(path, RTLD_LAZY);
     if (*dll == NULL)
