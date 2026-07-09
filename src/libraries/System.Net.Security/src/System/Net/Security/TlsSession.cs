@@ -91,6 +91,39 @@ namespace System.Net.Security
         // ActiveCredentialsRef() and never touch the shared TlsContext.CredentialsHandle.
         // Disposed when the session is disposed.
         private SafeFreeCredentials? _sessionCredentialsHandle;
+
+        // Session-local view of the CertificateContext. Initialized from _options at
+        // SetContext time and every mutation (SetClientCertificateContext, the
+        // server-side selector path) routes through SessionCertificateContext so parallel
+        // sessions built from the same TlsContext template never race on the shared cert
+        // slot. _ownsSessionCertificateContext tracks whether the session itself built
+        // this context (only true when constructed via SslStreamCertificateContext.Create
+        // in the server-cert-selector path); Dispose releases it iff owned. The PAL
+        // signature still reads _options.CertificateContext, so the setter mirrors the
+        // new value onto the per-session cloned options bag; that mirror is the single
+        // point that goes away when the PAL is later reshaped to consume the session
+        // directly.
+        private SslStreamCertificateContext? _sessionCertificateContext;
+        private bool _ownsSessionCertificateContext;
+
+        private SslStreamCertificateContext? SessionCertificateContext => _sessionCertificateContext;
+
+        private void SetSessionCertificateContext(SslStreamCertificateContext? context, bool takeOwnership)
+        {
+            if (_ownsSessionCertificateContext && _sessionCertificateContext is not null && !ReferenceEquals(_sessionCertificateContext, context))
+            {
+                _sessionCertificateContext.ReleaseResources();
+            }
+
+            _sessionCertificateContext = context;
+            _ownsSessionCertificateContext = takeOwnership && context is not null;
+
+            // Mirror onto the per-session cloned options bag so the PAL (which reads
+            // _options.CertificateContext directly) sees the effective value. Also flip
+            // the bag's own ownership bit off — session now owns the disposal decision.
+            _options.CertificateContext = context;
+            _options.OwnsCertificateContext = false;
+        }
         private bool _disposed;
         private SslConnectionInfo _connectionInfo;
         private X509Certificate2? _remoteCertificate;
@@ -136,6 +169,15 @@ namespace System.Net.Security
             _ownsOptions = !context.ShareOptions;
             _options = context.CreateSessionOptions();
             _hasServerOptions = context.TemplateHasServerOptions;
+
+            // Transfer CertificateContext ownership from the per-session options clone
+            // to the session so subsequent mutations (SetClientCertificateContext,
+            // server-selector build) live entirely on TlsSession's own fields. The bag
+            // itself never owns after this point; TlsSession.Dispose is the sole releaser.
+            _sessionCertificateContext = _options.CertificateContext;
+            _ownsSessionCertificateContext = _options.OwnsCertificateContext;
+            _options.OwnsCertificateContext = false;
+
             OnContextInitialized();
         }
 
@@ -554,6 +596,15 @@ namespace System.Net.Security
             _options.PreallocatedSslContext = serverOpts.PreallocatedSslContext;
 #endif
 
+            // CopyFrom sets _options.OwnsCertificateContext = false and copies the
+            // template's CertificateContext reference into the bag. Re-seat our session
+            // ownership from the freshly-copied serverOpts (the new template may have
+            // brought its own owned context via ServerCertificate), releasing any prior
+            // session-owned context. serverOpts itself is a per-session clone that Owns
+            // = false, so its live-owner is the source TlsContext template that stays
+            // alive across sessions — hence takeOwnership: false here.
+            SetSessionCertificateContext(_options.CertificateContext, takeOwnership: false);
+
             _hasServerOptions = true;
 
             // The per-tenant options differ from the bootstrap context's template, so
@@ -594,7 +645,7 @@ namespace System.Net.Security
             {
                 throw new InvalidOperationException("SetClientCertificateContext can only be called on a client-side session.");
             }
-            _options.CertificateContext = context;
+            SetSessionCertificateContext(context, takeOwnership: false);
 
             // Acquire a session-local credentials handle so we don't touch the shared
             // TlsContext.CredentialsHandle, which is used by any concurrent session on
@@ -672,7 +723,7 @@ namespace System.Net.Security
                 ThrowIfDisposed();
                 if (_context!.IsServer)
                 {
-                    return _options.CertificateContext?.TargetCertificate;
+                    return SessionCertificateContext?.TargetCertificate;
                 }
 
                 if (_securityContext == null || _securityContext.IsInvalid)
@@ -685,7 +736,7 @@ namespace System.Net.Security
                     return null;
                 }
 
-                return _options.CertificateContext?.TargetCertificate;
+                return SessionCertificateContext?.TargetCertificate;
             }
         }
 
@@ -836,7 +887,7 @@ namespace System.Net.Security
                         }
 
                         bool needsCertResolution =
-                            _options.CertificateContext is null &&
+                            SessionCertificateContext is null &&
                             _options.ServerCertSelectionDelegate is not null;
 
                         if (needsCertResolution && !ResolveServerCertificateFromClientHello(input))
@@ -1514,7 +1565,7 @@ namespace System.Net.Security
             }
 
             ServerCertificateSelectionCallback? selector = _options.ServerCertSelectionDelegate;
-            if (selector is null || _options.CertificateContext is not null)
+            if (selector is null || SessionCertificateContext is not null)
             {
                 return true;
             }
@@ -1531,7 +1582,9 @@ namespace System.Net.Security
                 throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
             }
 
-            _options.SetCertificateContextFromCert(withKey);
+            SetSessionCertificateContext(
+                SslStreamCertificateContext.Create(withKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true),
+                takeOwnership: true);
             return true;
         }
 
@@ -2234,6 +2287,16 @@ namespace System.Net.Security
             // _context is owned by TlsContext and released with it.
             _sessionCredentialsHandle?.Dispose();
             _sessionCredentialsHandle = null;
+
+            // Release the session-owned CertificateContext (only true when we built
+            // one via the server-cert-selector path). Caller-provided contexts and the
+            // template context inherited from TlsContext are not disposed here.
+            if (_ownsSessionCertificateContext && _sessionCertificateContext is not null)
+            {
+                _sessionCertificateContext.ReleaseResources();
+            }
+            _sessionCertificateContext = null;
+            _ownsSessionCertificateContext = false;
 
             OnDispose();
         }
