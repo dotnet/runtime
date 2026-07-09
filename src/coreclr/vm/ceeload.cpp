@@ -1668,7 +1668,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACT_END;
 
@@ -1702,7 +1702,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         THROWS;
         WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACT_END;
 
@@ -1756,7 +1756,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // where right now...</REVISIT_TODO>
         HRESULT hr = S_OK;
 
-        SafeComHolder<ISymUnmanagedBinder> pBinder;
+        ComHolderPreemp<ISymUnmanagedBinder> pBinder;
 
         if (g_pDebugInterface == NULL)
         {
@@ -1784,11 +1784,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // hard disk for files.
         ErrorModeHolder errorMode{};
 
-        SafeComHolder<ISymUnmanagedReader> pReader;
+        ComHolderPreemp<ISymUnmanagedReader> pReader;
 
         if (fInMemorySymbols)
         {
-            SafeComHolder<IStream> pIStream( NULL );
+            ComHolderPreemp<IStream> pIStream( NULL );
 
             // If debug stream is already specified, don't bother to go through fusion
             // This is the common case for case 2 (hosted modules) and case 3 (Ref.Emit).
@@ -1831,7 +1831,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         if (SUCCEEDED(hr))
         {
-            m_pISymUnmanagedReader = pReader.Extract();
+            m_pISymUnmanagedReader = pReader.Detach();
             LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %s\n", GetDebugName()));
         }
         else
@@ -1890,7 +1890,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     STANDARD_VM_CONTRACT;
 
     // Create a IStream from the memory for the syms.
-    SafeComHolder<CGrowableStream> pStream(new CGrowableStream());
+    ComHolderPreemp<CGrowableStream> pStream(new CGrowableStream());
 
     // Do not need to AddRef the CGrowableStream because the constructor set it to 1
     // ref count already. The Module will keep a copy for its own use.
@@ -2222,10 +2222,9 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     }
     CONTRACTL_END;
 
-    BOOL fIs80Plus;
     DWORD dwCharCount;
     LPCWSTR pString;
-    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &fIs80Plus, &pString)) ||
+    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &pString)) ||
         (pString == NULL))
     {
         THROW_BAD_FORMAT(BFA_BAD_STRING_TOKEN_RANGE, this);

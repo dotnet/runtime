@@ -101,7 +101,8 @@ namespace Internal.JitInterface
             CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
             CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
             CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-            CFI_DEF_CFA               // Take address from register and add offset to it.
+            CFI_DEF_CFA,              // Take address from register and add offset to it.
+            CFI_NEGATE_RA_STATE,      // Sign the return address in lr with the platform PAC key
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
@@ -132,6 +133,7 @@ namespace Internal.JitInterface
             }
 
             int offset = 0;
+            bool shouldAddPacOpCode = false;
             while (offset < blobData.Length)
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
@@ -185,6 +187,15 @@ namespace Internal.JitInterface
                             }
                         }
                         break;
+
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        Debug.Assert(cfaRegister == spReg);
+                        Debug.Assert(cfaOffset == 0);
+                        // TODO-PAC: Support prologs that adjust SP before signing LR.
+                        // Currently we require PAC to be emitted before any stack adjustment.
+                        Debug.Assert(spOffset == 0);
+                        shouldAddPacOpCode = true;
+                        break;
                 }
             }
 
@@ -194,6 +205,14 @@ namespace Internal.JitInterface
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
+                    if (shouldAddPacOpCode)
+                    {
+                        cfiWriter.Write((byte)codeOffset);
+                        cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
+                        cfiWriter.Write((short)-1);
+                        cfiWriter.Write(0);
+                    }
+
                     if (cfaRegister != -1)
                     {
                         cfiWriter.Write((byte)codeOffset);
@@ -833,37 +852,6 @@ namespace Internal.JitInterface
             }
 
             pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
-        }
-
-        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
-        {
-            // Assume we can tail call unless proved otherwise
-            bool result = true;
-
-            if (!fIsTailPrefix)
-            {
-                MethodDesc caller = HandleToObject(callerHnd);
-
-                if (caller.OwningType is EcmaType ecmaOwningType
-                    && ecmaOwningType.Module.EntryPoint == caller)
-                {
-                    // Do not tailcall from the application entrypoint.
-                    // We want Main to be visible in stack traces.
-                    result = false;
-                }
-
-                if (caller.IsNoInlining)
-                {
-                    // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
-                    // to mean "I want to always see this method in stacktrace")
-                    //
-                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
-                    // to emit fast tail calls if optimizations are disabled.
-                    result = false;
-                }
-            }
-
-            return result;
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)

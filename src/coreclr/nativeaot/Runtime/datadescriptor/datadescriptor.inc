@@ -260,6 +260,7 @@ CDAC_GLOBAL_CONTRACT(ReJIT, n1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, n1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, n1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
+CDAC_GLOBAL_CONTRACT(ManagedTypeSource, n1)
 
 // Managed type sub-descriptor: ILC emits a ContractDescriptor with managed type layouts
 // that the cDAC reader merges as a sub-descriptor. This provides field offsets for managed

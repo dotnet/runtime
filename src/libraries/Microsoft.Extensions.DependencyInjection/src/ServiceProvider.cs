@@ -42,11 +42,11 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool DisableDynamicEngine { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine", out bool disableDynamicEngine) ? disableDynamicEngine : false;
 
-        internal static bool VerifyAotCompatibility =>
+        internal static bool IsDynamicCodeSupported =>
 #if NETFRAMEWORK || NETSTANDARD2_0
-            false;
+            true;
 #else
-            !RuntimeFeature.IsDynamicCodeSupported;
+            RuntimeFeature.IsDynamicCodeSupported;
 #endif
 
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)

@@ -246,7 +246,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
-    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
+    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers)
     {
         // Initialize the walk data directly
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -273,7 +273,7 @@ internal partial class StackWalk_1 : IStackWalk
         if (walkData.State == StackWalkState.Frameless && CheckForSkippedFrames(walkData))
             walkData.State = StackWalkState.SkippedFrame;
 
-        GcScanContext scanContext = new(_target, resolveInteriorPointers: false);
+        GcScanContext scanContext = new(_target, resolveInteriorPointers);
 
         // Filter drives Next() directly, matching native Filter()+NextRaw() integration.
         // This prevents funclet-to-parent transitions from re-visiting already-walked frames.
@@ -341,9 +341,16 @@ internal partial class StackWalk_1 : IStackWalk
                     }
                 }
             }
+            catch (NotImplementedException ex)
+            {
+                // The calling convention or frame type is not yet supported (e.g., VarArgs,
+                // SystemV struct-in-registers). Skip this frame -- the DSO will have partial
+                // results but won't fail the entire stack walk.
+                Debug.WriteLine($"Skipping frame at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.Message}");
+            }
             catch (System.Exception ex)
             {
-                // Per-frame exceptions are intentionally swallowed to provide partial results
+                // Unexpected per-frame exceptions are swallowed to provide partial results
                 // rather than failing the entire stack walk. This matches the resilience model
                 // of the legacy DAC. Callers can detect incomplete results by comparing counts.
                 Debug.WriteLine($"Exception during WalkStackReferences at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.GetType().Name}: {ex.Message}");
@@ -361,6 +368,7 @@ internal partial class StackWalk_1 : IStackWalk
         return scanContext.StackRefs.Select(r => new StackReferenceData
         {
             HasRegisterInformation = r.HasRegisterInformation,
+            IsInteriorPointer = r.IsInteriorPointer,
             Register = r.Register,
             Offset = r.Offset,
             Address = r.Address,
@@ -947,6 +955,11 @@ internal partial class StackWalk_1 : IStackWalk
                 }
                 else
                 {
+                    if (handle.State == StackWalkState.Frame)
+                    {
+                        handle.State = validFrame ? StackWalkState.Frame : StackWalkState.Complete;
+                        return;
+                    }
                     handle.State = (validFrame || handle.State == StackWalkState.Frameless) ? StackWalkState.NativeMarker : StackWalkState.Complete;
                 }
                 return;

@@ -13,7 +13,7 @@ using Xunit;
 namespace System.Security.Cryptography.EcDsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class ECDsaTests_Array : ECDsaTests
+    public abstract class ECDsaTests_Array : ECDsaTests
     {
         protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm) =>
             ecdsa.VerifyData(data, offset, count, signature, hashAlgorithm);
@@ -29,93 +29,109 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => ecdsa.SignHash(hash));
         }
 
-        [Theory, MemberData(nameof(RealImplementations))]
-        public void SignData_InvalidArguments_Throws(ECDsa ecdsa)
+        [Fact]
+        public void SignData_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((byte[])null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData(null, -1, -1, default(HashAlgorithmName)));
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((byte[])null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData(null, -1, -1, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.SignData(new byte[0], -1, -1, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.SignData(new byte[0], 2, 1, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.SignData(new byte[0], -1, -1, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.SignData(new byte[0], 2, 1, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.SignData(new byte[0], 0, -1, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.SignData(new byte[0], 0, 1, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.SignData(new byte[0], 0, -1, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.SignData(new byte[0], 0, 1, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[10], 0, 10, new HashAlgorithmName("")));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[10], 0, 10, new HashAlgorithmName("")));
 
-            Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
-            Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new byte[0], 0, 0, new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+                Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+                Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new byte[0], 0, 0, new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            }
         }
 
-        [Theory, MemberData(nameof(RealImplementations))]
-        public void VerifyData_InvalidArguments_Throws(ECDsa ecdsa)
+        [Fact]
+        public void VerifyData_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.VerifyData((byte[])null, null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.VerifyData(null, -1, -1, null, default(HashAlgorithmName)));
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.VerifyData((byte[])null, null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.VerifyData(null, -1, -1, null, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new byte[0], null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new byte[0], 0, 0, null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new byte[0], null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new byte[0], 0, 0, null, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.VerifyData(new byte[0], -1, -1, null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.VerifyData(new byte[0], 2, 1, null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.VerifyData(new byte[0], -1, -1, null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => ecdsa.VerifyData(new byte[0], 2, 1, null, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.VerifyData(new byte[0], 0, -1, null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.VerifyData(new byte[0], 0, 1, null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.VerifyData(new byte[0], 0, -1, null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.VerifyData(new byte[0], 0, 1, null, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], new byte[0], default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], new byte[0], new HashAlgorithmName("")));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], 0, 10, new byte[0], new HashAlgorithmName("")));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], new byte[0], default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], new byte[0], new HashAlgorithmName("")));
+                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], 0, 10, new byte[0], new HashAlgorithmName("")));
 
-            Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new byte[0], new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
-            Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+                Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new byte[0], new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+                Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            }
         }
 
-        [Theory, MemberData(nameof(RealImplementations))]
-        public void SignHash_InvalidArguments_Throws(ECDsa ecdsa)
+        [Fact]
+        public void SignHash_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentNullException>("hash", () => ecdsa.SignHash(null));
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("hash", () => ecdsa.SignHash(null));
+            }
         }
 
-        [Theory, MemberData(nameof(RealImplementations))]
-        public void VerifyHash_InvalidArguments_Throws(ECDsa ecdsa)
+        [Fact]
+        public void VerifyHash_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentNullException>("hash", () => ecdsa.VerifyHash(null, null));
-            AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyHash(new byte[0], null));
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("hash", () => ecdsa.VerifyHash(null, null));
+                AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyHash(new byte[0], null));
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(RealImplementations))]
-        public void SignHash_NullSignature_Fails(ECDsa ecdsa)
+        [Fact]
+        public void SignHash_NullSignature_Fails()
         {
-            byte[] hash = RandomNumberGenerator.GetBytes(SHA256.HashSizeInBytes);
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                byte[] hash = RandomNumberGenerator.GetBytes(SHA256.HashSizeInBytes);
 
-            AssertExtensions.Throws<ArgumentException>("destination", () =>
-                ecdsa.SignHash(hash, (Span<byte>)null, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+                AssertExtensions.Throws<ArgumentException>("destination", () =>
+                    ecdsa.SignHash(hash, (Span<byte>)null, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
 
-            bool result = ecdsa.TrySignHash(hash, (Span<byte>)null, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int bytesWritten);
-            Assert.False(result);
-            Assert.Equal(0, bytesWritten);
+                bool result = ecdsa.TrySignHash(hash, (Span<byte>)null, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int bytesWritten);
+                Assert.False(result);
+                Assert.Equal(0, bytesWritten);
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(RealImplementations))]
-        public void SignData_NullSignature_Fails(ECDsa ecdsa)
+        [Fact]
+        public void SignData_NullSignature_Fails()
         {
-            AssertExtensions.Throws<ArgumentException>("destination", () =>
-                ecdsa.SignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentException>("destination", () =>
+                    ecdsa.SignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
 
-            bool result = ecdsa.TrySignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int bytesWritten);
-            Assert.False(result);
-            Assert.Equal(0, bytesWritten);
+                bool result = ecdsa.TrySignData("hello"u8, (Span<byte>)null, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int bytesWritten);
+                Assert.False(result);
+                Assert.Equal(0, bytesWritten);
+            }
         }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class ECDsaTests_Stream : ECDsaTests
+    public abstract class ECDsaTests_Stream : ECDsaTests
     {
         protected override bool VerifyData(ECDsa ecdsa, byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
@@ -133,23 +149,29 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return result;
         }
 
-        [Theory, MemberData(nameof(RealImplementations))]
-        public void SignData_InvalidArguments_Throws(ECDsa ecdsa)
+        [Fact]
+        public void SignData_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((Stream)null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName("")));
-            Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((Stream)null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName("")));
+                Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            }
         }
 
-        [Theory, MemberData(nameof(RealImplementations))]
-        public void VerifyData_InvalidArguments_Throws(ECDsa ecdsa)
+        [Fact]
+        public void VerifyData_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.VerifyData((Stream)null, null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new MemoryStream(), null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName("")));
-            Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.VerifyData((Stream)null, null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new MemoryStream(), null, default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], default(HashAlgorithmName)));
+                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName("")));
+                Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            }
         }
     }
 
@@ -172,25 +194,20 @@ namespace System.Security.Cryptography.EcDsa.Tests
         protected virtual bool VerifyHash(ECDsa ecdsa, byte[] hash, int offset, int count, byte[] signature) =>
             throw new SkipTestException("VerifyHash not implemented.");
 
-        public static IEnumerable<object[]> RealImplementations() =>
-            new[] {
-                new ECDsa[] { ECDsaFactory.Create() },
-            };
-
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        [Theory]
-        [MemberData(nameof(RealImplementations))]
-        public void UseAfterDispose_Import(ECDsa ecdsa)
+        [Fact]
+        public void UseAfterDispose_Import()
         {
+            ECDsa ecdsa = ECDsaFactory.Create();
             ecdsa.ImportParameters(EccTestData.GetNistP256ReferenceKey());
             UseAfterDispose(ecdsa);
         }
 
-        [Theory]
-        [MemberData(nameof(RealImplementations))]
-        public void UseAfterDispose_NewKey(ECDsa ecdsa)
+        [Fact]
+        public void UseAfterDispose_NewKey()
         {
+            ECDsa ecdsa = ECDsaFactory.Create();
             UseAfterDispose(ecdsa);
         }
 
@@ -235,75 +252,87 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 () => VerifyData(ecdsa, data, sig, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(RealImplementations))]
-        public void SignHash_Roundtrip(ECDsa ecdsa)
+        [ConditionalFact]
+        public void SignHash_Roundtrip()
         {
-            byte[] hash = RandomNumberGenerator.GetBytes(32);
-            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                byte[] hash = RandomNumberGenerator.GetBytes(32);
+                byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
 
-            Assert.True(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+                Assert.True(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+            }
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(RealImplementations))]
-        public void SignHash_TamperedSignature(ECDsa ecdsa)
+        [ConditionalFact]
+        public void SignHash_TamperedSignature()
         {
-            byte[] hash = RandomNumberGenerator.GetBytes(32);
-            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                byte[] hash = RandomNumberGenerator.GetBytes(32);
+                byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
 
-            signature[0] ^= 0xFF;
+                signature[0] ^= 0xFF;
 
-            Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+                Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+            }
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(RealImplementations))]
-        public void SignHash_DifferentHashes(ECDsa ecdsa)
+        [ConditionalFact]
+        public void SignHash_DifferentHashes()
         {
-            byte[] hash = RandomNumberGenerator.GetBytes(32);
-            byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                byte[] hash = RandomNumberGenerator.GetBytes(32);
+                byte[] signature = SignHash(ecdsa, hash, 0, hash.Length);
 
-            hash[0] ^= 0xFF;
+                hash[0] ^= 0xFF;
 
-            Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+                Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(RealImplementations))]
-        public void SignData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
+        [Fact]
+        public void SignData_MaxOffset_ZeroLength_NoThrow()
         {
-            // Explicitly larger than Array.Empty
-            byte[] data = new byte[10];
-            byte[] signature = SignData(ecdsa, data, data.Length, 0, HashAlgorithmName.SHA256);
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                // Explicitly larger than Array.Empty
+                byte[] data = new byte[10];
+                byte[] signature = SignData(ecdsa, data, data.Length, 0, HashAlgorithmName.SHA256);
 
-            Assert.True(VerifyData(ecdsa, Array.Empty<byte>(), signature, HashAlgorithmName.SHA256));
+                Assert.True(VerifyData(ecdsa, Array.Empty<byte>(), signature, HashAlgorithmName.SHA256));
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(RealImplementations))]
-        public void VerifyData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
+        [Fact]
+        public void VerifyData_MaxOffset_ZeroLength_NoThrow()
         {
-            // Explicitly larger than Array.Empty
-            byte[] data = new byte[10];
-            byte[] signature = SignData(ecdsa, Array.Empty<byte>(), HashAlgorithmName.SHA256);
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                // Explicitly larger than Array.Empty
+                byte[] data = new byte[10];
+                byte[] signature = SignData(ecdsa, Array.Empty<byte>(), HashAlgorithmName.SHA256);
 
-            Assert.True(VerifyData(ecdsa, data, data.Length, 0, signature, HashAlgorithmName.SHA256));
+                Assert.True(VerifyData(ecdsa, data, data.Length, 0, signature, HashAlgorithmName.SHA256));
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(RealImplementations))]
-        public void Roundtrip_WithOffset(ECDsa ecdsa)
+        [Fact]
+        public void Roundtrip_WithOffset()
         {
-            byte[] data = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            byte[] halfData = { 5, 6, 7, 8, 9 };
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                byte[] data = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+                byte[] halfData = { 5, 6, 7, 8, 9 };
 
-            byte[] dataSignature = SignData(ecdsa, data, 5, data.Length - 5, HashAlgorithmName.SHA256);
-            byte[] halfDataSignature = SignData(ecdsa, halfData, HashAlgorithmName.SHA256);
+                byte[] dataSignature = SignData(ecdsa, data, 5, data.Length - 5, HashAlgorithmName.SHA256);
+                byte[] halfDataSignature = SignData(ecdsa, halfData, HashAlgorithmName.SHA256);
 
-            // Cross-feed the VerifyData calls to prove that both offsets work
-            Assert.True(VerifyData(ecdsa, data, 5, data.Length - 5, halfDataSignature, HashAlgorithmName.SHA256));
-            Assert.True(VerifyData(ecdsa, halfData, dataSignature, HashAlgorithmName.SHA256));
+                // Cross-feed the VerifyData calls to prove that both offsets work
+                Assert.True(VerifyData(ecdsa, data, 5, data.Length - 5, halfDataSignature, HashAlgorithmName.SHA256));
+                Assert.True(VerifyData(ecdsa, halfData, dataSignature, HashAlgorithmName.SHA256));
+            }
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -328,67 +357,66 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         public static IEnumerable<object[]> InteroperableSignatureConfigurations()
         {
-            foreach (HashAlgorithmName hashAlgorithm in new[] {
-                HashAlgorithmName.MD5,
-                HashAlgorithmName.SHA1,
-                HashAlgorithmName.SHA256,
-                HashAlgorithmName.SHA384,
-                HashAlgorithmName.SHA512 })
-            {
-                yield return new object[] { ECDsaFactory.Create(), hashAlgorithm };
-            }
+            yield return new object[] { HashAlgorithmName.MD5 };
+            yield return new object[] { HashAlgorithmName.SHA1 };
+            yield return new object[] { HashAlgorithmName.SHA256 };
+            yield return new object[] { HashAlgorithmName.SHA384 };
+            yield return new object[] { HashAlgorithmName.SHA512 };
         }
-
+        
         [Theory]
         [MemberData(nameof(InteroperableSignatureConfigurations))]
-        public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
+        public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(HashAlgorithmName hashAlgorithm)
         {
-            // large enough to make hashing work though multiple iterations and not a multiple of 4KB it uses.
-            byte[] dataArray = new byte[33333];
-
-            byte[] dataArray2 = new byte[dataArray.Length + 2];
-            dataArray.CopyTo(dataArray2, 1);
-
-            using HashAlgorithm halg =
-                hashAlgorithm == HashAlgorithmName.MD5 ? MD5.Create() :
-                hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.Create() :
-                hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.Create() :
-                hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.Create() :
-                hashAlgorithm == HashAlgorithmName.SHA512 ? SHA512.Create() :
-                throw new Exception("Hash algorithm not supported.");
-
-            List<byte[]> signatures = new List<byte[]>(6);
-
-            // Compute a signature using each of the SignData overloads.  Then, verify it using each
-            // of the VerifyData overloads, and VerifyHash overloads.
-            //
-            // Then, verify that VerifyHash fails if the data is tampered with.
-
-            signatures.Add(SignData(ecdsa, dataArray, hashAlgorithm));
-
-            signatures.Add(ecdsa.SignHash(halg.ComputeHash(dataArray)));
-
-            foreach (byte[] signature in signatures)
+            using (ECDsa ecdsa = ECDsaFactory.Create())
             {
-                Assert.True(VerifyData(ecdsa, dataArray, signature, hashAlgorithm), "Verify 1");
-                Assert.True(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify 4");
-            }
+                // large enough to make hashing work though multiple iterations and not a multiple of 4KB it uses.
+                byte[] dataArray = new byte[33333];
 
-            int distinctSignatures = signatures.Distinct(EqualityComparer<byte[]>.Create(
-                (x, y) => x.SequenceEqual(y),
-                x =>
+                byte[] dataArray2 = new byte[dataArray.Length + 2];
+                dataArray.CopyTo(dataArray2, 1);
+
+                using HashAlgorithm halg =
+                    hashAlgorithm == HashAlgorithmName.MD5 ? MD5.Create() :
+                    hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.Create() :
+                    hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.Create() :
+                    hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.Create() :
+                    hashAlgorithm == HashAlgorithmName.SHA512 ? SHA512.Create() :
+                    throw new Exception("Hash algorithm not supported.");
+
+                List<byte[]> signatures = new List<byte[]>(6);
+
+                // Compute a signature using each of the SignData overloads.  Then, verify it using each
+                // of the VerifyData overloads, and VerifyHash overloads.
+                //
+                // Then, verify that VerifyHash fails if the data is tampered with.
+
+                signatures.Add(SignData(ecdsa, dataArray, hashAlgorithm));
+
+                signatures.Add(ecdsa.SignHash(halg.ComputeHash(dataArray)));
+
+                foreach (byte[] signature in signatures)
                 {
-                    HashCode hc = default;
-                    hc.AddBytes(x);
-                    return hc.ToHashCode();
-                })).Count();
-            Assert.True(distinctSignatures == signatures.Count, "Signing should be randomized");
+                    Assert.True(VerifyData(ecdsa, dataArray, signature, hashAlgorithm), "Verify 1");
+                    Assert.True(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify 4");
+                }
 
-            foreach (byte[] signature in signatures)
-            {
-                signature[signature.Length - 1] ^= 0xFF; // flip some bits
-                Assert.False(VerifyData(ecdsa, dataArray, signature, hashAlgorithm), "Verify Tampered 1");
-                Assert.False(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify Tampered 4");
+                int distinctSignatures = signatures.Distinct(EqualityComparer<byte[]>.Create(
+                    (x, y) => x.SequenceEqual(y),
+                    x =>
+                    {
+                        HashCode hc = default;
+                        hc.AddBytes(x);
+                        return hc.ToHashCode();
+                    })).Count();
+                Assert.True(distinctSignatures == signatures.Count, "Signing should be randomized");
+
+                foreach (byte[] signature in signatures)
+                {
+                    signature[signature.Length - 1] ^= 0xFF; // flip some bits
+                    Assert.False(VerifyData(ecdsa, dataArray, signature, hashAlgorithm), "Verify Tampered 1");
+                    Assert.False(ecdsa.VerifyHash(halg.ComputeHash(dataArray), signature), "Verify Tampered 4");
+                }
             }
         }
     }

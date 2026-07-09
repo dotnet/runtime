@@ -3221,6 +3221,56 @@ L_3:
     IL_000c:  ret
   }
 
+  .class nested private auto ansi beforefieldinit MissingFieldCarrier`1<T>
+      extends [mscorlib]System.Object
+  {
+    .method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
+    {
+      .maxstack 8
+      ldarg.0
+      call instance void object::.ctor()
+      ret
+    }
+  }
+
+  // After lowering the missing-field access into a runtime throw, AOT must also
+  // consume the recoverable metadata error so the later accepted inline does not
+  // trip inline_method()'s cfg->error assert.
+  .method private hidebysig static void missing_field_then_inline<T> () cil managed
+  {
+    .maxstack 8
+    ldnull
+    ldfld !0 class Tests/MissingFieldCarrier`1<!!0>::missing
+    pop
+    ldc.i4.2
+    call int32 Tests::always_inline(int32)
+    pop
+    ret
+  }
+
+  .method public hidebysig static int32 test_0_missing_field_then_inline () cil managed
+  {
+    .maxstack 8
+    .locals init (int32 V_0)
+    .try
+    {
+      call void class Tests::missing_field_then_inline<string> ()
+      ldc.i4.1
+      stloc.0
+      leave.s IL_0011
+    }
+    catch [mscorlib]System.MissingFieldException
+    {
+      pop
+      ldc.i4.0
+      stloc.0
+      leave.s IL_0011
+    }
+
+    IL_0011: ldloc.0
+    ret
+  }
+
   .method public hidebysig static int32 test_104_conv_u_and_string() cil managed
   {
     .maxstack  8

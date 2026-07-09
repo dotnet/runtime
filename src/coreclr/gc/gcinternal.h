@@ -835,7 +835,6 @@ retry:
 };
 #endif //BACKGROUND_GC
 
-#ifdef FEATURE_BASICFREEZE
 // The array we allocate is organized as follows:
 // 0th element is the address of the last array we allocated.
 // starting from the 1st element are the segment addresses, that's
@@ -866,7 +865,6 @@ public:
     void    enqueue_old_slot(bk* sl);
     BOOL    ensure_space_for_insert();
 };
-#endif //FEATURE_BASICFREEZE
 
 #ifdef FEATURE_STRUCTALIGN
 BOOL IsStructAligned (uint8_t *ptr, int requiredAlignment);
@@ -964,11 +962,7 @@ public:
 #endif
         if (fSmallObjectHeapPtr)
         {
-#ifdef FEATURE_BASICFREEZE
             _ASSERTE(!g_theGCHeap->IsLargeObject(this) || g_theGCHeap->IsInFrozenSegment(this));
-#else
-            _ASSERTE(!g_theGCHeap->IsLargeObject(this));
-#endif
         }
     }
 
@@ -2266,14 +2260,9 @@ static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaadbaadbaad;
 
 inline bool is_in_heap_range (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
         (o == nullptr) || (ro_segment_lookup (o) != nullptr));
     return ((g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#else //FEATURE_BASICFREEZE
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-    return (o != nullptr);
-#endif //FEATURE_BASICFREEZE
 }
 
 inline
@@ -2759,7 +2748,6 @@ void gc_heap::mark_array_clear_marked (uint8_t* add)
     mark_array [mark_word_of (add)] &= ~(1 << mark_bit_bit_of (add));
 }
 
-#ifdef FEATURE_BASICFREEZE
 inline
 void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
 {
@@ -2770,7 +2758,6 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
         clear_mark_array (range_beg, align_on_mark_word (range_end));
     }
 }
-#endif //FEATURE_BASICFREEZE
 #endif //BACKGROUND_GC
 
 inline
@@ -3308,16 +3295,10 @@ mark* gc_heap::loh_pinned_plug_of (size_t bos)
 #ifdef USE_REGIONS
 inline bool gc_heap::is_in_gc_range (uint8_t* o)
 {
-#ifdef FEATURE_BASICFREEZE
     // we may have frozen objects in read only segments
     // outside of the reserved address range of the gc heap
     assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
         (o == nullptr) || (ro_segment_lookup (o) != nullptr));
-#else //FEATURE_BASICFREEZE
-    // without frozen objects, every non-null pointer must be
-    // within the heap
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#endif //FEATURE_BASICFREEZE
     return ((gc_low <= o) && (o < gc_high));
 }
 #endif //USE_REGIONS
@@ -4340,9 +4321,7 @@ extern uint64_t qpf;
 extern double qpf_ms;
 extern double qpf_us;
 
-#ifdef FEATURE_BASICFREEZE
 heap_segment* ro_segment_lookup (uint8_t* o);
-#endif //FEATURE_BASICFREEZE
 
 struct imemory_data
 {
