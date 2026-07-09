@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+#if NET
+using System.Runtime.CompilerServices;
+#endif
 using Xunit;
 
 namespace Microsoft.Extensions.Caching.Hybrid.Tests;
@@ -203,6 +206,114 @@ public class HybridCacheTests
         Assert.NotNull(entry.Tags);
         Assert.Equal(tags, entry.Tags!.ToArray());
     }
+
+#if NET
+    [Fact]
+    public async Task ReadOnlySpanKey_FactoryMutationsReachCache()
+    {
+        var cache = new FakeHybridCache();
+        HybridCacheEntryContext? observed = null;
+
+        int result = await cache.GetOrCreateAsync(
+            "span-key".AsSpan(), state: 0,
+            factory: (_, ctx, _) =>
+            {
+                observed = ctx;
+                ctx.Expiration = TimeSpan.FromMinutes(4);
+                ctx.LocalSize = 321;
+                return new ValueTask<int>(55);
+            });
+
+        Assert.Equal(55, result);
+        Assert.NotNull(observed);
+        StoredEntry entry = cache.Store["span-key"];
+        Assert.Equal(55, entry.Value);
+        Assert.Equal(TimeSpan.FromMinutes(4), entry.Options!.Expiration);
+        Assert.Equal(321, entry.Options.LocalSize);
+    }
+
+    [Fact]
+    public async Task ReadOnlySpanKey_NoStateOverload_FactoryMutationsReachCache()
+    {
+        var cache = new FakeHybridCache();
+
+        int result = await cache.GetOrCreateAsync(
+            "span-key-nostate".AsSpan(),
+            factory: (ctx, _) =>
+            {
+                ctx.Expiration = TimeSpan.FromMinutes(6);
+                return new ValueTask<int>(77);
+            });
+
+        Assert.Equal(77, result);
+        StoredEntry entry = cache.Store["span-key-nostate"];
+        Assert.Equal(77, entry.Value);
+        Assert.Equal(TimeSpan.FromMinutes(6), entry.Options!.Expiration);
+    }
+
+    [Fact]
+    public async Task InterpolatedStringKey_FactoryMutationsReachCache_AndClearsHandler()
+    {
+        var cache = new FakeHybridCache();
+
+        // A DefaultInterpolatedStringHandler is a ref struct and cannot be a local in an async method,
+        // so the synchronous handler work — including asserting the overload cleared it — lives in a
+        // non-async local function that hands back the pending operation.
+        ValueTask<int> pending = Invoke(cache);
+        int result = await pending;
+
+        Assert.Equal(42, result);
+        StoredEntry entry = cache.Store["dish-key"];
+        Assert.Equal(42, entry.Value);
+        Assert.Equal(TimeSpan.FromMinutes(9), entry.Options!.Expiration);
+
+        static ValueTask<int> Invoke(FakeHybridCache cache)
+        {
+            var key = new DefaultInterpolatedStringHandler(literalLength: 8, formattedCount: 0);
+            key.AppendLiteral("dish-key");
+
+            ValueTask<int> pending = cache.GetOrCreateAsync(
+                ref key, state: 0,
+                factory: (_, ctx, _) =>
+                {
+                    ctx.Expiration = TimeSpan.FromMinutes(9);
+                    return new ValueTask<int>(42);
+                });
+
+            // key.Clear() must run before the overload returns, on every completion path (here the
+            // factory ran, so the underlying operation may complete asynchronously).
+            Assert.Equal(string.Empty, key.ToString());
+            return pending;
+        }
+    }
+
+    [Fact]
+    public async Task InterpolatedStringKey_ClearsHandler_OnSynchronousCacheHit()
+    {
+        var cache = new FakeHybridCache();
+        cache.Store["dish-hit"] = new StoredEntry(123, Options: null, Tags: null);
+
+        // A pre-existing entry means the factory is never invoked and the operation completes
+        // synchronously; the handler must still be cleared.
+        ValueTask<int> pending = Invoke(cache);
+        int result = await pending;
+
+        Assert.Equal(123, result);
+
+        static ValueTask<int> Invoke(FakeHybridCache cache)
+        {
+            var key = new DefaultInterpolatedStringHandler(literalLength: 8, formattedCount: 0);
+            key.AppendLiteral("dish-hit");
+
+            ValueTask<int> pending = cache.GetOrCreateAsync<int, int>(
+                ref key, state: 0,
+                factory: (_, _, _) => throw new Xunit.Sdk.XunitException("factory should not run on a cache hit"));
+
+            Assert.Equal(string.Empty, key.ToString());
+            return pending;
+        }
+    }
+#endif
 
     private sealed record StoredEntry(object? Value, HybridCacheEntryOptions? Options, IEnumerable<string>? Tags);
 
