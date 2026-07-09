@@ -279,7 +279,7 @@ namespace System.Xml.Serialization
 
         internal bool CannotNew
         {
-            get { return (!HasDefaultConstructor && !UsesCollectionBuilder) || ConstructorInaccessible; }
+            get { return !HasDefaultConstructor || ConstructorInaccessible; }
         }
 
         internal bool IsAbstract
