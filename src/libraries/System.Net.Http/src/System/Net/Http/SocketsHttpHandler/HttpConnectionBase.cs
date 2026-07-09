@@ -27,7 +27,7 @@ namespace System.Net.Http
         // avoid decrementing the counter once it's closed in case telemetry was enabled in between.
         private bool _httpTelemetryMarkedConnectionAsOpened;
 
-        private readonly long _creationTickCount = Environment.TickCount64;
+        private readonly long _creationTickCount = Environment.TickCount64; // milliseconds from Environment.TickCount64, not TimeSpan ticks
         private long? _idleSinceTickCount;
 
         /// <summary>
@@ -90,14 +90,14 @@ namespace System.Net.Http
         {
             ConnectionSetupActivity = connectionSetupActivity;
 
-            // Baseline the eviction generation to the pool's current value so a freshly established connection isn't
-            // immediately re-evaluated; it becomes eligible once the next maintenance pass advances the generation.
-            _lastEvictionGeneration = _pool.EvictionGeneration;
-
-            // Only the ShouldEvictConnection callback consumes the disposal token, so the source is created only when
-            // such a callback is configured.
+            // The eviction generation baseline and disposal token are only relevant when a ShouldEvictConnection
+            // callback is configured, so they're only set up in that case.
             if (_pool.Settings._shouldEvictConnection is not null)
             {
+                // Baseline the eviction generation to the pool's current value so a freshly established connection isn't
+                // immediately re-evaluated; it becomes eligible once the next maintenance pass advances the generation.
+                _lastEvictionGeneration = _pool.EvictionGeneration;
+
                 _connectionDisposalCts = new CancellationTokenSource();
 
                 HttpAuthority authority = _pool.OriginAuthority;
@@ -233,6 +233,12 @@ namespace System.Net.Http
 
         public long GetIdleTicks(long nowTicks) => _idleSinceTickCount is long idleSinceTickCount ? nowTicks - idleSinceTickCount : 0;
 
+        /// <summary>
+        /// Called when a connection is returned to the pool to run the eviction evaluation that may have been skipped
+        /// for it during a background pass. HTTP/1.1 connections that were in use at the time weren't visible in the
+        /// available list (they were checked out as pending), so the pass couldn't evaluate them. Comparing the
+        /// connection's last evaluated generation against the pool's current one detects that case and evaluates now.
+        /// </summary>
         public void RunEvictionEvaluationIfNeeded()
         {
             if (_pool.EvictionGeneration != _lastEvictionGeneration)
