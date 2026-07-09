@@ -1990,24 +1990,27 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // If the loop is already bottom-tested (has an exiting BBJ_COND latch that is not the IV test)
     // and no induction variable was recognized, only invert when the block that would be duplicated
-    // (condBlock) contains a call or a loop-invariant memory load worth hoisting out of the test.
-    // Classify condBlock here and record the locals used as bases of its indirections; the size-check
-    // walk below marks whether any such base is assigned in the loop (making the load loop-variant).
-    const bool   checkBenefit = sawExitingCondLatch && (ivTestBlock == nullptr) &&
+    // (condBlock) contains a call or a memory load whose address has no loop-varying local. Classify
+    // condBlock here and record the locals appearing in its indirection address expressions; the
+    // size-check walk below flags whether any of them is assigned in the loop (making the load
+    // loop-variant).
+    const bool checkBenefit = sawExitingCondLatch && (ivTestBlock == nullptr) &&
                               (JitConfig.JitLoopInversionRequireBenefitForBottomTested() != 0);
-    bool         condHasCall     = false;
-    bool         condHasIndir    = false;
-    bool         condBaseStored  = false;
+    bool         condHasCall    = false;
+    bool         condHasIndir   = false;
+    bool         condAddrStored = false;
     BitVecTraits condTraits(lvaCount, this);
-    BitVec       condIndirBaseLocals(BitVecOps::MakeEmpty(&condTraits));
+    BitVec       condIndirAddrLocals = BitVecOps::UninitVal();
     if (checkBenefit)
     {
         assert(analyzedIteration);
 
+        condIndirAddrLocals = BitVecOps::MakeEmpty(&condTraits);
+
         struct CondClassifier : GenTreeVisitor<CondClassifier>
         {
             BitVecTraits* m_traits;
-            BitVec*       m_baseLocals;
+            BitVec*       m_addrLocals;
             bool*         m_hasCall;
             bool*         m_hasIndir;
 
@@ -2016,10 +2019,10 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 DoPreOrder = true
             };
 
-            CondClassifier(Compiler* comp, BitVecTraits* traits, BitVec* baseLocals, bool* hasCall, bool* hasIndir)
+            CondClassifier(Compiler* comp, BitVecTraits* traits, BitVec* addrLocals, bool* hasCall, bool* hasIndir)
                 : GenTreeVisitor(comp)
                 , m_traits(traits)
-                , m_baseLocals(baseLocals)
+                , m_addrLocals(addrLocals)
                 , m_hasCall(hasCall)
                 , m_hasIndir(hasIndir)
             {
@@ -2029,7 +2032,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             {
                 if (tree->OperIsLocal())
                 {
-                    BitVecOps::AddElemD(m_traits, *m_baseLocals, tree->AsLclVarCommon()->GetLclNum());
+                    BitVecOps::AddElemD(m_traits, *m_addrLocals, tree->AsLclVarCommon()->GetLclNum());
                 }
                 tree->VisitOperands([&](GenTree* op) -> GenTree::VisitResult {
                     CollectLocals(op);
@@ -2054,7 +2057,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             }
         };
 
-        CondClassifier cc(this, &condTraits, &condIndirBaseLocals, &condHasCall, &condHasIndir);
+        CondClassifier cc(this, &condTraits, &condIndirAddrLocals, &condHasCall, &condHasIndir);
         for (Statement* const stmt : condBlock->Statements())
         {
             GenTree* root = stmt->GetRootNode();
@@ -2141,12 +2144,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 {
                     *boundsCheckFlag = true;
                 }
-                // Note whether any local used as a base of the condition's indirections is stored in
-                // the loop (making that load loop-variant).
+                // Note whether any local appearing in the condition's indirection addresses is stored
+                // in the loop (making that load loop-variant).
                 if (checkBenefit && !condHasCall && tree->OperIsLocalStore() &&
-                    BitVecOps::IsMember(&condTraits, condIndirBaseLocals, tree->AsLclVarCommon()->GetLclNum()))
+                    BitVecOps::IsMember(&condTraits, condIndirAddrLocals, tree->AsLclVarCommon()->GetLclNum()))
                 {
-                    condBaseStored = true;
+                    condAddrStored = true;
                 }
                 loopSize++;
                 return 1;
@@ -2179,11 +2182,11 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     }
 
     // Skip the inversion unless the duplicated test carries a benefit: a call, or an indirection off
-    // a base not assigned in the loop (a loop-invariant, hoistable load). condBaseStored is left
-    // conservatively false if the size walk above was skipped or aborted early, keeping the inversion.
+    // an address with no loop-varying local. condAddrStored is left conservatively false if the size
+    // walk above was skipped or aborted early, keeping the inversion.
     if (checkBenefit)
     {
-        const bool keepInverting = condHasCall || (condHasIndir && !condBaseStored);
+        const bool keepInverting = condHasCall || (condHasIndir && !condAddrStored);
         if (!keepInverting)
         {
             JITDUMP("No loop-inversion for " FMT_LP "; already bottom-tested with no recognized IV and no "
