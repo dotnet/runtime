@@ -229,23 +229,23 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
         return;
     }
 
-    // Position of the immediates from top of stack
+    // Position of the immediates (in eval order)
     int imm1Pos = -1;
     int imm2Pos = -1;
 
-#if DEBUG
-    HWIntrinsicInfo::CheckImmOpSignature(intrinsic, sig);
-#endif
+    int numArgs = HWIntrinsicInfo::lookupNumArgs(intrinsic);
     HWIntrinsicInfo::GetImmOpsPositions(intrinsic, &imm1Pos, &imm2Pos);
     if (imm1Pos >= 0)
     {
-        *immOp1Ptr = impStackTop(imm1Pos).val;
+        int imm1StackPos = numArgs - imm1Pos;
+        *immOp1Ptr       = impStackTop(imm1StackPos).val;
         assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp1Ptr));
     }
 
     if (imm2Pos >= 0)
     {
-        *immOp2Ptr = impStackTop(imm2Pos).val;
+        int imm2StackPos = numArgs - imm2Pos;
+        *immOp2Ptr       = impStackTop(imm2StackPos).val;
         assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp2Ptr));
     }
 }

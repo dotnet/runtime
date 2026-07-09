@@ -1292,38 +1292,6 @@ struct HWIntrinsicInfo
         }
     }
 #elif defined(TARGET_WASM)
-    //-----------------------------------------------------------------------
-    // CheckImmOpSignature: Check that the signature of an intrinsic with an immediate operand is valid.
-    //
-    // Arguments:
-    //    id - The intrinsic ID
-    //    sig - The signature information
-    //
-    // Notes:
-    //   This should only be called under #if DEBUG, since it is only used to assert that the signature is valid.
-    static void CheckImmOpSignature(NamedIntrinsic id, CORINFO_SIG_INFO* sig)
-    {
-        switch (id)
-        {
-            case NI_PackedSimd_ExtractScalar:
-            {
-                assert(sig->numArgs == 2);
-                break;
-            }
-            case NI_PackedSimd_ReplaceScalar:
-            case NI_PackedSimd_StoreSelectedScalar:
-            case NI_PackedSimd_LoadScalarAndInsert:
-            {
-                assert(sig->numArgs == 3);
-                break;
-            }
-            default:
-            {
-                unreached();
-            }
-        }
-    }
-
     //------------------------------------------------------------------------------------------------
     // GetImmOpPositions: Get the positions of the immediate operands in the signature of an intrinsic
     // with an immediate.
@@ -1334,7 +1302,7 @@ struct HWIntrinsicInfo
     //   imm2Pos - The position of the second immediate operand
     //
     // Notes:
-    //   imm1Pos and imm2Pos are set to -1 if the intrinsic does not have an immediate operand.
+    //   imm1Pos and imm2Pos are initialized to -1.
     static void GetImmOpsPositions(NamedIntrinsic id, int* imm1Pos, int* imm2Pos)
     {
         *imm1Pos = -1;
@@ -1345,20 +1313,20 @@ struct HWIntrinsicInfo
             case NI_PackedSimd_ExtractScalar:
             {
                 // (v128, lane_imm)
-                *imm1Pos = 0;
+                *imm1Pos = 2;
                 break;
             }
             case NI_PackedSimd_ReplaceScalar:
             {
                 // (v128, lane_imm, value)
-                *imm1Pos = 1;
+                *imm1Pos = 2;
                 break;
             }
             case NI_PackedSimd_StoreSelectedScalar:
             case NI_PackedSimd_LoadScalarAndInsert:
             {
                 // (scalar_addr, v128, lane_imm)
-                *imm1Pos = 0;
+                *imm1Pos = 3;
                 break;
             }
             default:
@@ -1521,10 +1489,8 @@ struct HWIntrinsic final
 
         GenTree* ops[] = {op1, op2, op3};
 
-        int opIdx = (int)numOperands - 1 - imm1Pos;
-        assert(opIdx >= 0);
-
-        GenTree* immOp = ops[opIdx];
+        assert(imm1Pos <= (int)numOperands);
+        GenTree* immOp = ops[imm1Pos - 1];
         return immOp;
     }
 

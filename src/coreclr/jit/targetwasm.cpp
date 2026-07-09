@@ -72,7 +72,6 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
                                                ClassLayout* structLayout,
                                                WellKnownArg wellKnownParam)
 {
-    varTypeIsStruct(type);
     if (varTypeIsStruct(type))
     {
         CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();

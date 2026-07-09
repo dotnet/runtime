@@ -826,13 +826,8 @@ static GenTree* getImmOp(GenTreeHWIntrinsic* node)
 
     // We only expect one immediate operand for Wasm SIMD
     assert(imm1Pos >= 0 && imm2Pos < 0);
-    int operandCount = HWIntrinsicInfo::lookupNumArgs(node->GetHWIntrinsicId());
-    assert(node->GetOperandCount() == (size_t)operandCount);
 
-    // imm1Pos is an offset in operand stack order
-    int immOpPos = operandCount - imm1Pos;
-    assert(immOpPos > 0);
-    return node->Op(immOpPos);
+    return node->Op(imm1Pos);
 }
 
 // --------------------------------------------------------
