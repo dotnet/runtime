@@ -939,17 +939,18 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
-    [InlineData(DebugVarLocKind.Register, false, VarLocType.VLT_REG)]
-    [InlineData(DebugVarLocKind.Register, true, VarLocType.VLT_REG_BYREF)]
-    [InlineData(DebugVarLocKind.Stack, false, VarLocType.VLT_STK)]
-    [InlineData(DebugVarLocKind.Stack, true, VarLocType.VLT_STK_BYREF)]
-    [InlineData(DebugVarLocKind.RegisterRegister, false, VarLocType.VLT_REG_REG)]
-    [InlineData(DebugVarLocKind.RegisterStack, false, VarLocType.VLT_REG_STK)]
-    [InlineData(DebugVarLocKind.StackRegister, false, VarLocType.VLT_STK_REG)]
-    [InlineData(DebugVarLocKind.DoubleStack, false, VarLocType.VLT_STK2)]
-    public void ConvertToVarLoc_MapsVarLocTypeCorrectly(DebugVarLocKind kind, bool isByRef, VarLocType expected)
+    [InlineData(DebugVarLocKind.Register, false, false, VarLocType.VLT_REG)]
+    [InlineData(DebugVarLocKind.Register, false, true, VarLocType.VLT_REG_FP)]
+    [InlineData(DebugVarLocKind.Register, true, false, VarLocType.VLT_REG_BYREF)]
+    [InlineData(DebugVarLocKind.Stack, false, false, VarLocType.VLT_STK)]
+    [InlineData(DebugVarLocKind.Stack, true, false, VarLocType.VLT_STK_BYREF)]
+    [InlineData(DebugVarLocKind.RegisterRegister, false, false, VarLocType.VLT_REG_REG)]
+    [InlineData(DebugVarLocKind.RegisterStack, false, false, VarLocType.VLT_REG_STK)]
+    [InlineData(DebugVarLocKind.StackRegister, false, false, VarLocType.VLT_STK_REG)]
+    [InlineData(DebugVarLocKind.DoubleStack, false, false, VarLocType.VLT_STK2)]
+    public void ConvertToVarLoc_MapsVarLocTypeCorrectly(DebugVarLocKind kind, bool isByRef, bool isFloatingPoint, VarLocType expected)
     {
-        var varInfo = new DebugVarInfo { Kind = kind, IsByRef = isByRef };
+        var varInfo = new DebugVarInfo { Kind = kind, IsByRef = isByRef, IsFloatingPoint = isFloatingPoint };
         VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
         Assert.Equal(expected, result.vlType);
     }
@@ -960,6 +961,15 @@ public unsafe class DacDbiImplTests
         var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.Register, Register = 7 };
         VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
         Assert.Equal(7u, result.vlrReg);
+    }
+
+    [Fact]
+    public void ConvertToVarLoc_RegisterFP_SetsRegisterField()
+    {
+        var varInfo = new DebugVarInfo { Kind = DebugVarLocKind.Register, IsFloatingPoint = true, Register = 9 };
+        VarLoc result = DacDbiImpl.ConvertToVarLoc(varInfo);
+        Assert.Equal(VarLocType.VLT_REG_FP, result.vlType);
+        Assert.Equal(9u, result.vlrReg);
     }
 
     [Fact]

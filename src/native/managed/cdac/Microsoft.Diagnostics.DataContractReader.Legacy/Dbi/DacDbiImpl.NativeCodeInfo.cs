@@ -49,16 +49,17 @@ public sealed unsafe partial class DacDbiImpl
     internal static VarLoc ConvertToVarLoc(DebugVarInfo varInfo)
     {
         VarLoc loc = default;
-        loc.vlType = (varInfo.Kind, varInfo.IsByRef) switch
+        loc.vlType = (varInfo.Kind, varInfo.IsByRef, varInfo.IsFloatingPoint) switch
         {
-            (DebugVarLocKind.Register, false) => VarLocType.VLT_REG,
-            (DebugVarLocKind.Register, true) => VarLocType.VLT_REG_BYREF,
-            (DebugVarLocKind.Stack, false) => VarLocType.VLT_STK,
-            (DebugVarLocKind.Stack, true) => VarLocType.VLT_STK_BYREF,
-            (DebugVarLocKind.RegisterRegister, _) => VarLocType.VLT_REG_REG,
-            (DebugVarLocKind.RegisterStack, _) => VarLocType.VLT_REG_STK,
-            (DebugVarLocKind.StackRegister, _) => VarLocType.VLT_STK_REG,
-            (DebugVarLocKind.DoubleStack, _) => VarLocType.VLT_STK2,
+            (DebugVarLocKind.Register, false, false) => VarLocType.VLT_REG,
+            (DebugVarLocKind.Register, false, true) => VarLocType.VLT_REG_FP,
+            (DebugVarLocKind.Register, true, _) => VarLocType.VLT_REG_BYREF,
+            (DebugVarLocKind.Stack, false, _) => VarLocType.VLT_STK,
+            (DebugVarLocKind.Stack, true, _) => VarLocType.VLT_STK_BYREF,
+            (DebugVarLocKind.RegisterRegister, _, _) => VarLocType.VLT_REG_REG,
+            (DebugVarLocKind.RegisterStack, _, _) => VarLocType.VLT_REG_STK,
+            (DebugVarLocKind.StackRegister, _, _) => VarLocType.VLT_STK_REG,
+            (DebugVarLocKind.DoubleStack, _, _) => VarLocType.VLT_STK2,
             _ => VarLocType.VLT_INVALID,
         };
 
@@ -196,6 +197,7 @@ public sealed unsafe partial class DacDbiImpl
             switch (c.loc.vlType)
             {
                 case VarLocType.VLT_REG:
+                case VarLocType.VLT_REG_FP:
                 case VarLocType.VLT_REG_BYREF:
                     Debug.Assert(c.loc.vlrReg == d.loc.vlrReg,
                         $"VarInfo[{i}] vlrReg mismatch - cDAC: {c.loc.vlrReg}, DAC: {d.loc.vlrReg}");
