@@ -31736,8 +31736,17 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsSIMD(simdType));
 
+#ifdef DEBUG
+    // A floating-point CreateScalarUnsafe is removed during lowering, which can leave a scalar
+    // operand occupying the low element of a SIMD register. Such an operand is consumed here at
+    // full register width, so it is valid in addition to a full SIMD operand.
+    auto isValidBinOpOperand = [=](GenTree* op) -> bool {
+        return op->TypeIs(simdType) || varTypeIsFloating(op);
+    };
+#endif // DEBUG
+
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+    assert(isValidBinOpOperand(op1));
     assert(op2 != nullptr);
 
 #if defined(TARGET_XARCH)
@@ -31763,7 +31772,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     {
         case GT_ADD:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -31810,7 +31819,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_AND:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -31846,7 +31855,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_AND_NOT:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
             if (comp->fgNodeThreading != NodeThreading::LIR)
             {
@@ -31897,7 +31906,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 #else
             assert(varTypeIsFloating(simdBaseType));
 #endif
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
 #if defined(TARGET_XARCH)
             if (varTypeIsFloating(simdBaseType))
@@ -31991,7 +32000,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_MUL:
         {
 #if defined(TARGET_XARCH)
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
             if (simdSize == 64)
             {
@@ -32058,7 +32067,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_OR:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -32238,7 +32247,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 
         case GT_SUB:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -32285,7 +32294,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_XOR:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType));
+            assert(isValidBinOpOperand(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
