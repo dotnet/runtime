@@ -827,7 +827,7 @@ static GenTree* getImmOp(GenTreeHWIntrinsic* node)
     // We only expect one immediate operand for Wasm SIMD
     assert(imm1Pos >= 0 && imm2Pos < 0);
     int operandCount = HWIntrinsicInfo::lookupNumArgs(node->GetHWIntrinsicId());
-    assert(node->GetOperandCount() == operandCount);
+    assert(node->GetOperandCount() == (size_t)operandCount);
 
     // imm1Pos is an offset in operand stack order
     int immOpPos = operandCount - imm1Pos;
@@ -921,7 +921,7 @@ GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
         // to cover all the possible immediate values. On Wasm this involves introducing nested blocks,
         // which requires us to set the operands as "multiply used" so regalloc assigns them locals.
         node->SetNeedsJumpTableFallback();
-        for (int i = 1; i <= node->GetOperandCount(); i++)
+        for (size_t i = 1; i <= node->GetOperandCount(); i++)
         {
             GenTree* op = node->Op(i);
             SetMultiplyUsed(op DEBUGARG("Non-constant imm op needs jump table fallback"));

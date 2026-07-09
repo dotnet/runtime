@@ -119,13 +119,13 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
     // Drop all incoming operands to actually consume them, they
     // will be unusable in the jump table and we will need to re-materialize them
     // on the value stack for each case in the table.
-    for (int i = 0; i < node->GetOperandCount(); i++)
+    for (size_t i = 0; i < node->GetOperandCount(); i++)
     {
         GetEmitter()->emitIns(INS_drop);
     }
 
     auto getNonImmediateOperands = [=]() {
-        for (int i = 1; i <= node->GetOperandCount(); i++)
+        for (size_t i = 1; i <= node->GetOperandCount(); i++)
         {
             GenTree* op = node->Op(i);
             if (op != immOp)
