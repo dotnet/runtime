@@ -1682,7 +1682,7 @@ private:
 protected:
     TADDR m_pDynamicMetadata;
 
-    // Incremented each time a dynamic module re-serializes its metadata.
+    // Incremented each time a module's metadata is updated.
     // Indicates update to out-of-process readers.
     uint32_t m_dwMetadataGeneration;
 
