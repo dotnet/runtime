@@ -131,16 +131,20 @@ namespace ILCompiler.ObjectWriter
             switch (architecture)
             {
                 case TargetArchitecture.ARM64:
-                    // Normal registers are directly mapped
-                    if (regNum >= 33)
-                        regNum = regNum - 33 + 64; // FP
-                    return regNum;
+                    // Integer registers map to DWARF 0-32, FP V registers to 64+
+                    return regNum switch
+                    {
+                        >= 33 and <= 64 => regNum - 33 + 64, // V0-V31 → DWARF 64-95
+                        _ => regNum                            // X0-PC → DWARF 0-32
+                    };
 
                 case TargetArchitecture.ARM:
-                    // Normal registers are directly mapped
-                    if (regNum >= 16)
-                        regNum = ((regNum - 16) / 2) + 256; // FP
-                    return regNum;
+                    // Integer registers map directly, FP D registers to DWARF 256+
+                    return regNum switch
+                    {
+                        >= 16 => ((regNum - 16) / 2) + 256, // D0-D7 → DWARF 256+
+                        _ => regNum                           // R0-PC → DWARF 0-15
+                    };
 
                 case TargetArchitecture.X64:
                     return (RegNumAmd64)regNum switch
@@ -161,7 +165,23 @@ namespace ILCompiler.ObjectWriter
                         RegNumAmd64.REGNUM_R13 => 13,
                         RegNumAmd64.REGNUM_R14 => 14,
                         RegNumAmd64.REGNUM_R15 => 15,
-                        _ => regNum - (int)RegNumAmd64.REGNUM_FP_FIRST + 17 // FP registers
+                        RegNumAmd64.REGNUM_XMM0 => 17,
+                        RegNumAmd64.REGNUM_XMM1 => 18,
+                        RegNumAmd64.REGNUM_XMM2 => 19,
+                        RegNumAmd64.REGNUM_XMM3 => 20,
+                        RegNumAmd64.REGNUM_XMM4 => 21,
+                        RegNumAmd64.REGNUM_XMM5 => 22,
+                        RegNumAmd64.REGNUM_XMM6 => 23,
+                        RegNumAmd64.REGNUM_XMM7 => 24,
+                        RegNumAmd64.REGNUM_XMM8 => 25,
+                        RegNumAmd64.REGNUM_XMM9 => 26,
+                        RegNumAmd64.REGNUM_XMM10 => 27,
+                        RegNumAmd64.REGNUM_XMM11 => 28,
+                        RegNumAmd64.REGNUM_XMM12 => 29,
+                        RegNumAmd64.REGNUM_XMM13 => 30,
+                        RegNumAmd64.REGNUM_XMM14 => 31,
+                        RegNumAmd64.REGNUM_XMM15 => 32,
+                        _ => throw new NotSupportedException($"Unsupported AMD64 register {regNum}")
                     };
 
                 case TargetArchitecture.X86:
@@ -175,7 +195,7 @@ namespace ILCompiler.ObjectWriter
                         RegNumX86.REGNUM_EBP => 5,
                         RegNumX86.REGNUM_ESI => 6,
                         RegNumX86.REGNUM_EDI => 7,
-                        _ => regNum - (int)RegNumX86.REGNUM_COUNT + 32 // FP registers
+                        _ => throw new NotSupportedException($"Unsupported x86 register {regNum}")
                     };
 
                 case TargetArchitecture.LoongArch64:
