@@ -565,9 +565,7 @@ void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
         {
             size_t flags = pSegment->flags;
             if ((flags & heap_segment_flags_loh)
-#ifdef FEATURE_BASICFREEZE
                 && !(flags & heap_segment_flags_readonly)
-#endif
                 )
             {
                 new_address = old_address + loh_node_relocation_distance (old_address);

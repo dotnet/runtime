@@ -663,8 +663,9 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         TADDR ssp = 0;
 #endif
 
-        ResumableFrame resFrame(pContextRecord);
-        resFrame.Push(pThread);
+        SoftwareExceptionFrame exceptionFrame;
+        exceptionFrame.SetContext(pContextRecord);
+        exceptionFrame.InitAndLink(pThread);
 
         OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
         INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContextRecord, ssp);
@@ -1664,7 +1665,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 
     REGDISPLAY rd = {};
     T_CONTEXT context = {};
-#if (defined(HOST_WINDOWS) && defined(HOST_AMD64)) || defined(TARGET_ARM64)
+#ifndef UNIX_AMD64_ABI
     constexpr BOOL updateFloats = TRUE;
     context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
     RtlCaptureContext(&context);
