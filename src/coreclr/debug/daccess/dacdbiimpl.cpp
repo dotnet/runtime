@@ -7230,7 +7230,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyFromModule(VMPTR_Modul
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     CORDB_ADDRESS continuationAddress,
-    OUT PCODE* pDiagnosticIP,
+    OUT CORDB_ADDRESS* pDiagnosticIP,
     OUT CORDB_ADDRESS* pNextContinuation,
     OUT UINT32* pState)
 {
@@ -7281,7 +7281,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
         return E_FAIL;
     }
 
-    *pDiagnosticIP = pResumeInfo->pDiagnosticIP;
+    *pDiagnosticIP = static_cast<CORDB_ADDRESS>(pResumeInfo->pDiagnosticIP);
     *pNextContinuation = static_cast<CORDB_ADDRESS>(dac_cast<TADDR>(OBJECTREFToObject(pNext)));
     *pState = state;
 

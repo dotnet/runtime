@@ -429,7 +429,7 @@ interface IDacDbiInterface : IUnknown
     // Async and Continuations
     HRESULT ParseContinuation(
         [in] CORDB_ADDRESS continuationAddress,
-        [out] PCODE * pDiagnosticIP,
+        [out] CORDB_ADDRESS * pDiagnosticIP,
         [out] CORDB_ADDRESS * pNextContinuation,
         [out] UINT32 * pState);
     HRESULT EnumerateAsyncLocals([in] VMPTR_MethodDesc vmMethod, [in] CORDB_ADDRESS codeAddr, [in] UINT32 state, [in] FP_ASYNC_LOCAL_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);

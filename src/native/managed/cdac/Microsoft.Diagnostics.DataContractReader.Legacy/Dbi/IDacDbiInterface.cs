@@ -195,7 +195,7 @@ public struct Debugger_JITFuncData
     public ulong vmNativeCodeMethodDescToken;
     public Interop.BOOL fIsFilterFrame;
     public ulong parentNativeOffset;
-    public ulong fpParentOrSelf;
+    public ulong fpParentOrSelf;                   // FramePointer (CORDB_ADDRESS)
     public Interop.BOOL isInstantiatedGeneric;
     public Interop.BOOL justAfterILThrow;
 }
@@ -224,14 +224,10 @@ public struct DebuggerIPCE_STRData_StubFrame
     public int frameType;                          // CorDebugInternalFrameType
 }
 
-// Holds data for each stack frame or chain. This data is passed from the RC to
-// the DI during a stack walk. Mirrors the native Debugger_STRData struct
-// defined in src/coreclr/debug/inc/dbgipcevents.h.
-//
-// `ctx` is a pointer into dbi-allocated memory.
-// The DAC writes the populated context through this pointer rather
-// than storing it inline. Code paths that do not produce a context
-// (e.g. EnumerateInternalFrames for cStubFrame entries) leave it as 0.
+// Holds data for each stack frame or chain, passed from the RC to the DI during a
+// stack walk. Mirrors the native Debugger_STRData in src/coreclr/debug/inc/dacdbistructures.h.
+// ctx is a host-sized pointer to a dbi-allocated DT_CONTEXT buffer the DAC writes through;
+// paths that produce no context (e.g. EnumerateInternalFrames cStubFrame entries) leave it 0.
 [StructLayout(LayoutKind.Explicit)]
 public struct Debugger_STRData
 {
@@ -242,10 +238,11 @@ public struct Debugger_STRData
         cRuntimeNativeFrame = 2,
     }
 
-    [FieldOffset(0)] public ulong fp;                           // FramePointer
-    [FieldOffset(8)] public ulong ctx;                          // DT_CONTEXT*
+    [FieldOffset(0)] public ulong fp;                           // FramePointer (CORDB_ADDRESS)
+    [FieldOffset(8)] public nuint ctx;                          // DT_CONTEXT* (host-sized)
     [FieldOffset(16)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
     [FieldOffset(24)] public EType eType;
+    // v (method frame) and stubFrame overlap, mirroring the native anonymous union.
     [FieldOffset(32)] public DebuggerIPCE_STRData_MethodFrame v;
     [FieldOffset(32)] public DebuggerIPCE_STRData_StubFrame stubFrame;
 }
