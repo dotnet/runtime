@@ -5033,12 +5033,15 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             op1Type                  = op1VarDsc->GetRegisterType(op1LclVar);
         }
         assert(varTypeUsesSameRegType(targetType, op1Type));
-        // A floating-point CreateScalarUnsafe is removed during lowering, which can leave a narrower
-        // scalar (e.g. TYP_FLOAT) feeding a wider SIMD local. The scalar physically occupies a full
-        // SIMD register, so the store still copies the target-sized register; the upper elements are
-        // simply undefined, which matches the Unsafe contract.
+        // A floating-point CreateScalarUnsafe or a ToVector*Unsafe widen is removed during lowering,
+        // which can leave a narrower source (a TYP_FLOAT/TYP_DOUBLE scalar, or a smaller TYP_SIMD*)
+        // feeding a wider SIMD local. The source physically occupies the low bits of a full SIMD
+        // register, so the store still copies the target-sized register; the upper elements are simply
+        // undefined, which matches the Unsafe contract.
         assert(varTypeUsesIntReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1Type)) ||
-               (varTypeIsSIMD(targetType) && varTypeIsFloating(op1Type)));
+               (varTypeIsSIMD(targetType) &&
+                (varTypeIsFloating(op1Type) ||
+                 (varTypeIsSIMD(op1Type) && (emitTypeSize(op1Type) <= emitTypeSize(targetType))))));
 #endif
 
 #if !defined(TARGET_64BIT)

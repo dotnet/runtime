@@ -2562,6 +2562,33 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector_ToVector256Unsafe:
+        case NI_Vector_ToVector512Unsafe:
+        {
+            // These widen a narrower vector into a wider one where the upper bits are undefined.
+            // At the register level that is a no-op: the value already occupies the low bits of
+            // the wider register. Remove the node and let the consumer read op1 directly, which
+            // avoids a register-to-register copy when the source is still live and keeps the node
+            // out of LIR entirely.
+            //
+            // The consumer reads op1 from a register at its own (wider) size, with the upper bits
+            // undefined, which is exactly the contract of these nodes. Nothing observes the node
+            // for sizing, and containment performs its own size check (operandSize >= expectedSize),
+            // so op1 can never be widened into an undersized contained memory operand.
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                GenTree* op1  = node->Op(1);
+                GenTree* next = node->gtNext;
+
+                use.ReplaceWith(op1);
+                BlockRange().Remove(node);
+                return next;
+            }
+            break;
+        }
+
         default:
             break;
     }
