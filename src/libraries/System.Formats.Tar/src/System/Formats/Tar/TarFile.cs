@@ -643,7 +643,7 @@ namespace System.Formats.Tar
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, extractState);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, ref extractState);
                 }
             }
             extractState.Apply(destinationDirectoryFullPath);
@@ -692,7 +692,10 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, extractState, cancellationToken).ConfigureAwait(false);
+                        // Pass extractState by ref in a synchronous statement; the ref is used only synchronously
+                        // (a ref argument cannot be part of an awaited expression).
+                        Task extractTask = entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, ref extractState, cancellationToken);
+                        await extractTask.ConfigureAwait(false);
                     }
                 }
             }

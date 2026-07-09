@@ -27,15 +27,18 @@ namespace System.Formats.Tar
         {
             internal SortedDictionary<string, UnixFileMode>? PendingModes;
             internal Stack<(string, DateTimeOffset)> DirectoryModificationTimes;
-            internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)> PendingLinks;
             internal TarHardLinkMode HardLinkMode;
+            // Allocated lazily on the first deferred symlink; most archives have none.
+            internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? PendingLinks;
 
             public ExtractState()
             {
                 PendingModes = CreatePendingModesDictionary();
                 DirectoryModificationTimes = new();
-                PendingLinks = new();
             }
+
+            internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)> GetOrCreatePendingLinks()
+                => PendingLinks ??= new();
 
             internal readonly void Apply(string destinationDirectoryPath)
             {
@@ -504,9 +507,15 @@ namespace System.Formats.Tar
 
         // We delayed creating some symbolic links because they might target locations outside the destination.
         // Any symlink that is in the destination directory at call time is either one that points in the destination or one that we are allowed to follow outside.
-        internal static void CreatePendingLinks(string destinationDirectoryFullPath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)> pendingLinks)
+        internal static void CreatePendingLinks(string destinationDirectoryFullPath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? pendingLinks)
         {
             Debug.Assert(destinationDirectoryFullPath[^1] == Path.DirectorySeparatorChar);
+
+            if (pendingLinks is not { Count: > 0 })
+            {
+                // Nothing to do, no pending links.
+                return;
+            }
 
             (string resolvedDestinationDirectoryFullPath, int destinationSymlinkDepth) = RealPath(destinationDirectoryFullPath);
 

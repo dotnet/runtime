@@ -319,7 +319,7 @@ namespace System.Formats.Tar
         internal abstract bool IsDataStreamSetterSupported();
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, TarHelpers.ExtractState extractState)
+        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, ref TarHelpers.ExtractState extractState)
         {
             (string destinationFullPath, string? linkTargetPath, bool deferred) = GetDestinationAndLinkPaths(destinationDirectoryPath);
 
@@ -328,7 +328,7 @@ namespace System.Formats.Tar
                 // Create a placeholder file for the deferred symlink.
                 Debug.Assert(EntryType is TarEntryType.SymbolicLink);
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, extractState.PendingModes);
-                CreateSymlinkPlaceholderFile(destinationFullPath, linkTargetPath!, overwrite, extractState.PendingLinks);
+                CreateSymlinkPlaceholderFile(destinationFullPath, linkTargetPath!, overwrite, extractState.GetOrCreatePendingLinks());
                 return;
             }
 
@@ -346,7 +346,7 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously extracts the current entry to a location relative to the specified directory.
-        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, TarHelpers.ExtractState extractState, CancellationToken cancellationToken)
+        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, ref TarHelpers.ExtractState extractState, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -360,7 +360,7 @@ namespace System.Formats.Tar
                 // Create a placeholder file for the deferred symlink.
                 Debug.Assert(EntryType is TarEntryType.SymbolicLink);
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, extractState.PendingModes);
-                CreateSymlinkPlaceholderFile(destinationFullPath, linkTargetPath!, overwrite, extractState.PendingLinks);
+                CreateSymlinkPlaceholderFile(destinationFullPath, linkTargetPath!, overwrite, extractState.GetOrCreatePendingLinks());
                 return Task.CompletedTask;
             }
 
