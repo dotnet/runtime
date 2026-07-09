@@ -1693,19 +1693,19 @@ namespace System.Threading.Tasks.Tests
             AssertTrue(stream, completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {completes}");
         }
 
-        // StateMachine-friendly variant: StateMachine's per-MoveNext dispatcher model emits one Create per await
-        // suspension, so a method with N awaits produces N dispatchers / N Creates within the
-        // same dispatcher tree. Each dispatcher ends in exactly one Suspend (it yielded) or one
-        // Complete (it finished), so every Create is balanced by a Suspend or a Complete:
-        // creates == completes + suspends (creates >= 1).
+        // StateMachine dispatcher model with reuse: a single dispatcher spans all of a method's yields
+        // (it resumes/suspends multiple times) and is created + completed exactly once. So within a
+        // dispatcher tree every Create is balanced by exactly one Complete; Suspends are interior events.
         private static void AssertCreateBalancesSuspendAndCompleteInChain(ParsedEventStream stream, ulong dispatcherId, string chainName)
         {
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
             int creates = ids.Count(id => id == AsyncEventID.CreateStateMachineAsyncContext);
+            int resumes = ids.Count(id => id == AsyncEventID.ResumeStateMachineAsyncContext);
             int suspends = ids.Count(id => id == AsyncEventID.SuspendStateMachineAsyncContext);
             int completes = ids.Count(id => id == AsyncEventID.CompleteStateMachineAsyncContext);
             AssertTrue(stream, creates >= 1, $"Expected at least 1 CreateStateMachineAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
-            AssertTrue(stream, creates == completes + suspends, $"Expected CreateStateMachineAsyncContext count == CompleteStateMachineAsyncContext + SuspendStateMachineAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates, {completes} completes, {suspends} suspends");
+            AssertTrue(stream, creates == completes, $"Expected CreateStateMachineAsyncContext count == CompleteStateMachineAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates, {completes} completes");
+            AssertTrue(stream, resumes == completes + suspends, $"Expected ResumeStateMachineAsyncContext count == Complete + Suspend count for {chainName} (DispatcherId {dispatcherId}), got {resumes} resumes, {completes} completes, {suspends} suspends");
         }
 
         private sealed class InlinePostSynchronizationContext : SynchronizationContext

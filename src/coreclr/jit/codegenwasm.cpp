@@ -105,15 +105,15 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
-    // SIMD16 (Vector128) parameters are lowered to i32 in the wasm signature, so any
-    // v128 operation performed on them produces an invalid module (e.g. a v128 op with
-    // an i32 operand). Bail such methods to the interpreter until SIMD16 parameters are
+    // SIMD (Vector2/3/4, Vector128) parameters are lowered to i32 in the wasm signature, so any
+    // vector operation performed on them produces an invalid module (e.g. a v128/f64 op with
+    // an i32 operand). Bail such methods to the interpreter until SIMD parameters are
     // properly supported in the wasm calling convention.
     for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
     {
-        if (m_compiler->lvaGetDesc(lclNum)->TypeGet() == TYP_SIMD16)
+        if (varTypeIsSIMD(m_compiler->lvaGetDesc(lclNum)->TypeGet()))
         {
-            NYI_WASM_SIMD("SIMD16 parameter");
+            NYI_WASM_SIMD("SIMD parameter");
         }
     }
 
