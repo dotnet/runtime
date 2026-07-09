@@ -58,9 +58,7 @@ namespace System.Net.Security
         private bool _hasServerOptions;
         private TlsSecurityContext? _securityContext;
 
-        private byte[]? _pending;
-        private int _pendingOffset;
-        private int _pendingLength;
+        private ArrayBuffer _pendingBuffer = new ArrayBuffer(initialSize: 0, usePool: true);
 
         private byte[]? _decryptScratch;
 
@@ -96,8 +94,7 @@ namespace System.Net.Security
         // of the supplied socket handle and disposes it with the session.
         private SafeSocketHandle? _socketHandle;
         private Socket? _socket;
-        private byte[]? _socketInBuf;
-        private int _socketInUsed;
+        private ArrayBuffer _socketInBuffer = new ArrayBuffer(initialSize: 0, usePool: true);
 
         private protected TlsSession()
         {
@@ -142,7 +139,7 @@ namespace System.Net.Security
 
         public bool IsHandshakeComplete => _isHandshakeComplete;
 
-        public bool HasPendingOutput => _pendingLength > 0;
+        public bool HasPendingOutput => _pendingBuffer.ActiveLength > 0;
 
         public string? TargetHostName
         {
@@ -726,10 +723,10 @@ namespace System.Net.Security
             }
 
             // Drain pending first; do not consume new input while output is owed.
-            if (_pendingLength > 0)
+            if (_pendingBuffer.ActiveLength > 0)
             {
                 bytesWritten = DrainTo(output);
-                return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
+                return _pendingBuffer.ActiveLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
             }
 
             // The PAL state machine — SChannel in particular — must only be handed
@@ -927,7 +924,7 @@ namespace System.Net.Security
                     // empty. Only fires on the client path today; server-side never reaches this
                     // branch for external-validation reasons because CertVerifyCallback
                     // accepts-and-defers (see gating in Interop.OpenSsl.CertVerifyCallback).
-                    if (_pendingLength > 0)
+                    if (_pendingBuffer.ActiveLength > 0)
                     {
                         bytesWritten = DrainTo(output);
                         _externalValidationFault = authExc;
@@ -954,10 +951,10 @@ namespace System.Net.Security
                     CaptureRemoteCertificateForExternalValidation();
                 }
 
-                if (_pendingLength > 0)
+                if (_pendingBuffer.ActiveLength > 0)
                 {
                     bytesWritten = DrainTo(output);
-                    if (_pendingLength > 0)
+                    if (_pendingBuffer.ActiveLength > 0)
                     {
                         return TlsOperationStatus.DestinationTooSmall;
                     }
@@ -1016,10 +1013,10 @@ namespace System.Net.Security
                 throw new InvalidOperationException("Handshake has not yet completed.");
             }
 
-            if (_pendingLength > 0)
+            if (_pendingBuffer.ActiveLength > 0)
             {
                 bytesWritten = DrainTo(ciphertext);
-                return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
+                return _pendingBuffer.ActiveLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
             }
 
             if (plaintext.IsEmpty)
@@ -1065,7 +1062,7 @@ namespace System.Net.Security
             }
 
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
+            return _pendingBuffer.ActiveLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
         }
 
         // ── Decrypt ───────────────────────────────────────────────────────
@@ -1086,7 +1083,7 @@ namespace System.Net.Security
                 throw new InvalidOperationException("Handshake has not yet completed.");
             }
 
-            if (_pendingLength > 0)
+            if (_pendingBuffer.ActiveLength > 0)
             {
                 // Caller must drain before we accept new input.
                 return TlsOperationStatus.DestinationTooSmall;
@@ -1279,7 +1276,7 @@ namespace System.Net.Security
                 throw new InvalidOperationException("Handshake has not yet completed.");
             }
 
-            if (_pendingLength == 0)
+            if (_pendingBuffer.ActiveLength == 0)
             {
                 ProtocolToken token = SslStreamPal.Renegotiate(
                     ref ActiveCredentialsRef(),
@@ -1305,7 +1302,7 @@ namespace System.Net.Security
             }
 
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
+            return _pendingBuffer.ActiveLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
 #endif
         }
 
@@ -1385,7 +1382,7 @@ namespace System.Net.Security
             }
 
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Closed;
+            return _pendingBuffer.ActiveLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Closed;
         }
 
         // ── Pending output ────────────────────────────────────────────────
@@ -1394,7 +1391,7 @@ namespace System.Net.Security
         {
             ThrowIfDisposed();
             bytesWritten = DrainTo(ciphertext);
-            return _pendingLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
+            return _pendingBuffer.ActiveLength > 0 ? TlsOperationStatus.DestinationTooSmall : TlsOperationStatus.Complete;
         }
 
         // ── Internals ─────────────────────────────────────────────────────
@@ -1406,54 +1403,21 @@ namespace System.Net.Security
                 return;
             }
 
-            // Compact if anything was already drained.
-            if (_pending != null && _pendingOffset > 0)
-            {
-                if (_pendingLength > 0)
-                {
-                    Buffer.BlockCopy(_pending, _pendingOffset, _pending, 0, _pendingLength);
-                }
-                _pendingOffset = 0;
-            }
-
-            int needed = _pendingLength + data.Length;
-            if (_pending == null || _pending.Length < needed)
-            {
-                byte[] bigger = ArrayPool<byte>.Shared.Rent(Math.Max(needed, 4096));
-                if (_pending is byte[] old)
-                {
-                    if (_pendingLength > 0)
-                    {
-                        Buffer.BlockCopy(old, 0, bigger, 0, _pendingLength);
-                    }
-                    ArrayPool<byte>.Shared.Return(old);
-                }
-                _pending = bigger;
-            }
-
-            data.CopyTo(_pending.AsSpan(_pendingLength));
-            _pendingLength += data.Length;
+            _pendingBuffer.EnsureAvailableSpace(data.Length);
+            data.CopyTo(_pendingBuffer.AvailableSpan);
+            _pendingBuffer.Commit(data.Length);
         }
 
         private int DrainTo(Span<byte> output)
         {
-            if (_pendingLength == 0)
+            int n = Math.Min(output.Length, _pendingBuffer.ActiveLength);
+            if (n == 0)
             {
                 return 0;
             }
 
-            int n = Math.Min(output.Length, _pendingLength);
-            _pending!.AsSpan(_pendingOffset, n).CopyTo(output);
-            _pendingOffset += n;
-            _pendingLength -= n;
-
-            if (_pendingLength == 0)
-            {
-                ArrayPool<byte>.Shared.Return(_pending!);
-                _pending = null;
-                _pendingOffset = 0;
-            }
-
+            _pendingBuffer.ActiveSpan.Slice(0, n).CopyTo(output);
+            _pendingBuffer.Discard(n);
             return n;
         }
 
@@ -1790,20 +1754,18 @@ namespace System.Net.Security
         private bool TryDrainPendingToSocket(out SocketError lastError)
         {
             lastError = SocketError.Success;
-            while (_pendingLength > 0)
+            while (_pendingBuffer.ActiveLength > 0)
             {
                 int sent = _socket!.Send(
-                    new ReadOnlySpan<byte>(_pending!, _pendingOffset, _pendingLength),
+                    _pendingBuffer.ActiveReadOnlySpan,
                     SocketFlags.None,
                     out SocketError err);
                 lastError = err;
                 if (sent > 0)
                 {
-                    _pendingOffset += sent;
-                    _pendingLength -= sent;
-                    if (_pendingLength == 0)
+                    _pendingBuffer.Discard(sent);
+                    if (_pendingBuffer.ActiveLength == 0)
                     {
-                        _pendingOffset = 0;
                         return true;
                     }
                     continue;
@@ -1811,28 +1773,6 @@ namespace System.Net.Security
                 return false;
             }
             return true;
-        }
-
-        // Grows the pool-rented _socketInBuf to at least newMinCapacity, preserving the
-        // first _socketInUsed bytes. Rents a new array, copies the used prefix, and
-        // returns the old buffer to the shared pool.
-        private void GrowSocketInBuf(int newMinCapacity)
-        {
-            byte[] oldBuf = _socketInBuf!;
-            int newSize = oldBuf.Length;
-            do
-            {
-                newSize *= 2;
-            }
-            while (newSize < newMinCapacity);
-
-            byte[] newBuf = ArrayPool<byte>.Shared.Rent(newSize);
-            if (_socketInUsed > 0)
-            {
-                Buffer.BlockCopy(oldBuf, 0, newBuf, 0, _socketInUsed);
-            }
-            _socketInBuf = newBuf;
-            ArrayPool<byte>.Shared.Return(oldBuf);
         }
 
         private protected TlsOperationStatus HandshakeSocketCore()
@@ -1858,13 +1798,13 @@ namespace System.Net.Security
                 return fast.Value;
             }
 
-            _socketInBuf ??= ArrayPool<byte>.Shared.Rent(SocketScratchSize);
+            _socketInBuffer.EnsureAvailableSpace(SocketScratchSize);
             byte[] scratch = ArrayPool<byte>.Shared.Rent(SocketScratchSize);
             try
             {
                 while (true)
                 {
-                    if (_pendingLength > 0)
+                    if (_pendingBuffer.ActiveLength > 0)
                     {
                         if (!TryDrainPendingToSocket(out SocketError drainErr))
                         {
@@ -1877,19 +1817,14 @@ namespace System.Net.Security
                     }
 
                     TlsOperationStatus status = HandshakeBufferedCore(
-                        new ReadOnlySpan<byte>(_socketInBuf, 0, _socketInUsed),
+                        _socketInBuffer.ActiveReadOnlySpan,
                         scratch,
                         out int consumed,
                         out int produced);
 
                     if (consumed > 0)
                     {
-                        int remaining = _socketInUsed - consumed;
-                        if (remaining > 0)
-                        {
-                            Buffer.BlockCopy(_socketInBuf, consumed, _socketInBuf, 0, remaining);
-                        }
-                        _socketInUsed = remaining;
+                        _socketInBuffer.Discard(consumed);
                     }
 
                     if (produced > 0)
@@ -1922,18 +1857,15 @@ namespace System.Net.Security
                             return TlsOperationStatus.Complete;
 
                         case TlsOperationStatus.NeedMoreData:
-                            if (_socketInUsed >= _socketInBuf.Length)
-                            {
-                                // Should not happen with conservative scratch sizing, but guard.
-                                GrowSocketInBuf(_socketInUsed + 1);
-                            }
+                            // Should not happen with conservative scratch sizing, but guard.
+                            _socketInBuffer.EnsureAvailableSpace(1);
                             int received = _socket!.Receive(
-                                _socketInBuf.AsSpan(_socketInUsed),
+                                _socketInBuffer.AvailableSpan,
                                 SocketFlags.None,
                                 out SocketError recvErr);
                             if (received > 0)
                             {
-                                _socketInUsed += received;
+                                _socketInBuffer.Commit(received);
                                 continue;
                             }
                             if (recvErr == SocketError.WouldBlock)
@@ -1979,26 +1911,21 @@ namespace System.Net.Security
                 return fast.Value;
             }
 
-            _socketInBuf ??= ArrayPool<byte>.Shared.Rent(SocketScratchSize);
+            _socketInBuffer.EnsureAvailableSpace(SocketScratchSize);
 
             while (true)
             {
-                if (_socketInUsed > 0)
+                if (_socketInBuffer.ActiveLength > 0)
                 {
                     TlsOperationStatus status = ReadBufferedCore(
-                        new ReadOnlySpan<byte>(_socketInBuf, 0, _socketInUsed),
+                        _socketInBuffer.ActiveReadOnlySpan,
                         buffer,
                         out int consumed,
                         out int produced);
 
                     if (consumed > 0)
                     {
-                        int remaining = _socketInUsed - consumed;
-                        if (remaining > 0)
-                        {
-                            Buffer.BlockCopy(_socketInBuf, consumed, _socketInBuf, 0, remaining);
-                        }
-                        _socketInUsed = remaining;
+                        _socketInBuffer.Discard(consumed);
                     }
 
                     bytesRead = produced;
@@ -2023,17 +1950,14 @@ namespace System.Net.Security
                     // WantRead: fall through to socket recv.
                 }
 
-                if (_socketInUsed >= _socketInBuf.Length)
-                {
-                    GrowSocketInBuf(_socketInUsed + 1);
-                }
+                _socketInBuffer.EnsureAvailableSpace(1);
                 int received = _socket!.Receive(
-                    _socketInBuf.AsSpan(_socketInUsed),
+                    _socketInBuffer.AvailableSpan,
                     SocketFlags.None,
                     out SocketError recvErr);
                 if (received > 0)
                 {
-                    _socketInUsed += received;
+                    _socketInBuffer.Commit(received);
                     continue;
                 }
                 if (recvErr == SocketError.WouldBlock)
@@ -2067,7 +1991,7 @@ namespace System.Net.Security
             }
 
             // Drain any previously stashed ciphertext first.
-            if (_pendingLength > 0)
+            if (_pendingBuffer.ActiveLength > 0)
             {
                 if (!TryDrainPendingToSocket(out SocketError drainErr))
                 {
@@ -2157,7 +2081,7 @@ namespace System.Net.Security
             ThrowIfNotSocketBound();
 
             // Drain any leftover pending output before staging new bytes.
-            if (_pendingLength > 0)
+            if (_pendingBuffer.ActiveLength > 0)
             {
                 if (!TryDrainPendingToSocket(out SocketError leftoverErr))
                 {
@@ -2273,21 +2197,13 @@ namespace System.Net.Security
                 _options.Dispose();
             }
 
-            if (_pending != null)
-            {
-                ArrayPool<byte>.Shared.Return(_pending);
-                _pending = null;
-            }
+            _pendingBuffer.Dispose();
             if (_decryptScratch != null)
             {
                 ArrayPool<byte>.Shared.Return(_decryptScratch);
                 _decryptScratch = null;
             }
-            if (_socketInBuf != null)
-            {
-                ArrayPool<byte>.Shared.Return(_socketInBuf);
-                _socketInBuf = null;
-            }
+            _socketInBuffer.Dispose();
 
             // Release the session-local credentials handle acquired by
             // SetContext / SetClientCertificateContext. The shared handle on

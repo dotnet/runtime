@@ -79,26 +79,22 @@ namespace System.Net.Security
                 // the parent on session Dispose()).
                 _options.PreallocatedReadBio = _peekBio;
             }
-            else if (_socketInUsed > 0)
+            else if (_socketInBuffer.ActiveLength > 0)
             {
                 // Legacy managed pre-fetch path: still exercised e.g. by a caller
                 // driving ProcessHandshake directly rather than Handshake(). Copy the
                 // peeked bytes so SafeSslHandle.Create's BioNewSocketReplay-with-prefix
                 // branch can seed the replay BIO.
-                byte[] prefix = new byte[_socketInUsed];
-                Buffer.BlockCopy(_socketInBuf!, 0, prefix, 0, _socketInUsed);
-                _options.ReplayPrefix = prefix;
+                _options.ReplayPrefix = _socketInBuffer.ActiveReadOnlySpan.ToArray();
             }
 
             _options.SocketHandle = _pendingFdSocket;
             _pendingFdSocket = null;
 
-            // Return the managed pre-fetch buffer if we ever rented one.
-            if (_socketInBuf is not null)
+            // Discard any managed pre-fetch bytes; ownership transfers to the native BIO now.
+            if (_socketInBuffer.ActiveLength > 0)
             {
-                System.Buffers.ArrayPool<byte>.Shared.Return(_socketInBuf);
-                _socketInBuf = null;
-                _socketInUsed = 0;
+                _socketInBuffer.Discard(_socketInBuffer.ActiveLength);
             }
 
             _useFdMode = true;
