@@ -108,6 +108,7 @@ internal sealed class MockEEClass : TypedView
     private const string FieldDescListFieldName = nameof(Data.EEClass.FieldDescList);
     private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
     private const string BaseSizePaddingFieldName = nameof(Data.EEClass.BaseSizePadding);
+    private const string OptionalFieldsFieldName = nameof(Data.EEClass.OptionalFields);
 
     public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("EEClass", architecture)
@@ -122,6 +123,7 @@ internal sealed class MockEEClass : TypedView
             .AddPointerField(FieldDescListFieldName)
             .AddUInt16Field(NumNonVirtualSlotsFieldName)
             .AddByteField(BaseSizePaddingFieldName)
+            .AddPointerField(OptionalFieldsFieldName)
             .Build<MockEEClass>();
 
     public ulong MethodTable

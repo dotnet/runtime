@@ -13,31 +13,26 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract class StructuralJsonTypeClassifierTests(JsonSerializerWrapper serializerUnderTest) : SerializerTests(serializerUnderTest)
     {
-        private static readonly JsonSerializerOptions s_options = new()
+        private readonly JsonSerializerOptions _options = new(serializerUnderTest.DefaultOptions);
+        private readonly JsonSerializerOptions _caseInsensitiveOptions = new(serializerUnderTest.DefaultOptions)
         {
-            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+            PropertyNameCaseInsensitive = true
         };
-        private static readonly JsonSerializerOptions s_caseInsensitiveOptions = new()
+        private readonly JsonSerializerOptions _numberFromStringOptions = new(serializerUnderTest.DefaultOptions)
         {
-            PropertyNameCaseInsensitive = true,
-            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
-        };
-        private static readonly JsonSerializerOptions s_numberFromStringOptions = new()
-        {
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
 
         [Fact]
         public async Task StructuralClassifier_DistinguishesObjectProperties()
         {
-            PetUnion? dog = await Serializer.DeserializeWrapper<PetUnion>("""{"Name":"Rex","Breed":"Labrador"}""", s_options);
+            PetUnion? dog = await Serializer.DeserializeWrapper<PetUnion>("""{"Name":"Rex","Breed":"Labrador"}""", _options);
             Assert.NotNull(dog);
             Dog dogValue = Assert.IsType<Dog>(GetUnionValue(dog));
             Assert.Equal("Rex", dogValue.Name);
             Assert.Equal("Labrador", dogValue.Breed);
 
-            PetUnion? cat = await Serializer.DeserializeWrapper<PetUnion>("""{"Name":"Misty","Lives":9}""", s_options);
+            PetUnion? cat = await Serializer.DeserializeWrapper<PetUnion>("""{"Name":"Misty","Lives":9}""", _options);
             Assert.NotNull(cat);
             Cat catValue = Assert.IsType<Cat>(GetUnionValue(cat));
             Assert.Equal("Misty", catValue.Name);
@@ -47,15 +42,15 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_DistinguishesStringPatterns()
         {
-            TemporalUnion? date = await Serializer.DeserializeWrapper<TemporalUnion>("\"2026-05-11T18:00:00Z\"", s_options);
+            TemporalUnion? date = await Serializer.DeserializeWrapper<TemporalUnion>("\"2026-05-11T18:00:00Z\"", _options);
             Assert.NotNull(date);
             Assert.IsType<DateTime>(GetUnionValue(date));
 
-            TemporalUnion? duration = await Serializer.DeserializeWrapper<TemporalUnion>("\"01:02:03\"", s_options);
+            TemporalUnion? duration = await Serializer.DeserializeWrapper<TemporalUnion>("\"01:02:03\"", _options);
             Assert.NotNull(duration);
             Assert.Equal(TimeSpan.FromSeconds(3723), Assert.IsType<TimeSpan>(GetUnionValue(duration)));
 
-            TemporalUnion? guid = await Serializer.DeserializeWrapper<TemporalUnion>("\"0f8fad5b-d9cb-469f-a165-70867728950e\"", s_options);
+            TemporalUnion? guid = await Serializer.DeserializeWrapper<TemporalUnion>("\"0f8fad5b-d9cb-469f-a165-70867728950e\"", _options);
             Assert.NotNull(guid);
             Assert.Equal(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e"), Assert.IsType<Guid>(GetUnionValue(guid)));
         }
@@ -63,11 +58,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_SamplesCollectionElementShapes()
         {
-            ListUnion? numbers = await Serializer.DeserializeWrapper<ListUnion>("[1,2,3]", s_options);
+            ListUnion? numbers = await Serializer.DeserializeWrapper<ListUnion>("[1,2,3]", _options);
             Assert.NotNull(numbers);
             Assert.Equal([1, 2, 3], Assert.IsType<List<int>>(GetUnionValue(numbers)));
 
-            ListUnion? strings = await Serializer.DeserializeWrapper<ListUnion>("""["one","two"]""", s_options);
+            ListUnion? strings = await Serializer.DeserializeWrapper<ListUnion>("""["one","two"]""", _options);
             Assert.NotNull(strings);
             Assert.Equal(["one", "two"], Assert.IsType<List<string>>(GetUnionValue(strings)));
         }
@@ -75,11 +70,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_SamplesDictionaryValueShapes()
         {
-            DictionaryUnion? numbers = await Serializer.DeserializeWrapper<DictionaryUnion>("""{"one":1,"two":2}""", s_options);
+            DictionaryUnion? numbers = await Serializer.DeserializeWrapper<DictionaryUnion>("""{"one":1,"two":2}""", _options);
             Assert.NotNull(numbers);
             Assert.Equal(2, Assert.IsType<Dictionary<string, int>>(GetUnionValue(numbers))["two"]);
 
-            DictionaryUnion? strings = await Serializer.DeserializeWrapper<DictionaryUnion>("""{"one":"uno","two":"dos"}""", s_options);
+            DictionaryUnion? strings = await Serializer.DeserializeWrapper<DictionaryUnion>("""{"one":"uno","two":"dos"}""", _options);
             Assert.NotNull(strings);
             Assert.Equal("dos", Assert.IsType<Dictionary<string, string>>(GetUnionValue(strings))["two"]);
         }
@@ -87,12 +82,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_RecursesIntoNestedGenericShapes()
         {
-            BatchUnion? temperatures = await Serializer.DeserializeWrapper<BatchUnion>("""{"Source":"sensor","Items":[{"Celsius":21.5}]}""", s_options);
+            BatchUnion? temperatures = await Serializer.DeserializeWrapper<BatchUnion>("""{"Source":"sensor","Items":[{"Celsius":21.5}]}""", _options);
             Assert.NotNull(temperatures);
             Batch<TemperatureReading> temperatureBatch = Assert.IsType<Batch<TemperatureReading>>(GetUnionValue(temperatures));
             Assert.Equal(21.5, temperatureBatch.Items![0].Celsius);
 
-            BatchUnion? statuses = await Serializer.DeserializeWrapper<BatchUnion>("""{"Source":"sensor","Items":[{"IsOnline":true}]}""", s_options);
+            BatchUnion? statuses = await Serializer.DeserializeWrapper<BatchUnion>("""{"Source":"sensor","Items":[{"IsOnline":true}]}""", _options);
             Assert.NotNull(statuses);
             Batch<StatusReading> statusBatch = Assert.IsType<Batch<StatusReading>>(GetUnionValue(statuses));
             Assert.True(statusBatch.Items![0].IsOnline);
@@ -101,11 +96,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_DistinguishesArrayFromDictionary()
         {
-            ArrayOrDictionaryUnion? array = await Serializer.DeserializeWrapper<ArrayOrDictionaryUnion>("[1,2,3]", s_options);
+            ArrayOrDictionaryUnion? array = await Serializer.DeserializeWrapper<ArrayOrDictionaryUnion>("[1,2,3]", _options);
             Assert.NotNull(array);
             Assert.Equal([1, 2, 3], Assert.IsType<List<int>>(GetUnionValue(array)));
 
-            ArrayOrDictionaryUnion? dictionary = await Serializer.DeserializeWrapper<ArrayOrDictionaryUnion>("""{"one":1,"two":2}""", s_options);
+            ArrayOrDictionaryUnion? dictionary = await Serializer.DeserializeWrapper<ArrayOrDictionaryUnion>("""{"one":1,"two":2}""", _options);
             Assert.NotNull(dictionary);
             Assert.Equal(2, Assert.IsType<Dictionary<string, int>>(GetUnionValue(dictionary))["two"]);
         }
@@ -113,7 +108,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_PrefersObjectShapeOverDictionaryWhenPropertiesMatch()
         {
-            ObjectOrDictionaryUnion? result = await Serializer.DeserializeWrapper<ObjectOrDictionaryUnion>("""{"X":1,"Y":2}""", s_options);
+            ObjectOrDictionaryUnion? result = await Serializer.DeserializeWrapper<ObjectOrDictionaryUnion>("""{"X":1,"Y":2}""", _options);
             Assert.NotNull(result);
             Point point = Assert.IsType<Point>(GetUnionValue(result));
             Assert.Equal(1, point.X);
@@ -123,7 +118,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_UsesJsonTypeInfoPropertyNames()
         {
-            RenamedPropertyUnion? result = await Serializer.DeserializeWrapper<RenamedPropertyUnion>("""{"kind":"special"}""", s_options);
+            RenamedPropertyUnion? result = await Serializer.DeserializeWrapper<RenamedPropertyUnion>("""{"kind":"special"}""", _options);
             Assert.NotNull(result);
             RenamedPropertyCase value = Assert.IsType<RenamedPropertyCase>(GetUnionValue(result));
             Assert.Equal("special", value.Kind);
@@ -132,7 +127,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_UsesCaseInsensitivePropertyNames()
         {
-            PetUnion? dog = await Serializer.DeserializeWrapper<PetUnion>("""{"name":"Rex","breed":"Labrador"}""", s_caseInsensitiveOptions);
+            PetUnion? dog = await Serializer.DeserializeWrapper<PetUnion>("""{"name":"Rex","breed":"Labrador"}""", _caseInsensitiveOptions);
             Assert.NotNull(dog);
             Dog dogValue = Assert.IsType<Dog>(GetUnionValue(dog));
             Assert.Equal("Rex", dogValue.Name);
@@ -142,7 +137,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_UsesNumberHandlingMetadata()
         {
-            NumberHandlingUnion? result = await Serializer.DeserializeWrapper<NumberHandlingUnion>("\"42\"", s_numberFromStringOptions);
+            NumberHandlingUnion? result = await Serializer.DeserializeWrapper<NumberHandlingUnion>("\"42\"", _numberFromStringOptions);
             Assert.NotNull(result);
             Assert.Equal(42, Assert.IsType<int>(GetUnionValue(result)));
         }
@@ -155,17 +150,17 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("true", typeof(PetUnion))]
         public async Task StructuralClassifier_AmbiguousOrUnsupportedShapesThrow(string json, Type unionType)
         {
-            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper(json, unionType, s_options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper(json, unionType, _options));
         }
 
         [Fact]
         public async Task StructuralClassifier_WorksForPolymorphicDerivedTypeMetadata()
         {
-            Shape? circle = await Serializer.DeserializeWrapper<Shape>("""{"Color":"red","Radius":2.5}""", s_options);
+            Shape? circle = await Serializer.DeserializeWrapper<Shape>("""{"Color":"red","Radius":2.5}""", _options);
             Assert.NotNull(circle);
             Assert.Equal(2.5, Assert.IsType<Circle>(circle).Radius);
 
-            Shape? rectangle = await Serializer.DeserializeWrapper<Shape>("""{"Color":"blue","Width":3,"Height":4}""", s_options);
+            Shape? rectangle = await Serializer.DeserializeWrapper<Shape>("""{"Color":"blue","Width":3,"Height":4}""", _options);
             Assert.NotNull(rectangle);
             Assert.Equal(4, Assert.IsType<Rectangle>(rectangle).Height);
         }

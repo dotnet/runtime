@@ -8291,6 +8291,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             case NI_X86Base_MoveMask:
             case NI_AVX_MoveMask:
             case NI_AVX2_MoveMask:
+#elif defined(TARGET_WASM)
+            case NI_PackedSimd_Bitmask:
 #endif
             {
 

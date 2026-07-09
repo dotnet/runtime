@@ -357,6 +357,12 @@ internal static class Parser
             isNullable = true;
             type = named.TypeArguments[0];
         }
+        else if (ImplementsIData(type) && prop.NullableAnnotation == NullableAnnotation.Annotated)
+        {
+            // IData<T>? field: emitter treats it as optional (ContainsKey
+            // guard + default(null) when the descriptor omits the field).
+            isNullable = true;
+        }
 
         string fqn = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 

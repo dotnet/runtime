@@ -2818,7 +2818,7 @@ public:
     bool emitChkAlign; // perform some alignment checks
 #endif
 
-    insGroup* emitCurIG;
+    insGroup* emitCurIG = nullptr;
 
     void emitSetShortJump(instrDescJmp* id);
     void emitSetMediumJump(instrDescJmp* id);
