@@ -8962,6 +8962,49 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 }
 
 //------------------------------------------------------------------------
+// ContainHWIntrinsicOperand: Contains an operand of a hardware intrinsic node.
+//
+//  Arguments:
+//     parentNode - The hardware intrinsic node which is the parent of 'childNode'
+//     childNode  - The operand to contain; must already have been validated by
+//                  IsContainableHWIntrinsicOp
+//
+// Notes:
+//     CreateScalar/CreateScalarUnsafe are not themselves memory operations - they were only
+//     selected as containable so codegen could look through them to the underlying scalar. Rather
+//     than contain such a node (which produces a second level of containment and requires special
+//     handling in LSRA and codegen), we remove it here and let the parent consume the scalar
+//     directly. The scalar keeps whatever contained/regOptional state it was already given.
+//
+void Lowering::ContainHWIntrinsicOperand(GenTreeHWIntrinsic* parentNode, GenTree* childNode)
+{
+    if (childNode->OperIsHWIntrinsic())
+    {
+        NamedIntrinsic childId = childNode->AsHWIntrinsic()->GetHWIntrinsicId();
+
+        if (HWIntrinsicInfo::IsVectorCreateScalar(childId) || HWIntrinsicInfo::IsVectorCreateScalarUnsafe(childId))
+        {
+            GenTree* scalar = childNode->AsHWIntrinsic()->Op(1);
+
+            // A decomposed long requires a real movd/movq to move the value into a SIMD register, so
+            // it must keep the CreateScalar/CreateScalarUnsafe node and be contained normally.
+            if (!scalar->OperIsLong())
+            {
+                LIR::Use use;
+                bool     foundUse = BlockRange().TryGetUse(childNode, &use);
+                assert(foundUse);
+
+                use.ReplaceWith(scalar);
+                BlockRange().Remove(childNode);
+                return;
+            }
+        }
+    }
+
+    MakeSrcContained(parentNode, childNode);
+}
+
+//------------------------------------------------------------------------
 // TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
 //
 //  Arguments:
@@ -8980,7 +9023,7 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, 
         }
         else
         {
-            MakeSrcContained(parentNode, childNode);
+            ContainHWIntrinsicOperand(parentNode, childNode);
         }
     }
     else if (supportsRegOptional)
@@ -9406,7 +9449,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                         else
                         {
-                            MakeSrcContained(node, containedOperand);
+                            ContainHWIntrinsicOperand(node, containedOperand);
                         }
                     }
                     else if (regOptionalOperand != nullptr)
@@ -9750,7 +9793,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else
                             {
-                                MakeSrcContained(node, containedOperand);
+                                ContainHWIntrinsicOperand(node, containedOperand);
                             }
                         }
                         else if (regOptionalOperand != nullptr)
@@ -9834,7 +9877,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else
                             {
-                                MakeSrcContained(node, containedOperand);
+                                ContainHWIntrinsicOperand(node, containedOperand);
                             }
                         }
                         else if (regOptionalOperand != nullptr)
@@ -10119,7 +10162,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                 if (containedOperand != nullptr)
                                 {
-                                    MakeSrcContained(node, containedOperand);
+                                    ContainHWIntrinsicOperand(node, containedOperand);
                                 }
                                 else if (regOptionalOperand != nullptr)
                                 {
@@ -10178,7 +10221,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                 if (containedOperand != nullptr)
                                 {
-                                    MakeSrcContained(node, containedOperand);
+                                    ContainHWIntrinsicOperand(node, containedOperand);
                                 }
                                 else if (regOptionalOperand != nullptr)
                                 {
@@ -10603,7 +10646,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else
                                 {
-                                    MakeSrcContained(node, containedOperand);
+                                    ContainHWIntrinsicOperand(node, containedOperand);
                                 }
                             }
                             else if (regOptionalOperand != nullptr)
