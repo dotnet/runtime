@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -15,40 +16,54 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Add_Fifo(TarEntryFormat format)
         {
-            RemoteExecutor.Invoke((string strFormat) =>
+            foreach (bool async in Booleans)
             {
-                TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(strFormat);
-
-                using TempDirectory root = new TempDirectory();
-                string fifoName = "fifofile";
-                string fifoPath = Path.Join(root.Path, fifoName);
-
-                Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultFileMode));
-
-                using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, expectedFormat, leaveOpen: true))
+                RemoteExecutor.Invoke(async (string args) =>
                 {
-                    writer.WriteEntry(fileName: fifoPath, entryName: fifoName);
-                }
+                    string[] parts = args.Split('|');
+                    TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(parts[0]);
+                    bool isAsync = bool.Parse(parts[1]);
 
-                archive.Seek(0, SeekOrigin.Begin);
-                using (TarReader reader = new TarReader(archive))
-                {
-                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, entry.Format);
+                    using TempDirectory root = new TempDirectory();
+                    string fifoName = "fifofile";
+                    string fifoPath = Path.Join(root.Path, fifoName);
 
-                    Assert.NotNull(entry);
-                    Assert.Equal(fifoName, entry.Name);
-                    Assert.Equal(DefaultLinkName, entry.LinkName);
-                    Assert.Equal(TarEntryType.Fifo, entry.EntryType);
-                    Assert.Null(entry.DataStream);
+                    Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultFileMode));
 
-                    VerifyPlatformSpecificMetadata(fifoPath, entry);
+                    using MemoryStream archive = new MemoryStream();
+                    TarWriter writer = await CreateTarWriter(archive, isAsync, expectedFormat, leaveOpen: true);
+                    try
+                    {
+                        await WriteEntry(writer, fifoPath, fifoName, isAsync);
+                    }
+                    finally
+                    {
+                        await DisposeTarWriter(writer, isAsync);
+                    }
 
-                    Assert.Null(reader.GetNextEntry());
-                }
+                    archive.Seek(0, SeekOrigin.Begin);
+                    TarReader reader = await CreateTarReader(archive, isAsync);
+                    try
+                    {
+                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        Assert.Equal(expectedFormat, entry.Format);
 
-            }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+                        Assert.NotNull(entry);
+                        Assert.Equal(fifoName, entry.Name);
+                        Assert.Equal(DefaultLinkName, entry.LinkName);
+                        Assert.Equal(TarEntryType.Fifo, entry.EntryType);
+                        Assert.Null(entry.DataStream);
+
+                        VerifyPlatformSpecificMetadata(fifoPath, entry);
+
+                        Assert.Null(await GetNextEntry(reader, isAsync));
+                    }
+                    finally
+                    {
+                        await DisposeTarReader(reader, isAsync);
+                    }
+                }, $"{format}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }
         }
 
         [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
@@ -57,43 +72,56 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Add_BlockDevice(TarEntryFormat format)
         {
-            RemoteExecutor.Invoke((string strFormat) =>
+            foreach (bool async in Booleans)
             {
-                TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(strFormat);
-
-                using TempDirectory root = new TempDirectory();
-                string blockDevicePath = Path.Join(root.Path, AssetBlockDeviceFileName);
-
-                // Creating device files needs elevation
-                Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultFileMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
-
-                using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, expectedFormat, leaveOpen: true))
+                RemoteExecutor.Invoke(async (string args) =>
                 {
-                    writer.WriteEntry(fileName: blockDevicePath, entryName: AssetBlockDeviceFileName);
-                }
+                    string[] parts = args.Split('|');
+                    TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(parts[0]);
+                    bool isAsync = bool.Parse(parts[1]);
 
-                archive.Seek(0, SeekOrigin.Begin);
-                using (TarReader reader = new TarReader(archive))
-                {
-                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, entry.Format);
+                    using TempDirectory root = new TempDirectory();
+                    string blockDevicePath = Path.Join(root.Path, AssetBlockDeviceFileName);
 
-                    Assert.NotNull(entry);
-                    Assert.Equal(AssetBlockDeviceFileName, entry.Name);
-                    Assert.Equal(DefaultLinkName, entry.LinkName);
-                    Assert.Equal(TarEntryType.BlockDevice, entry.EntryType);
-                    Assert.Null(entry.DataStream);
+                    Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultFileMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
 
-                    VerifyPlatformSpecificMetadata(blockDevicePath, entry);
+                    using MemoryStream archive = new MemoryStream();
+                    TarWriter writer = await CreateTarWriter(archive, isAsync, expectedFormat, leaveOpen: true);
+                    try
+                    {
+                        await WriteEntry(writer, blockDevicePath, AssetBlockDeviceFileName, isAsync);
+                    }
+                    finally
+                    {
+                        await DisposeTarWriter(writer, isAsync);
+                    }
 
-                    Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
-                    Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
+                    archive.Seek(0, SeekOrigin.Begin);
+                    TarReader reader = await CreateTarReader(archive, isAsync);
+                    try
+                    {
+                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        Assert.Equal(expectedFormat, entry.Format);
 
-                    Assert.Null(reader.GetNextEntry());
-                }
+                        Assert.NotNull(entry);
+                        Assert.Equal(AssetBlockDeviceFileName, entry.Name);
+                        Assert.Equal(DefaultLinkName, entry.LinkName);
+                        Assert.Equal(TarEntryType.BlockDevice, entry.EntryType);
+                        Assert.Null(entry.DataStream);
 
-            }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+                        VerifyPlatformSpecificMetadata(blockDevicePath, entry);
+
+                        Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
+                        Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
+
+                        Assert.Null(await GetNextEntry(reader, isAsync));
+                    }
+                    finally
+                    {
+                        await DisposeTarReader(reader, isAsync);
+                    }
+                }, $"{format}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }
         }
 
         [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
@@ -102,42 +130,55 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Add_CharacterDevice(TarEntryFormat format)
         {
-            RemoteExecutor.Invoke((string strFormat) =>
+            foreach (bool async in Booleans)
             {
-                TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(strFormat);
-                using TempDirectory root = new TempDirectory();
-                string characterDevicePath = Path.Join(root.Path, AssetCharacterDeviceFileName);
-
-                // Creating device files needs elevation
-                Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultFileMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
-
-                using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, expectedFormat, leaveOpen: true))
+                RemoteExecutor.Invoke(async (string args) =>
                 {
-                    writer.WriteEntry(fileName: characterDevicePath, entryName: AssetCharacterDeviceFileName);
-                }
+                    string[] parts = args.Split('|');
+                    TarEntryFormat expectedFormat = Enum.Parse<TarEntryFormat>(parts[0]);
+                    bool isAsync = bool.Parse(parts[1]);
+                    using TempDirectory root = new TempDirectory();
+                    string characterDevicePath = Path.Join(root.Path, AssetCharacterDeviceFileName);
 
-                archive.Seek(0, SeekOrigin.Begin);
-                using (TarReader reader = new TarReader(archive))
-                {
-                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, entry.Format);
+                    Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultFileMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
 
-                    Assert.NotNull(entry);
-                    Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
-                    Assert.Equal(DefaultLinkName, entry.LinkName);
-                    Assert.Equal(TarEntryType.CharacterDevice, entry.EntryType);
-                    Assert.Null(entry.DataStream);
+                    using MemoryStream archive = new MemoryStream();
+                    TarWriter writer = await CreateTarWriter(archive, isAsync, expectedFormat, leaveOpen: true);
+                    try
+                    {
+                        await WriteEntry(writer, characterDevicePath, AssetCharacterDeviceFileName, isAsync);
+                    }
+                    finally
+                    {
+                        await DisposeTarWriter(writer, isAsync);
+                    }
 
-                    VerifyPlatformSpecificMetadata(characterDevicePath, entry);
+                    archive.Seek(0, SeekOrigin.Begin);
+                    TarReader reader = await CreateTarReader(archive, isAsync);
+                    try
+                    {
+                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        Assert.Equal(expectedFormat, entry.Format);
 
-                    Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
-                    Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
+                        Assert.NotNull(entry);
+                        Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
+                        Assert.Equal(DefaultLinkName, entry.LinkName);
+                        Assert.Equal(TarEntryType.CharacterDevice, entry.EntryType);
+                        Assert.Null(entry.DataStream);
 
-                    Assert.Null(reader.GetNextEntry());
-                }
+                        VerifyPlatformSpecificMetadata(characterDevicePath, entry);
 
-            }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+                        Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
+                        Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
+
+                        Assert.Null(await GetNextEntry(reader, isAsync));
+                    }
+                    finally
+                    {
+                        await DisposeTarReader(reader, isAsync);
+                    }
+                }, $"{format}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }
         }
 
         [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
@@ -146,48 +187,64 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void CreateEntryFromFileOwnedByNonExistentGroup(TarEntryFormat f)
         {
-            RemoteExecutor.Invoke((string strFormat) =>
+            foreach (bool async in Booleans)
             {
-                using TempDirectory root = new TempDirectory();
-
-                string fileName = "file.txt";
-                string filePath = Path.Join(root.Path, fileName);
-                File.Create(filePath).Dispose();
-
-                string groupName = Path.GetRandomFileName()[0..6];
-                int groupId = CreateGroup(groupName);
-
-                try
+                RemoteExecutor.Invoke(async (string args) =>
                 {
-                    SetGroupAsOwnerOfFile(groupName, filePath);
-                }
-                finally
-                {
-                    DeleteGroup(groupName);
-                }
+                    string[] parts = args.Split('|');
+                    TarEntryFormat format = Enum.Parse<TarEntryFormat>(parts[0]);
+                    bool isAsync = bool.Parse(parts[1]);
+                    using TempDirectory root = new TempDirectory();
 
-                using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
-                {
-                    writer.WriteEntry(filePath, fileName); // Should not throw
-                }
-                archive.Seek(0, SeekOrigin.Begin);
+                    string fileName = "file.txt";
+                    string filePath = Path.Join(root.Path, fileName);
+                    File.Create(filePath).Dispose();
 
-                using (TarReader reader = new TarReader(archive, leaveOpen: false))
-                {
-                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.NotNull(entry);
+                    string groupName = Path.GetRandomFileName()[0..6];
+                    int groupId = CreateGroup(groupName);
 
-                    Assert.Equal(string.Empty, entry.GroupName);
-                    Assert.Equal(groupId, entry.Gid);
+                    try
+                    {
+                        SetGroupAsOwnerOfFile(groupName, filePath);
+                    }
+                    finally
+                    {
+                        DeleteGroup(groupName);
+                    }
 
-                    string extractedPath = Path.Join(root.Path, "extracted.txt");
-                    entry.ExtractToFile(extractedPath, overwrite: false);
-                    Assert.True(File.Exists(extractedPath));
+                    using MemoryStream archive = new MemoryStream();
+                    TarWriter writer = await CreateTarWriter(archive, isAsync, format, leaveOpen: true);
+                    try
+                    {
+                        await WriteEntry(writer, filePath, fileName, isAsync);
+                    }
+                    finally
+                    {
+                        await DisposeTarWriter(writer, isAsync);
+                    }
+                    archive.Seek(0, SeekOrigin.Begin);
 
-                    Assert.Null(reader.GetNextEntry());
-                }
-            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+                    TarReader reader = await CreateTarReader(archive, isAsync, leaveOpen: false);
+                    try
+                    {
+                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        Assert.NotNull(entry);
+
+                        Assert.Equal(string.Empty, entry.GroupName);
+                        Assert.Equal(groupId, entry.Gid);
+
+                        string extractedPath = Path.Join(root.Path, "extracted.txt");
+                        await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
+                        Assert.True(File.Exists(extractedPath));
+
+                        Assert.Null(await GetNextEntry(reader, isAsync));
+                    }
+                    finally
+                    {
+                        await DisposeTarReader(reader, isAsync);
+                    }
+                }, $"{f}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }
         }
 
         [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
@@ -196,48 +253,64 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void CreateEntryFromFileOwnedByNonExistentUser(TarEntryFormat f)
         {
-            RemoteExecutor.Invoke((string strFormat) =>
+            foreach (bool async in Booleans)
             {
-                using TempDirectory root = new TempDirectory();
-
-                string fileName = "file.txt";
-                string filePath = Path.Join(root.Path, fileName);
-                File.Create(filePath).Dispose();
-
-                string userName = Path.GetRandomFileName()[0..6];
-                int userId = CreateUser(userName);
-
-                try
+                RemoteExecutor.Invoke(async (string args) =>
                 {
-                    SetUserAsOwnerOfFile(userName, filePath);
-                }
-                finally
-                {
-                    DeleteUser(userName);
-                }
+                    string[] parts = args.Split('|');
+                    TarEntryFormat format = Enum.Parse<TarEntryFormat>(parts[0]);
+                    bool isAsync = bool.Parse(parts[1]);
+                    using TempDirectory root = new TempDirectory();
 
-                using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
-                {
-                    writer.WriteEntry(filePath, fileName); // Should not throw
-                }
-                archive.Seek(0, SeekOrigin.Begin);
+                    string fileName = "file.txt";
+                    string filePath = Path.Join(root.Path, fileName);
+                    File.Create(filePath).Dispose();
 
-                using (TarReader reader = new TarReader(archive, leaveOpen: false))
-                {
-                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.NotNull(entry);
+                    string userName = Path.GetRandomFileName()[0..6];
+                    int userId = CreateUser(userName);
 
-                    Assert.Equal(string.Empty, entry.UserName);
-                    Assert.Equal(userId, entry.Uid);
+                    try
+                    {
+                        SetUserAsOwnerOfFile(userName, filePath);
+                    }
+                    finally
+                    {
+                        DeleteUser(userName);
+                    }
 
-                    string extractedPath = Path.Join(root.Path, "extracted.txt");
-                    entry.ExtractToFile(extractedPath, overwrite: false);
-                    Assert.True(File.Exists(extractedPath));
+                    using MemoryStream archive = new MemoryStream();
+                    TarWriter writer = await CreateTarWriter(archive, isAsync, format, leaveOpen: true);
+                    try
+                    {
+                        await WriteEntry(writer, filePath, fileName, isAsync);
+                    }
+                    finally
+                    {
+                        await DisposeTarWriter(writer, isAsync);
+                    }
+                    archive.Seek(0, SeekOrigin.Begin);
 
-                    Assert.Null(reader.GetNextEntry());
-                }
-            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+                    TarReader reader = await CreateTarReader(archive, isAsync, leaveOpen: false);
+                    try
+                    {
+                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        Assert.NotNull(entry);
+
+                        Assert.Equal(string.Empty, entry.UserName);
+                        Assert.Equal(userId, entry.Uid);
+
+                        string extractedPath = Path.Join(root.Path, "extracted.txt");
+                        await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
+                        Assert.True(File.Exists(extractedPath));
+
+                        Assert.Null(await GetNextEntry(reader, isAsync));
+                    }
+                    finally
+                    {
+                        await DisposeTarReader(reader, isAsync);
+                    }
+                }, $"{f}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }
         }
 
         [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
@@ -246,63 +319,79 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void CreateEntryFromFileOwnedByNonExistentGroupAndUser(TarEntryFormat f)
         {
-            RemoteExecutor.Invoke((string strFormat) =>
+            foreach (bool async in Booleans)
             {
-                using TempDirectory root = new TempDirectory();
-
-                string fileName = "file.txt";
-                string filePath = Path.Join(root.Path, fileName);
-                File.Create(filePath).Dispose();
-
-                string groupName = Path.GetRandomFileName()[0..6];
-                int groupId = CreateGroup(groupName);
-
-                string userName = Path.GetRandomFileName()[0..6];
-                int userId = CreateUser(userName);
-
-                try
+                RemoteExecutor.Invoke(async (string args) =>
                 {
-                    SetGroupAsOwnerOfFile(groupName, filePath);
-                }
-                finally
-                {
-                    DeleteGroup(groupName);
-                }
+                    string[] parts = args.Split('|');
+                    TarEntryFormat format = Enum.Parse<TarEntryFormat>(parts[0]);
+                    bool isAsync = bool.Parse(parts[1]);
+                    using TempDirectory root = new TempDirectory();
 
-                try
-                {
-                    SetUserAsOwnerOfFile(userName, filePath);
-                }
-                finally
-                {
-                    DeleteUser(userName);
-                }
+                    string fileName = "file.txt";
+                    string filePath = Path.Join(root.Path, fileName);
+                    File.Create(filePath).Dispose();
 
-                using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
-                {
-                    writer.WriteEntry(filePath, fileName); // Should not throw
-                }
-                archive.Seek(0, SeekOrigin.Begin);
+                    string groupName = Path.GetRandomFileName()[0..6];
+                    int groupId = CreateGroup(groupName);
 
-                using (TarReader reader = new TarReader(archive, leaveOpen: false))
-                {
-                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.NotNull(entry);
+                    string userName = Path.GetRandomFileName()[0..6];
+                    int userId = CreateUser(userName);
 
-                    Assert.Equal(string.Empty, entry.GroupName);
-                    Assert.Equal(groupId, entry.Gid);
+                    try
+                    {
+                        SetGroupAsOwnerOfFile(groupName, filePath);
+                    }
+                    finally
+                    {
+                        DeleteGroup(groupName);
+                    }
 
-                    Assert.Equal(string.Empty, entry.UserName);
-                    Assert.Equal(userId, entry.Uid);
+                    try
+                    {
+                        SetUserAsOwnerOfFile(userName, filePath);
+                    }
+                    finally
+                    {
+                        DeleteUser(userName);
+                    }
 
-                    string extractedPath = Path.Join(root.Path, "extracted.txt");
-                    entry.ExtractToFile(extractedPath, overwrite: false);
-                    Assert.True(File.Exists(extractedPath));
+                    using MemoryStream archive = new MemoryStream();
+                    TarWriter writer = await CreateTarWriter(archive, isAsync, format, leaveOpen: true);
+                    try
+                    {
+                        await WriteEntry(writer, filePath, fileName, isAsync);
+                    }
+                    finally
+                    {
+                        await DisposeTarWriter(writer, isAsync);
+                    }
+                    archive.Seek(0, SeekOrigin.Begin);
 
-                    Assert.Null(reader.GetNextEntry());
-                }
-            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+                    TarReader reader = await CreateTarReader(archive, isAsync, leaveOpen: false);
+                    try
+                    {
+                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        Assert.NotNull(entry);
+
+                        Assert.Equal(string.Empty, entry.GroupName);
+                        Assert.Equal(groupId, entry.Gid);
+
+                        Assert.Equal(string.Empty, entry.UserName);
+                        Assert.Equal(userId, entry.Uid);
+
+                        string extractedPath = Path.Join(root.Path, "extracted.txt");
+                        await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
+                        Assert.True(File.Exists(extractedPath));
+
+                        Assert.Null(await GetNextEntry(reader, isAsync));
+                    }
+                    finally
+                    {
+                        await DisposeTarReader(reader, isAsync);
+                    }
+                }, $"{f}|{async}", new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }
         }
 
         [Theory]
