@@ -26,10 +26,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="capacity">The suggested starting size of the <see cref="InplaceStringBuilder"/> instance.</param>
         public InplaceStringBuilder(int capacity) : this()
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 0);
 
             _capacity = capacity;
         }
@@ -42,10 +39,7 @@ namespace Microsoft.Extensions.Primitives
             get => _capacity;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
 
                 // _offset > 0 indicates writing state
                 if (_offset > 0)
@@ -88,12 +82,12 @@ namespace Microsoft.Extensions.Primitives
         {
             EnsureValueIsInitialized();
 
-            if (value == null
-                || offset < 0
-                || value.Length - offset < count
-                || Capacity - _offset < count)
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentOutOfRangeException.ThrowIfLessThan(offset, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, value.Length - offset, nameof(offset));
+            if (Capacity - _offset < count)
             {
-                ThrowValidationError(value, offset, count);
+                throw new InvalidOperationException(SR.Format(SR.Capacity_NotEnough, value.Length, Capacity - _offset));
             }
 
             fixed (char* destination = _value)
@@ -141,21 +135,6 @@ namespace Microsoft.Extensions.Primitives
         private void EnsureValueIsInitialized()
         {
             _value ??= new string('\0', _capacity);
-        }
-
-        private void ThrowValidationError(string? value, int offset, int count)
-        {
-            ArgumentNullException.ThrowIfNull(value);
-
-            if (offset < 0 || value.Length - offset < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (Capacity - _offset < count)
-            {
-                throw new InvalidOperationException(SR.Format(SR.Capacity_NotEnough, value.Length, Capacity - _offset));
-            }
         }
     }
 }
