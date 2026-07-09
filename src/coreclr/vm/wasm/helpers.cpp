@@ -13,7 +13,7 @@
 
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
-#define INLINED_PINVOKE_FROM_R2R 0
+#define INLINED_PINVOKE_FROM_R2R 1
 
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
@@ -494,7 +494,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     pRD->IsCallerContextValid = FALSE;
 
-    if (m_CallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
+    if (m_pCallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
     {
         pRD->pCurrentContext->InterpreterSP = m_pCallSiteSP;
         pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(m_pCallSiteSP);
@@ -507,10 +507,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
         pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
     }
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
 
     SyncRegDisplayToCurrentContext(pRD);
 
@@ -530,8 +526,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     PORTABILITY_ASSERT("FaultingExceptionFrame::UpdateRegDisplay_Impl is not implemented on wasm");
 }
 
-TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
-
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     pRD->IsCallerContextValid = FALSE;
@@ -549,7 +543,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     bool hasR2RStackPointer = (pTransitionBlock != NULL) &&
                               (pTransitionBlock->m_ReturnAddress != 0) &&
                               (pTransitionBlock->m_StackPointer != 0);
-    pRD->pCurrentContext->InterpreterFP = hasR2RStackPointer ? GetWasmFramePointerFromStackPointer(sp) : 0;
+    pRD->pCurrentContext->InterpreterFP = hasR2RStackPointer ? GetWasmFramePointerFromStackPointer(sp, (PCODE)pRD->pCurrentContext->InterpreterIP) : 0;
 
     SyncRegDisplayToCurrentContext(pRD);
 
@@ -1479,7 +1473,45 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
 
     MetaSig sig(pMD);
-    void* thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+    void* thunk;
+
+    if (pMD->IsCtor() && pMD->GetMethodTable()->IsString())
+    {
+        const char *thunkKey = nullptr;
+
+        // String constructors are special-cased in the interpreter and have special thunks that don't match the normal signature.
+        if (sig.NumFixedArgs() == 1 && sig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+        {
+            thunkKey = "IiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+        }
+        else
+        {
+            switch (sig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Iiip";
+                    break;
+                case 2:
+                    thunkKey = "Iiiip";
+                    break;
+                case 3:
+                    thunkKey = "Iiiiip";
+                    break;
+                case 4:
+                    thunkKey = "Iiiiiip";
+                    break;
+                default:
+                    PORTABILITY_ASSERT("GetPortableEntryPointToInterpreterThunk: unknown thunk for string constructor");
+                    return nullptr;
+            }
+        }
+
+        thunk = LookupPortableEntryPointThunk(thunkKey);
+    }
+    else
+    {
+        thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+    }
 
     return thunk;
 }
@@ -1551,7 +1583,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
     PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
 }
 
-TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
+static TADDR GetWasmFramePointerFromStackPointer_Internal(TADDR sp)
 {
     if (sp <= 0x1000)
     {
@@ -1562,11 +1594,11 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
     }
     else
     {
-        if (*(int*)sp == 0)
+        if (*(int32_t*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == STACK_WALK_INDIRECT_TO_FRAMEPOINTER)
         {
-            sp = *(TADDR*)(sp + sizeof(TADDR));
+            sp = *(TADDR*)(sp + WASM_STACKFRAME_INDIRECT_TO_FRAMEPOINTER_OFFSET);
         }
-        if (*(int*)sp == TERMINATE_R2R_STACK_WALK)
+        if (*(int32_t*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == TERMINATE_R2R_STACK_WALK)
         {
             return 0;
         }
@@ -1582,13 +1614,13 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp)
 // reached after natively unwinding a funclet that the VM invoked via CallFunclet).
 TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp)
 {
-    _ASSERTE(*(int*)sp == TERMINATE_R2R_STACK_WALK);
+    _ASSERTE(*(int32_t*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == TERMINATE_R2R_STACK_WALK);
     return *(TADDR*)(sp + TERMINATE_R2R_STACK_WALK_FP_OFFSET);
 }
 
 TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
 {
-    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
+    TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
 
     if (fp == 0)
     {
@@ -1596,12 +1628,74 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
     else
     {
-        uint32_t r2rFunctionTableEntryNumber = ((uint32_t*)fp)[0];
-        uint32_t functionLocalVirtualIP = ((uint32_t*)fp)[1] * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
+        uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(fp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
+        uint32_t functionLocalVirtualIP = (*(uint32_t*)(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
         TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
         if (baseVirtualIP == 0)
             return 0;
         return baseVirtualIP + functionLocalVirtualIP;
+    }
+}
+
+static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry)
+{
+    TADDR sp = *pSP;
+    TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
+    if (fp == 0)
+    {
+        *pSP = 0;
+        *pIP = 0;
+    }
+    else
+    {
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
+        *pSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
+        *pIP = GetWasmVirtualIPFromStackPointer(*pSP);
+    }
+}
+
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
+{
+    // Get the frame pointer of the individual WASM function from the stack pointer. However, if this is a funclet, the logical
+    // frame pointer is found by unwinding to either its containing function, or to a CallFunclet location.
+
+    TADDR internalFunctionFramePointer = GetWasmFramePointerFromStackPointer_Internal(sp);
+    _ASSERTE(internalFunctionFramePointer != 0);
+    uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(internalFunctionFramePointer + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
+    _ASSERTE(GetWasmVirtualIPFromStackPointer(sp) == controlPC);
+
+    if (ExecutionManager::IsFuncletFunctionIndex(r2rFunctionTableEntryNumber))
+    {
+        UINT_PTR            uImageBase;
+        PT_RUNTIME_FUNCTION pFunctionEntry;
+        EECodeInfo codeInfo;
+
+        codeInfo.Init(controlPC);
+        pFunctionEntry = codeInfo.GetFunctionEntry();
+        uImageBase = (UINT_PTR)codeInfo.GetModuleBase();
+
+        WasmUnwindStackFrameCore(&sp, &controlPC, uImageBase, pFunctionEntry);
+
+        if (*(int32_t*)sp == TERMINATE_R2R_STACK_WALK)
+        {
+            // The funclet was invoked by the VM through CallFuncletWith[out]Throwable, so native
+            // unwinding terminates at that synthetic frame before reaching the method's own frame.
+            // Recover the establishing (method) frame pointer the helper stored next to the
+            // TERMINATE_R2R_STACK_WALK marker.
+            return GetWasmEstablishingFramePointerFromTerminator(sp);
+        }
+        else
+        {
+            // The funclet was called by its containing method or funclet.
+            // Recurse to find out if we're dealing with another funclet, or the non-exceptional
+            // finally case.
+            return GetWasmFramePointerFromStackPointer(sp, controlPC);
+        }
+    }
+    else
+    {
+        // Return the normal method frame pointer
+        return internalFunctionFramePointer;
     }
 }
 
@@ -1628,21 +1722,21 @@ RtlVirtualUnwind (
     *HandlerData = 0;
     *EstablisherFrame = 0;
 
-    TADDR sp = ContextRecord->InterpreterSP;
-    TADDR fp = GetWasmFramePointerFromStackPointer(sp);
-    if (fp != 0)
+    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry);
+
+    if (ContextRecord->InterpreterSP != 0)
     {
-        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
-        ContextRecord->InterpreterSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
-        ContextRecord->InterpreterIP = GetWasmVirtualIPFromStackPointer(ContextRecord->InterpreterSP);
-        ContextRecord->InterpreterFP = GetWasmFramePointerFromStackPointer(ContextRecord->InterpreterSP);
+        // If InterpreterSP is set, then we successfully unwound, but if InterpreterIP is 0, then the caller
+        // frame is not a frame on the RyuJit frame chain, so only get the InterpreterFP for those scenarios.
+        if (ContextRecord->InterpreterIP != 0)
+            ContextRecord->InterpreterFP = GetWasmFramePointerFromStackPointer(ContextRecord->InterpreterSP, (PCODE)ContextRecord->InterpreterIP);
+        else
+            ContextRecord->InterpreterFP = 0;
     }
     else
     {
         // Unwind failed!
         _ASSERTE(FALSE);
-        ContextRecord->InterpreterIP = 0;
-        ContextRecord->InterpreterSP = 0;
         ContextRecord->InterpreterFP = 0;
     }
 

@@ -3608,6 +3608,18 @@ namespace Internal.JitInterface
             {
                 var sig = HandleToObject(callSig->methodSignature);
 
+                if (callSig->callConv == CorInfoCallConv.CORINFO_CALLCONV_DEFAULT &&
+                    callSig->retType == CorInfoType.CORINFO_TYPE_CLASS &&
+                    !sig.IsStatic &&
+                    sig.ReturnType == sig.Context.GetWellKnownType(WellKnownType.Void))
+                {
+                    // Detect special case for string ctors
+                    if (sig.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor"u8, sig) is not null)
+                    {
+                        sig = WasmLowering.GetStringCtorActualSignature(sig);
+                    }
+                }
+
                 WasmLowering.LoweringFlags flags = 0;
                 if (callSig->hasTypeArg())
                 {

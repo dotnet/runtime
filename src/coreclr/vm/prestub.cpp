@@ -1037,18 +1037,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     // code. This also avoid races with profiler overriding ngened code (see
     // matching SetNativeCodeInterlocked done after
     // JITCachedFunctionSearchStarted)
-    if (!pConfig->SetNativeCode(pCode, &pOtherCode))
-    {
-#ifdef HAVE_GCCOVER
-        // When GCStress is enabled, this thread should always win the publishing race
-        // since we're under a lock.
-        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
-#endif
-
-        // Another thread beat us to publishing its copy of the JITted code.
-        return pOtherCode;
-    }
-
 #ifdef FEATURE_INTERPRETER
     if (*pIsInterpreterCode)
     {
@@ -1063,6 +1051,18 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
+
+    if (!pConfig->SetNativeCode(pCode, &pOtherCode))
+    {
+#ifdef HAVE_GCCOVER
+        // When GCStress is enabled, this thread should always win the publishing race
+        // since we're under a lock.
+        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
+#endif
+
+        // Another thread beat us to publishing its copy of the JITted code.
+        return pOtherCode;
+    }
 
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();

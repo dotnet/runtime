@@ -675,13 +675,6 @@ JNIEnv* GetJNIEnv(void)
     return env;
 }
 
-int GetEnumAsInt(JNIEnv *env, jobject enumObj)
-{
-    int value = (*env)->CallIntMethod(env, enumObj, g_EnumOrdinal);
-    (*env)->DeleteLocalRef(env, enumObj);
-    return value;
-}
-
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
