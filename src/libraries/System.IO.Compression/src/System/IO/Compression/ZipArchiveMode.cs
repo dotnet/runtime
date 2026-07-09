@@ -26,6 +26,12 @@ namespace System.IO.Compression
         /// The underlying file or stream must be readable, writable and seekable.
         /// No data will be written to the underlying file or stream until the archive is disposed.
         /// </summary>
-        Update
+        Update,
+        /// <summary>
+        /// Only forward-only sequential reading of entries is permitted using <see cref="ZipArchive.GetNextEntry"/>.
+        /// Entries are read from local file headers instead of the central directory, enabling reading from non-seekable streams
+        /// without buffering the entire archive. The underlying stream must be readable but need not be seekable.
+        /// </summary>
+        ForwardRead = 3
     }
 }

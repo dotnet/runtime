@@ -7,10 +7,11 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
@@ -34,6 +35,9 @@ namespace System.IO.Compression
         private byte[] _archiveComment;
         private Encoding? _entryNameAndCommentEncoding;
         private long _firstDeletedEntryOffset;
+        private ZipArchiveEntry? _forwardReadPreviousEntry;
+        private bool _forwardReadReachedEnd;
+        private byte[]? _forwardReadDrainBuffer;
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
@@ -150,6 +154,12 @@ namespace System.IO.Compression
                     case ZipArchiveMode.Read:
                         ReadEndOfCentralDirectory();
                         break;
+                    case ZipArchiveMode.ForwardRead:
+                        // Central directory is intentionally never read in this mode.
+                        // Set _readEntries to prevent EnsureCentralDirectoryRead from
+                        // attempting to read it if accidentally reached.
+                        _readEntries = true;
+                        break;
                     case ZipArchiveMode.Update:
                     default:
                         Debug.Assert(mode == ZipArchiveMode.Update);
@@ -231,6 +241,8 @@ namespace System.IO.Compression
             {
                 if (_mode == ZipArchiveMode.Create)
                     throw new NotSupportedException(SR.EntriesInCreateMode);
+                if (_mode == ZipArchiveMode.ForwardRead)
+                    throw new NotSupportedException(SR.ForwardReadOnly);
 
                 ThrowIfDisposed();
 
@@ -298,6 +310,8 @@ namespace System.IO.Compression
                     switch (_mode)
                     {
                         case ZipArchiveMode.Read:
+                        case ZipArchiveMode.ForwardRead:
+                            DrainPreviousEntry();
                             break;
                         case ZipArchiveMode.Create:
                             WriteFile();
@@ -349,10 +363,228 @@ namespace System.IO.Compression
 
             if (_mode == ZipArchiveMode.Create)
                 throw new NotSupportedException(SR.EntriesInCreateMode);
+            if (_mode == ZipArchiveMode.ForwardRead)
+                throw new NotSupportedException(SR.ForwardReadOnly);
 
             EnsureCentralDirectoryRead();
             _entriesDictionary.TryGetValue(entryName, out ZipArchiveEntry? result);
             return result;
+        }
+
+        /// <summary>
+        /// Reads the next entry from the archive when opened in <see cref="ZipArchiveMode.ForwardRead"/> mode.
+        /// </summary>
+        /// <returns>The next <see cref="ZipArchiveEntry"/> in the archive, or <see langword="null"/> if no more entries exist.</returns>
+        /// <exception cref="NotSupportedException">The archive was not opened in <see cref="ZipArchiveMode.ForwardRead"/> mode.</exception>
+        /// <exception cref="ObjectDisposedException">The archive has been disposed.</exception>
+        /// <exception cref="InvalidDataException">The archive contains invalid data.</exception>
+        public ZipArchiveEntry? GetNextEntry()
+        {
+            ThrowIfDisposed();
+            if (_mode != ZipArchiveMode.ForwardRead)
+                throw new NotSupportedException(SR.GetNextEntryNotInForwardRead);
+
+            if (_forwardReadReachedEnd)
+                return null;
+
+            DrainPreviousEntry();
+
+            ZipLocalFileHeader.ForwardReadHeaderData? headerData =
+                ZipLocalFileHeader.TryReadForForwardRead(_archiveStream, EntryNameAndCommentEncoding);
+
+            if (headerData is null)
+            {
+                _forwardReadReachedEnd = true;
+                return null;
+            }
+
+            var data = headerData.Value;
+
+            if (data.HasDataDescriptor)
+            {
+                if (data.CompressionMethod == ZipCompressionMethod.Stored)
+                    throw new NotSupportedException(SR.ForwardReadStoredDataDescriptorNotSupported);
+                if (data.IsEncrypted)
+                    throw new NotSupportedException(SR.ForwardReadEncryptedDataDescriptorNotSupported);
+            }
+
+            Stream? dataStream = BuildForwardReadDataStream(data);
+            var entry = new ZipArchiveEntry(this, data, dataStream);
+            _forwardReadPreviousEntry = entry;
+
+            return entry;
+        }
+
+        /// <summary>
+        /// Asynchronously reads the next entry from the archive when opened in <see cref="ZipArchiveMode.ForwardRead"/> mode.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token to observe.</param>
+        /// <returns>A <see cref="ValueTask{TResult}"/> representing the next entry, or <see langword="null"/> if no more entries exist.</returns>
+        /// <exception cref="NotSupportedException">The archive was not opened in <see cref="ZipArchiveMode.ForwardRead"/> mode.</exception>
+        /// <exception cref="ObjectDisposedException">The archive has been disposed.</exception>
+        /// <exception cref="InvalidDataException">The archive contains invalid data.</exception>
+        public ValueTask<ZipArchiveEntry?> GetNextEntryAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            if (_mode != ZipArchiveMode.ForwardRead)
+                throw new NotSupportedException(SR.GetNextEntryNotInForwardRead);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (_forwardReadReachedEnd)
+                return new ValueTask<ZipArchiveEntry?>((ZipArchiveEntry?)null);
+
+            return GetNextEntryAsyncCore(cancellationToken);
+        }
+
+        private async ValueTask<ZipArchiveEntry?> GetNextEntryAsyncCore(CancellationToken cancellationToken)
+        {
+            await DrainPreviousEntryAsync(cancellationToken).ConfigureAwait(false);
+
+            ZipLocalFileHeader.ForwardReadHeaderData? headerData =
+                await ZipLocalFileHeader.TryReadForForwardReadAsync(_archiveStream, EntryNameAndCommentEncoding, cancellationToken).ConfigureAwait(false);
+
+            if (headerData is null)
+            {
+                _forwardReadReachedEnd = true;
+                return null;
+            }
+
+            var data = headerData.Value;
+
+            if (data.HasDataDescriptor)
+            {
+                if (data.CompressionMethod == ZipCompressionMethod.Stored)
+                    throw new NotSupportedException(SR.ForwardReadStoredDataDescriptorNotSupported);
+                if (data.IsEncrypted)
+                    throw new NotSupportedException(SR.ForwardReadEncryptedDataDescriptorNotSupported);
+            }
+
+            Stream? dataStream = BuildForwardReadDataStream(data);
+            var entry = new ZipArchiveEntry(this, data, dataStream);
+            _forwardReadPreviousEntry = entry;
+
+            return entry;
+        }
+
+        private void DrainPreviousEntry()
+        {
+            if (_forwardReadPreviousEntry is not { } prev)
+                return;
+
+            Stream? dataStream = prev.ForwardReadDataStream;
+            if (dataStream is not null)
+            {
+                byte[] buffer = _forwardReadDrainBuffer ??= new byte[4096];
+                while (dataStream.Read(buffer) > 0) { }
+
+                var crcResult = (dataStream as CrcValidatingReadStream)?.GetFinalCrcResult();
+                dataStream.Dispose();
+
+                if (prev.HasDataDescriptor)
+                {
+                    if (crcResult is not { } actual)
+                        throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+
+                    var (crc32, _, uncompressedSize) = ZipLocalFileHeader.ReadDataDescriptorAdaptive(
+                        _archiveStream, actual.Crc32, actual.BytesRead);
+
+                    if (actual.Crc32 != crc32)
+                        throw new InvalidDataException(SR.CrcMismatch);
+                    if (actual.BytesRead != uncompressedSize)
+                        throw new InvalidDataException(SR.UnexpectedStreamLength);
+                }
+            }
+            else if (prev.HasDataDescriptor)
+            {
+                ZipLocalFileHeader.ReadDataDescriptor(_archiveStream, prev.IsZip64SizeFields);
+            }
+
+            _forwardReadPreviousEntry = null;
+        }
+
+        private async ValueTask DrainPreviousEntryAsync(CancellationToken cancellationToken)
+        {
+            if (_forwardReadPreviousEntry is not { } prev)
+                return;
+
+            Stream? dataStream = prev.ForwardReadDataStream;
+            if (dataStream is not null)
+            {
+                byte[] buffer = _forwardReadDrainBuffer ??= new byte[4096];
+                while (await dataStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false) > 0) { }
+
+                var crcResult = (dataStream as CrcValidatingReadStream)?.GetFinalCrcResult();
+                await dataStream.DisposeAsync().ConfigureAwait(false);
+
+                if (prev.HasDataDescriptor)
+                {
+                    if (crcResult is not { } actual)
+                        throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+
+                    var (crc32, _, uncompressedSize) = await ZipLocalFileHeader.ReadDataDescriptorAdaptiveAsync(
+                        _archiveStream, actual.Crc32, actual.BytesRead, cancellationToken).ConfigureAwait(false);
+
+                    if (actual.Crc32 != crc32)
+                        throw new InvalidDataException(SR.CrcMismatch);
+                    if (actual.BytesRead != uncompressedSize)
+                        throw new InvalidDataException(SR.UnexpectedStreamLength);
+                }
+            }
+            else if (prev.HasDataDescriptor)
+            {
+                await ZipLocalFileHeader.ReadDataDescriptorAsync(_archiveStream, prev.IsZip64SizeFields, cancellationToken).ConfigureAwait(false);
+            }
+
+            _forwardReadPreviousEntry = null;
+        }
+
+        private Stream? BuildForwardReadDataStream(ZipLocalFileHeader.ForwardReadHeaderData data)
+        {
+            bool isDirectory = data.FullName.Length > 0 &&
+                (data.FullName[^1] == '/' || data.FullName[^1] == '\\');
+            bool isEmptyEntry = !data.HasDataDescriptor && data.CompressedSize == 0 && data.UncompressedSize == 0;
+
+            if (isDirectory)
+                return null;
+            if (isEmptyEntry)
+                return Stream.Null;
+
+            if (data.CompressionMethod != ZipCompressionMethod.Stored &&
+                data.CompressionMethod != ZipCompressionMethod.Deflate &&
+                data.CompressionMethod != ZipCompressionMethod.Deflate64)
+            {
+                throw new InvalidDataException(SR.UnsupportedCompression);
+            }
+
+            if (data.HasDataDescriptor)
+            {
+                Stream decompressor = CreateForwardReadDecompressor(_archiveStream, data.CompressionMethod, -1, leaveOpen: true);
+
+                return new CrcValidatingReadStream(decompressor, expectedCrc: 0, expectedLength: long.MaxValue);
+            }
+
+            if (data.IsEncrypted)
+            {
+                return new SubReadStream(_archiveStream, _archiveStream.Position, data.CompressedSize);
+            }
+
+            // Known size, not encrypted — store lightweight SubReadStream as a bookmark;
+            // decompressor + CRC wrapper are created lazily in OpenInForwardReadMode.
+            return new SubReadStream(_archiveStream, _archiveStream.Position, data.CompressedSize);
+        }
+
+        internal static Stream CreateForwardReadDecompressor(Stream source, ZipCompressionMethod compressionMethod, long uncompressedSize, bool leaveOpen)
+        {
+            Debug.Assert(compressionMethod is ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64);
+            return compressionMethod switch
+            {
+                ZipCompressionMethod.Deflate when leaveOpen => new DeflateStream(source, CompressionMode.Decompress, leaveOpen: true),
+                ZipCompressionMethod.Deflate => new DeflateStream(source, CompressionMode.Decompress, uncompressedSize),
+                ZipCompressionMethod.Deflate64 when leaveOpen => new DeflateManagedStream(source, ZipCompressionMethod.Deflate64, -1),
+                ZipCompressionMethod.Deflate64 => new DeflateManagedStream(source, ZipCompressionMethod.Deflate64, uncompressedSize),
+                _ => source,
+            };
         }
 
         internal Stream ArchiveStream => _archiveStream;
@@ -434,6 +666,8 @@ namespace System.IO.Compression
 
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);
+            if (_mode == ZipArchiveMode.ForwardRead)
+                throw new NotSupportedException(SR.ForwardReadOnly);
 
             ThrowIfDisposed();
 
@@ -970,6 +1204,10 @@ namespace System.IO.Compression
                         isReadModeAndUnseekable = true;
                     }
                     break;
+                case ZipArchiveMode.ForwardRead:
+                    if (!stream.CanRead)
+                        throw new ArgumentException(SR.ReadModeCapabilities);
+                    break;
                 case ZipArchiveMode.Update:
                     if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek)
                         throw new ArgumentException(SR.UpdateModeCapabilities);
@@ -988,9 +1226,13 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            return mode == ZipArchiveMode.Create && !stream.CanSeek ?
-                new PositionPreservingWriteOnlyStreamWrapper(stream) :
-                stream;
+            if (mode == ZipArchiveMode.Create && !stream.CanSeek)
+                return new PositionPreservingWriteOnlyStreamWrapper(stream);
+
+            if (mode == ZipArchiveMode.ForwardRead && !stream.CanSeek)
+                return new ReadAheadStream(stream);
+
+            return stream;
         }
 
 
