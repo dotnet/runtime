@@ -563,7 +563,15 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    defaultCtorInvoker.InvokeThrowing(&ref, pMD->GetSingleCallableAddrOfCode());
+    PCODE ctorCode = pMD->GetSingleCallableAddrOfCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // CallDefaultConstructor invokes the ctor via a typed call_indirect, so its portable
+    // entry point must resolve to real code (native R2R or a correctly-typed interpreter
+    // thunk) rather than a temporary precode.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ctorCode);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    defaultCtorInvoker.InvokeThrowing(&ref, ctorCode);
 
     GCPROTECT_END ();
 }
