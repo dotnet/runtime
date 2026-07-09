@@ -3,13 +3,13 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
@@ -77,9 +77,13 @@ namespace ILCompiler.ObjectWriter
             outputFileStream.Write([0x1, 0x0, 0x0, 0x0]);
         }
 
-        private Dictionary<Utf8String, int> _uniqueSignatures = new();
-        private Dictionary<string, int> _uniqueSymbols = new();
-        private int _methodCount = 0;
+        // The wasm function index space. Every function (method, funclet, or stub) is registered
+        // into the function section via RegisterFunctionSymbol, so the number of symbols in that
+        // section is both the count of emitted functions and the next function index to assign.
+        private int MethodCount =>
+            _sectionNameToIndex.TryGetValue(WasmObjectNodeSection.FunctionSection.Name, out int functionSectionIndex)
+                ? SectionSymbolCount(functionSectionIndex)
+                : 0;
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
         private protected override void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
@@ -99,9 +103,9 @@ namespace ILCompiler.ObjectWriter
             var mangledNameBuilder = new Utf8StringBuilder();
             signature.AppendMangledName(_nodeFactory.NameMangler, mangledNameBuilder);
             Utf8String mangledName = mangledNameBuilder.ToUtf8String();
-            // Note that we do not expect duplicates here, crossgen should deduplicate signatures already
-            // using the node cache, so we can simply add the new signature with the next available index.
-            _uniqueSignatures.Add(mangledName, _uniqueSignatures.Count);
+            // Record the signature's wasm type index in the shared symbol table. The signature bytes
+            // are emitted by the node's own data; here we only assign its index.
+            EnsureSymbolIndex(mangledName, GetOrCreateSection(ObjectNodeSection.WasmTypeSection).SectionIndex);
         }
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
@@ -120,8 +124,7 @@ namespace ILCompiler.ObjectWriter
                 flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
             }
             WriteSignatureIndexForFunction(node.Signature, flags, node);
-            _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
-            _methodCount++;
+            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
@@ -142,8 +145,7 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < funcletKinds.Length; i++)
             {
                  WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
-                _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i}", _methodCount);
-                _methodCount++;
+                RegisterFunctionSymbol(new Utf8String($"{mangledNodeName}_funclet_{i}"));
                 RegisterStubIndexAndSignature(funcletSignature);
             }
         }
@@ -164,12 +166,12 @@ namespace ILCompiler.ObjectWriter
 
             WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags).FuncType;
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
-            if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
+            if (!_symbolDefinitions.TryGetValue(key, out var signatureSymbol))
             {
                 throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
             }
 
-            writer.WriteULEB128((ulong)signatureIndex);
+            writer.WriteULEB128((ulong)signatureSymbol.Index);
         }
 
         private int _numImports;
@@ -188,6 +190,8 @@ namespace ILCompiler.ObjectWriter
             int bytesWritten = import.Encode(writer.Buffer.GetSpan(encodeSize));
             Debug.Assert(bytesWritten == encodeSize);
             writer.Buffer.Advance((int)bytesWritten);
+
+            writer.EmitSymbolDefinition(new Utf8String(import.Name));
 
             _numImports++;
             return writer;
@@ -384,8 +388,7 @@ namespace ILCompiler.ObjectWriter
             body.Encode(data);
 
             codeWriter.EmitData(data);
-            _uniqueSymbols.Add(name.ToString(), _methodCount);
-            _methodCount++;
+            RegisterFunctionSymbol(name);
 
             RegisterStubIndexAndSignature(body.Signature);
 
@@ -534,15 +537,15 @@ namespace ILCompiler.ObjectWriter
         private WebcilSegment _webcilSegment = null;
         private protected override void EmitSectionsAndLayout()
         {
-            int totalMethodCount = _methodCount + 3;
+            int totalMethodCount = MethodCount + 3;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
             InsertWasmStub(new Utf8String("fillWebcilTable"), FillWebcilTable(totalMethodCount));
-            Debug.Assert(_methodCount == totalMethodCount);
+            Debug.Assert(MethodCount == totalMethodCount);
 
             WriteDataCountSection();
 
-            PrependCount(SectionByName(ObjectNodeSection.WasmCodeSection.Name), _methodCount);
+            PrependCount(SectionByName(ObjectNodeSection.WasmCodeSection.Name), MethodCount);
         }
 
         private int _numDefinedGlobals = 0;
@@ -759,7 +762,7 @@ namespace ILCompiler.ObjectWriter
             // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
             byte[] lengthBuffer = new byte[sizeof(uint) * 2];
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)_webcilSegment.GetFlatMappedSize());
-            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)_uniqueSymbols.Count);
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
             MemoryStream webcilSizeSegmentStream = new MemoryStream(lengthBuffer);
             WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
                 WasmDataSectionType.Passive, null);
@@ -807,6 +810,46 @@ namespace ILCompiler.ObjectWriter
                     _pendingBaseRelocs.Add(new PendingBaseReloc(sectionIndex, reloc.Offset, fileRelocType));
                 }
             }
+        }
+
+        // Sections are dense and 0-based (CreateSection asserts _sections.Count == sectionIndex),
+        // so the per-section wasm index counter can live on the section itself rather than a side map.
+        private int GetNextIndexForSection(int sectionIndex) => _sections[sectionIndex].GetNewSymbolIndex();
+
+        private int SectionSymbolCount(int sectionIndex) => _sections[sectionIndex].IndexCount;
+
+        Dictionary<Utf8String, WasmIndexBasedSymbol> _symbolDefinitions = new();
+        record struct WasmIndexBasedSymbol(int SectionIndex, long Index, Utf8String Name);
+
+        // Assigns (or returns the existing) wasm index for a symbol within the index space of the
+        // given object-writer section. Wasm functions, types and globals each live in a distinct
+        // index space, tracked here by the section the symbol is first registered in. Keeping the
+        // first registration ensures a later definition of the same symbol (e.g. the code-section
+        // body of a function already registered in the function section) does not reassign its index.
+        private int EnsureSymbolIndex(Utf8String symbolName, int sectionIndex)
+        {
+            // Keep-first: a symbol legitimately appears in two sections - its index-space section
+            // (function/type/import), where it is registered first, and later its definition section
+            // (e.g. the code section body of a function), which must NOT reassign its index. The kept
+            // section is therefore the index space the symbol belongs to. This relies on the wasm index
+            // spaces having disjoint symbol names (mangled method names vs mangled type keys vs the fixed
+            // well-known import names), so distinct symbols never collide on a name.
+            if (!_symbolDefinitions.TryGetValue(symbolName, out WasmIndexBasedSymbol symbol))
+            {
+                symbol = new WasmIndexBasedSymbol(sectionIndex, GetNextIndexForSection(sectionIndex), symbolName);
+                _symbolDefinitions.Add(symbolName, symbol);
+            }
+
+            return (int)symbol.Index;
+        }
+
+        private int RegisterFunctionSymbol(Utf8String name) =>
+            EnsureSymbolIndex(name, GetOrCreateSection(WasmObjectNodeSection.FunctionSection).SectionIndex);
+
+        protected internal override void EmitSymbolDefinition(int sectionIndex, Utf8String symbolName, long offset = 0, int size = 0, bool global = false)
+        {
+            EnsureSymbolIndex(symbolName, sectionIndex);
+            base.EmitSymbolDefinition(sectionIndex, symbolName, offset, size, global);
         }
 
         /// <summary>
@@ -873,26 +916,6 @@ namespace ILCompiler.ObjectWriter
                     throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
                 }
 
-                if (reloc.Type == RelocType.WASM_GLOBAL_INDEX_LEB)
-                {
-                    // The JIT references the well-known wasm globals (stack pointer / image base /
-                    // table base) via WASM_GLOBAL_INDEX_LEB relocations against the WasmWellKnownGlobalSymbolNode.
-                    // For R2R these globals live at fixed indices supplied by the runtime loader, so we
-                    // self-resolve them here to the global indices defined in the WebCIL specification.
-                    if (!_globalSymbolNameToGlobalIndex.TryGetValue(reloc.SymbolName, out var globalIndex))
-                    {
-                        throw new NotImplementedException($"Unexpected global symbol: {reloc.SymbolName}");
-                    }
-
-                    fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
-                    {
-                        Relocation.WriteValue(reloc.Type, pData, (int)globalIndex);
-                        WriteRelocFromDataSpan(reloc, pData, sectionStart);
-                    }
-
-                    continue;
-                }
-
                 SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
 
                 // The virtual address of the relocation we are resolving
@@ -926,16 +949,22 @@ namespace ILCompiler.ObjectWriter
                     switch (reloc.Type)
                     {
                         case RelocType.WASM_TYPE_INDEX_LEB:
+                        case RelocType.WASM_GLOBAL_INDEX_LEB:
+                        case RelocType.WASM_TABLE_INDEX_I32:
+                        case RelocType.WASM_TABLE_INDEX_I64:
+                        case RelocType.WASM_TABLE_INDEX_SLEB:
+                        case RelocType.WASM_TABLE_INDEX_REL_I32:
+                        case RelocType.WASM_FUNCTION_INDEX_LEB:
                         {
-                            if (_uniqueSignatures.TryGetValue(reloc.SymbolName, out int index))
+                            // These relocations reference a wasm structural index (function, type,
+                            // table entry, or well-known global). For R2R we self-resolve them here to
+                            // the index assigned when the symbol was registered into its index space.
+                            if (!_symbolDefinitions.TryGetValue(reloc.SymbolName, out var symbol))
                             {
-                                Relocation.WriteValue(reloc.Type, pData, index);
-                            }
-                            else
-                            {
-                                throw new InvalidDataException($"Type signature symbol definition '{reloc.SymbolName}' not found");
+                                throw new NotImplementedException($"No wasm index registered for symbol '{reloc.SymbolName}' (relocation {reloc.Type}).");
                             }
 
+                            Relocation.WriteValue(reloc.Type, pData, (int)symbol.Index + addend);
                             break;
                         }
 
@@ -998,30 +1027,6 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         }
-                        case RelocType.WASM_TABLE_INDEX_I32:
-                        case RelocType.WASM_TABLE_INDEX_I64:
-                        case RelocType.WASM_TABLE_INDEX_SLEB:
-                        case RelocType.WASM_TABLE_INDEX_REL_I32:
-                        {
-                            string symbolName = reloc.SymbolName.ToString();
-                            int index = _uniqueSymbols[symbolName];
-                            // Here, we are effectively writing a table offset relative to the table_base.
-                            // These will need to be fixed up by the runtime after load by adding tableBase
-                            // except for WASM_TABLE_INDEX_REL_I32 and WASM_TABLE_INDEX_SLEB which are relative
-                            // to the start of the table.
-                            Relocation.WriteValue(reloc.Type, pData, index + addend);
-                            break;
-                        }
-                        case RelocType.WASM_FUNCTION_INDEX_LEB:
-                        {
-                            string symbolName = reloc.SymbolName.ToString();
-                            int index = _uniqueSymbols[symbolName];
-
-                            // These are module-local function pointer indices, so we can simply write out the assigned function index
-                            // for this particular symbol
-                            Relocation.WriteValue(reloc.Type, pData, index + addend);
-                            break;
-                        }
                         case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
                         {
                             Relocation.WriteValue(reloc.Type, pData, RtlRestoreContextTagIndex + addend);
@@ -1062,21 +1067,15 @@ namespace ILCompiler.ObjectWriter
             new([]),
             new([]));
 
-        private static readonly FrozenDictionary<Utf8String, int> _globalSymbolNameToGlobalIndex = FrozenDictionary.Create<Utf8String, int>([
-            new(new(WasmWellKnownGlobalSymbolNode.StackPointerName), StackPointerGlobalIndex),
-            new(new(WasmWellKnownGlobalSymbolNode.ImageBaseName),    ImageBaseGlobalIndex),
-            new(new(WasmWellKnownGlobalSymbolNode.TableBaseName),    TableBaseGlobalIndex)
-        ]);
-
         private WasmImport[] CreateDefaultGlobalImports()
         {
             int rtlRestoreContextTagTypeIndex = RegisterSignature(RtlRestoreContextTagSignature);
 
             return
             [
-                new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-                new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-                new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
+                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.ImageBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.TableBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
                 new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
                 new WasmImport("webcil", "rtlRestoreContextTag", import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
             ];
@@ -1085,20 +1084,20 @@ namespace ILCompiler.ObjectWriter
         private int RegisterSignature(WasmFuncType signature)
         {
             Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
-            if (_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
+            if (_symbolDefinitions.TryGetValue(signatureKey, out var signatureIndex))
             {
-                return signatureIndex;
+                return (int)signatureIndex.Index;
             }
-
-            signatureIndex = _uniqueSignatures.Count;
-            _uniqueSignatures.Add(signatureKey, signatureIndex);
 
             SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
             byte[] encodedSignature = new byte[signature.EncodeSize()];
             signature.Encode(encodedSignature);
             typeSectionWriter.EmitData(encodedSignature);
+            // Assigns the type index (via the EmitSymbolDefinition override) and registers the
+            // signature in the defined-symbol table used during relocation resolution.
+            typeSectionWriter.EmitSymbolDefinition(signatureKey);
 
-            return signatureIndex;
+            return (int)_symbolDefinitions[signatureKey].Index;
         }
 
         private void WriteImports()
@@ -1134,29 +1133,29 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(_definedGlobals.ContainsKey("webcilVersion"));
             WriteGlobalExport("webcilVersion", _definedGlobals["webcilVersion"].Index);
 
-            string[] functionExports = _uniqueSymbols.Keys.ToArray();
+            int functionSectionIndex = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
-            // Also, see if we could leverage definedSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
-            foreach (string name in functionExports.OrderBy(name => name))
+            IEnumerable<WasmIndexBasedSymbol> functionSymbols =
+                _symbolDefinitions.Values.Where(symbol => symbol.SectionIndex == functionSectionIndex);
+            foreach (WasmIndexBasedSymbol symbol in functionSymbols.OrderBy(symbol => symbol.Name.ToString()))
             {
-                WriteFunctionExport(name, _uniqueSymbols[name]);
+                WriteFunctionExport(symbol.Name.ToString(), (int)symbol.Index);
             }
         }
 
         private Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
         private void WriteElements()
         {
-            // Generate the function pointer table element that contains function pointers for all of our functions
-            int[] functionIndices = new int[_uniqueSymbols.Count];
-            // NOTE: This relies on items in _uniqueSymbols being assigned sequentially and that iteration over Values is order-preserving.
-            // BCL Dictionary preserves insertion order so as long as we keep using it, we would get the function indices in the order they were added.
-            _uniqueSymbols.Values.CopyTo(functionIndices, 0);
-            // Enforce that the function pointers are sequential so that (image_function_pointer_base + 0) == ftn index 0
-#if DEBUG
-            for (int i = 0; i < _uniqueSymbols.Count; i++) {
-                Debug.Assert(functionIndices[i] == i);
+            // Generate the function pointer table element that contains function pointers for all of our functions.
+            // Function indices are assigned sequentially (0..MethodCount-1) so that
+            // (image_function_pointer_base + 0) == function index 0.
+            int methodCount = MethodCount;
+            int[] functionIndices = new int[methodCount];
+            for (int i = 0; i < methodCount; i++)
+            {
+                functionIndices[i] = i;
             }
-#endif
+
             WriteRefFuncFunctionElement(functionIndices);
         }
 
@@ -1175,10 +1174,10 @@ namespace ILCompiler.ObjectWriter
         private void EmitSectionElementCounts()
         {
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
-            PrependCount(_sections[funcIdx], _methodCount);
+            PrependCount(_sections[funcIdx], MethodCount);
 
             int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
-            PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
+            PrependCount(_sections[typeIdx], SectionSymbolCount(typeIdx));
 
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
             PrependCount(_sections[exportIdx], _numExports);
@@ -1199,6 +1198,20 @@ namespace ILCompiler.ObjectWriter
     {
         public WasmSectionType Type { get; }
         public Utf8String Name { get; }
+
+        // Running counter used to assign per-section wasm indices (function, type, and global
+        // index spaces), incremented as symbols are registered into this section.
+        private int _nextSymbolIndex;
+
+        /// <summary>
+        /// The number of wasm indices allocated in this section's index space so far.
+        /// </summary>
+        public int IndexCount => _nextSymbolIndex;
+
+        /// <summary>
+        /// Returns the next wasm index in this section's index space, and increments the counter for future calls.
+        /// </summary>
+        public int GetNewSymbolIndex() => Interlocked.Increment(ref _nextSymbolIndex) - 1;
 
         public int? PrependCount = null;
         public int PrependCountSize => PrependCount.HasValue ? (int)DwarfHelper.SizeOfULEB128((ulong)PrependCount.Value) : 0;

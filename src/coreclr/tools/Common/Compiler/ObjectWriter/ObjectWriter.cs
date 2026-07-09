@@ -262,7 +262,7 @@ namespace ILCompiler.ObjectWriter
         /// the order of the symbols so any necessary sorting is done when the
         /// symbol table is created.
         /// </remarks>
-        protected internal void EmitSymbolDefinition(
+        protected internal virtual void EmitSymbolDefinition(
             int sectionIndex,
             Utf8String symbolName,
             long offset = 0,
