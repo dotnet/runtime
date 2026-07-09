@@ -778,6 +778,7 @@ namespace System.Net.Security
             out int bytesWritten)
         {
             ThrowIfDisposed();
+            ThrowIfContextNotSet();
             bytesConsumed = 0;
             bytesWritten = 0;
 
@@ -1877,6 +1878,7 @@ namespace System.Net.Security
         private protected TlsOperationStatus HandshakeSocketCore()
         {
             ThrowIfDisposed();
+            ThrowIfContextNotSet();
             ThrowIfNotSocketBound();
 
             if (_isHandshakeComplete && !_externalValidationPending && !_externalValidationResolved)
