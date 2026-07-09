@@ -46,7 +46,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void SetsLastModifiedTimeOnExtractedFiles()
         {
             using TempDirectory root = new TempDirectory();
@@ -74,7 +73,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void SetsLastModifiedTimeOnExtractedDirectories()
         {
             using TempDirectory root = new TempDirectory();
@@ -211,7 +209,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void ExtractArchiveWithEntriesThatStartWithSlashDotPrefix()
         {
             using TempDirectory root = new TempDirectory();
@@ -237,7 +234,6 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void UnixFileModes(bool overwrite)
         {
             using TempDirectory source = new TempDirectory();
@@ -306,7 +302,6 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129227")]
         public void UnixFileModes_RestrictiveParentDir(bool overwrite)
         {
             using TempDirectory source = new TempDirectory();

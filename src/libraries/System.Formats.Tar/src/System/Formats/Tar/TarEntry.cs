@@ -431,9 +431,13 @@ namespace System.Formats.Tar
                 return true;
             }
 
-            // Walk relative components, resolving symlinks at each step
-            string relative = normalizedFile.Substring(logicalPrefix.Length)
-                .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            // Walk relative components, resolving symlinks at each step.
+            // When the file resolves to the destination directory itself, there are no components to walk,
+            // so the relative path is empty. Guarding here avoids an out-of-range Substring on the prefix length.
+            string relative = normalizedFile.Equals(logicalDest, pathComparison)
+                ? string.Empty
+                : normalizedFile.Substring(logicalPrefix.Length)
+                    .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             string[] components = relative.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
                 StringSplitOptions.RemoveEmptyEntries);
