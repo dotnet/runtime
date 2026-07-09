@@ -26,10 +26,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        private protected virtual bool OnConflictTakeNew(Node current, T newValue)
-        {
-            return false;
-        }
+        private protected abstract bool OnConflictTakeNew(Node current, T newValue);
 
         private protected static int GetHashCode(string key) => key.GetHashCode();
 
@@ -149,6 +146,43 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return ret;
+        }
+
+        private protected Node? Remove(int hashCode, string key)
+        {
+            Debug.Assert(key is not null);
+            Debug.Assert(_lock.IsHeldByCurrentThread);
+
+            Node? previous = null;
+            Node? current = _head;
+
+            while (current is not null)
+            {
+                if (current.MatchesKey(hashCode, key))
+                {
+                    if (previous is null)
+                    {
+                        _head = current.Next;
+                    }
+                    else
+                    {
+                        previous.Next = current.Next;
+                    }
+
+                    if (current == _expire)
+                    {
+                        _expire = current.Next;
+                    }
+
+                    _count--;
+                    return current;
+                }
+
+                previous = current;
+                current = current.Next;
+            }
+
+            return null;
         }
 
         private void PruneForGC()

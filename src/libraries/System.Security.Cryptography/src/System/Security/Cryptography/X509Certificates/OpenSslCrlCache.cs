@@ -287,6 +287,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (newEntry is not null)
             {
                 UpdateCacheAndAttachCrl(crlFileName, store, newEntry);
+                OpenSslCertificateAssetDownloader.ReportCrlCached(url);
             }
         }
 
