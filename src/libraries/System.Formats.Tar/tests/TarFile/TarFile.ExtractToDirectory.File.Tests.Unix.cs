@@ -1,16 +1,18 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
     public partial class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
-        public void Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
+        [MemberData(nameof(Get_Boolean_Data))]
+        public async Task Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess(bool async)
         {
             string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
             using TempDirectory root = new TempDirectory();
@@ -18,12 +20,10 @@ namespace System.Formats.Tar.Tests
             string archive = Path.Join(root.Path, "input.tar");
             string destination = Path.Join(root.Path, "dir");
 
-            // Copying the tar to reduce the chance of other tests failing due to being used by another process
             File.Copy(originalFileName, archive);
-
             Directory.CreateDirectory(destination);
 
-            Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(archive, destination, overwriteFiles: false));
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ExtractToDirectory(archive, destination, overwriteFiles: false, async));
 
             Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
         }
