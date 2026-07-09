@@ -2114,7 +2114,7 @@ namespace System
             ReadOnlySpan<ushort> sourceSpanUInt16 = MemoryMarshal.Cast<char, ushort>(sourceSpan);
             ReadOnlySpan<ushort> remaining = sourceSpanUInt16;
 
-            if (Vector512.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector512<ushort>.Count)
+            if (Vector512.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
             {
                 Vector512<ushort> v1 = Vector512.Create((ushort)c);
                 Vector512<ushort> v2 = Vector512.Create((ushort)c2);
@@ -2209,7 +2209,7 @@ namespace System
                 }
                 return;
             }
-            else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count)
+            else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
             {
                 Vector256<ushort> v1 = Vector256.Create((ushort)c);
                 Vector256<ushort> v2 = Vector256.Create((ushort)c2);
