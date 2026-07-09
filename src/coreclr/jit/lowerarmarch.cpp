@@ -2266,7 +2266,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //   ...
 
     GenTree* tmp1 = InsertNewSimdCreateScalarUnsafeNode(simdType, node->Op(1), simdBaseType, simdSize);
-    LowerNode(tmp1);
 
     // We will be constructing the following parts:
     //   ...

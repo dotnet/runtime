@@ -2008,23 +2008,24 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (varTypeIsFloating(node->GetSimdBaseType()))
             {
+                GenTree* op1      = node->Op(1);
+                GenTree* nextNode = node->gtNext;
+
                 LIR::Use use;
                 if (BlockRange().TryGetUse(node, &use))
                 {
-                    GenTree* op1      = node->Op(1);
-                    GenTree* nextNode = node->gtNext;
-
                     use.ReplaceWith(op1);
-                    BlockRange().Remove(node);
-                    return nextNode;
+                }
+                else
+                {
+                    // With no use, transfer the unused marker to op1 so it is DCE'd.
+                    assert(node->IsUnusedValue());
+                    node->ClearUnusedValue();
+                    op1->SetUnusedValue();
                 }
 
-                // A node with no use is either already dead (and marked unused) or a transient
-                // CreateScalarUnsafe that Vector.Create lowering creates and lowers before wiring it
-                // to its parent. Leaving it in place is harmless: the dead case is DCE'd, and the
-                // transient builder case still produces the same code it does today. Removing the
-                // duplicative Vector.Create lowering (so it no longer manufactures these) is tracked
-                // as separate work.
+                BlockRange().Remove(node);
+                return nextNode;
             }
             break;
         }
@@ -4035,7 +4036,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   return Avx512.BroadcastScalarToVector512(tmp1);
 
             tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
-            LowerNode(tmp1);
             node->ResetHWIntrinsicId(NI_AVX512_BroadcastScalarToVector512, tmp1);
             return LowerNode(node);
         }
@@ -4059,7 +4059,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   return Avx2.BroadcastScalarToVector256(tmp1);
 
                 tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
-                LowerNode(tmp1);
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
                 return LowerNode(node);
@@ -4122,7 +4121,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         //   ...
 
         tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
-        LowerNode(tmp1);
 
         if ((simdBaseType != TYP_DOUBLE) && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
@@ -4410,7 +4408,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //   ...
 
     tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, simdBaseType, 16);
-    LowerNode(tmp1);
 
     switch (simdBaseType)
     {
@@ -4503,7 +4500,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 opN = node->Op(N + 1);
 
                 tmp2 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, opN, simdBaseType, 16);
-                LowerNode(tmp2);
 
                 idx = m_compiler->gtNewIconNode(N << 4, TYP_INT);
 
@@ -4537,7 +4533,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             opN = node->Op(argCnt);
 
             tmp2 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, opN, simdBaseType, 16);
-            LowerNode(tmp2);
 
             idx = m_compiler->gtNewIconNode((argCnt - 1) << 4, TYP_INT);
             BlockRange().InsertAfter(tmp2, idx);
@@ -4599,7 +4594,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   return Sse.UnpackLow(tmp1, tmp2);
 
             tmp2 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, simdBaseType, 16);
-            LowerNode(tmp2);
 
             node->ResetHWIntrinsicId(NI_X86Base_UnpackLow, tmp1, tmp2);
             break;
@@ -5319,7 +5313,6 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
             //   tmp1 = Vector128.CreateScalarUnsafe(op3);
 
             tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op3, TYP_FLOAT, 16);
-            LowerNode(tmp1);
 
             imm8 = imm8 * 16;
             op3  = tmp1;
@@ -5351,7 +5344,6 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
             //   tmp1 = Vector128.CreateScalarUnsafe(op3);
 
             tmp1 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op3, TYP_DOUBLE, 16);
-            LowerNode(tmp1);
 
             result->ResetHWIntrinsicId((imm8 == 0) ? NI_X86Base_MoveScalar : NI_X86Base_UnpackLow, op1, tmp1);
             break;
