@@ -18,11 +18,6 @@ namespace Microsoft.Extensions.Caching.Hybrid;
 /// </remarks>
 public sealed class HybridCacheEntryContext
 {
-    private TimeSpan? _expiration;
-    private TimeSpan? _localCacheExpiration;
-    private HybridCacheEntryFlags? _flags;
-    private long? _localSize;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="HybridCacheEntryContext"/> class, seeding its values from
     /// the supplied options.
@@ -39,11 +34,14 @@ public sealed class HybridCacheEntryContext
     {
         if (options is not null)
         {
-            _expiration = options.Expiration;
-            _localCacheExpiration = options.LocalCacheExpiration;
-            _flags = options.Flags;
-            _localSize = options.LocalSize;
+            Expiration = options.Expiration;
+            LocalCacheExpiration = options.LocalCacheExpiration;
+            Flags = options.Flags;
+            LocalSize = options.LocalSize;
         }
+
+        // Seeding from the supplied options is not a caller change, so the context starts at revision zero.
+        Revision = 0;
     }
 
     /// <summary>
@@ -51,12 +49,12 @@ public sealed class HybridCacheEntryContext
     /// </summary>
     public TimeSpan? Expiration
     {
-        get => _expiration;
+        get;
         set
         {
-            if (_expiration != value)
+            if (field != value)
             {
-                _expiration = value;
+                field = value;
                 BumpRevision();
             }
         }
@@ -71,12 +69,12 @@ public sealed class HybridCacheEntryContext
     /// </remarks>
     public TimeSpan? LocalCacheExpiration
     {
-        get => _localCacheExpiration;
+        get;
         set
         {
-            if (_localCacheExpiration != value)
+            if (field != value)
             {
-                _localCacheExpiration = value;
+                field = value;
                 BumpRevision();
             }
         }
@@ -87,12 +85,12 @@ public sealed class HybridCacheEntryContext
     /// </summary>
     public HybridCacheEntryFlags? Flags
     {
-        get => _flags;
+        get;
         set
         {
-            if (_flags != value)
+            if (field != value)
             {
-                _flags = value;
+                field = value;
                 BumpRevision();
             }
         }
@@ -112,12 +110,12 @@ public sealed class HybridCacheEntryContext
     /// </remarks>
     public long? LocalSize
     {
-        get => _localSize;
+        get;
         set
         {
-            if (_localSize != value)
+            if (field != value)
             {
-                _localSize = value;
+                field = value;
                 BumpRevision();
             }
         }
@@ -145,9 +143,9 @@ public sealed class HybridCacheEntryContext
     internal HybridCacheEntryOptions ToOptions()
         => new HybridCacheEntryOptions
         {
-            Expiration = _expiration,
-            LocalCacheExpiration = _localCacheExpiration,
-            Flags = _flags,
-            LocalSize = _localSize,
+            Expiration = Expiration,
+            LocalCacheExpiration = LocalCacheExpiration,
+            Flags = Flags,
+            LocalSize = LocalSize,
         };
 }
