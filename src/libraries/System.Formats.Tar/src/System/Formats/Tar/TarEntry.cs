@@ -400,7 +400,7 @@ namespace System.Formats.Tar
 
         // Prevent an archive from escaping the extraction root through symlinks that were created by earlier entries in the same archive.
         // This protection applies only to links introduced by the archive itself. It is not intended to defend against preexisting symlinks
-        // already present on disk before extraction
+        // already present on disk before extraction.
         private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
         {
             // Windows is case insensitive while Linux is case sensitive
