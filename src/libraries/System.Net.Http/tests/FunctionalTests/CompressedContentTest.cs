@@ -259,5 +259,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        #endregion Helpers
     }
 }
