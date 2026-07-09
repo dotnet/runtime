@@ -41,10 +41,11 @@ timeout-minutes: 30
 concurrency:
   group: code-review-${{ github.event.inputs.pr_number }}
   cancel-in-progress: true
-  # The per-PR job-discriminator gives each PR's compiler-generated jobs (agent, safe_outputs,
-  # conclusion) a distinct concurrency slot, so concurrently dispatched workers for different PRs
-  # run independently; cancel-in-progress above still cancels a stale review when the same PR is
-  # pushed again.
+  # job-discriminator per-PR-keys the concurrency groups of gh-aw's auto-generated jobs -- notably
+  # the conclusion job, whose default group is otherwise shared across all runs. Under the
+  # orchestrator's fan-out, that shared group would make GitHub cancel all-but-one pending
+  # conclusion job; keying by pr_number isolates them. (Applied at compile time; it rewrites the
+  # generated group names rather than appearing literally in the lock.)
   job-discriminator: ${{ github.event.inputs.pr_number }}
 
 if: ${{ github.event_name == 'workflow_dispatch' || !github.event.repository.fork }}
