@@ -94,16 +94,9 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private BrotliStream CreateCompressionStream(Stream outputStream)
-        {
-            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            return _compressionOptions is null
+        private BrotliStream CreateCompressionStream(Stream outputStream) =>
+            _compressionOptions is null
                 ? new BrotliStream(outputStream, _compressionLevel, leaveOpen: true)
                 : new BrotliStream(outputStream, _compressionOptions, leaveOpen: true);
-        }
     }
 }
