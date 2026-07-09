@@ -270,9 +270,14 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
 {
     // A two-register value occupies more than one register's worth of space
     // and at most two registers' worth. On x86 this is 8 bytes (2*4), on
-    // x64 this is up to 16 bytes (2*8).
-    _ASSERTE((newValue.Size() > sizeof(void*)) && (newValue.Size() <= 2 * sizeof(void*)));
+    // x64 this is up to 16 bytes (2*8). Guard at runtime (not just via assert)
+    // so that an unexpected buffer size cannot cause the memcpy below to read
+    // past the end of newValue in retail builds.
     _ASSERTE(REG_SIZE == sizeof(void*));
+    if ((newValue.Size() <= sizeof(void*)) || (newValue.Size() > 2 * sizeof(void*)))
+    {
+        ThrowHR(E_INVALIDARG);
+    }
 
     // Split the new value into high and low parts.
     SIZE_T highPart = 0;

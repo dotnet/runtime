@@ -1803,8 +1803,11 @@ HRESULT CordbType::ReturnedByValue()
             {
                 // On 32-bit targets, only single-field value classes are
                 // representable (matching the original behavior). More than one
-                // non-static field is unsupported there.
-                if (!allowMultiField && fieldCount++ != 0)
+                // non-static field is unsupported there. Increment the counter
+                // unconditionally and apply the single-field restriction only
+                // when multi-field is not allowed.
+                fieldCount++;
+                if (!allowMultiField && fieldCount > 1)
                 {
                     unsupported = true;
                     break;

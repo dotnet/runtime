@@ -512,7 +512,7 @@ namespace ILCompiler.ObjectWriter
                 case VarLocType.VLT_STK:
                 case VarLocType.VLT_STK2:
                 case VarLocType.VLT_STK_BYREF:
-                    e.OpBReg(loc.B, loc.C);
+                    e.OpStackLocation(loc.B, loc.C);
                     if (loc.LocationType == VarLocType.VLT_STK_BYREF)
                     {
                         e.OpDeref();
@@ -527,11 +527,11 @@ namespace ILCompiler.ObjectWriter
                 case VarLocType.VLT_REG_STK:
                     e.OpReg(loc.B);
                     e.OpPiece();
-                    e.OpBReg(loc.C, loc.D);
+                    e.OpStackLocation(loc.C, loc.D);
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_STK_REG:
-                    e.OpBReg(loc.B, loc.C);
+                    e.OpStackLocation(loc.B, loc.C);
                     e.OpPiece();
                     e.OpReg(loc.D);
                     e.OpPiece();

@@ -25,6 +25,22 @@ namespace ILCompiler.ObjectWriter
 
         public void OpBReg(int register, int offset = 0) => OpBDwarfReg(DwarfRegNum(_architecture, register), offset);
 
+        // Emit a stack-slot location described by a base register and offset. If the base
+        // register is the "ambient SP" pseudo-register (REGNUM_AMBIENT_SP), emit a
+        // CFA-relative expression instead of routing the pseudo-register through
+        // DwarfRegNum (which has no valid DWARF number for it).
+        public void OpStackLocation(int baseRegister, int offset = 0)
+        {
+            if (baseRegister == AmbientSpRegNum(_architecture))
+            {
+                OpCallFrameCfa(offset);
+            }
+            else
+            {
+                OpBReg(baseRegister, offset);
+            }
+        }
+
         public void OpDwarfReg(int register)
         {
             if (register <= 31)
@@ -53,6 +69,35 @@ namespace ILCompiler.ObjectWriter
         }
 
         public void OpDeref() => OpCode(DW_OP_deref);
+
+        // Emits a location relative to the Canonical Frame Address (CFA). This is used
+        // for stack slots whose base register is the "ambient SP" pseudo-register
+        // (REGNUM_AMBIENT_SP), which represents the caller's stack pointer rather than
+        // a physical register.
+        public void OpCallFrameCfa(int offset = 0)
+        {
+            OpCode(DW_OP_call_frame_cfa);
+            if (offset != 0)
+            {
+                OpCode(DW_OP_consts);
+                AppendSLEB128(offset);
+                OpCode(DW_OP_plus);
+            }
+        }
+
+        // Returns the RegNum value used for the "ambient SP" pseudo-register on the
+        // given architecture. It is defined as REGNUM_COUNT + 1 in ICorDebugInfo::RegNum.
+        private static int AmbientSpRegNum(TargetArchitecture architecture)
+        {
+            return architecture switch
+            {
+                TargetArchitecture.X86 => (int)RegNumX86.REGNUM_COUNT + 1,
+                TargetArchitecture.X64 => (int)RegNumAmd64.REGNUM_COUNT + 1,
+                TargetArchitecture.ARM64 => 66,  // 33 int + 32 V registers, +1
+                TargetArchitecture.ARM => 25,    // 16 int + 8 D registers, +1
+                _ => -1
+            };
+        }
 
         public void OpPiece(uint size = 0)
         {
