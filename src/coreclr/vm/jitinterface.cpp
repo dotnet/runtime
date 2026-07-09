@@ -12405,7 +12405,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	"GetExtendedString",
         "ReleaseHandle",
         "AllBytesInUInt32AreAscii",
-        "GetBucket",
         "Close",
         "GetNumber",
         "EventSource_GetClrConfig",
@@ -12430,7 +12429,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "AreSameType",
         "AreSame",
         "IsBitwiseEquatable",
-        "get_IsOutputRedirected"
+        "get_IsOutputRedirected",
         "GetTypeFromHandle",
         "AsPointer",
         "GetUnderlyingNativeHandle",
@@ -12457,7 +12456,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        	"get_HasLeftoverData",
        	"get_State",
        	"get_BufferSize",
-       	"get_Path"
+       	"get_Path",
         "ThrowIfInvalid",
        	"GetHandleValue",
        	"InternalFree",
