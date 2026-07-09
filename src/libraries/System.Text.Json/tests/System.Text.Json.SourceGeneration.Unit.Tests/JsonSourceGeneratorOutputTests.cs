@@ -336,6 +336,87 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """, nameof(UnsafeAccessors_GenericTypeInitOnlyProperties));
         }
 
+        [Fact]
+        public void ExternalConverterOnContextMatchesTypeLevelConverterOutput()
+        {
+            const string typeLevelSource =
+                """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    [JsonConverter(typeof(StrongIdConverter))]
+                    public readonly struct StrongId
+                    {
+                        public StrongId(int value) => Value = value;
+                        public int Value { get; }
+                    }
+
+                    public sealed class StrongIdConverter : JsonConverter<StrongId>
+                    {
+                        public override StrongId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            => new(reader.GetInt32());
+
+                        public override void Write(Utf8JsonWriter writer, StrongId value, JsonSerializerOptions options)
+                            => writer.WriteNumberValue(value.Value);
+                    }
+
+                    public sealed class Model
+                    {
+                        public StrongId Id { get; set; }
+                        public StrongId? NullableId { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(Model))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                }
+                """;
+
+            const string externalSource =
+                """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    public readonly struct StrongId
+                    {
+                        public StrongId(int value) => Value = value;
+                        public int Value { get; }
+                    }
+
+                    public sealed class StrongIdConverter : JsonConverter<StrongId>
+                    {
+                        public override StrongId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            => new(reader.GetInt32());
+
+                        public override void Write(Utf8JsonWriter writer, StrongId value, JsonSerializerOptions options)
+                            => writer.WriteNumberValue(value.Value);
+                    }
+
+                    [JsonExternalConverter(typeof(StrongIdConverter))]
+                    public abstract class StrongIdContextBase : JsonSerializerContext
+                    {
+                        protected StrongIdContextBase(JsonSerializerOptions options) : base(options) { }
+                    }
+
+                    public sealed class Model
+                    {
+                        public StrongId Id { get; set; }
+                        public StrongId? NullableId { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(Model))]
+                    internal partial class MyContext : StrongIdContextBase { }
+                }
+                """;
+
+            CompilationHelper.AssertGeneratedOutputEquivalent(typeLevelSource, CompilationHelper.AddExternalConverterAttributeDeclaration(externalSource));
+        }
+
         #region Baseline comparison infrastructure
 
         private static readonly string s_baselinesRelativePath = IO.Path.Combine(

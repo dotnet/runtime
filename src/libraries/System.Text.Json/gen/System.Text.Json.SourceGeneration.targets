@@ -51,6 +51,7 @@
     <Compile Include="..\Common\JsonObjectCreationHandling.cs" Link="Common\System\Text\Json\Serialization\JsonObjectCreationHandling.cs" />
     <Compile Include="..\Common\JsonSeparatorNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSeparatorNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
+    <Compile Include="..\Common\JsonExternalConverterAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonExternalConverterAttribute.cs" />
     <Compile Include="..\Common\JsonSerializerDefaults.cs" Link="Common\System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
     <Compile Include="..\Common\JsonSnakeCaseLowerNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSnakeCaseLowerNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSnakeCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSnakeCaseUpperNamingPolicy.cs" />

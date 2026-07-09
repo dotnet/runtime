@@ -286,6 +286,9 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1237`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1238`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1239`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1240`__ | JsonSourceGenerator encountered duplicate [JsonExternalConverterAttribute] registrations for the same target type and converter type. |
+|  __`SYSLIB1241`__ | JsonSourceGenerator encountered conflicting [JsonExternalConverterAttribute] registrations for the same target type. |
+|  __`SYSLIB1242`__ | JsonSourceGenerator could not infer the target type for a [JsonExternalConverterAttribute] registration. |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 

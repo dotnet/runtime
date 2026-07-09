@@ -59,6 +59,8 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
+            private Dictionary<ITypeSymbol, ExternalConverterRegistration>? _externalConverterRegistrations;
+
             public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
 
@@ -100,6 +102,7 @@ namespace System.Text.Json.SourceGeneration
                 Debug.Assert(_typesToGenerate.Count == 0);
                 Debug.Assert(_generatedTypes.Count == 0);
                 Debug.Assert(_contextClassLocation is null);
+                _externalConverterRegistrations = null;
 
                 INamedTypeSymbol? contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
                 Debug.Assert(contextTypeSymbol != null);
@@ -183,6 +186,7 @@ namespace System.Text.Json.SourceGeneration
                 // Clear the caches of generated metadata between the processing of context classes.
                 _generatedTypes.Clear();
                 _typesToGenerate.Clear();
+                _externalConverterRegistrations = null;
                 _contextClassLocation = null;
                 return contextGenSpec;
             }
@@ -281,7 +285,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                void AddTypeArgumentDiagnosticIds(ITypeSymbol type, ref HashSet<string>? experimentalIds)
+                static void AddTypeArgumentDiagnosticIds(ITypeSymbol type, ref HashSet<string>? experimentalIds)
                 {
                     if (type is IArrayTypeSymbol arrayType)
                     {
@@ -345,6 +349,8 @@ namespace System.Text.Json.SourceGeneration
                         options = ParseJsonSourceGenerationOptionsAttribute(contextClassSymbol, attributeData);
                     }
                 }
+
+                CollectExternalConverterAttributes(contextClassSymbol);
             }
 
             /// <summary>
@@ -974,6 +980,13 @@ namespace System.Text.Json.SourceGeneration
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
                 INamedTypeSymbol? namedUnionType = typeToGenerate.Type as INamedTypeSymbol;
 
+                if (TryGetExactExternalConverterRegistration(typeToGenerate.Type, out ExternalConverterRegistration? externalConverterRegistration))
+                {
+                    customConverterType = externalConverterRegistration.ConverterType;
+                    foundJsonConverterAttribute = true;
+                    externalConverterRegistration.AddExperimentalDiagnosticIds(ref experimentalIds);
+                }
+
                 foreach (AttributeData attributeData in typeToGenerate.Type.GetAttributes())
                 {
                     INamedTypeSymbol? attributeType = attributeData.AttributeClass;
@@ -1138,6 +1151,166 @@ namespace System.Text.Json.SourceGeneration
                 {
                     EnqueueUnionCaseTypes(typeToGenerate, hasUnionTypeClassifierSpecified, ref experimentalIds);
                 }
+            }
+
+            /// <summary>
+            /// Walks the inheritance chain of the context class up to JsonSerializerContext
+            /// to collect all <c>[JsonExternalConverter]</c> attributes
+            /// </summary>
+            private void CollectExternalConverterAttributes(INamedTypeSymbol contextClassSymbol)
+            {
+                if (_knownSymbols.JsonExternalConverterAttributeType is null)
+                {
+                    return;
+                }
+
+                _externalConverterRegistrations = new(SymbolEqualityComparer.Default);
+
+                INamedTypeSymbol? current = contextClassSymbol;
+                while (current is not null && current.SpecialType != SpecialType.System_Object)
+                {
+                    if (_knownSymbols.JsonSerializerContextType is not null &&
+                        SymbolEqualityComparer.Default.Equals(current, _knownSymbols.JsonSerializerContextType))
+                    {
+                        break;
+                    }
+
+                    foreach (AttributeData attributeData in current.GetAttributes())
+                    {
+                        if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.JsonExternalConverterAttributeType))
+                        {
+                            ProcessExternalConverterAttribute(contextClassSymbol, current, attributeData);
+                        }
+                    }
+
+                    current = current.BaseType;
+                }
+            }
+
+            /// <summary>
+            /// Validates a single JsonExternalConverterAttribute, infers its target type, and records the first registration.
+            /// </summary>
+            private void ProcessExternalConverterAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData)
+            {
+                Debug.Assert(_externalConverterRegistrations is not null);
+
+                Debug.Assert(attributeData.ConstructorArguments.Length == 1 &&
+                             attributeData.ConstructorArguments[0].Value is null or ITypeSymbol);
+                ITypeSymbol? converterType = (ITypeSymbol?)attributeData.ConstructorArguments[0].Value;
+
+                if (converterType is INamedTypeSymbol { IsUnboundGenericType: true })
+                {
+                    // We may support generic converter types in the future, but for now we require a closed type to infer the target type.
+                    ReportTargetTypeNotInferred();
+                    return;
+                }
+
+                if (converterType is not INamedTypeSymbol namedConverterType ||
+                    _knownSymbols.JsonConverterType?.IsAssignableFrom(namedConverterType) != true)
+                {
+                    // The converter type is either not a named type or does not derive from JsonConverter, reuse the existing logic to report the diagnostic
+                    HashSet<string>? ignoredExperimentalIds = null;
+                    _ = GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData, ref ignoredExperimentalIds);
+                    return;
+                }
+
+                // infer closed T from JsonConverter<T> in the inheritance chain
+                if (!TryGetExternalConverterTargetType(namedConverterType, out ITypeSymbol? targetType))
+                {
+                    ReportTargetTypeNotInferred();
+                    return;
+                }
+
+                HashSet<string>? experimentalIds = null;
+                TypeRef? resolvedConverterType = GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData, ref experimentalIds, targetType);
+                if (resolvedConverterType is null)
+                {
+                    return;
+                }
+
+                // Valid registration, record it for later use in the type graph.
+                // Use the erased target type as the key to avoid duplicate registrations for the same type with different compile-time metadata.
+                targetType = _knownSymbols.Compilation.EraseCompileTimeMetadata(targetType);
+                string converterDisplayName = converterType.ToDisplayString();
+
+                var registration = new ExternalConverterRegistration
+                {
+                    ConverterType = resolvedConverterType,
+                    ConverterDisplayName = converterDisplayName,
+                    ExperimentalDiagnosticIds = experimentalIds is { Count: > 0 }
+                        ? experimentalIds.OrderBy(id => id, StringComparer.Ordinal).ToArray()
+                        : [],
+                };
+
+                // Check for duplicate or conflicting registrations for the same target type
+                if (!_externalConverterRegistrations.TryAdd(targetType, registration))
+                {
+                    ExternalConverterRegistration existingRegistration = _externalConverterRegistrations[targetType];
+
+                    ReportDiagnostic(
+                        existingRegistration.ConverterType.Equals(resolvedConverterType)
+                            ? DiagnosticDescriptors.DuplicateExternalConverterRegistration
+                            : DiagnosticDescriptors.ConflictingExternalConverterRegistration,
+                        attributeData.GetLocation(),
+                        targetType.ToDisplayString(),
+                        existingRegistration.ConverterDisplayName,
+                        converterDisplayName);
+                }
+
+                void ReportTargetTypeNotInferred()
+                {
+                    ReportDiagnostic(
+                        DiagnosticDescriptors.ExternalConverterTargetTypeNotInferred,
+                        attributeData.GetLocation(),
+                        converterType?.ToDisplayString() ?? "null",
+                        declaringSymbol.ToDisplayString());
+                }
+            }
+
+            // Resolves closed type T from JsonConverter<T> in the inheritance hierarchy
+            private bool TryGetExternalConverterTargetType(INamedTypeSymbol converterType, [NotNullWhen(true)] out ITypeSymbol? targetType)
+            {
+                targetType = null;
+
+                if (_knownSymbols.JsonConverterOfTType is null)
+                {
+                    return false;
+                }
+
+                // Walk the inheritance chain to find JsonConverter<T> base type
+                for (INamedTypeSymbol? current = converterType; current is not null; current = current.BaseType)
+                {
+                    if (!SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, _knownSymbols.JsonConverterOfTType))
+                    {
+                        continue;
+                    }
+
+                    // current is JsonConverter<T>, ensure T is a closed type
+
+                    targetType = current.TypeArguments[0];
+                    return targetType is not IErrorTypeSymbol &&
+                           !ContainsOpenTypeParameters(targetType) &&
+                           targetType is not INamedTypeSymbol { IsUnboundGenericType: true };
+                }
+
+                // No JsonConverter<T> base type found in the inheritance chain
+                return false;
+            }
+
+            /// <summary>
+            /// Looks up an external converter registration for the exact erased type only; nullable lifting stays with existing logic.
+            /// </summary>
+            private bool TryGetExactExternalConverterRegistration(ITypeSymbol type, [NotNullWhen(true)] out ExternalConverterRegistration? registration)
+            {
+                registration = null;
+
+                if (_externalConverterRegistrations is null)
+                {
+                    return false;
+                }
+
+                type = _knownSymbols.Compilation.EraseCompileTimeMetadata(type);
+                return _externalConverterRegistrations.TryGetValue(type, out registration);
             }
 
             /// <summary>
@@ -1778,6 +1951,11 @@ namespace System.Text.Json.SourceGeneration
 
             private bool HasCustomConverterAttribute(ITypeSymbol type)
             {
+                if (TryGetExactExternalConverterRegistration(type, out _))
+                {
+                    return true;
+                }
+
                 INamedTypeSymbol? converterAttr = _knownSymbols.JsonConverterAttributeType;
                 if (converterAttr is null)
                 {
@@ -3227,6 +3405,21 @@ namespace System.Text.Json.SourceGeneration
                 return display.Substring(whereIndex + 1);
             }
 
+            /// <summary>
+            /// Recursively detects open generic type parameters for Roslyn targets that lack a single built-in helper.
+            /// </summary>
+            private static bool ContainsOpenTypeParameters(ITypeSymbol type)
+            {
+                return type switch
+                {
+                    ITypeParameterSymbol => true,
+                    IArrayTypeSymbol arrayType => ContainsOpenTypeParameters(arrayType.ElementType),
+                    IPointerTypeSymbol pointerType => ContainsOpenTypeParameters(pointerType.PointedAtType),
+                    INamedTypeSymbol namedType => namedType.TypeArguments.Any(ContainsOpenTypeParameters),
+                    _ => false
+                };
+            }
+
             private readonly struct TypeToGenerate
             {
                 public required ITypeSymbol Type { get; init; }
@@ -3234,6 +3427,27 @@ namespace System.Text.Json.SourceGeneration
                 public required string? TypeInfoPropertyName { get; init; }
                 public required Location? Location { get; init; }
                 public required Location? AttributeLocation { get; init; }
+            }
+
+            /// <summary>
+            /// A converter registered with <c>JsonExternalConverterAttribute</c>
+            /// </summary>
+            private sealed class ExternalConverterRegistration
+            {
+                public required TypeRef ConverterType { get; init; }
+                public required string ConverterDisplayName { get; init; }
+                public required string[] ExperimentalDiagnosticIds { get; init; }
+
+                /// <summary>
+                /// Replays experimental diagnostics onto the consuming type graph.
+                /// </summary>
+                public void AddExperimentalDiagnosticIds(ref HashSet<string>? experimentalIds)
+                {
+                    foreach (string diagnosticId in ExperimentalDiagnosticIds)
+                    {
+                        (experimentalIds ??= new(StringComparer.Ordinal)).Add(diagnosticId);
+                    }
+                }
             }
         }
     }

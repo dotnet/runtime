@@ -147,6 +147,30 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor DuplicateExternalConverterRegistration { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1240",
+                title: new LocalizableResourceString(nameof(SR.DuplicateExternalConverterRegistrationTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.DuplicateExternalConverterRegistrationMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor ConflictingExternalConverterRegistration { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1241",
+                title: new LocalizableResourceString(nameof(SR.ConflictingExternalConverterRegistrationTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.ConflictingExternalConverterRegistrationMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor ExternalConverterTargetTypeNotInferred { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1242",
+                title: new LocalizableResourceString(nameof(SR.ExternalConverterTargetTypeNotInferredTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.ExternalConverterTargetTypeNotInferredMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
         }
     }
 }

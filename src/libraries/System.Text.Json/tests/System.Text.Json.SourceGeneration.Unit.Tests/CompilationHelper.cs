@@ -175,6 +175,66 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             };
         }
 
+        /// <summary>
+        /// Verifies that two source inputs produce the same generated files and contents.
+        /// </summary>
+        public static void AssertGeneratedOutputEquivalent(string baselineSource, string comparisonSource)
+        {
+            Dictionary<string, string> baselineOutput = GetGeneratedOutputMap(baselineSource);
+            Dictionary<string, string> comparisonOutput = GetGeneratedOutputMap(comparisonSource);
+
+            Assert.Equal(
+                baselineOutput.Keys.OrderBy(key => key, StringComparer.Ordinal),
+                comparisonOutput.Keys.OrderBy(key => key, StringComparer.Ordinal));
+
+            foreach (KeyValuePair<string, string> kvp in baselineOutput)
+            {
+                string hintName = kvp.Key;
+                string baselineText = kvp.Value;
+                Assert.True(comparisonOutput.TryGetValue(hintName, out string comparisonText));
+                Assert.Equal(LineEndingsHelper.Normalize(baselineText), LineEndingsHelper.Normalize(comparisonText));
+            }
+
+            static Dictionary<string, string> GetGeneratedOutputMap(string source)
+            {
+                Compilation compilation = CreateCompilation(source);
+                JsonSourceGeneratorResult result = RunJsonSourceGenerator(compilation);
+
+                var inputPaths = new HashSet<string>(compilation.SyntaxTrees.Select(t => t.FilePath));
+
+                return result.NewCompilation.SyntaxTrees
+                    .Where(tree => !inputPaths.Contains(tree.FilePath))
+                    .ToDictionary(
+                        tree => Path.GetFileName(tree.FilePath),
+                        tree => tree.GetText().ToString(),
+                        StringComparer.Ordinal);
+            }
+        }
+
+        /// <summary>
+        /// Appends a minimal test-only declaration when the loaded runtime assembly does not contain <c>JsonExternalConverterAttribute</c>
+        /// </summary>
+        public static string AddExternalConverterAttributeDeclaration(string source)
+        {
+            if (typeof(JsonSerializerOptions).Assembly.GetType("System.Text.Json.Serialization.JsonExternalConverterAttribute") is not null)
+            {
+                return source;
+            }
+
+            return source + """
+
+                namespace System.Text.Json.Serialization
+                {
+                    [global::System.AttributeUsage(global::System.AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+                    public sealed class JsonExternalConverterAttribute : global::System.Text.Json.Serialization.JsonAttribute
+                    {
+                        public JsonExternalConverterAttribute(global::System.Type converterType) => ConverterType = converterType;
+                        public global::System.Type ConverterType { get; }
+                    }
+                }
+                """;
+        }
+
         public static byte[] CreateAssemblyImage(Compilation compilation)
         {
             MemoryStream ms = new MemoryStream();
@@ -352,7 +412,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
 
                 namespace HelloWorld
-                {                
+                {
                     public class Location
                     {
                         public int Id { get; set; }
@@ -377,7 +437,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public class Location
                     {
                         public int Id { get; init; }
@@ -407,7 +467,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     using System.Text.Json.Serialization;
 
                     namespace HelloWorld
-                    { 
+                    {
                         public class MyClass
                         {
                             public MyClass(int value)
@@ -493,7 +553,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public record Location
                     (
                         int Id,
@@ -523,7 +583,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public class Location
                     {
                         [JsonInclude]
@@ -694,7 +754,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     [JsonConverter(typeof(JsonStringEnumConverter))]
                     public enum Enum1 { A, B, C };
-                    
+
                     public enum Enum2 { A, B, C };
                 }
                 """;
@@ -826,7 +886,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
-                {                
+                {
                     public class ClassWithPublicCtor
                     {
                         [JsonConstructor]

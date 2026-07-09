@@ -345,6 +345,229 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void InvalidExternalConverterAttributeTypeWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilation(CompilationHelper.AddExternalConverterAttributeDeclaration("""
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public class MyPoco
+                    {
+                        public int Value { get; set; }
+                    }
+
+                    [JsonExternalConverter(typeof(int))]
+                    [JsonSerializable(typeof(MyPoco))]
+                    public partial class MyContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """));
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("MyContext").First();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[0].GetLocation(), "The 'JsonConverterAttribute' type 'int' specified on member 'HelloWorld.MyContext' is not a converter type or does not contain an accessible parameterless constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void DuplicateExternalConverterRegistrationWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilation(CompilationHelper.AddExternalConverterAttributeDeclaration("""
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public readonly struct MyId
+                    {
+                        public MyId(int value) => Value = value;
+                        public int Value { get; }
+                    }
+
+                    public sealed class MyIdConverter : JsonConverter<MyId>
+                    {
+                        public override MyId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new(reader.GetInt32());
+                        public override void Write(Utf8JsonWriter writer, MyId value, JsonSerializerOptions options) => writer.WriteNumberValue(value.Value);
+                    }
+
+                    [JsonExternalConverter(typeof(MyIdConverter))]
+                    [JsonExternalConverter(typeof(MyIdConverter))]
+                    [JsonSerializable(typeof(MyId))]
+                    public partial class MyContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """));
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("MyContext").First();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[1].GetLocation(), "The external converter 'HelloWorld.MyIdConverter' for type 'HelloWorld.MyId' has already been registered. The duplicate registration will be ignored."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void ConflictingExternalConverterRegistrationWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilation(CompilationHelper.AddExternalConverterAttributeDeclaration("""
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public readonly struct MyId
+                    {
+                        public MyId(int value) => Value = value;
+                        public int Value { get; }
+                    }
+
+                    public sealed class MyIdConverter : JsonConverter<MyId>
+                    {
+                        public override MyId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new(reader.GetInt32());
+                        public override void Write(Utf8JsonWriter writer, MyId value, JsonSerializerOptions options) => writer.WriteNumberValue(value.Value);
+                    }
+
+                    public sealed class AlternateMyIdConverter : JsonConverter<MyId>
+                    {
+                        public override MyId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new(reader.GetInt32() - 1);
+                        public override void Write(Utf8JsonWriter writer, MyId value, JsonSerializerOptions options) => writer.WriteNumberValue(value.Value + 1);
+                    }
+
+                    [JsonExternalConverter(typeof(MyIdConverter))]
+                    [JsonExternalConverter(typeof(AlternateMyIdConverter))]
+                    [JsonSerializable(typeof(MyId))]
+                    public partial class MyContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """));
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("MyContext").First();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[1].GetLocation(), "The external converter 'HelloWorld.MyIdConverter' for type 'HelloWorld.MyId' has already been registered. The conflicting converter 'HelloWorld.AlternateMyIdConverter' will be ignored."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void ExternalConverterFactoryRegistrationWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilation(CompilationHelper.AddExternalConverterAttributeDeclaration("""
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public class MyPoco
+                    {
+                        public int Value { get; set; }
+                    }
+
+                    public sealed class MyFactory : JsonConverterFactory
+                    {
+                        public override bool CanConvert(Type typeToConvert) => true;
+
+                        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+                            => throw new NotSupportedException();
+                    }
+
+                    [JsonExternalConverter(typeof(MyFactory))]
+                    [JsonSerializable(typeof(MyPoco))]
+                    public partial class MyContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """));
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("MyContext").First();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[0].GetLocation(), "The converter type 'HelloWorld.MyFactory' specified on context 'HelloWorld.MyContext' must derive from closed 'JsonConverter<T>' to be used with 'JsonExternalConverterAttribute'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void OpenGenericExternalConverterRegistrationWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilation(CompilationHelper.AddExternalConverterAttributeDeclaration("""
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public readonly struct GenericId<T>
+                    {
+                        public GenericId(T value) => Value = value;
+                        public T Value { get; }
+                    }
+
+                    public sealed class GenericIdConverter<T> : JsonConverter<GenericId<T>>
+                    {
+                        public override GenericId<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            => throw new NotSupportedException();
+
+                        public override void Write(Utf8JsonWriter writer, GenericId<T> value, JsonSerializerOptions options)
+                            => throw new NotSupportedException();
+                    }
+
+                    public class MyPoco
+                    {
+                        public GenericId<int> Value { get; set; }
+                    }
+
+                    [JsonExternalConverter(typeof(GenericIdConverter<>))]
+                    [JsonSerializable(typeof(MyPoco))]
+                    public partial class MyContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """));
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            INamedTypeSymbol symbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("MyContext").First();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[0].GetLocation(), "The converter type 'HelloWorld.GenericIdConverter<>' specified on context 'HelloWorld.MyContext' must derive from closed 'JsonConverter<T>' to be used with 'JsonExternalConverterAttribute'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
         public void UnboundGenericTypeDeclarationWarns()
         {
             Compilation compilation = CompilationHelper.CreateContextWithUnboundGenericTypeDeclarations();

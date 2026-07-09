@@ -219,6 +219,24 @@
   <data name="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat" xml:space="preserve">
     <value>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</value>
   </data>
+  <data name="DuplicateExternalConverterRegistrationTitle" xml:space="preserve">
+    <value>The same external converter has been registered more than once.</value>
+  </data>
+  <data name="DuplicateExternalConverterRegistrationMessageFormat" xml:space="preserve">
+    <value>The external converter '{1}' for type '{0}' has already been registered. The duplicate registration will be ignored.</value>
+  </data>
+  <data name="ConflictingExternalConverterRegistrationTitle" xml:space="preserve">
+    <value>Different external converters were registered for the same type.</value>
+  </data>
+  <data name="ConflictingExternalConverterRegistrationMessageFormat" xml:space="preserve">
+    <value>The external converter '{1}' for type '{0}' has already been registered. The conflicting converter '{2}' will be ignored.</value>
+  </data>
+  <data name="ExternalConverterTargetTypeNotInferredTitle" xml:space="preserve">
+    <value>The target type for the external converter could not be inferred.</value>
+  </data>
+  <data name="ExternalConverterTargetTypeNotInferredMessageFormat" xml:space="preserve">
+    <value>The converter type '{0}' specified on context '{1}' must derive from closed 'JsonConverter&lt;T&gt;' to be used with 'JsonExternalConverterAttribute'.</value>
+  </data>
   <data name="Polymorphism_OpenGeneric_Reason_NotAssignable" xml:space="preserve">
     <value>the derived type is not assignable to the base type</value>
   </data>

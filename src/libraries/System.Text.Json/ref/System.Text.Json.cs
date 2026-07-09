@@ -1170,6 +1170,11 @@ namespace System.Text.Json.Serialization
         public System.Text.Json.Serialization.JsonSourceGenerationMode GenerationMode { get { throw null; } set { } }
         public string? TypeInfoPropertyName { get { throw null; } set { } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
+    public sealed partial class JsonExternalConverterAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonExternalConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type converterType) { }
+    }
     public abstract partial class JsonSerializerContext : System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver
     {
         protected JsonSerializerContext(System.Text.Json.JsonSerializerOptions? options) { }

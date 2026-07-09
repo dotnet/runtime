@@ -192,6 +192,7 @@
     <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
     <Compile Include="Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonPropertyInfo.cs" />
+    <Compile Include="Serialization\MetadataTests\ExternalCustomConverterTests.SourceGen.cs" />
     <Compile Include="Serialization\Pipe.ReadTests.cs" />
     <Compile Include="Serialization\Pipe.WriteTests.cs" />
     <Compile Include="Serialization\PipeTests.cs" />
