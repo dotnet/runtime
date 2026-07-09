@@ -297,12 +297,12 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
                 throw new NotSupportedException(SR.ZipStreamEncryptedDataDescriptorNotSupported);
             }
 
-            return new BoundedReadOnlyStream(_archiveStream, compressedSize);
+            return CreateBoundedStream(compressedSize);
         }
 
         Stream source = hasDataDescriptor
             ? _archiveStream
-            : new BoundedReadOnlyStream(_archiveStream, compressedSize);
+            : CreateBoundedStream(compressedSize);
 
         Stream decompressed = CreateDecompressionStream(source, compressionMethod, uncompressedSize, leaveOpen: hasDataDescriptor);
 
@@ -315,6 +315,15 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 
         return crcStream;
     }
+
+    // Bounds forward reads to exactly compressedSize bytes so the decompressor (or the
+    // encrypted-drain path) cannot read past the entry into the next local file header.
+    // SubReadStream supports non-seekable super streams; anchoring the window at the
+    // current position keeps its internal position in lockstep with _archiveStream so it
+    // never issues a SeekOrigin.Begin (which ReadAheadStream does not support) on a
+    // non-seekable source.
+    private SubReadStream CreateBoundedStream(long compressedSize)
+        => new SubReadStream(_archiveStream, _archiveStream.Position, compressedSize);
 
     /// <summary>
     /// Creates the appropriate decompression stream for the given compression method.
