@@ -52,6 +52,9 @@ typedef char pal_char_t;
 #include <windows.h>
 #include <share.h>
 
+typedef HMODULE pal_dll_t;
+typedef FARPROC pal_proc_t;
+
 #define DIR_SEPARATOR L'\\'
 #define DIR_SEPARATOR_STR L"\\"
 #define PATH_SEPARATOR L';'
@@ -76,6 +79,9 @@ typedef char pal_char_t;
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+typedef void* pal_dll_t;
+typedef void* pal_proc_t;
 
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
@@ -215,17 +221,10 @@ bool pal_load_library(const pal_char_t* path, void** dll);
 void pal_unload_library(void* library);
 
 // Resolve an exported symbol from a loaded library, or NULL if not found.
-void* pal_get_symbol(void* library, const char* name);
+pal_proc_t pal_get_symbol(void* library, const char* name);
 
 // Convert a UTF-8 string into the platform character type
 bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
-
-// Handle to a loaded dynamic library.
-#if defined(_WIN32)
-typedef HMODULE pal_dll_t;
-#else
-typedef void* pal_dll_t;
-#endif
 
 // Find a library named library_name that is already loaded into the current
 // process (without loading it if it is not). symbol_name is used to obtain an

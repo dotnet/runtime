@@ -589,18 +589,15 @@ void pal_unload_library(void* library)
     (void)library;
 }
 
-void* pal_get_symbol(void* library, const char* name)
+pal_proc_t pal_get_symbol(void* library, const char* name)
 {
-    // Convert the function pointer to void* via a union to avoid function/data
-    // pointer cast warnings (which are errors under /WX).
-    union { FARPROC proc; void* ptr; } convert;
-    convert.proc = GetProcAddress((HMODULE)library, name);
-    if (convert.proc == NULL)
+    FARPROC proc = GetProcAddress((HMODULE)library, name);
+    if (proc == NULL)
     {
         trace_info(_X("Probed for and did not resolve library symbol %S"), name);
         return NULL;
     }
-    return convert.ptr;
+    return proc;
 }
 
 bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)

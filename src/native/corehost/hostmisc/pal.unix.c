@@ -331,7 +331,7 @@ void pal_unload_library(void* library)
     }
 }
 
-void* pal_get_symbol(void* library, const char* name)
+pal_proc_t pal_get_symbol(void* library, const char* name)
 {
     void* result = dlsym(library, name);
     if (result == NULL)
