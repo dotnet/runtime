@@ -1292,6 +1292,15 @@ struct HWIntrinsicInfo
         }
     }
 #elif defined(TARGET_WASM)
+    //-----------------------------------------------------------------------
+    // CheckImmOpSignature: Check that the signature of an intrinsic with an immediate operand is valid.
+    //
+    // Arguments:
+    //    id - The intrinsic ID
+    //    sig - The signature information
+    //
+    // Notes:
+    //   This should only be called under #if DEBUG, since it is only used to assert that the signature is valid.
     static void CheckImmOpSignature(NamedIntrinsic id, CORINFO_SIG_INFO* sig)
     {
         switch (id)
@@ -1315,8 +1324,22 @@ struct HWIntrinsicInfo
         }
     }
 
+    //------------------------------------------------------------------------------------------------
+    // GetImmOpPositions: Get the positions of the immediate operands in the signature of an intrinsic
+    // with an immediate.
+    //
+    // Arguments:
+    //   id - The intrinsic ID
+    //   imm1Pos - The position of the first immediate operand
+    //   imm2Pos - The position of the second immediate operand
+    //
+    // Notes:
+    //   imm1Pos and imm2Pos are set to -1 if the intrinsic does not have an immediate operand.
     static void GetImmOpsPositions(NamedIntrinsic id, int* imm1Pos, int* imm2Pos)
     {
+        *imm1Pos = -1;
+        *imm2Pos = -1;
+
         switch (id)
         {
             case NI_PackedSimd_ExtractScalar:

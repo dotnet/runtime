@@ -99,9 +99,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
    Essentially, we create a block for each possible value of the immediate, and dispatch according to the immediate
    value. In each case of the jump table, we re-materialize the non-immediate operands, whose result values are assigned
    to locals by regalloc. Note that it is safe to emit these blocks mid-instruction stream, since we can logically think
-   of them as one macro "instruction", whose result is the same as the underlying instruction. There aren't any GC
-   safepoints in any of the generated cases here, but if we have to add any calls/throws/etc. in any of the generated
-   cases, this approach will need to change.
+   of them as one macro "instruction" whose result is the same as the underlying instruction we are wrapping. There
+   aren't any GC safepoints in any of the generated cases here, but if we have to add any calls/throws/etc. in any of
+   the generated cases, this approach will need to change.
 */
 void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info)
 {
@@ -142,17 +142,19 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
     genEmitBeginBlock(resultType); // emit $outer block
     genEmitBeginBlock();           // emit unreachable $inner block
     {
+        // emit `immUpperBound+1` blocks. The iteration order of the loop doesn't matter here,
+        // we just need to stage the right number of blocks on the control flow stack.
         for (int i = 0; i <= immUpperBound; i++)
         {
             // emit a block for each case
             genEmitBeginBlock();
         }
 
-        // Load the immediate value to branch to the appropriate case block
+        // In the innermost block, load the immediate value to branch to the appropriate case block
         GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(immOp), WasmRegToIndex(immReg));
 
         // cases are 0 ... immUpperBound, default, where the last case is the default which branches to the unreachable
-        // inner block.
+        // inner block. Case 0 -> imm = 0, Case 1 -> imm = 1, and so on.
         int caseCount = immUpperBound + 1;
         GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
         for (int caseNum = 0; caseNum <= immUpperBound; caseNum++)
@@ -165,7 +167,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
         assert(FitsIn<uint8_t>(immUpperBound));
         for (int i = 0; i <= immUpperBound; i++)
         {
-            genEmitEndBlock(); // end block for case i, the handling of case i follows
+            genEmitEndBlock(); // End block for case i. The handling of case i follows
 
             getNonImmediateOperands();
             switch (info.category)

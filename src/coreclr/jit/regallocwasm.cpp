@@ -700,6 +700,15 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
     }
 }
 
+// ------------------------------------------------------------------------
+// CollectReferencesForHardwareIntrinsic: Collect virtual register references for a hardware intrinsic.
+//
+// Arguments:
+//    node - The GT_HWINTRINSIC node
+//
+// Notes:
+//   This is a no-op unless a hw intrinsic needs a jump table fallback, in which case we have to consume
+//    temporary registers for its operands.
 void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
 {
     // Only intrinsics that need a jump-table fallback have operands marked
