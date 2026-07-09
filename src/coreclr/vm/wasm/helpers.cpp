@@ -533,10 +533,11 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     if (m_pCallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
     {
-        pRD->pCurrentContext->InterpreterSP = m_pCallSiteSP;
-        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(m_pCallSiteSP);
+        TADDR callSiteSP = dac_cast<TADDR>(m_pCallSiteSP);
+        pRD->pCurrentContext->InterpreterSP = callSiteSP;
+        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer(callSiteSP);
         _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
-        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(m_pCallSiteSP, pRD->pCurrentContext->InterpreterIP);
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(callSiteSP, (PCODE)pRD->pCurrentContext->InterpreterIP);
     }
     else
     {
