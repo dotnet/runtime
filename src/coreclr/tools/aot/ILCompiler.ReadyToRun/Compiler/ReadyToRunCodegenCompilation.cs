@@ -525,13 +525,11 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
             }
 
-            // Component (per-assembly forwarding) stubs use the same container format as the
-            // composite image. Windows and Apple both emit PE stubs that forward to the native
-            // composite; wasm emits webcil-in-wasm stubs to match the browser/wasi loading model,
-            // since the PE/COFF writer does not support the Wasm32 architecture.
+            // Component (per-assembly forwarding) stubs are emitted as PE (even when the composite image is native),
+            // except on wasm where we emit webcil-in-wasm stubs to match the browser/wasi loading model.
+            // The PE/COFF writer does not support the Wasm32 architecture.
             ReadyToRunContainerFormat componentFormat =
                 _format == ReadyToRunContainerFormat.Wasm ? ReadyToRunContainerFormat.Wasm : ReadyToRunContainerFormat.PE;
-
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
