@@ -408,6 +408,12 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13)]
         public async Task SslStreamServer_RejectsClientCert_ClientObservesAlert(SslProtocols protocol)
         {
+            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            {
+                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                return;
+            }
+
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
@@ -466,6 +472,12 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13)]
         public async Task ServerSession_RemoteCertificateValidationCallback_IsInvokedPostHoc(SslProtocols protocol)
         {
+            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            {
+                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                return;
+            }
+
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
@@ -532,6 +544,12 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13)]
         public async Task ServerSession_ExternalValidation_RejectsClientCert_ServerFaultsPostHoc(SslProtocols protocol)
         {
+            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            {
+                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                return;
+            }
+
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             using X509Certificate2 clientCert = TestCertificates.GetClientCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
@@ -2372,6 +2390,13 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SocketBoundSession_DeferredOptions_ProtocolMismatch_Fails()
         {
+            if (OperatingSystem.IsMacOS())
+            {
+                // Test uses TLS 1.3 on the server side; SecureTransport (the legacy macOS TLS
+                // backend used here) does not implement TLS 1.3.
+                return;
+            }
+
             using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
             string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
 

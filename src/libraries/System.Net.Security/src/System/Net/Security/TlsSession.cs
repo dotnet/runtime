@@ -78,6 +78,11 @@ namespace System.Net.Security
         // Set by SetClientCertificateContext after a WantCredentials suspension; consumed by
         // the next ProcessHandshake to allow an empty-input re-entry past the frame guard.
         private bool _resumeAfterCredentials;
+        // Set by SetRemoteCertificateValidationResult when the PAL paused mid-handshake
+        // pending external certificate validation (SecureTransport on macOS). Consumed by
+        // the next ProcessHandshake to allow an empty-input re-entry past the frame guard
+        // so the PAL can produce the next handshake flight (or a fatal alert on reject).
+        private bool _resumeAfterCertValidation;
         // Intermediate certs the peer sent (chain elements minus the leaf). The platform-built
         // X509Chain itself is never surfaced to TlsSession callers; AcceptWithDefaultValidation
         // rebuilds a fresh chain from this collection at validation time.
@@ -399,6 +404,18 @@ namespace System.Net.Security
             _externalValidationPending = false;
             _externalValidationResolved = true;
 
+            // If the PAL paused mid-handshake pending external validation (SecureTransport
+            // on macOS returns errSSL{Server,Client}AuthCompleted before any handshake
+            // response bytes are produced), the next ProcessHandshake call must be allowed
+            // to re-enter the PAL with an empty input to drive the handshake forward
+            // (produce ClientKeyExchange/Finished on accept, or a fatal alert on reject).
+            // On OpenSSL and SChannel the suspension only fires after _isHandshakeComplete
+            // is already true, so this resume flag is a no-op for those PALs.
+            if (!_isHandshakeComplete)
+            {
+                _resumeAfterCertValidation = true;
+            }
+
 #if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
             // OpenSSL 3.0+ retry-verify path: the handshake paused inside the CertVerifyCallback.
             // Push the verdict to the SafeSslHandle so the next SSL_do_handshake call (driven by
@@ -431,6 +448,20 @@ namespace System.Net.Security
                 // are drained to the caller first).
                 if (_isHandshakeComplete)
                 {
+                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                }
+                else if (_resumeAfterCertValidation)
+                {
+                    // Mid-handshake rejection. On OpenSSL 1.1.x / SecureTransport (macOS)
+                    // the peer-verify callback took the accept-and-defer path, so the
+                    // handshake will still complete on the wire; the caller's Write / Read
+                    // must throw AuthenticationException afterwards. Set the fault now, but
+                    // do NOT throw it from HandshakeBufferedCore -- let the PAL drive the
+                    // handshake to completion silently so the peer doesn't hang waiting
+                    // for our Finished. Write / Read guard on ThrowIfPendingExternalValidation
+                    // which checks _externalValidationFault. On OpenSSL 3.0+ retry-verify the
+                    // fault will instead be set by the natural token-failed branch when
+                    // SSL_do_handshake emits the fatal alert.
                     _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
                 }
 
@@ -784,7 +815,17 @@ namespace System.Net.Security
 
             if (_externalValidationFault is not null)
             {
-                throw _externalValidationFault;
+                // Mid-handshake external-validation reject: on OpenSSL 1.1.x and SecureTransport
+                // the peer-verify callback took the accept-and-defer path (no retry-verify), so
+                // the wire handshake still needs to complete before the fault surfaces on the
+                // caller's Write / Read. Suppress the throw here while the handshake is still
+                // in-flight so the PAL can silently drive it to completion; the fault will still
+                // fire on Write / Read via ThrowIfPendingExternalValidation. On OpenSSL 3.0+
+                // retry-verify the natural PAL failure produces a fatal alert to the peer.
+                if (_isHandshakeComplete || !_externalValidationResolved)
+                {
+                    throw _externalValidationFault;
+                }
             }
 
             if (_externalValidationPending)
@@ -831,7 +872,9 @@ namespace System.Net.Security
             bool isInitialClientCall = !_context!.IsServer && _securityContext is null;
             bool isCredentialResume = _resumeAfterCredentials;
             _resumeAfterCredentials = false;
-            if (!isInitialClientCall && !isCredentialResume)
+            bool isCertValidationResume = _resumeAfterCertValidation;
+            _resumeAfterCertValidation = false;
+            if (!isInitialClientCall && !isCredentialResume && !isCertValidationResume)
             {
                 if (input.Length < TlsFrameHelper.HeaderSize)
                 {
