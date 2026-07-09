@@ -2594,15 +2594,16 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             {
                 pFriendAssemblyName->Init(displayName);
             }
-            EX_CATCH
+            EX_HOOK
             {
                 // Preserve the underlying reason the friend assembly name could not be
                 // parsed (e.g. a malformed identity string) as the inner exception, while
                 // reporting the assembly that declared the invalid friend.
                 Exception *pInnerException = GET_EXCEPTION();
-                EEFileLoadException::Throw(pAssembly, pInnerException->GetHR(), pInnerException);
+                if (!pInnerException->IsTransient())
+                    EEFileLoadException::Throw(pAssembly, pInnerException->GetHR(), pInnerException);
             }
-            EX_END_CATCH
+            EX_END_HOOK
 
             hr = pFriendAssemblyName->CheckFriendAssemblyName();
 
