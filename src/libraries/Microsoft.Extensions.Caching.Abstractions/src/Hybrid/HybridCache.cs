@@ -145,50 +145,71 @@ public abstract class HybridCache
         Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory,
         HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
     {
-        var context = new HybridCacheEntryContext(options);
+        // Carries state + factory into the wrapped delegate and the context back out. The context is
+        // created lazily inside the delegate, so a cache hit (where the factory never runs) does not
+        // allocate a context or seed it.
+        var packedState = new DefaultImplState<TState, T>(state, factory, options);
 
         // Suppress writes in the inner call so we can perform a single, correct SetAsync afterwards
         // using the options that the factory ultimately produced.
         // This introduces some race conditions, but that's considered better than not honoring the factory's options.
-        HybridCacheEntryOptions innerOptions = CloneWithWritesDisabled(options);
-
-        var packedState = new DefaultImplState<TState, T>(state, factory, context);
+        // The common options == null case reuses a shared immutable instance instead of allocating one.
+        HybridCacheEntryOptions innerOptions = options is null
+            ? s_writesDisabled
+            : CloneWithWritesDisabled(options);
 
         T value = await GetOrCreateAsync(key, packedState, static (packed, ct) =>
         {
-            packed.FactoryRan = true;
-            return packed.Factory(packed.State, packed.Context, ct);
+            // Reached only on a cache miss (the underlying implementation skips this for hits and for
+            // stampede followers), so the context is allocated exactly when it is needed.
+            var context = new HybridCacheEntryContext(packed.Options);
+            packed.Context = context;
+            return packed.Factory(packed.State, context, ct);
         }, innerOptions, tags, cancellationToken).ConfigureAwait(false);
 
-        // Only the stampede leader observes FactoryRan == true; followers reuse the leader's value
-        // (and the leader's SetAsync) without issuing a duplicate write.
-        if (packedState.FactoryRan)
+        // Context is non-null only if the wrapped factory actually ran; stampede followers reuse the
+        // leader's value (and the leader's SetAsync) without issuing a duplicate write.
+        if (packedState.Context is { } context)
         {
             const HybridCacheEntryFlags BothWritesDisabled =
                 HybridCacheEntryFlags.DisableLocalCacheWrite
                 | HybridCacheEntryFlags.DisableDistributedCacheWrite;
             if ((context.Flags & BothWritesDisabled) != BothWritesDisabled)
             {
+                // If the factory left the context unchanged, reuse the caller's original options: this
+                // avoids materializing a new instance and preserves any special handling of a null value
+                // (context.ToOptions() would always produce a non-null instance).
+                HybridCacheEntryOptions? writeOptions = context.Revision == 0
+                    ? packedState.Options
+                    : context.ToOptions();
+
                 // Cancellation of the caller should not abort the write: the factory has already
                 // produced a value that we are about to return; canceling SetAsync here would
                 // discard a completed result and force the next caller to re-run the factory.
-                await SetAsync(key, value, context.ToOptions(), tags, CancellationToken.None).ConfigureAwait(false);
+                await SetAsync(key, value, writeOptions, tags, CancellationToken.None).ConfigureAwait(false);
             }
         }
 
         return value;
     }
 
-    private static HybridCacheEntryOptions CloneWithWritesDisabled(HybridCacheEntryOptions? options)
+    // options == null always yields the same write-disabled options, so hoist it out of the per-call
+    // path. Safe to share because HybridCacheEntryOptions is immutable.
+    private static readonly HybridCacheEntryOptions s_writesDisabled = new()
     {
-        HybridCacheEntryFlags flags = (options?.Flags ?? HybridCacheEntryFlags.None)
+        Flags = HybridCacheEntryFlags.DisableLocalCacheWrite | HybridCacheEntryFlags.DisableDistributedCacheWrite,
+    };
+
+    private static HybridCacheEntryOptions CloneWithWritesDisabled(HybridCacheEntryOptions options)
+    {
+        HybridCacheEntryFlags flags = (options.Flags ?? HybridCacheEntryFlags.None)
             | HybridCacheEntryFlags.DisableLocalCacheWrite
             | HybridCacheEntryFlags.DisableDistributedCacheWrite;
         return new HybridCacheEntryOptions
         {
-            Expiration = options?.Expiration,
-            LocalCacheExpiration = options?.LocalCacheExpiration,
-            LocalSize = options?.LocalSize,
+            Expiration = options.Expiration,
+            LocalCacheExpiration = options.LocalCacheExpiration,
+            LocalSize = options.LocalSize,
             Flags = flags,
         };
     }
@@ -309,14 +330,16 @@ public abstract class HybridCache
     {
         public readonly TState State;
         public readonly Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> Factory;
-        public readonly HybridCacheEntryContext Context;
-        public bool FactoryRan;
+        public readonly HybridCacheEntryOptions? Options;
 
-        public DefaultImplState(TState state, Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory, HybridCacheEntryContext context)
+        // Set by the wrapped delegate when the factory runs; a non-null value signals a cache miss.
+        public HybridCacheEntryContext? Context;
+
+        public DefaultImplState(TState state, Func<TState, HybridCacheEntryContext, CancellationToken, ValueTask<T>> factory, HybridCacheEntryOptions? options)
         {
             State = state;
             Factory = factory;
-            Context = context;
+            Options = options;
         }
     }
 

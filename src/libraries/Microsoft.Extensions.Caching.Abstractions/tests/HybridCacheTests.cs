@@ -104,6 +104,22 @@ public class HybridCacheTests
     }
 
     [Fact]
+    public async Task FactoryLeavesContextUnchanged_WritesWithOriginalOptions()
+    {
+        var cache = new FakeHybridCache();
+
+        // The factory does not touch the context, so the write should reuse the caller's original
+        // options (here null) rather than materializing a new all-null-valued instance.
+        await cache.GetOrCreateAsync(
+            "k", state: 0,
+            factory: (_, _, _) => new ValueTask<int>(5));
+
+        StoredEntry entry = Assert.Contains("k", (IReadOnlyDictionary<string, StoredEntry>)cache.Store);
+        Assert.Equal(5, entry.Value);
+        Assert.Null(entry.Options);
+    }
+
+    [Fact]
     public async Task FactoryDisablingBothWrites_SuppressesCacheWrite()
     {
         var cache = new FakeHybridCache();
