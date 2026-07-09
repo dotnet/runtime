@@ -3757,6 +3757,46 @@ public static partial class XmlSerializerTests
         Assert.Equal("SomeType", actual.GroupIdRef?.Type);
     }
 
+    [Fact]
+    public static void Xml_DerivedTypeOverridingVirtualXmlAttributeProperty_CanSerialize()
+    {
+        // Overriding a virtual [XmlAttribute] property is allowed as long as the override keeps the
+        // same attribute name. Serialization writes the attribute and deserialization assigns the
+        // overridden property (the derived setter runs).
+        var serializer = new XmlSerializer(typeof(GroupWithSameNameAttributeOverride));
+        var value = new GroupWithSameNameAttributeOverride { Code = "XYZ" };
+
+        using var ms = new MemoryStream();
+        serializer.Serialize(ms, value);
+        ms.Position = 0;
+        string xml = new StreamReader(ms).ReadToEnd();
+        Assert.Contains("aprop=\"XYZ\"", xml);
+
+        ms.Position = 0;
+        var actual = (GroupWithSameNameAttributeOverride)serializer.Deserialize(ms);
+        Assert.Equal("XYZ", actual.Code);
+        Assert.True(actual.DerivedSetterInvoked);
+    }
+
+    [Fact]
+    public static void Xml_DerivedTypeRenamingOverriddenXmlAttribute_Throws()
+    {
+        // Overriding a virtual [XmlAttribute] property but giving it a different attribute name is
+        // an invalid override; XmlSerializer rejects it rather than choosing one name over the other.
+        Assert.Throws<InvalidOperationException>(() =>
+            SerializeAndDeserialize(new GroupWithRenamedAttributeOverride { Code = "v" }, string.Empty, skipStringCompare: true));
+    }
+
+    [Fact]
+    public static void Xml_DerivedTypeDroppingOverriddenXmlAttribute_Throws()
+    {
+        // XmlSerializer reads member attributes without inheritance, so an override that omits
+        // [XmlAttribute] maps as an element and conflicts with the base attribute mapping. This is
+        // an invalid override and XmlSerializer rejects it.
+        Assert.Throws<InvalidOperationException>(() =>
+            SerializeAndDeserialize(new GroupWithDroppedAttributeOverride { Code = "v" }, string.Empty, skipStringCompare: true));
+    }
+
     [Theory]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", true, "p", "text")]
     [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test", false, null, null)]

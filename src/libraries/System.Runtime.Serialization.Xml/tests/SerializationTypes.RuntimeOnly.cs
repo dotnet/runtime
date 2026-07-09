@@ -2426,6 +2426,49 @@ namespace SerializationTypes
         [XmlText]
         public override string Value { get; set; }
     }
+
+    // XmlSerializer test types: overriding a virtual [XmlAttribute] property in a derived class.
+    // The base maps 'Code' to an attribute named "aprop".
+    public class GroupWithAttributeBase
+    {
+        [XmlAttribute("aprop")]
+        public virtual string? Code { get; set; }
+    }
+
+    // Valid override: re-applies [XmlAttribute] with the same name. The derived setter records
+    // that it was invoked so deserialization can be shown to assign the overridden property.
+    public class GroupWithSameNameAttributeOverride : GroupWithAttributeBase
+    {
+        private string? _code;
+
+        [XmlIgnore]
+        public bool DerivedSetterInvoked { get; private set; }
+
+        [XmlAttribute("aprop")]
+        public override string? Code
+        {
+            get => _code;
+            set
+            {
+                _code = value;
+                DerivedSetterInvoked = true;
+            }
+        }
+    }
+
+    // Invalid override: the override maps the same property to a different attribute name.
+    public class GroupWithRenamedAttributeOverride : GroupWithAttributeBase
+    {
+        [XmlAttribute("bprop")]
+        public override string? Code { get; set; }
+    }
+
+    // Invalid override: the override omits [XmlAttribute]. XmlSerializer reads member attributes
+    // without inheritance, so the override maps as an element and conflicts with the base attribute.
+    public class GroupWithDroppedAttributeOverride : GroupWithAttributeBase
+    {
+        public override string? Code { get; set; }
+    }
 }
 
 namespace DuplicateTypeNamesTest.ns1
