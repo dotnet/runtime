@@ -178,11 +178,11 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
 {
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #else
     HMODULE hDac = WszLoadLibrary(pDacModulePath);
-#endif // !TARGET_WINDOWS
+#endif // !HOST_WINDOWS
     if (hDac == NULL)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -648,6 +648,33 @@ IDacDbiInterface * CordbProcess::GetDAC()
     return m_pDacPrimitives;
 }
 
+HRESULT CordbProcess::GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    if (pTargetInfo == NULL)
+        return E_INVALIDARG;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (!m_fHasCachedTargetInfo)
+        {
+            IfFailThrow(GetDAC()->GetTargetInfo(&m_cachedTargetInfo));
+            m_fHasCachedTargetInfo = true;
+        }
+
+        *pTargetInfo = m_cachedTargetInfo;
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 //---------------------------------------------------------------------------------------
 // Get the Data-Target
 //
@@ -852,6 +879,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_dispatchedEvent(DB_IPCE_DEBUGGER_INVALID),
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
+    m_fHasCachedTargetInfo(false),
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
@@ -6582,7 +6610,7 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
     if (*pfPatchFound == false)
     {
         // Read one instruction from the faulting address...
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(HOST_ARM) || defined(HOST_ARM64)
         PRD_TYPE TrapCheck = 0;
 #else
         BYTE TrapCheck = 0;
@@ -6627,7 +6655,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     DWORD fCheckInt3 = configCheckInt3.val(CLRConfig::INTERNAL_DbgCheckInt3);
     if (fCheckInt3)
     {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
         if (size == 1 && buffer[0] == 0xCC)
         {
             CONSISTENCY_CHECK_MSGF(false,
@@ -6636,7 +6664,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
                 "(This assert is only enabled under the CLR knob DbgCheckInt3.)\n",
                 CORDB_ADDRESS_TO_PTR(address)));
         }
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // HOST_X86 || HOST_AMD64
 
         // check if we're replaced an opcode.
         if (size == 1)
@@ -7074,7 +7102,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 
 
     {
-#if TARGET_UNIX
+#if HOST_UNIX
         m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
         m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
@@ -8332,9 +8360,9 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 {
     // There should have been an int3 there already. Since we already put it in there,
     // we should be able to safely read it out.
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(HOST_ARM) || defined(HOST_ARM64)
     PRD_TYPE opcodeTest = 0;
-#elif defined(TARGET_AMD64) || defined(TARGET_X86)
+#elif defined(HOST_AMD64) || defined(HOST_X86)
     BYTE opcodeTest = 0;
 #else
     PORTABILITY_ASSERT("NYI: Architecture specific opcode type to read");
@@ -8397,10 +8425,10 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
     HRESULT hr = S_OK;
 
     NativePatch * p = NULL;
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     const BYTE patch = CORDbg_BREAK_INSTRUCTION;
     BYTE opcode;
-#elif defined(TARGET_ARM64)
+#elif defined(HOST_ARM64)
     const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
     PRD_TYPE opcode;
 #else
@@ -8439,10 +8467,10 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
         goto ErrExit;
 
     // It's all successful, so now update our out-params & internal bookkeaping.
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     opcode = (BYTE)p->opcode;
     buffer[0] = opcode;
-#elif defined(TARGET_ARM64)
+#elif defined(HOST_ARM64)
     opcode = p->opcode;
     memcpy_s(buffer, bufsize, &opcode, sizeof(opcode));
 #else
@@ -10341,7 +10369,7 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 {
     LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
     // Before we can read the left side context information, we must:
     // 1. obtain the thread handle
     // 2. suspened the thread
@@ -12451,9 +12479,9 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         tempDebugContext.ContextFlags = DT_CONTEXT_FULL;
         DbiGetThreadContext(pUnmanagedThread->m_handle, &tempDebugContext);
         CordbUnmanagedThread::LogContext(&tempDebugContext);
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
         const ULONG_PTR breakpointOpcodeSize = 1;
-#elif defined(TARGET_ARM64)
+#elif defined(HOST_ARM64)
         const ULONG_PTR breakpointOpcodeSize = 4;
 #else
         const ULONG_PTR breakpointOpcodeSize = 1;
@@ -12674,7 +12702,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
 
                 // Because hijacks don't return normally they might have pushed handlers without poping them
                 // back off. To take care of that we explicitly restore the old SEH chain.
-    #ifdef TARGET_X86
+    #ifdef HOST_X86
                 hr = pUnmanagedThread->RestoreLeafSeh();
                 _ASSERTE(SUCCEEDED(hr));
     #endif
@@ -13081,7 +13109,7 @@ void EnableDebugTrace(CordbUnmanagedThread *ut)
         return;
 
     // Give us a nop so that we can setip in the optimized case.
-#ifdef TARGET_X86
+#ifdef HOST_X86
     __asm {
         nop
     }

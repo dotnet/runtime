@@ -190,6 +190,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
     // If the value is in a reg, then it's going to be a register's width (regardless of
     // the actual width of the data).
     // For signed types, like i2, i1, make sure we sign extend.
+    IDacDbiInterface::TargetInfo targetInfo;
 
     if (fIsSigned)
     {
@@ -203,10 +204,13 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = (SSIZE_T) *(short*)newValue.StartAddress();          break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = (SSIZE_T) *(int*)newValue.StartAddress();            break;
-#if defined(TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
-                     extendedVal = (SSIZE_T) *(ULONGLONG*)newValue.StartAddress();      break;
-#endif // TARGET_64BIT
+            case 8:
+            {
+                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+                _ASSERTE(targetInfo.pointerSize == 8);
+                extendedVal = (SSIZE_T) *(INT64*)newValue.StartAddress();
+                break;
+            }
             default: _ASSERTE(!"bad size");
         }
     }
@@ -221,10 +225,13 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                      extendedVal = *( WORD*)newValue.StartAddress();     break;
             case 4:  _ASSERTE(sizeof(DWORD) == 4);
                      extendedVal = *(DWORD*)newValue.StartAddress();     break;
-#if defined(TARGET_64BIT)
-            case 8:  _ASSERTE(sizeof(ULONGLONG) == 8);
-                     extendedVal = *(ULONGLONG*)newValue.StartAddress(); break;
-#endif // TARGET_64BIT
+            case 8:
+            {
+                IfFailThrow(m_pFrame->GetProcess()->GetTargetInfo(&targetInfo));
+                _ASSERTE(targetInfo.pointerSize == 8);
+                extendedVal = *(UINT64*)newValue.StartAddress();
+                break;
+            }
             default: _ASSERTE(!"bad size");
         }
     }
@@ -836,21 +843,9 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 } // RegisterValueHome::SetEnregisteredValue
 
 
-// Get an enregistered value from the register display of the native frame
-// Arguments:
-//     output: dest - buffer will hold the register value
-// Note: Throws E_NOTIMPL for attempts to get an enregistered value for a float register
-//       or for 64-bit platforms
 void RegisterValueHome::GetEnregisteredValue(MemoryRange dest)
 {
-#if !defined(TARGET_X86)
-    _ASSERTE(!"@TODO IA64/AMD64 -- Not Yet Implemented");
     ThrowHR(E_NOTIMPL);
-#else // TARGET_X86
-    _ASSERTE(m_pRemoteRegAddr != NULL);
-
-    m_pRemoteRegAddr->GetEnregisteredValue(dest); // throws
-#endif // !TARGET_X86
 } // RegisterValueHome::GetEnregisteredValue
 
 // Is this a signed type or unsigned type?

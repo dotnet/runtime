@@ -7425,6 +7425,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pT
     pTargetInfo->os = kOSUnknown;
 #endif
 
+#if defined(TARGET_64BIT)
+    pTargetInfo->pointerSize = 8;
+#else
+    pTargetInfo->pointerSize = 4;
+#endif
+
     return S_OK;
 }
 

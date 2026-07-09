@@ -15,6 +15,7 @@
 // Function to invoke for
 typedef HRESULT (*FPContinueStatusChanged)(void * pUserData, DWORD dwThreadId, CORDB_CONTINUE_STATUS dwContinueStatus);
 
+class ShimProcess;
 
 //---------------------------------------------------------------------------------------
 // Data target for a live process. This is used by Shim.
@@ -26,6 +27,9 @@ public:
 
     // Allow hooking an implementation for ContinueStatusChanged.
     void HookContinueStatusChanged(FPContinueStatusChanged fpContinueStatusChanged, void * pUserData);
+
+    void SetShimProcess(ShimProcess * pShim) { m_pShim = pShim; }
+    ShimProcess * GetShimProcess() { return m_pShim; }
 
     // Release any resources. Also called by destructor.
     virtual void Dispose() = 0;
@@ -101,6 +105,8 @@ protected:
 
     FPContinueStatusChanged m_fpContinueStatusChanged;
     void * m_pContinueStatusChangedUserData;
+
+    ShimProcess * m_pShim = NULL;
 
     // Reference count.
     LONG m_ref;

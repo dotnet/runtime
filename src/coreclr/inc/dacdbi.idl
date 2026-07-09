@@ -129,7 +129,7 @@ typedef struct { void *pList; int nEntries; } DacDbiArrayList_CORDB_ADDRESS;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_GUID;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_SEGMENT;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_MEMORY_RANGE;
-typedef struct { int arch; int os; } TargetInfo;
+typedef struct { int arch; int os; int pointerSize; } TargetInfo;
 
 cpp_quote("#endif")
 
