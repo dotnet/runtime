@@ -9,7 +9,11 @@ namespace System.Diagnostics.Tests
 {
     public partial class FileVersionInfoTest : FileCleanupTestBase
     {
-        private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
+        // On Apple mobile NativeAOT the app bundler strips managed .dll files from the .app bundle,
+        // so the test assembly is deployed with a .exe extension there (see the .csproj).
+        private static readonly string TestAssemblyFileName = PlatformDetection.IsAppleMobile && PlatformDetection.IsNativeAot ?
+            "System.Diagnostics.FileVersionInfo.TestAssembly.exe" :
+            "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
         // On Unix the internal name's extension is .exe if OutputType is exe even though the TargetExt is .dll.
         private readonly string OriginalTestAssemblyInternalName = PlatformDetection.IsWindows ?
             "System.Diagnostics.FileVersionInfo.TestAssembly.dll" :
@@ -19,7 +23,6 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
         public void FileVersionInfo_CustomManagedAssembly()
         {
             // Assembly1.dll

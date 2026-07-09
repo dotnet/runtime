@@ -49,7 +49,19 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' == 'browser' or '$(TargetsAppleMobile)' == 'true'" />
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(UseNativeAotRuntime)' != 'true')" />
+    <!-- On Apple mobile NativeAOT the app bundler strips managed .dll files from the .app bundle (see
+         src/tasks/AppleAppBuilder/Xcode.cs), so deploy the test assembly with a .exe extension, which the
+         bundler preserves. The test only reads the file's version metadata by path, it never loads it. -->
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseNativeAotRuntime)' == 'true'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <Content Include="$(ArtifactsBinDir)System.Diagnostics.FileVersionInfo.TestAssembly\$(Configuration)\$(NetCoreAppCurrent)\System.Diagnostics.FileVersionInfo.TestAssembly.dll"
+             Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseNativeAotRuntime)' == 'true'">
+      <TargetPath>System.Diagnostics.FileVersionInfo.TestAssembly.exe</TargetPath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
     <!-- R2R testing does not tolerate the combination of a regular project reference and a content reference. -->
     <!-- This is a bug in the SDK tracked here: https://github.com/dotnet/sdk/issues/30718 -->
     <PublishReadyToRunExclude Include="System.Diagnostics.FileVersionInfo.TestAssembly.dll" />
