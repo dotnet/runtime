@@ -468,6 +468,8 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Listener failed to become ready");
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(inboundSem);
+        dispatch_release(listenerReadySem);
         dispatch_release(sessionQueue);
         return NULL;
     }
@@ -478,6 +480,8 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Listener has no port");
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(inboundSem);
+        dispatch_release(listenerReadySem);
         dispatch_release(sessionQueue);
         return NULL;
     }
@@ -491,6 +495,8 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Failed to create trigger socket (errno=%d)", errno);
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(inboundSem);
+        dispatch_release(listenerReadySem);
         dispatch_release(sessionQueue);
         return NULL;
     }
@@ -508,6 +514,8 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Trigger sendto failed (errno=%d)", errno);
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(inboundSem);
+        dispatch_release(listenerReadySem);
         dispatch_release(sessionQueue);
         return NULL;
     }
@@ -518,6 +526,8 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
         LOG_ERROR(context, "Inbound connection not delivered");
         nw_listener_cancel(listener);
         nw_release(listener);
+        dispatch_release(inboundSem);
+        dispatch_release(listenerReadySem);
         dispatch_release(sessionQueue);
         return NULL;
     }
@@ -528,6 +538,8 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
     // remains retained by the inbound connection.
     nw_listener_cancel(listener);
     nw_release(listener);
+    dispatch_release(inboundSem);
+    dispatch_release(listenerReadySem);
     dispatch_release(sessionQueue);
 
     return inbound;
