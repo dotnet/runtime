@@ -61,7 +61,67 @@ namespace ILLink.RoslynAnalyzer.Tests
             """);
 
         [Fact]
-        public Task WrapsValueCallInUnsafeExpression() => VerifyCodeFix(
+        public Task WrapsValueInUnsafeExpressionWhenNotDeclaration() => VerifyCodeFix(
+            """
+            class C
+            {
+                static unsafe int M1() => 0;
+                int _f;
+                void M2()
+                {
+                    _f = {|IL5006:M1()|};
+                }
+            }
+            """,
+            """
+            class C
+            {
+                static unsafe int M1() => 0;
+                int _f;
+                void M2()
+                {
+                    _f = /* SAFETY: Audit */ unsafe(M1());
+                }
+            }
+            """);
+
+        [Fact]
+        public Task SplitsStackallocSpanDeclarationIntoUnsafeBlock() => VerifyCodeFix(
+            """
+            using System;
+            using System.Runtime.CompilerServices;
+            class C
+            {
+                [SkipLocalsInit]
+                static void M()
+                {
+                    Span<byte> s = {|IL5006:stackalloc byte[10]|};
+                    s.Clear();
+                }
+            }
+            """,
+            """
+            using System;
+            using System.Runtime.CompilerServices;
+            class C
+            {
+                [SkipLocalsInit]
+                static void M()
+                {
+                    scoped Span<byte> s;
+
+                    unsafe
+                    {
+                        // SAFETY: Audit
+                        s = stackalloc byte[10];
+                    }
+                    s.Clear();
+                }
+            }
+            """);
+
+        [Fact]
+        public Task SplitsLocalDeclarationIntoUnsafeBlock() => VerifyCodeFix(
             """
             class C
             {
@@ -79,24 +139,34 @@ namespace ILLink.RoslynAnalyzer.Tests
                 static unsafe int M1() => 0;
                 void M2()
                 {
-                    int x = /* SAFETY: Audit */ unsafe(M1());
+                    int x;
+
+                    unsafe
+                    {
+                        // SAFETY: Audit
+                        x = M1();
+                    }
                     _ = x;
                 }
             }
             """);
 
         [Fact]
-        public Task WrapsStackallocSpanInUnsafeExpression() => VerifyCodeFix(
+        public Task KeepsExpressionWhenStackallocSpanEscapesToOuterScope() => VerifyCodeFix(
             """
             using System;
             using System.Runtime.CompilerServices;
             class C
             {
                 [SkipLocalsInit]
-                static int M()
+                static void M()
                 {
-                    Span<byte> s = {|IL5006:stackalloc byte[10]|};
-                    return s.Length;
+                    ReadOnlySpan<byte> source;
+                    {
+                        Span<byte> stackSpan = {|IL5006:stackalloc byte[10]|};
+                        source = stackSpan;
+                    }
+                    _ = source.Length;
                 }
             }
             """,
@@ -106,10 +176,14 @@ namespace ILLink.RoslynAnalyzer.Tests
             class C
             {
                 [SkipLocalsInit]
-                static int M()
+                static void M()
                 {
-                    Span<byte> s = /* SAFETY: Audit */ unsafe(stackalloc byte[10]);
-                    return s.Length;
+                    ReadOnlySpan<byte> source;
+                    {
+                        Span<byte> stackSpan = /* SAFETY: Audit */ unsafe(stackalloc byte[10]);
+                        source = stackSpan;
+                    }
+                    _ = source.Length;
                 }
             }
             """);

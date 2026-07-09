@@ -47,6 +47,12 @@ namespace ILLink.CodeFix
             if (statement is null)
                 return WrapExpression(root, operation, semanticModel);
 
+            // A local declaration can't be wrapped wholesale without shrinking the variable's scope. Split it:
+            // keep the bare declaration in the outer scope and move only its initializer into the 'unsafe' block.
+            if (statement is LocalDeclarationStatementSyntax)
+                return TrySplitLocalDeclaration(root, statement, operation, semanticModel)
+                    ?? WrapExpression(root, operation, semanticModel);
+
             return WrapStatement(root, statement);
         }
 
@@ -116,10 +122,174 @@ namespace ILLink.CodeFix
                     .Any(static n => n is DeclarationExpressionSyntax or SingleVariableDesignationSyntax))
                 return true;
 
+            // A local declaration whose initializer (not its type) needs the unsafe context reads best as a
+            // split: the declaration stays in the outer scope and only the initializer moves into an 'unsafe'
+            // block, which keeps the variable in scope and gives the safety comment its own clean line. Prefer
+            // that block form over an embedded 'unsafe(...)'.
+            if (IsSplittableLocalDeclaration(statement, operation, semanticModel))
+                return false;
+
             // The operation is a value embedded inside the statement: an expression keeps the scope minimal.
             // If it sits at the very start of the statement, an 'unsafe(...)' expression cannot be used there
             // (the parser reads 'unsafe' as a block), so fall through to the block form.
             return operation.SpanStart != statement.SpanStart && !ReturnsVoid(operation, semanticModel);
+        }
+
+        // A local declaration whose initializer needs an unsafe context can be rewritten as a bare declaration
+        // plus an 'unsafe' block that assigns it, instead of an embedded 'unsafe(...)' expression. This is only
+        // valid when the declaration itself is legal outside an unsafe context and splitting won't change the
+        // meaning of the code.
+        private static bool IsSplittableLocalDeclaration(StatementSyntax? statement, ExpressionSyntax operation, SemanticModel semanticModel)
+        {
+            if (statement is not LocalDeclarationStatementSyntax local ||
+                !local.UsingKeyword.IsKind(SyntaxKind.None) ||          // 'using' declaration: block would end its scope early
+                local.Modifiers.Any(SyntaxKind.ConstKeyword) ||         // 'const' can't be assigned separately
+                local.Declaration.Variables.Count != 1)
+                return false;
+
+            var declaredType = local.Declaration.Type;
+            var variable = local.Declaration.Variables[0];
+            if (variable.Initializer is not { Value: { } value })
+                return false;
+
+            // 'ref'/'scoped' locals already prefer the expression form; 'var' would need its inferred type
+            // reconstructed to form a bare declaration.
+            if (declaredType is RefTypeSyntax or ScopedTypeSyntax || declaredType.IsVar)
+                return false;
+
+            // Only split when the flagged operation lives in the initializer (the only part moved into the block).
+            if (!value.Span.Contains(operation.Span))
+                return false;
+
+            // The declared type must be legal without an unsafe context; a pointer/function-pointer declaration
+            // would itself require 'unsafe', so a bare declaration wouldn't compile.
+            var symbol = semanticModel.GetDeclaredSymbol(variable);
+            if (symbol is not ILocalSymbol { Type: { } type } ||
+                type.TypeKind is TypeKind.Pointer or TypeKind.FunctionPointer)
+                return false;
+
+            // The statement must sit directly in a statement list so it can be replaced by two statements.
+            if (statement.Parent is not (BlockSyntax or SwitchSectionSyntax))
+                return false;
+
+            // Splitting gives a ref-struct local (identified by its stackalloc initializer) a 'scoped' declaration
+            // whose escape scope is narrower than the 'T x = stackalloc ...' form the compiler infers inline.
+            // That's only safe when the value stays local; if a value derived from it flows to a wider scope
+            // (returned, assigned outward, or passed by ref/out) keep the expression form so the code compiles.
+            return !IsRefStructLocal(type, variable) || !ReferenceEscapes(local, variable, symbol, semanticModel);
+        }
+
+        // A local is treated as ref-struct-like (so it needs 'scoped' when split, and escape-checking) when its
+        // type is ref-like or its initializer contains a stackalloc: the only IL5006 case that produces a
+        // ref-struct local is a stackalloc, and its target is always Span/ReadOnlySpan.
+        private static bool IsRefStructLocal(ITypeSymbol type, VariableDeclaratorSyntax variable) =>
+            type.IsRefLikeType ||
+            (variable.Initializer?.Value.DescendantNodesAndSelf().Any(static n =>
+                n is StackAllocArrayCreationExpressionSyntax or ImplicitStackAllocArrayCreationExpressionSyntax) ?? false);
+
+        // Conservatively (and purely syntactically, since the migration's reference-swapped compilation can't be
+        // trusted for type resolution) reports whether any value derived from the local escapes to a wider scope.
+        private static bool ReferenceEscapes(LocalDeclarationStatementSyntax declaration, VariableDeclaratorSyntax variable, ISymbol symbol, SemanticModel semanticModel)
+        {
+            SyntaxNode? container = declaration.FirstAncestorOrSelf<BaseMethodDeclarationSyntax>();
+            container ??= declaration.FirstAncestorOrSelf<AccessorDeclarationSyntax>();
+            container ??= declaration.FirstAncestorOrSelf<LocalFunctionStatementSyntax>();
+            if (container is null)
+                return true;
+
+            var name = variable.Identifier.ValueText;
+            foreach (var reference in container.DescendantNodes().OfType<IdentifierNameSyntax>())
+            {
+                if (reference.Identifier.ValueText == name &&
+                    SymbolEqualityComparer.Default.Equals(semanticModel.GetSymbolInfo(reference).Symbol, symbol) &&
+                    ReferenceFlowsOut(reference))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // True when a value projected from the reference (via member/element access, invocation, cast, ...) is
+        // returned, assigned to another target, or passed by ref/out. Passing the variable (or a projection) as
+        // a by-value argument does not let it escape, so those references are considered safe.
+        private static bool ReferenceFlowsOut(ExpressionSyntax reference)
+        {
+            var derived = reference;
+            while (derived.Parent is ExpressionSyntax parent)
+            {
+                if ((parent is MemberAccessExpressionSyntax member && member.Expression == derived) ||
+                    (parent is ElementAccessExpressionSyntax element && element.Expression == derived) ||
+                    (parent is InvocationExpressionSyntax invocation && invocation.Expression == derived) ||
+                    (parent is ConditionalAccessExpressionSyntax conditional && conditional.Expression == derived) ||
+                    parent is ParenthesizedExpressionSyntax or CastExpressionSyntax)
+                {
+                    derived = parent;
+                    continue;
+                }
+
+                break;
+            }
+
+            return derived.Parent switch
+            {
+                ReturnStatementSyntax { Expression: { } returned } when returned == derived => true,
+                ArrowExpressionClauseSyntax arrow when arrow.Expression == derived => true,
+                AssignmentExpressionSyntax assignment when assignment.Right == derived => true,
+                ArgumentSyntax { RefKindKeyword.RawKind: not (int)SyntaxKind.None } => true,
+                _ => false,
+            };
+        }
+
+        // Rewrites 'T x = <needs-unsafe>;' as 'T x;' followed by 'unsafe { x = <needs-unsafe>; }'. Ref-struct
+        // locals get 'scoped' so the stack-referencing value assigned inside the block can't escape further
+        // than the inline initializer form would have allowed. Returns null if the declaration isn't splittable.
+        private static SyntaxNode? TrySplitLocalDeclaration(SyntaxNode root, StatementSyntax statement, ExpressionSyntax operation, SemanticModel semanticModel)
+        {
+            if (!IsSplittableLocalDeclaration(statement, operation, semanticModel))
+                return null;
+
+            var local = (LocalDeclarationStatementSyntax)statement;
+            var variable = local.Declaration.Variables[0];
+            var value = variable.Initializer!.Value;
+            var type = ((ILocalSymbol)semanticModel.GetDeclaredSymbol(variable)!).Type;
+
+            // Built with explicit spacing rather than Formatter.Annotation, which would strip the blank line
+            // inserted between the declaration and the block. A ref-struct local (its initializer is a
+            // stackalloc) gets 'scoped' so the stack-referencing value assigned inside the block can't escape
+            // further than the inline form allowed.
+            bool needsScoped = IsRefStructLocal(type, variable);
+
+            TypeSyntax declaredType = local.Declaration.Type.WithoutTrivia().WithTrailingTrivia(SyntaxFactory.Space);
+            if (needsScoped)
+                declaredType = SyntaxFactory.ScopedType(
+                    SyntaxFactory.Token(SyntaxKind.ScopedKeyword).WithTrailingTrivia(SyntaxFactory.Space), declaredType);
+
+            // Use only the statement's indentation (not its full leading trivia, which may carry a preceding
+            // blank line) for the block, so exactly one blank line separates the declaration from the block.
+            var leading = statement.GetLeadingTrivia();
+            var indent = leading.Count > 0 && leading[leading.Count - 1].IsKind(SyntaxKind.WhitespaceTrivia)
+                ? SyntaxFactory.TriviaList(leading[leading.Count - 1])
+                : default;
+
+            var newLine = SyntaxFactory.EndOfLine("\n");
+            var declarationStatement = SyntaxFactory.LocalDeclarationStatement(
+                    SyntaxFactory.VariableDeclaration(
+                        declaredType,
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(variable.Identifier.WithoutTrivia()))))
+                .WithLeadingTrivia(leading)
+                .WithTrailingTrivia(newLine, newLine);
+
+            var assignment = SyntaxFactory.ExpressionStatement(
+                SyntaxFactory.AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    SyntaxFactory.IdentifierName(variable.Identifier.WithoutTrivia()),
+                    value.WithoutLeadingTrivia().WithoutTrailingTrivia()));
+
+            var unsafeBlock = MakeUnsafeBlock([assignment])
+                .WithLeadingTrivia(indent)
+                .WithTrailingTrivia(statement.GetTrailingTrivia());
+
+            return root.ReplaceNode(statement, new SyntaxNode[] { declarationStatement, unsafeBlock });
         }
 
         private static bool ReturnsVoid(ExpressionSyntax operation, SemanticModel semanticModel) =>
