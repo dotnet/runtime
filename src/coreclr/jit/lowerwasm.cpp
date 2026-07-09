@@ -1230,5 +1230,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
         }
+        default:
+        {
+            break;
+        }
     }
 }
