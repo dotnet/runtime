@@ -118,10 +118,13 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd", SetLastError = true)]
+        // The OpenSSL shims below report errors via out params + the OpenSSL error
+        // queue (SSL_get_error / ERR_get_error); they do not set errno. SetLastError is
+        // omitted so we don't pay the marshaller cost of capturing a value no caller reads.
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd")]
         internal static partial int SslSetFd(SafeSslHandle ssl, SafeSocketHandle socket);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake")]
         internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]

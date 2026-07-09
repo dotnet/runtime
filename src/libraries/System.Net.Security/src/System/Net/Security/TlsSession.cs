@@ -192,12 +192,25 @@ namespace System.Net.Security
 
         public bool HasPendingOutput => _pendingBuffer.ActiveLength > 0;
 
+        /// <summary>
+        /// Target host name for this session. On the client this is the value the
+        /// caller supplied via <see cref="SslClientAuthenticationOptions.TargetHost"/>
+        /// (used for SNI and hostname validation). On the server this is the SNI value
+        /// parsed from the peer's ClientHello, or <see langword="null"/> if no
+        /// ClientHello has been processed yet or the ClientHello carried no SNI
+        /// extension. Setting the value on either side overrides the current value;
+        /// setting to <see langword="null"/> clears it.
+        /// </summary>
         public string? TargetHostName
         {
             get
             {
                 ThrowIfContextNotSet();
-                return _context!.IsServer ? _sessionTargetHost : _options.TargetHost;
+                if (_context!.IsServer)
+                {
+                    return string.IsNullOrEmpty(_sessionTargetHost) ? null : _sessionTargetHost;
+                }
+                return string.IsNullOrEmpty(_options.TargetHost) ? null : _options.TargetHost;
             }
             set
             {
@@ -1756,7 +1769,16 @@ namespace System.Net.Security
                 return;
             }
 
-            _context!.CredentialsHandle = SslStreamPal.AcquireCredentialsHandle(_options, false);
+            // Multiple sessions on the same TlsContext can call EnsureCredentialsAcquired
+            // concurrently and each see CredentialsHandle == null. Atomically install
+            // ours; if another session beat us to it, dispose the loser to avoid a leak.
+            // Non-Windows PALs return null here (OpenSSL has no cred handle concept); the
+            // CompareExchange is a no-op in that case.
+            SafeFreeCredentials? acquired = SslStreamPal.AcquireCredentialsHandle(_options, false);
+            if (System.Threading.Interlocked.CompareExchange(ref _context!.CredentialsHandle, acquired, null) is not null)
+            {
+                acquired?.Dispose();
+            }
         }
 
         // Feed a decrypted post-handshake message (e.g. TLS 1.3 NewSessionTicket

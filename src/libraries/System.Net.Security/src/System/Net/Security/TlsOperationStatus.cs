@@ -17,9 +17,14 @@ namespace System.Net.Security
         Complete = 0,
 
         /// <summary>
-        /// The destination buffer was too small for the pending output. Call the
-        /// operation again with a larger buffer, or drain via
-        /// <see cref="TlsBufferSession.DrainPendingOutput"/>.
+        /// The operation could not complete because output could not be delivered.
+        /// On the buffered APIs (<see cref="TlsBufferSession"/>) this means the caller's
+        /// destination span was too small for the pending output; call the operation
+        /// again with a larger destination, or drain via
+        /// <see cref="TlsBufferSession.DrainPendingOutput"/>. On the socket-bound APIs
+        /// (<see cref="TlsSocketSession"/>) this means the underlying socket returned
+        /// <see cref="System.Net.Sockets.SocketError.WouldBlock"/> mid-write; retry the
+        /// operation once the socket is writable.
         /// </summary>
         DestinationTooSmall = 1,
 
