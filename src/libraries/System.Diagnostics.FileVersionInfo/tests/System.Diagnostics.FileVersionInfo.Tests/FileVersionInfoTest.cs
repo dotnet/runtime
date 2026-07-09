@@ -29,7 +29,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void FileVersionInfo_CustomManagedAssembly()
         {
             string filePath = WriteTestAssemblyToFile();
