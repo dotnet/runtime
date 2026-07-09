@@ -10,6 +10,8 @@
 #include "error_codes.h"
 #include "utils.h"
 #include <type_traits>
+#include <atomic>
+#include <mutex>
 #include <minipal/utils.h>
 #include <coreclr_delegates.h>
 
@@ -170,6 +172,46 @@ namespace
         return status;
     }
 
+    // COM activation state resolved from the runtime. It is set for the process lifetime.
+    struct com_activation_info
+    {
+        pal::string_t app_path;
+        com_delegates delegates;
+        void* load_context;
+    };
+
+    // Resolve and cache the COM activation delegate so the hostfxr load and config parsing
+    // only happens once per comhost. Failures are not cached, so they are retried.
+    int get_com_activation_delegate(const com_activation_info** delegate)
+    {
+        static std::atomic<bool> com_activation_initialized{ false };
+        static pal::mutex_t com_activation_lock;
+        static com_activation_info com_activation;
+
+        if (!com_activation_initialized.load())
+        {
+            std::lock_guard<pal::mutex_t> lock{ com_activation_lock };
+            if (!com_activation_initialized.load())
+            {
+                trace::setup();
+                reset_redirected_error_writer();
+
+                error_writer_scope_t writer_scope(redirected_error_writer);
+
+                int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &com_activation.app_path, com_activation.delegates, &com_activation.load_context);
+                if (ec != StatusCode::Success)
+                    return ec;
+
+                assert(com_activation.delegates.delegate != nullptr || com_activation.load_context == ISOLATED_CONTEXT);
+
+                com_activation_initialized.store(true);
+            }
+        }
+
+        *delegate = &com_activation;
+        return StatusCode::Success;
+    }
+
     void report_com_error_info(const GUID& guid, pal::string_t errs)
     {
         ICreateErrorInfo *cei;
@@ -213,24 +255,15 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
         return CLASS_E_CLASSNOTAVAILABLE;
 
     HRESULT hr;
-    pal::string_t app_path;
-    com_delegates act;
-    void* load_context;
+    const com_activation_info* activation;
     {
-        trace::setup();
-        reset_redirected_error_writer();
-
-        error_writer_scope_t writer_scope(redirected_error_writer);
-
-        int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &app_path, act, &load_context);
+        int ec = get_com_activation_delegate(&activation);
         if (ec != StatusCode::Success)
         {
             report_com_error_info(rclsid, std::move(get_redirected_error_string()));
             return __HRESULT_FROM_WIN32(ec);
         }
     }
-
-    assert(act.delegate != nullptr || load_context == ISOLATED_CONTEXT);
 
     // Query the CLR for the type
 
@@ -239,18 +272,18 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     {
         rclsid,
         riid,
-        app_path.c_str(),
+        activation->app_path.c_str(),
         iter->second.assembly.c_str(),
         iter->second.type.c_str(),
         (void**)&classFactory
     };
-    if (act.delegate != nullptr)
+    if (activation->delegates.delegate != nullptr)
     {
-        RETURN_IF_FAILED(act.delegate(&cxt, load_context));
+        RETURN_IF_FAILED(activation->delegates.delegate(&cxt, activation->load_context));
     }
     else
     {
-        RETURN_IF_FAILED(act.delegate_no_load_cxt(&cxt));
+        RETURN_IF_FAILED(activation->delegates.delegate_no_load_cxt(&cxt));
     }
     assert(classFactory != nullptr);
 
