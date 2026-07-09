@@ -2395,16 +2395,17 @@ namespace System
                     if (Vector64.IsHardwareAccelerated && remaining.Length <= Vector64<ushort>.Count)
                     {
                         Vector64<ushort> vector = Vector64.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector64<ushort>.Count));
-                        Vector64<byte> cmp = Vector64.Equals(vector, v1).AsByte() | Vector64.Equals(vector, v2).AsByte() | Vector64.Equals(vector, v3).AsByte();
-                        var cmpU64 = cmp.AsUInt64().GetElement(0);
+                        Vector64<byte> cmp = Vector64.Equals(vector, v1.GetLower()).AsByte() | Vector64.Equals(vector, v2.GetLower()).AsByte() | Vector64.Equals(vector, v3.GetLower()).AsByte();
+                        ulong cmpU64 = cmp.AsUInt64().GetElement(0);
                         if (cmpU64 != 0)
                         {
-                            cmpU64 &= 0x0101010101010101;
+                            int finalIndex = sourceSpanUInt16.Length - Vector64<ushort>.Count;
+                            cmpU64 &= 0x0101010101010101UL & ~((1UL << (Vector64<byte>.Count - remaining.Length * sizeof(char) * 8)) - 1);
                             while (cmpU64 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(cmpU64) / (sizeof(char) * 8);
                                 sepListBuilder.Append(finalIndex + (int)bitPos);
-                                mask = BitOperations.ResetLowestSetBit(mask);
+                                cmpU64 = BitOperations.ResetLowestSetBit(cmpU64);
                             }
                         }
                     }
