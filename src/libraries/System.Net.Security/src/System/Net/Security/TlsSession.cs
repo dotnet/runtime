@@ -1701,6 +1701,15 @@ namespace System.Net.Security
         // certificate selection are not yet integrated.
         private void EnsureCredentialsAcquired()
         {
+            // If SetContext or SetClientCertificateContext already produced a
+            // session-local handle, ActiveCredentialsRef() will route the PAL
+            // through it. Skip touching the shared TlsContext.CredentialsHandle
+            // to avoid racing with concurrent sessions on the same context.
+            if (_sessionCredentialsHandle is not null)
+            {
+                return;
+            }
+
             if (_context!.CredentialsHandle is not null)
             {
                 return;
@@ -2279,6 +2288,12 @@ namespace System.Net.Security
                 ArrayPool<byte>.Shared.Return(_socketInBuf);
                 _socketInBuf = null;
             }
+
+            // Release the session-local credentials handle acquired by
+            // SetContext / SetClientCertificateContext. The shared handle on
+            // _context is owned by TlsContext and released with it.
+            _sessionCredentialsHandle?.Dispose();
+            _sessionCredentialsHandle = null;
 
             OnDispose();
         }
