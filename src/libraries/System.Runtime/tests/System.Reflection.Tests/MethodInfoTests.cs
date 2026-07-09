@@ -467,7 +467,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments()
         {
             MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
@@ -475,6 +474,16 @@ namespace System.Reflection.Tests
             Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToIntBinder(), args, null));
             Assert.True(args[0] is int);
             Assert.True(args[1] is int);
+        }
+
+        [Fact]
+        public void Invoke_CustomBinder_ResultRequiringPrimitiveWidening_DoesNotCopyBackWidenedArgument()
+        {
+            MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
+            object[] args = new object[] { "10", 100 };
+
+            Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToInt16Binder(), args, null));
+            Assert.Equal("10", Assert.IsType<string>(args[0]));
         }
 
         [Theory]

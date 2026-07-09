@@ -46,6 +46,9 @@ internal sealed class GCInfoX86_1 : IGCInfo
     IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)
         => AssertCorrectHandle(gcInfoHandle).EnumerateLiveSlots(instructionOffset, options);
 
+    bool IGCInfo.IsGcSafe(IGCInfoHandle gcInfoHandle, uint instructionOffset)
+        => AssertCorrectHandle(gcInfoHandle).IsGcSafe(instructionOffset);
+
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
     {
         if (gcInfoHandle is not IGCInfoDecoder handle)

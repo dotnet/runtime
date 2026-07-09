@@ -502,6 +502,28 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(HasUnmanagedCallersOnlyAttribute());
+
+#ifdef FEATURE_READYTORUN
+    PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+    config.SetCallerGCMode(CallerGCMode::Preemptive);
+
+    // GetPrecompiledR2RCode resolves the R2R entrypoint and, on portable-entrypoint (wasm) targets,
+    // publishes it into this method's portable entrypoint as a side effect (PortableEntryPoint::SetActualCode).
+    // It never compiles interpreter byte code, so purely interpreted methods simply return NULL here and
+    // are left unprepared for lazy byte code generation on first call.
+    PCODE pCode = GetPrecompiledR2RCode(&config);
+    return pCode != (PCODE)NULL;
+#else // !FEATURE_READYTORUN
+    return false;
+#endif // FEATURE_READYTORUN
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;
@@ -703,6 +725,17 @@ namespace
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
+        Module* pModule = pMD->GetModule();
+        if (pModule->IsReadyToRun()
+            && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
+            && pHeader->GetCodeSize() == 2
+            && pHeader->Code[0] == 0xFE
+            && pHeader->Code[1] == 0x24)
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                W("A method body required at runtime was stripped from the ReadyToRun image."));
+        }
+
         return pHeader;
     }
 
@@ -878,8 +911,20 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #endif // PROFILING_SUPPORTED
 
 #ifdef FEATURE_PERFMAP
-    // Save the JIT'd method information so that perf can resolve JIT'd call frames.
-    PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+#if defined(FEATURE_INTERPRETER)
+    if (isInterpreterCode)
+    {
+        InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+        InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)pPrecode->GetData()->ByteCodeAddr;
+        PCODE irAddress = PINSTRToPCODE((TADDR)interpreterCode);
+        PerfMap::LogInterpreterMethod(this, irAddress, sizeOfCode);
+    }
+    else
+#endif // FEATURE_INTERPRETER
+    {
+        // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+    }
 #endif
 
     // The notification will only occur if someone has registered for this method.
@@ -992,18 +1037,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     // code. This also avoid races with profiler overriding ngened code (see
     // matching SetNativeCodeInterlocked done after
     // JITCachedFunctionSearchStarted)
-    if (!pConfig->SetNativeCode(pCode, &pOtherCode))
-    {
-#ifdef HAVE_GCCOVER
-        // When GCStress is enabled, this thread should always win the publishing race
-        // since we're under a lock.
-        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
-#endif
-
-        // Another thread beat us to publishing its copy of the JITted code.
-        return pOtherCode;
-    }
-
 #ifdef FEATURE_INTERPRETER
     if (*pIsInterpreterCode)
     {
@@ -1018,6 +1051,18 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
+
+    if (!pConfig->SetNativeCode(pCode, &pOtherCode))
+    {
+#ifdef HAVE_GCCOVER
+        // When GCStress is enabled, this thread should always win the publishing race
+        // since we're under a lock.
+        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
+#endif
+
+        // Another thread beat us to publishing its copy of the JITted code.
+        return pOtherCode;
+    }
 
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
@@ -2081,6 +2126,12 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
 {
+    // targetIp must point to valid interpreter byte code. A NULL here means a caller failed to route a
+    // method that has native (R2R) code but no interpreter code to InvokeManagedMethod. Dispatching a
+    // NULL byte code pointer would be (mis)interpreted as INTOP_INVALID and fail with a cryptic fatal
+    // error, so assert here at the actual point of misuse.
+    _ASSERTE(targetIp != (TADDR)NULL);
+
     // Copy arguments to the stack
     if (argSize > 0)
     {
@@ -2093,7 +2144,7 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
     TransitionBlock block{};
     block.m_ReturnAddress = (TADDR)callerIp;
 #ifdef TARGET_WASM
-    // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here. 
+    // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here.
     // The WebAssembly codegen will use this field to determine where the stack base is, and if it's not set to 0 then the WebAssembly
     // codegen will think that the stack base is at some random offset from the actual stack base, which will cause stack accesses to
     // be incorrect.
@@ -2142,8 +2193,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             if (targetIp == NULL)
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
-                ManagedMethodParam param = { pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */};
-                InvokeManagedMethod(&param);
+                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */);
             }
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -2225,10 +2275,14 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
     InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
     if (targetIp == NULL)
     {
-        GCX_PREEMP();
-        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         targetIp = pMD->GetInterpreterCode();
     }
+    // The g_ReverseThunks reverse thunk is only used for UnmanagedCallersOnly methods that are executed
+    // by the interpreter. Methods compiled to native (R2R) code are dispatched directly to their R2R
+    // entrypoint by GetUnmanagedCallersOnlyThunk and never reach this path, so the interpreter byte code
+    // must exist here.
+    _ASSERTE(targetIp != NULL);
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
 }
 #endif // FEATURE_INTERPRETER

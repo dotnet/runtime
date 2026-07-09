@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -466,6 +467,104 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("test content", File.ReadAllText(targetFile1));
             Assert.Equal("test content", File.ReadAllText(targetFile2));
             AssertPathsAreNotHardLinked(targetFile1, targetFile2);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsSymlinkDirectoryTraversal_WithNestedFile()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            // Absolute path outside destDir
+            string linkTarget = "/tmp/outside";
+
+            string tarPath = Path.Combine(root.Path, "symlink_dir_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                // symlink: "link" -> "/tmp/outside"
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link")
+                {
+                    LinkName = linkTarget
+                });
+
+                // file: "link/test.txt" with "hello"
+                byte[] content = Encoding.UTF8.GetBytes("hello");
+                var fileEntry = new PaxTarEntry(TarEntryType.RegularFile, "link/test.txt")
+                {
+                    DataStream = new MemoryStream(content, writable: false)
+                };
+
+                fileEntry.DataStream.Position = 0;
+                writer.WriteEntry(fileEntry);
+            }
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+
+            // Nothing should be created in dest
+            string linkPath = Path.Combine(destDir, "link");
+            string outsideFilePath = Path.Combine(destDir, "link", "test.txt");
+            Assert.False(File.Exists(linkPath) || Directory.Exists(linkPath), "link should not have been created.");
+            Assert.False(File.Exists(outsideFilePath) || Directory.Exists(outsideFilePath), "traversal link should not have been created.");
+        }
+
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal_WithNestedFile()
+        {
+            // dir a/
+            // symlink a/b ? .
+            // symlink a/b/c ? .
+            // symlink a/b/c/d ? ../../outside
+            // file a/d/ pwned.txt escapes
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "chained_symlink_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b") { LinkName = "." });
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c") { LinkName = "." });
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/d") { LinkName = "../../outside" });
+
+                var pwned = new PaxTarEntry(TarEntryType.RegularFile, "a/d/pwned.txt")
+                {
+                    DataStream = new MemoryStream(Encoding.UTF8.GetBytes("pwned"))
+                };
+                writer.WriteEntry(pwned);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                // Windows always creates file symlinks (FileInfo.CreateAsSymbolicLink), so entry "a/b" becomes a
+                // *file* symlink whose target (".") is a *directory*. Processing the nested entries forces the
+                // extractor to resolve/descend through that type-mismatched reparse point, which Windows rejects,
+                // but the surfaced exception depends on the OS build:
+                //   - Some builds throw UnauthorizedAccessException while resolving the link (FileInfo.ResolveLinkTarget
+                //     during the traversal-safety walk in FilePathEscapesDirectory).
+                //   - Others resolve the link successfully, then fail creating a directory where the file symlink
+                //     already exists, throwing IOException ("a file or directory with the same name already exists").
+                // Either way the archive is rejected and nothing escapes (verified below), so accept both.
+                Exception ex = Assert.ThrowsAny<Exception>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+                Assert.True(ex is IOException or UnauthorizedAccessException, $"Unexpected exception type: {ex}");
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            }
+
+            string outsideDir = Path.Combine(root.Path, "outside");
+            Assert.False(Directory.Exists(outsideDir), "outside/directory should not have been created.");
+            Assert.False(File.Exists(Path.Combine(outsideDir, "pwned.txt")), "pwned.txt should not have been written outside destination.");
+
         }
     }
 }

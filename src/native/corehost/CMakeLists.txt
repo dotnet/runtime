@@ -83,7 +83,7 @@ endif()
 
 if(NOT CLR_CMAKE_TARGET_BROWSER)
     add_library(fxr_resolver INTERFACE)
-    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp fxr_resolver.c)
+    target_sources(fxr_resolver INTERFACE fxr_resolver.c)
     target_include_directories(fxr_resolver INTERFACE fxr)
 
     add_compile_definitions(RAPIDJSON_HAS_CXX17)
