@@ -367,6 +367,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
