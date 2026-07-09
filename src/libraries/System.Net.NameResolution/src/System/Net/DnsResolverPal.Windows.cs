@@ -286,10 +286,27 @@ namespace System.Net
         // returns no records. The behavior is fixed in Windows 11 / Windows Server 2025 (build
         // 22000+). See https://dblohm7.ca/blog/2022/05/06/dnsqueryex-needs-love/.
         private static readonly bool s_asyncSyncCompletionBug = !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+        private static string? s_hostName;
 
-        private static bool IsLocalhostName(string name) =>
-            string.Equals(name, "localhost", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(name, "localhost.", StringComparison.OrdinalIgnoreCase);
+        private static bool IsSynchronouslyCompletingQueryName(string name)
+        {
+            if (IPAddress.TryParse(name, out _))
+            {
+                return true;
+            }
+
+            ReadOnlySpan<char> normalizedName = name;
+            if (normalizedName.EndsWith('.'))
+            {
+                normalizedName = normalizedName.Slice(0, normalizedName.Length - 1);
+            }
+
+            return normalizedName.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                normalizedName.Equals("loopback", StringComparison.OrdinalIgnoreCase) ||
+                normalizedName.Equals("..DnsServers", StringComparison.OrdinalIgnoreCase) ||
+                normalizedName.Equals("..localmachine", StringComparison.OrdinalIgnoreCase) ||
+                normalizedName.Equals(LazyInitializer.EnsureInitialized(ref s_hostName, static () => NameResolutionPal.GetHostName()), StringComparison.OrdinalIgnoreCase);
+        }
 
         private static Task<DnsQueryRawResult> DnsQueryEx(IPEndPoint[] servers, bool async, string name, ushort queryType, CancellationToken cancellationToken)
         {
@@ -300,10 +317,11 @@ namespace System.Net
 
             if (async && s_asyncSyncCompletionBug)
             {
-                // On affected Windows versions "localhost" always trips the synchronous-completion
-                // bug, so resolve it on the synchronous path up front and route every other
-                // asynchronous query through a wrapper that retries synchronously if it hits the bug.
-                if (IsLocalhostName(name))
+                // On affected Windows versions a small set of special names always trips the
+                // synchronous-completion bug, so resolve them on the synchronous path up front and
+                // route every other asynchronous query through a wrapper that retries synchronously
+                // if it hits the bug.
+                if (IsSynchronouslyCompletingQueryName(name))
                 {
                     async = false;
                 }

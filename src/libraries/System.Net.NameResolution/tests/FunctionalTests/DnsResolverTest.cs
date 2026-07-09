@@ -117,6 +117,24 @@ namespace System.Net.NameResolution.Tests
         private static async Task<DnsResult<AddressRecord>> Static_ResolveAddresses(bool async, string name)
             => async ? await Dns.ResolveAddressesAsync(name) : Dns.ResolveAddresses(name);
 
+        public static TheoryData<bool, string> SynchronouslyCompletingQueryNames => new()
+        {
+            { false, "localhost" },
+            { true, "localhost" },
+            { false, "loopback" },
+            { true, "loopback" },
+            { false, "..DnsServers" },
+            { true, "..DnsServers" },
+            { false, "..localmachine" },
+            { true, "..localmachine" },
+            { false, "127.0.0.1" },
+            { true, "127.0.0.1" },
+            { false, "::1" },
+            { true, "::1" },
+            { false, Dns.GetHostName() },
+            { true, Dns.GetHostName() },
+        };
+
         // ---- Windows network tests (require outbound DNS) ----
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
@@ -129,32 +147,35 @@ namespace System.Net.NameResolution.Tests
         }
 
         // Regression test for the Windows 10 DnsQueryEx bug where an asynchronous query
-        // that the OS can satisfy synchronously (for example "localhost") returns
+        // that the OS can satisfy synchronously (for example localhost, loopback, IP
+        // literals, the local host name, and a few Windows special names) returns
         // ERROR_SUCCESS inline and never invokes the registered completion callback.
         // If the implementation waited for that callback it would hang forever; the PAL
         // must instead detect the synchronous completion (any status other than
         // DNS_REQUEST_PENDING) and surface the result directly.
         // See https://dblohm7.ca/blog/2022/05/06/dnsqueryex-needs-love/.
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task ResolveAddresses_SynchronouslyCompletingQuery_DoesNotHang(bool async)
+        [MemberData(nameof(SynchronouslyCompletingQueryNames))]
+        public async Task ResolveAddresses_SynchronouslyCompletingQuery_DoesNotHang(bool async, string name)
         {
             using DnsResolver r = new DnsResolver();
 
-            // "localhost" can be answered without any network round-trip, which is what
-            // triggers the synchronous-completion path inside DnsQueryEx. A short timeout
-            // turns the "callback never fires" hang into a test failure rather than letting
-            // the run stall.
-            Task<DnsResult<AddressRecord>> task = ResolveAddresses(async, r, "localhost");
+            // These names can be answered without the normal asynchronous callback path,
+            // which is what triggers the synchronous-completion path inside DnsQueryEx.
+            // A short timeout turns the "callback never fires" hang into a test failure
+            // rather than letting the run stall.
+            Task<DnsResult<AddressRecord>> task = ResolveAddresses(async, r, name);
             DnsResult<AddressRecord> result = await task.WaitAsync(TimeSpan.FromSeconds(30));
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
-
             Assert.NotEmpty(result.Records);
-            foreach (AddressRecord rec in result.Records)
+
+            if (name is "localhost" or "loopback" or "127.0.0.1" or "::1")
             {
-                Assert.True(IPAddress.IsLoopback(rec.Address), $"Expected a loopback address but got {rec.Address}.");
+                foreach (AddressRecord rec in result.Records)
+                {
+                    Assert.True(IPAddress.IsLoopback(rec.Address), $"Expected a loopback address but got {rec.Address}.");
+                }
             }
         }
 
