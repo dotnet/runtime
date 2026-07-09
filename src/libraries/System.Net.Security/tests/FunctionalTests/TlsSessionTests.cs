@@ -2629,10 +2629,7 @@ namespace System.Net.Security.Tests
             });
             using TlsBufferSession session = NewBufferSession(ctx);
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                ReadOnlySpan<byte> _ = GetClientHelloBytesHelper(session);
-            });
+            Assert.Throws<InvalidOperationException>(() => GetClientHelloBytesHelper(session));
         }
 
         // Regression: SetContext used to acquire credentials into the shared
@@ -2864,10 +2861,7 @@ namespace System.Net.Security.Tests
             });
             using TlsBufferSession session = NewBufferSession(ctx);
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                ReadOnlySpan<byte> _ = GetClientHelloBytesHelper(session);
-            });
+            Assert.Throws<InvalidOperationException>(() => GetClientHelloBytesHelper(session));
         }
     }
 }
