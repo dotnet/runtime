@@ -652,8 +652,15 @@ namespace System.Formats.Tar
                     }
                     if (component is "..")
                     {
+                        // traverse to the parent, make sure we don't have a trailing '/' or '\'.
+                        ReadOnlySpan<char> resolvedFullPathSpan = resolvedFullPath.AsSpan();
+                        resolvedFullPathSpan = resolvedFullPathSpan.TrimEnd(Path.DirectorySeparatorChar);
+                        resolvedFullPathSpan = resolvedFullPathSpan.TrimEnd(Path.AltDirectorySeparatorChar);
+
                         // GetDirectoryName returns null at the root, map back to root (.. on / yields /).
-                        resolvedFullPath = Path.GetDirectoryName(resolvedFullPath) ?? resolvedFullPath;
+                        resolvedFullPathSpan = Path.GetDirectoryName(resolvedFullPathSpan);
+                        resolvedFullPath = resolvedFullPathSpan.IsEmpty ? resolvedFullPath : resolvedFullPathSpan.ToString();
+
                         if (!IsInRootOrDestination(rootPath, resolvedFullPath))
                         {
                             return false;
