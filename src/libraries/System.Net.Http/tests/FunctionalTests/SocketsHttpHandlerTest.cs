@@ -4435,10 +4435,22 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+
+                    long connectCallbackConnectionId = -1;
+                    socketsHandler.ConnectCallback = (context, token) =>
+                    {
+                        connectCallbackConnectionId = context.ConnectionId;
+                        var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                        socket.Connect(context.DnsEndPoint);
+                        return ValueTask.FromResult<Stream>(new NetworkStream(socket, ownsSocket: true));
+                    };
+
                     socketsHandler.PlaintextStreamFilter = async (context, token) =>
                     {
                         Assert.Equal(UseVersion, context.NegotiatedHttpVersion);
                         Assert.Equal(requestMessage, context.InitialRequestMessage);
+                        // The filter observes the same connection id surfaced to the ConnectCallback.
+                        Assert.Equal(connectCallbackConnectionId, context.ConnectionId);
 
                         if (!syncCallback)
                         {

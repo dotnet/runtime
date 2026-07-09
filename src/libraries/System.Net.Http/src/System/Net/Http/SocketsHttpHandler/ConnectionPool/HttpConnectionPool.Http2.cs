@@ -246,7 +246,7 @@ namespace System.Net.Http
 
         private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, long connectionId, CancellationToken cancellationToken)
         {
-            stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
+            stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, connectionId, cancellationToken).ConfigureAwait(false);
 
             Http2Connection http2Connection = new Http2Connection(this, stream, activity, remoteEndPoint, connectionId);
             try

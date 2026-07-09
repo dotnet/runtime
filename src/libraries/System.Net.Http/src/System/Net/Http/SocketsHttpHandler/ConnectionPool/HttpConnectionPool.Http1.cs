@@ -299,7 +299,7 @@ namespace System.Net.Http
 
         private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, long connectionId, CancellationToken cancellationToken)
         {
-            Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
+            Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, connectionId, cancellationToken).ConfigureAwait(false);
             return new HttpConnection(this, newStream, transportContext, activity, remoteEndPoint, connectionId);
         }
 

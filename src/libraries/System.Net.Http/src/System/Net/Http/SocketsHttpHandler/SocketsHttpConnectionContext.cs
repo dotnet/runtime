@@ -34,10 +34,12 @@ namespace System.Net.Http
 
         /// <summary>
         /// The identifier that will be assigned to the connection being established. This matches the connection id
-        /// reported through <see cref="EventSource"/> telemetry, and the
+        /// reported through <see cref="EventSource"/> telemetry, the
         /// <see cref="SocketsHttpConnectionEvictionContext.ConnectionId"/> passed to
-        /// <see cref="SocketsHttpHandler.ShouldEvictConnection"/>. It can be used to associate caller state (for
-        /// example, the resolved address used) with the connection so it can be recovered when deciding on eviction.
+        /// <see cref="SocketsHttpHandler.ShouldEvictConnection"/>, and the
+        /// <see cref="HttpRequestMessage.ConnectionId"/> stamped on requests sent over the connection. It can be used
+        /// to associate caller state (for example, the resolved address used) with the connection and to correlate it
+        /// with the requests it serves, so that state can be recovered later (for example when deciding on eviction).
         /// </summary>
         [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public long ConnectionId => _connectionId;

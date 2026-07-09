@@ -54,10 +54,11 @@ namespace System.Net.Http
 
         /// <summary>
         /// Gets the identifier assigned to the connection. This matches the connection id reported through
-        /// <see cref="EventSource"/> telemetry, and the
+        /// <see cref="EventSource"/> telemetry, the
         /// <see cref="SocketsHttpConnectionContext.ConnectionId"/> seen by a custom
-        /// <see cref="SocketsHttpHandler.ConnectCallback"/>, allowing the decision to be correlated with state the
-        /// caller associated with the connection at creation time.
+        /// <see cref="SocketsHttpHandler.ConnectCallback"/>, and the <see cref="HttpRequestMessage.ConnectionId"/>
+        /// stamped on requests sent over the connection. It allows the eviction decision to be correlated both with
+        /// state the caller associated with the connection at creation time and with the requests it served.
         /// </summary>
         public long ConnectionId { get; }
 

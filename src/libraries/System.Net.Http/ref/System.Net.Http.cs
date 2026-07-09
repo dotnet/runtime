@@ -492,6 +492,8 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpPlaintextStreamFilterContext
     {
         internal SocketsHttpPlaintextStreamFilterContext() { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5008", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public long ConnectionId { get { throw null; } }
         public System.Net.Http.HttpRequestMessage InitialRequestMessage { get { throw null; } }
         public System.Version NegotiatedHttpVersion { get { throw null; } }
         public System.IO.Stream PlaintextStream { get { throw null; } }

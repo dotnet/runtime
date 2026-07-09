@@ -745,7 +745,7 @@ namespace System.Net.Http
             return _sslOptionsHttp11!;
         }
 
-        private async ValueTask<Stream> ApplyPlaintextFilterAsync(bool async, Stream stream, Version httpVersion, HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ApplyPlaintextFilterAsync(bool async, Stream stream, Version httpVersion, HttpRequestMessage request, long connectionId, CancellationToken cancellationToken)
         {
             if (Settings._plaintextStreamFilter is null)
             {
@@ -755,7 +755,7 @@ namespace System.Net.Http
             Stream newStream;
             try
             {
-                ValueTask<Stream> streamTask = Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request), cancellationToken);
+                ValueTask<Stream> streamTask = Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request, connectionId), cancellationToken);
 
                 if (!async && !streamTask.IsCompleted)
                 {
