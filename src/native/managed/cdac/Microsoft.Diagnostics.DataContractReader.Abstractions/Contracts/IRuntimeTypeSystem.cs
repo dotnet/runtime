@@ -99,6 +99,16 @@ public enum GenericContextLoc
     ThisPtr,
 }
 
+[Flags]
+public enum AsyncMethodFlags : uint
+{
+    None = 0,
+    AsyncCall = 0x1,
+    IsAsyncVariant = 0x4,
+    Thunk = 0x10,
+    ReturnDroppingThunk = 0x20,
+}
+
 public enum WellKnownMethodTable
 {
     Object,
@@ -107,6 +117,14 @@ public enum WellKnownMethodTable
     Exception,
     Free,
     Canon,
+    EH,
+    ExceptionServicesInternalCalls,
+    StackFrameIterator,
+}
+
+public enum WellKnownMethodDesc
+{
+    EnvironmentCallEntryPoint,
 }
 
 
@@ -148,6 +166,9 @@ public interface IRuntimeTypeSystem : IContract
     // Returns the address of one of the runtime's well-known singleton MethodTables,
     // or TargetPointer.Null if the runtime has not yet initialized that global.
     TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind) => throw new NotImplementedException();
+    // Returns the address of one of the runtime's well-known singleton MethodDescs,
+    // or TargetPointer.Null if the runtime has not yet initialized that global.
+    TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
@@ -293,11 +314,12 @@ public interface IRuntimeTypeSystem : IContract
 
     OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
-
-    bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     bool IsUnboxingStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    bool IsVarArg(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();

@@ -456,6 +456,53 @@ public record X86GCInfo : IGCInfoDecoder
         return (Header.EbpFrame || Header.DoubleAlign) ? REG_EBP : REG_ESP;
     }
 
+    private const ulong SHADOW_SP_BITS = 0x3;
+    private const uint INVALID_SYNC_OFFSET = 0;
+
+    // x86 (the InfoHdr GC info format) does not encode a generic instantiation context stack slot;
+    // GetExactGenericArgsToken recovers the token differently. Always report "not present".
+    bool IGCInfoDecoder.TryGetGenericInstantiationContextStackSlot(out int spOffset, out bool isStackBaseRelative)
+    {
+        spOffset = 0;
+        isStackBaseRelative = false;
+        return false;
+    }
+
+    // See https://github.com/dotnet/runtime/blob/5ad8ae4df419c33fed516bebe59231b21127bc5d/src/coreclr/vm/stackwalk.cpp#L145
+    public TargetPointer GetAmbientSP(uint codeOffset, TargetPointer fp, TargetPointer sp)
+    {
+        if (IsCodeOffsetInProlog(codeOffset) || IsCodeOffsetInEpilog(codeOffset))
+            return TargetPointer.Null;
+
+        if (Header.Handlers)
+            return new TargetPointer(GetOutermostBaseFP(fp).Value & ~SHADOW_SP_BITS);
+
+        if (Header.EbpFrame)
+            return GetOutermostBaseFP(fp);
+
+        return new TargetPointer(sp.Value + CalculatePushedArgSizeAt(codeOffset));
+    }
+
+    private TargetPointer GetOutermostBaseFP(TargetPointer ebp)
+    {
+        if (Header.LocalAlloc)
+        {
+            TargetPointer pLocalloc = new(ebp.Value - GetLocallocSPOffset());
+            return _target.ReadPointer(pLocalloc);
+        }
+
+        return new TargetPointer(ebp.Value - RawStackSize + (uint)sizeof(int));
+    }
+
+    private ulong GetLocallocSPOffset()
+    {
+        Debug.Assert(Header.LocalAlloc && Header.EbpFrame);
+        uint position = SavedRegsCountExclFP
+                        + (Header.SyncStartOffset != INVALID_SYNC_OFFSET ? 1u : 0u)
+                        + 1u;
+        return position * (uint)_target.PointerSize;
+    }
+
     uint IGCInfoDecoder.GetSizeOfStackParameterArea()
     {
         // x86 GC info does not encode a separate outgoing-argument scratch area; the

@@ -1532,22 +1532,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             if (handleData.IsValid)
             {
-                IStackWalk sw = _target.Contracts.StackWalk;
-                StackwalkFlag flags = (handleData.Current.State == StackWalkState.NativeMarker)
-                    ? StackwalkFlag.X86ESPIgnoresCalleePoppedArgs
-                    : StackwalkFlag.Default;
-                byte[] context = sw.GetRawContext(handleData.Current, flags);
-
                 // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
-                RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-                if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
-                {
-                    IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                    stripped.FillFromBuffer(context);
-                    stripped.RawContextFlags &= ~0x40u;
-                    context = stripped.GetBytes();
-                }
-
+                byte[] context = GetCurrentContextBytes(handleData.Current!);
                 context.AsSpan().CopyTo(new Span<byte>(pContext, context.Length));
             }
             else
@@ -1705,10 +1691,262 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (pSFIHandle == 0)
             return HResults.E_INVALIDARG;
 
-        nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
-            ? _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, pFrameData, pRetVal)
-            : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        FrameType ftResult = FrameType.kInvalid;
+        StackWalkFrameInfo frameInfo = default;
+        bool haveFrameInfo = false;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
+            if (gcHandle.Target is not StackWalkHandleData handleData)
+                throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
+            legacyHandle = handleData.LegacyHandle;
+
+            if (!handleData.IsValid)
+            {
+                ftResult = FrameType.kAtEndOfStack;
+            }
+            else
+            {
+                IStackDataFrameHandle handle = handleData.Current!;
+                bool fInitFrameData = false;
+                switch (handle.State)
+                {
+                    case StackWalkState.Frameless:
+                        ftResult = ClassifyManagedFrame(handle, out fInitFrameData);
+                        break;
+                    case StackWalkState.InitialNativeContext:
+                    case StackWalkState.NativeMarker:
+                        TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+                        if (_target.Contracts.Debugger.GetHijackKind(controlPC) != HijackKind.None)
+                        {
+                            ftResult = FrameType.kNativeRuntimeUnwindableStackFrame;
+                            fInitFrameData = true;
+                        }
+                        else
+                        {
+                            ftResult = FrameType.kNativeStackFrame;
+                        }
+                        break;
+                    default:
+                        ftResult = FrameType.kInvalid;
+                        break;
+                }
+
+                if (fInitFrameData && pFrameData != 0)
+                {
+                    frameInfo = _target.Contracts.StackWalk.GetCurrentFrameInfo(handle);
+                    haveFrameInfo = true;
+                    InitFrameData(handle, ftResult, frameInfo, pFrameData);
+                }
+            }
+
+            if (pRetVal != null)
+                *pRetVal = (int)ftResult;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && legacyHandle != 0)
+        {
+            uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
+            byte* pLegacyCtx = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
+            try
+            {
+                new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
+                Debugger_STRData legacyData = default;
+                legacyData.ctx = (ulong)pLegacyCtx;
+                int legacyRetVal = 0;
+                int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert((int)ftResult == legacyRetVal, $"FrameType mismatch - cDAC: {ftResult}, DAC: {(FrameType)legacyRetVal}");
+                    if (haveFrameInfo && pFrameData != 0)
+                    {
+                        Debugger_STRData* pcdac = (Debugger_STRData*)pFrameData;
+                        Debug.Assert(pcdac->fp == legacyData.fp, $"fp mismatch - cDAC: 0x{pcdac->fp:x}, DAC: 0x{legacyData.fp:x}");
+                        Debug.Assert(pcdac->vmCurrentAppDomainToken == legacyData.vmCurrentAppDomainToken, $"appDomain mismatch - cDAC: 0x{pcdac->vmCurrentAppDomainToken:x}, DAC: 0x{legacyData.vmCurrentAppDomainToken:x}");
+                        Debug.Assert(pcdac->eType == legacyData.eType, $"eType mismatch - cDAC: {pcdac->eType}, DAC: {legacyData.eType}");
+
+                        if (pcdac->ctx != 0)
+                        {
+                            ReadOnlySpan<byte> cctx = new((byte*)pcdac->ctx, (int)contextSize);
+                            ReadOnlySpan<byte> lctx = new(pLegacyCtx, (int)contextSize);
+                            if (!cctx.SequenceEqual(lctx))
+                                Debug.Fail(DescribeContextDiff(cctx, lctx));
+                        }
+
+                        if (ftResult == FrameType.kManagedStackFrame)
+                        {
+                            DebuggerIPCE_STRData_MethodFrame cv = pcdac->v;
+                            DebuggerIPCE_STRData_MethodFrame lv = legacyData.v;
+                            Debug.Assert(cv.mapping == lv.mapping, $"mapping mismatch - cDAC: {cv.mapping}, DAC: {lv.mapping}");
+                            Debug.Assert(cv.fVarArgs == lv.fVarArgs, $"fVarArgs mismatch - cDAC: {cv.fVarArgs}, DAC: {lv.fVarArgs}");
+                            Debug.Assert(cv.fNoMetadata == lv.fNoMetadata, $"fNoMetadata mismatch - cDAC: {cv.fNoMetadata}, DAC: {lv.fNoMetadata}");
+                            Debug.Assert(cv.taAmbientESP == lv.taAmbientESP, $"taAmbientESP mismatch - cDAC: 0x{cv.taAmbientESP:x}, DAC: 0x{lv.taAmbientESP:x}");
+                            Debug.Assert(cv.exactGenericArgsToken == lv.exactGenericArgsToken, $"exactGenericArgsToken mismatch - cDAC: 0x{cv.exactGenericArgsToken:x}, DAC: 0x{lv.exactGenericArgsToken:x}");
+                            Debug.Assert(cv.dwExactGenericArgsTokenIndex == lv.dwExactGenericArgsTokenIndex, $"dwExactGenericArgsTokenIndex mismatch - cDAC: 0x{cv.dwExactGenericArgsTokenIndex:x}, DAC: 0x{lv.dwExactGenericArgsTokenIndex:x}");
+                            Debug.Assert(cv.funcData.funcMetadataToken == lv.funcData.funcMetadataToken, $"funcMetadataToken mismatch - cDAC: 0x{cv.funcData.funcMetadataToken:x}, DAC: 0x{lv.funcData.funcMetadataToken:x}");
+                            Debug.Assert(cv.funcData.vmAssembly == lv.funcData.vmAssembly, $"vmAssembly mismatch - cDAC: 0x{cv.funcData.vmAssembly:x}, DAC: 0x{lv.funcData.vmAssembly:x}");
+                            Debug.Assert(cv.jitFuncData.nativeStartAddressPtr == lv.jitFuncData.nativeStartAddressPtr, $"nativeStartAddressPtr mismatch - cDAC: 0x{cv.jitFuncData.nativeStartAddressPtr:x}, DAC: 0x{lv.jitFuncData.nativeStartAddressPtr:x}");
+                            Debug.Assert(cv.jitFuncData.nativeOffset == lv.jitFuncData.nativeOffset, $"nativeOffset mismatch - cDAC: 0x{cv.jitFuncData.nativeOffset:x}, DAC: 0x{lv.jitFuncData.nativeOffset:x}");
+                            Debug.Assert(cv.jitFuncData.vmNativeCodeMethodDescToken == lv.jitFuncData.vmNativeCodeMethodDescToken, $"vmNativeCodeMethodDescToken mismatch - cDAC: 0x{cv.jitFuncData.vmNativeCodeMethodDescToken:x}, DAC: 0x{lv.jitFuncData.vmNativeCodeMethodDescToken:x}");
+                            Debug.Assert(cv.jitFuncData.fIsFilterFrame == lv.jitFuncData.fIsFilterFrame, $"fIsFilterFrame mismatch - cDAC: {cv.jitFuncData.fIsFilterFrame}, DAC: {lv.jitFuncData.fIsFilterFrame}");
+                            Debug.Assert(cv.jitFuncData.isInstantiatedGeneric == lv.jitFuncData.isInstantiatedGeneric, $"isInstantiatedGeneric mismatch - cDAC: {cv.jitFuncData.isInstantiatedGeneric}, DAC: {lv.jitFuncData.isInstantiatedGeneric}");
+                            Debug.Assert(cv.jitFuncData.fpParentOrSelf == lv.jitFuncData.fpParentOrSelf, $"fpParentOrSelf mismatch - cDAC: 0x{cv.jitFuncData.fpParentOrSelf:x}, DAC: 0x{lv.jitFuncData.fpParentOrSelf:x}");
+                            Debug.Assert(cv.jitFuncData.parentNativeOffset == lv.jitFuncData.parentNativeOffset, $"parentNativeOffset mismatch - cDAC: 0x{cv.jitFuncData.parentNativeOffset:x}, DAC: 0x{lv.jitFuncData.parentNativeOffset:x}");
+                            if (frameInfo.IsInterrupted)
+                                Debug.Assert(cv.jitFuncData.justAfterILThrow == lv.jitFuncData.justAfterILThrow, $"justAfterILThrow mismatch - cDAC: {cv.jitFuncData.justAfterILThrow}, DAC: {lv.jitFuncData.justAfterILThrow}");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(pLegacyCtx);
+            }
+        }
+#endif
+        return hr;
+    }
+
+    private FrameType ClassifyManagedFrame(IStackDataFrameHandle handle, out bool fInitFrameData)
+    {
+        fInitFrameData = false;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetPointer mdPtr = _target.Contracts.StackWalk.GetMethodDescPtr(handle);
+        if (mdPtr == TargetPointer.Null)
+            throw new InvalidOperationException("Frameless method has no MethodDesc");
+
+        MethodDescHandle md = rts.GetMethodDescHandle(mdPtr);
+        TargetPointer mtPtr = rts.GetMethodTable(md);
+
+        if (mtPtr == rts.GetWellKnownMethodTable(WellKnownMethodTable.EH)
+            || mtPtr == rts.GetWellKnownMethodTable(WellKnownMethodTable.ExceptionServicesInternalCalls)
+            || mtPtr == rts.GetWellKnownMethodTable(WellKnownMethodTable.StackFrameIterator))
+        {
+            return FrameType.kManagedExceptionHandlingCodeFrame;
+        }
+
+        if (mdPtr == rts.GetWellKnownMethodDesc(WellKnownMethodDesc.EnvironmentCallEntryPoint))
+        {
+            return FrameType.kRuntimeEntryPointFrame;
+        }
+
+        fInitFrameData = true;
+        return FrameType.kManagedStackFrame;
+    }
+
+    private byte[] GetCurrentContextBytes(IStackDataFrameHandle handle)
+    {
+        IStackWalk sw = _target.Contracts.StackWalk;
+        StackwalkFlag flags = (handle.State == StackWalkState.NativeMarker)
+            ? StackwalkFlag.X86ESPIgnoresCalleePoppedArgs
+            : StackwalkFlag.Default;
+        byte[] context = sw.GetRawContext(handle, flags);
+
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
+        {
+            IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            stripped.FillFromBuffer(context);
+            stripped.RawContextFlags &= ~0x40u;
+            context = stripped.GetBytes();
+        }
+        return context;
+    }
+
+    private void WriteContext(IStackDataFrameHandle handle, ulong ctxPtr)
+    {
+        if (ctxPtr == 0)
+            return;
+        byte[] context = GetCurrentContextBytes(handle);
+        context.AsSpan().CopyTo(new Span<byte>((byte*)ctxPtr, context.Length));
+    }
+
+    private void InitFrameData(IStackDataFrameHandle handle, FrameType ft, StackWalkFrameInfo frameInfo, nint pFrameData)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
+
+        Debugger_STRData* pDest = (Debugger_STRData*)pFrameData;
+        ulong incomingCtx = pDest->ctx;
+
+        Debugger_STRData data = default;
+        data.ctx = incomingCtx;
+        data.fp = frameInfo.FramePointer.Value;
+        data.vmCurrentAppDomainToken = currentAppDomain.Value;
+        WriteContext(handle, incomingCtx);
+
+        if (ft == FrameType.kNativeRuntimeUnwindableStackFrame)
+        {
+            data.eType = Debugger_STRData.EType.cRuntimeNativeFrame;
+        }
+        else
+        {
+            data.eType = Debugger_STRData.EType.cMethodFrame;
+
+            TargetPointer mdPtr = _target.Contracts.StackWalk.GetMethodDescPtr(handle);
+            MethodDescHandle md = rts.GetMethodDescHandle(mdPtr);
+
+            data.v.mapping = (int)CorDebugMappingResult.MAPPING_NO_INFO;
+            data.v.fVarArgs = (byte)(rts.IsVarArg(md) ? 1 : 0);
+            data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md)) ? 1 : 0);
+            data.v.taAmbientESP = frameInfo.AmbientSP.Value;
+
+            GenericContextLoc genericContextLoc = rts.GetGenericContextLoc(md);
+            data.v.exactGenericArgsToken = _target.Contracts.StackWalk.GetExactGenericArgsToken(handle).Value;
+            if (genericContextLoc != GenericContextLoc.None)
+            {
+                data.v.dwExactGenericArgsTokenIndex = genericContextLoc == GenericContextLoc.ThisPtr ? 0u : unchecked((uint)IlNum.TYPECTXT_ILNUM);
+            }
+            else
+            {
+                data.v.dwExactGenericArgsTokenIndex = unchecked((uint)IlNum.MAX_ILNUM);
+            }
+
+            ResolveStubFrameAssemblyAndToken(mdPtr, out TargetPointer vmAssembly, out uint funcMetadataToken);
+            data.v.funcData.funcMetadataToken = funcMetadataToken;
+            data.v.funcData.vmAssembly = vmAssembly.Value;
+
+            TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+            ulong nativeOffset = 0;
+            if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
+            {
+                data.v.jitFuncData.nativeStartAddressPtr = eman.GetStartAddress(cbh).Value;
+                nativeOffset = eman.GetRelativeOffset(cbh).Value;
+            }
+            data.v.jitFuncData.nativeHotSize = 0;
+            data.v.jitFuncData.nativeStartAddressColdPtr = 0;
+            data.v.jitFuncData.nativeColdSize = 0;
+            data.v.jitFuncData.nativeOffset = nativeOffset;
+            data.v.jitFuncData.vmNativeCodeMethodDescToken = mdPtr.Value;
+            data.v.jitFuncData.fIsFilterFrame = frameInfo.IsFilterFunclet ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data.v.jitFuncData.parentNativeOffset = frameInfo.ParentNativeOffset;
+            data.v.jitFuncData.fpParentOrSelf = frameInfo.ParentOrSelfFramePointer.Value;
+            data.v.jitFuncData.isInstantiatedGeneric = HasClassOrMethodInstantiation(rts, md) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data.v.jitFuncData.justAfterILThrow = (frameInfo.IsInterrupted && !frameInfo.HasFaulted && nativeOffset != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+
+        *pDest = data;
+    }
+
+    private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)
+        => flags.HasFlag(AsyncMethodFlags.Thunk)
+            && (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant));
+
+    private static bool HasClassOrMethodInstantiation(IRuntimeTypeSystem rts, MethodDescHandle md)
+    {
+        TargetPointer mtAddr = rts.GetMethodTable(md);
+        TypeHandle mt = rts.GetTypeHandle(mtAddr);
+        bool hasClassInstantiation = !rts.GetInstantiation(mt).IsEmpty;
+        bool hasMethodInstantiation = rts.IsGenericMethodDefinition(md) || !rts.GetGenericMethodInstantiation(md).IsEmpty;
+        return hasClassInstantiation || hasMethodInstantiation;
     }
 
     // Filter used by GetCountOfInternalFrames and EnumerateInternalFrames to decide
@@ -2014,7 +2252,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-            if (rts.IsILStub(md) || rts.IsAsyncThunkMethod(md) || rts.IsWrapperStub(md))
+            if (rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md))
             {
                 *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }
@@ -5497,7 +5735,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethod));
 
-            if (!rts.IsAsyncThunkMethod(md))
+            if (!rts.GetAsyncMethodFlags(md).HasFlag(Contracts.AsyncMethodFlags.Thunk))
             {
                 TargetCodePointer pCode;
                 if (codeAddr != 0)

@@ -36,7 +36,9 @@ internal partial class StackWalk_1 : IStackWalk
         ThreadData ThreadData,
         bool IsResumableFrame = false,
         bool IsActiveFrame = false,
-        uint LastFramelessStackParameterSize = 0) : IStackDataFrameHandle
+        uint LastFramelessStackParameterSize = 0,
+        bool IsInterrupted = false,
+        bool HasFaulted = false) : IStackDataFrameHandle
     { }
 
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
@@ -58,6 +60,8 @@ internal partial class StackWalk_1 : IStackWalk
         // and EnumGcRefs should use ExecutionAborted to skip live slot reporting at
         // non-interruptible offsets.
         public bool IsInterrupted { get; set; }
+
+        public bool HasFaulted { get; set; }
 
         // The frame type of the last Frame processed by Next().
         // Used by UpdateState to detect exception frames (FRAME_ATTR_EXCEPTION) and
@@ -115,7 +119,7 @@ internal partial class StackWalk_1 : IStackWalk
         {
             bool isResumable = IsCurrentFrameResumable();
             bool isActiveFrame = IsFirst && State == StackWalkState.Frameless;
-            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, LastFramelessStackParameterSize);
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, LastFramelessStackParameterSize, IsInterrupted, HasFaulted);
         }
     }
 
@@ -136,7 +140,7 @@ internal partial class StackWalk_1 : IStackWalk
         return RunStackWalk(context, state, frameIterator, threadData);
     }
 
-    private void SetupContext(IPlatformAgnosticContext context, FrameIterator frameIterator, StackWalkState state, ref bool isFirst, out bool matchedIsInterrupted)
+    private void SetupContext(IPlatformAgnosticContext context, FrameIterator frameIterator, StackWalkState state, ref bool isFirst, out bool matchedIsInterrupted, out bool matchedHasFaulted)
     {
         TargetPointer curSP = context.StackPointer;
         TargetCodePointer curPc = context.InstructionPointer;
@@ -180,6 +184,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         matchedIsInterrupted = false;
+        matchedHasFaulted = false;
         if (matched)
         {
             isFirst = matchedType is FrameType.ResumableFrame
@@ -187,6 +192,7 @@ internal partial class StackWalk_1 : IStackWalk
                           || (matchedType is FrameType.HijackFrame && !isX86);
             matchedIsInterrupted = matchedType is FrameType.FaultingExceptionFrame
                                                 or FrameType.SoftwareExceptionFrame;
+            matchedHasFaulted = matchedType is FrameType.FaultingExceptionFrame;
         }
     }
 
@@ -196,8 +202,8 @@ internal partial class StackWalk_1 : IStackWalk
         context.FillFromBuffer(contextBuffer);
         FrameIterator frameIterator = new(_target, threadData);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.Frameless : StackWalkState.InitialNativeContext;
-        SetupContext(context, frameIterator, state, ref isFirst, out bool matchedIsInterrupted);
-        return RunStackWalk(context, state, frameIterator, threadData, isFirst, matchedIsInterrupted);
+        SetupContext(context, frameIterator, state, ref isFirst, out bool matchedIsInterrupted, out bool matchedHasFaulted);
+        return RunStackWalk(context, state, frameIterator, threadData, isFirst, matchedIsInterrupted, matchedHasFaulted);
     }
 
     private IEnumerable<IStackDataFrameHandle> RunStackWalk(
@@ -206,7 +212,8 @@ internal partial class StackWalk_1 : IStackWalk
         FrameIterator frameIterator,
         ThreadData threadData,
         bool isFirst = true,
-        bool isInterrupted = false)
+        bool isInterrupted = false,
+        bool hasFaulted = false)
     {
         // Skip the head InterpreterFrame when entering with a context already
         // inside an interpreter execution (e.g. a managed-debugger breakpoint
@@ -224,7 +231,8 @@ internal partial class StackWalk_1 : IStackWalk
         StackWalkData stackWalkData = new(context, state, frameIterator, threadData)
         {
             IsFirst = isFirst,
-            IsInterrupted = isInterrupted
+            IsInterrupted = isInterrupted,
+            HasFaulted = hasFaulted
         };
 
         // Mirror native Init() -> ProcessCurrentFrame() -> CheckForSkippedFrames():
@@ -821,6 +829,7 @@ internal partial class StackWalk_1 : IStackWalk
                 // Reset interrupted state after processing a managed frame.
                 // Native stackwalk.cpp: isInterrupted = false; hasFaulted = false;
                 handle.IsInterrupted = false;
+                handle.HasFaulted = false;
                 TargetCodePointer preUnwindIp = new(handle.Context.InstructionPointer.Value);
                 if (_target.Contracts.ExecutionManager.GetCodeBlockHandle(preUnwindIp) is CodeBlockHandle cbh)
                 {
@@ -865,9 +874,10 @@ internal partial class StackWalk_1 : IStackWalk
                         ? StackWalkState.Frameless
                         : StackWalkState.InitialNativeContext;
                     FrameIterator frameIterator = new(_target, handle.ThreadData);
-                    SetupContext(recoveredContext, frameIterator, handle.State, ref isFirst, out bool matchedIsInterrupted);
+                    SetupContext(recoveredContext, frameIterator, handle.State, ref isFirst, out bool matchedIsInterrupted, out bool matchedHasFaulted);
                     handle.IsFirst = isFirst;
                     handle.IsInterrupted = matchedIsInterrupted;
+                    handle.HasFaulted = matchedHasFaulted;
                     handle.FrameIter = frameIterator;
                     handle.Context = recoveredContext;
                     handle.LastProcessedFrameType = null;
@@ -945,6 +955,7 @@ internal partial class StackWalk_1 : IStackWalk
                                                       or FrameType.SoftwareExceptionFrame)
                     {
                         handle.IsInterrupted = true;
+                        handle.HasFaulted = handle.LastProcessedFrameType is FrameType.FaultingExceptionFrame;
                     }
                     handle.LastProcessedFrameType = null;
 
@@ -1065,6 +1076,177 @@ internal partial class StackWalk_1 : IStackWalk
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return handle.Context.InstructionPointer;
+    }
+
+    StackWalkFrameInfo IStackWalk.GetCurrentFrameInfo(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+
+        TargetPointer framePointer = ComputeFramePointer(handle);
+        bool isFunclet = IsFunclet(handle);
+        bool isFilterFunclet = IsFilterFunclet(handle);
+
+        TargetPointer parentOrSelf;
+        uint parentNativeOffset = 0;
+        if (isFunclet)
+        {
+            if (TryGetFuncletParentInfo(handle, out TargetPointer parent, out parentNativeOffset))
+            {
+                parentOrSelf = parent;
+            }
+            else
+            {
+                // The funclet (and its parent) have already been unwound; fall back to the caller SP.
+                parentOrSelf = CallerStackPointer(handle);
+            }
+        }
+        else
+        {
+            parentOrSelf = CallerStackPointer(handle);
+        }
+
+        return new StackWalkFrameInfo(
+            framePointer,
+            isFunclet,
+            isFilterFunclet,
+            parentOrSelf,
+            handle.IsInterrupted,
+            handle.HasFaulted,
+            parentNativeOffset,
+            ComputeAmbientSP(handle));
+    }
+
+    private TargetPointer ComputeAmbientSP(StackDataFrameHandle handle)
+    {
+        // Mirrors native CrawlFrame::GetAmbientSPFromCrawlFrame: ARM (32-bit) returns the current
+        // SP, x86 computes it from the GC info, and every other architecture returns 0.
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        if (arch == RuntimeInfoArchitecture.Arm)
+            return handle.State == StackWalkState.Frameless ? handle.Context.StackPointer : TargetPointer.Null;
+
+        if (arch != RuntimeInfoArchitecture.X86)
+            return TargetPointer.Null;
+
+        if (handle.State != StackWalkState.Frameless)
+            return TargetPointer.Null;
+
+        if (!IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? cbh))
+            return TargetPointer.Null;
+
+        uint relOffset = (uint)_eman.GetRelativeOffset(cbh.Value).Value;
+        _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
+        IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+
+        // x86 register numbering (see X86Context.TryReadRegister / X86GCInfo.GetStackBaseRegister): EBP = 5.
+        const int RegEbp = 5;
+        if (!handle.Context.TryReadRegister(RegEbp, out TargetNUInt ebp))
+            return TargetPointer.Null;
+
+        return _target.Contracts.GCInfo.GetAmbientSP(gcHandle, relOffset, new TargetPointer(ebp.Value), handle.Context.StackPointer);
+    }
+
+    private TargetPointer CallerStackPointer(StackDataFrameHandle handle)
+    {
+        IPlatformAgnosticContext callerContext = handle.Context.Clone();
+        callerContext.Unwind(_target);
+        return callerContext.StackPointer;
+    }
+
+    TargetPointer IStackWalk.GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+
+        if (handle.State != StackWalkState.Frameless)
+            return TargetPointer.Null;
+
+        TargetPointer mdPtr = ((IStackWalk)this).GetMethodDescPtr(handle);
+        if (mdPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(mdPtr);
+
+        // Only shared generic code has an exact generics context to recover.
+        GenericContextLoc ctxLoc = rts.GetGenericContextLoc(md);
+        if (ctxLoc == GenericContextLoc.None)
+            return TargetPointer.Null;
+
+        if (!IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? cbh))
+            return TargetPointer.Null;
+
+        _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
+        IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+        if (!_target.Contracts.GCInfo.TryGetGenericInstantiationContextStackSlot(gcHandle, out int spOffset, out bool isStackBaseRelative))
+            return TargetPointer.Null;
+
+        TargetPointer baseAddr;
+        if (isStackBaseRelative)
+        {
+            uint stackBaseRegister = _target.Contracts.GCInfo.GetStackBaseRegister(gcHandle);
+            if (!handle.Context.TryReadRegister((int)stackBaseRegister, out TargetNUInt baseReg))
+                return TargetPointer.Null;
+            baseAddr = new TargetPointer(baseReg.Value);
+        }
+        else
+        {
+            baseAddr = handle.Context.StackPointer;
+        }
+
+        TargetPointer contextValue = _target.ReadPointer(new TargetPointer(baseAddr.Value + (ulong)(long)spOffset));
+        if (contextValue == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        // For the "this"-derived context the slot holds the object reference; the exact generics
+        // token is its MethodTable. For an explicit context arg the slot value is the token itself.
+        return ctxLoc == GenericContextLoc.ThisPtr
+            ? _target.Contracts.Object.GetMethodTableAddress(contextValue)
+            : contextValue;
+    }
+
+    private TargetPointer ComputeFramePointer(StackDataFrameHandle handle)
+    {
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        return arch switch
+        {
+            RuntimeInfoArchitecture.X64 => handle.Context.StackPointer,
+            RuntimeInfoArchitecture.Arm64
+                or RuntimeInfoArchitecture.Arm
+                or RuntimeInfoArchitecture.RiscV64
+                or RuntimeInfoArchitecture.LoongArch64 => CallerStackPointer(handle),
+            RuntimeInfoArchitecture.X86 => ComputeX86FramePointer(handle),
+            _ => throw new InvalidOperationException($"GetCurrentFrameInfo is not supported on {arch}"),
+        };
+    }
+
+    // Mirrors native DacDbiInterfaceImpl::GetFramePointerWorker on x86 (dacdbiimplstackwalk.cpp):
+    // frameless managed methods use ComputeX86FramePointer; runtime-unwindable native markers take the
+    // stack address of the return address from the hijacked context.
+    private TargetPointer ComputeX86FramePointer(StackDataFrameHandle handle)
+    {
+        uint pointerSize = (uint)_target.PointerSize;
+
+        if (handle.State == StackWalkState.Frameless)
+        {
+            // ComputeX86FramePointer: unwind one frame, then
+            // PCTAddr = unwoundEsp - GetStackParameterSize - sizeof(DWORD).
+            ulong unwoundEsp = CallerStackPointer(handle).Value;
+
+            uint stackParameterSize = 0;
+            if (IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? cbh))
+            {
+                _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
+                IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+                stackParameterSize = _target.Contracts.GCInfo.GetCalleePoppedArgumentsSize(gcHandle);
+            }
+
+            return new TargetPointer(unwoundEsp - stackParameterSize - pointerSize);
+        }
+
+        // Native marker / initial native context: RetrieveHijackedContext already returns the context
+        // the stub unwinds to, so PCTAddr = hijackedContext.Esp - sizeof(DWORD).
+        HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(handle.Context.InstructionPointer);
+        IPlatformAgnosticContext hijacked = RetrieveHijackedContext(handle.Context, hijackKind == HijackKind.UnhandledException);
+        return new TargetPointer(hijacked.StackPointer.Value - pointerSize);
     }
 
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)

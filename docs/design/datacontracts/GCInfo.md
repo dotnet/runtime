@@ -50,6 +50,8 @@ IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructio
 
 // Returns true if the instruction offset is a GC-safe point.
 bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset);
+bool TryGetGenericInstantiationContextStackSlot(IGCInfoHandle handle, out int spOffset, out bool isStackBaseRelative);
+TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp);
 ```
 
 ```csharp
@@ -98,6 +100,8 @@ Constants:
 | `NO_GENERICS_INST_CONTEXT` | Indicates no generics instantiation context | -1 |
 | `NO_REVERSE_PINVOKE_FRAME` | Indicates no reverse P/Invoke frame | -1 |
 | `NO_PSP_SYM` | Indicates no PSP symbol | -1 |
+| `INVALID_SYNC_OFFSET` | Sync start offset value indicating the method is not synchronized (x86) | 0 |
+| `SHADOW_SP_BITS` | Flag bits stored in the low bits of an x86 shadow-SP slot; masked off to recover the SP | 0x3 |
 
 
 ### GCInfo Format
@@ -611,6 +615,29 @@ bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset)
     // Ensure header and body are decoded through interruptible ranges, then return true
     // if the offset is fully interruptible or (for the general decoder) matches an entry
     // in the safe point table.
+}
+
+bool TryGetGenericInstantiationContextStackSlot(IGCInfoHandle handle,
+    out int spOffset, out bool isStackBaseRelative)
+{
+    // Ensure the header is decoded through the generic instantiation context and stack
+    // base register fields. If the method reports no context slot (NO_GENERICS_INST_CONTEXT),
+    // return false. Otherwise return the denormalized signed slot offset and whether it is
+    // relative to the stack base register (present) or SP (absent).
+}
+
+TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp)
+{
+    // Non-x86 decoders: return TargetPointer.Null (there is no ambient SP).
+    //
+    // x86 (InfoHdr) decoder, mirroring native EECodeManager::GetAmbientSP:
+    //   - return Null if codeOffset is in the prolog or an epilog;
+    //   - if the method has handlers, return GetOutermostBaseFP(fp) with the low
+    //     SHADOW_SP_BITS masked off;
+    //   - else if it is an EBP frame, return GetOutermostBaseFP(fp);
+    //   - else (ESP frame) return sp plus the pushed-argument size at codeOffset.
+    // GetOutermostBaseFP reads the localloc slot when the method uses localloc,
+    // otherwise returns fp - stackSize + sizeof(int).
 }
 ```
 

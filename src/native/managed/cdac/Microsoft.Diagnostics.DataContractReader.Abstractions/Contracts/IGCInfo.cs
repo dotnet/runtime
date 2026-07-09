@@ -56,6 +56,8 @@ public interface IGCInfo : IContract
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options) => throw new NotImplementedException();
     bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset) => throw new NotImplementedException();
+    bool TryGetGenericInstantiationContextStackSlot(IGCInfoHandle handle, out int spOffset, out bool isStackBaseRelative) => throw new NotImplementedException();
+    TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp) => throw new NotImplementedException();
 }
 
 public readonly struct GCInfo : IGCInfo

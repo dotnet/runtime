@@ -71,6 +71,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns the address of one of the runtime's well-known singleton MethodTables, or
     // TargetPointer.Null if the runtime has not yet initialized that global.
     public virtual TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind);
+    // Returns the address of one of the runtime's well-known singleton MethodDescs, or
+    // TargetPointer.Null if the runtime has not yet initialized that global.
+    public virtual TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
@@ -204,6 +207,16 @@ public enum WellKnownMethodTable
     Exception,
     Free,
     Canon,
+    EH,
+    ExceptionServicesInternalCalls,
+    StackFrameIterator,
+}
+
+// Identifies one of the runtime's well-known singleton MethodDescs, each addressable
+// via a dedicated global pointer.
+public enum WellKnownMethodDesc
+{
+    EnvironmentCallEntryPoint,
 }
 ```
 
@@ -291,8 +304,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
-    // Return true if the method is an async thunk method.
-    public virtual bool IsAsyncThunkMethod(MethodDescHandle methodDesc);
+    // Returns the Runtime Async flags recorded for the method (native AsyncMethodFlags),
+    // or AsyncMethodFlags.None if the method has no async method data.
+    public virtual AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc);
 
     // Return true if the method is a wrapper stub (unboxing or instantiating).
     public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
@@ -514,6 +528,10 @@ The contract depends on the following globals
 | `ObjectArrayMethodTable` | A pointer to the address of the `object[]` `MethodTable` (`g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]`)
 | `ExceptionMethodTable` | A pointer to the address of the `System.Exception` `MethodTable` (`g_pExceptionClass`)
 | `CanonMethodTable` | A pointer to the address of the canonical `MethodTable` used for shared generics (`System.__Canon`)
+| `EHMethodTable` | A pointer to the address of the `MethodTable` for the runtime exception-handling helper class
+| `ExceptionServicesInternalCallsMethodTable` | A pointer to the address of the `MethodTable` for the exception-services internal-calls class
+| `StackFrameIteratorMethodTable` | A pointer to the address of the `MethodTable` for `System.Runtime.StackFrameIterator`
+| `EnvironmentCallEntryPointMethodDesc` | A pointer to the address of the `MethodDesc` for the runtime entry-point method
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
@@ -679,7 +697,25 @@ Contracts used:
             WellKnownMethodTable.Exception => "ExceptionMethodTable",
             WellKnownMethodTable.Free => "FreeObjectMethodTable",
             WellKnownMethodTable.Canon => "CanonMethodTable",
+            WellKnownMethodTable.EH => "EHMethodTable",
+            WellKnownMethodTable.ExceptionServicesInternalCalls => "ExceptionServicesInternalCallsMethodTable",
+            WellKnownMethodTable.StackFrameIterator => "StackFrameIteratorMethodTable",
         };
+        return ReadWellKnownGlobalPointer(globalName);
+    }
+
+    public TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind)
+    {
+        // As GetWellKnownMethodTable, but for well-known MethodDesc globals.
+        string globalName = kind switch
+        {
+            WellKnownMethodDesc.EnvironmentCallEntryPoint => "EnvironmentCallEntryPointMethodDesc",
+        };
+        return ReadWellKnownGlobalPointer(globalName);
+    }
+
+    private TargetPointer ReadWellKnownGlobalPointer(string globalName)
+    {
         if (!target.TryReadGlobalPointer(globalName, out TargetPointer? ptrPtr))
             return TargetPointer.Null;
         if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
@@ -1430,7 +1466,10 @@ And the following enumeration definitions
     internal enum AsyncMethodFlags : uint
     {
         None = 0,
-        Thunk = 16,
+        AsyncCall = 0x1,
+        IsAsyncVariant = 0x4,
+        Thunk = 0x10,
+        ReturnDroppingThunk = 0x20,
     }
 
     [Flags]
@@ -1838,19 +1877,19 @@ Determining if a method supports multiple code versions:
     }
 ```
 
-Determining if a method is an async thunk method:
+Reading a method's Runtime Async flags:
 
 ```csharp
-    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    public AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         if (!md.HasAsyncMethodData)
-        {
-            return false;
-        }
+            return AsyncMethodFlags.None;
 
-        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the address of the async method data optional slot
-        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+        // Read and return the raw AsyncMethodFlags from the async method data optional slot.
+        // Callers test individual bits (e.g. Thunk, ReturnDroppingThunk, IsAsyncVariant), since a
+        // method may carry several simultaneously.
+        return (AsyncMethodFlags)/* AsyncMethodData.Flags */;
     }
 ```
 

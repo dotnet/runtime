@@ -518,6 +518,24 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _stackBaseRegister;
     }
 
+    public bool TryGetGenericInstantiationContextStackSlot(out int spOffset, out bool isStackBaseRelative)
+    {
+        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        if (_genericsInstContextStackSlot == TTraits.NO_GENERICS_INST_CONTEXT)
+        {
+            spOffset = 0;
+            isStackBaseRelative = false;
+            return false;
+        }
+
+        spOffset = _genericsInstContextStackSlot;
+        isStackBaseRelative = _stackBaseRegister != TTraits.NO_STACK_BASE_REGISTER;
+        return true;
+    }
+
+    // The GcInfoDecoder format (all non-x86 architectures) has no ambient SP
+    public TargetPointer GetAmbientSP(uint codeOffset, TargetPointer fp, TargetPointer sp) => TargetPointer.Null;
+
     public uint GetSizeOfStackParameterArea()
     {
         EnsureDecodedTo(DecodePoints.ReversePInvoke);

@@ -64,6 +64,18 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.IsGcSafe(instructionOffset);
     }
 
+    bool IGCInfo.TryGetGenericInstantiationContextStackSlot(IGCInfoHandle gcInfoHandle, out int spOffset, out bool isStackBaseRelative)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.TryGetGenericInstantiationContextStackSlot(out spOffset, out isStackBaseRelative);
+    }
+
+    TargetPointer IGCInfo.GetAmbientSP(IGCInfoHandle gcInfoHandle, uint codeOffset, TargetPointer fp, TargetPointer sp)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetAmbientSP(codeOffset, fp, sp);
+    }
+
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
     {
         if (gcInfoHandle is not IGCInfoDecoder handle)

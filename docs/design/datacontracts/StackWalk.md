@@ -93,6 +93,25 @@ byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint
 
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
+
+// Returns funclet / interrupt state and the frame pointer for the current stack dataframe.
+StackWalkFrameInfo GetCurrentFrameInfo(IStackDataFrameHandle stackDataFrameHandle);
+
+// Returns the exact generic instantiation context token for the current frameless managed frame,
+// or TargetPointer.Null if the method is not shared generic code or the context can't be recovered.
+TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle);
+```
+
+```csharp
+public record struct StackWalkFrameInfo(
+    TargetPointer FramePointer,
+    bool IsFunclet,
+    bool IsFilterFunclet,
+    TargetPointer ParentOrSelfFramePointer,
+    bool IsInterrupted,
+    bool HasFaulted,
+    uint ParentNativeOffset = 0,
+    TargetPointer AmbientSP = default);
 ```
 
 ## Version 1
@@ -624,6 +643,23 @@ The implementation uses the same stack walk algorithm as `CreateStackWalk`, but 
 If no Frame in the chain produces a usable context (thread is not running managed code), a zeroed context of the target architecture's size is returned.
 
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
+
+`GetCurrentFrameInfo` returns a `StackWalkFrameInfo` describing the current stack dataframe. It is the data a debugger needs to shape a managed stack frame (funclet handling and interrupt/fault state):
+
+* `FramePointer` is the frame pointer for the current frame. On x64 it is the current context's stack pointer; on ARM, ARM64, RISCV64 and LoongArch64 it is the caller's stack pointer (the stack pointer after unwinding the current context one iteration). On x86 it mirrors native `GetFramePointerWorker`: for a frameless managed method it is the unwound stack pointer less the callee-popped argument size and one pointer (native `ComputeX86FramePointer`), and for a runtime-unwindable native marker it is the return-address slot of the recovered hijacked context. Other architectures are unsupported.
+* `IsFunclet` / `IsFilterFunclet` report whether the current frame is a funclet, and whether it is a filter funclet.
+* `ParentOrSelfFramePointer` is the caller's stack pointer for a non-funclet frame. For a funclet it is the caller's stack pointer of the funclet's parent method frame, located by a self-contained secondary stackwalk that skips intervening (possibly nested) funclets. If the parent cannot be located (the funclet and its parent have already been unwound) it falls back to the caller's stack pointer.
+* `IsInterrupted` is true when the current managed frame was interrupted by an exception frame (`FaultingExceptionFrame`/`SoftwareExceptionFrame`).
+* `HasFaulted` is true when the interrupting frame was a `FaultingExceptionFrame` (a hardware fault such as an access violation), which distinguishes a synchronous throw from a fault when reporting the frame.
+* `ParentNativeOffset` is meaningful only for funclets: it is the relative native offset of the parent method frame located by the secondary walk above (0 for non-funclets).
+* `AmbientSP` is the "ambient stack pointer" (native `taAmbientESP`), and is `TargetPointer.Null` (0) on every architecture except x86 and ARM (32-bit). On ARM32 it is the current context's stack pointer. On x86 it is computed from the GC info by `IGCInfo.GetAmbientSP` (native `EECodeManager::GetAmbientSP`): `Null` in the prolog/epilog; the masked outermost base frame pointer for methods with handlers; the outermost base frame pointer for EBP frames; and the stack pointer plus the pushed-argument size for ESP frames.
+
+`GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frameless managed frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. It returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
+
+1. Decodes the method's GC info and reads the generic instantiation context stack slot via `IGCInfo.TryGetGenericInstantiationContextStackSlot`. If the method does not report a context slot (e.g. the JIT did not keep it alive, or the frame is a prolog/epilog), it returns `TargetPointer.Null`.
+2. Computes the slot address from the reported offset, relative to the stack base (frame) register when the method has one, otherwise relative to SP, and reads the context pointer from that slot.
+3. For a `ThisPtr` context the slot holds the `this` object reference and the token is its `MethodTable`; for an explicit context argument (`InstArgMethodDesc`/`InstArgMethodTable`) the slot value is the token itself.
+
 
 #### CreateStackWalk with a caller-provided CONTEXT
 

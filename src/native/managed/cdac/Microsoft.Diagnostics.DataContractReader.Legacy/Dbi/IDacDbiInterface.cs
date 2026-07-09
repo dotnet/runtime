@@ -250,6 +250,18 @@ public struct Debugger_STRData
     [FieldOffset(32)] public DebuggerIPCE_STRData_StubFrame stubFrame;
 }
 
+public enum FrameType
+{
+    kInvalid = 0,
+    kManagedStackFrame = 1,
+    kExplicitFrame = 2,
+    kNativeStackFrame = 3,
+    kNativeRuntimeUnwindableStackFrame = 4,
+    kManagedExceptionHandlingCodeFrame = 5,
+    kRuntimeEntryPointFrame = 6,
+    kAtEndOfStack = 7,
+}
+
 #pragma warning restore CS0649
 
 public enum CorDebugInternalFrameType
@@ -389,6 +401,12 @@ public enum CorDebugGenerationTypes
 public enum IlNum : int
 {
     TYPECTXT_ILNUM = -3,
+    MAX_ILNUM = -6,
+}
+
+public enum CorDebugMappingResult : int
+{
+    MAPPING_NO_INFO = 0x4,
 }
 
 [Flags]

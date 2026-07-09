@@ -139,14 +139,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     [Flags]
-    internal enum AsyncMethodFlags : uint
-    {
-        None = 0,
-        AsyncCall = 0x1,
-        Thunk = 16,
-    }
-
-    [Flags]
     internal enum ILStubType : uint
     {
         StubPInvokeVarArg = 0x4,
@@ -602,9 +594,28 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             WellKnownMethodTable.Exception => Constants.Globals.ExceptionMethodTable,
             WellKnownMethodTable.Free => Constants.Globals.FreeObjectMethodTable,
             WellKnownMethodTable.Canon => Constants.Globals.CanonMethodTable,
+            WellKnownMethodTable.EH => Constants.Globals.EHMethodTable,
+            WellKnownMethodTable.ExceptionServicesInternalCalls => Constants.Globals.ExceptionServicesInternalCallsMethodTable,
+            WellKnownMethodTable.StackFrameIterator => Constants.Globals.StackFrameIteratorMethodTable,
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
 
+        return ReadWellKnownGlobalPointer(globalName);
+    }
+
+    public TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind)
+    {
+        string globalName = kind switch
+        {
+            WellKnownMethodDesc.EnvironmentCallEntryPoint => Constants.Globals.EnvironmentCallEntryPointMethodDesc,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+
+        return ReadWellKnownGlobalPointer(globalName);
+    }
+
+    private TargetPointer ReadWellKnownGlobalPointer(string globalName)
+    {
         if (!_target.TryReadGlobalPointer(globalName, out TargetPointer? ptrPtr) || ptrPtr is null)
             return TargetPointer.Null;
         if (!_target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
@@ -2120,16 +2131,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDesc.IsEligibleForTieredCompilation;
     }
 
-    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    public AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         if (!md.HasAsyncMethodData)
         {
-            return false;
+            return AsyncMethodFlags.None;
         }
 
-        Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData());
-        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+        return (AsyncMethodFlags)_target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData()).Flags;
     }
 
     public bool IsWrapperStub(MethodDescHandle methodDescHandle)
@@ -2142,6 +2152,36 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         return methodDesc.IsUnboxingStub;
+    }
+
+    public bool IsVarArg(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (IsStoredSigMethodDesc(methodDescHandle, out ReadOnlySpan<byte> storedSig))
+        {
+            if (storedSig.Length < 1)
+                return false;
+            return (SignatureCallingConvention)(storedSig[0] & 0x0F) == SignatureCallingConvention.VarArgs;
+        }
+
+        uint token = methodDesc.Token;
+        if (EcmaMetadataUtils.GetRowId(token) == 0)
+            return false;
+
+        TargetPointer modulePtr = GetOrCreateMethodTable(methodDesc).Module;
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+            return false;
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        BlobReader sigReader = mdReader.GetBlobReader(methodDef.Signature);
+        if (sigReader.Length < 1)
+            return false;
+
+        SignatureHeader header = sigReader.ReadSignatureHeader();
+        return header.CallingConvention == SignatureCallingConvention.VarArgs;
     }
 
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
