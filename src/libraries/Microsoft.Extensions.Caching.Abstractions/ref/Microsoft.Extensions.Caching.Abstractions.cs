@@ -175,13 +175,21 @@ namespace Microsoft.Extensions.Caching.Hybrid
     {
         bool TryCreateSerializer<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IHybridCacheSerializer<T>? serializer);
     }
+    public sealed class HybridCacheEntryContext
+    {
+        public HybridCacheEntryContext() { }
+        public System.TimeSpan? Expiration { get { throw null; } set { } }
+        public System.TimeSpan? LocalCacheExpiration { get { throw null; } set { } }
+        public HybridCacheEntryFlags? Flags { get { throw null; } set { } }
+        public long? LocalSize { get { throw null; } set { } }
+        public int Revision { get { throw null; } }
+    }
     public sealed class HybridCacheEntryOptions
     {
-        public System.TimeSpan? Expiration { get; set; }
-        public System.TimeSpan? LocalCacheExpiration { get; set; }
-        public HybridCacheEntryFlags? Flags { get; set; }
-        public long? LocalSize { get; set; }
-        public int Revision { get { throw null; } }
+        public System.TimeSpan? Expiration { get; init; }
+        public System.TimeSpan? LocalCacheExpiration { get; init; }
+        public HybridCacheEntryFlags? Flags { get; init; }
+        public long? LocalSize { get; init; }
     }
     [System.Flags]
     public enum HybridCacheEntryFlags
@@ -206,12 +214,12 @@ namespace Microsoft.Extensions.Caching.Hybrid
             => throw null;
 
         public virtual System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state,
-            System.Func<TState, HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            System.Func<TState, HybridCacheEntryContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
             HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
             => throw null;
 
         public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(string key,
-            System.Func<HybridCacheEntryOptions, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            System.Func<HybridCacheEntryContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
             HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string>? tags = null, System.Threading.CancellationToken cancellationToken = default)
             => throw null;
 

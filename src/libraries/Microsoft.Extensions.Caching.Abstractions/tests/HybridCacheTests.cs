@@ -11,7 +11,7 @@ using Xunit;
 namespace Microsoft.Extensions.Caching.Hybrid.Tests;
 
 /// <summary>
-/// Contract tests for the default <see cref="HybridCache.GetOrCreateAsync{TState, T}(string, TState, Func{TState, HybridCacheEntryOptions, CancellationToken, ValueTask{T}}, HybridCacheEntryOptions?, IEnumerable{string}?, CancellationToken)"/>
+/// Contract tests for the default <see cref="HybridCache.GetOrCreateAsync{TState, T}(string, TState, Func{TState, HybridCacheEntryContext, CancellationToken, ValueTask{T}}, HybridCacheEntryOptions?, IEnumerable{string}?, CancellationToken)"/>
 /// implementation, exercised against a <see cref="HybridCache"/> subclass that does not override the new virtual.
 /// <para>
 /// The fake cache stores writes from any path (the abstract <see cref="HybridCache.GetOrCreateAsync{TState, T}(string, TState, Func{TState, CancellationToken, ValueTask{T}}, HybridCacheEntryOptions?, IEnumerable{string}?, CancellationToken)"/>
@@ -35,17 +35,17 @@ public class HybridCacheTests
     }
 
     [Fact]
-    public async Task FactoryReceivesNonNullMutableOptions()
+    public async Task FactoryReceivesNonNullMutableContext()
     {
         var cache = new FakeHybridCache();
-        HybridCacheEntryOptions? observed = null;
+        HybridCacheEntryContext? observed = null;
 
         await cache.GetOrCreateAsync(
             "k", state: 0,
-            factory: (_, opts, _) =>
+            factory: (_, ctx, _) =>
             {
-                observed = opts;
-                opts.Expiration = TimeSpan.FromMinutes(5);
+                observed = ctx;
+                ctx.Expiration = TimeSpan.FromMinutes(5);
                 return new ValueTask<int>(1);
             });
 
@@ -62,15 +62,14 @@ public class HybridCacheTests
             Expiration = TimeSpan.FromMinutes(1),
             Flags = HybridCacheEntryFlags.None,
         };
-        int revisionBefore = callerOptions.Revision;
 
         await cache.GetOrCreateAsync(
             "k", state: 0,
-            factory: (_, opts, _) =>
+            factory: (_, ctx, _) =>
             {
-                opts.Expiration = TimeSpan.FromHours(1);
-                opts.LocalSize = 12345;
-                opts.Flags = HybridCacheEntryFlags.DisableCompression;
+                ctx.Expiration = TimeSpan.FromHours(1);
+                ctx.LocalSize = 12345;
+                ctx.Flags = HybridCacheEntryFlags.DisableCompression;
                 return new ValueTask<int>(1);
             },
             options: callerOptions);
@@ -78,7 +77,6 @@ public class HybridCacheTests
         Assert.Equal(TimeSpan.FromMinutes(1), callerOptions.Expiration);
         Assert.Null(callerOptions.LocalSize);
         Assert.Equal(HybridCacheEntryFlags.None, callerOptions.Flags);
-        Assert.Equal(revisionBefore, callerOptions.Revision);
     }
 
     [Fact]
@@ -88,10 +86,10 @@ public class HybridCacheTests
 
         await cache.GetOrCreateAsync(
             "k", state: 0,
-            factory: (_, opts, _) =>
+            factory: (_, ctx, _) =>
             {
-                opts.Expiration = TimeSpan.FromHours(2);
-                opts.LocalSize = 999;
+                ctx.Expiration = TimeSpan.FromHours(2);
+                ctx.LocalSize = 999;
                 return new ValueTask<int>(7);
             });
 
@@ -109,9 +107,9 @@ public class HybridCacheTests
 
         await cache.GetOrCreateAsync(
             "k", state: 0,
-            factory: (_, opts, _) =>
+            factory: (_, ctx, _) =>
             {
-                opts.Flags = HybridCacheEntryFlags.DisableLocalCacheWrite | HybridCacheEntryFlags.DisableDistributedCacheWrite;
+                ctx.Flags = HybridCacheEntryFlags.DisableLocalCacheWrite | HybridCacheEntryFlags.DisableDistributedCacheWrite;
                 return new ValueTask<int>(1);
             });
 
@@ -125,9 +123,9 @@ public class HybridCacheTests
 
         await cache.GetOrCreateAsync(
             "k", state: 0,
-            factory: (_, opts, _) =>
+            factory: (_, ctx, _) =>
             {
-                opts.Flags = HybridCacheEntryFlags.DisableLocalCacheWrite;
+                ctx.Flags = HybridCacheEntryFlags.DisableLocalCacheWrite;
                 return new ValueTask<int>(1);
             });
 
@@ -179,9 +177,9 @@ public class HybridCacheTests
 
         int result = await cache.GetOrCreateAsync<int>(
             "k",
-            factory: (opts, _) =>
+            factory: (ctx, _) =>
             {
-                opts.Expiration = TimeSpan.FromMinutes(3);
+                ctx.Expiration = TimeSpan.FromMinutes(3);
                 return new ValueTask<int>(99);
             });
 
