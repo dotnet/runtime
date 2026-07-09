@@ -7868,6 +7868,19 @@ bool InterpCompiler::IsRuntimeAsyncCallAsTaskRetInAsyncVersionExact(const uint8_
         return false;
     }
 
+    CORINFO_RESOLVED_TOKEN asTaskResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &asTaskResolvedToken);
+    if (!m_compHnd->isIntrinsic(asTaskResolvedToken.hMethod))
+    {
+        return false;
+    }
+
+    NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, asTaskResolvedToken.hMethod);
+    if (ni != NI_System_Threading_Tasks_ValueTask_AsTask && ni != NI_System_Threading_Tasks_ValueTask_1_AsTask)
+    {
+        return false;
+    }
+
     if (!ResolveAsyncCallToken(ip))
     {
         return false;
