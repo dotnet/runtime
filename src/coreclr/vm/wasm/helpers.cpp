@@ -339,6 +339,41 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL2(int64_t, CallInterpreter_I64_I64_RetI64, int64_t, int64_t);
+    WASM_CALLABLE_FUNC_3(int64_t, CallInterpreter_I64_I64_RetI64, int64_t arg0, int64_t arg1, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[2];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        transitionBlock.args[0] = arg0;
+        transitionBlock.args[1] = arg1;
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        int64_t result = 0;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return result;
+    }
+    FCDECL1(int32_t, CallInterpreter_S8_RetI32, int8_t*);
+    WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_S8_RetI32, int8_t* arg0, PCODE portableEntrypoint)
+    {
+        struct
+        {
+            TransitionBlock block;
+            int64_t args[1];
+        } transitionBlock;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
+        memcpy(&transitionBlock.args[0], arg0, 8);
+        static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
+        return (int32_t)result;
+    }
 }
 
 const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
@@ -358,7 +393,9 @@ const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
     { "Iiiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
     { "Iidp", (void*)&CallInterpreter_D64_RetI32 },
     { "Ildp", (void*)&CallInterpreter_D64_RetI64 },
-    { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 }
+    { "IiiS8p", (void*)&CallInterpreter_I32_S8_RetI32 },
+    { "Illlp", (void*)&CallInterpreter_I64_I64_RetI64 },
+    { "IiS8p", (void*)&CallInterpreter_S8_RetI32 }
 };
 
 const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);

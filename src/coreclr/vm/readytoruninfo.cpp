@@ -537,8 +537,10 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         return NULL;
 
     LPCUTF8 ownerCompositeExecutableName = NULL;
-    if (pLayout->IsMapped())
+    if (pLayout->IsMapped() || pLayout->IsWebcilFormat())
     {
+        // Mapped PE images and (flat) webcil images are RVA-addressable directly from the base:
+        // webcil is flat-mapped so the R2R section VirtualAddress maps 1:1 onto GetBase()+VA.
         ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
     }
     else

@@ -184,12 +184,12 @@ bool emitter::emitInsIsStore(instruction ins)
 
 //------------------------------------------------------------------------
 // emitAddressConstant: Emit a memory address constant, like an indirection cell.
-// This will automatically make use of relocations and the module base (__r2r_start).
+// This will automatically make use of relocations and the module base (imageBase).
 void emitter::emitAddressConstant(void* address)
 {
-    // Load our module base from __r2r_start, then load our address constant, then sum them.
-    // FIXME-WASM: Make this a named constant or a reloc that crossgen2 fills in.
-    emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
+    // Load our module base from the image base global, then load our address constant, then sum them.
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
     emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
 }
@@ -197,7 +197,8 @@ void emitter::emitAddressConstant(void* address)
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 {
     // Load our table base, then load our funclet pointer offset, then sum them.
-    emitIns_I(INS_global_get, EA_4BYTE, 2 /* __table_start */);
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
     emitIns(INS_i32_add);
 }
@@ -668,6 +669,7 @@ unsigned emitter::instrDesc::idCodeSize() const
         }
         case IF_FUNCIDX:
         case IF_ULEB128:
+        case IF_GLOBALIDX:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
         case IF_MEMADDR:
@@ -955,6 +957,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
             break;
         }
+        case IF_GLOBALIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_GLOBAL_INDEX_LEB);
+            break;
+        }
         case IF_CALL_INDIRECT:
         {
             dst += emitOutputOpcode(dst, ins);
@@ -1239,6 +1247,7 @@ void emitter::emitDispIns(
         case IF_RAW_ULEB128:
         case IF_ULEB128:
         case IF_FUNCIDX:
+        case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);

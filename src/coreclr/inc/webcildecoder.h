@@ -200,7 +200,10 @@ private:
     // ------------------------------------------------------------
 
     BOOL HasReadyToRunHeader() const;
-    BOOL IsComponentAssembly() const { return FALSE; }
+    BOOL IsComponentAssembly() const
+    {
+        return HasReadyToRunHeader() && (GetReadyToRunHeader()->CoreHeader.Flags & READYTORUN_FLAG_COMPONENT) != 0;
+    }
     READYTORUN_HEADER *GetReadyToRunHeader() const;
     BOOL IsNativeMachineFormat() const { return true; } // This can only be loaded on a Wasm runtime which matches the necessary load environment, which means these are always in the native machine format.
     PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize) const;

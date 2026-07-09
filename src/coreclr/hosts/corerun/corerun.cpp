@@ -308,6 +308,149 @@ static char* s_core_root_path = nullptr;
 extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 #endif // TARGET_BROWSER
 
+#ifdef TARGET_WASI
+// PROTOTYPE: statically-composed WASI R2R support.
+//
+// A crossgen2-produced R2R webcil image is merged into this module post-link (its native
+// functions land in the shared indirect function table and its webcil payload/metadata is
+// copied into g_wasi_r2r_image by an injected start function via getWebcilPayload()). This
+// buffer is the fixed, link-time-stable location the merge step targets for imageBase, so the
+// runtime can find the R2R webcil the same way the browser host does via BrowserHost_ExternalAssemblyProbe.
+// Sized to hold the COMPOSITE R2R metadata payload (written by the offline merge's active data segment
+// at this buffer's address == the composite image's imageBase). 3 MB covers the ~2.84 MB composite payload.
+alignas(16) static uint8_t g_wasi_r2r_image[3u * 1024u * 1024u];
+
+// Exported so the offline merge step can discover the buffer's address and wire it to the
+// R2R image's imageBase global.
+extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r_image_base(void)
+{
+    return (uint32_t)(uintptr_t)&g_wasi_r2r_image[0];
+}
+
+// Size of the baked composite webcil payload. Set by the merge step to match the composite image.
+#ifndef WASI_R2R_PAYLOAD_SIZE
+#define WASI_R2R_PAYLOAD_SIZE 2837488
+#endif
+
+// The composite native image's bundle-relative file name (the ownerCompositeExecutable named by each
+// per-assembly stub). The runtime asks for this via NativeImage::Open -> external_assembly_probe.
+#ifndef WASI_R2R_COMPOSITE_NAME
+#define WASI_R2R_COMPOSITE_NAME "composite-r2r.wasm"
+#endif
+
+// The wasm table index where the merge step placed the composite's R2R functions (tableBase global).
+#ifndef WASI_R2R_TABLE_BASE
+#define WASI_R2R_TABLE_BASE 6252
+#endif
+
+// Minimal LEB128 reader for parsing a wasm binary's Data section.
+static uint64_t wasi_read_uleb(const uint8_t* p, size_t len, size_t* pos)
+{
+    uint64_t result = 0; int shift = 0;
+    while (*pos < len)
+    {
+        uint8_t b = p[(*pos)++];
+        result |= (uint64_t)(b & 0x7f) << shift;
+        if ((b & 0x80) == 0) break;
+        shift += 7;
+    }
+    return result;
+}
+
+// Extract the raw WbIL webcil payload (passive data segment index 1) from a wasm-wrapped-webcil stub
+// on disk, copy it into a malloc'd buffer, and patch the tableBase field (offset 28) to the composite's
+// tableBase so any stub-side table references resolve into the shared composite function range.
+// Mirrors what the browser JS loader's getWebcilPayload does, but purely in native code (no instantiation).
+static bool WasiExtractStubPayload(const char* wasmPath, void** data_start, int64_t* size)
+{
+    void* filedata = nullptr; int64_t filesize = 0;
+    if (!pal::try_map_file_readonly(wasmPath, &filedata, &filesize))
+        return false;
+
+    const uint8_t* p = (const uint8_t*)filedata;
+    size_t len = (size_t)filesize;
+    bool ok = false;
+    if (len >= 8 && p[0] == 0x00 && p[1] == 0x61 && p[2] == 0x73 && p[3] == 0x6d)
+    {
+        size_t pos = 8;
+        while (pos < len)
+        {
+            uint8_t secId = p[pos++];
+            uint64_t secSize = wasi_read_uleb(p, len, &pos);
+            size_t secEnd = pos + (size_t)secSize;
+            if (secEnd > len) break;
+            if (secId == 11) // Data section
+            {
+                size_t q = pos;
+                uint64_t segCount = wasi_read_uleb(p, len, &q);
+                for (uint64_t s = 0; s < segCount && q < secEnd; s++)
+                {
+                    uint64_t mode = wasi_read_uleb(p, len, &q);
+                    // Only passive segments (mode 1) are used by the webcil wrapper.
+                    if (mode != 1) { break; }
+                    uint64_t dlen = wasi_read_uleb(p, len, &q);
+                    size_t dstart = q;
+                    q += (size_t)dlen;
+                    if (s == 1) // segment[1] == the WbIL payload
+                    {
+                        uint8_t* buf = (uint8_t*)malloc((size_t)dlen);
+                        if (buf != nullptr)
+                        {
+                            memcpy(buf, p + dstart, (size_t)dlen);
+                            if (dlen >= 32)
+                                *(uint32_t*)(buf + 28) = (uint32_t)WASI_R2R_TABLE_BASE;
+                            *data_start = buf;
+                            *size = (int64_t)dlen;
+                            ok = true;
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+            pos = secEnd;
+        }
+    }
+    munmap(filedata, (size_t)filesize);
+    return ok;
+}
+
+static bool WasiStaticR2RProbe(const char* name, void** data_start, int64_t* size)
+{
+#if WASI_R2R_PAYLOAD_SIZE > 0
+    // The composite native image itself: return the baked composite payload at imageBase.
+    if (strcmp(name, WASI_R2R_COMPOSITE_NAME) == 0)
+    {
+        *data_start = &g_wasi_r2r_image[0];
+        *size = WASI_R2R_PAYLOAD_SIZE;
+        return true;
+    }
+
+    // A managed assembly: return its per-assembly stub payload (extracted from <base>.wasm on disk).
+    // The stub carries the assembly metadata + the R2R header naming the composite, which drives the
+    // runtime to then request WASI_R2R_COMPOSITE_NAME above.
+    size_t nlen = strlen(name);
+    if (nlen > 4 && strcmp(name + nlen - 4, ".dll") == 0)
+    {
+        char stub[512];
+        for (const char* dir : { s_core_libs_path, s_core_root_path })
+        {
+            if (dir == nullptr) continue;
+            // Build "<dir>/comp/<base>.wasm"
+            snprintf(stub, sizeof(stub), "%scomp/%.*s.wasm", dir, (int)(nlen - 4), name);
+            if (WasiExtractStubPayload(stub, data_start, size))
+            {
+                return true;
+            }
+        }
+    }
+#else
+    (void)name; (void)data_start; (void)size;
+#endif
+    return false;
+}
+#endif // TARGET_WASI
+
 static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
     const host_runtime_contract_native_code_context* context,
     host_runtime_contract_native_code_data* data)
@@ -375,6 +518,11 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     const char* pos = strrchr(name, '/');
     if (pos != NULL)
         name = pos + 1;
+
+#ifdef TARGET_WASI
+    if (WasiStaticR2RProbe(name, data_start, size))
+        return true;
+#endif // TARGET_WASI
 
     // Try to map the file from our known app assembly paths
     for (const char* dir : { s_core_libs_path, s_core_root_path })

@@ -250,6 +250,33 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     SSIZE_T tableBaseDelta = GetTableBaseOffset();
 #endif // FEATURE_WEBCIL
 
+#ifdef TARGET_WASM
+    // PROTOTYPE: Externally-provided (host-probed) webcil R2R images are backed by a single
+    // shared in-memory buffer, not a copy-on-write file mapping. The assembly binder can open
+    // such an image more than once (identity probe + load), and each open would apply base
+    // relocations again over the SAME memory. WASM table-index relocations are additive
+    // (index += tableBase), so a second application doubles tableBase and pushes the indirect
+    // call indices out of the function table. Guard against re-relocating a buffer we've
+    // already relocated, keyed on its base address.
+    if (IsWebcilFormat())
+    {
+        // Single-threaded WASI prototype: a small fixed table of already-relocated bases.
+        static const int kMaxRelocatedWebcil = 64;
+        static TADDR s_relocatedWebcilBases[kMaxRelocatedWebcil] = { 0 };
+        static int s_relocatedWebcilCount = 0;
+        TADDR base = (TADDR)GetBase();
+        for (int i = 0; i < s_relocatedWebcilCount; i++)
+        {
+            if (s_relocatedWebcilBases[i] == base)
+            {
+                return;
+            }
+        }
+        if (s_relocatedWebcilCount < kMaxRelocatedWebcil)
+            s_relocatedWebcilBases[s_relocatedWebcilCount++] = base;
+    }
+#endif // TARGET_WASM
+
     // Nothing to do - image is loaded at preferred base and no table base offset
     if (delta == 0
 #ifdef FEATURE_WEBCIL

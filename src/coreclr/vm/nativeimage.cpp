@@ -208,6 +208,12 @@ namespace
         }
 
         *header = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
+#ifdef TARGET_WASM
+        // Webcil images do not expose a named "RTR_HEADER" export the way PE R2R images do;
+        // fall back to the decoder's R2R header for the (flat) webcil composite.
+        if (*header == NULL && peLoadedImage->HasReadyToRunHeader())
+            *header = peLoadedImage->GetReadyToRunHeader();
+#endif
         if (*header == NULL)
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);

@@ -241,6 +241,13 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };
 
+struct Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS
+{
+    DWORDLONG stackPointer;
+    DWORDLONG imageBase;
+    DWORDLONG tableBase;
+};
+
 struct Agnostic_GetAwaitReturnCallResult
 {
     DWORDLONG methodHnd;
