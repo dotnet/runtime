@@ -3,10 +3,36 @@
 
 //
 
+#if defined(NATIVEAOT)
+#include "common.h"
+#include <windows.h>
+#include "rhassert.h"
+
+#ifndef T_CONTEXT
+#define T_CONTEXT CONTEXT
+#endif
+#ifndef PT_CONTEXT
+#define PT_CONTEXT PCONTEXT
+#endif
+#ifndef T_KNONVOLATILE_CONTEXT_POINTERS
+#define T_KNONVOLATILE_CONTEXT_POINTERS KNONVOLATILE_CONTEXT_POINTERS
+#endif
+#ifndef PT_KNONVOLATILE_CONTEXT_POINTERS
+#define PT_KNONVOLATILE_CONTEXT_POINTERS PKNONVOLATILE_CONTEXT_POINTERS
+#endif
+#ifndef T_RUNTIME_FUNCTION
+#define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
+#endif
+#ifndef PT_RUNTIME_FUNCTION
+#define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
+#endif
+#else
 #include "stdafx.h"
 #include "utilcode.h"
 #include "crosscomp.h"
+#endif
 
+#include "clrnt.h"
 #include "unwinder.h"
 
 #define NOTHING
@@ -170,10 +196,10 @@ typedef struct _ARM64_VFP_STATE
 
 #if !defined(DEBUGGER_UNWIND)
 
-#define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
-#define MEMORY_READ_WORD(params, addr)      (*dac_cast<PTR_WORD>(addr))
-#define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
-#define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
+#define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_uint8_t>(addr))
+#define MEMORY_READ_WORD(params, addr)       (*dac_cast<DPTR(uint16_t)>(addr))
+#define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_uint32_t>(addr))
+#define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_uint64_t>(addr))
 
 #endif
 
@@ -2786,6 +2812,7 @@ Return Value:
 
 #endif // !defined(DEBUGGER_UNWIND)
 
+#if !defined(NATIVEAOT)
 BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
 {
     DWORD64 ImageBase = 0;
@@ -2853,6 +2880,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     return res;
 }
+#endif // !defined(NATIVEAOT)
 
 #if defined(HOST_UNIX)
 
