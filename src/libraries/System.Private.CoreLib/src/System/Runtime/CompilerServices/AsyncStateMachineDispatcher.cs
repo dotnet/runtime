@@ -187,7 +187,6 @@ namespace System.Runtime.CompilerServices
     internal sealed class AsyncStateMachineDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
     {
         private IAsyncStateMachineBox? _inner;
-        private Action? _moveNextAction;
 
         internal IAsyncStateMachineBox? InnerBox => _inner;
 
@@ -250,7 +249,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public Action MoveNextAction => _moveNextAction ??= MoveNext;
+        public Action MoveNextAction => (Action)(m_action ??= new Action(MoveNext));
 
         public IAsyncStateMachine GetStateMachineObject()
         {

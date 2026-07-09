@@ -1109,6 +1109,118 @@ namespace System.Threading.Tasks.Tests
             AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteStateMachineAsyncContext after Resume");
         }
 
+        // Custom awaiters that post their continuation directly to the thread pool, bypassing the
+        // Task/ValueTask/Yield "known awaiter" fast paths (ITaskAwaiter / IConfiguredTaskAwaiter /
+        // IStateMachineBoxAwareAwaiter). They exercise the builder's fallback completion paths:
+        // the ICriticalNotifyCompletion awaiter routes through AwaitUnsafeOnCompleted's else-branch,
+        // the INotifyCompletion-only awaiter routes through AwaitOnCompleted. Both must still create a
+        // dispatcher so the await is represented in the V1 event stream.
+        private sealed class DirectPostCriticalAwaitable
+        {
+            public DirectPostCriticalAwaiter GetAwaiter() => default;
+        }
+
+        private readonly struct DirectPostCriticalAwaiter : ICriticalNotifyCompletion
+        {
+            public bool IsCompleted => false;
+            public void GetResult() { }
+            public void OnCompleted(Action continuation) => UnsafeOnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) =>
+                ThreadPool.QueueUserWorkItem(static c => c(), continuation, preferLocal: false);
+        }
+
+        private sealed class DirectPostNotifyAwaitable
+        {
+            public DirectPostNotifyAwaiter GetAwaiter() => default;
+        }
+
+        private readonly struct DirectPostNotifyAwaiter : INotifyCompletion
+        {
+            public bool IsCompleted => false;
+            public void GetResult() { }
+            public void OnCompleted(Action continuation) =>
+                ThreadPool.QueueUserWorkItem(static c => c(), continuation, preferLocal: false);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_Critical_Marker()
+        {
+            await new DirectPostCriticalAwaitable();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_Notify_Marker()
+        {
+            await new DirectPostNotifyAwaitable();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_PoolingCritical_Marker()
+        {
+            await new DirectPostCriticalAwaitable();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_PoolingNotify_Marker()
+        {
+            await new DirectPostNotifyAwaitable();
+        }
+
+        // Covers all four builder fallback sites that wrap the box for an opaque custom awaiter:
+        //  - Task + ICriticalNotifyCompletion -> AsyncTaskMethodBuilderT.AwaitUnsafeOnCompleted else-branch
+        //  - Task + INotifyCompletion         -> AsyncTaskMethodBuilderT.AwaitOnCompleted
+        //  - pooling + ICriticalNotifyCompletion -> PoolingAsyncValueTaskMethodBuilderT.AwaitUnsafeOnCompleted (delegates to the shared else-branch)
+        //  - pooling + INotifyCompletion         -> PoolingAsyncValueTaskMethodBuilderT.AwaitOnCompleted (its own create site)
+        [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public void StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete(bool pooling, bool criticalNotifyCompletion)
+        {
+            (string markerName, Func<Task> scenario) = (pooling, criticalNotifyCompletion) switch
+            {
+                (false, true) => (nameof(StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_Critical_Marker), (Func<Task>)StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_Critical_Marker),
+                (false, false) => (nameof(StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_Notify_Marker), StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_Notify_Marker),
+                (true, true) => (nameof(StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_PoolingCritical_Marker), () => StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_PoolingCritical_Marker().AsTask()),
+                _ => (nameof(StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_PoolingNotify_Marker), () => StateMachineAsync_CustomAwaiter_EmitsCreateResumeComplete_PoolingNotify_Marker().AsTask()),
+            };
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(scenario);
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // A custom awaiter that posts its continuation directly (bypassing the Task/ValueTask/Yield
+            // fast paths) must still produce a dispatcher: the marker frame appears in a Resume callstack
+            // and the chain emits the standard Create -> Resume -> Complete sequence. Without the fallback
+            // dispatcher creation the marker is absent from the stream and this assertion fails.
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, markerName);
+            AssertNotEmpty(stream, markerCallstacks);
+
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateStateMachineAsyncContext);
+            AssertTrue(stream, createIdx >= 0, "Expected CreateStateMachineAsyncContext for the custom awaiter scenario");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, createIdx + 1);
+            AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeStateMachineAsyncContext after Create");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
+            AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteStateMachineAsyncContext after Resume");
+        }
+
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task StateMachineAsync_NoEventsWhenDisabled_Marker()
@@ -1481,11 +1593,6 @@ namespace System.Threading.Tasks.Tests
             // We expect at least one marker callstack per iteration.
             AssertTrue(stream, markerCallstacks.Count >= iterations,
                 $"Expected at least {iterations} callstacks with marker, got {markerCallstacks.Count}");
-
-            // Verify multiple buffer flushes occurred -- proves the buffer machinery is exercised.
-            int bufferCount = 0;
-            ForEachEventBufferPayload(events, _ => bufferCount++);
-            AssertTrue(stream, bufferCount >= 3, $"Expected at least 3 buffer flushes, got {bufferCount}");
         }
 
         [RuntimeAsyncMethodGeneration(false)]

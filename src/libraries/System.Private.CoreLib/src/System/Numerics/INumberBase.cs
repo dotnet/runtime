@@ -419,6 +419,31 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
 
+        /// <summary>Tries to parse a string into a value.</summary>
+        /// <param name="s">The string to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
+        /// <param name="charsConsumed">On return, contains the number of characters consumed during parsing.</param>
+        /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int charsConsumed)
+        {
+            // NumberStyles.AllowTrailingInvalidCharacters is new with the introduction of this DIM and so the expected behavior of TryParse
+            // is to throw, meaning that we will always consume "everything" or "nothing". The style is passed through unmodified so a type
+            // that doesn't understand the flag throws as expected. Types which add support for the new flag are expected to override this
+            // method and provide a correct implementation.
+
+            if (TSelf.TryParse(s, style, provider, out result))
+            {
+                charsConsumed = s.Length;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
         /// <summary>Tries to parse a span of characters into a value.</summary>
         /// <param name="s">The span of characters to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
@@ -427,6 +452,31 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
+
+        /// <summary>Tries to parse a span of characters into a value.</summary>
+        /// <param name="s">The span of characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
+        /// <param name="charsConsumed">On return, contains the number of characters consumed during parsing.</param>
+        /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int charsConsumed)
+        {
+            // NumberStyles.AllowTrailingInvalidCharacters is new with the introduction of this DIM and so the expected behavior of TryParse
+            // is to throw, meaning that we will always consume "everything" or "nothing". The style is passed through unmodified so a type
+            // that doesn't understand the flag throws as expected. Types which add support for the new flag are expected to override this
+            // method and provide a correct implementation.
+
+            if (TSelf.TryParse(s, style, provider, out result))
+            {
+                charsConsumed = s.Length;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
 
         /// <summary>Tries to parse a span of UTF-8 characters into a value.</summary>
         /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
@@ -481,6 +531,31 @@ namespace System.Numerics
             }
 
             return succeeded;
+        }
+
+        /// <summary>Tries to parse a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="utf8Text" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
+        /// <param name="bytesConsumed">On return, contains the number of bytes consumed during parsing.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int bytesConsumed)
+        {
+            // NumberStyles.AllowTrailingInvalidCharacters is new with the introduction of this DIM and so the expected behavior of TryParse
+            // is to throw, meaning that we will always consume "everything" or "nothing". The style is passed through unmodified so a type
+            // that doesn't understand the flag throws as expected. Types which add support for the new flag are expected to override this
+            // method and provide a correct implementation.
+
+            if (TSelf.TryParse(utf8Text, style, provider, out result))
+            {
+                bytesConsumed = utf8Text.Length;
+                return true;
+            }
+
+            bytesConsumed = 0;
+            return false;
         }
 
         unsafe bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
