@@ -286,11 +286,10 @@ namespace System.Net
         // returns no records. The behavior is fixed in Windows 11 / Windows Server 2025 (build
         // 22000+). See https://dblohm7.ca/blog/2022/05/06/dnsqueryex-needs-love/.
         private static readonly bool s_asyncSyncCompletionBug = !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
-        private static string? s_hostName;
 
         private static bool IsSynchronouslyCompletingQueryName(string name)
         {
-            if (IPAddress.TryParse(name, out _))
+            if (IPAddress.IsValid(name))
             {
                 return true;
             }
@@ -301,11 +300,22 @@ namespace System.Net
                 normalizedName = normalizedName.Slice(0, normalizedName.Length - 1);
             }
 
-            return normalizedName.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            if (normalizedName.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
                 normalizedName.Equals("loopback", StringComparison.OrdinalIgnoreCase) ||
                 normalizedName.Equals("..DnsServers", StringComparison.OrdinalIgnoreCase) ||
-                normalizedName.Equals("..localmachine", StringComparison.OrdinalIgnoreCase) ||
-                normalizedName.Equals(LazyInitializer.EnsureInitialized(ref s_hostName, static () => NameResolutionPal.GetHostName()), StringComparison.OrdinalIgnoreCase);
+                normalizedName.Equals("..localmachine", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            try
+            {
+                return normalizedName.Equals(NameResolutionPal.GetHostName(), StringComparison.OrdinalIgnoreCase);
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
         }
 
         private static Task<DnsQueryRawResult> DnsQueryEx(IPEndPoint[] servers, bool async, string name, ushort queryType, CancellationToken cancellationToken)
