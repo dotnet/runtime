@@ -17,9 +17,7 @@ namespace System.Diagnostics.Tests
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
-        // The test assembly and Assembly1.cs are embedded as managed resources (see the .csproj) and written to a temp
-        // file at run time. This keeps the tests independent of those files being deployed next to the test app, which
-        // does not happen on NativeAOT Apple mobile where the app bundler strips managed .dll files from the .app bundle.
+        // Written to a temp file at run time so the tests do not depend on files deployed next to the test app.
         private string WriteEmbeddedResourceToFile(string resourceName)
         {
             string path = GetTestFilePath();
