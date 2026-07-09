@@ -638,7 +638,8 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg -
                                                            ICorDebugInfo::REGNUM_FP_FIRST)));
 #else
-            printf("%s", getRegName(varLoc->vlReg.vlrReg));
+            // Non-AMD64: vlrReg is a 0-based FP register index; map back to JIT regNumber
+            printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + varLoc->vlReg.vlrReg)));
 #endif
             break;
 
