@@ -191,8 +191,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        #region Helpers
-
         private static HttpContent CreateContent(string encoding, HttpContent inner) => encoding switch
         {
             "gzip" => new GZipCompressedContent(inner),
@@ -258,7 +256,5 @@ namespace System.Net.Http.Functional.Tests
                 return false;
             }
         }
-
-        #endregion Helpers
     }
 }
