@@ -190,7 +190,7 @@ namespace System.Net
             {
                 return false;
             }
-            if (!DnsEncodedName.TryParse(record.Message, record.DataOffset, out DnsEncodedName cname, out _))
+            if (!record.TryParseSingleDnsNameRecord(out DnsEncodedName cname))
             {
                 return false;
             }
@@ -206,7 +206,8 @@ namespace System.Net
                 return false;
             }
             ushort preference = BinaryPrimitives.ReadUInt16BigEndian(record.Data);
-            if (!DnsEncodedName.TryParse(record.Message, record.DataOffset + 2, out DnsEncodedName exchange, out _))
+
+            if (!record.TryParseSingleDnsNameRecord(out DnsEncodedName exchange, 2))
             {
                 return false;
             }
@@ -224,7 +225,7 @@ namespace System.Net
             ushort priority = BinaryPrimitives.ReadUInt16BigEndian(record.Data);
             ushort weight = BinaryPrimitives.ReadUInt16BigEndian(record.Data[2..]);
             ushort port = BinaryPrimitives.ReadUInt16BigEndian(record.Data[4..]);
-            if (!DnsEncodedName.TryParse(record.Message, record.DataOffset + 6, out DnsEncodedName target, out _))
+            if (!record.TryParseSingleDnsNameRecord(out DnsEncodedName target, 6))
             {
                 return false;
             }
@@ -240,12 +241,12 @@ namespace System.Net
                 return false;
             }
 
-            if (!DnsEncodedName.TryParse(record.Message, record.DataOffset, out DnsEncodedName mname, out int mnameLen))
+            if (!DnsEncodedName.TryParse(record.Message.Slice(0, record.DataOffset + record.Data.Length), record.DataOffset, out DnsEncodedName mname, out int mnameLen))
             {
                 return false;
             }
 
-            if (!DnsEncodedName.TryParse(record.Message, record.DataOffset + mnameLen, out DnsEncodedName rname, out int rnameLen))
+            if (!DnsEncodedName.TryParse(record.Message.Slice(0, record.DataOffset + record.Data.Length), record.DataOffset + mnameLen, out DnsEncodedName rname, out int rnameLen))
             {
                 return false;
             }
@@ -283,7 +284,7 @@ namespace System.Net
             {
                 return false;
             }
-            if (!DnsEncodedName.TryParse(record.Message, record.DataOffset, out DnsEncodedName ptr, out _))
+            if (!record.TryParseSingleDnsNameRecord(out DnsEncodedName ptr))
             {
                 return false;
             }
@@ -298,12 +299,19 @@ namespace System.Net
             {
                 return false;
             }
-            if (!DnsEncodedName.TryParse(record.Message, record.DataOffset, out DnsEncodedName ns, out _))
+            if (!record.TryParseSingleDnsNameRecord(out DnsEncodedName ns))
             {
                 return false;
             }
             result = new DnsNsRecordData(ns);
             return true;
+        }
+
+        private static bool TryParseSingleDnsNameRecord(this DnsRecord record, out DnsEncodedName name, int inRecordOffset = 0)
+        {
+            return
+                DnsEncodedName.TryParse(record.Message.Slice(0, record.DataOffset + record.Data.Length), record.DataOffset + inRecordOffset, out name, out int bytesConsumed)
+                && bytesConsumed == record.Data.Length - inRecordOffset;
         }
     }
 }

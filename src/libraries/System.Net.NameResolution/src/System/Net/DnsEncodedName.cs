@@ -447,12 +447,13 @@ namespace System.Net
 
                 if ((b & 0xC0) == 0xC0)
                 {
-                    // Compression pointer.
+                    // Compression pointer, 2 bytes with highest two bits set.
                     if (pos + 1 >= buffer.Length)
                     {
                         return false; // truncated pointer
                     }
 
+                    // first compression pointer tells us where the wire encoding ends, any subsequent lables/pointers are parts of the preceding message parts
                     if (!foundWireEnd)
                     {
                         wireLength = pos + 2 - offset;
@@ -460,10 +461,11 @@ namespace System.Net
                         hasPointers = true;
                     }
 
+                    // compression pointers are offsets *from the start of the entire DNS message*. To prevent cycles, we allow only jumps backward
                     int pointer = ((b & 0x3F) << 8) | buffer[pos + 1];
                     if (pointer >= pos)
                     {
-                        return false; // only backwards jumps allowed
+                        return false;
                     }
                     pos = pointer;
 
@@ -480,7 +482,7 @@ namespace System.Net
                 }
                 Debug.Assert(b <= 63); // enforced by condition above
 
-                if (pos + 1 + b > buffer.Length)
+                if (pos + b >= buffer.Length)
                 {
                     return false; // label extends past buffer
                 }

@@ -59,26 +59,15 @@ namespace System.Net
 
         public static async Task<DnsResult<AddressRecord>> ResolveAddresses(IList<IPEndPoint> servers, bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
         {
-            if (addressFamily == AddressFamily.Unspecified)
+            DnsRecordType qtype = addressFamily switch
             {
-                if (async)
-                {
-                    Task<DnsResult<AddressRecord>> aTask = QueryAddresses(servers, async: true, name, DnsRecordType.A, cancellationToken);
-                    Task<DnsResult<AddressRecord>> aaaaTask = QueryAddresses(servers, async: true, name, DnsRecordType.AAAA, cancellationToken);
-                    DnsResult<AddressRecord> aRes = await aTask.ConfigureAwait(false);
-                    DnsResult<AddressRecord> aaaaRes = await aaaaTask.ConfigureAwait(false);
-                    return MergeAddressResults(aRes, aaaaRes);
-                }
-                else
-                {
-                    DnsResult<AddressRecord> aRes = await QueryAddresses(servers, async: false, name, DnsRecordType.A, cancellationToken).ConfigureAwait(false);
-                    DnsResult<AddressRecord> aaaaRes = await QueryAddresses(servers, async: false, name, DnsRecordType.AAAA, cancellationToken).ConfigureAwait(false);
-                    return MergeAddressResults(aRes, aaaaRes);
-                }
-            }
+                AddressFamily.InterNetwork => DnsRecordType.A,
+                AddressFamily.InterNetworkV6 => DnsRecordType.AAAA,
+                _ => throw new ArgumentException(SR.net_invalid_ip_addr, nameof(addressFamily)),
+            };
 
-            DnsRecordType qtype = AddressFamilyToQueryType(addressFamily);
-            return await QueryAddresses(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
+            using DnsResponse response = await SendQuery(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
+            return ParseAddresses(response.Span, qtype);
         }
 
         public static async Task<DnsResult<SrvRecord>> ResolveSrv(IList<IPEndPoint> servers, bool async, string name, CancellationToken cancellationToken)
@@ -116,20 +105,6 @@ namespace System.Net
             using DnsResponse response = await SendQuery(servers, async, name, DnsRecordType.NS, cancellationToken).ConfigureAwait(false);
             return ParseNs(response.Span);
         }
-
-        private static async Task<DnsResult<AddressRecord>> QueryAddresses(IList<IPEndPoint> servers, bool async, string name, DnsRecordType qtype, CancellationToken cancellationToken)
-        {
-            using DnsResponse response = await SendQuery(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
-            return ParseAddresses(response.Span, qtype);
-        }
-
-        private static DnsRecordType AddressFamilyToQueryType(AddressFamily addressFamily) =>
-            addressFamily switch
-            {
-                AddressFamily.InterNetwork => DnsRecordType.A,
-                AddressFamily.InterNetworkV6 => DnsRecordType.AAAA,
-                _ => throw new ArgumentException(SR.net_invalid_ip_addr, nameof(addressFamily)),
-            };
 
         // ---- Response parsers ----
 
@@ -359,21 +334,6 @@ namespace System.Net
             return new DnsResult<NsRecord>(DnsResponseCode.NoError, records, nsNegTtl);
         }
 
-        private static DnsResult<AddressRecord> MergeAddressResults(DnsResult<AddressRecord> a, DnsResult<AddressRecord> b)
-        {
-            if (a.Records.Count > 0 || b.Records.Count > 0)
-            {
-                AddressRecord[] merged = [.. a.Records, .. b.Records];
-                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, TimeSpan.Zero);
-            }
-
-            DnsResponseCode chosenRc = a.ResponseCode == DnsResponseCode.NxDomain || b.ResponseCode == DnsResponseCode.NxDomain
-                ? DnsResponseCode.NxDomain
-                : (a.ResponseCode != DnsResponseCode.NoError ? a.ResponseCode : b.ResponseCode);
-            TimeSpan negTtl = a.NegativeCacheTtl > TimeSpan.Zero ? a.NegativeCacheTtl : b.NegativeCacheTtl;
-            return new DnsResult<AddressRecord>(chosenRc, null, negTtl);
-        }
-
         // Per RFC 2308 §5, the negative cache TTL is the minimum of the SOA record TTL
         // and the SOA MINIMUM field of the SOA record in the authority section.
         private static TimeSpan ExtractNegativeCacheTtl(ReadOnlySpan<byte> response)
@@ -420,10 +380,8 @@ namespace System.Net
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
-                            // Surface pre-flight cancellation as TaskCanceledException to match the
-                            // Windows PAL (which completes via TaskCompletionSource.TrySetCanceled).
                             ArrayPool<byte>.Shared.Return(responseBuffer);
-                            throw new TaskCanceledException();
+                            cancellationToken.ThrowIfCancellationRequested();
                         }
                         try
                         {
@@ -683,6 +641,7 @@ namespace System.Net
             if (!ar.AsyncWaitHandle.WaitOne(s_queryTimeout))
             {
                 socket.Close();
+                ar.AsyncWaitHandle.Close();
                 throw new SocketException((int)SocketError.TimedOut);
             }
             socket.EndConnect(ar);
