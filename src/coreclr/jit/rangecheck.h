@@ -326,6 +326,16 @@ struct RangeOps
 
     static Range Add(const Range& r1, const Range& r2, bool unsignedAdd = false)
     {
+        if (unsignedAdd &&
+            ((r1.IsConstantRange() && (r1.LowerLimit().GetConstant() < 0) &&
+              (r1.UpperLimit().GetConstant() >= 0)) ||
+             (r2.IsConstantRange() && (r2.LowerLimit().GetConstant() < 0) &&
+              (r2.UpperLimit().GetConstant() >= 0))))
+        {
+            // Signed intervals that straddle zero are not monotonic when interpreted as unsigned.
+            return Limit(Limit::keUnknown);
+        }
+
         return ApplyRangeOp(r1, r2, [unsignedAdd](const Limit& a, const Limit& b) {
             // For Add we support:
             //   keConstant + keConstant  => keConstant
