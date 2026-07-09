@@ -1139,13 +1139,10 @@ namespace System.Xml.Serialization
                     Type collectionType = memberMapping.TypeDesc!.Type!;
                     o = ReflectionCreateObject(memberMapping.TypeDesc.Type!);
 
-                    if (memberMapping.ChoiceIdentifier != null)
-                    {
-                        // https://github.com/dotnet/runtime/issues/1400:
-                        // To Support ArrayMapping Types Having ChoiceIdentifier
-                        throw new NotImplementedException("memberMapping.ChoiceIdentifier != null");
-                    }
-
+                    // When this array is the value of a member that carries an [XmlChoiceIdentifier]
+                    // (e.g. one of the choice element types is itself an array), the parallel choice
+                    // value is recorded by the calling WriteElement against the owning member after
+                    // this method returns, so no additional choice handling is needed here.
                     var arrayMember = new Member(memberMapping);
                     arrayMember.Collection = new CollectionMember();
                     arrayMember.ArraySource = arrayMember.Collection.Add;
