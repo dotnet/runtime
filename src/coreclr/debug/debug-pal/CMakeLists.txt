@@ -26,7 +26,8 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CMAKE_HOST_UNIX)
     if (NOT CLR_CMAKE_TARGET_WASI)
         # ds-ipc-pal-socket.c needs UNIX/TCP sockets; re-enable once
-        # WASI PERFTRACING is wired.
+        # WASI PERFTRACING is wired. Tracked by https://github.com/dotnet/runtime/issues/130383
+
         set(DEBUG_PAL_REFEREENCE_DIAGNOSTICSERVER ON)
     endif()
 
