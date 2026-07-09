@@ -52,16 +52,6 @@
         <target state="translated">'JsonSourceGenerationMode.Serialization'에서는 'JsonDerivedTypeAttribute'가 지원되지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
-        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="translated">멤버 '{0}.{1}'이(가) JsonIncludeAttribute로 주석 처리되었지만 원본 생성기에는 표시되지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
-        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="translated">JsonIncludeAttribute로 주석 처리된 액세스할 수 없는 속성은 원본 생성 모드에서 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">'{1}' 멤버에 지정된 'JsonConverterAttribute' 형식 '{0}'이(가) 변환기 형식이 아니거나 액세스 가능한 매개 변수가 없는 생성자를 포함하지 않습니다.</target>

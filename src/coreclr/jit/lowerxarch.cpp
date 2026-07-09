@@ -5588,14 +5588,13 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     NamedIntrinsic shuffle       = NI_Illegal;
     LIR::Use       use;
 
-    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX) && varTypeIsFloating(simdBaseType) &&
-        (simdSize == 16 || simdSize == 32))
+    if (varTypeIsFloating(simdBaseType) && (simdSize == 16 || simdSize == 32) &&
+        m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
     {
         if (BlockRange().TryGetUse(node, &use))
         {
             return LowerHWIntrinsicDotInnerMulSum(node);
         }
-
         return node->gtNext;
     }
 
