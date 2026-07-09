@@ -506,23 +506,41 @@ namespace System.Formats.Tar
         }
 
         // We delayed creating some symbolic links because they might target locations outside the destination.
-        // Any symlink that is in the destination directory at call time is either one that points in the destination or one that we are allowed to follow outside.
+        // Any symlink that is in the destination directory at the time this method is called is either one that points in the destination
+        // or a pre-existing symlink that we are allowed to follow outside.
         internal static void CreatePendingLinks(string destinationDirectoryFullPath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? pendingLinks)
         {
             Debug.Assert(destinationDirectoryFullPath[^1] == Path.DirectorySeparatorChar);
 
             if (pendingLinks is not { Count: > 0 })
             {
-                // Nothing to do, no pending links.
+                // No pending links, nothing to do.
                 return;
             }
 
-            (string resolvedDestinationDirectoryFullPath, int destinationSymlinkDepth) = RealPath(destinationDirectoryFullPath);
+            // Resolve the destination directory against the filesystem root, following any pre-existing symlinks in its path.
+            string resolvedDestinationDirectoryFullPath;
+            int destinationSymlinkDepth;
+            {
+                string root = Path.GetPathRoot(destinationDirectoryFullPath)!;
+                var rootResolver = new PendingLinkResolver(root, root, destinationSymlinkDepth: 0, pendingLinks: null);
+                resolvedDestinationDirectoryFullPath = rootResolver.ResolveDestinationDirectory(destinationDirectoryFullPath.AsSpan(root.Length));
+                destinationSymlinkDepth = rootResolver.SymlinkDepth;
 
+                // Ensure DirectorySeparatorChar.
+                if (!resolvedDestinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
+                {
+                    resolvedDestinationDirectoryFullPath += Path.DirectorySeparatorChar;
+                }
+            }
+
+            // Now create all pending links (that have ".." segments)
             var resolver = new PendingLinkResolver(destinationDirectoryFullPath, resolvedDestinationDirectoryFullPath, destinationSymlinkDepth, pendingLinks);
 
             while (pendingLinks.Count > 0)
             {
+                // CreateLink will remove the link from pendingLinks if it is successfully created. It can also create multiple intermediate links as necessary.
+                // Since we don't care about the order of creation, we just create a fresh enumerator and grab the first entry.
                 using var enumerator = pendingLinks.GetEnumerator();
                 enumerator.MoveNext();
                 (FileId fileId, (string symlinkPath, string linkTarget)) = enumerator.Current;
@@ -530,24 +548,11 @@ namespace System.Formats.Tar
             }
         }
 
-        private static (string resolvedPath, int symlinkDepth) RealPath(string fullPath)
-        {
-            Debug.Assert(fullPath[^1] == Path.DirectorySeparatorChar);
-
-            string root = Path.GetPathRoot(fullPath)!;
-            // Resolve the destination directory against the filesystem root, following any pre-existing symlinks in its path.
-            // Everything is nested under the root, so nothing is ever "outside"; we only need the resolved path and how many symlinks were traversed to reach it.
-            var resolver = new PendingLinkResolver(root, root, destinationSymlinkDepth: 0, pendingLinks: null);
-            string resolvedPath = resolver.ResolveDestinationDirectory(fullPath.AsSpan(root.Length));
-
-            // Ensure DirectorySeparatorChar.
-            if (!resolvedPath.EndsWith(Path.DirectorySeparatorChar))
-            {
-                resolvedPath += Path.DirectorySeparatorChar;
-            }
-            return (resolvedPath, resolver.SymlinkDepth);
-        }
-
+        // checks if a path is equal to or nested under a full path. The full path must end with a directory separator.
+        // examples:
+        //    FullPathIsEqualOrNested("C:\foo\", "C:\foo\bar") => true
+        //    FullPathIsEqualOrNested("C:\foo\", "C:\foo") => true
+        //    FullPathIsEqualOrNested("C:\foo\", "C:\foobar") => false
         internal static bool FullPathIsEqualOrNested(string fullPath, string nestedFullPath)
         {
             Debug.Assert(fullPath[^1] == Path.DirectorySeparatorChar);
@@ -637,6 +642,7 @@ namespace System.Formats.Tar
                 resolvedFullPath = baseFullPath;
                 bool checkExists = true;
 
+                // walk the relative path and resolve each component, following symlinks and checking for loops.
                 foreach (Range range in relativePath.SplitAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
                 {
                     ReadOnlySpan<char> component = relativePath[range];
@@ -661,6 +667,7 @@ namespace System.Formats.Tar
                     if (!checkExists || !TryGetPathInfo(componentPath, out FileId fileId, out bool isSymlink))
                     {
                         // Path doesn't exist; remaining components can't exist either.
+                        // short-circuit to simply appending the remaining components to the path for the final check.
                         resolvedFullPath = componentPath;
                         checkExists = false;
                         continue;

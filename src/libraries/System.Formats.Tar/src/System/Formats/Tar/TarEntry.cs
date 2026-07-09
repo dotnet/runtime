@@ -445,9 +445,11 @@ namespace System.Formats.Tar
         // already present on disk before extraction.
         private static bool LinkDestinationIsWithinDirectory(string destinationDirectoryPath, string linkFullPath, string linkTarget, out bool deferred)
         {
+            // Symbolic links with ".." segments are tricky as they resolve against the physical location of the link and not the lexical path used to access it (which may contain symlinks to ".").
+            // We defer the creation of such links until after all entries are extracted, at which point we can properly validate the destination.
             deferred = HasDotDotSegment(linkTarget);
 
-            // Require the target path to logically reside within the destination.
+            // Require the target path to lexically reside within the destination.
             if (deferred || Path.IsPathFullyQualified(linkTarget))
             {
                 string resolvedPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(linkFullPath)!, linkTarget));
