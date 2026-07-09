@@ -29,6 +29,22 @@ namespace System
                     ThrowArgumentOutOfRangeException(paramName);
                 }
             }
+
+            public static void ThrowIfGreaterThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IComparable<T>
+            {
+                if (value.CompareTo(other) > 0)
+                {
+                    ThrowArgumentOutOfRangeException(paramName);
+                }
+            }
+
+            public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IComparable<T>
+            {
+                if (value.CompareTo(other) >= 0)
+                {
+                    ThrowArgumentOutOfRangeException(paramName);
+                }
+            }
         }
 
         [DoesNotReturn]

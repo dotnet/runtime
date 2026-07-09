@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 if ((uint)index >= (uint)Length)
                 {
-                    ThrowArgumentOutOfRangeException(nameof(index));
+                    ThrowArgumentOutOfRangeExclusive(index, Length);
                 }
 
                 Debug.Assert(Buffer is not null);
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || start < 0)
             {
-                ThrowInvalidArguments(start, Length - start, nameof(start));
+                ThrowInvalidArguments(start, Length - start);
             }
 
             return Buffer.AsSpan(Offset + start, Length - start);
@@ -152,7 +152,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
             {
-                ThrowInvalidArguments(start, length, nameof(start));
+                ThrowInvalidArguments(start, length);
             }
 
             return Buffer.AsSpan(Offset + start, length);
@@ -393,7 +393,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length, nameof(offset));
+                ThrowInvalidArguments(offset, length);
             }
 
             return Buffer.Substring(Offset + offset, length);
@@ -426,7 +426,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length, nameof(offset));
+                ThrowInvalidArguments(offset, length);
             }
 
             return new StringSegment(Buffer, Offset + offset, length);
@@ -453,12 +453,12 @@ namespace Microsoft.Extensions.Primitives
             {
                 if ((uint)start > (uint)Length)
                 {
-                    ThrowArgumentOutOfRangeException(nameof(start));
+                    ThrowArgumentOutOfRangeInclusive(start, Length);
                 }
 
                 if ((uint)count > (uint)(Length - start))
                 {
-                    ThrowArgumentOutOfRangeException(nameof(count));
+                    ThrowArgumentOutOfRangeInclusive(count, Length - start);
                 }
 
                 index = AsSpan(start, count).IndexOf(c);
@@ -516,12 +516,12 @@ namespace Microsoft.Extensions.Primitives
             {
                 if ((uint)startIndex > (uint)Length)
                 {
-                    ThrowArgumentOutOfRangeException(nameof(startIndex));
+                    ThrowArgumentOutOfRangeInclusive(startIndex, Length);
                 }
 
                 if ((uint)count > (uint)(Length - startIndex))
                 {
-                    ThrowArgumentOutOfRangeException(nameof(count));
+                    ThrowArgumentOutOfRangeInclusive(count, Length - startIndex);
                 }
 
                 index = Buffer.IndexOfAny(anyOf, Offset + startIndex, count);
@@ -661,15 +661,31 @@ namespace Microsoft.Extensions.Primitives
             // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
             if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
             {
-                ThrowArgumentOutOfRangeException(nameof(comparisonType));
+                ThrowArgumentOutOfRangeInclusive((int)comparisonType, (int)StringComparison.OrdinalIgnoreCase, nameof(comparisonType));
             }
         }
 
-        // Methods that do no return (i.e. throw) are not inlined, keeping the throw out of
-        // the (often inlined) caller's body.
+        // Cold, out-of-line throw helpers. The (often inlined) callers keep a single unsigned
+        // comparison on the hot path (e.g. '(uint)value >= (uint)max') and branch here only when
+        // out of range. The signed value is re-validated here so the exception reports the actual
+        // argument (e.g. -1) rather than its unsigned wrap-around, with an enriched message.
         [DoesNotReturn]
-        private static void ThrowArgumentOutOfRangeException(string paramName) =>
-            throw new ArgumentOutOfRangeException(paramName);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowArgumentOutOfRangeExclusive(int value, int exclusiveMax, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 0, paramName);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, exclusiveMax, paramName);
+            throw new ArgumentOutOfRangeException(paramName); // unreachable: one of the checks above always throws here
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowArgumentOutOfRangeInclusive(int value, int inclusiveMax, [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 0, paramName);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, inclusiveMax, paramName);
+            throw new ArgumentOutOfRangeException(paramName); // unreachable: one of the checks above always throws here
+        }
 
         // Methods that do no return (i.e. throw) are not inlined
         // https://github.com/dotnet/coreclr/pull/6103
@@ -701,7 +717,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [DoesNotReturn]
-        private void ThrowInvalidArguments(int offset, int length, string offsetOrStart)
+        private void ThrowInvalidArguments(int offset, int length, [CallerArgumentExpression(nameof(offset))] string? offsetOrStart = null)
         {
             throw GetInvalidArgumentsException(HasValue);
 
