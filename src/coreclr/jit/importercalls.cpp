@@ -7351,6 +7351,19 @@ void Compiler::impSetupAsyncCall(
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
 
+    // Calls using the async calling convention are only valid inside async
+    // methods, which arrange for suspension/resumption of the call. The only
+    // exception is a small number of infrastructure helpers (async thunks and
+    // resumption stubs) that are not themselves async but explicitly handle the
+    // continuation via the AsyncHelpers.AsyncCallContinuation intrinsic. Any
+    // other non-async method containing such a call is invalid IL; record it
+    // here and diagnose it once importation is complete (compUsesAsyncContinuation
+    // is not necessarily set yet since the intrinsic is imported after the call).
+    if (!compIsForInlining() && !compIsAsync())
+    {
+        compHasAsyncCallInNonAsync = true;
+    }
+
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries() && (call->gtCallType == CT_USER_FUNC))
     {
