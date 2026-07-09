@@ -7255,6 +7255,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ParseContinuation(
     UINT32 state = 0;
     int numFound = 0;
 
+    *pDiagnosticIP = 0;
+    *pNextContinuation = 0;
+    *pState = 0;
+
     ApproxFieldDescIterator continuationFieldIter(pContinuationMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 3; continuationField = continuationFieldIter.Next())
     {
