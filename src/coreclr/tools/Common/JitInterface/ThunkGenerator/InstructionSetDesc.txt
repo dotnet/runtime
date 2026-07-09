@@ -300,9 +300,16 @@ instructionsetgroup  ,armv8.3-a                  ,ARM64    ,armv8.2-a rcpc
 instructionsetgroup  ,armv8.4-a                  ,ARM64    ,armv8.3-a dotprod rcpc2
 instructionsetgroup  ,armv8.5-a                  ,ARM64    ,armv8.4-a
 instructionsetgroup  ,armv8.6-a                  ,ARM64    ,armv8.5-a
+instructionsetgroup  ,armv8.7-a                  ,ARM64    ,armv8.6-a
+instructionsetgroup  ,armv8.8-a                  ,ARM64    ,armv8.7-a
+instructionsetgroup  ,armv8.9-a                  ,ARM64    ,armv8.8-a cssc
 
 ; Technically, apple-m1 is v8.5+
 instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.5-a
+instructionsetgroup  ,apple-m2                   ,ARM64    ,armv8.6-a
+instructionsetgroup  ,apple-m3                   ,ARM64    ,armv8.6-a
+instructionsetgroup  ,apple-m4                   ,ARM64    ,armv8.7-a
+instructionsetgroup  ,apple-m5                   ,ARM64    ,armv8.9-a
 
 
 ; Definition of Wasm instruction sets

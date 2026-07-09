@@ -1097,7 +1097,14 @@ namespace Internal.JitInterface
                 { ("armv8.4-a",  TargetArchitecture.ARM64), "armv8.3-a dotprod rcpc2" },
                 { ("armv8.5-a",  TargetArchitecture.ARM64), "armv8.4-a" },
                 { ("armv8.6-a",  TargetArchitecture.ARM64), "armv8.5-a" },
+                { ("armv8.7-a",  TargetArchitecture.ARM64), "armv8.6-a" },
+                { ("armv8.8-a",  TargetArchitecture.ARM64), "armv8.7-a" },
+                { ("armv8.9-a",  TargetArchitecture.ARM64), "armv8.8-a cssc" },
                 { ("apple-m1",   TargetArchitecture.ARM64), "armv8.5-a" },
+                { ("apple-m2",   TargetArchitecture.ARM64), "armv8.6-a" },
+                { ("apple-m3",   TargetArchitecture.ARM64), "armv8.6-a" },
+                { ("apple-m4",   TargetArchitecture.ARM64), "armv8.7-a" },
+                { ("apple-m5",   TargetArchitecture.ARM64), "armv8.9-a" },
             };
 
         public static IEnumerable<string> AllCpuNames =>
