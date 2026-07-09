@@ -107,57 +107,23 @@ namespace contracts
             int emitted;
         };
 
-        // PE structure sizes on the target. The DAC emits each of these as a fixed struct via
-        // DPTR::EnumMem(), so we mirror the exact sizes rather than a coarse [Base, SizeOfHeaders].
-        constexpr uint32_t kDosHeaderSize = 0x40;            // sizeof(IMAGE_DOS_HEADER)
-        constexpr uint32_t kSectionHeaderSize = 40;          // sizeof(IMAGE_SECTION_HEADER)
-        constexpr uint32_t kCor20HeaderSize = 72;            // sizeof(IMAGE_COR20_HEADER)
-        constexpr uint32_t kReadyToRunHeaderSize = 16;       // sizeof(READYTORUN_HEADER)
-        constexpr uint32_t kDebugDirEntrySize = 28;          // sizeof(IMAGE_DEBUG_DIRECTORY)
-        constexpr uint32_t kReadyToRunSignature = 0x00525452; // 'RTR\0'
-        constexpr uint32_t kMaxSections = 96;
-
-        // Translates an RVA to a target address within an image layout. For a mapped image
-        // (FLAG_MAPPED) RVA == offset-from-base. For a flat (raw file) image the RVA must be
-        // converted to a file offset by walking the section table, matching PEDecoder's
-        // RvaToAddr for a flat layout (and Loader_1.RvaToOffset in the managed cDAC).
-        uint64_t RvaToAddr(uint64_t base, uint32_t rva, bool isMapped, const uint8_t* sections, uint32_t numSections)
-        {
-            if (isMapped)
-            {
-                return base + rva;
-            }
-            for (uint32_t i = 0; i < numSections; i++)
-            {
-                const uint8_t* s = sections + (size_t)i * kSectionHeaderSize;
-                uint32_t va = 0, rawSize = 0, rawPtr = 0;
-                memcpy(&va, s + 12, sizeof(va));       // VirtualAddress
-                memcpy(&rawSize, s + 16, sizeof(rawSize)); // SizeOfRawData
-                memcpy(&rawPtr, s + 20, sizeof(rawPtr));   // PointerToRawData
-                if (rva >= va && rva < va + rawSize)
-                {
-                    return base + (rva - va) + rawPtr;
-                }
-            }
-            return base + rva;
-        }
-
-        // Mirrors PEDecoder::EnumMemoryRegions for a single image layout (pedecoder.cpp): emits the
-        // DOS header, NT headers, section table, COR (CLI) header, and R2R header -- the exact regions
-        // the legacy DAC records. When emitDebugDir is set (the loaded layout, per
-        // PEImage::EnumMemoryRegions) it also emits the debug directory and the blobs its entries
-        // point to (used to locate managed PDBs). The ECMA metadata and code bytes are deliberately
-        // NOT emitted; a reader reads those from the on-disk image, exactly like the DAC. Managed
-        // assemblies are PE on every platform, so this PE parse is valid on Linux/macOS.
-        void EmitPEDecoderRegions(const Target& target, uint64_t base, uint32_t flags, bool emitDebugDir)
+        // Emits ONLY the PE header page of a managed module's loaded image layout: the DOS header,
+        // NT headers, and section table (i.e. [Base, SizeOfHeaders]). This is the minimal
+        // information a reader needs to identify the module (COFF TimeDateStamp + OptionalHeader
+        // SizeOfImage form the PE identity key) and to parse its section table. Everything else --
+        // the COR/R2R headers, ECMA metadata, debug directory, and code -- is deliberately NOT
+        // emitted; a reader pages those in from the on-disk assembly, exactly like the DAC does.
+        // createdump excludes module image content from heap/mini dumps by design (only Full dumps
+        // write m_moduleMappings), so cdac-lite re-emits just this header page. Managed assemblies
+        // are PE on every platform, so this parse is valid on Linux/macOS.
+        void EmitLoadedImageHeaders(const Target& target, uint64_t base)
         {
             if (base == 0)
             {
                 return;
             }
-            const bool isMapped = (flags & 0x1) != 0; // FLAG_MAPPED
 
-            uint8_t dos[kDosHeaderSize];
+            uint8_t dos[0x40]; // sizeof(IMAGE_DOS_HEADER)
             if (!target.ReadBuffer(base, dos, sizeof(dos)) || dos[0] != 'M' || dos[1] != 'Z')
             {
                 return;
@@ -165,113 +131,29 @@ namespace contracts
             uint32_t e_lfanew = 0;
             memcpy(&e_lfanew, dos + 0x3C, sizeof(e_lfanew));
 
-            // PE signature(4) + COFF header(20) + optional header (PE32+: 240). Covers all data dirs.
+            // PE signature(4) + COFF header(20) + optional header. SizeOfHeaders lives at optional
+            // header offset 60 for both PE32 and PE32+.
             uint8_t peHdr[4 + 20 + 240];
             if (!target.ReadBuffer(base + e_lfanew, peHdr, sizeof(peHdr)) || peHdr[0] != 'P' || peHdr[1] != 'E')
             {
                 return;
             }
+            uint32_t sizeOfHeaders = 0;
+            memcpy(&sizeOfHeaders, peHdr + 4 + 20 + 60, sizeof(sizeOfHeaders));
 
-            uint16_t numberOfSections = 0;
-            memcpy(&numberOfSections, peHdr + 4 + 2, sizeof(numberOfSections));     // IMAGE_FILE_HEADER.NumberOfSections
-            uint16_t sizeOfOptionalHeader = 0;
-            memcpy(&sizeOfOptionalHeader, peHdr + 4 + 16, sizeof(sizeOfOptionalHeader)); // IMAGE_FILE_HEADER.SizeOfOptionalHeader
-            const uint32_t optOffset = 4 + 20; // within peHdr
-            uint16_t optMagic = 0;
-            memcpy(&optMagic, peHdr + optOffset, sizeof(optMagic));
-            const bool isPE32Plus = (optMagic == 0x20B);
-
-            // DOS header + NT headers, exactly as PEDecoder::EnumMemoryRegions records them
-            // (DacEnumMemoryRegion(m_base, sizeof(IMAGE_DOS_HEADER)) then m_pNTHeaders.EnumMem()).
-            // createdump excludes module image content from heap dumps by design -- only Full dumps
-            // write m_moduleMappings (crashinfo.cpp GatherCrashInfo) -- so, just like the DAC, we
-            // re-emit these header structures into the dump; the ECMA metadata and code are read from
-            // the on-disk image. createdump page-rounds each emitted region, so these discrete regions
-            // land as the module's first header page.
-            target.EmitMemory(base, kDosHeaderSize);
-            target.EmitMemory(base + e_lfanew, 4 + 20 + (isPE32Plus ? 240u : 224u)); // sizeof(IMAGE_NT_HEADERS)
-
-            // Section table (immediately after the optional header) -- also read for RVA->offset mapping.
-            const uint64_t firstSection = base + e_lfanew + optOffset + sizeOfOptionalHeader;
-            uint32_t numSec = numberOfSections;
-            if (numSec > kMaxSections)
+            // The header page (DOS + NT headers + section table). createdump page-rounds the region,
+            // so [Base, SizeOfHeaders] lands as the module's first header page in the dump.
+            if (sizeOfHeaders != 0)
             {
-                numSec = kMaxSections;
-            }
-            uint8_t sections[kMaxSections * kSectionHeaderSize];
-            if (numSec != 0 && !target.ReadBuffer(firstSection, sections, kSectionHeaderSize * numSec))
-            {
-                numSec = 0;
-            }
-            if (numSec != 0)
-            {
-                target.EmitMemory(firstSection, kSectionHeaderSize * numSec);
-            }
-
-            const uint32_t dataDirOffset = optOffset + (isPE32Plus ? 112 : 96);
-
-            // COR (CLI) header (data directory 14 = IMAGE_DIRECTORY_ENTRY_COMHEADER).
-            uint32_t corRVA = 0;
-            memcpy(&corRVA, peHdr + dataDirOffset + 14 * 8, sizeof(corRVA));
-            if (corRVA != 0)
-            {
-                uint64_t corAddr = RvaToAddr(base, corRVA, isMapped, sections, numSec);
-                target.EmitMemory(corAddr, kCor20HeaderSize);
-
-                // R2R header via the COR header's ManagedNativeHeader directory (RVA @+64, Size @+68).
-                uint8_t cor[kCor20HeaderSize];
-                if (target.ReadBuffer(corAddr, cor, sizeof(cor)))
-                {
-                    uint32_t r2rRVA = 0, r2rSize = 0;
-                    memcpy(&r2rRVA, cor + 64, sizeof(r2rRVA));
-                    memcpy(&r2rSize, cor + 68, sizeof(r2rSize));
-                    if (r2rRVA != 0 && r2rSize >= kReadyToRunHeaderSize)
-                    {
-                        uint64_t r2rAddr = RvaToAddr(base, r2rRVA, isMapped, sections, numSec);
-                        uint32_t sig = 0;
-                        if (target.ReadBuffer(r2rAddr, &sig, sizeof(sig)) && sig == kReadyToRunSignature)
-                        {
-                            target.EmitMemory(r2rAddr, kReadyToRunHeaderSize);
-                        }
-                    }
-                }
-            }
-
-            // Debug directory (data directory 6): loaded layout only, matching PEImage::EnumMemoryRegions.
-            // Emits the directory plus each entry's raw data (e.g. CodeView records for managed PDBs).
-            if (emitDebugDir)
-            {
-                uint32_t dbgRVA = 0, dbgSize = 0;
-                memcpy(&dbgRVA, peHdr + dataDirOffset + 6 * 8, sizeof(dbgRVA));
-                memcpy(&dbgSize, peHdr + dataDirOffset + 6 * 8 + 4, sizeof(dbgSize));
-                if (dbgRVA != 0 && dbgSize != 0)
-                {
-                    uint64_t dbgAddr = RvaToAddr(base, dbgRVA, isMapped, sections, numSec);
-                    target.EmitMemory(dbgAddr, dbgSize);
-                    for (uint32_t i = 0; i < dbgSize / kDebugDirEntrySize; i++)
-                    {
-                        uint8_t entry[kDebugDirEntrySize];
-                        if (!target.ReadBuffer(dbgAddr + (uint64_t)i * kDebugDirEntrySize, entry, sizeof(entry)))
-                        {
-                            break;
-                        }
-                        uint32_t sizeOfData = 0, addrOfRawData = 0;
-                        memcpy(&sizeOfData, entry + 16, sizeof(sizeOfData));    // IMAGE_DEBUG_DIRECTORY.SizeOfData
-                        memcpy(&addrOfRawData, entry + 20, sizeof(addrOfRawData)); // .AddressOfRawData (RVA)
-                        if (addrOfRawData != 0 && sizeOfData != 0)
-                        {
-                            target.EmitMemory(RvaToAddr(base, addrOfRawData, isMapped, sections, numSec), sizeOfData);
-                        }
-                    }
-                }
+                target.EmitMemory(base, sizeOfHeaders);
             }
         }
 
-        // Emit the module's metadata-locator chain: Module -> PEAssembly -> PEImage ->
-        // PEImageLayout, plus the PE header regions of the image, matching the legacy DAC.
-        // PEImage::EnumMemoryRegions (peimage.cpp) enumerates BOTH m_pLayouts[IMAGE_FLAT] and
-        // [IMAGE_LOADED] and additionally emits the debug directory for the loaded layout, so we
-        // do the same. The reader then reads ECMA metadata from the on-disk image via these headers.
+        // Emit the module's locator chain: Module -> PEAssembly -> PEImage -> PEImageLayout, plus
+        // the loaded image's PE header page. The struct reads auto-emit each structure into the
+        // dump (via the Target's EnumMem sink), giving a reader the path from a Module to the
+        // loaded image base. The reader then pages the ECMA metadata and code in from the on-disk
+        // assembly, so only the header page (needed to identify the module) is emitted here.
         void EmitModuleMetadataChain(const Target& target, const data::Module& module)
         {
             if (module.PEAssembly == 0)
@@ -291,15 +173,7 @@ namespace contracts
             data::PEImageLayout loaded;
             if (target.TryRead(peImage.LoadedImageLayout, loaded)) // struct read -> auto-emitted
             {
-                EmitPEDecoderRegions(target, loaded.Base, (uint32_t)loaded.Flags, /*emitDebugDir*/ true);
-            }
-            if (peImage.FlatImageLayout != 0 && peImage.FlatImageLayout != peImage.LoadedImageLayout)
-            {
-                data::PEImageLayout flat;
-                if (target.TryRead(peImage.FlatImageLayout, flat)) // struct read -> auto-emitted
-                {
-                    EmitPEDecoderRegions(target, flat.Base, (uint32_t)flat.Flags, /*emitDebugDir*/ false);
-                }
+                EmitLoadedImageHeaders(target, loaded.Base);
             }
         }
 
