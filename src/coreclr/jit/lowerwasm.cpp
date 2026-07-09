@@ -846,31 +846,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic      intrinsic = node->GetHWIntrinsicId();
     HWIntrinsicCategory category  = HWIntrinsicInfo::lookupCategory(intrinsic);
 
-/*
-
-    if ((node->GetSimdBaseType() == TYP_ULONG) &&
-        ((id == NI_PackedSimd_CompareLessThan) || (id == NI_PackedSimd_CompareLessThanOrEqual) ||
-         (id == NI_PackedSimd_CompareGreaterThan) || (id == NI_PackedSimd_CompareGreaterThanOrEqual)))
-    {
-        return LowerHWIntrinsicCompareUnsignedLong(node);
-    }
-*/
-
-/*
-
-            GenTree* immOp = getImmOp(node);
-            if (!immOp->IsCnsIntOrI()) // this instruction will need a jump table fallback
-            {
-                node->SetNeedsJumpTableFallback();
-                for (int i = 1; i <= node->GetOperandCount(); i++)
-                {
-                    GenTree* op = node->Op(i);
-                    SetMultiplyUsed(op DEBUGARG("Non-constant imm op needs jump table fallback"));
-                }
-            }
-
-*/
-
     switch (intrinsic)
     {
         case NI_Vector_ConditionalSelect:

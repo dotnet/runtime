@@ -75,7 +75,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 //   info - Hardware intrinsic info about the node
 //
 // Notes:
-/* This isn't a true jump table like on Native ISAs, it's just a series of nested blocks that looks like the following:
+/* The structure emitted here is a series of nested blocks that looks like the following:
         (block $outer
           (block $inner
              (block $(N-1)
@@ -84,20 +84,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     (block $0
                         (br_table $0 $1 ... $N-1 $inner)
                     )
-                    <case imm=0>
+                    {(local.get lcl_num(arg)) for each non-immediate operand}
+                    <op> imm=0
                     br $outer
                 )
                   ...
              )
-             <case imm=N-1>
+             {(local.get lcl_num(arg)) for each non-immediate operand}
+             <op> imm=N-1
              br $outer
           )
           unreachable
         )
    Essentially, we create a block for each possible value of the immediate, and dispatch according to the immediate
-   value. Note that it is safe to emit these blocks mid-instruction stream, since we can logically think of them as one
-   macro "instruction", whose result is the same as the underlying instruction. There aren't any GC safepoints in any of
-   the generated cases here, so GC info shouldn't need to be touched at any point.
+   value. In each case of the jump table, we re-materialize the non-immediate operands, whose result values are assigned
+   to locals by regalloc. Note that it is safe to emit these blocks mid-instruction stream, since we can logically think
+   of them as one macro "instruction", whose result is the same as the underlying instruction. There aren't any GC
+   safepoints in any of the generated cases here, but if we have to add any calls/throws/etc. in any of the generated
+   cases, this approach will need to change.
 */
 void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info)
 {
