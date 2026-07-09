@@ -184,7 +184,7 @@ namespace Microsoft.Extensions.Options.Generators
             };
 
         private static string GetFQN(ISymbol type)
-            => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+            => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
         private static string GetMinimalFQN(ISymbol type)
             => type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat.AddGenericsOptions(SymbolDisplayGenericsOptions.IncludeTypeParameters));

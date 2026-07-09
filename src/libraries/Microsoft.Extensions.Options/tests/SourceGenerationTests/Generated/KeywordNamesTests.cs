@@ -1,0 +1,44 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using KeywordNames;
+using Microsoft.Extensions.Options;
+using Xunit;
+
+namespace Microsoft.Gen.OptionsValidation.Test;
+
+public class KeywordNamesTests
+{
+    [Fact]
+    public void Invalid()
+    {
+        var model = new FirstModel
+        {
+            @namespace = "XXX",
+            @if = "YYY",
+            @event = new @class(),
+            @const = new List<@class> { new @class { @string = "XXX" } },
+        };
+
+        var validator = new FirstValidator();
+        var vr = validator.Validate("KeywordNames", model);
+
+        Utils.VerifyValidateOptionsResult(vr, 4, "namespace", "if", "event", "const");
+    }
+
+    [Fact]
+    public void Valid()
+    {
+        var model = new FirstModel
+        {
+            @namespace = "ABCDE",
+            @if = "ABCDE",
+            @event = new @class { @string = "ABCDE" },
+            @const = new List<@class> { new @class { @string = "ABCDE" } },
+        };
+
+        var validator = new FirstValidator();
+        Assert.Equal(ValidateOptionsResult.Success, validator.Validate("KeywordNames", model));
+    }
+}
