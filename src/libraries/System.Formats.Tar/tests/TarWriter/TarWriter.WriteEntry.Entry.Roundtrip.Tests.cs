@@ -49,7 +49,7 @@ namespace System.Formats.Tar.Tests
                 using MemoryStream ms = new();
                 Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
-                TarWriter writer = await CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(s, TarEntryFormat.Pax, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, entry, async);
@@ -60,11 +60,11 @@ namespace System.Formats.Tar.Tests
                 }
 
                 ms.Position = 0;
-                TarReader reader = await CreateTarReader(s, async);
+                TarReader reader = await CreateTarReader(s, async: async);
                 try
                 {
-                    entry = await GetNextEntry(reader, async);
-                    Assert.Null(await GetNextEntry(reader, async));
+                    entry = await GetNextEntry(reader, async: async);
+                    Assert.Null(await GetNextEntry(reader, async: async));
                     Assert.Equal(name, entry.Name);
                 }
                 finally
@@ -108,7 +108,7 @@ namespace System.Formats.Tar.Tests
                 using MemoryStream ms = new();
                 Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
-                TarWriter writer = await CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(s, TarEntryFormat.Pax, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, entry, async);
@@ -119,11 +119,11 @@ namespace System.Formats.Tar.Tests
                 }
 
                 ms.Position = 0;
-                TarReader reader = await CreateTarReader(s, async);
+                TarReader reader = await CreateTarReader(s, async: async);
                 try
                 {
-                    entry = await GetNextEntry(reader, async);
-                    Assert.Null(await GetNextEntry(reader, async));
+                    entry = await GetNextEntry(reader, async: async);
+                    Assert.Null(await GetNextEntry(reader, async: async));
                     Assert.Equal(name, entry.Name);
                     Assert.Equal(linkName, entry.LinkName);
                 }
@@ -162,7 +162,7 @@ namespace System.Formats.Tar.Tests
                 using MemoryStream ms = new();
                 Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
 
-                TarWriter writer = await CreateTarWriter(s, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(s, TarEntryFormat.Pax, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, posixEntry, async);
@@ -173,12 +173,12 @@ namespace System.Formats.Tar.Tests
                 }
 
                 ms.Position = 0;
-                TarReader reader = await CreateTarReader(s, async);
+                TarReader reader = await CreateTarReader(s, async: async);
                 try
                 {
-                    entry = await GetNextEntry(reader, async);
+                    entry = await GetNextEntry(reader, async: async);
                     posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
-                    Assert.Null(await GetNextEntry(reader, async));
+                    Assert.Null(await GetNextEntry(reader, async: async));
 
                     Assert.Equal(name, posixEntry.Name);
                     Assert.Equal(userGroupName, posixEntry.UserName);
@@ -223,7 +223,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 using MemoryStream ms = new();
-                TarWriter writer = await CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(ms, TarEntryFormat.Pax, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, writeEntry, async);
@@ -234,11 +234,11 @@ namespace System.Formats.Tar.Tests
                 }
                 ms.Position = 0;
 
-                TarReader reader = await CreateTarReader(ms, async);
+                TarReader reader = await CreateTarReader(ms, async: async);
                 try
                 {
-                    PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async));
-                    Assert.Null(await GetNextEntry(reader, async));
+                    PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
+                    Assert.Null(await GetNextEntry(reader, async: async));
 
                     Assert.Equal(writeEntry.Name, readEntry.Name);
                     Assert.Equal(writeEntry.GroupName, readEntry.GroupName);
@@ -287,7 +287,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 using MemoryStream ms = new();
-                TarWriter writer = await CreateTarWriter(ms, async, TarEntryFormat.Pax, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(ms, TarEntryFormat.Pax, leaveOpen: true, async: async);
                 try
                 {
                     await WriteEntry(writer, writeEntry, async);
@@ -298,11 +298,11 @@ namespace System.Formats.Tar.Tests
                 }
                 ms.Position = 0;
 
-                TarReader reader = await CreateTarReader(ms, async);
+                TarReader reader = await CreateTarReader(ms, async: async);
                 try
                 {
-                    PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async));
-                    Assert.Null(await GetNextEntry(reader, async));
+                    PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(await GetNextEntry(reader, async: async));
+                    Assert.Null(await GetNextEntry(reader, async: async));
 
                     Assert.Equal(writeEntry.Name, readEntry.Name);
                     Assert.Equal(writeEntry.GroupName, readEntry.GroupName);

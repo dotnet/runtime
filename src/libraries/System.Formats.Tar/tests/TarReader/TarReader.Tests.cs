@@ -28,11 +28,11 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            TarReader reader = await CreateTarReader(ms, async, leaveOpen: false);
+            TarReader reader = await CreateTarReader(ms, leaveOpen: false, async: async);
             try
             {
                 TarEntry entry;
-                while ((entry = await GetNextEntry(reader, async)) != null)
+                while ((entry = await GetNextEntry(reader, async: async)) != null)
                 {
                     if (entry.DataStream != null)
                     {
@@ -60,11 +60,11 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            TarReader reader = await CreateTarReader(ms, async, leaveOpen: true);
+            TarReader reader = await CreateTarReader(ms, leaveOpen: true, async: async);
             try
             {
                 TarEntry entry;
-                while ((entry = await GetNextEntry(reader, async)) != null)
+                while ((entry = await GetNextEntry(reader, async: async)) != null)
                 {
                     if (entry.DataStream != null)
                     {
@@ -93,11 +93,11 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
             List<Stream> dataStreams = new List<Stream>();
-            TarReader reader = await CreateTarReader(ms, async, leaveOpen: false);
+            TarReader reader = await CreateTarReader(ms, leaveOpen: false, async: async);
             try
             {
                 TarEntry entry;
-                while ((entry = await GetNextEntry(reader, async, copyData: true)) != null)
+                while ((entry = await GetNextEntry(reader, copyData: true, async: async)) != null)
                 {
                     if (entry.DataStream != null)
                     {

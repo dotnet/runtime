@@ -30,7 +30,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
             Assert.True(MountHelper.CreateJunction(junctionPath, targetPath));
 
             using MemoryStream archive = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archive, async, format, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
             try
             {
                 await WriteEntry(writer, junctionPath, junctionPath, async);
@@ -41,10 +41,10 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
             }
 
             archive.Position = 0;
-            TarReader reader = await CreateTarReader(archive, async);
+            TarReader reader = await CreateTarReader(archive, async: async);
             try
             {
-                TarEntry entry = await GetNextEntry(reader, async);
+                TarEntry entry = await GetNextEntry(reader, async: async);
                 Assert.NotNull(entry);
                 Assert.Equal(format, entry.Format);
                 Assert.Equal(junctionPath, entry.Name);
@@ -54,7 +54,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
 
                 VerifyPlatformSpecificMetadata(junctionPath, entry);
 
-                Assert.Null(await GetNextEntry(reader, async));
+                Assert.Null(await GetNextEntry(reader, async: async));
             }
             finally
             {
@@ -79,7 +79,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
         foreach (bool async in Booleans)
         {
             using MemoryStream archive = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archive, async, format);
+            TarWriter writer = await CreateTarWriter(archive, format, async: async);
             try
             {
                 if (async)

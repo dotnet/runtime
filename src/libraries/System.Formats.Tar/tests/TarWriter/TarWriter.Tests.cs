@@ -101,7 +101,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream inner = new MemoryStream();
             using WrappedStream wrapped = new WrappedStream(inner, canRead: true, canWrite: true, canSeek: false);
 
-            TarWriter writer = await CreateTarWriter(wrapped, async, TarEntryFormat.Pax, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(wrapped, TarEntryFormat.Pax, leaveOpen: true, async: async);
             try
             {
                 PaxTarEntry paxEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt");
@@ -115,13 +115,13 @@ namespace System.Formats.Tar.Tests
 
             inner.Seek(0, SeekOrigin.Begin); // Rewind the base stream (wrapped cannot be rewound)
 
-            TarReader reader = await CreateTarReader(wrapped, async);
+            TarReader reader = await CreateTarReader(wrapped, async: async);
             try
             {
-                TarEntry entry = await GetNextEntry(reader, async);
+                TarEntry entry = await GetNextEntry(reader, async: async);
                 Assert.Equal(TarEntryFormat.Pax, entry.Format);
                 Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
-                Assert.Null(await GetNextEntry(reader, async));
+                Assert.Null(await GetNextEntry(reader, async: async));
             }
             finally
             {
@@ -283,7 +283,7 @@ namespace System.Formats.Tar.Tests
             {
                 using MemoryStream archive = new MemoryStream();
                 int expectedChecksum;
-                TarWriter writer = await CreateTarWriter(archive, async, format, leaveOpen: true);
+                TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: async);
                 try
                 {
                     TarEntry entry = CreateTarEntryAndGetExpectedChecksum(format, entryType, longPath, longLink, testEpoch, out expectedChecksum);
@@ -296,10 +296,10 @@ namespace System.Formats.Tar.Tests
                 }
 
                 archive.Seek(0, SeekOrigin.Begin);
-                TarReader reader = await CreateTarReader(archive, async);
+                TarReader reader = await CreateTarReader(archive, async: async);
                 try
                 {
-                    TarEntry readEntry = await GetNextEntry(reader, async);
+                    TarEntry readEntry = await GetNextEntry(reader, async: async);
                     Assert.Equal(expectedChecksum, readEntry.Checksum);
                 }
                 finally

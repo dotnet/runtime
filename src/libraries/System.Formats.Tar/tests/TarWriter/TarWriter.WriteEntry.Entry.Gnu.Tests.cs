@@ -15,7 +15,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteEntry_Null_Throws(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: false);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: false, async: async);
             try
             {
                 if (async)
@@ -38,7 +38,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteRegularFile(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry regularFile = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
@@ -52,10 +52,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry regularFile = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry regularFile = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 VerifyRegularFile(regularFile, isWritable: false);
             }
             finally
@@ -69,7 +69,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteHardLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry hardLink = new GnuTarEntry(TarEntryType.HardLink, InitialEntryName);
@@ -83,10 +83,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry hardLink = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry hardLink = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 VerifyHardLink(hardLink);
             }
             finally
@@ -100,7 +100,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteSymbolicLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry symbolicLink = new GnuTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
@@ -114,10 +114,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry symbolicLink = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry symbolicLink = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 VerifySymbolicLink(symbolicLink);
             }
             finally
@@ -131,7 +131,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteDirectory(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry directory = new GnuTarEntry(TarEntryType.Directory, InitialEntryName);
@@ -145,10 +145,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry directory = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry directory = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 VerifyDirectory(directory);
             }
             finally
@@ -162,7 +162,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteCharacterDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry charDevice = new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName);
@@ -176,10 +176,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry charDevice = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry charDevice = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 VerifyCharacterDevice(charDevice);
             }
             finally
@@ -193,7 +193,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteBlockDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry blockDevice = new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName);
@@ -207,10 +207,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry blockDevice = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry blockDevice = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 VerifyBlockDevice(blockDevice);
             }
             finally
@@ -224,7 +224,7 @@ namespace System.Formats.Tar.Tests
         public async Task WriteFifo(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry fifo = new GnuTarEntry(TarEntryType.Fifo, InitialEntryName);
@@ -238,10 +238,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry fifo = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry fifo = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 VerifyFifo(fifo);
             }
             finally
@@ -265,7 +265,7 @@ namespace System.Formats.Tar.Tests
             string longName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry entry = new GnuTarEntry(entryType, longName);
@@ -281,10 +281,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry entry = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 Assert.Equal(entryType, entry.EntryType);
                 Assert.Equal(longName, entry.Name);
             }
@@ -305,7 +305,7 @@ namespace System.Formats.Tar.Tests
             string longLinkName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry entry = new GnuTarEntry(entryType, "file.txt");
@@ -318,10 +318,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry entry = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 Assert.Equal(entryType, entry.EntryType);
                 Assert.Equal("file.txt", entry.Name);
                 Assert.Equal(longLinkName, entry.LinkName);
@@ -344,7 +344,7 @@ namespace System.Formats.Tar.Tests
             string longLinkName = new string('a', 101);
 
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, TarEntryFormat.Gnu, leaveOpen: true);
+            TarWriter writer = await CreateTarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true, async: async);
             try
             {
                 GnuTarEntry entry = new GnuTarEntry(entryType, longName);
@@ -357,10 +357,10 @@ namespace System.Formats.Tar.Tests
             }
 
             archiveStream.Position = 0;
-            TarReader reader = await CreateTarReader(archiveStream, async);
+            TarReader reader = await CreateTarReader(archiveStream, async: async);
             try
             {
-                GnuTarEntry entry = await GetNextEntry(reader, async) as GnuTarEntry;
+                GnuTarEntry entry = await GetNextEntry(reader, async: async) as GnuTarEntry;
                 Assert.Equal(entryType, entry.EntryType);
                 Assert.Equal(longName, entry.Name);
                 Assert.Equal(longLinkName, entry.LinkName);
@@ -379,7 +379,7 @@ namespace System.Formats.Tar.Tests
         public async Task Write_LinkEntry_EmptyLinkName_Throws(TarEntryType entryType, bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
-            TarWriter writer = await CreateTarWriter(archiveStream, async, leaveOpen: false);
+            TarWriter writer = await CreateTarWriter(archiveStream, leaveOpen: false, async: async);
             try
             {
                 if (async)

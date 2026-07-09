@@ -31,7 +31,7 @@ namespace System.Formats.Tar.Tests
                     Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultFileMode));
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, isAsync, expectedFormat, leaveOpen: true);
+                    TarWriter writer = await CreateTarWriter(archive, expectedFormat, leaveOpen: true, async: isAsync);
                     try
                     {
                         await WriteEntry(writer, fifoPath, fifoName, isAsync);
@@ -42,10 +42,10 @@ namespace System.Formats.Tar.Tests
                     }
 
                     archive.Seek(0, SeekOrigin.Begin);
-                    TarReader reader = await CreateTarReader(archive, isAsync);
+                    TarReader reader = await CreateTarReader(archive, async: isAsync);
                     try
                     {
-                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
                         Assert.Equal(expectedFormat, entry.Format);
 
                         Assert.NotNull(entry);
@@ -56,7 +56,7 @@ namespace System.Formats.Tar.Tests
 
                         VerifyPlatformSpecificMetadata(fifoPath, entry);
 
-                        Assert.Null(await GetNextEntry(reader, isAsync));
+                        Assert.Null(await GetNextEntry(reader, async: isAsync));
                     }
                     finally
                     {
@@ -86,7 +86,7 @@ namespace System.Formats.Tar.Tests
                     Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultFileMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, isAsync, expectedFormat, leaveOpen: true);
+                    TarWriter writer = await CreateTarWriter(archive, expectedFormat, leaveOpen: true, async: isAsync);
                     try
                     {
                         await WriteEntry(writer, blockDevicePath, AssetBlockDeviceFileName, isAsync);
@@ -97,10 +97,10 @@ namespace System.Formats.Tar.Tests
                     }
 
                     archive.Seek(0, SeekOrigin.Begin);
-                    TarReader reader = await CreateTarReader(archive, isAsync);
+                    TarReader reader = await CreateTarReader(archive, async: isAsync);
                     try
                     {
-                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
                         Assert.Equal(expectedFormat, entry.Format);
 
                         Assert.NotNull(entry);
@@ -114,7 +114,7 @@ namespace System.Formats.Tar.Tests
                         Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
                         Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
 
-                        Assert.Null(await GetNextEntry(reader, isAsync));
+                        Assert.Null(await GetNextEntry(reader, async: isAsync));
                     }
                     finally
                     {
@@ -143,7 +143,7 @@ namespace System.Formats.Tar.Tests
                     Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultFileMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, isAsync, expectedFormat, leaveOpen: true);
+                    TarWriter writer = await CreateTarWriter(archive, expectedFormat, leaveOpen: true, async: isAsync);
                     try
                     {
                         await WriteEntry(writer, characterDevicePath, AssetCharacterDeviceFileName, isAsync);
@@ -154,10 +154,10 @@ namespace System.Formats.Tar.Tests
                     }
 
                     archive.Seek(0, SeekOrigin.Begin);
-                    TarReader reader = await CreateTarReader(archive, isAsync);
+                    TarReader reader = await CreateTarReader(archive, async: isAsync);
                     try
                     {
-                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
                         Assert.Equal(expectedFormat, entry.Format);
 
                         Assert.NotNull(entry);
@@ -171,7 +171,7 @@ namespace System.Formats.Tar.Tests
                         Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
                         Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
 
-                        Assert.Null(await GetNextEntry(reader, isAsync));
+                        Assert.Null(await GetNextEntry(reader, async: isAsync));
                     }
                     finally
                     {
@@ -213,7 +213,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, isAsync, format, leaveOpen: true);
+                    TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: isAsync);
                     try
                     {
                         await WriteEntry(writer, filePath, fileName, isAsync);
@@ -224,10 +224,10 @@ namespace System.Formats.Tar.Tests
                     }
                     archive.Seek(0, SeekOrigin.Begin);
 
-                    TarReader reader = await CreateTarReader(archive, isAsync, leaveOpen: false);
+                    TarReader reader = await CreateTarReader(archive, leaveOpen: false, async: isAsync);
                     try
                     {
-                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
                         Assert.NotNull(entry);
 
                         Assert.Equal(string.Empty, entry.GroupName);
@@ -237,7 +237,7 @@ namespace System.Formats.Tar.Tests
                         await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
                         Assert.True(File.Exists(extractedPath));
 
-                        Assert.Null(await GetNextEntry(reader, isAsync));
+                        Assert.Null(await GetNextEntry(reader, async: isAsync));
                     }
                     finally
                     {
@@ -279,7 +279,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, isAsync, format, leaveOpen: true);
+                    TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: isAsync);
                     try
                     {
                         await WriteEntry(writer, filePath, fileName, isAsync);
@@ -290,10 +290,10 @@ namespace System.Formats.Tar.Tests
                     }
                     archive.Seek(0, SeekOrigin.Begin);
 
-                    TarReader reader = await CreateTarReader(archive, isAsync, leaveOpen: false);
+                    TarReader reader = await CreateTarReader(archive, leaveOpen: false, async: isAsync);
                     try
                     {
-                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
                         Assert.NotNull(entry);
 
                         Assert.Equal(string.Empty, entry.UserName);
@@ -303,7 +303,7 @@ namespace System.Formats.Tar.Tests
                         await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
                         Assert.True(File.Exists(extractedPath));
 
-                        Assert.Null(await GetNextEntry(reader, isAsync));
+                        Assert.Null(await GetNextEntry(reader, async: isAsync));
                     }
                     finally
                     {
@@ -357,7 +357,7 @@ namespace System.Formats.Tar.Tests
                     }
 
                     using MemoryStream archive = new MemoryStream();
-                    TarWriter writer = await CreateTarWriter(archive, isAsync, format, leaveOpen: true);
+                    TarWriter writer = await CreateTarWriter(archive, format, leaveOpen: true, async: isAsync);
                     try
                     {
                         await WriteEntry(writer, filePath, fileName, isAsync);
@@ -368,10 +368,10 @@ namespace System.Formats.Tar.Tests
                     }
                     archive.Seek(0, SeekOrigin.Begin);
 
-                    TarReader reader = await CreateTarReader(archive, isAsync, leaveOpen: false);
+                    TarReader reader = await CreateTarReader(archive, leaveOpen: false, async: isAsync);
                     try
                     {
-                        PosixTarEntry entry = await GetNextEntry(reader, isAsync) as PosixTarEntry;
+                        PosixTarEntry entry = await GetNextEntry(reader, async: isAsync) as PosixTarEntry;
                         Assert.NotNull(entry);
 
                         Assert.Equal(string.Empty, entry.GroupName);
@@ -384,7 +384,7 @@ namespace System.Formats.Tar.Tests
                         await ExtractToFile(entry, extractedPath, overwrite: false, isAsync);
                         Assert.True(File.Exists(extractedPath));
 
-                        Assert.Null(await GetNextEntry(reader, isAsync));
+                        Assert.Null(await GetNextEntry(reader, async: isAsync));
                     }
                     finally
                     {

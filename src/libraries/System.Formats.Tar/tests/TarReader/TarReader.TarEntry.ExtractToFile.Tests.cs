@@ -15,12 +15,12 @@ namespace System.Formats.Tar.Tests
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream archiveStream = GetStrangeTarMemoryStream("prefixDotSlashAndCurrentFolderEntry");
-            TarReader reader = await CreateTarReader(archiveStream, async, leaveOpen: false);
+            TarReader reader = await CreateTarReader(archiveStream, leaveOpen: false, async: async);
             try
             {
                 string rootPath = Path.TrimEndingDirectorySeparator(root.Path);
                 TarEntry entry;
-                while ((entry = await GetNextEntry(reader, async)) != null)
+                while ((entry = await GetNextEntry(reader, async: async)) != null)
                 {
                     Assert.NotNull(entry);
                     Assert.StartsWith("./", entry.Name);
