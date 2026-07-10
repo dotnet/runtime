@@ -245,14 +245,22 @@ public static class EcmaMetadataUtils
         SignatureHeader header = blobReader.ReadSignatureHeader();
         if (header.Kind != SignatureKind.Field)
             throw new BadImageFormatException();
+
+        // Skip any custom modifiers (each is followed by a TypeDefOrRef token) to reach the underlying type.
         CorElementType typeCode;
-        EntityHandle entityHandle;
-        // in a loop, read custom modifiers until we get to the underlying type
-        do
+        while (true)
         {
             typeCode = (CorElementType)blobReader.ReadByte();
-            entityHandle = blobReader.ReadTypeHandle(); // consume the type
-        } while (typeCode is CorElementType.CModReqd or CorElementType.CModOpt);
+            if (typeCode is not (CorElementType.CModReqd or CorElementType.CModOpt))
+                break;
+            blobReader.ReadTypeHandle(); // consume the modifier's type token
+        }
+
+        // Only class/valuetype signatures encode a following type token; for all other element types the
+        // element-type byte fully describes the type, so there is no token to read.
+        EntityHandle entityHandle = typeCode is CorElementType.Class or CorElementType.ValueType
+            ? blobReader.ReadTypeHandle()
+            : default;
         return (typeCode, entityHandle);
     }
 }

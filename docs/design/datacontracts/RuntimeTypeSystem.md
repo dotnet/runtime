@@ -312,7 +312,8 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescRVA(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
-uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
+uint GetFieldDescOffset(TargetPointer fieldDescPointer);
+(CorElementType ElementType, uint TypeToken) GetFieldDescSignatureType(TargetPointer fieldDescPointer);
 TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
@@ -2279,7 +2280,7 @@ uint GetFieldDescType(TargetPointer fieldDescPointer)
     return (DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
 }
 
-uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
+uint GetFieldDescOffset(TargetPointer fieldDescPointer)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
     // DWord2 packs the 27-bit offset (low bits) with the 5-bit field type (high bits), so the offset
@@ -2288,11 +2289,22 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDe
     uint offset = DWord2 & (uint)FieldDescFlags2.OffsetMask;
     if (offset == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
     {
-        if (fieldDef is null)
-            throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
-        return (uint)fieldDef.Value.GetRelativeVirtualAddress();
+        // Big-RVA fields store their offset (an RVA) in metadata; resolve the FieldDefinition
+        // (enclosing MT -> Module -> MetadataReader -> field's MemberDef) and read its RVA.
+        FieldDefinition fieldDef = /* resolve FieldDefinition from metadata */;
+        return (uint)fieldDef.GetRelativeVirtualAddress();
     }
     return offset;
+}
+
+(CorElementType ElementType, uint TypeToken) GetFieldDescSignatureType(TargetPointer fieldDescPointer)
+{
+    // Resolve enclosing MT -> Module -> MetadataReader and read the field's signature blob.
+    // If metadata is unavailable, fall back to (GetFieldDescType(fieldDescPointer), mdTypeDefNil).
+    // Otherwise read the top-level element type from the signature (skipping custom modifiers).
+    // Unlike GetFieldDescType this preserves the precise element type (e.g. String/SzArray rather
+    // than the normalized Class). For class/valuetype fields the signature also encodes a type
+    // token (a token in the field's defining module); otherwise the token is mdTypeDefNil.
 }
 
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true)

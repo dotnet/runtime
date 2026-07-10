@@ -1070,34 +1070,45 @@ public sealed unsafe partial class SOSDacImpl
 
             // Resolve the MethodTable of the field's type from its (approximate) TypeHandle, following the
             // DAC's TypeHandle::GetMethodTable rules used by SOS pretty-printing (src/coreclr/vm/typehandle.inl).
-            // This mapping operates only on TypeHandles, so no metadata is read here.
+            // This is an implementation detail of the DAC that we replicate here to get method tables for
+            // non-MT types that we can return to SOS for pretty-printing. In the future we may want to return
+            // a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
             TypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
-            if (foundTypeHandle.IsNull)
-                // if we can't find the MT (e.g in a minidump)
-                data->MTOfType = 0;
-                // get the MT of the type
-                // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
-                // that we can return to SOS for pretty-printing.
-                // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
-                // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
-            else if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
-                data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
-            // array MTs
-            else if (rtsContract.IsArray(foundTypeHandle, out _))
-                data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-            else
+            try
             {
-                try
+                if (foundTypeHandle.IsNull)
                 {
-                    // value typedescs
-                    TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
-                    data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
+                    // if we can't find the MT (e.g in a minidump)
+                    data->MTOfType = 0;
                 }
-                catch (ArgumentException)
+                else if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
                 {
-                    // non-array MTs
+                    data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
+                }
+                else if (rtsContract.IsArray(foundTypeHandle, out _))
+                {
+                    // array MTs
                     data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
                 }
+                else
+                {
+                    try
+                    {
+                        // value typedescs
+                        TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
+                        data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
+                    }
+                    catch (ArgumentException)
+                    {
+                        // non-array MTs
+                        data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
+                    }
+                }
+            }
+            catch (VirtualReadException)
+            {
+                // if we can't read the MT (e.g in a minidump)
+                data->MTOfType = 0;
             }
 
             // Read the field type's element type and encoded token from the field signature via the

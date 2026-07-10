@@ -309,10 +309,6 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    // Reads the field's type from its signature (metadata). Returns the top-level CorElementType (after
-    // skipping custom modifiers) -- unlike GetFieldDescType this preserves the precise element type (e.g.
-    // String/SzArray rather than Class) -- along with the encoded type token (a token in the field's
-    // defining module) for class/valuetype fields, otherwise the nil TypeDef token.
     (CorElementType ElementType, uint TypeToken) GetFieldDescSignatureType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
