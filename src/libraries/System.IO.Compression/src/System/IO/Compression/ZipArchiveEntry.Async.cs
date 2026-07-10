@@ -19,22 +19,11 @@ public partial class ZipArchiveEntry
     /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
     /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
     /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
-    public async Task<Stream> OpenAsync(CancellationToken cancellationToken = default)
+    public Task<Stream> OpenAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
-
-        switch (_archive.Mode)
-        {
-            case ZipArchiveMode.Read:
-                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
-            case ZipArchiveMode.Create:
-                return OpenInWriteMode();
-            case ZipArchiveMode.Update:
-            default:
-                Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
-        }
+        return OpenAsyncCore(InferAccessFromMode(), default, cancellationToken);
     }
 
     /// <summary>
@@ -56,40 +45,103 @@ public partial class ZipArchiveEntry
     /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
     /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
     /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
-    public async Task<Stream> OpenAsync(FileAccess access, CancellationToken cancellationToken = default)
+    public Task<Stream> OpenAsync(FileAccess access, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ThrowIfInvalidArchive();
+        ValidateAccessForMode(access);
+        return OpenAsyncCore(access, default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously opens the entry with the specified access mode and password for decrypting encrypted entries.
+    /// </summary>
+    /// <param name="access">The file access mode for the returned stream.</param>
+    /// <param name="password">The password used to decrypt the encrypted entry.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A <see cref="Task{Stream}"/> that represents the asynchronous open operation.</returns>
+    /// <remarks>
+    /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+    /// <list type="bullet">
+    /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed; <see cref="FileAccess.Read"/> is not allowed. The <paramref name="password"/> is only used when decrypting existing encrypted entries and is not used when opening a newly created entry for writing.</description></item>
+    /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed for encrypted entries.</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+    /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+    /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive.</exception>
+    /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+    public Task<Stream> OpenAsync(FileAccess access, ReadOnlySpan<char> password, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ThrowIfInvalidArchive();
+        ValidateAccessForMode(access);
+
+        if (IsEncrypted && password.IsEmpty)
+        {
+            throw new ArgumentException(SR.PasswordRequired, nameof(password));
+        }
+
+        return OpenAsyncCore(access, password, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously opens the entry and uses the specified password to decrypt it if it is encrypted.
+    /// If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support <see cref="Stream.SetLength(long)" />.
+    /// </summary>
+    /// <param name="password">The password used to decrypt the encrypted entry.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task whose result is a stream that represents the contents of the entry.</returns>
+    /// <remarks>
+    /// <para>If the entry is not encrypted, <paramref name="password" /> is ignored.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">The entry is encrypted and <paramref name="password" /> is empty.</exception>
+    /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in <see cref="ZipArchiveMode.Create" />, and this entry has already been written to once.</exception>
+    /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+    /// <exception cref="ObjectDisposedException">The <see cref="ZipArchive" /> that this entry belongs to has been disposed.</exception>
+    public Task<Stream> OpenAsync(ReadOnlySpan<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
 
-        if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
-            throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+        if (IsEncrypted && password.IsEmpty)
+        {
+            throw new ArgumentException(SR.PasswordRequired, nameof(password));
+        }
 
-        // Validate that the requested access is compatible with the archive's mode
+        return OpenAsyncCore(InferAccessFromMode(), password, cancellationToken);
+    }
+
+    private Task<Stream> OpenAsyncCore(FileAccess access, ReadOnlySpan<char> password, CancellationToken cancellationToken)
+    {
+        bool usePassword = IsEncrypted && !password.IsEmpty;
+
         switch (_archive.Mode)
         {
             case ZipArchiveMode.Read:
-                if (access != FileAccess.Read)
-                    throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
-                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
-
+                return OpenInReadModeAsync(checkOpenable: true, password, cancellationToken);
             case ZipArchiveMode.Create:
-                if (access == FileAccess.Read)
-                    throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
-                return OpenInWriteMode();
-
+                return Task.FromResult<Stream>(OpenInWriteMode());
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                switch (access)
+                // Encrypted entries always require a password for re-encryption,
+                // even when discarding existing content (write-only access).
+                if (IsEncrypted && password.IsEmpty && access != FileAccess.Read)
                 {
-                    case FileAccess.Read:
-                        return await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
-                    case FileAccess.Write:
-                        return await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken).ConfigureAwait(false);
-                    case FileAccess.ReadWrite:
-                    default:
-                        return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
+                    throw new ArgumentException(SR.PasswordRequired, nameof(password));
                 }
+                return access switch
+                {
+                    FileAccess.Read => OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
+                    FileAccess.Write => usePassword
+                        ? OpenInUpdateModeWithPasswordAsync(loadExistingContent: false, password, cancellationToken)
+                        : CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken)),
+                    _ => usePassword
+                        ? OpenInUpdateModeWithPasswordAsync(loadExistingContent: true, password, cancellationToken)
+                        : CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken)),
+                };
         }
     }
 
@@ -98,23 +150,184 @@ public partial class ZipArchiveEntry
         cancellationToken.ThrowIfCancellationRequested();
         if (_storedOffsetOfCompressedData == null)
         {
+            // Seek to local header
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-            // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
-            // to find start of data, but still using central directory size information
+
+            // Skip the local file header to get to the compressed data
+            // TrySkipBlockAsync handles both AES and non-AES cases correctly
             if (!await ZipLocalFileHeader.TrySkipBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
+            {
                 throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+            }
+
             _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
         }
         return _storedOffsetOfCompressedData.Value;
     }
 
+    /// <summary>
+    /// Asynchronously reads and caches the AES encryption salt from the local file data area.
+    /// Called during central directory parsing for AES-encrypted entries so that
+    /// the salt is available for key derivation without additional I/O at open time.
+    /// </summary>
+    internal async Task ReadEncryptionSaltIfNeededAsync(CancellationToken cancellationToken)
+    {
+        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+        {
+            return;
+        }
+
+        long savedPosition = _archive.ArchiveStream.Position;
+        try
+        {
+            long offset = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
+            _archive.ArchiveStream.Seek(offset, SeekOrigin.Begin);
+
+            int keySizeBits = GetAesKeySizeBits(Encryption);
+            int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
+            _aesSalt = new byte[saltSize];
+            await _archive.ArchiveStream.ReadExactlyAsync(_aesSalt, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException)
+        {
+            // These are the only exceptions GetOffsetOfCompressedDataAsync() and ReadExactlyAsync()
+            // can throw for corrupt or truncated data. Swallow them here and defer the error
+            // to when the entry is actually opened.
+            _aesSalt = null;
+        }
+        finally
+        {
+            _archive.ArchiveStream.Seek(savedPosition, SeekOrigin.Begin);
+        }
+    }
+
+    private Task<Stream> OpenInReadModeAsync(bool checkOpenable, ReadOnlySpan<char> password, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Derive key material from the password span before entering the async core.
+        WinZipAesKeyMaterial? aesKeys = null;
+        ZipCryptoKeys? zipCryptoKeys = null;
+        byte zipCryptoCheckByte = 0;
+
+        if (IsEncrypted)
+        {
+            if (Encryption == ZipEncryptionMethod.Unknown)
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+
+            if (password.IsEmpty)
+            {
+                throw new InvalidDataException(SR.PasswordRequired);
+            }
+
+            if (IsAesEncrypted)
+            {
+                if (OperatingSystem.IsBrowser())
+                {
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                }
+
+                if (_aesSalt is null)
+                {
+                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
+
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                aesKeys = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
+            }
+            else if (IsZipCryptoEncrypted)
+            {
+                zipCryptoCheckByte = CalculateZipCryptoCheckByte();
+                zipCryptoKeys = ZipCryptoStream.CreateKey(password);
+            }
+            else
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+        }
+
+        return OpenInReadModeAsyncCore(checkOpenable, aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
+
+        async Task<Stream> OpenInReadModeAsyncCore(bool checkOpenable, WinZipAesKeyMaterial? aesKeys, ZipCryptoKeys? zipCryptoKeys, byte zipCryptoCheckByte, CancellationToken cancellationToken)
+        {
+            if (checkOpenable)
+            {
+                await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: false, cancellationToken).ConfigureAwait(false);
+            }
+
+            long offset = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
+            Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
+
+            Stream streamToDecompress;
+            if (aesKeys is not null)
+            {
+                streamToDecompress = await WinZipAesStream.CreateAsync(
+                    baseStream: compressedStream,
+                    keyMaterial: aesKeys.Value,
+                    totalStreamSize: _compressedSize,
+                    encrypting: false,
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+            else if (zipCryptoKeys is not null)
+            {
+                streamToDecompress = await ZipCryptoStream.CreateAsync(
+                    compressedStream, zipCryptoKeys.Value, zipCryptoCheckByte,
+                    encrypting: false, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                streamToDecompress = compressedStream;
+            }
+
+            return BuildDecompressionPipeline(streamToDecompress);
+        }
+    }
+
+    private async Task<WrappedStream> OpenInUpdateModeAsync(bool loadExistingContent, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_currentlyOpenForWrite)
+        {
+            throw new IOException(SR.UpdateModeOneStream);
+        }
+
+        if (Encryption == ZipEncryptionMethod.Unknown)
+        {
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
+
+        if (loadExistingContent)
+        {
+            await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+        }
+
+        _currentlyOpenForWrite = true;
+
+        if (loadExistingContent)
+        {
+            _storedUncompressedData = await GetUncompressedDataAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            _storedUncompressedData?.Dispose();
+            _storedUncompressedData = new MemoryStream();
+            MarkAsModified();
+        }
+
+        _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+
+        return new WrappedStream(_storedUncompressedData, this,
+            onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
+            notifyEntryOnWrite: true);
+    }
+
     private async Task<MemoryStream> GetUncompressedDataAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_storedUncompressedData == null)
+        if (_storedUncompressedData is null)
         {
-            // this means we have never opened it before
-
             // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
             // Validate up front before attempting the (int) cast.
             if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
@@ -123,11 +336,13 @@ public partial class ZipArchiveEntry
                 throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
             }
 
+
             _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
             if (_originallyInArchive)
             {
-                Stream decompressor = await OpenInReadModeAsync(false, cancellationToken).ConfigureAwait(false);
+                Stream decompressor = await OpenInReadModeAsync(checkOpenable: false, default, cancellationToken).ConfigureAwait(false);
+
                 await using (decompressor)
                 {
                     try
@@ -136,15 +351,12 @@ public partial class ZipArchiveEntry
                     }
                     catch (InvalidDataException)
                     {
-                        // this is the case where the archive say the entry is deflate, but deflateStream
-                        // throws an InvalidDataException. This property should only be getting accessed in
-                        // Update mode, so we want to make sure _storedUncompressedData stays null so
-                        // that later when we dispose the archive, this entry loads the compressedBytes, and
-                        // copies them straight over
                         await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
                         _storedUncompressedData = null;
                         _currentlyOpenForWrite = false;
                         _everOpenedForWrite = false;
+                        _derivedZipCryptoKeyMaterial = null;
+                        _derivedAesKeyMaterial = null;
                         throw;
                     }
                 }
@@ -184,14 +396,26 @@ public partial class ZipArchiveEntry
             await _archive.ArchiveStream.WriteAsync(cdStaticHeader, cancellationToken).ConfigureAwait(false);
             await _archive.ArchiveStream.WriteAsync(_storedEntryNameBytes, cancellationToken).ConfigureAwait(false);
 
-            // only write zip64ExtraField if we decided we need it (it's not null)
+            // Write zip64ExtraField first if we decided we need it
             if (zip64ExtraField != null)
             {
                 await zip64ExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             }
 
-            // write extra fields (and any malformed trailing data).
-            await ZipGenericExtraField.WriteAllBlocksAsync(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            // Write WinZip AES extra field AFTER Zip64 (matching sync version order)
+            // Must match the exact check used in the sync version WriteCentralDirectoryFileHeader
+            if (UseAesEncryption)
+            {
+                await CreateAesExtraField().WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+
+                // write extra fields excluding existing AES extra field (and any malformed trailing data).
+                await ZipGenericExtraField.WriteAllBlocksExcludingTagAsync(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                // write extra fields (and any malformed trailing data).
+                await ZipGenericExtraField.WriteAllBlocksAsync(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            }
 
             if (_fileComment.Length > 0)
             {
@@ -199,7 +423,6 @@ public partial class ZipArchiveEntry
             }
         }
     }
-
     internal async Task LoadLocalHeaderExtraFieldIfNeededAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -246,42 +469,140 @@ public partial class ZipArchiveEntry
         cancellationToken.ThrowIfCancellationRequested();
         (bool openable, string? message) = await IsOpenableAsync(needToUncompress, needToLoadIntoMemory, cancellationToken).ConfigureAwait(false);
         if (!openable)
-            throw new InvalidDataException(message);
-    }
-
-    private async Task<Stream> OpenInReadModeAsync(bool checkOpenable, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (checkOpenable)
-            await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: false, cancellationToken).ConfigureAwait(false);
-
-        return OpenInReadModeGetDataCompressor(
-            await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false));
-    }
-
-    private async Task<WrappedStream> OpenInUpdateModeAsync(bool loadExistingContent = true, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_currentlyOpenForWrite)
-            throw new IOException(SR.UpdateModeOneStream);
-
-        if (loadExistingContent)
         {
-            await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+            throw new InvalidDataException(message);
+        }
+    }
+
+    /// <summary>
+    /// Accepts a <see cref="ReadOnlySpan{T}"/> password, derives decryption and re-encryption keys (CPU-only),
+    /// and delegates all I/O to fully async helper methods.
+    /// </summary>
+    private Task<Stream> OpenInUpdateModeWithPasswordAsync(bool loadExistingContent, ReadOnlySpan<char> password, CancellationToken cancellationToken)
+    {
+        if (_currentlyOpenForWrite)
+        {
+            throw new IOException(SR.UpdateModeOneStream);
         }
 
+        if (Encryption == ZipEncryptionMethod.Unknown)
+        {
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
+
+        // Encrypted entries always require a password for re-encryption,
+        // even when discarding existing content (write-only access).
+        if (IsEncrypted && password.IsEmpty)
+        {
+            throw new ArgumentException(SR.PasswordRequired, nameof(password));
+        }
+
+        // Derive re-encryption key material while the password span is still valid.
+        if (IsEncrypted)
+        {
+            SetupEncryptionKeyMaterial(password);
+        }
+
+        if (loadExistingContent && IsEncrypted)
+        {
+            if (IsAesEncrypted)
+            {
+                if (OperatingSystem.IsBrowser())
+                {
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                }
+
+                if (_aesSalt is null)
+                {
+                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
+
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                WinZipAesKeyMaterial aesKeys = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
+                return DecryptAndStoreForUpdateWithAesAsync(aesKeys, cancellationToken);
+            }
+
+            if (IsZipCryptoEncrypted)
+            {
+                byte checkByte = CalculateZipCryptoCheckByte();
+                ZipCryptoKeys keys = ZipCryptoStream.CreateKey(password);
+                return DecryptAndStoreForUpdateWithZipCryptoAsync(keys, checkByte, cancellationToken);
+            }
+
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
+
+        return CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent, cancellationToken));
+    }
+
+    private static async Task<Stream> CastToStreamAsync(Task<WrappedStream> task) => await task.ConfigureAwait(false);
+
+    private async Task<Stream> DecryptAndStoreForUpdateWithZipCryptoAsync(ZipCryptoKeys keys, byte checkByte, CancellationToken cancellationToken)
+    {
+        await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+
+        long offset = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
+        Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
+
+        Stream decrypted = await ZipCryptoStream.CreateAsync(compressedStream, keys, checkByte, encrypting: false, cancellationToken).ConfigureAwait(false);
+
+        return await StoreDecryptedDataForUpdateAsync(decrypted, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Stream> DecryptAndStoreForUpdateWithAesAsync(WinZipAesKeyMaterial aesKeys, CancellationToken cancellationToken)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+        }
+
+        await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
+
+        long offset = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
+        Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
+
+        Stream decrypted = await WinZipAesStream.CreateAsync(
+            baseStream: compressedStream,
+            keyMaterial: aesKeys,
+            totalStreamSize: _compressedSize,
+            encrypting: false,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return await StoreDecryptedDataForUpdateAsync(decrypted, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Decompresses a decrypted stream and stores the result in memory for update mode.
+    /// </summary>
+    private async Task<Stream> StoreDecryptedDataForUpdateAsync(Stream decryptedStream, CancellationToken cancellationToken)
+    {
         _currentlyOpenForWrite = true;
 
-        if (loadExistingContent)
+        if (_uncompressedSize > Array.MaxLength)
         {
-            _storedUncompressedData = await GetUncompressedDataAsync(cancellationToken).ConfigureAwait(false);
+            throw new InvalidDataException(SR.EntryTooLarge);
         }
-        else
+
+        _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+
+        Stream decompressed = BuildDecompressionPipeline(decryptedStream);
+
+        await using (decompressed)
         {
-            _storedUncompressedData?.Dispose();
-            _storedUncompressedData = new MemoryStream();
-            // Opening with loadExistingContent: false discards existing content, which is a modification
-            MarkAsModified();
+            try
+            {
+                await decompressed.CopyToAsync(_storedUncompressedData, cancellationToken).ConfigureAwait(false);
+            }
+            catch (InvalidDataException)
+            {
+                await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
+                _storedUncompressedData = null;
+                _currentlyOpenForWrite = false;
+                _everOpenedForWrite = false;
+                _derivedZipCryptoKeyMaterial = null;
+                _derivedAesKeyMaterial = null;
+                throw;
+            }
         }
 
         _storedUncompressedData.Seek(0, SeekOrigin.Begin);
@@ -305,10 +626,23 @@ public partial class ZipArchiveEntry
         {
             return (false, message);
         }
-        if (!await ZipLocalFileHeader.TrySkipBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
+
+        if (!IsEncrypted && !await ZipLocalFileHeader.TrySkipBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
         {
             message = SR.LocalFileHeaderCorrupt;
             return (false, message);
+        }
+        else if (IsEncrypted && (ushort)_headerCompressionMethod == WinZipAesMethod)
+        {
+            _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
+            // AES case - skip the local file header and validate it exists.
+            // The AES metadata (encryption strength, actual compression method) was already
+            // parsed from the central directory in the constructor.
+            if (!await ZipLocalFileHeader.TrySkipBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
+            {
+                message = SR.LocalFileHeaderCorrupt;
+                return (false, message);
+            }
         }
 
         // when this property gets called, some duplicated work
@@ -341,7 +675,19 @@ public partial class ZipArchiveEntry
                 await zip64ExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             }
 
-            await ZipGenericExtraField.WriteAllBlocksAsync(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            // Write WinZip AES extra field if using AES encryption
+            // Must match the exact check used in the sync version WriteLocalFileHeader
+            if (UseAesEncryption)
+            {
+                await CreateAesExtraField().WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+
+                // Write other extra fields, excluding any existing AES extra field to avoid duplication
+                await ZipGenericExtraField.WriteAllBlocksExcludingTagAsync(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await ZipGenericExtraField.WriteAllBlocksAsync(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         return zip64ExtraField != null;
@@ -370,18 +716,138 @@ public partial class ZipArchiveEntry
             {
                 _uncompressedSize = _storedUncompressedData.Length;
 
-                //The compressor fills in CRC and sizes
-                //The DirectToArchiveWriterStream writes headers and such
-                DirectToArchiveWriterStream entryWriter = new(GetDataCompressor(_archive.ArchiveStream, true, null), this);
-                await using (entryWriter)
+                // Check if we need to re-encrypt with ZipCrypto (only if we have cached key material)
+                if (Encryption == ZipEncryptionMethod.ZipCrypto && _derivedZipCryptoKeyMaterial != null)
                 {
-                    _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-                    await _storedUncompressedData.CopyToAsync(entryWriter, cancellationToken).ConfigureAwait(false);
+                    // Write local file header first (with encryption flag set)
+                    // Pass isEmptyFile: false because even empty encrypted files have the 12-byte header
+                    await WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+
+                    // Record position before encryption data
+                    long startPosition = _archive.ArchiveStream.Position;
+
+                    ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
+
+                    ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                        baseStream: _archive.ArchiveStream,
+                        keys: _derivedZipCryptoKeyMaterial.Value,
+                        passwordVerifierLow2Bytes: verifierLow2Bytes,
+                        encrypting: true,
+                        crc32: null,
+                        leaveOpen: true);
+                    await using (encryptionStream.ConfigureAwait(false))
+                    {
+                        // Use GetDataCompressor which handles CRC calculation and compression
+                        CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
+                        await using (crcStream.ConfigureAwait(false))
+                        {
+                            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                            await _storedUncompressedData.CopyToAsync(crcStream, cancellationToken).ConfigureAwait(false);
+                        }
+                        // CRC, uncompressed size are now set by GetDataCompressor callback
+                        // For empty files, ZipCryptoStream.Dispose() will write the 12-byte header
+                    }
+
+                    // Calculate compressed size AFTER ZipCryptoStream is disposed
+                    // (includes 12-byte encryption header + compressed data)
+                    _compressedSize = _archive.ArchiveStream.Position - startPosition;
+
+                    // Write data descriptor since we used streaming mode
+                    await WriteDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
+
+                    await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
+                    _storedUncompressedData = null;
+                }
+                else if (UseAesEncryption && _derivedAesKeyMaterial != null)
+                {
+
+                    if (OperatingSystem.IsBrowser())
+                    {
+                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    }
+                    // For AES, we need to:
+                    // 1. Write header with CompressionMethod = Aes (99)
+                    // 2. Compress data with actual compression (Deflate/Stored)
+                    // 3. Keep CompressionMethod = Aes for central directory
+
+                    // WriteLocalFileHeaderAsync will set CompressionMethod = Aes
+                    bool usedZip64InLH = await WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+
+                    // Record position before encryption data
+                    long startPosition = _archive.ArchiveStream.Position;
+
+                    int keySizeBits = GetAesKeySizeBits(Encryption);
+
+                    // Determine the actual compression method to use
+                    // The AES extra field stores the real compression method
+                    bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
+
+                    WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                        baseStream: _archive.ArchiveStream,
+                        keyMaterial: _derivedAesKeyMaterial.Value,
+                        totalStreamSize: -1,
+                        encrypting: true,
+                        leaveOpen: true);
+
+                    await using (encryptionStream.ConfigureAwait(false))
+                    {
+                        // Only compress/write if there's data
+                        if (_storedUncompressedData.Length > 0)
+                        {
+                            // Temporarily set CompressionMethod for GetDataCompressor
+                            ZipCompressionMethod savedMethod = CompressionMethod;
+                            CompressionMethod = useDeflate ? ZipCompressionMethod.Deflate : ZipCompressionMethod.Stored;
+
+                            try
+                            {
+                                CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
+                                await using (crcStream.ConfigureAwait(false))
+                                {
+                                    _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                                    await _storedUncompressedData.CopyToAsync(crcStream, cancellationToken).ConfigureAwait(false);
+                                }
+                            }
+                            finally
+                            {
+                                // Restore CompressionMethod - AesCompressionMethodValue is used directly when writing headers
+                                CompressionMethod = savedMethod;
+                            }
+                        }
+                        else
+                        {
+                            // Empty file: CRC is 0, uncompressed size is 0
+                            _crc32 = 0;
+                            _uncompressedSize = 0;
+                        }
+                        // WinZipAesStream.Dispose() writes salt + verifier + HMAC even for empty files
+                    }
+
+                    // Calculate compressed size AFTER WinZipAesStream is disposed
+                    // (includes salt + password verifier + encrypted data + HMAC)
+                    _compressedSize = _archive.ArchiveStream.Position - startPosition;
+
+                    // Patch CRC and sizes back into the local header
+                    await WriteCrcAndSizesInLocalHeaderAsync(usedZip64InLH, cancellationToken).ConfigureAwait(false);
+
+                    await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
+                    _storedUncompressedData = null;
+                }
+                else
+                {
+                    // Non-encrypted: use standard path
+                    //The compressor fills in CRC and sizes
+                    //The DirectToArchiveWriterStream writes headers and such
+                    DirectToArchiveWriterStream entryWriter = new(GetDataCompressor(_archive.ArchiveStream, true, null, null), this);
+                    await using (entryWriter.ConfigureAwait(false))
+                    {
+                        _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                        await _storedUncompressedData.CopyToAsync(entryWriter, cancellationToken).ConfigureAwait(false);
+                    }
                     await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
                     _storedUncompressedData = null;
                 }
             }
-            else
+            else // _compressedBytes path - copying unchanged entry data
             {
                 if (_uncompressedSize == 0)
                 {
@@ -389,7 +855,52 @@ public partial class ZipArchiveEntry
                     _compressedSize = 0;
                 }
 
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+                // For unchanged entries, we need to write the header correctly but avoid
+                // WriteLocalFileHeaderAsync creating NEW encryption structures (which would have
+                // wrong compression method from _compressionLevel).
+                // The original AES extra field is preserved in _lhUnknownExtraFields.
+                BitFlagValues savedFlags = _generalPurposeBitFlag;
+                ZipEncryptionMethod savedEncryption = Encryption;
+                ZipCompressionMethod savedCompressionMethod = CompressionMethod;
+
+                try
+                {
+                    // For AES entries: set CompressionMethod to Aes so header writes method 99,
+                    // but clear _encryptionMethod so WriteLocalFileHeaderAsync doesn't create a new
+                    // AES extra field (the original one in _lhUnknownExtraFields will be used).
+                    if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
+                    {
+                        CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
+                        Encryption = ZipEncryptionMethod.None;
+                    }
+
+                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+
+                    // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
+                    // (because Encryption was temporarily set to None and the stream is seekable).
+                    // If the original entry had a data descriptor, patch the general-purpose bit
+                    // flags in the already-written local header to match, so the header on disk
+                    // is consistent with the data descriptor we conditionally write below.
+                    if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
+                        (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+                    {
+                        long currentPos = _archive.ArchiveStream.Position;
+                        _archive.ArchiveStream.Seek(
+                            _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
+                            SeekOrigin.Begin);
+                        byte[] flagBytes = new byte[2];
+                        BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
+                        await _archive.ArchiveStream.WriteAsync(flagBytes, cancellationToken).ConfigureAwait(false);
+                        _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
+                    }
+                }
+                finally
+                {
+                    // Restore original state
+                    _generalPurposeBitFlag = savedFlags;
+                    Encryption = savedEncryption;
+                    CompressionMethod = savedCompressionMethod;
+                }
 
                 // according to ZIP specs, zero-byte files MUST NOT include file data
                 if (_uncompressedSize != 0)
@@ -399,6 +910,12 @@ public partial class ZipArchiveEntry
                     {
                         await _archive.ArchiveStream.WriteAsync(compressedBytes, cancellationToken).ConfigureAwait(false);
                     }
+                }
+
+                // Write data descriptor if the original entry had one
+                if ((savedFlags & BitFlagValues.DataDescriptor) != 0)
+                {
+                    await WriteDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }
