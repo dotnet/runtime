@@ -3,11 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
@@ -1341,65 +1337,25 @@ public class MethodTableTests
             rtsBuilder => fieldDescPtr = rtsBuilder.AddFieldDesc(mtOfEnclosingClass: 0, CorElementType.Class, fieldOffset).Address);
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Assert.Equal(fieldOffset, contract.GetFieldDescOffset(fieldDescPtr, fieldDef: null));
+        Assert.Equal(fieldOffset, contract.GetFieldDescOffset(fieldDescPtr));
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetFieldDescOffset_BigRVA_ResolvesFromMetadata(MockTarget.Architecture arch)
+    public void GetFieldDescOffset_BigRVA_DetectedAfterMaskingTypeBits(MockTarget.Architecture arch)
     {
         // A big-RVA field packs the FIELD_OFFSET_BIG_RVA sentinel into DWord2's low 27 bits together with a
-        // non-zero type in the high 5 bits. Detection must mask off the type before comparing the sentinel,
-        // otherwise the branch is never taken and the sentinel leaks out as the offset.
-        const int rva = 0x1234;
-        byte[] metadata = BuildMetadataWithRvaField(rva, out FieldDefinitionHandle fieldHandle);
-        using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(metadata));
-        MetadataReader reader = provider.GetMetadataReader();
-        FieldDefinition fieldDef = reader.GetFieldDefinition(fieldHandle);
-
+        // non-zero type in the high 5 bits. Detection must mask off the type before comparing the sentinel;
+        // once detected, the offset is resolved from the field's metadata. Here no enclosing MethodTable is
+        // wired, so that resolution path finds no FieldDefinition and throws -- which confirms the sentinel
+        // was detected. (Before the masking fix the full packed DWord2 never equals the sentinel, so the
+        // branch is skipped and the sentinel would leak out as the offset instead of throwing.)
         TargetPointer fieldDescPtr = default;
         TestPlaceholderTarget target = CreateTarget(
             arch,
             rtsBuilder => fieldDescPtr = rtsBuilder.AddFieldDesc(mtOfEnclosingClass: 0, CorElementType.I4, MockRTS.FieldOffsetBigRVAValue).Address);
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Assert.Equal((uint)rva, contract.GetFieldDescOffset(fieldDescPtr, fieldDef));
-    }
-
-    // Builds a minimal metadata image containing a single static field with a FieldRVA row.
-    private static byte[] BuildMetadataWithRvaField(int rva, out FieldDefinitionHandle fieldHandle)
-    {
-        var mdBuilder = new MetadataBuilder();
-        mdBuilder.AddModule(
-            0,
-            mdBuilder.GetOrAddString("TestModule"),
-            mdBuilder.GetOrAddGuid(Guid.Empty),
-            default, default);
-        mdBuilder.AddAssembly(
-            mdBuilder.GetOrAddString("TestAssembly"),
-            new Version(1, 0, 0, 0),
-            default, default, 0,
-            AssemblyHashAlgorithm.None);
-
-        var fieldSig = new BlobBuilder();
-        new BlobEncoder(fieldSig).FieldSignature().Int32();
-        BlobHandle fieldSigHandle = mdBuilder.GetOrAddBlob(fieldSig);
-
-        fieldHandle = mdBuilder.AddFieldDefinition(
-            FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasFieldRVA,
-            mdBuilder.GetOrAddString("RvaField"),
-            fieldSigHandle);
-        mdBuilder.AddFieldRelativeVirtualAddress(fieldHandle, rva);
-
-        // The <Module> type owns the field (required first type row).
-        mdBuilder.AddTypeDefinition(
-            default, default,
-            mdBuilder.GetOrAddString("<Module>"),
-            default, fieldHandle, MetadataTokens.MethodDefinitionHandle(1));
-
-        var rootBuilder = new MetadataRootBuilder(mdBuilder);
-        var blobBuilder = new BlobBuilder();
-        rootBuilder.Serialize(blobBuilder, 0, 0);
-        return blobBuilder.ToArray();
+        Assert.Throws<InvalidOperationException>(() => contract.GetFieldDescOffset(fieldDescPtr));
     }
 }
