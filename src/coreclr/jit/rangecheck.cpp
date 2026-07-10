@@ -313,13 +313,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
-
-    if (!binop->OperIs(GT_ADD))
-    {
-        JITDUMP("Not monotonically increasing because operation is not addition\n");
-        return false;
-    }
+    assert(binop->OperIs(GT_ADD));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -409,7 +403,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
         return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst);
     }
-    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
+    else if (expr->OperIs(GT_ADD))
     {
         return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
