@@ -291,8 +291,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         assert(segment.IsPassedInRegister());
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        // Spill the parameter if referenced. Liveness is not reliable in codegen currently.
-        if (varDsc->lvTracked && !m_compiler->compJmpOpUsed && (varDsc->lvRefCnt() == 0))
+        // Skip homing parameters that are dead at method entry (not live into the first block).
+        if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             return;
         }
