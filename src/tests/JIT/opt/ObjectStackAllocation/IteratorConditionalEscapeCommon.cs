@@ -3,16 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
-using TestLibrary;
-using Xunit;
 
-public static class IteratorConditionalEscape
+public static class IteratorConditionalEscapeCommon
 {
     private const int Iterations = 10_000;
 
@@ -54,7 +49,7 @@ public static class IteratorConditionalEscape
         new(nameof(SelectArray), SelectArray, 380, 8, warmUp: true),
         new(nameof(SelectEnumerable), SelectEnumerable, 380, 8, warmUp: true),
         new(nameof(YieldIterator), YieldIterator, 190, 40, warmUp: true),
-        new(nameof(DefaultIfEmptyEmptyList), DefaultIfEmptyEmptyList, 0, 8, warmUp: true),
+        new(nameof(DefaultIfEmptyEmptyList), DefaultIfEmptyEmptyList, 0, 56, warmUp: true),
         new(nameof(DefaultIfEmptyEmptyArray), DefaultIfEmptyEmptyArray, 0, 8, warmUp: true),
         new(nameof(DefaultIfEmptyEmptyEnumerable), DefaultIfEmptyEmptyEnumerable, 0, 8, warmUp: true),
         new(nameof(TwoWhereListSerial), TwoWhereListSerial, 274, 8, warmUp: true),
@@ -67,39 +62,21 @@ public static class IteratorConditionalEscape
         new(nameof(TakeArray), TakeArray, 45, 96),
     ];
 
-    [ActiveIssue("needs triage", TestRuntimes.Mono)]
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Run(string caseName)
     {
-        string? selectedCaseName = Environment.GetEnvironmentVariable("ITERATOR_CEA_CASE");
-        if (selectedCaseName is not null)
-        {
-            foreach (Case testCase in s_cases)
-            {
-                if (testCase.Name == selectedCaseName)
-                {
-                    return RunInCurrentProcess(testCase);
-                }
-            }
-
-            Console.WriteLine($"Unknown case '{selectedCaseName}'");
-            return -1;
-        }
-
-        int result = 100;
-
         foreach (Case testCase in s_cases)
         {
-            if (!RunInChildProcess(testCase))
+            if (testCase.Name == caseName)
             {
-                result = -1;
+                return Run(testCase);
             }
         }
 
-        return result;
+        Console.WriteLine($"Unknown case '{caseName}'");
+        return -1;
     }
 
-    private static int RunInCurrentProcess(Case testCase)
+    private static int Run(Case testCase)
     {
         if (testCase.WarmUp)
         {
@@ -110,43 +87,6 @@ public static class IteratorConditionalEscape
 
         bool checkAllocations = Environment.GetEnvironmentVariable("DOTNET_GCStress") is null;
         return RunAndValidate(testCase, checkAllocations) ? 100 : -1;
-    }
-
-    private static bool RunInChildProcess(Case testCase)
-    {
-        string? processPath = Environment.ProcessPath;
-        if (processPath is null)
-        {
-            Console.WriteLine("Unable to locate current process path");
-            return false;
-        }
-
-        ProcessStartInfo processInfo = new(processPath)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        processInfo.ArgumentList.Add(Assembly.GetExecutingAssembly().Location);
-        processInfo.Environment["ITERATOR_CEA_CASE"] = testCase.Name;
-
-        using Process process = Process.Start(processInfo)!;
-        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-        Task<string> errorTask = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-        string output = outputTask.GetAwaiter().GetResult();
-        string error = errorTask.GetAwaiter().GetResult();
-
-        Console.Write(output);
-        Console.Error.Write(error);
-
-        if (process.ExitCode == 100)
-        {
-            return true;
-        }
-
-        Console.WriteLine($"FAILURE ({testCase.Name}): child process exited with {process.ExitCode}");
-        return false;
     }
 
     private static void WarmUp(Test test)

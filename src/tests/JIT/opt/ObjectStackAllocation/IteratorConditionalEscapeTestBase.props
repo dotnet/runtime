@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
   <PropertyGroup>
     <CrossGenTest>false</CrossGenTest>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
@@ -7,13 +7,14 @@
     <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="IteratorConditionalEscapeCase.cs" />
 
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitObjectStackAllocationConditionalEscape" Value="1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="IteratorConditionalEscapeCommon.csproj" />
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
