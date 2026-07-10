@@ -1090,12 +1090,13 @@ namespace System
             }
 
             int precision = TDecimal.Precision;
-            int digitsCount = WideDigitCount<TDecimal, TValue>(high, low);
 
             if (exponent > TDecimal.MaxExponent)
             {
                 return sign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
             }
+
+            int digitsCount = WideDigitCount<TDecimal, TValue>(high, low);
 
             if (exponent > TDecimal.MaxAdjustedExponent)
             {
