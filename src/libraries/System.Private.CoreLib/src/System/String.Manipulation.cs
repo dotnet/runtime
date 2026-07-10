@@ -2178,8 +2178,8 @@ namespace System
 
                     // Handle the last chunk in a vectorized way also.
                     // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                    // Note: when Avx512BW.IsSupported is false, we never enter the first block, and thus remaining.Length is always > 0.
-                    if (!Avx512BW.IsSupported || remaining.Length > 0)
+                    // Note: ExtractMostSignificantBits is too expensive on non-xarch platforms for the vectorized fixup handling to be worth it.
+                    if (X86Base.IsSupported && remaining.Length > 0)
                     {
                         Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
                         Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
@@ -2194,8 +2194,9 @@ namespace System
                                 mask = BitOperations.ResetLowestSetBit(mask);
                             }
                         }
+
+                        return;
                     }
-                    return;
                 }
                 else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
                 {
@@ -2277,8 +2278,8 @@ namespace System
 
                     // Handle the last chunk in a vectorized way also.
                     // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                    // Note: when Avx2.IsSupported is false, we never enter the first block, and thus remaining.Length is always > 0.
-                    if (!Avx2.IsSupported || remaining.Length > 0)
+                    // Note: ExtractMostSignificantBits is too expensive on non-xarch platforms for the vectorized fixup handling to be worth it.
+                    if (X86Base.IsSupported && remaining.Length > 0)
                     {
                         Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
                         Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
@@ -2293,8 +2294,9 @@ namespace System
                                 mask = BitOperations.ResetLowestSetBit(mask);
                             }
                         }
+
+                        return;
                     }
-                    return;
                 }
                 else if (Vector128.IsHardwareAccelerated)
                 {
@@ -2353,7 +2355,7 @@ namespace System
                         }
                     }
 
-                    while ((uint)remaining.Length > (uint)Vector128<ushort>.Count)
+                    while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count)
                     {
                         Vector128<ushort> vector = Vector128.Create(remaining);
                         Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
@@ -2376,8 +2378,8 @@ namespace System
 
                     // Handle the last chunk in a vectorized way also.
                     // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                    // Note: when Sse.IsSupported is false, we never enter the first block, and thus remaining.Length is always > 0.
-                    if (!Sse.IsSupported || remaining.Length > 0)
+                    // Note: ExtractMostSignificantBits is too expensive on non-xarch platforms for the vectorized fixup handling to be worth it.
+                    if (X86Base.IsSupported && remaining.Length > 0)
                     {
                         Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
                         Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
@@ -2392,8 +2394,18 @@ namespace System
                                 mask = BitOperations.ResetLowestSetBit(mask);
                             }
                         }
+
+                        return;
                     }
-                    return;
+                }
+
+                for (int i = 0; i < remaining.Length; i++)
+                {
+                    char v = remaining[i];
+                    if (v == c || v == c2 || v == c3)
+                    {
+                        sepListBuilder.Append(i);
+                    }
                 }
             }
             else
