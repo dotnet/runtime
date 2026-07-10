@@ -17,16 +17,19 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     // maps CodeBlockHandle.Address (which is the CodeHeaderAddress) to the CodeBlock
     private readonly Dictionary<TargetPointer, CodeBlock> _codeInfos = new();
-    private readonly Data.RangeSectionMap _topRangeSectionMap;
+    private readonly TargetPointer _topRangeSectionMapAddress;
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
 
-    public ExecutionManagerCore(Target target, Data.RangeSectionMap topRangeSectionMap)
+    private Data.RangeSectionMap _topRangeSectionMap
+        => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
+
+    public ExecutionManagerCore(Target target, TargetPointer topRangeSectionMapAddress)
     {
         _target = target;
-        _topRangeSectionMap = topRangeSectionMap;
+        _topRangeSectionMapAddress = topRangeSectionMapAddress;
         _rangeSectionMapLookup = ExecutionManagerHelpers.RangeSectionMap.Create(_target);
         INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
@@ -34,7 +37,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
     }
 
-    public void Flush()
+    public void Flush(FlushScope scope)
     {
         _codeInfos.Clear();
     }
@@ -281,7 +284,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
     {
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeaturePortableEntrypoints) != 0)
+        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
         {
             Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
             return portableEntryPoint.MethodDesc;
@@ -403,6 +406,20 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
+    bool IExecutionManager.IsGcSafe(TargetCodePointer instructionPointer)
+    {
+        IExecutionManager eman = this;
+        if (eman.GetCodeBlockHandle(instructionPointer) is not CodeBlockHandle cbh)
+            return false; // not managed code
+
+        TargetNUInt relativeOffset = eman.GetRelativeOffset(cbh);
+        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
+        IGCInfoHandle handle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+
+        uint offset = (uint)relativeOffset.Value;
+        return _target.Contracts.GCInfo.IsGcSafe(handle, offset);
+    }
+
     uint IExecutionManager.GetStackParameterSize(CodeBlockHandle codeInfoHandle)
     {
         IExecutionManager eman = this;
@@ -416,9 +433,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (gcInfoAddress == TargetPointer.Null)
             throw new InvalidOperationException($"GC info not available for {codeInfoHandle.Address}");
 
-        uint relOffset = (uint)eman.GetRelativeOffset(codeInfoHandle).Value;
-        StackWalkHelpers.X86.GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
-        return gcInfo.Header.VarArgs ? 0u : gcInfo.Header.ArgCount * (uint)_target.PointerSize;
+        IGCInfo gcInfoContract = _target.Contracts.GCInfo;
+        IGCInfoHandle handle = gcInfoContract.DecodePlatformSpecificGCInfo(gcInfoAddress, gcInfoVersion);
+        return gcInfoContract.GetCalleePoppedArgumentsSize(handle);
     }
 
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)

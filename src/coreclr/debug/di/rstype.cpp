@@ -1704,11 +1704,22 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             // this may be called multiple times. Each call will discard previous values in m_fieldList and reinitialize
             // the list with updated information
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            IfFailThrow(pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeAssembly(),
+
+            CallbackAccumulator<FieldData> acc;
+
+            HRESULT hrEnum = pProcess->GetDAC()->EnumerateInstantiationFields(
+                                                          m_pClass->GetModule()->GetRuntimeAssembly(),
                                                           m_typeHandleExact,
                                                           typeHandleApprox,
-                                                          &m_fieldList,
-                                                          &m_objectSize));
+                                                          &m_objectSize,
+                                                          &CallbackAccumulator<FieldData>::PushCallback,
+                                                          &acc);
+            if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+                hrEnum = acc.hrError;
+            IfFailThrow(hrEnum);
+
+            int fieldCount = (int)acc.items.Size();
+            m_fieldList.Init(fieldCount > 0 ? &acc.items[0] : NULL, fieldCount);
         }
     }
     EX_CATCH_HRESULT(hr);

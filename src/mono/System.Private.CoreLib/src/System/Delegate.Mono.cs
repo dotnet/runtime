@@ -105,8 +105,6 @@ namespace System
             };
         }
 
-        public object? Target => GetTarget();
-
         internal virtual object? GetTarget() => _target;
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)

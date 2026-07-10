@@ -24,4 +24,6 @@ internal sealed partial class EEClass : IData<EEClass>
     [Field] public ushort NumThreadStaticFields { get; }
     [Field] public TargetPointer FieldDescList { get; }
     [Field] public ushort NumNonVirtualSlots { get; }
+    [Field] public byte BaseSizePadding { get; }
+    [Field] public TargetPointer OptionalFields { get; }
 }

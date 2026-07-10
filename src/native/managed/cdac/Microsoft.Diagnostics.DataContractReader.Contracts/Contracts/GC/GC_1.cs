@@ -9,7 +9,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly struct GC_1 : IGC
+internal struct GC_1 : IGC
 {
     private const uint WRK_HEAP_COUNT = 1;
 
@@ -44,6 +44,17 @@ internal readonly struct GC_1 : IGC
     private readonly uint _handleMaxInternalTypes;
     private readonly uint _handleSegmentSize;
     private readonly uint _heapSegmentFlagsReadonly = 1;
+    private readonly uint _smallObjectHeapAlignment;
+    private readonly uint _largeObjectHeapAlignment = 7;
+
+    private List<AllocContext>? _allocContexts;
+
+    private readonly record struct AllocContext(TargetPointer Pointer, TargetPointer Limit);
+
+    public void Flush()
+    {
+        _allocContexts = null;
+    }
 
     internal GC_1(Target target)
     {
@@ -53,6 +64,7 @@ internal readonly struct GC_1 : IGC
         _debugDestroyedHandleValue = target.ReadGlobalPointer(Constants.Globals.DebugDestroyedHandleValue);
         _handleMaxInternalTypes = target.ReadGlobal<uint>(Constants.Globals.HandleMaxInternalTypes);
         _handleSegmentSize = target.ReadGlobal<uint>(Constants.Globals.HandleSegmentSize);
+        _smallObjectHeapAlignment = (uint)target.PointerSize - 1;
     }
 
     string[] IGC.GetGCIdentifiers()
@@ -442,6 +454,90 @@ internal readonly struct GC_1 : IGC
         }
     }
 
+    TargetPointer IGC.GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment)
+    {
+        TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
+
+        if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
+            return next;
+
+        ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
+        foreach (AllocContext context in GetAllocContexts())
+        {
+            if (next == context.Pointer)
+                return new TargetPointer(context.Limit.Value + minObjSize);
+        }
+        return next;
+    }
+
+    private List<AllocContext> GetAllocContexts()
+    {
+        if (_allocContexts is not null)
+            return _allocContexts;
+
+        List<AllocContext> contexts = new();
+
+        IThread thread = _target.Contracts.Thread;
+        ThreadStoreData store = thread.GetThreadStoreData();
+        TargetPointer current = store.FirstThread;
+        int safety = store.ThreadCount;
+        while (current != TargetPointer.Null && safety-- > 0)
+        {
+            ThreadData td = thread.GetThreadData(current);
+            if (td.AllocContextPointer != TargetPointer.Null)
+                contexts.Add(new AllocContext(td.AllocContextPointer, td.AllocContextLimit));
+            current = td.NextThread;
+        }
+
+        IGC gc = _target.Contracts.GC;
+        gc.GetGlobalAllocationContext(out TargetPointer gAllocPtr, out TargetPointer gAllocLimit);
+        if (gAllocPtr != TargetPointer.Null)
+            contexts.Add(new AllocContext(gAllocPtr, gAllocLimit));
+
+        string[] gcIdentifiers = gc.GetGCIdentifiers();
+        IEnumerable<GCHeapData> heaps = gcIdentifiers.Contains(GCIdentifiers.Workstation)
+            ? new[] { gc.GetHeapData() }
+            : EnumerateServerHeaps(gc);
+        foreach (GCHeapData heap in heaps)
+        {
+            if (heap.GenerationTable.Count > 0)
+            {
+                TargetPointer ptr = heap.GenerationTable[0].AllocationContextPointer;
+                TargetPointer limit = heap.GenerationTable[0].AllocationContextLimit;
+                if (ptr != TargetPointer.Null)
+                    contexts.Add(new AllocContext(ptr, limit));
+            }
+        }
+
+        _allocContexts = contexts;
+        return contexts;
+    }
+
+    private static IEnumerable<GCHeapData> EnumerateServerHeaps(IGC gc)
+    {
+        foreach (TargetPointer heapAddress in gc.GetGCHeaps())
+            yield return gc.GetHeapData(heapAddress);
+    }
+
+    ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)
+    {
+        return generation is GCSegmentClassification.LOH or GCSegmentClassification.POH
+            ? AlignForLargeObject(size)
+            : AlignForSmallObject(size);
+    }
+
+    // SOH alignment: pointer-sized (4 on 32-bit, 8 on 64-bit). Mirrors gcpriv.h Align().
+    private ulong AlignForSmallObject(ulong size)
+    {
+        return (size + _smallObjectHeapAlignment) & ~_smallObjectHeapAlignment;
+    }
+
+    // LOH/POH alignment: always 8-byte. Mirrors dacimpl.h DacHeapWalker::AlignLarge().
+    private ulong AlignForLargeObject(ulong size) => (size + _largeObjectHeapAlignment) & ~_largeObjectHeapAlignment;
+
     HandleType[] IGC.GetSupportedHandleTypes()
     {
         List<HandleType> supportedTypes =
@@ -453,11 +549,12 @@ internal readonly struct GC_1 : IGC
             HandleType.Dependent,
             HandleType.WeakInteriorPointer
         ];
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureComWrappers) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureObjCMarshal) != 0)
+        IFeatureFlags featureFlags = _target.Contracts.FeatureFlags;
+        if (featureFlags.IsEnabled(RuntimeFeature.COMInterop) || featureFlags.IsEnabled(RuntimeFeature.ComWrappers) || featureFlags.IsEnabled(RuntimeFeature.ObjCMarshal))
         {
             supportedTypes.Add(HandleType.RefCounted);
         }
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureJavaMarshal) != 0)
+        if (featureFlags.IsEnabled(RuntimeFeature.JavaMarshal))
         {
             supportedTypes.Add(HandleType.CrossReference);
         }
@@ -566,7 +663,7 @@ internal readonly struct GC_1 : IGC
             handleData.Secondary = 0;
         }
 
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 && IsRefCounted(type))
+        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop) && IsRefCounted(type))
         {
             IObject obj = _target.Contracts.Object;
             TargetPointer handle = _target.ReadPointer(handleAddress);

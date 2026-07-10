@@ -425,10 +425,17 @@ struct RecordVariantHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
 
         if (value != NULL)
         {
+            GCX_PREEMP();
             if (V_RECORD(value))
                 V_RECORDINFO(value)->RecordDestroy(V_RECORD(value));
             if (V_RECORDINFO(value))
@@ -1664,8 +1671,8 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     {
         GCX_PREEMP();
 
-        SafeComHolder<ITypeInfo> pITI;
-        SafeComHolder<IRecordInfo> pRecInfo;
+        ComHolderPreemp<ITypeInfo> pITI;
+        ComHolderPreemp<IRecordInfo> pRecInfo;
         IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
         IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
@@ -1986,6 +1993,20 @@ namespace
         }
     }
 
+    // Returns the IntPtr/UIntPtr element TypeHandle for a pointer-sized SAFEARRAY element, rejecting
+    // the case where the managed pointer size does not match the native SAFEARRAY element size. The
+    // blittable array marshaler copies sizeof(void*) bytes per element, so an 8-byte IntPtr does
+    // not match a 4-byte VT_I4/VT_INT/VT_UI4/VT_UINT element on a 64-bit process.
+    TypeHandle GetPointerSizedElementTypeForSafeArrayVarType(VARTYPE vt, MethodTable* pPointerMT)
+    {
+        STANDARD_VM_CONTRACT;
+
+        if (sizeof(void*) != OleVariant::GetElementSizeForVarType(vt, NULL))
+            COMPlusThrow(kSafeArrayTypeMismatchException);
+
+        return TypeHandle(pPointerMT);
+    }
+
     // Returns the element TypeHandle for a given VARTYPE and element MethodTable.
     TypeHandle GetElementTypeForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT)
     {
@@ -2005,20 +2026,20 @@ namespace
         case VT_INT:
         case VT_ERROR:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
         case VT_UI4:
         case VT_UINT:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT32));
         case VT_I8:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__INT64));
         case VT_UI8:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
-                return TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR));
+                return GetPointerSizedElementTypeForSafeArrayVarType(vt, pElementMT);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT64));
         case VT_R4:         return TypeHandle(CoreLibBinder::GetClass(CLASS__SINGLE));
         case VT_R8:         return TypeHandle(CoreLibBinder::GetClass(CLASS__DOUBLE));
@@ -2191,7 +2212,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    SafeComHolder<ITypeInfo> pTypeInfo = NULL;
+    ComHolderAnyMode<ITypeInfo> pTypeInfo;
     RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.

@@ -3016,6 +3016,15 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
             return;
 
+        case INS_sve_sqxtnt:
+        case INS_sve_uqxtnt:
+        case INS_sve_sqxtunt:
+            // RMW instructions without movprfx support, use mov instead
+            assert(insSveMovOptsUnpredicated(mopt));
+            emitIns_Mov(INS_sve_mov, attr, reg1, reg2, /* canSkip */ true, opt);
+            emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
+            return;
+
         case INS_sve_and:
         case INS_sve_bic:
         case INS_sve_eor:
@@ -19309,7 +19318,10 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         assert(firstId->idReg2() == secondId->idReg2());
 
         // "predicated using the same governing predicate register and source element size as this instruction."
-        assert(firstId->idInsOpt() == secondId->idInsOpt());
+        emitAttr dstSize1 = optGetSveElemsize(firstId->idInsOpt());
+        emitAttr dstSize2 = insOptsScalableStandard(secondId->idInsOpt()) ? optGetSveElemsize(secondId->idInsOpt())
+                                                                          : optGetDstsize(secondId->idInsOpt());
+        assert(dstSize1 == dstSize2);
     }
 
     // The following instructions cannot use predicated movprfx, else the behaviour will be unpredictable.

@@ -34,15 +34,27 @@ public enum StackWalkState
     SkippedFrame,
 }
 
+// Classifies the origin of a reported stack reference.
+//   InstructionPointer - a managed (frameless) JIT frame; Source is the native PC.
+//   Frame              - an explicit capital-F Frame; Source is the Frame address.
+//   Other              - a root which is not any of the other enums
+public enum StackSourceType
+{
+    InstructionPointer = 0,
+    Frame = 1,
+    Other = 2,
+}
+
 public class StackReferenceData
 {
     public bool HasRegisterInformation { get; init; }
+    public bool IsInteriorPointer { get; init; }
     public int Register { get; init; }
     public int Offset { get; init; }
     public TargetPointer Address { get; init; }
     public TargetPointer Object { get; init; }
     public uint Flags { get; init; }
-    public bool IsStackSourceFrame { get; init; }
+    public StackSourceType SourceType { get; init; }
     public TargetPointer Source { get; init; }
     public TargetPointer StackPointer { get; init; }
 }
@@ -68,21 +80,30 @@ public record struct DebuggerEvalData(
     uint MethodToken,
     TargetPointer AssemblyPtr);
 
+[Flags]
+public enum StackwalkFlag
+{
+    Default = 0,
+    X86ESPIgnoresCalleePoppedArgs = 0x1,
+}
+
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
-
-    public virtual IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
-    IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData) => throw new NotImplementedException();
-    byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
+    IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData, byte[] contextBuffer, bool isFirst = true) => throw new NotImplementedException();
+    IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers) => throw new NotImplementedException();
+    byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle, StackwalkFlag flags = StackwalkFlag.Default) => throw new NotImplementedException();
     TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     string GetFrameName(TargetPointer frameIdentifier) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
-    TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer) => throw new NotImplementedException();
     bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => throw new NotImplementedException();
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
+    TargetPointer GetRedirectedContextPointer(ThreadData threadData) => throw new NotImplementedException();
+    byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk

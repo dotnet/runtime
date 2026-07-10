@@ -8,9 +8,13 @@
 #include "dbginterface.h"
 #include "method.hpp"
 #include "peassembly.h"
+#include <errno.h>
 #include <clrconfignocache.h>
+#include <limits>
 #include <minipal/guid.h>
+#include <limits.h>
 #include <new>
+#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -88,6 +92,10 @@ GetCrashReportFrameLimitPerThread()
 }
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+static bool TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value);
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+static int GetCrashReportTimeoutSeconds();
 
 static
 void
@@ -587,6 +595,94 @@ CrashReportEnumerateThreads(
     }
 }
 
+static
+bool
+TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value)
+{
+    _ASSERTE(minValue <= maxValue);
+    _ASSERTE(value != nullptr);
+
+    if (!config.IsSet())
+    {
+        return false;
+    }
+
+    const char* configString = config.AsString();
+    if (configString == nullptr)
+    {
+        return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    long parsedValue = strtol(configString, &end, 10);
+    if (end == configString ||
+        *end != '\0' ||
+        errno == ERANGE ||
+        parsedValue < minValue ||
+        parsedValue > maxValue)
+    {
+        return false;
+    }
+
+    *value = static_cast<int>(parsedValue);
+    return true;
+}
+
+// This runs during configuration, not from the crash signal path. maxFileCount
+// is a positive retention bound; values outside [1, INT32_MAX] fall back to the
+// default.
+static
+int32_t
+GetCrashReportMaxFileCount()
+{
+    int32_t maxFileCount = CRASHREPORT_DEFAULT_MAX_FILE_COUNT;
+
+    CLRConfigNoCache maxFileCountCfg = CLRConfigNoCache::Get("CrashReportMaxFileCount", /*noprefix*/ false, &getenv);
+    if (!maxFileCountCfg.IsSet())
+    {
+        return maxFileCount;
+    }
+
+    int configuredMaxFileCount;
+    if (TryParseCrashReportConfigurationInteger(maxFileCountCfg, 1, INT32_MAX, &configuredMaxFileCount))
+    {
+        maxFileCount = configuredMaxFileCount;
+    }
+    else
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report using default CrashReportMaxFileCount: invalid configured value");
+    }
+
+    return maxFileCount;
+}
+
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+// DOTNET_CrashReportTimeoutSeconds is a seconds-based watchdog knob: unset,
+// unparseable, negative, or out-of-range values use the default; 0 disables the
+// watchdog; and positive in-range values configure a fixed timeout. Use
+// CLRConfigNoCache so Android-hosted apps can set DOTNET_* values after PAL
+// initialization but before crash-report configuration.
+static int
+GetCrashReportTimeoutSeconds()
+{
+    // Keep the default conservative: successful reports can be large, while 0
+    // remains available to disable the watchdog for diagnostics.
+    static constexpr int DefaultTimeoutSeconds = 30;
+    static constexpr int TimeoutSecondsToMilliseconds = 1000;
+    static constexpr int MaxTimeoutSeconds = std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds;
+
+    int timeoutSeconds;
+    CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
+    if (!TryParseCrashReportConfigurationInteger(timeoutCfg, 0, MaxTimeoutSeconds, &timeoutSeconds))
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    return timeoutSeconds;
+}
+
 void
 CrashReportConfigure()
 {
@@ -612,11 +708,18 @@ CrashReportConfigure()
         return;
     }
 
-    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+    CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
+    const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
+    bool rootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
 
     InProcCrashReporterSettings settings = {};
-    settings.reportPath = dumpName;
+    if (rootConfigured)
+    {
+        settings.reportRootPath = crashReportRootPath;
+        settings.maxFileCount = GetCrashReportMaxFileCount();
+    }
+
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;

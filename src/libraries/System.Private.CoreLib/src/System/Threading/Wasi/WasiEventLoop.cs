@@ -3,9 +3,9 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using WasiPollWorld.wit.imports.wasi.io.v0_2_0;
-using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_0.IPoll.Pollable;
-using MonotonicClockInterop = WasiPollWorld.wit.imports.wasi.clocks.v0_2_0.MonotonicClockInterop;
+using WasiPollWorld.wit.Imports.wasi.io.v0_2_8;
+using Pollable = WasiPollWorld.wit.Imports.wasi.io.v0_2_8.IPollImports.Pollable;
+using MonotonicClockInterop = WasiPollWorld.wit.Imports.wasi.clocks.v0_2_8.IMonotonicClockImports;
 
 namespace System.Threading
 {
@@ -153,7 +153,7 @@ namespace System.Threading
 
                 // this could block, this is blocking WASI API call
                 // FIXME: this will also block soft-debugger ability to pause the execution. Solutions: A) upgrade to WASIp3 B) register debugger connection's pollable
-                var readyIndexes = PollInterop.Poll(pending);
+                var readyIndexes = IPollImports.Poll(pending);
 
                 var holdersCount = holders.Count;
                 for (int i = 0; i < readyIndexes.Length; i++)

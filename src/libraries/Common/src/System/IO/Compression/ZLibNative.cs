@@ -158,36 +158,6 @@ namespace System.IO.Compression
         public const byte GZip_Header_ID1 = 31;
         public const byte GZip_Header_ID2 = 139;
 
-        /**
-         * Do not remove the nested typing of types inside of <see cref="ZLibNative" />.
-         * This was done on purpose to:
-         *
-         * - Achieve the right encapsulation in a situation where <see cref="ZLibNative" /> may be compiled division-wide
-         *   into different assemblies that wish to consume <c>System.IO.Compression.Native</c>. Since <c>internal</c>
-         *   scope is effectively like <c>public</c> scope when compiling <see cref="ZLibNative" /> into a higher
-         *   level assembly, we need a combination of inner types and <c>private</c>-scope members to achieve
-         *   the right encapsulation.
-         *
-         * - Achieve late dynamic loading of <c>System.IO.Compression.Native.dll</c> at the right time.
-         *   The native assembly will not be loaded unless it is actually used since the loading is performed by a static
-         *   constructor of an inner type that is not directly referenced by user code.
-         *
-         *   In Dev12 we would like to create a proper feature for loading native assemblies from user-specified
-         *   directories in order to PInvoke into them. This would preferably happen in the native interop/PInvoke
-         *   layer; if not we can add a Framework level feature.
-         */
-
-        /// <summary>
-        /// The <see cref="ZLibStreamHandle" /> could be a <see cref="System.Runtime.ConstrainedExecution.CriticalFinalizerObject" /> rather than a
-        /// <see cref="SafeHandle" />. This would save an <see cref="IntPtr" /> field since
-        /// <see cref="ZLibStreamHandle" /> does not actually use its <see cref="SafeHandle.handle" /> field.
-        /// Instead it uses a private <see cref="_zStream" /> field which is the actual handle data
-        /// structure requiring critical finalization.
-        /// However, we would like to take advantage if the better debugability offered by the fact that a
-        /// <em>releaseHandleFailed MDA</em> is raised if the <see cref="ReleaseHandle" /> method returns
-        /// <c>false</c>, which can for instance happen if the underlying ZLib <see cref="Interop.ZLib.InflateEnd"/>
-        /// or <see cref="Interop.ZLib.DeflateEnd"/> routines return an failure error code.
-        /// </summary>
         public sealed class ZLibStreamHandle : SafeHandle
         {
             public enum State

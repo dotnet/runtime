@@ -176,6 +176,13 @@ namespace System.Text.Json.Serialization
         internal bool IsValueType { get; init; }
 
         /// <summary>
+        /// Indicates whether this converter handles IEEE 754 floating-point types
+        /// (double, float, Half) that may emit anyOf schemas with named floating-point
+        /// literals under AllowNamedFloatingPointLiterals.
+        /// </summary>
+        internal virtual bool IsIeeeFloatingPointConverter => false;
+
+        /// <summary>
         /// Whether the converter is built-in.
         /// </summary>
         internal bool IsInternalConverter { get; init; }

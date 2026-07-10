@@ -170,7 +170,12 @@ namespace ILCompiler.DependencyAnalysis
                                 }
                                 else
                                 {
-                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(canonImpl), null, "ImplementingMethodInstantiation"));
+#if READYTORUN
+                                    if (!factory.CanBeInGenericCycle(canonImpl))
+#endif
+                                    {
+                                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(canonImpl), null, "ImplementingMethodInstantiation"));
+                                    }
                                 }
 
 #if !READYTORUN
@@ -265,15 +270,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!factory.CompilationModuleGroup.ContainsMethodBody(method, false))
                 return null;
 
-            try
-            {
-                factory.DetectGenericCycles(method, method);
-                return factory.CompiledMethodNode(method);
-            }
-            catch (TypeSystemException)
-            {
-                return null;
-            }
+            return factory.CompiledMethodNode(method);
 #endif
         }
     }

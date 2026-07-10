@@ -245,6 +245,10 @@ extern jclass    g_PrivateKeyEntryClass;
 extern jmethodID g_PrivateKeyEntryGetCertificate;
 extern jmethodID g_PrivateKeyEntryGetPrivateKey;
 
+// java/security/Key
+extern jclass    g_KeyClass;
+extern jmethodID g_KeyGetEncoded;
+
 // java/security/KeyStore$TrustedCertificateEntry
 extern jclass    g_TrustedCertificateEntryClass;
 extern jmethodID g_TrustedCertificateEntryGetTrustedCertificate;
@@ -598,8 +602,6 @@ JNIEnv* GetJNIEnv(void);
 // The function must be called from the embedder's `JNI_OnLoad` function prior to using any
 // APIs in this library.
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved);
-
-int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
 
 void* xmalloc (size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1) __wur;
 void* xcalloc (size_t nmemb, size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1,2) __wur;

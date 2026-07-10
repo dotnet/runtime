@@ -52,16 +52,6 @@
         <target state="translated">„JsonDerivedTypeAttribute“ wird in „JsonSourceGenerationMode.Serialization“ nicht unterstützt.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
-        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="translated">Der Member "{0}. {1}" wurde mit dem JsonIncludeAttribute versehen, ist jedoch für den Quellgenerator nicht sichtbar.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
-        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="translated">Nicht zugängliche Eigenschaften, die mit dem JsonIncludeAttribute versehen sind, werden im Quellgenerierungsmodus nicht unterstützt.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">Der für den Member "{1}" angegebene JsonConverterAttribute-Typ "{0}" ist kein Konvertertyp oder enthält keinen parameterlosen Konstruktor, auf den zugegriffen werden kann.</target>
@@ -130,6 +120,41 @@
       <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
         <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
         <target state="translated">Der Typ enthält mehrere Elemente, die mit dem JsonExtensionDataAttribute versehen sind.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">Der offene generische abgeleitete Typ „{0}“ konnte für den polymorphen Basistyp „{1}“ nicht aufgelöst werden: {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">Der abgeleitete Typ stimmt über mehrere Vorfahren mit dem Basistyp überein</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">Die Einschränkung für den Typparameter „{0}“ wird von „{1}“ nicht erfüllt</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">Der abgeleitete Typ ist nicht auf den Basistyp zuweisbar</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">Der Typparameter „{0}“ des abgeleiteten Typs wird nicht durch die Argumente des Basistyps gebunden</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">Die Argumente des Basistyps stimmen nicht mit der Basisspezifikation des abgeleiteten Typs überein</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">Der offene generische abgeleitete Typ konnte für den polymorphen Basistyp nicht aufgelöst werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">

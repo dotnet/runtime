@@ -95,9 +95,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(continuationContext is TaskScheduler { });
                 TaskScheduler sched = (TaskScheduler)continuationContext;
 
-                // TODO: We do not need TaskSchedulerAwaitTaskContinuation here, just need to refactor its Run method...
-                var taskSchedCont = new TaskSchedulerAwaitTaskContinuation(sched, (Action)RuntimeAsyncTask.m_action!, flowExecutionContext: false);
-                taskSchedCont.Run(Task.CompletedTask, canInlineContinuationTask: canInline);
+                TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction((Action)RuntimeAsyncTask.m_action!, sched, capturedContext: null, allowInlining: canInline);
 
                 return true;
             }

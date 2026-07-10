@@ -527,6 +527,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -542,6 +543,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -598,6 +600,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
             if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
@@ -651,6 +654,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Upn()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();

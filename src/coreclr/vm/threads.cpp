@@ -1185,7 +1185,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = GCFRAME_TOP;
+    m_pGCFrame              = NULL;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -6558,7 +6558,7 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -6566,6 +6566,13 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     if (m_pInterpThreadContext == nullptr)
     {
         m_pInterpThreadContext = new InterpThreadContext();
+
+#ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached() && g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->SendCreateThreadAtInterpreterEntry(this);
+        }
+#endif // DEBUGGING_SUPPORTED
     }
 
     return m_pInterpThreadContext;
@@ -6674,6 +6681,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         {
             bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
+            INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
             INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -6681,12 +6689,16 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            // ohThrowable can be NULL when we've caught the ResumeAfterCatchException
+            if (ohThrowable != NULL)
+            {
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            }
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -6752,7 +6764,7 @@ PTR_GCFrame Thread::GetGCFrame()
     {
         void* curSP;
         curSP = (void *)GetCurrentSP();
-        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+        _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
     }
 #endif
 

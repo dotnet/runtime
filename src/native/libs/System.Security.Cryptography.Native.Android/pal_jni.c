@@ -155,6 +155,10 @@ jclass    g_PrivateKeyEntryClass;
 jmethodID g_PrivateKeyEntryGetCertificate;
 jmethodID g_PrivateKeyEntryGetPrivateKey;
 
+// java/security/Key
+jclass    g_KeyClass;
+jmethodID g_KeyGetEncoded;
+
 // java/security/KeyStore$TrustedCertificateEntry
 jclass    g_TrustedCertificateEntryClass;
 jmethodID g_TrustedCertificateEntryGetTrustedCertificate;
@@ -671,13 +675,6 @@ JNIEnv* GetJNIEnv(void)
     return env;
 }
 
-int GetEnumAsInt(JNIEnv *env, jobject enumObj)
-{
-    int value = (*env)->CallIntMethod(env, enumObj, g_EnumOrdinal);
-    (*env)->DeleteLocalRef(env, enumObj);
-    return value;
-}
-
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
@@ -872,6 +869,9 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_PrivateKeyEntryClass =            GetClassGRef(env, "java/security/KeyStore$PrivateKeyEntry");
     g_PrivateKeyEntryGetCertificate =   GetMethod(env, false, g_PrivateKeyEntryClass, "getCertificate", "()Ljava/security/cert/Certificate;");
     g_PrivateKeyEntryGetPrivateKey =    GetMethod(env, false, g_PrivateKeyEntryClass, "getPrivateKey", "()Ljava/security/PrivateKey;");
+
+    g_KeyClass =      GetClassGRef(env, "java/security/Key");
+    g_KeyGetEncoded = GetMethod(env, false, g_KeyClass, "getEncoded", "()[B");
 
     g_TrustedCertificateEntryClass =                    GetClassGRef(env, "java/security/KeyStore$TrustedCertificateEntry");
     g_TrustedCertificateEntryGetTrustedCertificate =    GetMethod(env, false, g_TrustedCertificateEntryClass, "getTrustedCertificate", "()Ljava/security/cert/Certificate;");

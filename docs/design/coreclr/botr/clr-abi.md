@@ -145,7 +145,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 ## Hidden parameters
 
-*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R4` / (ARM NativeAOT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
+*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
 *Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
 
@@ -385,7 +385,7 @@ When a funclet finishes execution, and the VM returns execution to the function 
 
 Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame. This not a fundamental limitation. If necessary, the runtime can be updated to preserve non-volatile register changes made in funclets.
 
-Funclets are not required to preserve non-volatile registers.
+Funclets are not required to preserve non-volatile registers that are saved by the main method body.
 
 # EH Info, GC Info, and Hot & Cold Splitting
 

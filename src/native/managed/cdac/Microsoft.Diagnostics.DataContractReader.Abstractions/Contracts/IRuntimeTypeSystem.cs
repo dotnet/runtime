@@ -70,6 +70,8 @@ public readonly struct MethodDescHandle
     public TargetPointer Address { get; }
 }
 
+public readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
+
 public enum ArrayFunctionType
 {
     Get = 0,
@@ -97,6 +99,16 @@ public enum GenericContextLoc
     ThisPtr,
 }
 
+public enum WellKnownMethodTable
+{
+    Object,
+    String,
+    Array,
+    Exception,
+    Free,
+    Canon,
+}
+
 
 public interface IRuntimeTypeSystem : IContract
 {
@@ -122,6 +134,7 @@ public interface IRuntimeTypeSystem : IContract
     TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot) => throw new NotImplementedException();
 
     uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
+    uint GetNumInstanceFieldBytes(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     uint GetComponentSize(TypeHandle typeHandle) => throw new NotImplementedException();
 
@@ -130,9 +143,24 @@ public interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     bool IsObject(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the CorElementType represents a GC-collectable object reference.
+    bool IsCorElementTypeObjRef(CorElementType elementType) => throw new NotImplementedException();
+    // Returns the address of one of the runtime's well-known singleton MethodTables,
+    // or TargetPointer.Null if the runtime has not yet initialized that global.
+    TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
+    bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
+    bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
+    {
+        elementSize = 0;
+        throw new NotImplementedException();
+    }
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
@@ -200,6 +228,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(TypeHandle typeHandle) => throw new NotImplementedException();
+    TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
 
@@ -229,8 +258,10 @@ public interface IRuntimeTypeSystem : IContract
     // Or something else similar.
     // A no metadata method is also a StoredSigMethodDesc
     bool IsNoMetadataMethod(MethodDescHandle methodDesc, out string methodName) => throw new NotImplementedException();
-    // A StoredSigMethodDesc is a MethodDesc for which the signature isn't found in metadata.
-    bool IsStoredSigMethodDesc(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
+
+    // Gets the raw signature bytes for a MethodDesc by checking stored signature, async variant signature, then metadata.
+    // Returns false if no signature could be resolved.
+    bool TryGetMethodSignature(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
 
     // Return true for a MethodDesc that describes a method represented by the System.Reflection.Emit.DynamicMethod class
     // A DynamicMethod is also a StoredSigMethodDesc, and a NoMetadataMethod
@@ -268,14 +299,17 @@ public interface IRuntimeTypeSystem : IContract
     bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    bool IsUnboxingStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescMemberDef(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool IsFieldDescStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
-    uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
+    uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
+    TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
