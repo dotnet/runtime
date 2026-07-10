@@ -2418,25 +2418,25 @@ namespace System
                             // Whereas on arm64, this pattern can be faster
                             var mask = ~((1UL << (Vector128<byte>.Count - remaining.Length * sizeof(char) * 8)) - 1);
                             ulong cmp1;
-    
+
                             if (remaining.Length > Vector128<ushort>.Count)
                             {
                                 var cmp0 = cmp.GetElement(0) & 0x0101010101010101UL & mask;
-    
+
                                 while (cmp0 != 0)
                                 {
                                     uint bitPos = (uint)BitOperations.TrailingZeroCount(cmp0) / (uint)(sizeof(char) * 8);
                                     sepListBuilder.Append(finalIndex + (int)bitPos);
                                     cmp0 = BitOperations.ResetLowestSetBit(cmp0);
                                 }
-    
+
                                 cmp1 = cmp.GetElement(1);
                             }
                             else
                             {
                                 cmp1 = cmp.GetElement(1) & 0x0101010101010101UL & mask;
                             }
-    
+
                             while (cmp1 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(cmp1) / (uint)(sizeof(char) * 8);
