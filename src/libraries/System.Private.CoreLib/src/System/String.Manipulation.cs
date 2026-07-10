@@ -2393,7 +2393,7 @@ namespace System
                 if (!Sse.IsSupported || remaining.Length > 0)
                 {
                     Debug.Assert(sourceSpanUInt16.Length >= Vector128<ushort>.Count);
-                    Vector128<ushort> vector = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(sourceSpanUInt16), (uint)(sourceSpanUInt16.Length - Vector128<ushort>.Count)));
+                    Vector128<ushort> vector = Vector128.LoadUnsafe(in MemoryMarshal.GetReference(sourceSpanUInt16), (uint)(sourceSpanUInt16.Length - Vector128<ushort>.Count));
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
                     if (cmp != Vector128<byte>.Zero)
                     {
