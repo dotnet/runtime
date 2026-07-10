@@ -1653,7 +1653,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 yield return new object[] { HashAlgorithmName.MD5.Name, (RSAProvider p) => p.SupportsMd5Signatures };
 
                 yield return new object[] { HashAlgorithmName.SHA1.Name, (RSAProvider p) => p.SupportsSha1Signatures };
-                
+
                 yield return new object[] { HashAlgorithmName.SHA3_256.Name, (RSAProvider p) => p.SupportsSha3 };
                 yield return new object[] { HashAlgorithmName.SHA3_384.Name, (RSAProvider p) => p.SupportsSha3 };
                 yield return new object[] { HashAlgorithmName.SHA3_512.Name, (RSAProvider p) => p.SupportsSha3 };
