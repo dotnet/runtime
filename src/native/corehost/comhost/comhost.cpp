@@ -172,7 +172,7 @@ namespace
         return status;
     }
 
-    // COM activation state resolved from the runtime. It is set for the process lifetime.
+    // COM activation state resolved from the runtime. Cached for the lifetime of the loaded comhost module.
     struct com_activation_info
     {
         pal::string_t app_path;
