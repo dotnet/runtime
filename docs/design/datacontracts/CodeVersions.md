@@ -107,6 +107,7 @@ Data descriptors used:
 | ILCodeVersionNode | RejitState | ReJIT state of the node |
 | ILCodeVersionNode | ILAddress | Address of IL corresponding to `ILCodeVersionNode`|
 | ILCodeVersionNode | Source | a `CodeVersionSource` value indicating what produced this version (ReJIT, EnC, or unknown) |
+| ILCodeVersionNode | EnCVersion | for an EnC version, the EnC (edit) version number this node corresponds to |
 | ILCodeVersionNode | InstrumentedILMap | Embedded `InstrumentedILOffsetMapping` describing the instrumented IL offset mapping |
 | InstrumentedILOffsetMapping | Count | Number of instrumented IL offset map entries |
 | InstrumentedILOffsetMapping | Map | Pointer to the array of instrumented IL offset map entries |
@@ -137,6 +138,12 @@ private enum ILCodeVersionKind
     Synthetic = 2, // means Module and Token are set
 }
 ```
+
+### Contract Constants:
+
+| Constant Name | Value | Description |
+| --- | --- | --- |
+| `CorDB_DEFAULT_ENC_FUNCTION_VERSION` | 1 | The EnC version number of the original (unedited) IL. The synthetic default IL code version, and any version not produced by EnC, is treated as having this version. |
 
 Global variables used: *none*
 
@@ -429,8 +436,8 @@ CodeVersionSource ICodeVersions.GetSource(ILCodeVersionHandle ilCodeVersionHandl
 TargetNUInt ICodeVersions.GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle)
 {
     if (!ilCodeVersionHandle.IsExplicit)
-        return // CorDB_DEFAULT_ENC_FUNCTION_VERSION
-    return // node EnCVersion
+        return new TargetNUInt(CorDB_DEFAULT_ENC_FUNCTION_VERSION);
+    return AsNode(ilCodeVersionHandle).EnCVersion;
 }
 ```
 

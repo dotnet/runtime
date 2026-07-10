@@ -1302,7 +1302,7 @@ COR_ILMETHOD* MethodDesc::GetActiveILHeader()
         {
             CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion activeVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
-            if (!activeVersion.IsNull() && activeVersion.GetSource() != CodeVersionSource::kReJIT)
+            if (!activeVersion.IsNull() && activeVersion.GetSource() == CodeVersionSource::kEnC)
             {
                 return activeVersion.GetIL();
             }
@@ -1332,7 +1332,7 @@ COR_ILMETHOD* MethodDesc::GetILHeaderForNativeCode(PCODE nativeCodeStartAddress)
         if (!nativeCodeVersion.IsNull())
         {
             ILCodeVersion ilCodeVersion = nativeCodeVersion.GetILCodeVersion();
-            if (!ilCodeVersion.IsNull() && ilCodeVersion.GetSource() != CodeVersionSource::kReJIT)
+            if (!ilCodeVersion.IsNull() && ilCodeVersion.GetSource() == CodeVersionSource::kEnC)
             {
                 return ilCodeVersion.GetIL();
             }
