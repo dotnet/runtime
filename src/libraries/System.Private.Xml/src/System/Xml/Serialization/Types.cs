@@ -1019,7 +1019,8 @@ namespace System.Xml.Serialization
                     // answer while HasDefaultConstructor remains factually accurate.
                     flags |= TypeFlags.UsesCollectionBuilder;
                     flags &= ~TypeFlags.CtorInaccessible;
-                    exception = null; // suppress any earlier exception (e.g., no Add method)
+                    if ((flags & TypeFlags.Unsupported) == 0)
+                        exception = null; // suppress any earlier exception (e.g., no Add method)
                 }
             }
 
@@ -1384,8 +1385,6 @@ namespace System.Xml.Serialization
             return 0;
         }
 
-        // Returns the static factory MethodInfo identified by [CollectionBuilderAttribute] on collectionType,
-        // bound to the collection's element type, or null if not applicable.
         // Returns the element type for a [CollectionBuilder]-decorated single-T generic collection,
         // or null if the type has no [CollectionBuilder] attribute or isn't a single-arg generic.
         [RequiresUnreferencedCode("Looks up CollectionBuilderAttribute via reflection")]

@@ -272,7 +272,7 @@ public static partial class XmlSerializerTests
         var serializer = new XmlSerializer(typeof(ReadOnlyCollection<string>));
         string xml = Serialize(roc, null, () => serializer, skipStringCompare: true);
         var rtt = (ReadOnlyCollection<string>)Deserialize(serializer, xml)!;
-        Assert.Equal(roc, rtt);
+        Assert.Equal(roc.ToArray(), rtt.ToArray());
     }
 
     [Theory]
