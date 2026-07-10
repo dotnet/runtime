@@ -1238,15 +1238,7 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
 
     if (GetInterfaceType()->GetMethodTable()->HasVirtualStaticMethods())
     {
-        MethodTable::MethodIterator it(GetInterfaceType()->GetMethodTable());
-        for (; it.IsValid(); it.Next())
-        {
-            MethodDesc *pDeclMD = it.GetDeclMethodDesc();
-            if (pDeclMD->IsStatic() && pDeclMD->IsVirtual())
-            {
-                cSlotsTotal++;
-            }
-        }
+        cSlotsTotal = GetInterfaceType()->GetMethodTable()->GetNumMethods();
     }
 
     bmtInterfaceSlotImpl * pST = new (pStackingAllocator) bmtInterfaceSlotImpl[cSlotsTotal];
@@ -1262,7 +1254,7 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
         }
 
         bmtRTMethod * pCurMethod = new (pStackingAllocator)
-            bmtRTMethod(GetInterfaceType(), it.GetDeclMethodDesc());
+            bmtRTMethod(GetInterfaceType(), pDeclMD);
 
         if (pDeclMD->IsStatic())
         {
