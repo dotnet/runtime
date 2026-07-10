@@ -26,6 +26,10 @@
 
 #ifdef ENABLE_CONTRACTS_IMPL
 
+// Indicates that the EE contract vocabulary (GC_TRIGGERS and MODE_COOPERATIVE/PREEMPTIVE/ANY)
+// is available and enforced.
+#define ENABLE_EE_CONTRACTS
+
 class EEContract : public BaseContract
 {
   private:

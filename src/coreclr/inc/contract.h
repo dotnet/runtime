@@ -4,9 +4,6 @@
 // Contract.h
 //
 
-// ! I am the owner for issues in the contract *infrastructure*, not for every
-// ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
-// ! CONTRACT_VIOLATION, you will become the new owner of this file.
 //--------------------------------------------------------------------------------
 // CONTRACTS - User Reference
 //
@@ -215,17 +212,17 @@
 #endif
 
 
-// We only enable contracts in _DEBUG builds
+// We only enable contract data in _DEBUG builds and non-JIT builds.
 #if defined(_DEBUG) && !defined(DISABLE_CONTRACTS) && !defined(JIT_BUILD)
 #define ENABLE_CONTRACTS_DATA
 #endif
 
-// Also, we won't enable contracts if this is a DAC build.
-#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
+// Also, we won't enable contracts if a DAC or DBI build, or a cross build.
+#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(DBI_COMPILE) && !defined(CROSS_COMPILE)
 #define ENABLE_CONTRACTS
 #endif
 
-// Finally, only define the implementation parts of contracts if this isn't a DAC build.
+// Finally, only define the implementation parts of contracts if this isn't for an external access (that is, _DEBUG_IMPL).
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_IMPL
 #endif
@@ -234,6 +231,8 @@
 #include "clrtypes.h"
 #include "check.h"
 #include "staticcontract.h"
+#include "volatile.h"
+#include "cor.h"
 
 #ifdef ENABLE_CONTRACTS_DATA
 
@@ -655,7 +654,7 @@ public:
     UINT GetCombinedLockCount();
 };
 
-#endif // ENABLE_CONTRACTS
+#endif // ENABLE_CONTRACTS_DATA
 
 #ifdef ENABLE_CONTRACTS_IMPL
 // Create ClrDebugState.
@@ -681,8 +680,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
                      const char *szFile,
                      int   lineNum
                      );
-
-#endif
+#endif // ENABLE_CONTRACTS_IMPL
 
 // This needs to be defined up here b/c it is used by ASSERT_CHECK which is used by the contract impl
 #ifdef _DEBUG
@@ -775,7 +773,7 @@ public:
 #define END_DEBUG_ONLY_CODE
 #define ENTER_DEBUG_ONLY_CODE
 #define LEAVE_DEBUG_ONLY_CODE
-#endif
+#endif // ENABLE_CONTRACTS_IMPL
 
 #else // _DEBUG
 #define DEBUG_ONLY_REGION()
@@ -2092,6 +2090,5 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
 #define AFTER_CONTRACTS
-#include "volatile.h"
 
 #endif  // CONTRACT_H_

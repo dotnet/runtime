@@ -1824,7 +1824,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // trying to get a symbol reader. This has to be done once per
             // Assembly.
             ReleaseHolder<IUnknown> pUnk;
-            hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
+            hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, (LPVOID*)&pUnk);
             if (SUCCEEDED(hr))
                 hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
         }
