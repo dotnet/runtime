@@ -502,5 +502,51 @@ namespace System.Tests
             yield return new object[] { Decimal128.NaN, canonical | (UInt128)0xFFFFF };
             yield return new object[] { Decimal128.NaN, canonical | (((UInt128)1 << 110) - 1) };
         }
+
+        public static IEnumerable<object[]> UnaryNegation_TestData()
+        {
+            yield return new object[] { new UInt128(0x3040_0000_0000_0000, 0), new UInt128(0xB040_0000_0000_0000, 0) }; // +0 -> -0
+            yield return new object[] { new UInt128(0xB040_0000_0000_0000, 0), new UInt128(0x3040_0000_0000_0000, 0) }; // -0 -> +0
+            yield return new object[] { new UInt128(0x7800_0000_0000_0000, 0), new UInt128(0xF800_0000_0000_0000, 0) }; // +Infinity -> -Infinity
+            yield return new object[] { new UInt128(0xF800_0000_0000_0000, 0), new UInt128(0x7800_0000_0000_0000, 0) }; // -Infinity -> +Infinity
+            yield return new object[] { new UInt128(0xFC00_0000_0000_0000, 0), new UInt128(0x7C00_0000_0000_0000, 0) }; // NaN -> sign-flipped NaN
+            yield return new object[] { new UInt128(0x7C00_0000_0000_0000, 0), new UInt128(0xFC00_0000_0000_0000, 0) };
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryNegation_TestData))]
+        public static void op_UnaryNegation(UInt128 value, UInt128 expected)
+        {
+            Decimal128 result = -Unsafe.BitCast<UInt128, Decimal128>(value);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [Theory]
+        [InlineData("123")]
+        [InlineData("-123")]
+        [InlineData("4567.891")]
+        [InlineData("-4567.891")]
+        [InlineData("9.999999999999999999999999999999999e6144")]
+        [InlineData("1e-6176")]
+        public static void op_UnaryNegation_FiniteRoundTrips(string value)
+        {
+            Decimal128 d = Decimal128.Parse(value, CultureInfo.InvariantCulture);
+            Decimal128 negated = -d;
+
+            UInt128 dBits = Unsafe.BitCast<Decimal128, UInt128>(d);
+            UInt128 negatedBits = Unsafe.BitCast<Decimal128, UInt128>(negated);
+
+            Assert.Equal(dBits ^ new UInt128(0x8000_0000_0000_0000, 0), negatedBits); // only the sign bit differs
+            Assert.Equal(dBits, Unsafe.BitCast<Decimal128, UInt128>(-negated)); // double negation is identity
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryNegation_TestData))]
+        public static void op_UnaryPlus(UInt128 value, UInt128 expected)
+        {
+            _ = expected;
+            Decimal128 d = Unsafe.BitCast<UInt128, Decimal128>(value);
+            Assert.Equal(value, Unsafe.BitCast<Decimal128, UInt128>(+d));
+        }
     }
 }

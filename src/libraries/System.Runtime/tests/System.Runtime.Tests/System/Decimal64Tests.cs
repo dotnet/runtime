@@ -504,5 +504,55 @@ namespace System.Tests
             yield return new object[] { Decimal64.NaN, canonical | 0x0000_0000_000F_FFFFUL };
             yield return new object[] { Decimal64.NaN, canonical | 0x03FF_FFFF_FFFF_FFFFUL };
         }
+
+        public static IEnumerable<object[]> UnaryNegation_TestData()
+        {
+            yield return new object[] { 0x31C0_0000_0000_0000UL, 0xB1C0_0000_0000_0000UL }; // +0 -> -0
+            yield return new object[] { 0xB1C0_0000_0000_0000UL, 0x31C0_0000_0000_0000UL }; // -0 -> +0
+            yield return new object[] { 0x7800_0000_0000_0000UL, 0xF800_0000_0000_0000UL }; // +Infinity -> -Infinity
+            yield return new object[] { 0xF800_0000_0000_0000UL, 0x7800_0000_0000_0000UL }; // -Infinity -> +Infinity
+            yield return new object[] { 0xFC00_0000_0000_0000UL, 0x7C00_0000_0000_0000UL }; // NaN -> sign-flipped NaN
+            yield return new object[] { 0x7C00_0000_0000_0000UL, 0xFC00_0000_0000_0000UL };
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryNegation_TestData))]
+        public static void op_UnaryNegation(ulong value, ulong expected)
+        {
+            Decimal64 result = -Unsafe.BitCast<ulong, Decimal64>(value);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
+        [Theory]
+        [InlineData("123")]
+        [InlineData("-123")]
+        [InlineData("4567.891")]
+        [InlineData("-4567.891")]
+        [InlineData("9.999999999999999e384")]
+        [InlineData("1e-398")]
+        public static void op_UnaryNegation_FiniteRoundTrips(string value)
+        {
+            Decimal64 d = Decimal64.Parse(value, CultureInfo.InvariantCulture);
+            Decimal64 negated = -d;
+
+            ulong dBits = Unsafe.BitCast<Decimal64, ulong>(d);
+            ulong negatedBits = Unsafe.BitCast<Decimal64, ulong>(negated);
+
+            Assert.Equal(dBits ^ 0x8000_0000_0000_0000UL, negatedBits); // only the sign bit differs
+            Assert.Equal(dBits, Unsafe.BitCast<Decimal64, ulong>(-negated)); // double negation is identity
+        }
+
+        [Theory]
+        [InlineData(0x31C0_0000_0000_0000UL)] // +0
+        [InlineData(0xB1C0_0000_0000_0000UL)] // -0
+        [InlineData(0x7800_0000_0000_0000UL)] // +Infinity
+        [InlineData(0xF800_0000_0000_0000UL)] // -Infinity
+        [InlineData(0xFC00_0000_0000_0000UL)] // NaN
+        [InlineData(0x2FE8_6F26_FC0F_FFFFUL)] // arbitrary finite
+        public static void op_UnaryPlus(ulong value)
+        {
+            Decimal64 d = Unsafe.BitCast<ulong, Decimal64>(value);
+            Assert.Equal(value, Unsafe.BitCast<Decimal64, ulong>(+d));
+        }
     }
 }

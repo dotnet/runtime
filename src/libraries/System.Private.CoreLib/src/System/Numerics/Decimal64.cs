@@ -259,6 +259,16 @@ namespace System.Numerics
             return Number.FormatDecimalIeee754<Decimal64, ulong>(_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
+        /// <summary>Computes the unary plus of a value.</summary>
+        /// <param name="value">The value for which to compute the unary plus.</param>
+        /// <returns><paramref name="value" /> unchanged.</returns>
+        public static Decimal64 operator +(Decimal64 value) => value;
+
+        /// <summary>Computes the unary negation of a value.</summary>
+        /// <param name="value">The value for which to compute the unary negation.</param>
+        /// <returns>The unary negation of <paramref name="value" />.</returns>
+        public static Decimal64 operator -(Decimal64 value) => new Decimal64(value._value ^ SignMask);
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.BufferLength => Number.Decimal64NumberBufferLength;

@@ -498,5 +498,55 @@ namespace System.Tests
             yield return new object[] { Decimal32.NaN, canonical | 0x000F_FFFFU };
             yield return new object[] { Decimal32.NaN, canonical | 0x03FF_FFFFU };
         }
+
+        public static IEnumerable<object[]> UnaryNegation_TestData()
+        {
+            yield return new object[] { 0x3280_0000U, 0xB280_0000U }; // +0 -> -0
+            yield return new object[] { 0xB280_0000U, 0x3280_0000U }; // -0 -> +0
+            yield return new object[] { 0x7800_0000U, 0xF800_0000U }; // +Infinity -> -Infinity
+            yield return new object[] { 0xF800_0000U, 0x7800_0000U }; // -Infinity -> +Infinity
+            yield return new object[] { 0xFC00_0000U, 0x7C00_0000U }; // NaN -> sign-flipped NaN
+            yield return new object[] { 0x7C00_0000U, 0xFC00_0000U };
+        }
+
+        [Theory]
+        [MemberData(nameof(UnaryNegation_TestData))]
+        public static void op_UnaryNegation(uint value, uint expected)
+        {
+            Decimal32 result = -Unsafe.BitCast<uint, Decimal32>(value);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        [Theory]
+        [InlineData("123")]
+        [InlineData("-123")]
+        [InlineData("4567.891")]
+        [InlineData("-4567.891")]
+        [InlineData("9.999999e96")]
+        [InlineData("1e-101")]
+        public static void op_UnaryNegation_FiniteRoundTrips(string value)
+        {
+            Decimal32 d = Decimal32.Parse(value, CultureInfo.InvariantCulture);
+            Decimal32 negated = -d;
+
+            uint dBits = Unsafe.BitCast<Decimal32, uint>(d);
+            uint negatedBits = Unsafe.BitCast<Decimal32, uint>(negated);
+
+            Assert.Equal(dBits ^ 0x8000_0000U, negatedBits); // only the sign bit differs
+            Assert.Equal(dBits, Unsafe.BitCast<Decimal32, uint>(-negated)); // double negation is identity
+        }
+
+        [Theory]
+        [InlineData(0x3280_0000U)] // +0
+        [InlineData(0xB280_0000U)] // -0
+        [InlineData(0x7800_0000U)] // +Infinity
+        [InlineData(0xF800_0000U)] // -Infinity
+        [InlineData(0xFC00_0000U)] // NaN
+        [InlineData(0x00F4_9F87U)] // +9.999999e-90 (arbitrary finite)
+        public static void op_UnaryPlus(uint value)
+        {
+            Decimal32 d = Unsafe.BitCast<uint, Decimal32>(value);
+            Assert.Equal(value, Unsafe.BitCast<Decimal32, uint>(+d));
+        }
     }
 }

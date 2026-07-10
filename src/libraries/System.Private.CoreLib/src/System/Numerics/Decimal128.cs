@@ -252,6 +252,16 @@ namespace System.Numerics
             return Number.FormatDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower), format, NumberFormatInfo.GetInstance(provider));
         }
 
+        /// <summary>Computes the unary plus of a value.</summary>
+        /// <param name="value">The value for which to compute the unary plus.</param>
+        /// <returns><paramref name="value" /> unchanged.</returns>
+        public static Decimal128 operator +(Decimal128 value) => value;
+
+        /// <summary>Computes the unary negation of a value.</summary>
+        /// <param name="value">The value for which to compute the unary negation.</param>
+        /// <returns>The unary negation of <paramref name="value" />.</returns>
+        public static Decimal128 operator -(Decimal128 value) => new Decimal128(value._upper ^ SignMaskUpper, value._lower);
+
         private static readonly UInt128[] UInt128Powers10 =
             [
                 new UInt128(0, 1),
