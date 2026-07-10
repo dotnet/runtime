@@ -33,7 +33,7 @@ public static class SingleBit
     {
         // A constant bit index folds to a plain 'or' with an immediate; it must not use 'bts'.
         // X64-NOT: bts
-        // X64: or {{[a-z0-9]+}}, 0x400
+        // X64: or {{[a-z0-9]+}}, {{(1024|0x400)}}
         return a | (1 << 10);
     }
 

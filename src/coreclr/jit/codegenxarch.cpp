@@ -1156,10 +1156,13 @@ void CodeGen::genCodeForBitOp(GenTreeOp* treeNode)
 
     instruction ins = treeNode->OperIs(GT_BIT_SET) ? INS_bts : treeNode->OperIs(GT_BIT_CLEAR) ? INS_btr : INS_btc;
 
-    // LSRA marks op2 (the bit index) as delayFree for these read-modify-write nodes, so the target
-    // register can never alias the index. That guarantees the `mov` below (which loads the value into
-    // the destination) does not clobber the index before `bts`/`btr`/`btc` reads it.
-    assert(targetReg != op2->GetRegNum());
+    // These are read-modify-write: the `mov` below loads op1 (the value) into the destination and
+    // then `bts`/`btr`/`btc` reads the bit index from op2. LSRA marks op2 as delayFree except when
+    // op2 shares op1's interval and it's their last use -- i.e. `x <op> (1 << x)`, where op1 and op2
+    // are the same value (see AddDelayFreeUses). So the destination can only alias op2 when op1 and
+    // op2 hold the same value, in which case the `mov` writes that same value back into op2's
+    // register and nothing is clobbered before the bit-test reads it. When the operands are distinct
+    // values, delayFree guarantees the destination and op2 use different registers.
 
     // These are read-modify-write: the destination register also supplies the value operand.
     inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
