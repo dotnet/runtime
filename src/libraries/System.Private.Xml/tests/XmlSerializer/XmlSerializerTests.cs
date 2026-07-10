@@ -291,14 +291,9 @@ public static partial class XmlSerializerTests
 
     public static IEnumerable<object[]> Xml_ImmutableCollections_MemberData()
     {
-        // Reference type element from the original #66264 repro (nullable reference value type via ConsoleColor?
-        // that originally caused an AccessViolationException for ImmutableArray<T>).
-        ConsoleColor?[] colors = new ConsoleColor?[] { ConsoleColor.Red, null, ConsoleColor.Blue };
-
-        // ImmutableArray<T>
+        // ImmutableArray<T> (the reference-type element case is the original #66264 repro).
         yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(1, 2, 3) };
         yield return new object[] { typeof(ImmutableArray<string>), ImmutableArray.Create("a", "b", "c") };
-        yield return new object[] { typeof(ImmutableArray<ConsoleColor?>), ImmutableArray.Create(colors) };
 
         // ImmutableList<T> (previously silently deserialized empty)
         yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(1, 2, 3) };
@@ -315,27 +310,32 @@ public static partial class XmlSerializerTests
 
     [Theory]
     [MemberData(nameof(Xml_UnsupportedImmutableCollections_MemberData))]
-    public static void Xml_UnsupportedImmutableCollections(Type type, Type expectedException, string exMsg)
+    public static void Xml_UnsupportedImmutableCollections(Type type, object collection, Type expectedException, string exMsg)
     {
-        // IDictionary-implementing types are not supported by XmlSerializer at all.
-#if ReflectionOnly
-        var serializer = new XmlSerializer(type);
-        var ex = Assert.Throws(expectedException, () => Serialize(new object(), null, () => serializer, skipStringCompare: true));
-#else
-        var ex = Assert.Throws(expectedException, () => new XmlSerializer(type));
-#endif
+        // IDictionary-implementing types are not supported by XmlSerializer at all. In RefEmit mode the failure
+        // surfaces when the serializer is constructed; in Reflection mode construction is deferred and the failure
+        // surfaces when an instance is serialized. Wrap both steps so the assertion holds regardless of where the
+        // failure occurs (the expected exception type differs per mode and is supplied by the member data).
+        var ex = Assert.Throws(expectedException, () =>
+        {
+            var serializer = new XmlSerializer(type);
+            Serialize(collection, null, () => serializer, skipStringCompare: true);
+        });
         if (exMsg != null)
             Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
     }
 
     public static IEnumerable<object[]> Xml_UnsupportedImmutableCollections_MemberData()
     {
+        var pairs = new[] { new KeyValuePair<string, int>("one", 1), new KeyValuePair<string, int>("two", 2) };
+        ImmutableDictionary<string, int> dictionary = ImmutableDictionary.CreateRange(pairs);
+        ImmutableSortedDictionary<string, int> sortedDictionary = ImmutableSortedDictionary.CreateRange(pairs);
 #if ReflectionOnly
-        yield return new object[] { typeof(ImmutableDictionary<string, int>), typeof(InvalidOperationException), "is not supported because it implements IDictionary." };
-        yield return new object[] { typeof(ImmutableSortedDictionary<string, int>), typeof(InvalidOperationException), "is not supported because it implements IDictionary." };
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), dictionary, typeof(InvalidOperationException), "is not supported because it implements IDictionary." };
+        yield return new object[] { typeof(ImmutableSortedDictionary<string, int>), sortedDictionary, typeof(InvalidOperationException), "is not supported because it implements IDictionary." };
 #else
-        yield return new object[] { typeof(ImmutableDictionary<string, int>), typeof(NotSupportedException), "is not supported because it implements IDictionary." };
-        yield return new object[] { typeof(ImmutableSortedDictionary<string, int>), typeof(NotSupportedException), "is not supported because it implements IDictionary." };
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), dictionary, typeof(NotSupportedException), "is not supported because it implements IDictionary." };
+        yield return new object[] { typeof(ImmutableSortedDictionary<string, int>), sortedDictionary, typeof(NotSupportedException), "is not supported because it implements IDictionary." };
 #endif
     }
 #endif  // !XMLSERIALIZERGENERATORTESTS

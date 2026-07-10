@@ -1014,9 +1014,9 @@ namespace System.Xml.Serialization
                 {
                     // Builder-backed types don't have (or shouldn't use) a public parameterless ctor —
                     // that's the whole point of [CollectionBuilder]. Do NOT set HasDefaultConstructor.
-                    // Instead, CannotNew / CheckNeedConstructor now also honor UsesCollectionBuilder so
-                    // downstream checks that ask "can we produce an instance of this?" get the right
-                    // answer while HasDefaultConstructor remains factually accurate.
+                     // Instead, CheckNeedConstructor now also honors UsesCollectionBuilder so downstream
+                     // checks that ask "can we produce an instance of this?" get the right answer while
+                     // HasDefaultConstructor remains factually accurate.
                     flags |= TypeFlags.UsesCollectionBuilder;
                     flags &= ~TypeFlags.CtorInaccessible;
                     if ((flags & TypeFlags.Unsupported) == 0)

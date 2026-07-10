@@ -1477,7 +1477,7 @@ namespace System.Xml.Serialization
             foreach (PropertyInfo p in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 ParameterInfo[] pars = p.GetIndexParameters();
-                if (pars.Length == 1 && pars[0].ParameterType == typeof(int) && p.GetMethod != null)
+                if (pars.Length == 1 && pars[0].ParameterType == typeof(int) && p.GetMethod is { IsPublic: true })
                 {
                     return true;
                 }
