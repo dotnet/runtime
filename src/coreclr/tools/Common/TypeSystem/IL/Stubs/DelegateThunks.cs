@@ -335,7 +335,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdLoc(startLocal);
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
-            codeStream.EmitLdc(Context.Target.PointerSize);
+            codeStream.EmitLdc(wrapper.GetElementSize().AsInt);
             codeStream.Emit(ILOpcode.mul);
             codeStream.Emit(ILOpcode.add);
             codeStream.EmitStLoc(endLocal);
@@ -363,7 +363,7 @@ namespace Internal.IL.Stubs
 
             // Increment the ref
             codeStream.EmitLdLoc(startLocal);
-            codeStream.EmitLdc(Context.Target.PointerSize);
+            codeStream.EmitLdc(wrapper.GetElementSize().AsInt);
             codeStream.Emit(ILOpcode.add);
             codeStream.EmitStLoc(startLocal);
 

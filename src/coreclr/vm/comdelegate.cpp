@@ -2039,12 +2039,10 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
         LocalDesc refLocalDesc(TypeHandle(pDelegateMT).MakeByRef());
-        DWORD dwStartNum = pCode->NewLocal(refLocalDesc);
-        DWORD dwEndNum = pCode->NewLocal(refLocalDesc);
+        DWORD dwCurrentRef = pCode->NewLocal(refLocalDesc);
+        DWORD dwEndRef = pCode->NewLocal(refLocalDesc);
 
-        DWORD dwReturnValNum = -1;
-        if (fReturnVal)
-            dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
+        DWORD dwReturnValNum = fReturnVal ? pCode->NewLocal(sig.GetRetTypeHandleNT()) : -1;
 
         // Load start and end refs
         pCode->EmitLoadThis();
@@ -2066,16 +2064,16 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         mdToken methodSpecSigToken = pCode->GetSigToken(gadrSig, sigLen);
 
         pCode->EmitCALL(pCode->GetToken(gadr, mdTokenNil, methodSpecSigToken), 1, 1);
-        pCode->EmitSTLOC(dwStartNum);
+        pCode->EmitSTLOC(dwCurrentRef);
 
         // Get end ref from adding count
-        pCode->EmitLDLOC(dwStartNum);
+        pCode->EmitLDLOC(dwCurrentRef);
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-        pCode->EmitLDC(TARGET_POINTER_SIZE);
+        pCode->EmitLDC(th.GetSize());
         pCode->EmitMUL();
         pCode->EmitADD();
-        pCode->EmitSTLOC(dwEndNum);
+        pCode->EmitSTLOC(dwEndRef);
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
         // Label_nextDelegate:
@@ -2084,21 +2082,17 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 #ifdef DEBUGGING_SUPPORTED
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
         pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
-        pCode->EmitCONV_I();
-        pCode->EmitLDIND_I4();
+        pCode->EmitCONV_U();
+        pCode->EmitLDIND_U4();
         // g_multicastDelegateTraceActiveCount == 0
         pCode->EmitLDC(0);
-        
+
         ILCodeLabel *realLoopStart = pCode->NewCodeLabel();
         pCode->EmitBEQ(realLoopStart);
 
         // Call debugger tracing
         pCode->EmitLoadThis();
-        pCode->EmitLDLOC(dwStartNum);
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_LIST)));
-        pCode->EmitCALL(pCode->GetToken(gadr, mdTokenNil, methodSpecSigToken), 1, 1);
-        pCode->EmitSUB();
+        pCode->EmitLDLOC(dwCurrentRef);
         pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
 
         // Label_realLoopStart:
@@ -2106,7 +2100,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 #endif // DEBUGGING_SUPPORTED
 
         // Load the delegate
-        pCode->EmitLDLOC(dwStartNum);
+        pCode->EmitLDLOC(dwCurrentRef);
         pCode->EmitLDIND_REF();
 
         // Load the arguments
@@ -2121,14 +2115,14 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
             pCode->EmitSTLOC(dwReturnValNum);
 
         // Increment the ref
-        pCode->EmitLDLOC(dwStartNum);
-        pCode->EmitLDC(TARGET_POINTER_SIZE);
+        pCode->EmitLDLOC(dwCurrentRef);
+        pCode->EmitLDC(th.GetSize());
         pCode->EmitADD();
-        pCode->EmitSTLOC(dwStartNum);
+        pCode->EmitSTLOC(dwCurrentRef);
 
         // Compare start ref with end. If less than branch to nextDelegate
-        pCode->EmitLDLOC(dwStartNum);
-        pCode->EmitLDLOC(dwEndNum);
+        pCode->EmitLDLOC(dwCurrentRef);
+        pCode->EmitLDLOC(dwEndRef);
         pCode->EmitBLT(nextDelegate);
 
         // Load the return value, return value from the last delegate call is returned

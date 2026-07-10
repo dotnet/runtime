@@ -17,7 +17,7 @@ namespace System
     [ComVisible(true)]
     public abstract partial class MulticastDelegate : Delegate
     {
-        private object? _invocationList;
+        internal object? _invocationList;
 
         // This is set under 3 circumstances
         // 1. Multicast delegate
