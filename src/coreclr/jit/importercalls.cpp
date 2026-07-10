@@ -4582,8 +4582,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Half_op_Subtraction:
             case NI_System_Half_op_Multiply:
             case NI_System_Half_op_Division:
-            case NI_System_Half_Max:
-            case NI_System_Half_Min:
             {
 #if defined(TARGET_XARCH)
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
@@ -12411,14 +12409,6 @@ NamedIntrinsic Compiler::lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, 
     {
         result = NI_System_Half_op_Explicit;
     }
-    else if (strcmp(methodName, "Max") == 0)
-    {
-        result = NI_System_Half_Max;
-    }
-    else if (strcmp(methodName, "Min") == 0)
-    {
-        result = NI_System_Half_Min;
-    }
     else if (strcmp(methodName, "Sqrt") == 0)
     {
         result = NI_System_Half_Sqrt;
@@ -12480,10 +12470,6 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
             return NI_AVX10v1_MultiplyScalar;
         case NI_System_Half_op_Division:
             return NI_AVX10v1_DivideScalar;
-        case NI_System_Half_Max:
-            return NI_AVX10v1_MaxScalar;
-        case NI_System_Half_Min:
-            return NI_AVX10v1_MinScalar;
         case NI_System_Half_Sqrt:
             return NI_AVX10v1_SqrtScalar;
         case NI_System_Half_ReciprocalEstimate:

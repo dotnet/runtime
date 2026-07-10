@@ -26,8 +26,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_SpanHelpers_Memmove,
 
     NI_System_Half_FusedMultiplyAdd,
-    NI_System_Half_Max,
-    NI_System_Half_Min,
     NI_System_Half_ReciprocalEstimate,
     NI_System_Half_ReciprocalSqrtEstimate,
     NI_System_Half_Round,
