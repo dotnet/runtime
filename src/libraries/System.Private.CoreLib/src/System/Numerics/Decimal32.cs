@@ -34,6 +34,8 @@ namespace System.Numerics
         // which stores zero with the biased exponent rather than the minimum exponent.
         private const uint ZeroValue = 0x3280_0000;
         private const uint NegativeZeroValue = 0xB280_0000;
+        // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
+        private const uint OneValue = ZeroValue | 0x1;
         private const uint QuietNaNValue = 0xFC00_0000;
         private const uint G0G1Mask = 0x6000_0000;
         private const uint SignMask = 0x8000_0000;
@@ -267,6 +269,22 @@ namespace System.Numerics
         /// <param name="value">The value for which to compute the unary negation.</param>
         /// <returns>The unary negation of <paramref name="value" />.</returns>
         public static Decimal32 operator -(Decimal32 value) => new Decimal32(value._value ^ SignMask);
+
+        /// <summary>Increments a value.</summary>
+        /// <param name="value">The value to increment.</param>
+        /// <returns>The result of incrementing <paramref name="value" /> by one.</returns>
+        public static Decimal32 operator ++(Decimal32 value)
+        {
+            return new Decimal32(Number.AddDecimalIeee754<Decimal32, uint>(value._value, OneValue));
+        }
+
+        /// <summary>Decrements a value.</summary>
+        /// <param name="value">The value to decrement.</param>
+        /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
+        public static Decimal32 operator --(Decimal32 value)
+        {
+            return new Decimal32(Number.AddDecimalIeee754<Decimal32, uint>(value._value, OneValue ^ SignMask));
+        }
 
         /// <summary>Adds two values together to compute their sum.</summary>
         /// <param name="left">The value to which <paramref name="right" /> is added.</param>

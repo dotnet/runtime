@@ -27,6 +27,8 @@ namespace System.Numerics
         // which stores zero with the biased exponent rather than the minimum exponent.
         private const ulong ZeroValue = 0x31C0_0000_0000_0000;
         private const ulong NegativeZeroValue = 0xB1C0_0000_0000_0000;
+        // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
+        private const ulong OneValue = ZeroValue | 0x1;
         private const ulong QuietNaNValue = 0xFC00_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
@@ -268,6 +270,22 @@ namespace System.Numerics
         /// <param name="value">The value for which to compute the unary negation.</param>
         /// <returns>The unary negation of <paramref name="value" />.</returns>
         public static Decimal64 operator -(Decimal64 value) => new Decimal64(value._value ^ SignMask);
+
+        /// <summary>Increments a value.</summary>
+        /// <param name="value">The value to increment.</param>
+        /// <returns>The result of incrementing <paramref name="value" /> by one.</returns>
+        public static Decimal64 operator ++(Decimal64 value)
+        {
+            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(value._value, OneValue));
+        }
+
+        /// <summary>Decrements a value.</summary>
+        /// <param name="value">The value to decrement.</param>
+        /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
+        public static Decimal64 operator --(Decimal64 value)
+        {
+            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(value._value, OneValue ^ SignMask));
+        }
 
         /// <summary>Adds two values together to compute their sum.</summary>
         /// <param name="left">The value to which <paramref name="right" /> is added.</param>

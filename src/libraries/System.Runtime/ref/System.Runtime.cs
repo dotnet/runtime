@@ -11406,6 +11406,8 @@ namespace System.Numerics
 
         public static Decimal32 operator +(Decimal32 value) { throw null; }
         public static Decimal32 operator -(Decimal32 value) { throw null; }
+        public static Decimal32 operator ++(Decimal32 value) { throw null; }
+        public static Decimal32 operator --(Decimal32 value) { throw null; }
         public static Decimal32 operator +(Decimal32 left, Decimal32 right) { throw null; }
         public static Decimal32 operator -(Decimal32 left, Decimal32 right) { throw null; }
         public static Decimal32 operator *(Decimal32 left, Decimal32 right) { throw null; }
@@ -11462,6 +11464,8 @@ namespace System.Numerics
 
         public static Decimal64 operator +(Decimal64 value) { throw null; }
         public static Decimal64 operator -(Decimal64 value) { throw null; }
+        public static Decimal64 operator ++(Decimal64 value) { throw null; }
+        public static Decimal64 operator --(Decimal64 value) { throw null; }
         public static Decimal64 operator +(Decimal64 left, Decimal64 right) { throw null; }
         public static Decimal64 operator -(Decimal64 left, Decimal64 right) { throw null; }
         public static Decimal64 operator *(Decimal64 left, Decimal64 right) { throw null; }
@@ -11518,6 +11522,8 @@ namespace System.Numerics
 
         public static Decimal128 operator +(Decimal128 value) { throw null; }
         public static Decimal128 operator -(Decimal128 value) { throw null; }
+        public static Decimal128 operator ++(Decimal128 value) { throw null; }
+        public static Decimal128 operator --(Decimal128 value) { throw null; }
         public static Decimal128 operator +(Decimal128 left, Decimal128 right) { throw null; }
         public static Decimal128 operator -(Decimal128 left, Decimal128 right) { throw null; }
         public static Decimal128 operator *(Decimal128 left, Decimal128 right) { throw null; }

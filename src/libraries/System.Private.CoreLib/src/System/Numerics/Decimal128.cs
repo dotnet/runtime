@@ -33,6 +33,8 @@ namespace System.Numerics
         // which stores zero with the biased exponent rather than the minimum exponent.
         private static UInt128 ZeroValue => new UInt128(0x3040_0000_0000_0000, 0);
         private static UInt128 NegativeZeroValue => new UInt128(0xB040_0000_0000_0000, 0);
+        // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
+        private static UInt128 OneValue => new UInt128(0x3040_0000_0000_0000, 1);
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
@@ -261,6 +263,25 @@ namespace System.Numerics
         /// <param name="value">The value for which to compute the unary negation.</param>
         /// <returns>The unary negation of <paramref name="value" />.</returns>
         public static Decimal128 operator -(Decimal128 value) => new Decimal128(value._upper ^ SignMaskUpper, value._lower);
+
+        /// <summary>Increments a value.</summary>
+        /// <param name="value">The value to increment.</param>
+        /// <returns>The result of incrementing <paramref name="value" /> by one.</returns>
+        public static Decimal128 operator ++(Decimal128 value)
+        {
+            UInt128 result = Number.AddDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), OneValue);
+            return new Decimal128(result);
+        }
+
+        /// <summary>Decrements a value.</summary>
+        /// <param name="value">The value to decrement.</param>
+        /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
+        public static Decimal128 operator --(Decimal128 value)
+        {
+            UInt128 negativeOne = new UInt128(OneValue.Upper ^ SignMaskUpper, OneValue.Lower);
+            UInt128 result = Number.AddDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), negativeOne);
+            return new Decimal128(result);
+        }
 
         /// <summary>Adds two values together to compute their sum.</summary>
         /// <param name="left">The value to which <paramref name="right" /> is added.</param>
