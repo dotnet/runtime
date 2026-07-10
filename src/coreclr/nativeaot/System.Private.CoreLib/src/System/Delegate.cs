@@ -356,6 +356,12 @@ namespace System
             }
         }
 
+        internal object GetTargetForSingleCastInstanceDelegate()
+        {
+            Debug.Assert(HasSingleTarget && Target == _target && _target != null);
+            return _target;
+        }
+
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 
@@ -484,7 +490,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        protected virtual Delegate CombineImpl(Delegate? d)
+        protected Delegate CombineImpl(Delegate? d)
         {
             if (d is null)
                 return this;
@@ -602,7 +608,7 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        protected virtual Delegate? RemoveImpl(Delegate d)
+        protected Delegate? RemoveImpl(Delegate? d)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
@@ -671,7 +677,7 @@ namespace System
             return this;
         }
 
-        public virtual Delegate[] GetInvocationList()
+        public Delegate[] GetInvocationList()
         {
             if (_helperObject is Wrapper[] invocationList)
             {

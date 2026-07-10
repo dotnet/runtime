@@ -631,8 +631,8 @@ public:
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
 
 #ifdef FEATURE_SIMD
-    unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-#endif                                       // FEATURE_SIMD
+    unsigned char lvIsBitcastToSimd : 1; // This tracks whether the lclvar was bitcast to a simd type
+#endif                                   // FEATURE_SIMD
 
     unsigned char lvRegStruct : 1; // This is a reg-sized non-field-addressed struct.
 
@@ -836,13 +836,13 @@ public:
     /////////////////////
 
 #ifdef FEATURE_SIMD
-    // Is this is a SIMD struct which is used for SIMD intrinsic?
-    bool lvIsUsedInSIMDIntrinsic() const
+    // Is this a TY_STRUCT which is bitcast to a TYP_SIMD
+    bool IsBitcastToSimd() const
     {
-        return lvUsedInSIMDIntrinsic;
+        return lvIsBitcastToSimd;
     }
 #else
-    bool lvIsUsedInSIMDIntrinsic() const
+    bool IsBitcastToSimd() const
     {
         return false;
     }
@@ -2409,6 +2409,11 @@ class FlowGraphTryRegion
     // region to some descendant region.
     jitstd::vector<FlowEdge*> m_entryEdges;
 
+    // In-try blocks that have no flow-graph predecessors. The wasm DFS will not
+    // reach them via normal succs, so they are surfaced as fake successors of
+    // the try entry by FgWasm::VisitWasmSuccs.
+    jitstd::vector<BasicBlock*> m_unreachableBlocks;
+
     bool m_requiresRuntimeResumption;
     bool m_hasSideEntry;
 
@@ -2449,6 +2454,11 @@ public:
     const jitstd::vector<FlowEdge*>& EntryEdges() const
     {
         return m_entryEdges;
+    }
+
+    const jitstd::vector<BasicBlock*>& UnreachableBlocks() const
+    {
+        return m_unreachableBlocks;
     }
 
     // True if resumption from a catch in this or in an enclosed
@@ -3394,6 +3404,10 @@ public:
                                var_types             type,
                                const DebugInfo&      di = DebugInfo());
 
+    GenTreeCall* gtNewUserCallNode(CORINFO_METHOD_HANDLE handle,
+                                   var_types             type,
+                                   const DebugInfo&      di = DebugInfo());
+
     GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(
@@ -3417,10 +3431,6 @@ public:
         genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
 
     GenTreeFieldList* gtNewFieldList();
-
-#ifdef FEATURE_SIMD
-    void SetOpLclRelatedToSIMDIntrinsic(GenTree* op);
-#endif
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
@@ -3573,6 +3583,7 @@ public:
 
     GenTree* gtNewSimdGetIndicesNode(var_types type, var_types simdBaseType, unsigned simdSize);
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     GenTree* gtNewSimdGetLowerNode(var_types   type,
                                    GenTree*    op1,
                                    var_types   simdBaseType,
@@ -3582,6 +3593,7 @@ public:
                                    GenTree*    op1,
                                    var_types   simdBaseType,
                                    unsigned    simdSize);
+#endif  // !TARGET_XARCH && !TARGET_ARM64
 
     GenTree* gtNewSimdIsEvenIntegerNode(var_types   type,
                                         GenTree*    op1,
@@ -3773,6 +3785,7 @@ public:
                                       var_types   simdBaseType,
                                       unsigned    simdSize);
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     GenTree* gtNewSimdWithLowerNode(var_types   type,
                                     GenTree*    op1,
                                     GenTree*    op2,
@@ -3784,6 +3797,7 @@ public:
                                     GenTree*    op2,
                                     var_types   simdBaseType,
                                     unsigned    simdSize);
+#endif  // !TARGET_XARCH && !TARGET_ARM64
 
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
@@ -3964,6 +3978,7 @@ public:
     bool gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity);
 
     GenTree* gtReverseCond(GenTree* tree);
+    bool     gtTryReverseCond(GenTree* tree);
 
     static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
@@ -5049,6 +5064,7 @@ private:
         // This call is a task await
         PREFIX_IS_TASK_AWAIT = 0x00000080,
         PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
+        PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -5088,7 +5104,7 @@ public:
     {
         CORINFO_CONTEXT_HANDLE  tokenLookupContext;      // The class context or method context
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
-        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
+        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token and method handle for the unboxed entry.
         CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
         CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
         bool                    objIsNonNull;            // True if the receiver is known non-null.
@@ -5200,6 +5216,11 @@ protected:
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
 #if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreate(NamedIntrinsic    intrinsic,
+                           CORINFO_SIG_INFO* sig,
+                           var_types         simdBaseType,
+                           var_types         retType,
+                           unsigned          simdSize);
     GenTree* impSimdCreateScalarHalf(GenTree* op1);
     GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
 #endif // FEATURE_HW_INTRINSICS
@@ -5253,7 +5274,14 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
-    void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
+    GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                CORINFO_CALL_INFO*      callInfo,
+                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                bool                    exactContextNeedsRuntimeLookup,
+                                unsigned                clsFlags,
+                                bool                    isReadonlyCall);
+
+    void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
     void impInheritAsyncContextsFromInliner(GenTreeCall* call);
@@ -5394,6 +5422,16 @@ protected:
                                  unsigned              simdSize,
                                  bool                  mustExpand);
 
+    GenTree* impXplatIntrinsic(NamedIntrinsic        intrinsic,
+                               CORINFO_CLASS_HANDLE  clsHnd,
+                               CORINFO_METHOD_HANDLE method,
+                               CORINFO_SIG_INFO*     sig
+                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
+                               var_types             simdBaseType,
+                               var_types             retType,
+                               unsigned              simdSize,
+                               bool                  mustExpand);
+
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType);
     GenTree* addRangeCheckIfNeeded(
@@ -5516,6 +5554,7 @@ public:
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
     const BYTE* impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal, IL_OFFSET* awaitOffset);
+    bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
@@ -5737,6 +5776,8 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    bool impWrapTopOfStackInAwait();
+    bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
@@ -5825,14 +5866,12 @@ private:
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                bool                   exactContextNeedsRuntimeLookup,
                                 CORINFO_CALL_INFO*     callInfo,
                                 InlineContext*         inlinersContext);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext,
                                       InlineResult*          inlineResult);
@@ -6055,6 +6094,8 @@ public:
     PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
 
     PhaseStatus fgRemoveEmptyFinally();
+
+    PhaseStatus fgRemoveUnreachableTry();
 
     PhaseStatus fgMergeFinallyChains();
 
@@ -7541,7 +7582,6 @@ private:
 public:
     PhaseStatus rangeCheckPhase();
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
-    GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
 
 protected:
@@ -9251,7 +9291,6 @@ public:
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
@@ -9704,6 +9743,8 @@ public:
 
     CorInfoReloc eeGetRelocTypeHint(void* target);
 
+    uint32_t eeGetAddressAlignment(void* address);
+
     // ICorStaticInfo wrapper functions
 
 #if defined(UNIX_AMD64_ABI)
@@ -10117,90 +10158,6 @@ private:
     // by the hardware.  It is allocated when/if such situations are encountered during Lowering.
     unsigned lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 
-    struct SIMDHandlesCache
-    {
-        CORINFO_CLASS_HANDLE PlaneHandle;
-        CORINFO_CLASS_HANDLE QuaternionHandle;
-        CORINFO_CLASS_HANDLE Vector2Handle;
-        CORINFO_CLASS_HANDLE Vector3Handle;
-        CORINFO_CLASS_HANDLE Vector4Handle;
-        CORINFO_CLASS_HANDLE VectorHandle;
-
-        SIMDHandlesCache()
-        {
-            memset(this, 0, sizeof(*this));
-        }
-    };
-
-    SIMDHandlesCache* m_simdHandleCache = nullptr;
-
-    // Returns true if this is a SIMD type that should be considered an opaque
-    // vector type (i.e. do not analyze or promote its fields).
-    // Note that all but the fixed vector types are opaque, even though they may
-    // actually be declared as having fields.
-    bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle) const
-    {
-        // We order the checks roughly by expected hit count so early exits are possible
-
-        if (m_simdHandleCache == nullptr)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->Vector4Handle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->Vector3Handle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->Vector2Handle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->QuaternionHandle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->PlaneHandle)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    bool isOpaqueSIMDType(ClassLayout* layout) const
-    {
-        if (layout->IsCustomLayout())
-        {
-            return true;
-        }
-
-        return isOpaqueSIMDType(layout->GetClassHandle());
-    }
-
-    // Returns true if the lclVar is an opaque SIMD type.
-    bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
-    {
-        if (!varTypeIsSIMD(varDsc))
-        {
-            return false;
-        }
-
-        if (varDsc->GetLayout() == nullptr)
-        {
-            return true;
-        }
-
-        return isOpaqueSIMDType(varDsc->GetLayout());
-    }
-
     bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -10253,8 +10210,6 @@ private:
     }
 
     GenTree* impSIMDPopStack();
-
-    void setLclRelatedToSIMDIntrinsic(GenTree* tree);
 
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
@@ -10540,10 +10495,6 @@ private:
     unsigned getSIMDInitTempVarNum(var_types simdType);
 
 #else  // !FEATURE_SIMD
-    bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)
-    {
-        return false;
-    }
     unsigned int roundUpSIMDSize(unsigned size)
     {
         return 0;
@@ -11059,8 +11010,6 @@ public:
     bool compRegAllocDone               = false;
     bool compRationalIRForm             = false;
 
-    bool compGeneratingProlog       = false;
-    bool compGeneratingEpilog       = false;
     bool compGeneratingUnwindProlog = false;
     bool compGeneratingUnwindEpilog = false;
 
@@ -11930,9 +11879,16 @@ public:
 #endif // TARGET_AMD64
     }
 
+    // Does this function have async calling convention and can have suspension points?
     bool compIsAsync() const
     {
         return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ASYNC);
+    }
+
+    // Is this the async version of a non-async method? IL belongs to non-async method.
+    bool compIsAsyncVersion() const
+    {
+        return (info.compMethodInfo->options & CORINFO_ASYNC_VERSION) != 0;
     }
 
     //------------------------------------------------------------------------

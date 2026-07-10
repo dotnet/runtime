@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.Unicode;
@@ -128,7 +129,7 @@ namespace System.Buffers
                 return CreateForSingleValue(values[0], uniqueValues, ignoreCase, allAscii, asciiLettersOnly);
             }
 
-            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
+            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 TryGetTeddyAcceleratedValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, nonAsciiAffectedByCaseConversion, minLength) is { } searchValues)
             {
                 return searchValues;
@@ -198,7 +199,7 @@ namespace System.Buffers
 
             int n = minLength == 2 ? 2 : 3;
 
-            if (Ssse3.IsSupported)
+            if (Ssse3.IsSupported || PackedSimd.IsSupported)
             {
                 foreach (string value in values)
                 {
@@ -206,8 +207,9 @@ namespace System.Buffers
                     {
                         // If we let null chars through here, Teddy would still work correctly, but it
                         // would hit more false positives that the verification step would have to rule out.
-                        // While we could flow a generic flag like Ssse3AndWasmHandleZeroInNeedle through,
-                        // we expect such values to be rare enough that introducing more code is not worth it.
+                        // Ssse3.PackUnsignedSaturate and PackedSimd.ConvertNarrowingSaturateUnsigned both
+                        // treat negative signed-16 values as 0, so we filter out null-containing needles
+                        // for both to avoid that source of false positives.
                         return null;
                     }
                 }
