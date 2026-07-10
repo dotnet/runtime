@@ -48,10 +48,10 @@ namespace System.Threading
         public bool InlineCompletions { get { throw null; } set { } }
         public bool IsReadReady(out int observedSequenceNumber) { throw null; }
         public bool IsWriteReady(out int observedSequenceNumber) { throw null; }
-        public System.Threading.UnixHandleAsyncContext.AsyncResult ReadAsync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.UnixHandleAsyncContext.AsyncResult WriteAsync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.UnixHandleAsyncContext.SyncResult ReadSync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
-        public System.Threading.UnixHandleAsyncContext.SyncResult WriteSync(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.AsyncResult StartAsyncRead(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.AsyncResult StartAsyncWrite(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.SyncResult Read(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
+        public System.Threading.UnixHandleAsyncContext.SyncResult Write(System.Threading.UnixHandleAsyncContext.Operation operation, int observedSequenceNumber, int timeout) { throw null; }
         public bool AbortAndDispose() { throw null; }
         public enum AsyncResult
         {

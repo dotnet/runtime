@@ -617,8 +617,8 @@ namespace System.Net.Sockets
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SyncResult result =
-                isRead ? AsyncContext.ReadSync(operation, observedSequenceNumber, timeout)
-                       : AsyncContext.WriteSync(operation, observedSequenceNumber, timeout);
+                isRead ? AsyncContext.Read(operation, observedSequenceNumber, timeout)
+                       : AsyncContext.Write(operation, observedSequenceNumber, timeout);
 
             if (result == SyncResult.TimedOut)
             {
@@ -689,7 +689,7 @@ namespace System.Net.Sockets
             operation.Callback = callback;
             operation.SocketAddress = socketAddress;
 
-            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.StartAsyncRead(operation, observedSequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Completed)
             {
@@ -778,7 +778,7 @@ namespace System.Net.Sockets
                 BytesTransferred = sentBytes,
             };
 
-            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.StartAsyncWrite(operation, observedSequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Completed)
             {
@@ -900,7 +900,7 @@ namespace System.Net.Sockets
             operation.Flags = flags;
             operation.SocketAddress = default;
 
-            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.StartAsyncRead(operation, observedSequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Completed)
             {
@@ -934,7 +934,7 @@ namespace System.Net.Sockets
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
 
-            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.StartAsyncRead(operation, observedSequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Completed)
             {
@@ -1014,7 +1014,7 @@ namespace System.Net.Sockets
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
 
-            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, default);
+            AsyncResult result = AsyncContext.StartAsyncRead(operation, observedSequenceNumber, default);
 
             if (result == AsyncResult.Completed)
             {
@@ -1133,7 +1133,7 @@ namespace System.Net.Sockets
                 IsIPv6 = isIPv6,
             };
 
-            AsyncResult result = AsyncContext.ReadAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.StartAsyncRead(operation, observedSequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Completed)
             {
@@ -1255,7 +1255,7 @@ namespace System.Net.Sockets
             operation.SocketAddress = socketAddress;
             operation.BytesTransferred = bytesSent;
 
-            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.StartAsyncWrite(operation, observedSequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Completed)
             {
@@ -1337,7 +1337,7 @@ namespace System.Net.Sockets
             operation.SocketAddress = socketAddress;
             operation.BytesTransferred = bytesSent;
 
-            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, default);
+            AsyncResult result = AsyncContext.StartAsyncWrite(operation, observedSequenceNumber, default);
 
             if (result == AsyncResult.Completed)
             {
@@ -1403,7 +1403,7 @@ namespace System.Net.Sockets
                 BytesTransferred = bytesSent
             };
 
-            AsyncResult result = AsyncContext.WriteAsync(operation, observedSequenceNumber, cancellationToken);
+            AsyncResult result = AsyncContext.StartAsyncWrite(operation, observedSequenceNumber, cancellationToken);
 
             if (result == AsyncResult.Completed)
             {
