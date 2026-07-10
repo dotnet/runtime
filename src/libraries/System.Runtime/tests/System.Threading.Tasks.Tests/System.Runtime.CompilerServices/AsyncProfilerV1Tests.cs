@@ -1508,6 +1508,15 @@ namespace System.Threading.Tasks.Tests
             const int MaxFrames = byte.MaxValue;
             const int Iterations = 128;
 
+            // Warm up the recursive method so its state machine id is frozen at its tier-0 version, then
+            // snapshot that id before tracing. (Snapshot is a no-op on non-Mono, where ids resolve
+            // reflectively; the warmup itself runs on all runtimes.)
+            var warmupGate = new TaskCompletionSource();
+            Task warmup = StateMachineAsync_RecursiveChainGated(2, warmupGate.Task);
+            warmupGate.SetResult();
+            warmup.GetAwaiter().GetResult();
+            SnapshotStateMachineMethodIdFor(typeof(AsyncProfilerTests).GetMethod(nameof(StateMachineAsync_RecursiveChainGated), BindingFlags.NonPublic | BindingFlags.Static)!);
+
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword, () =>
             {
                 RunScenarioAndFlush(async () =>
@@ -1547,9 +1556,21 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_CallstackStressWithVaryingDepths_Recurse(int depth)
+        {
+            if (depth <= 1)
+            {
+                await Task.Delay(100);
+                return;
+            }
+            await StateMachineAsync_CallstackStressWithVaryingDepths_Recurse(depth - 1);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task StateMachineAsync_CallstackStressWithVaryingDepths_Marker(int depth)
         {
-            await StateMachineAsync_RecursiveChain(depth);
+            await StateMachineAsync_CallstackStressWithVaryingDepths_Recurse(depth);
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
@@ -1560,6 +1581,12 @@ namespace System.Threading.Tasks.Tests
             var rng = new Random(42);
             for (int i = 0; i < iterations; i++)
                 depths[i] = rng.Next(1, 60);
+
+            // Warm up the recursive method so its state machine id is frozen at its tier-0 version, then
+            // snapshot that id before tracing. (Snapshot is a no-op on non-Mono, where ids resolve
+            // reflectively; the warmup itself runs on all runtimes.)
+            StateMachineAsync_CallstackStressWithVaryingDepths_Recurse(2).GetAwaiter().GetResult();
+            SnapshotStateMachineMethodIdFor(typeof(AsyncProfilerTests).GetMethod(nameof(StateMachineAsync_CallstackStressWithVaryingDepths_Recurse), BindingFlags.NonPublic | BindingFlags.Static)!);
 
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
             {

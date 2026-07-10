@@ -128,6 +128,10 @@ namespace System.Threading.Tasks.Tests
         public static bool IsStateMachineAsyncAndRuntimeAsyncAndThreadingSupported =>
             IsStateMachineAsyncAndThreadingSupported && IsRuntimeAsyncAndThreadingSupported;
 
+        // Alias so tests that additionally require CoreCLR can list the exclusion as an extra ConditionalFact
+        // condition alongside the shared gates.
+        public static bool IsNotMonoRuntime => PlatformDetection.IsNotMonoRuntime;
+
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const string WrapperNameTemplate = "Continuation_Wrapper_{0}";
         private static readonly string WrapperNamePrefix = WrapperNameTemplate.Substring(0, WrapperNameTemplate.IndexOf("{0}", StringComparison.Ordinal));
@@ -296,8 +300,8 @@ namespace System.Threading.Tasks.Tests
             new(BuildStateMachineMoveNextMethods);
 
         // Resolved map: state machine frame method id (native code IP of MoveNext) -> async method name.
-        // Populated lazily because a MoveNext only has a native code IP once it has been JITted, which is
-        // guaranteed by the time we resolve frames (assertions run after the scenario executed).
+        // Filled lazily on the first resolve miss, and eagerly by tests (SnapshotStateMachineMethodIdFor) that
+        // need to capture a method's tier-0 id before re-tiering; additive and keyed by address.
         private static readonly ConcurrentDictionary<ulong, string> s_methodIdToName = new();
 
         private static (string Name, IntPtr MoveNextHandle)[] BuildStateMachineMoveNextMethods()
@@ -331,8 +335,62 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        // Records the CURRENT native code start of every known state machine MoveNext into the id->name map.
+        // Used by the resolve path, which only has a raw frame address and so must consider every method.
+        // A MoveNext has no native code start until it has actually run, and a resume frame's method id is the
+        // code start of whatever version was current when the runtime first froze that id. The map is additive
+        // and keyed by address. No-op except on Mono.
+        private static void SnapshotStateMachineMethodIds()
+        {
+            if (s_getNativeCodeInternalMethod is null)
+            {
+                return;
+            }
+
+            foreach ((string methodName, IntPtr moveNextHandle) in s_stateMachineMoveNextMethods.Value)
+            {
+                object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNextHandle });
+                if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
+                {
+                    s_methodIdToName.TryAdd((ulong)ip, methodName);
+                }
+            }
+        }
+
+        // Records the CURRENT native code start of a single async method's compiler-generated state machine
+        // MoveNext (found via its [AsyncStateMachine] attribute) into the id->name map, keyed to the async
+        // method's name so it matches normal resolution. On Mono the interpreter re-tiers a method after
+        // enough calls, replacing its code start, while the resume frames keep the initial (tier-0) id frozen
+        // at first run; a test that calls a method enough to trigger re-tiering can snapshot its id up front,
+        // while the method is still at its tier-0 version, so the frozen id stays resolvable afterwards.
+        // No-op except on Mono.
+        private static void SnapshotStateMachineMethodIdFor(MethodInfo asyncMethod)
+        {
+            if (s_getNativeCodeInternalMethod is null)
+            {
+                return;
+            }
+
+            Type? stateMachineType = asyncMethod
+                .GetCustomAttribute<System.Runtime.CompilerServices.AsyncStateMachineAttribute>()?.StateMachineType;
+            MethodInfo? moveNext = stateMachineType?.GetMethod(
+                "MoveNext",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (moveNext is null)
+            {
+                return;
+            }
+
+            object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNext.MethodHandle.Value });
+            if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
+            {
+                s_methodIdToName.TryAdd((ulong)ip, asyncMethod.Name);
+            }
+        }
+
         // Mono fallback: resolve a StateMachine frame's method id to the async method name via the reverse
-        // map. On a miss we (re)scan, since more MoveNext methods may have been JITted since the last scan.
+        // map. On a miss we snapshot the current native code starts and retry, filling the map lazily as
+        // methods run (a MoveNext has no code start until it has first run). No-op except on Mono.
         private static string? ResolveStateMachineMethodNameFromId(ulong methodId)
         {
             if (s_getNativeCodeInternalMethod is null || methodId == 0)
@@ -345,14 +403,7 @@ namespace System.Threading.Tasks.Tests
                 return name;
             }
 
-            foreach ((string methodName, IntPtr moveNextHandle) in s_stateMachineMoveNextMethods.Value)
-            {
-                object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNextHandle });
-                if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
-                {
-                    s_methodIdToName.TryAdd((ulong)ip, methodName);
-                }
-            }
+            SnapshotStateMachineMethodIds();
 
             return s_methodIdToName.TryGetValue(methodId, out name) ? name : null;
         }
