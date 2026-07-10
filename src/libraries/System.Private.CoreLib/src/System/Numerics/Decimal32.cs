@@ -295,6 +295,15 @@ namespace System.Numerics
             return new Decimal32(Number.MultiplyDecimalIeee754<Decimal32, uint>(left._value, right._value));
         }
 
+        /// <summary>Divides two values together to compute their quotient.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal32 operator /(Decimal32 left, Decimal32 right)
+        {
+            return new Decimal32(Number.DivideDecimalIeee754<Decimal32, uint>(left._value, right._value));
+        }
+
         /// <summary>Compares two values to determine equality.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>
         /// <param name="right">The value to compare with <paramref name="left" />.</param>

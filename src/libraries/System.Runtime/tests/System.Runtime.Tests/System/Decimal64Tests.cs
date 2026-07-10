@@ -1084,5 +1084,135 @@ namespace System.Tests
             Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
         }
 
+        public static IEnumerable<object[]> op_Division_TestData()
+        {
+            yield return new object[] { 0xFC000000_00000000UL, 0x31C00000_00000001UL, 0xFC000000_00000000UL }; // NaN / 1 -> NaN
+            yield return new object[] { 0x31C00000_00000001UL, 0xFC000000_00000000UL, 0xFC000000_00000000UL }; // 1 / NaN -> NaN
+            yield return new object[] { 0xFC000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // NaN / +Inf -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // +Inf / +Inf -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // +Inf / -Inf -> NaN
+            yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // -Inf / +Inf -> NaN
+            yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // -Inf / -Inf -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // +Inf / 1 -> +Inf
+            yield return new object[] { 0x78000000_00000000UL, 0xB1C00000_00000001UL, 0xF8000000_00000000UL }; // +Inf / -1 -> -Inf
+            yield return new object[] { 0xF8000000_00000000UL, 0x31C00000_00000002UL, 0xF8000000_00000000UL }; // -Inf / 2 -> -Inf
+            yield return new object[] { 0xF8000000_00000000UL, 0xB1C00000_00000002UL, 0x78000000_00000000UL }; // -Inf / -2 -> +Inf
+            yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000000UL, 0x78000000_00000000UL }; // +Inf / +0 -> +Inf
+            yield return new object[] { 0xF8000000_00000000UL, 0x31C00000_00000000UL, 0xF8000000_00000000UL }; // -Inf / +0 -> -Inf
+            yield return new object[] { 0x78000000_00000000UL, 0xB1C00000_00000000UL, 0xF8000000_00000000UL }; // +Inf / -0 -> -Inf
+            yield return new object[] { 0x31C00000_00000001UL, 0x78000000_00000000UL, 0x00000000_00000000UL }; // 1 / +Inf -> +0 (Etiny)
+            yield return new object[] { 0xB1C00000_00000001UL, 0x78000000_00000000UL, 0x80000000_00000000UL }; // -1 / +Inf -> -0 (Etiny)
+            yield return new object[] { 0x31C00000_00000005UL, 0xF8000000_00000000UL, 0x80000000_00000000UL }; // 5 / -Inf -> -0 (Etiny)
+            yield return new object[] { 0x33000000_00000005UL, 0x78000000_00000000UL, 0x00000000_00000000UL }; // 5e10 / +Inf -> +0 (Etiny, dividend exp ignored)
+            yield return new object[] { 0x31C00000_00000000UL, 0x78000000_00000000UL, 0x00000000_00000000UL }; // +0 / +Inf -> +0 (Etiny)
+            yield return new object[] { 0xB1C00000_00000000UL, 0x78000000_00000000UL, 0x80000000_00000000UL }; // -0 / +Inf -> -0 (Etiny)
+            yield return new object[] { 0x31C00000_00000005UL, 0x31C00000_00000000UL, 0x78000000_00000000UL }; // 5 / +0 -> +Inf
+            yield return new object[] { 0xB1C00000_00000005UL, 0x31C00000_00000000UL, 0xF8000000_00000000UL }; // -5 / +0 -> -Inf
+            yield return new object[] { 0x31C00000_00000005UL, 0xB1C00000_00000000UL, 0xF8000000_00000000UL }; // 5 / -0 -> -Inf
+            yield return new object[] { 0xB1C00000_00000005UL, 0xB1C00000_00000000UL, 0x78000000_00000000UL }; // -5 / -0 -> +Inf
+            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000000UL, 0xFC000000_00000000UL }; // +0 / +0 -> NaN
+            yield return new object[] { 0xB1C00000_00000000UL, 0xB1C00000_00000000UL, 0xFC000000_00000000UL }; // -0 / -0 -> NaN
+            yield return new object[] { 0x31C00000_00000000UL, 0xB1C00000_00000000UL, 0xFC000000_00000000UL }; // +0 / -0 -> NaN
+            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000005UL, 0x31C00000_00000000UL }; // +0 / 5 -> +0 (ideal exp)
+            yield return new object[] { 0xB1C00000_00000000UL, 0x31C00000_00000005UL, 0xB1C00000_00000000UL }; // -0 / 5 -> -0 (ideal exp, sign xor)
+            yield return new object[] { 0x32000000_00000000UL, 0x31C00000_00000005UL, 0x32000000_00000000UL }; // 0e2 / 5 -> 0e2 (ideal exp)
+            yield return new object[] { 0x31C00000_00000000UL, 0x32200000_00000005UL, 0x31600000_00000000UL }; // 0 / 5e3 -> 0e-3 (ideal exp)
+            yield return new object[] { 0x32600000_00000000UL, 0x31200000_00000005UL, 0x33000000_00000000UL }; // 0e5 / 5e-5 -> 0e10 (ideal exp)
+            yield return new object[] { 0x5FE00000_00000000UL, 0x31200000_00000005UL, 0x5FE00000_00000000UL }; // zero dividend, ideal exp far above max quantum (clamped)
+            yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000002UL, 0x31A00000_00000005UL }; // 1 / 2 -> 0.5 (exact)
+            yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000008UL, 0x31600000_0000007DUL }; // 1 / 8 -> 0.125 (exact)
+            yield return new object[] { 0x31C00000_00000064UL, 0x31C00000_00000004UL, 0x31C00000_00000019UL }; // 100 / 4 -> 25 (exact)
+            yield return new object[] { 0x31C00000_0000000AUL, 0x31C00000_00000002UL, 0x31C00000_00000005UL }; // 10 / 2 -> 5 (exact)
+            yield return new object[] { 0x31C00000_00000006UL, 0x31C00000_00000003UL, 0x31C00000_00000002UL }; // 6 / 3 -> 2 (exact)
+            yield return new object[] { 0x31C00000_00000005UL, 0x31C00000_00000005UL, 0x31C00000_00000001UL }; // 5 / 5 -> 1 (exact)
+            yield return new object[] { 0x31800000_00000064UL, 0x31C00000_00000004UL, 0x31800000_00000019UL }; // 1.00 / 4 -> 0.25 (exact, ideal exp preserved)
+            yield return new object[] { 0x31C00000_00000007UL, 0x31C00000_00000002UL, 0x31A00000_00000023UL }; // 7 / 2 -> 3.5 (exact)
+            yield return new object[] { 0xB1C00000_0000000FUL, 0x31C00000_00000004UL, 0xB1800000_00000177UL }; // -15 / 4 -> -3.75 (exact, sign)
+            yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000003UL, 0x2FCBD7A6_25405555UL }; // 1 / 3 -> repeating (round)
+            yield return new object[] { 0x31C00000_00000002UL, 0x31C00000_00000003UL, 0x2FD7AF4C_4A80AAABUL }; // 2 / 3 -> repeating (round)
+            yield return new object[] { 0x31C00000_000F4240UL, 0x31C00000_00000007UL, 0x30851347_34894925UL }; // 1000000 / 7 (round)
+            yield return new object[] { 0x31C00000_0000000AUL, 0x31C00000_00000003UL, 0x2FEBD7A6_25405555UL }; // 10 / 3 -> repeating (round)
+            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x31C00000_00000007UL, 0x31C51347_34894924UL }; // all-nines / 7 (round)
+            yield return new object[] { 0x31C00000_00000001UL, 0x6C7386F2_6FC0FFFFUL, 0x2DE38D7E_A4C68000UL }; // 1 / all-nines (round)
+            yield return new object[] { 0x31C00000_00000002UL, 0x31C00000_00000007UL, 0x2FCA268E_69129249UL }; // 2 / 7 (round)
+            yield return new object[] { 0x2FE4BCA8_DBB35555UL, 0x2FE650E1_24EF1C71UL, 0x2FDAA535_D3D0C001UL }; // full-precision / full-precision (round)
+            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x2FE3F28C_B71571C7UL, 0x33A00000_00000009UL }; // all-nines / near-one full precision (round)
+            yield return new object[] { 0x5FFFF973_CAFA8000UL, 0x31200000_00000001UL, 0x78000000_00000000UL }; // huge / tiny -> +Inf (overflow)
+            yield return new object[] { 0xDFFFF973_CAFA8000UL, 0x31200000_00000001UL, 0xF8000000_00000000UL }; // -huge / tiny -> -Inf (overflow)
+            yield return new object[] { 0x01C00000_00000001UL, 0x32600000_00000001UL, 0x01200000_00000001UL }; // tiny / large -> underflow
+            yield return new object[] { 0x31C00000_00000001UL, 0x5FC00000_00000003UL, 0x01CBD7A6_25405555UL }; // 1 / huge -> tiny subnormal (round)
+            yield return new object[] { 0x01E00000_00000001UL, 0x32600000_00000001UL, 0x01400000_00000001UL }; // small / large (subnormal-ish)
+            yield return new object[] { 0x78000000_00000002UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // non-canonical +Inf / 1 -> canonical +Inf
+            yield return new object[] { 0x31C00000_00000001UL, 0xF8000000_00000005UL, 0x80000000_00000000UL }; // 1 / non-canonical -Inf -> canonical -0 (Etiny)
+            yield return new object[] { 0xAF200000_000023D2UL, 0xAFA34A58_43C82F35UL, 0x6B7B2CEB_297ED958UL };
+            yield return new object[] { 0x19C00000_0006B3C8UL, 0xB2400000_000014EDUL, 0x979D2147_81117476UL };
+            yield return new object[] { 0x31200054_42297730UL, 0x2F000063_A23BC84AUL, 0x31FE0B6E_C9E4B663UL };
+            yield return new object[] { 0x2E60007D_E4F31691UL, 0x328000E1_F407BFE1UL, 0x2BB3CB6E_24C9CCB5UL };
+            yield return new object[] { 0x95400091_BAB57FB9UL, 0x14600009_ED261C68UL, 0xB0E5373B_9B321342UL };
+            yield return new object[] { 0xB1E00000_173C0E97UL, 0x17C00575_228BEDE5UL, 0xC9771439_895B2784UL };
+            yield return new object[] { 0x31C00000_3838FC8EUL, 0x33800000_0008C901UL, 0x2E85D20C_CE429AB3UL };
+            yield return new object[] { 0x33E00000_00000006UL, 0xB3000000_000738AFUL, 0xB024810D_4C0C6020UL };
+            yield return new object[] { 0xB120007E_4A0EE845UL, 0xB1A2CD7D_00E19992UL, 0x2EF86D56_8CCEE558UL };
+            yield return new object[] { 0xB1800000_003142FFUL, 0x2F4004A5_E17CD24DUL, 0xB156717A_82887347UL };
+            yield return new object[] { 0x30A1AE18_98FE6B6EUL, 0xB2400000_00034D87UL, 0xAF67C2FF_FFD9495DUL };
+            yield return new object[] { 0x1040016E_281289C6UL, 0x2E417F41_004E3595UL, 0x118D4239_24D52B06UL };
+            yield return new object[] { 0x2F2160D1_63A6598CUL, 0xAD988DFF_DCC311D5UL, 0xB153F0C6_047336B7UL };
+            yield return new object[] { 0xAF800000_000149F7UL, 0x82600001_9308E202UL, 0x5C64702C_F70E8C82UL };
+            yield return new object[] { 0xB3600000_0000230CUL, 0xB8600000_00000003UL, 0x2B4A9FFE_D84EEAABUL };
+            yield return new object[] { 0xAD80816C_363173A8UL, 0x2FE00718_1926DD3EUL, 0xADA67B3F_728271F8UL };
+            yield return new object[] { 0xB2800000_00000000UL, 0x2F000000_007AF558UL, 0xB5400000_00000000UL };
+            yield return new object[] { 0xAE836513_54C06345UL, 0x8D000000_0000002AUL, 0x5308153A_3780EC5BUL };
+            yield return new object[] { 0xAE543A07_C082FDB3UL, 0x35200000_00000007UL, 0xAADCE52F_A54D6A6DUL };
+            yield return new object[] { 0x32600000_0000B48AUL, 0x31400000_00015465UL, 0x30F2D7CB_58E04973UL };
+            yield return new object[] { 0x33400000_000E8F6AUL, 0x33C00000_00000287UL, 0x2FC53D5A_B1B4EF3CUL };
+            yield return new object[] { 0xAFE00000_0025FA34UL, 0x31C00000_000001BBUL, 0xAE73F5C4_5E9939EFUL };
+            yield return new object[] { 0x31200015_EE481751UL, 0xB06385FA_ED15C9E7UL, 0xEC01BE15_983D5BE2UL };
+            yield return new object[] { 0xB3A00000_0001B644UL, 0x31400000_88C9241BUL, 0xB1B15E7C_6BD1FB18UL };
+            yield return new object[] { 0xCE000000_2C155ADEUL, 0x2E400000_00000CC1UL, 0xD0480C36_8CE138FBUL };
+            yield return new object[] { 0x2E0059A2_1C73F798UL, 0xAEC00000_0000038FUL, 0xB083D7E6_4738794BUL };
+            yield return new object[] { 0xB4400000_00000000UL, 0xB3C00000_00000002UL, 0x32400000_00000000UL };
+            yield return new object[] { 0x14200000_1E148863UL, 0xAF600000_00000003UL, 0x96800000_0A06D821UL };
+            yield return new object[] { 0xB3000000_093826EBUL, 0x27600000_00000008UL, 0xBD000004_806B00BFUL };
+            yield return new object[] { 0xBDA00000_0054E714UL, 0xAEC00000_00083858UL, 0x3EE3AB63_2787AAABUL };
+            yield return new object[] { 0xBBE00000_00000008UL, 0xB1000000_00000008UL, 0x3CA00000_00000001UL };
+            yield return new object[] { 0xD8600000_72FA8C0BUL, 0x30404C87_C53B7F29UL, 0xD76824FD_5DC6387AUL };
+            yield return new object[] { 0x31E00000_00011A74UL, 0x31EB8DA8_BD290BE9UL, 0x2E87E644_72962839UL };
+            yield return new object[] { 0xAE8000BE_61899933UL, 0x2E8E68EB_22D62BD8UL, 0xAF672984_2954D3E5UL };
+            yield return new object[] { 0x30A00002_3C81B477UL, 0xB3400000_0000019EUL, 0xAE283E16_28D505EEUL };
+            yield return new object[] { 0xAFC00016_E7160E75UL, 0x32600000_00000013UL, 0xAE72649C_3A014DDBUL };
+            yield return new object[] { 0x328000C6_0667F8FFUL, 0x437376D5_46AB54AAUL, 0x1E8583E6_67068B52UL };
+            yield return new object[] { 0x316008E3_5687A600UL, 0x32C00000_000000BCUL, 0x2FD277AE_2C929D9EUL };
+            yield return new object[] { 0x32600011_10EB5AFDUL, 0xB1200000_70F0F514UL, 0xB14DBE35_89D2645BUL };
+            yield return new object[] { 0x2F600000_0000018DUL, 0x34000000_000001F2UL, 0x2B3C5263_B59E7BE3UL };
+            yield return new object[] { 0x3260573E_35DB7C8EUL, 0x328018AA_7862D5CEUL, 0x2FCC90DF_5F1B1DBCUL };
+            yield return new object[] { 0x22C00000_00000005UL, 0xB0A00000_000004FDUL, 0xA1ADE90F_5674DD52UL };
+            yield return new object[] { 0xD4200014_54458F18UL, 0xB2C00000_0000001DUL, 0x526AB24E_6D558412UL };
+            yield return new object[] { 0x30200000_0000004CUL, 0x324199F5_8C48AAF6UL, 0x2C25FD76_8E35F895UL };
+            yield return new object[] { 0xEB90A2E6_7C00A0EDUL, 0xB2C00000_000020F5UL, 0x2CE3DE44_E337731CUL };
+            yield return new object[] { 0xB282B0EE_E060C24AUL, 0x30600000_00000008UL, 0xECE9A3A9_F4B97C9DUL };
+            yield return new object[] { 0x2E20004A_73ED6947UL, 0x9C6F546E_573DB6B7UL, 0xC11A5413_6BDEAB49UL };
+            yield return new object[] { 0xB1600000_00000054UL, 0x30800000_00000500UL, 0xB1E00000_00010059UL };
+            yield return new object[] { 0xAA4042B6_7AA7818BUL, 0x31800000_00000055UL, 0xAA1EA890_D66400D2UL };
+            yield return new object[] { 0xB2E00000_00000366UL, 0xB2C00000_00001F1DUL, 0x2FE3E16B_F510BDF3UL };
+            yield return new object[] { 0x33000000_00000002UL, 0x33200000_02DF7470UL, 0x2ECEBDEE_F33FAD55UL };
+            yield return new object[] { 0xB062FAF8_87469CE0UL, 0x30200000_00000045UL, 0xB1C451C1_3AC6CD18UL };
+            yield return new object[] { 0xB0200000_000E661FUL, 0xB1000000_00076DFBUL, 0x2F06E2A3_F0EE7805UL };
+            yield return new object[] { 0xA9800000_01ECEE93UL, 0x2DC04A74_C2BEB838UL, 0xAACE04F2_43140E20UL };
+            yield return new object[] { 0x29200001_1579BC2EUL, 0xAFC058BC_B025DCC1UL, 0xA8B0F380_7A2A5151UL };
+            yield return new object[] { 0xB3C00000_00000012UL, 0xD5600000_0000001EUL, 0x10000000_00000006UL };
+            yield return new object[] { 0xAF400000_000003E0UL, 0xB2E00000_1892B9E7UL, 0x2B888C6C_1C593DF8UL };
+            yield return new object[] { 0x32400000_1E910857UL, 0xB120000E_041E212AUL, 0xB0BE43D2_A6ACD64EUL };
+            yield return new object[] { 0x2FE00000_36F3932DUL, 0x32000000_00003529UL, 0x2E58114F_9968A5F7UL };
+            yield return new object[] { 0x32C00001_B3BF92FFUL, 0x2FC00000_02D2E250UL, 0x33257B7B_B885F394UL };
+        }
+
+        [Theory]
+        [MemberData(nameof(op_Division_TestData))]
+        public static void op_Division(ulong left, ulong right, ulong expected)
+        {
+            Decimal64 result = Unsafe.BitCast<ulong, Decimal64>(left) / Unsafe.BitCast<ulong, Decimal64>(right);
+            Assert.Equal(expected, Unsafe.BitCast<Decimal64, ulong>(result));
+        }
+
     }
 }

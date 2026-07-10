@@ -296,6 +296,15 @@ namespace System.Numerics
             return new Decimal64(Number.MultiplyDecimalIeee754<Decimal64, ulong>(left._value, right._value));
         }
 
+        /// <summary>Divides two values together to compute their quotient.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal64 operator /(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.DivideDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+        }
+
         /// <summary>Compares two values to determine equality.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>
         /// <param name="right">The value to compare with <paramref name="left" />.</param>

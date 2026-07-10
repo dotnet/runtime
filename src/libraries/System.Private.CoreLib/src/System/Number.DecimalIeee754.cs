@@ -874,6 +874,151 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Divides two IEEE 754 decimal values represented by their raw bit patterns and returns the
+        /// bit pattern of the correctly rounded (round-to-nearest, ties-to-even) quotient.
+        /// </summary>
+        /// <remarks>
+        /// The dividend coefficient is scaled up by a power of ten large enough to expose more than the
+        /// format precision in significant quotient digits, then long-divided by the divisor coefficient
+        /// in base 10 (the intermediate values can exceed the underlying integer width, so the arithmetic
+        /// is performed on digit spans). The remainder determines whether the result is exact; an inexact
+        /// result carries a sticky flag into the shared rounding path, while an exact result has its
+        /// exponent raised toward the IEEE 754 preferred exponent (the difference of the operand exponents)
+        /// by discarding trailing zeros. This mirrors the mathematical behavior of the Intel reference
+        /// implementation while remaining independent of the integer width.
+        /// </remarks>
+        internal static TValue DivideDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_div`, `bid64_div`, and `bid128_div` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
+            {
+                return TDecimal.NaN;
+            }
+
+            // The sign of a quotient is always the exclusive-or of the operand signs, including zeros.
+            bool resultSign = TDecimal.IsNegative(left) ^ TDecimal.IsNegative(right);
+
+            if (TDecimal.IsInfinity(left))
+            {
+                // Infinity divided by infinity is invalid (NaN); infinity divided by any finite value is
+                // an infinity carrying the exclusive-or sign.
+                if (TDecimal.IsInfinity(right))
+                {
+                    return TDecimal.NaN;
+                }
+
+                return resultSign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            if (TDecimal.IsInfinity(right))
+            {
+                // A finite value divided by infinity is zero with the exclusive-or sign; the preferred
+                // exponent is the minimum (the encoder clamps the sub-minimum exponent up to it).
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, TValue.Zero, TDecimal.MinAdjustedExponent);
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(left);
+            DecodedDecimalIeee754<TValue> b = UnpackDecimalIeee754<TDecimal, TValue>(right);
+
+            if (TValue.IsZero(b.Significand))
+            {
+                // Zero divided by zero is invalid (NaN); any other value divided by zero is an infinity
+                // carrying the exclusive-or sign (division by zero).
+                if (TValue.IsZero(a.Significand))
+                {
+                    return TDecimal.NaN;
+                }
+
+                return resultSign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            if (TValue.IsZero(a.Significand))
+            {
+                // Zero divided by a finite non-zero value is zero. The preferred exponent is the difference
+                // of the operand exponents (clamped to the representable range by the encoder).
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, TValue.Zero, a.UnbiasedExponent - b.UnbiasedExponent);
+            }
+
+            int dividendDigits = TDecimal.CountDigits(a.Significand);
+            int divisorDigits = TDecimal.CountDigits(b.Significand);
+
+            // Scale the dividend up so the quotient exposes at least Precision + 1 significant digits.
+            // Because both coefficients have at most Precision digits, this shift is always positive.
+            int shift = divisorDigits - dividendDigits + TDecimal.Precision + 1;
+            Debug.Assert(shift > 0);
+
+            int quotientExponent = a.UnbiasedExponent - b.UnbiasedExponent - shift;
+
+            int capacity = (2 * TDecimal.Precision) + 4;
+            Span<byte> divisorSpan = stackalloc byte[capacity];
+            Span<byte> numeratorSpan = stackalloc byte[capacity];
+            Span<byte> quotientSpan = stackalloc byte[capacity];
+            Span<byte> remainderSpan = stackalloc byte[capacity];
+
+            int divisorLength = WriteDigits(b.Significand, divisorSpan, divisorDigits);
+
+            int numeratorLength = WriteDigits(a.Significand, numeratorSpan, dividendDigits);
+            for (int i = 0; i < shift; i++)
+            {
+                numeratorSpan[numeratorLength++] = (byte)'0';
+            }
+
+            BigDivRem(numeratorSpan.Slice(0, numeratorLength), divisorSpan.Slice(0, divisorLength), quotientSpan, remainderSpan, out bool remainderNonZero);
+
+            int start = 0;
+            while (start < numeratorLength && quotientSpan[start] == (byte)'0')
+            {
+                start++;
+            }
+            int digitsCount = numeratorLength - start;
+            Debug.Assert(digitsCount > 0);
+
+            if (!remainderNonZero)
+            {
+                // The quotient is exact, so raise its exponent toward the preferred exponent (the difference
+                // of the operand exponents) by discarding trailing zeros.
+                int idealExponent = a.UnbiasedExponent - b.UnbiasedExponent;
+                while (digitsCount > 1 && quotientExponent < idealExponent && quotientSpan[start + digitsCount - 1] == (byte)'0')
+                {
+                    digitsCount--;
+                    quotientExponent++;
+                }
+            }
+
+            Span<byte> numberDigits = stackalloc byte[capacity + 2];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, numberDigits);
+            quotientSpan.Slice(start, digitsCount).CopyTo(number.Digits);
+            number.Digits[digitsCount] = 0;
+            number.DigitsCount = digitsCount;
+            number.Scale = digitsCount + quotientExponent;
+            number.IsNegative = resultSign;
+            number.HasNonZeroTail = remainderNonZero;
+            number.CheckConsistency();
+
+            return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+
+            static int WriteDigits(TValue value, Span<byte> destination, int length)
+            {
+                TValue ten = TValue.CreateTruncating(10);
+
+                for (int i = length - 1; i >= 0; i--)
+                {
+                    (value, TValue remainder) = TValue.DivRem(value, ten);
+                    destination[i] = (byte)('0' + int.CreateTruncating(remainder));
+                }
+
+                return length;
+            }
+        }
+
         private static ReadOnlySpan<byte> TrimLeadingZeros(ReadOnlySpan<byte> digits)
         {
             int start = 0;
@@ -937,6 +1082,105 @@ namespace System
             }
 
             return length;
+        }
+
+        private static void BigDivRem(ReadOnlySpan<byte> dividend, ReadOnlySpan<byte> divisor, Span<byte> quotient, Span<byte> remainder, out bool remainderNonZero)
+        {
+            // Schoolbook base-10 long division. Each dividend digit is brought down into the running
+            // remainder (which multiplies it by ten and adds the digit), then the quotient digit is found
+            // by repeatedly subtracting the divisor. The remainder is stored right-aligned so the subtract
+            // and compare helpers operate on the least-significant digits regardless of leading zeros.
+            int dividendLength = dividend.Length;
+            int divisorLength = divisor.Length;
+            int remainderLength = 0;
+
+            for (int i = 0; i < dividendLength; i++)
+            {
+                remainder[remainderLength++] = dividend[i];
+
+                int digit = 0;
+                while (CompareRightAligned(remainder, remainderLength, divisor, divisorLength) >= 0)
+                {
+                    SubtractRightAligned(remainder, remainderLength, divisor, divisorLength);
+                    digit++;
+                }
+
+                quotient[i] = (byte)('0' + digit);
+            }
+
+            remainderNonZero = false;
+
+            for (int i = 0; i < remainderLength; i++)
+            {
+                if (remainder[i] != (byte)'0')
+                {
+                    remainderNonZero = true;
+                    break;
+                }
+            }
+        }
+
+        private static int CompareRightAligned(ReadOnlySpan<byte> left, int leftLength, ReadOnlySpan<byte> right, int rightLength)
+        {
+            int leftStart = 0;
+            while (leftStart < leftLength && left[leftStart] == (byte)'0')
+            {
+                leftStart++;
+            }
+
+            int rightStart = 0;
+            while (rightStart < rightLength && right[rightStart] == (byte)'0')
+            {
+                rightStart++;
+            }
+
+            int leftDigits = leftLength - leftStart;
+            int rightDigits = rightLength - rightStart;
+
+            if (leftDigits != rightDigits)
+            {
+                return leftDigits < rightDigits ? -1 : 1;
+            }
+
+            for (int i = 0; i < leftDigits; i++)
+            {
+                int difference = left[leftStart + i] - right[rightStart + i];
+
+                if (difference != 0)
+                {
+                    return difference < 0 ? -1 : 1;
+                }
+            }
+
+            return 0;
+        }
+
+        private static void SubtractRightAligned(Span<byte> left, int leftLength, ReadOnlySpan<byte> right, int rightLength)
+        {
+            int borrow = 0;
+
+            for (int i = 0; i < leftLength; i++)
+            {
+                int leftIndex = leftLength - 1 - i;
+                int digit = (left[leftIndex] - '0') - borrow;
+
+                if (i < rightLength)
+                {
+                    digit -= right[rightLength - 1 - i] - '0';
+                }
+
+                if (digit < 0)
+                {
+                    digit += 10;
+                    borrow = 1;
+                }
+                else
+                {
+                    borrow = 0;
+                }
+
+                left[leftIndex] = (byte)('0' + digit);
+            }
         }
 
         private static int BigAdd(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, Span<byte> result)
