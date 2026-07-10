@@ -126,6 +126,14 @@ namespace {Namespace}
             _fld1 = TestLibrary.Vectors.GetRandomVector<{Op1BaseType}>();
             _fld2 = TestLibrary.Vectors.GetRandomVector<{Op2BaseType}>();
             _falseFld = _fld2;
+
+            if (LargestVectorSize < Unsafe.SizeOf<Vector<{Op1BaseType}>>() ||
+                 LargestVectorSize < Unsafe.SizeOf<Vector<{Op2BaseType}>>() ||
+                 LargestVectorSize < Unsafe.SizeOf<Vector<{RetBaseType}>>())
+            {
+                throw new ArgumentException("Invalid value of alignment");
+            }
+
             _pinnedOp1 = new TestLibrary.Vectors.PinnedVector<{Op1BaseType}>(_fld1, LargestVectorSize);
             _pinnedOp2 = new TestLibrary.Vectors.PinnedVector<{Op2BaseType}>(_fld2, LargestVectorSize);
         }
