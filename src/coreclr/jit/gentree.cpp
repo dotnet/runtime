@@ -22829,16 +22829,26 @@ GenTree* Compiler::gtNewSimdBinOpNode(
     assert(varTypeIsArithmetic(simdBaseType));
 
     assert(op1 != nullptr);
-    assert(op1->TypeIs(type, simdBaseType, genActualType(simdBaseType)) ||
-           (op1->TypeIs(TYP_SIMD12) && type == TYP_SIMD16));
-
     assert(op2 != nullptr);
+
+    // The operand-shape asserts below validate that the HIR builder is producing the exact vector
+    // shape we expect. Once in LIR, lowering is free to feed a size-changing reinterpret operand
+    // directly -- e.g. an elided GetLower or ToVectorXXXUnsafe -- since the binop operates on the low
+    // simdSize bytes and containment validates the memory-operand size (operandSize >= expectedSize)
+    // before allowing a load. Only enforce the shape in HIR.
+    bool isLIR = (fgNodeThreading == NodeThreading::LIR);
+
+    if (!isLIR)
+    {
+        assert(op1->TypeIs(type, simdBaseType, genActualType(simdBaseType)) ||
+               (op1->TypeIs(TYP_SIMD12) && type == TYP_SIMD16));
+    }
 
     if ((op == GT_LSH) || (op == GT_RSH) || (op == GT_RSZ))
     {
         assert(genActualType(op2) == TYP_INT);
     }
-    else
+    else if (!isLIR)
     {
         assert((genActualType(op2) == genActualType(type)) || (genActualType(op2) == genActualType(simdBaseType)) ||
                (op2->TypeIs(TYP_SIMD12) && (type == TYP_SIMD16)));
@@ -31739,9 +31749,17 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     // A floating-point CreateScalarUnsafe is removed during lowering, which can leave a scalar
     // operand occupying the low element of a SIMD register. Such an operand is consumed here at
     // full register width, so it is valid in addition to a full SIMD operand.
+    //
+    // Likewise, once in LIR, lowering may feed a size-changing SIMD reinterpret operand directly --
+    // e.g. an elided GetLower or ToVectorXXXUnsafe. It still occupies a full SIMD register and is
+    // consumed at the node's width, so treat any SIMD-typed operand as a full-vector operand rather
+    // than requiring an exact size match. In HIR the operand size must still be exact.
+    auto isFullVectorOp = [=](GenTree* op) -> bool {
+        return op->TypeIs(simdType) || ((comp->fgNodeThreading == NodeThreading::LIR) && varTypeIsSIMD(op));
+    };
 
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType) || varTypeIsFloating(op1));
+    assert(isFullVectorOp(op1) || varTypeIsFloating(op1));
     assert(op2 != nullptr);
 
 #if defined(TARGET_XARCH)
@@ -31767,7 +31785,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     {
         case GT_ADD:
         {
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -31814,7 +31832,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_AND:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -31850,7 +31868,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_AND_NOT:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
             if (comp->fgNodeThreading != NodeThreading::LIR)
             {
@@ -31901,7 +31919,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 #else
             assert(varTypeIsFloating(simdBaseType));
 #endif
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
 #if defined(TARGET_XARCH)
             if (varTypeIsFloating(simdBaseType))
@@ -31939,7 +31957,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_LSH:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsInt(op2));
+            assert(isFullVectorOp(op2) || varTypeIsInt(op2));
             assert(varTypeIsIntegral(simdBaseType));
 
 #if defined(TARGET_XARCH)
@@ -31995,7 +32013,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_MUL:
         {
 #if defined(TARGET_XARCH)
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
             if (simdSize == 64)
             {
@@ -32042,11 +32060,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             }
             else if (simdBaseType == TYP_DOUBLE)
             {
-                id = op2->TypeIs(simdType) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
+                id = isFullVectorOp(op2) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
             }
             else if (!varTypeIsLong(simdBaseType))
             {
-                id = op2->TypeIs(simdType) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
+                id = isFullVectorOp(op2) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
             }
 #elif defined(TARGET_WASM)
             if (!varTypeIsByte(simdBaseType))
@@ -32062,7 +32080,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_OR:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -32098,7 +32116,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_ROL:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsInt(op2));
+            assert(isFullVectorOp(op2) || varTypeIsInt(op2));
             assert(varTypeIsIntegral(simdBaseType));
 
 #if defined(TARGET_XARCH)
@@ -32113,7 +32131,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_ROR:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsInt(op2));
+            assert(isFullVectorOp(op2) || varTypeIsInt(op2));
             assert(varTypeIsIntegral(simdBaseType));
 
 #if defined(TARGET_XARCH)
@@ -32128,7 +32146,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_RSH:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsInt(op2));
+            assert(isFullVectorOp(op2) || varTypeIsInt(op2));
             assert(varTypeIsIntegral(simdBaseType));
 
 #if defined(TARGET_XARCH)
@@ -32187,7 +32205,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_RSZ:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsInt(op2));
+            assert(isFullVectorOp(op2) || varTypeIsInt(op2));
             assert(varTypeIsIntegral(simdBaseType));
 
 #if defined(TARGET_XARCH)
@@ -32242,7 +32260,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 
         case GT_SUB:
         {
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
@@ -32289,7 +32307,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_XOR:
         {
             assert(!isScalar);
-            assert(op2->TypeIs(simdType) || varTypeIsFloating(op2));
+            assert(isFullVectorOp(op2) || varTypeIsFloating(op2));
 
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
