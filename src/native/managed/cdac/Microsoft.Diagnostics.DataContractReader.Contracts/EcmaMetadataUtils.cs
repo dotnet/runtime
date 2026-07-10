@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -234,5 +235,24 @@ public static class EcmaMetadataUtils
 
         nextModule = default;
         return false;
+    }
+
+    // Reads the top-level type from a field signature, skipping custom modifiers. Returns the element type
+    // and, for class/valuetype types, the encoded type token handle (a token in the field's defining module).
+    public static (CorElementType TypeCode, EntityHandle TypeHandle) ReadFieldSignatureType(MetadataReader reader, BlobHandle signature)
+    {
+        BlobReader blobReader = reader.GetBlobReader(signature);
+        SignatureHeader header = blobReader.ReadSignatureHeader();
+        if (header.Kind != SignatureKind.Field)
+            throw new BadImageFormatException();
+        CorElementType typeCode;
+        EntityHandle entityHandle;
+        // in a loop, read custom modifiers until we get to the underlying type
+        do
+        {
+            typeCode = (CorElementType)blobReader.ReadByte();
+            entityHandle = blobReader.ReadTypeHandle(); // consume the type
+        } while (typeCode is CorElementType.CModReqd or CorElementType.CModOpt);
+        return (typeCode, entityHandle);
     }
 }

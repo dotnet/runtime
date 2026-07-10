@@ -230,7 +230,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
             if (fieldDescAddr == TargetPointer.Null)
                 continue;
 
-            uint fdOffset = rts.GetFieldDescOffset(fieldDescAddr, fieldDef);
+            uint fdOffset = rts.GetFieldDescOffset(fieldDescAddr);
             CorElementType elementType = rts.GetFieldDescType(fieldDescAddr);
             instanceFields[fieldName] = new Target.FieldInfo
             {

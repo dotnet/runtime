@@ -2645,7 +2645,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     TargetPointer baseAddr = isPrimitive ? nonGCStaticsBase : gcStaticsBase;
                     if (baseAddr != TargetPointer.Null)
                     {
-                        uint offset = rts.GetFieldDescOffset(fdPtr, null);
+                        uint offset = rts.GetFieldDescOffset(fdPtr);
                         fd.m_pFldStaticAddress = baseAddr + offset;
                     }
                 }
@@ -2653,7 +2653,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             else
             {
                 // instance: store the offset
-                uint offset = rts.GetFieldDescOffset(fdPtr, null);
+                uint offset = rts.GetFieldDescOffset(fdPtr);
                 fd.m_fldInstanceOffset = offset;
             }
         }
@@ -4783,7 +4783,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
                     FieldDefinition fieldDef = enclosingMdReader.GetFieldDefinition(fieldDefHandle);
 
-                    corField->offset = rts.GetFieldDescOffset(fieldDescPtr, fieldDef) + firstFieldOffset;
+                    corField->offset = rts.GetFieldDescOffset(fieldDescPtr) + firstFieldOffset;
 
                     // Resolve the field's type. If we cannot decode the signature (e.g. corrupt
                     // metadata or a type that cannot be loaded), zero out the type id and

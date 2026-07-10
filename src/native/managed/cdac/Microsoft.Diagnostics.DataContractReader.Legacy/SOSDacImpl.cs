@@ -1056,8 +1056,6 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            ISignature signatureContract = _target.Contracts.Signature;
 
             TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
             CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
@@ -1065,83 +1063,58 @@ public sealed unsafe partial class SOSDacImpl
             data->sigType = fieldDescType;
 
             uint token = rtsContract.GetFieldDescMemberDef(fieldDescTargetPtr);
-            FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
 
             TargetPointer enclosingMT = rtsContract.GetMTOfEnclosingClass(fieldDescTargetPtr);
             TypeHandle ctx = rtsContract.GetTypeHandle(enclosingMT);
             TargetPointer modulePtr = rtsContract.GetModule(ctx);
-            Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-            MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
-            FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-            try
-            {
-                // try to completely decode the signature
-                TypeHandle foundTypeHandle = signatureContract.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
 
+            // Resolve the MethodTable of the field's type from its (approximate) TypeHandle, following the
+            // DAC's TypeHandle::GetMethodTable rules used by SOS pretty-printing (src/coreclr/vm/typehandle.inl).
+            // This mapping operates only on TypeHandles, so no metadata is read here.
+            TypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
+            if (foundTypeHandle.IsNull)
+                // if we can't find the MT (e.g in a minidump)
+                data->MTOfType = 0;
                 // get the MT of the type
                 // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
                 // that we can return to SOS for pretty-printing.
                 // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
                 // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
-                if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
-                    data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
-                // array MTs
-                else if (rtsContract.IsArray(foundTypeHandle, out _))
-                    data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                else
-                {
-                    try
-                    {
-                        // value typedescs
-                        TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
-                        data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
-                    }
-                    catch (ArgumentException)
-                    {
-                        // non-array MTs
-                        data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                    }
-                }
-            }
-            catch (VirtualReadException)
-            {
-                // if we can't find the MT (e.g in a minidump)
-                data->MTOfType = 0;
-            }
-
-            // partial decoding of signature
-            BlobReader blobReader = mdReader.GetBlobReader(fieldDef.Signature);
-            SignatureHeader header = blobReader.ReadSignatureHeader();
-            // read the header byte and check for correctness
-            if (header.Kind != SignatureKind.Field)
-                throw new BadImageFormatException();
-            // read the top-level type
-            CorElementType typeCode;
-            EntityHandle entityHandle;
-            // in a loop, read custom modifiers until we get to the underlying type
-            do
-            {
-                typeCode = (CorElementType)blobReader.ReadByte();
-                entityHandle = blobReader.ReadTypeHandle(); // consume the type
-            } while (typeCode is CorElementType.CModReqd or CorElementType.CModOpt); // eat custom modifiers
-
-            if (typeCode is CorElementType.Class or CorElementType.ValueType)
-            {
-                // if the typecode is class or value, we have been able to read the token that follows in the sig
-                data->TokenOfType = (uint)MetadataTokens.GetToken(entityHandle);
-            }
+            else if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
+                data->MTOfType = rtsContract.GetPrimitiveType(CorElementType.U).Address.ToClrDataAddress(_target);
+            // array MTs
+            else if (rtsContract.IsArray(foundTypeHandle, out _))
+                data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
             else
             {
-                // otherwise we have not found the token here, but we can encode the underlying type in sigType
-                data->TokenOfType = (uint)EcmaMetadataUtils.TokenType.mdtTypeDef;
-                if (data->MTOfType == 0)
-                    data->sigType = typeCode;
+                try
+                {
+                    // value typedescs
+                    TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
+                    data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
+                }
+                catch (ArgumentException)
+                {
+                    // non-array MTs
+                    data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
+                }
+            }
+
+            // Read the field type's element type and encoded token from the field signature via the
+            // RuntimeTypeSystem contract so this method doesn't need to read ECMA metadata itself.
+            (CorElementType sigElementType, uint sigTypeToken) = rtsContract.GetFieldDescSignatureType(fieldDescTargetPtr);
+            data->TokenOfType = sigTypeToken;
+            if (sigTypeToken == (uint)EcmaMetadataUtils.TokenType.mdtTypeDef && data->MTOfType == 0)
+            {
+                // There is no encoded token (i.e. a primitive type) and no MethodTable for it, so remember
+                // the element type from the signature.
+                data->sigType = sigElementType;
             }
 
             data->ModuleOfType = modulePtr.ToClrDataAddress(_target);
             data->mb = token;
             data->MTOfEnclosingClass = ctx.Address.ToClrDataAddress(_target);
-            data->dwOffset = rtsContract.GetFieldDescOffset(fieldDescTargetPtr, fieldDef);
+            data->dwOffset = rtsContract.GetFieldDescOffset(fieldDescTargetPtr);
             data->bIsThreadLocal = rtsContract.IsFieldDescThreadStatic(fieldDescTargetPtr) ? 1 : 0;
             data->bIsContextLocal = 0;
             data->bIsStatic = rtsContract.IsFieldDescStatic(fieldDescTargetPtr) ? 1 : 0;

@@ -892,7 +892,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 if (isStatic)
                     continue;
                 fieldType = rts.GetFieldDescType(fdPtr);
-                fieldOffset = rts.GetFieldDescOffset(fdPtr, fieldDef: null);
+                fieldOffset = rts.GetFieldDescOffset(fdPtr);
             }
             catch
             {

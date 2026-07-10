@@ -2284,7 +2284,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (CorElementType)((fieldDesc.DWord2 & (uint)FieldDescFlags2.TypeMask) >> TYPE_MASK_OFFSET);
     }
 
-    uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
+    uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
         // DWord2 packs the 27-bit offset (low bits) with the 5-bit field type (high bits), so the offset
@@ -2293,11 +2293,56 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         uint offset = fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
         if (offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
         {
-            if (fieldDef is null)
-                throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
-            return (uint)fieldDef.Value.GetRelativeVirtualAddress();
+            // Big-RVA fields store their offset (an RVA) in metadata; resolve the FieldDefinition for it.
+            if (TryGetFieldDefinition(fieldDescPointer, out _, out _) is not FieldDefinition fieldDef)
+                throw new InvalidOperationException("Field definition metadata is required to resolve a big RVA field offset.");
+            return (uint)fieldDef.GetRelativeVirtualAddress();
         }
         return offset;
+    }
+
+    (CorElementType ElementType, uint TypeToken) IRuntimeTypeSystem.GetFieldDescSignatureType(TargetPointer fieldDescPointer)
+    {
+        FieldDefinition? fieldDefOrNull = TryGetFieldDefinition(fieldDescPointer, out ModuleHandle moduleHandle, out _);
+        if (fieldDefOrNull is not FieldDefinition fieldDef)
+        {
+            // Metadata unavailable; fall back to the (normalized) type stored in the FieldDesc and no token.
+            return (((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer), (uint)EcmaMetadataUtils.TokenType.mdtTypeDef);
+        }
+
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        (CorElementType typeCode, EntityHandle entityHandle) = EcmaMetadataUtils.ReadFieldSignatureType(mdReader, fieldDef.Signature);
+        // For class/valuetype fields the signature encodes the type token (in the field's defining module);
+        // otherwise there is no encoded token.
+        uint typeToken = typeCode is CorElementType.Class or CorElementType.ValueType
+            ? (uint)MetadataTokens.GetToken(entityHandle)
+            : (uint)EcmaMetadataUtils.TokenType.mdtTypeDef;
+        return (typeCode, typeToken);
+    }
+
+    // Resolves the FieldDefinition (and its containing module/enclosing type) for a FieldDesc from metadata.
+    // Returns null if the metadata is not available (e.g. in a minidump).
+    private FieldDefinition? TryGetFieldDefinition(TargetPointer fieldDescPointer, out ModuleHandle moduleHandle, out TypeHandle enclosingType)
+    {
+        moduleHandle = default;
+        enclosingType = default;
+
+        TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
+        if (enclosingMT == TargetPointer.Null)
+            return null;
+        enclosingType = GetTypeHandle(enclosingMT);
+        TargetPointer modulePtr = GetModule(enclosingType);
+        if (modulePtr == TargetPointer.Null)
+            return null;
+
+        moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+            return null;
+
+        uint memberDef = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
+        FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
+        return mdReader.GetFieldDefinition(fieldDefHandle);
     }
 
     TypeHandle IRuntimeTypeSystem.GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
@@ -2419,12 +2464,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (@base == TargetPointer.Null)
             return TargetPointer.Null;
 
-        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
-        uint token = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
-        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
-        FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-
-        uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
+        uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer);
         bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
         TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
         if (unboxValueTypes && type == CorElementType.ValueType && !isRVA)
