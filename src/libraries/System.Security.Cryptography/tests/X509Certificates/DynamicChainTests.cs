@@ -1046,6 +1046,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(ChainPolicyMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void CertificatePolicyTest(
            ChainPolicyTestCase testCase)
         {
