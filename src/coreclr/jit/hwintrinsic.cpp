@@ -2876,33 +2876,100 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     assert(HWIntrinsicInfo::lookupIsa(intrinsic) == InstructionSet_Vector);
 
 #if defined(TARGET_XARCH)
-    if ((simdSize == 32) && varTypeIsIntegral(simdBaseType))
+    if (simdSize == 32)
     {
         bool potentiallyNotSupported = true;
 
-        switch (intrinsic)
+        if (HWIntrinsicInfo::AvxOnlyCompatible(intrinsic))
         {
-            case NI_Vector_Abs:
+            switch (intrinsic)
             {
-                potentiallyNotSupported = varTypeIsSigned(simdBaseType);
-                break;
-            }
+                case NI_Vector_Abs:
+                case NI_Vector_IsNegative:
+                case NI_Vector_IsPositive:
+                {
+                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    break;
+                }
 
-            case NI_Vector_CreateAlternatingSequence:
-            case NI_Vector_CreateGeometricSequence:
-            case NI_Vector_CreateSequence:
-            {
-                GenTree* op1 = impStackTop(1).val;
-                GenTree* op2 = impStackTop(0).val;
+                case NI_Vector_ExtractMostSignificantBits:
+                {
+                    potentiallyNotSupported = varTypeIsSmall(simdBaseType);
+                    break;
+                }
 
-                potentiallyNotSupported = !op1->OperIsConst() || !op2->OperIsConst();
-                break;
-            }
+                case NI_Vector_AddSaturate:
+                case NI_Vector_Dot:
+                case NI_Vector_Equals:
+                case NI_Vector_GreaterThan:
+                case NI_Vector_GreaterThanOrEqual:
+                case NI_Vector_IsZero:
+                case NI_Vector_LessThan:
+                case NI_Vector_LessThanOrEqual:
+                case NI_Vector_MaxNative:
+                case NI_Vector_MinNative:
+                case NI_Vector_MultiplyAddEstimate:
+                case NI_Vector_Narrow:
+                case NI_Vector_NarrowWithSaturation:
+                case NI_Vector_SubtractSaturate:
+                case NI_Vector_Sum:
+                case NI_Vector_WidenLower:
+                case NI_Vector_WidenUpper:
+                case NI_Vector_op_Addition:
+                case NI_Vector_op_Division:
+                case NI_Vector_op_Equality:
+                case NI_Vector_op_Inequality:
+                case NI_Vector_op_Multiply:
+                case NI_Vector_op_Subtraction:
+                case NI_Vector_op_UnaryNegation:
+                {
+                    potentiallyNotSupported = varTypeIsIntegral(simdBaseType);
+                    break;
+                }
 
-            default:
-            {
-                potentiallyNotSupported = !HWIntrinsicInfo::AvxOnlyCompatible(intrinsic);
-                break;
+                case NI_Vector_IsFinite:
+                case NI_Vector_IsInfinity:
+                case NI_Vector_IsInteger:
+                case NI_Vector_IsNegativeInfinity:
+                case NI_Vector_IsPositiveInfinity:
+                case NI_Vector_IsSubnormal:
+                {
+                    potentiallyNotSupported = varTypeIsFloating(simdBaseType);
+                    break;
+                }
+
+                case NI_Vector_UnzipEven:
+                case NI_Vector_UnzipOdd:
+                {
+                    potentiallyNotSupported = genTypeSize(simdBaseType) != 4;
+                    break;
+                }
+
+                case NI_Vector_CreateAlternatingSequence:
+                {
+                    GenTree* op1 = impStackTop(1).val;
+                    GenTree* op2 = impStackTop(0).val;
+
+                    potentiallyNotSupported = !op1->OperIsConst() || !op2->OperIsConst();
+                    break;
+                }
+
+                case NI_Vector_CreateGeometricSequence:
+                case NI_Vector_CreateSequence:
+                {
+                    GenTree* op1 = impStackTop(1).val;
+                    GenTree* op2 = impStackTop(0).val;
+
+                    potentiallyNotSupported =
+                        varTypeIsIntegral(simdBaseType) && (!op1->OperIsConst() || !op2->OperIsConst());
+                    break;
+                }
+
+                default:
+                {
+                    potentiallyNotSupported = false;
+                    break;
+                }
             }
         }
 
@@ -2910,12 +2977,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             return nullptr;
         }
-    }
-#elif defined(TARGET_WASM)
-    if (intrinsic != NI_Vector_Create)
-    {
-        // TODO-WASM-SIMD: Finish adding xplat intrinsic lightup
-        return nullptr;
     }
 #endif
 
@@ -2963,9 +3024,19 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_ARM64)
+                intrinsic = NI_AdvSimd_AddSaturate;
+
+                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+                {
+                    intrinsic = NI_AdvSimd_AddSaturateScalar;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
                 if (varTypeIsSmall(simdBaseType))
                 {
+#if defined(TARGET_XARCH)
                     if (simdSize == 64)
                     {
                         intrinsic = NI_AVX512_AddSaturate;
@@ -2979,7 +3050,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                         assert(simdSize == 16);
                         intrinsic = NI_X86Base_AddSaturate;
                     }
-
+#elif defined(TARGET_WASM)
+                    intrinsic = NI_PackedSimd_AddSaturate;
+#else
+#error Unsupported platform
+#endif
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
                 }
                 else if (varTypeIsUnsigned(simdBaseType))
@@ -3006,13 +3081,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
                     switch (simdBaseType)
                     {
-                        case TYP_SHORT:
-                        {
-                            minCns->EvaluateBroadcastInPlace<int16_t>(INT16_MIN);
-                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT16_MAX);
-                            break;
-                        }
-
                         case TYP_INT:
                         {
                             minCns->EvaluateBroadcastInPlace<int32_t>(INT32_MIN);
@@ -3046,6 +3114,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
                     // The mask we need is ((a ^ b) & ~(b ^ c)) < 0
 
+#if defined(TARGET_XARCH)
                     if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                     {
                         // tmpDup1 = a: 0xF0
@@ -3058,6 +3127,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                                                         simdBaseType, simdSize);
                     }
                     else
+#endif
                     {
                         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
@@ -3070,20 +3140,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseType, simdSize);
                     retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseType, simdSize);
                 }
-#elif defined(TARGET_ARM64)
-                intrinsic = NI_AdvSimd_AddSaturate;
-
-                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
-                {
-                    intrinsic = NI_AdvSimd_AddSaturateScalar;
-                }
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
-                // TODO-WASM-SIMD: Implement NI_Vector_AddSaturate
-                return nullptr;
-#else
-                unreached();
 #endif
             }
             break;
@@ -3120,7 +3176,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_AsUInt32:
         case NI_Vector_AsUInt64:
         case NI_Vector_AsVector4:
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
         case NI_Vector_AsVector:
 #endif
         {
@@ -3275,6 +3331,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     assert(simdBaseType == TYP_FLOAT);
 
+#if defined(TARGET_WASM)
+                    // TODO-WASM-SIMD: Implement NI_Vector_AsVector128(Vector2) - Need WithElement
+                    return nullptr;
+#endif
+
                     op1 = impSIMDPopStack();
 
                     if (op1->IsCnsVec())
@@ -3308,6 +3369,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 case 12:
                 {
                     assert(simdBaseType == TYP_FLOAT);
+
+#if defined(TARGET_WASM)
+                    // TODO-WASM-SIMD: Implement NI_Vector_AsVector128(Vector3) - Need WithElement
+                    return nullptr;
+#endif
 
                     op1 = impSIMDPopStack();
 
@@ -3369,6 +3435,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(simdBaseType == TYP_FLOAT);
             assert((simdSize == 8) || (simdSize == 12));
 
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_AsVector128Unsafe
+            return nullptr;
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector_AsVector128Unsafe, simdBaseType, simdSize);
             break;
@@ -3379,6 +3450,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert((simdSize == 16) && (simdBaseType == TYP_FLOAT));
             assert((retType == TYP_SIMD8) || (retType == TYP_SIMD12));
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_AsVector2/3
+            return nullptr;
+#endif
 
             assert(sig->numArgs == 1);
             op1 = impSIMDPopStack();
@@ -3533,6 +3609,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToInt64
+            return nullptr;
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNode(retType, op1, TYP_LONG, simdBaseType, simdSize);
             break;
@@ -3553,6 +3634,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             {
                 break;
             }
+#endif
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToInt64Native
+            return nullptr;
 #endif
 
             op1     = impSIMDPopStack();
@@ -3605,8 +3691,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
             intrinsic = NI_AdvSimd_ConvertToSingle;
 #elif defined(TARGET_WASM)
-            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToSingle
-            return nullptr;
+            intrinsic = NI_PackedSimd_ConvertToSingle;
 #else
             unreached();
 #endif
@@ -3667,6 +3752,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToUInt64
+            return nullptr;
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNode(retType, op1, TYP_ULONG, simdBaseType, simdSize);
             break;
@@ -3689,6 +3779,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_ConvertToUInt64Native
+            return nullptr;
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNativeNode(retType, op1, TYP_ULONG, simdBaseType, simdSize);
             break;
@@ -3706,6 +3801,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             impSpillSideEffect(true, stackState.esStackDepth -
                                          2 DEBUGARG("Spilling op1 side effects for vector CreateAlternatingSequence"));
+
+#if defined(TARGET_WASM)
+            if (!impStackTop(0).val->OperIsConst() || !impStackTop(1).val->OperIsConst())
+            {
+                // TODO-WASM-SIMD: Implement NI_Vector_CreateAlternatingSequence - Need Shuffle
+                return nullptr;
+            }
+#endif
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -3760,6 +3863,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
+#if defined(TARGET_WASM)
+            if (!impStackTop(0).val->OperIsConst())
+            {
+                // TODO-WASM-SIMD: Implement NI_Vector_CreateScalar
+                break;
+            }
+#endif
+
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -3768,6 +3879,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_WASM)
+            if (!impStackTop(0).val->OperIsConst())
+            {
+                // TODO-WASM-SIMD: Implement NI_Vector_CreateScalarUnsafe
+                break;
+            }
+#endif
 
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarUnsafeNode(retType, op1, simdBaseType, simdSize);
@@ -3799,6 +3918,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_Dot:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_Dot - Need Shuffle
+            return nullptr;
+#endif
 
 #if defined(TARGET_ARM64)
             if (varTypeIsLong(simdBaseType))
@@ -3841,13 +3965,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_EqualsAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -3907,6 +4024,21 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     unreached();
                 }
             }
+#elif defined(TARGET_WASM)
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType = TYP_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseType = TYP_LONG;
+            }
+            else
+            {
+                assert(varTypeIsIntegral(simdBaseType));
+            }
+
+            intrinsic = NI_PackedSimd_Bitmask;
 #endif
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
@@ -3944,6 +4076,9 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             impSpillSideEffect(true,
                                stackState.esStackDepth - 2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
+#elif defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_FusedMultiplyAdd
+            return nullptr;
 #endif
 
             op3 = impSIMDPopStack();
@@ -3957,6 +4092,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GetElement:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_GetElement
+            return nullptr;
+#endif
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
@@ -4014,13 +4154,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4031,13 +4164,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GreaterThanAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4061,13 +4187,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4078,13 +4197,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GreaterThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4112,14 +4224,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsFinite:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsFiniteNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4128,14 +4232,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsInfinity:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsInfinityNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4144,14 +4240,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsInteger:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsIntegerNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4168,14 +4256,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsNegative:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsNegativeNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4184,14 +4264,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsNegativeInfinity:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsNegativeInfinityNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4200,14 +4272,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsNormal:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsNormalNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4232,14 +4296,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsPositive:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsPositiveNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4248,14 +4304,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsPositiveInfinity:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsPositiveInfinityNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4264,14 +4312,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_IsSubnormal:
         {
             assert(sig->numArgs == 1);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsSubnormalNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -4300,13 +4340,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4317,13 +4350,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_LessThanAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4347,13 +4373,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -4364,13 +4383,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_LessThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
-
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
-#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4383,10 +4395,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+                // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
@@ -4409,10 +4421,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+                // ARM64/WASM doesn't have aligned loads, but aligned loads are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
@@ -4567,6 +4579,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             {
                 isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2);
             }
+#elif defined(TARGET_WASM)
+            isFmaSupported = false;
 #endif
 
             if (isFmaSupported)
@@ -4584,6 +4598,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_Narrow:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_Narrow
+            return nullptr;
+#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -4845,6 +4864,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_Reverse - Need Shuffle
+            return nullptr;
+#endif
+
 #if defined(TARGET_XARCH)
             if ((simdSize == 64) && varTypeIsByte(simdBaseType))
             {
@@ -4888,6 +4912,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 // that have operator alternatives like `simd << int`
                 break;
             }
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_ShiftLeft
+            return nullptr;
+#endif
 
 #if defined(TARGET_XARCH)
             if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -4935,6 +4964,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_ShuffleNativeFallback:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_Shuffle
+            return nullptr;
+#endif
 
             bool isShuffleNative    = (intrinsic != NI_Vector_Shuffle);
             bool isNonDeterministic = isShuffleNative;
@@ -5017,10 +5051,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
@@ -5048,10 +5082,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
             if (opts.OptimizationDisabled())
             {
-                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // ARM64/WASM doesn't have aligned stores, but aligned stores are only validated to be
                 // aligned when optimizations are disable, so only skip the intrinsic handling
                 // if optimizations are enabled
                 break;
@@ -5127,9 +5161,19 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_ARM64)
+                intrinsic = NI_AdvSimd_SubtractSaturate;
+
+                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
+                {
+                    intrinsic = NI_AdvSimd_SubtractSaturateScalar;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
                 if (varTypeIsSmall(simdBaseType))
                 {
+#if defined(TARGET_XARCH)
                     if (simdSize == 64)
                     {
                         intrinsic = NI_AVX512_SubtractSaturate;
@@ -5143,6 +5187,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                         assert(simdSize == 16);
                         intrinsic = NI_X86Base_SubtractSaturate;
                     }
+#elif defined(TARGET_WASM)
+                    intrinsic = NI_PackedSimd_SubtractSaturate;
+#else
+#error Unsupported platform
+#endif
 
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
                 }
@@ -5170,13 +5219,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
                     switch (simdBaseType)
                     {
-                        case TYP_SHORT:
-                        {
-                            minCns->EvaluateBroadcastInPlace<int16_t>(INT16_MIN);
-                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT16_MAX);
-                            break;
-                        }
-
                         case TYP_INT:
                         {
                             minCns->EvaluateBroadcastInPlace<int32_t>(INT32_MIN);
@@ -5210,6 +5252,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
                     // The mask we need is ((a ^ b) & (b ^ c)) < 0
 
+#if defined(TARGET_XARCH)
                     if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                     {
                         // tmpDup1 = a: 0xF0
@@ -5222,6 +5265,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                                                         simdBaseType, simdSize);
                     }
                     else
+#endif
                     {
                         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
@@ -5234,20 +5278,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseType, simdSize);
                     retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseType, simdSize);
                 }
-#elif defined(TARGET_ARM64)
-                intrinsic = NI_AdvSimd_SubtractSaturate;
-
-                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
-                {
-                    intrinsic = NI_AdvSimd_SubtractSaturateScalar;
-                }
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
-#elif defined(TARGET_WASM)
-                // TODO-WASM-SIMD: Implement NI_Vector_SubtractSaturate
-                return nullptr;
-#else
-                unreached();
 #endif
             }
             break;
@@ -5256,6 +5286,12 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_Sum:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_Sum - Need Shuffle
+            return nullptr;
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -5264,6 +5300,12 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_ToScalar:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_ToScalar - Need GetElement
+            return nullptr;
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdToScalarNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -5288,6 +5330,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_UnzipOdd:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_Unzip - Need Shuffle
+            return nullptr;
+#endif
 
 #if defined(TARGET_XARCH)
             if (simdSize == 16)
@@ -5320,6 +5367,15 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_WidenUpper:
         {
             assert(sig->numArgs == 1);
+
+#if defined(TARGET_WASM)
+            if (simdBaseType == TYP_FLOAT)
+            {
+                // TODO-WASM-SIMD - Implement NI_Vector_WidenUpper(float) - Need Shuffle
+                return nullptr;
+            }
+#endif
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdWidenUpperNode(retType, op1, simdBaseType, simdSize);
             break;
@@ -5328,6 +5384,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_WithElement:
         {
             assert(sig->numArgs == 3);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_WithElement
+            return nullptr;
+#endif
 
 #if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType))
@@ -5420,6 +5481,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_ZipUpper:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_Zip - Need Shuffle
+            return nullptr;
+#endif
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -5722,11 +5788,9 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_op_LeftShift
+            return nullptr;
 #endif
 
             op2 = impPopStack().val;
@@ -5767,11 +5831,9 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_op_RightShift
+            return nullptr;
 #endif
 
             genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
@@ -5813,11 +5875,9 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                break;
-            }
+#if defined(TARGET_WASM)
+            // TODO-WASM-SIMD: Implement NI_Vector_op_UnsignedRightShift
+            return nullptr;
 #endif
 
             op2 = impPopStack().val;
@@ -5861,6 +5921,11 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     {
         assert(sig->numArgs == 2);
         assert(retNode == nullptr);
+
+#if defined(TARGET_WASM)
+        // TODO-WASM-SIMD: Implement NI_Vector_Concat - Need Shuffle
+        return nullptr;
+#endif
 
         op2 = impSIMDPopStack();
         op1 = impSIMDPopStack();
