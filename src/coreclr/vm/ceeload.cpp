@@ -1835,7 +1835,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         if (SUCCEEDED(hr))
         {
-            m_pISymUnmanagedReader = pReader.Detach();
+            m_pISymUnmanagedReader = pReader.Extract();
             LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %s\n", GetDebugName()));
         }
         else
