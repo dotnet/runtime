@@ -6414,8 +6414,7 @@ GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
     // maskNode must be ADD(LSH(1, y), -1) or the equivalent, un-canonicalized SUB(LSH(1, y), 1).
     GenTree* lshNode   = nullptr;
     GenTree* constNode = nullptr;
-    if (maskNode->OperIs(GT_ADD) && maskNode->gtGetOp2()->IsIntegralConst(-1) &&
-        maskNode->gtGetOp1()->OperIs(GT_LSH))
+    if (maskNode->OperIs(GT_ADD) && maskNode->gtGetOp2()->IsIntegralConst(-1) && maskNode->gtGetOp1()->OperIs(GT_LSH))
     {
         lshNode   = maskNode->gtGetOp1();
         constNode = maskNode->gtGetOp2();
