@@ -101,8 +101,4 @@
           Condition="'$(IsTestProject)' == 'true'" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
-
-  <!-- Use local targeting/app host packs for test projects targeting NetCoreAppCurrent.
-       This avoids NuGet restore failures on platforms without published host packs (e.g. s390x, ppc64le). -->
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'" />
 </Project>
