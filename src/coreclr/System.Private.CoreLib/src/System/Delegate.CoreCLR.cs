@@ -223,7 +223,6 @@ namespace System
                 if (IsUnmanagedFunctionPtr)
                 {
                     return other.IsUnmanagedFunctionPtr &&
-                           _methodPtr == other._methodPtr &&
                            _methodPtrAux == other._methodPtrAux;
                 }
 
