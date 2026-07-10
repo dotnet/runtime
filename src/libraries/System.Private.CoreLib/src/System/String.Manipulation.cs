@@ -2400,7 +2400,6 @@ namespace System
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
                     if (cmp != Vector128<byte>.Zero)
                     {
-                        cmp &= Vector128.Create(0x0101010101010101UL).AsByte();
                         int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
                         uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
                         while (mask != 0)
