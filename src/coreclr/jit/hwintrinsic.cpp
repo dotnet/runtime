@@ -980,7 +980,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Crc32, LAST_NI_Crc32 },                          // Crc32
     { FIRST_NI_Dp, LAST_NI_Dp },                                // Dp
     { FIRST_NI_Rdm, LAST_NI_Rdm },                              // Rdm
-    { NI_Illegal, NI_Illegal },                                 //      Fp16
+    { FIRST_NI_Fp16, LAST_NI_Fp16 },                            // Fp16
     { FIRST_NI_Sha1, LAST_NI_Sha1 },                            // Sha1
     { FIRST_NI_Sha256, LAST_NI_Sha256 },                        // Sha256
     { NI_Illegal, NI_Illegal },                                 //      Atomics
