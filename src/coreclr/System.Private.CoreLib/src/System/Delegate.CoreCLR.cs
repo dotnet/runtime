@@ -272,14 +272,14 @@ namespace System
         {
             return TryGetInvocations(out ReadOnlySpan<object> invocations)
                 ? ((Delegate)invocations[^1]).Method
-                : _helperObject as MethodInfo ?? GetMethodImplUncached();
+                : _helperObject as MethodInfo ?? GetMethodImplSlow();
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            MethodInfo GetMethodImplUncached()
+            MethodInfo GetMethodImplSlow()
             {
                 Debug.Assert(HasSingleTarget);
 
-                MethodInfo method = GetMethodImplCore();
+                MethodInfo method = GetMethodImplUncached();
                 Debug.Assert(method is not null);
 
                 _helperObject = method;
@@ -287,7 +287,7 @@ namespace System
             }
         }
 
-        private unsafe MethodInfo GetMethodImplCore()
+        private unsafe MethodInfo GetMethodImplUncached()
         {
             // should be handled by GetMethodImpl
             Debug.Assert(HasSingleTarget);
