@@ -69,7 +69,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFEATURE_IJW) # C++/CLI managed/native interop support
 endif(CLR_CMAKE_TARGET_WIN32)
 
-add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CORECLR)
 if(FEATURE_DBGIPC)
   add_definitions(-DFEATURE_DBGIPC_TRANSPORT_DI)

@@ -273,7 +273,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         private int Age { get; set; }
                     }
                 }
-                """, nameof(UnsafeAccessors_PrivateProperties), disableDiagnosticValidation: true);
+                """, nameof(UnsafeAccessors_PrivateProperties));
         }
 
         [Fact]
