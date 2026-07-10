@@ -752,5 +752,108 @@ namespace System.Tests
             Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
         }
 
+        public static IEnumerable<object[]> op_Equality_TestData()
+        {
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000), false }; // NaN == NaN -> false
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), false }; // NaN == 1 -> false
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xFC00000000000000, 0x0000000000000000), false }; // 1 == NaN -> false
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), false }; // NaN == +Inf -> false
+            yield return new object[] { new UInt128(0xFE00000000000000, 0x0000000000000000), new UInt128(0xFE00000000000000, 0x0000000000000000), false }; // sNaN == sNaN -> false
+            yield return new object[] { new UInt128(0xFE00000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), false }; // sNaN == 1 -> false
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), true }; // +Inf == +Inf -> true
+            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), true }; // -Inf == -Inf -> true
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), false }; // +Inf == -Inf -> false
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), false }; // +Inf == 1 -> false
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000002), new UInt128(0x7800000000000000, 0x0000000000000000), true }; // non-canonical +Inf == +Inf -> true
+            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000005), new UInt128(0xF800000000000000, 0x0000000000000000), true }; // non-canonical -Inf == -Inf -> true
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000000), true }; // +0 == -0 -> true
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), true }; // -0 == +0 -> true
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), true }; // +0 == +0 -> true
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000001), true }; // 1 == 1 -> true
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000001), false }; // 1 == -1 -> false
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000001), false }; // -1 == 1 -> false
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x000000000000000A), true }; // 1 == 1.0 -> true (cohort)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x000000000000000A), new UInt128(0x3040000000000000, 0x0000000000000001), true }; // 1.0 == 1 -> true (cohort)
+            yield return new object[] { new UInt128(0x303C000000000000, 0x0000000000000064), new UInt128(0x303E000000000000, 0x000000000000000A), true }; // 1.00 == 1.0 -> true (cohort)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000064), new UInt128(0x3044000000000000, 0x0000000000000001), true }; // 100 == 1e2 -> true (cohort)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x000000000000000A), new UInt128(0x3040000000000000, 0x0000000000000001), false }; // 10 == 1 -> false
+            yield return new object[] { new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), true }; // large == large -> true
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), true }; // all-nines == all-nines -> true
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFE), false }; // all-nines != near -> false
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x0000000000000001), true }; // 0.1 == 0.1 -> true
+            yield return new object[] { new UInt128(0xB03E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x0000000000000001), false }; // -0.1 == 0.1 -> false
+            yield return new object[] { new UInt128(0x304A000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), true }; // +0 (exp 5) == +0 -> true (zero cohort)
+            yield return new object[] { new UInt128(0x301A000000000003, 0x9BCF4E2EDCF12EF7), new UInt128(0x3018000000000024, 0x16190DD4A16BD5A6), true };
+            yield return new object[] { new UInt128(0xABF20063BD39CCEE, 0x436C8968918D808D), new UInt128(0x303E000000000000, 0x00230AA75BEE8E14), false };
+            yield return new object[] { new UInt128(0x300C00002B873DBB, 0xBEBE1FC587469CE0), new UInt128(0x2FF00016B43C9B4F, 0x23150FD733E05182), false };
+            yield return new object[] { new UInt128(0xB026000000000000, 0x0000076D2FCDB6B3), new UInt128(0x3000000000000000, 0x0003114CF7F46793), false };
+            yield return new object[] { new UInt128(0x3030000000000030, 0x6A45B64B7AA1C513), new UInt128(0x302C0000000012E9, 0x833B357BE730FB6C), true };
+            yield return new object[] { new UInt128(0x289C000000000000, 0x000000000004EDA8), new UInt128(0x2896000000000000, 0x0000000013405840), true };
+            yield return new object[] { new UInt128(0xB008000000000000, 0x0AC06CB3BC9AF0A1), new UInt128(0xB004000000000004, 0x332A7635AC85FEE4), true };
+            yield return new object[] { new UInt128(0xD3FA000000000000, 0x0000000000000F1B), new UInt128(0xB02800044597400B, 0x08FB25BCBB359B1B), false };
+            yield return new object[] { new UInt128(0x3038000000000000, 0x0157E2AA499D25FA), new UInt128(0xB048000000000000, 0x000000000000003B), false };
+            yield return new object[] { new UInt128(0x1A30000000000000, 0x0970216EDBCE4CB6), new UInt128(0x1A2C000000000003, 0xAFCD0F4DDC95F718), true };
+            yield return new object[] { new UInt128(0xB032000002F2A152, 0x9B60F2A4EEAF5036), new UInt128(0x305E000000000000, 0x000000000003CF69), false };
+            yield return new object[] { new UInt128(0xAFFC000000000000, 0x000119FF4AE64AB6), new UInt128(0xAFF6000000000000, 0x044D8D3C9393D6F0), true };
+            yield return new object[] { new UInt128(0xB024000000000000, 0x0000000000383395), new UInt128(0xB01E000000000000, 0x00000000DB897E08), true };
+            yield return new object[] { new UInt128(0x3016000000000000, 0x00000000025C222D), new UInt128(0xAFEE0000105989B6, 0x14E871DF7FB4E7FF), false };
+            yield return new object[] { new UInt128(0xAFE4004BC3F60664, 0xA2D28316972FB16C), new UInt128(0x3024000000000000, 0x336683344D857468), false };
+            yield return new object[] { new UInt128(0xB026000000000000, 0x0000000000000009), new UInt128(0xD38C000000000000, 0x0134998469438B15), false };
+            yield return new object[] { new UInt128(0xB030000000000000, 0x00000006C1105459), new UInt128(0xB040000000000000, 0x0000000000000272), false };
+            yield return new object[] { new UInt128(0x30360000000000BC, 0x438EB99271BCAFC8), new UInt128(0xB040000000000000, 0x00000000DBE2C593), false };
+            yield return new object[] { new UInt128(0x9B3E004F2DD1B479, 0xFC21185B344542C4), new UInt128(0xB052000000000000, 0x00000000EFF4031C), false };
+            yield return new object[] { new UInt128(0x3020000000000000, 0x0000009AA0434574), new UInt128(0x301C000000000000, 0x00003C669A472150), true };
+            yield return new object[] { new UInt128(0x3048000000000000, 0x000000003A904488), new UInt128(0x3046000000000000, 0x0000000249A2AD50), true };
+            yield return new object[] { new UInt128(0x303C0000000000E8, 0xFEE00455BE372834), new UInt128(0x3036000000038E23, 0x9B10EEEF07750B20), true };
+            yield return new object[] { new UInt128(0xB012000000000000, 0x0000000002BA9121), new UInt128(0xB00C000000000000, 0x0000000AA8C6E8E8), true };
+            yield return new object[] { new UInt128(0x3004000000000000, 0x0000BD66F041ECD5), new UInt128(0x3002000000000000, 0x0007660562934052), true };
+            yield return new object[] { new UInt128(0xADE0000000000000, 0x0002A69155BE30BC), new UInt128(0xADDE000000000000, 0x001A81AD596DE758), true };
+            yield return new object[] { new UInt128(0xDF96000000000000, 0x000000DF56F88A23), new UInt128(0xDF90000000000000, 0x0003686BBADB98B8), true };
+            yield return new object[] { new UInt128(0xB01A000000000000, 0x0000000000000034), new UInt128(0xB016000000000000, 0x0000000000001450), true };
+            yield return new object[] { new UInt128(0x334C0000001FE2B8, 0xADA8450705F0175D), new UInt128(0x334800000C749023, 0xD5BAF6BE51C92054), true };
+            yield return new object[] { new UInt128(0x8462000000000000, 0x00000000EAC878D0), new UInt128(0xB044000000000000, 0x0766DC043F42224C), false };
+            yield return new object[] { new UInt128(0xB02400012DE50EC6, 0xBBBA78C47B74A0E0), new UInt128(0x302200000000012F, 0x1F7FF8F741AE5567), false };
+            yield return new object[] { new UInt128(0x3038000000000000, 0x0000000000000057), new UInt128(0xB03C000000000000, 0x000000110FC8CD30), false };
+            yield return new object[] { new UInt128(0x3030000000000000, 0x17E95893CB288412), new UInt128(0x004A00000000001C, 0x8D893304C576A4DE), false };
+            yield return new object[] { new UInt128(0xB030000000000000, 0x0000000002CEAE78), new UInt128(0xB02A000000000000, 0x0000000AF75984C0), true };
+            yield return new object[] { new UInt128(0xB004000000000000, 0x0000000FAFB5B374), new UInt128(0xDF860003F338CEEF, 0xDDFFE3EAF7A5A1FD), false };
+            yield return new object[] { new UInt128(0xB026000000000000, 0x00009E4E44EAB8B0), new UInt128(0x9244000000000000, 0x000004781F6323F3), false };
+            yield return new object[] { new UInt128(0xAFFA00000000002E, 0x3420D6865B6A6E4E), new UInt128(0xD258000000000000, 0x000000000091C9EF), false };
+            yield return new object[] { new UInt128(0x300A000000000000, 0x0000167364209915), new UInt128(0x301C000000000000, 0x000000000439E2E9), false };
+            yield return new object[] { new UInt128(0xB014000000000032, 0x708772352DE98CF2), new UInt128(0xB0120000000001F8, 0x654A7613CB1F8174), true };
+            yield return new object[] { new UInt128(0xA7B80000000002FC, 0x39DED1B856E65FE1), new UInt128(0xB0240000000047EB, 0x1D33A9AEB44C6F89), false };
+            yield return new object[] { new UInt128(0xB03A000000006CA7, 0xBAF42939DF4E7BA0), new UInt128(0x3012000000008D6C, 0x822E872520B2A4C8), false };
+            yield return new object[] { new UInt128(0x1530000000000000, 0x0000000005217896), new UInt128(0x152C000000000000, 0x0000000201131A98), true };
+            yield return new object[] { new UInt128(0xB042000000000000, 0x00000000002D231B), new UInt128(0xB040000000000000, 0x0000000001C35F0E), true };
+            yield return new object[] { new UInt128(0x300800000041C9DA, 0x0AE55CDA1CDDE16F), new UInt128(0x300600000291E284, 0x6CF5A08520AACE56), true };
+            yield return new object[] { new UInt128(0xB024000000000000, 0x00000000007F4CCA), new UInt128(0xB020000000000000, 0x0000000031B9FEE8), true };
+            yield return new object[] { new UInt128(0x3050000000000000, 0x000000001572A68A), new UInt128(0x30040058AA3F10A7, 0x9EFB87DE8539A6CD), false };
+            yield return new object[] { new UInt128(0xB006000000000000, 0x0000041BDB3C92D4), new UInt128(0xB004000000000000, 0x00002916905DBC48), true };
+            yield return new object[] { new UInt128(0x3022000000000002, 0x18ABFEB8FC5D88D3), new UInt128(0x5F400000000005E8, 0x2C8923BCBDB9FD3E), false };
+            yield return new object[] { new UInt128(0xB034000000000000, 0x00000000000C3C2B), new UInt128(0xB032000000000000, 0x00000000007A59AE), true };
+            yield return new object[] { new UInt128(0xB0040315621B218F, 0xE4D69AF338BACC8F), new UInt128(0xB0021ED5D50F4F9E, 0xF0620D80374BFD96), true };
+            yield return new object[] { new UInt128(0xB02E000000000000, 0x000000440D74407B), new UInt128(0xB02A000000000000, 0x00001A954169300C), true };
+            yield return new object[] { new UInt128(0x302600393862E7E8, 0x73749E8BE815E588), new UInt128(0x3020DF844259E402, 0xFF8B528295889B40), true };
+            yield return new object[] { new UInt128(0x3038000000000000, 0x096997BACFE09F53), new UInt128(0x3032000000000024, 0xC478B1BC056E5C38), true };
+            yield return new object[] { new UInt128(0x3040000000000000, 0x00000000F4E84277), new UInt128(0x302E000000029939, 0x82A8BC0D5A4BB09F), false };
+            yield return new object[] { new UInt128(0x305C000000000000, 0x000000000000FE36), new UInt128(0x3058000000000000, 0x0000000000634D18), true };
+            yield return new object[] { new UInt128(0xB00E000000000000, 0x000000008DD9B33D), new UInt128(0xAFF80000004473DF, 0xDFFE9B3EC48B6A65), false };
+            yield return new object[] { new UInt128(0xB012000000000000, 0x000000013AA4FC9F), new UInt128(0x3014000000000000, 0x00003245B752F717), false };
+            yield return new object[] { new UInt128(0x3002000000000000, 0x081624F7721E25C3), new UInt128(0x2FFE000000000003, 0x28A670A893C6C02C), true };
+            yield return new object[] { new UInt128(0xDDC8000000000000, 0x00855569DF51C986), new UInt128(0x3024000000000000, 0x000000000007C72E), false };
+            yield return new object[] { new UInt128(0x1758000000000000, 0x000000041F72D9AA), new UInt128(0x301A0000000061C8, 0xEEFC10C4D3DADBE3), false };
+            yield return new object[] { new UInt128(0xB0100003A1125F48, 0x953E3B9231F49265), new UInt128(0xB00C016AEB2D385A, 0x4C4F451B83892F74), true };
+        }
+
+        [Theory]
+        [MemberData(nameof(op_Equality_TestData))]
+        public static void op_Equality(UInt128 left, UInt128 right, bool expected)
+        {
+            Decimal128 l = Unsafe.BitCast<UInt128, Decimal128>(left);
+            Decimal128 r = Unsafe.BitCast<UInt128, Decimal128>(right);
+            Assert.Equal(expected, l == r);
+            Assert.Equal(!expected, l != r);
+        }
+
     }
 }

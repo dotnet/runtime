@@ -283,6 +283,24 @@ namespace System.Numerics
             return new Decimal128(result);
         }
 
+        /// <summary>Compares two values to determine equality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator ==(Decimal128 left, Decimal128 right)
+        {
+            return Number.EqualsDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine inequality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is not equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator !=(Decimal128 left, Decimal128 right)
+        {
+            return !(left == right);
+        }
+
         private static readonly UInt128[] UInt128Powers10 =
             [
                 new UInt128(0, 1),

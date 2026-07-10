@@ -216,6 +216,29 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Determines whether two IEEE 754 decimal values represented by their raw bit patterns
+        /// are numerically equal using the semantics required by the equality operator.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="CompareDecimalIeee754{TDecimal, TValue}"/>, which treats NaN as equal
+        /// to NaN so that equality is consistent with hashing and ordering, this method follows the
+        /// IEEE 754 equality-comparison rules used by <c>operator ==</c>: NaN is unordered and is
+        /// therefore never equal to any value, including itself. All other values (including the two
+        /// zeros and different members of the same cohort) compare by numeric value.
+        /// </remarks>
+        internal static bool EqualsDecimalIeee754<TDecimal, TValue>(TValue leftDecimalBits, TValue rightDecimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsNaN(leftDecimalBits) || TDecimal.IsNaN(rightDecimalBits))
+            {
+                return false;
+            }
+
+            return CompareDecimalIeee754<TDecimal, TValue>(leftDecimalBits, rightDecimalBits) == 0;
+        }
+
         private static TValue NumberToDecimalIeee754Bits<TDecimal, TValue>(ref NumberBuffer number)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>

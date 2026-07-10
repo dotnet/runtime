@@ -287,6 +287,24 @@ namespace System.Numerics
             return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(left._value, right._value ^ SignMask));
         }
 
+        /// <summary>Compares two values to determine equality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator ==(Decimal64 left, Decimal64 right)
+        {
+            return Number.EqualsDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine inequality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is not equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator !=(Decimal64 left, Decimal64 right)
+        {
+            return !(left == right);
+        }
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.BufferLength => Number.Decimal64NumberBufferLength;
