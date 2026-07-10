@@ -3498,16 +3498,71 @@ bool ObjectAllocator::IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tre
         return false;
     }
 
+    return IsLinqIteratorCloneMethod(call->gtCallMethHnd);
+}
+
+//------------------------------------------------------------------------------
+// IsLinqIteratorCloneMethod - see if this is a LINQ iterator Clone method.
+//
+// Arguments:
+//    method - method in question
+//
+// Returns:
+//    true if method is Clone():System.Linq.Enumerable.Iterator<T> on a type that
+//    derives from the private System.Linq.Enumerable.Iterator<T> base class.
+//
+bool ObjectAllocator::IsLinqIteratorCloneMethod(CORINFO_METHOD_HANDLE method)
+{
     const char* className              = nullptr;
     const char* namespaceName          = nullptr;
     const char* enclosingClassNames[1] = {nullptr};
     const char* methodName =
-        m_compiler->info.compCompHnd->getMethodNameFromMetadata(call->gtCallMethHnd, &className, &namespaceName,
+        m_compiler->info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName,
                                                                 enclosingClassNames, ArrLen(enclosingClassNames));
 
-    return (namespaceName != nullptr) && (strcmp(namespaceName, "System.Linq") == 0) &&
-           (enclosingClassNames[0] != nullptr) && (strcmp(enclosingClassNames[0], "Enumerable") == 0) &&
-           (methodName != nullptr) && (strcmp(methodName, "Clone") == 0);
+    if ((namespaceName == nullptr) || (strcmp(namespaceName, "System.Linq") != 0) ||
+        (enclosingClassNames[0] == nullptr) || (strcmp(enclosingClassNames[0], "Enumerable") != 0) ||
+        (methodName == nullptr) || (strcmp(methodName, "Clone") != 0))
+    {
+        return false;
+    }
+
+    CORINFO_SIG_INFO sig;
+    m_compiler->info.compCompHnd->getMethodSig(method, &sig);
+    if (!sig.hasThis() || sig.hasExplicitThis() || (sig.numArgs != 0) || (sig.retType != CORINFO_TYPE_CLASS) ||
+        !IsLinqIteratorClass(sig.retTypeClass))
+    {
+        return false;
+    }
+
+    CORINFO_CLASS_HANDLE methodClass = m_compiler->info.compCompHnd->getMethodClass(method);
+    return IsLinqIteratorClass(methodClass);
+}
+
+//------------------------------------------------------------------------------
+// IsLinqIteratorClass - see if this type is a LINQ iterator type.
+//
+// Arguments:
+//    cls - type in question
+//
+// Returns:
+//    true if cls is or derives from the private System.Linq.Enumerable.Iterator<T>
+//    base class.
+//
+bool ObjectAllocator::IsLinqIteratorClass(CORINFO_CLASS_HANDLE cls)
+{
+    for (CORINFO_CLASS_HANDLE currentClass = cls; currentClass != NO_CLASS_HANDLE;
+         currentClass = m_compiler->info.compCompHnd->getParentType(currentClass))
+    {
+        const char* className = m_compiler->info.compCompHnd->getClassNameFromMetadata(currentClass, nullptr);
+
+        if ((className != nullptr) && (strcmp(className, "Iterator`1") == 0))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
