@@ -315,6 +315,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);

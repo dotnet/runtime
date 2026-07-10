@@ -509,7 +509,9 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    GenTree* TryLowerAndOpToZeroHighBits(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
+    GenTree* TryLowerBitwiseOpToBitOp(GenTreeOp* binOp);
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)

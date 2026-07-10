@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -260,6 +260,15 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
+    if (m_compiler->opts.OptimizationEnabled() && varTypeIsIntegral(binOp) && binOp->OperIs(GT_OR, GT_XOR, GT_AND))
+    {
+        GenTree* replacementNode = TryLowerBitwiseOpToBitOp(binOp);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
+    }
+
 #ifdef FEATURE_HW_INTRINSICS
     if (m_compiler->opts.OptimizationEnabled() && varTypeIsIntegral(binOp))
     {
@@ -278,6 +287,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             }
 
             replacementNode = TryLowerAndOpToExtractLowestSetBit(binOp);
+            if (replacementNode != nullptr)
+            {
+                return replacementNode->gtNext;
+            }
+
+            replacementNode = TryLowerAndOpToZeroHighBits(binOp);
             if (replacementNode != nullptr)
             {
                 return replacementNode->gtNext;
@@ -6156,7 +6171,8 @@ bool Lowering::TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBas
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerAndOpToResetLowestSetBit: Lowers a tree AND(X, ADD(X, -1)) to HWIntrinsic::ResetLowestSetBit
+// Lowering::TryLowerAndOpToResetLowestSetBit: Lowers a tree AND(X, ADD(X, -1)) (or the equivalent
+// AND(X, SUB(X, 1))) to HWIntrinsic::ResetLowestSetBit
 //
 // Arguments:
 //    andNode - GT_AND node of integral type
@@ -6177,13 +6193,26 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     }
 
     GenTree* op2 = andNode->gtGetOp2();
-    if (!op2->OperIs(GT_ADD))
+
+    // op2 must be ADD(X, -1), or the equivalent, un-canonicalized SUB(X, 1). Global morph normally
+    // rewrites the subtraction into the addition form, but that only happens during global morph so
+    // a SUB introduced afterwards can still reach here.
+    ssize_t expectedConst;
+    if (op2->OperIs(GT_ADD))
+    {
+        expectedConst = -1;
+    }
+    else if (op2->OperIs(GT_SUB))
+    {
+        expectedConst = 1;
+    }
+    else
     {
         return nullptr;
     }
 
     GenTree* addOp2 = op2->gtGetOp2();
-    if (!addOp2->IsIntegralConst(-1))
+    if (!addOp2->IsIntegralConst(expectedConst))
     {
         return nullptr;
     }
@@ -6201,18 +6230,23 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
-    if (op1->TypeIs(TYP_LONG) && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2_X64))
+#if defined(TARGET_AMD64)
+    if (andNode->TypeIs(TYP_LONG))
     {
         intrinsic = NamedIntrinsic::NI_AVX2_X64_ResetLowestSetBit;
     }
-    else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-    {
-        intrinsic = NamedIntrinsic::NI_AVX2_ResetLowestSetBit;
-    }
     else
+#endif // TARGET_AMD64
     {
-        return nullptr;
+        // On x86 longs are decomposed before lowering, so only the 32-bit form is reachable here.
+        assert(andNode->TypeIs(TYP_INT));
+        intrinsic = NamedIntrinsic::NI_AVX2_ResetLowestSetBit;
     }
 
     LIR::Use use;
@@ -6286,18 +6320,23 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
-    if (andNode->TypeIs(TYP_LONG) && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2_X64))
+#if defined(TARGET_AMD64)
+    if (andNode->TypeIs(TYP_LONG))
     {
         intrinsic = NamedIntrinsic::NI_AVX2_X64_ExtractLowestSetBit;
     }
-    else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-    {
-        intrinsic = NamedIntrinsic::NI_AVX2_ExtractLowestSetBit;
-    }
     else
+#endif // TARGET_AMD64
     {
-        return nullptr;
+        // On x86 longs are decomposed before lowering, so only the 32-bit form is reachable here.
+        assert(andNode->TypeIs(TYP_INT));
+        intrinsic = NamedIntrinsic::NI_AVX2_ExtractLowestSetBit;
     }
 
     LIR::Use use;
@@ -6323,6 +6362,280 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
     ContainCheckHWIntrinsic(blsiNode);
 
     return blsiNode;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndOpToZeroHighBits: Lowers a tree AND(X, ADD(LSH(1, Y), -1)) (or the
+// equivalent AND(X, SUB(LSH(1, Y), 1))) to HWIntrinsic::ZeroHighBits (the BMI2 `bzhi` instruction),
+// which zeroes the bits of X starting at bit position Y.
+//
+// Arguments:
+//    andNode - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created.
+//
+//    `bzhi(x, y)` copies `x` and clears the bits at position `y` and higher. When `y >= width`
+//    it leaves `x` unchanged, which differs from the C# masked-shift result of `(1 << y) - 1`.
+//    ECMA-335 leaves the result of a shift by an amount >= the operand width unspecified and `y`
+//    here is a runtime value, so emitting `bzhi` is a legal implementation of the source pattern.
+GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
+{
+    assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
+
+    if (!andNode->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return nullptr;
+    }
+
+    // The mask `(1 << y) - 1` may be on either side of the AND. Global morph normally canonicalizes
+    // the subtraction to ADD(LSH(1, y), -1), but that only happens during global morph, so a SUB
+    // introduced afterwards (or by a later phase) can still reach here; recognize both forms.
+    GenTree* srcNode  = nullptr;
+    GenTree* maskNode = nullptr;
+    if (andNode->gtGetOp2()->OperIs(GT_ADD, GT_SUB))
+    {
+        maskNode = andNode->gtGetOp2();
+        srcNode  = andNode->gtGetOp1();
+    }
+    else if (andNode->gtGetOp1()->OperIs(GT_ADD, GT_SUB))
+    {
+        maskNode = andNode->gtGetOp1();
+        srcNode  = andNode->gtGetOp2();
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    // maskNode must be ADD(LSH(1, y), -1) or the equivalent, un-canonicalized SUB(LSH(1, y), 1).
+    GenTree* lshNode   = nullptr;
+    GenTree* constNode = nullptr;
+    if (maskNode->OperIs(GT_ADD) && maskNode->gtGetOp2()->IsIntegralConst(-1) &&
+        maskNode->gtGetOp1()->OperIs(GT_LSH))
+    {
+        lshNode   = maskNode->gtGetOp1();
+        constNode = maskNode->gtGetOp2();
+    }
+    else if (maskNode->OperIs(GT_ADD) && maskNode->gtGetOp1()->IsIntegralConst(-1) &&
+             maskNode->gtGetOp2()->OperIs(GT_LSH))
+    {
+        lshNode   = maskNode->gtGetOp2();
+        constNode = maskNode->gtGetOp1();
+    }
+    else if (maskNode->OperIs(GT_SUB) && maskNode->gtGetOp2()->IsIntegralConst(1) &&
+             maskNode->gtGetOp1()->OperIs(GT_LSH))
+    {
+        // Only SUB(LSH(1, y), 1) matches; SUB(1, LSH(1, y)) computes a different value.
+        lshNode   = maskNode->gtGetOp1();
+        constNode = maskNode->gtGetOp2();
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    if (!lshNode->gtGetOp1()->IsIntegralConst(1))
+    {
+        return nullptr;
+    }
+    GenTree* indexNode = lshNode->gtGetOp2();
+
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
+    if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((maskNode->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((lshNode->gtFlags & GTF_SET_FLAGS) != 0))
+    {
+        return nullptr;
+    }
+
+    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic intrinsic;
+#if defined(TARGET_AMD64)
+    if (andNode->TypeIs(TYP_LONG))
+    {
+        intrinsic = NamedIntrinsic::NI_AVX2_X64_ZeroHighBits;
+    }
+    else
+#endif // TARGET_AMD64
+    {
+        // On x86 longs are decomposed before lowering, so only the 32-bit form is reachable here.
+        assert(andNode->TypeIs(TYP_INT));
+        intrinsic = NamedIntrinsic::NI_AVX2_ZeroHighBits;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(andNode, &use))
+    {
+        return nullptr;
+    }
+
+    // The backend expects op1 to be the index (encoded in VEX.vvvv) and op2 to be the value
+    // (which may be a memory operand), matching the import order for `ZeroHighBits`.
+    GenTreeHWIntrinsic* bzhiNode =
+        m_compiler->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), indexNode, srcNode, intrinsic);
+
+    JITDUMP("Lower: optimize AND(X, ADD(LSH(1, Y), -1))\n");
+    DISPNODE(andNode);
+    JITDUMP("to:\n");
+    DISPNODE(bzhiNode);
+
+    BlockRange().InsertBefore(andNode, bzhiNode);
+    use.ReplaceWith(bzhiNode);
+
+    BlockRange().Remove(andNode);
+    BlockRange().Remove(maskNode);
+    BlockRange().Remove(lshNode);
+    BlockRange().Remove(lshNode->gtGetOp1());
+    BlockRange().Remove(constNode);
+
+    ContainCheckHWIntrinsic(bzhiNode);
+
+    return bzhiNode;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerBitwiseOpToBitOp: Lowers the single-bit manipulation idioms
+//    OR(X, LSH(1, Y))       -> GT_BIT_SET     (`bts`, set bit Y of X)
+//    XOR(X, LSH(1, Y))      -> GT_BIT_INVERT  (`btc`, complement bit Y of X)
+//    AND(X, NOT(LSH(1, Y))) -> GT_BIT_CLEAR   (`btr`, reset bit Y of X)
+//
+// Arguments:
+//    binOp - GT_OR, GT_XOR, or GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Only fires when the bit index Y is not a constant. For a constant index the shift folds to a
+//    constant mask that the existing `or`/`xor`/`and` with an immediate already handles optimally.
+//
+//    The reg,reg form of `bts`/`btr`/`btc` masks the bit index modulo the operand width, which
+//    exactly matches the C# masked-shift semantics of `1 << Y`, so the transform is always valid
+//    (even when Y is out of range). The value operand is kept in a register because the
+//    memory-destination form of these instructions does not mask the index.
+GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
+{
+    assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND) && varTypeIsIntegral(binOp));
+
+    if (!binOp->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return nullptr;
+    }
+
+    genTreeOps newOper;
+    switch (binOp->OperGet())
+    {
+        case GT_OR:
+            newOper = GT_BIT_SET;
+            break;
+        case GT_XOR:
+            newOper = GT_BIT_INVERT;
+            break;
+        default:
+            assert(binOp->OperIs(GT_AND));
+            newOper = GT_BIT_CLEAR;
+            break;
+    }
+
+    // Locate the `1 << Y` sub-tree (wrapped in a NOT for the AND/`btr` case) which may be on either
+    // side of the commutative binary op.
+    GenTree* op1     = binOp->gtGetOp1();
+    GenTree* op2     = binOp->gtGetOp2();
+    GenTree* srcNode = nullptr;
+    GenTree* notNode = nullptr;
+    GenTree* lshNode = nullptr;
+
+    auto matchShift = [&](GenTree* candidate) -> bool {
+        notNode = nullptr;
+        if (newOper == GT_BIT_CLEAR)
+        {
+            if (!candidate->OperIs(GT_NOT))
+            {
+                return false;
+            }
+            notNode   = candidate;
+            candidate = candidate->AsUnOp()->gtGetOp1();
+        }
+
+        if (!candidate->OperIs(GT_LSH))
+        {
+            return false;
+        }
+
+        lshNode = candidate;
+        return true;
+    };
+
+    if (matchShift(op2))
+    {
+        srcNode = op1;
+    }
+    else if (matchShift(op1))
+    {
+        srcNode = op2;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    // The shifted value must be exactly `1` and match the width of the operation.
+    if (!lshNode->gtGetOp1()->IsIntegralConst(1) || !lshNode->TypeIs(binOp->TypeGet()))
+    {
+        return nullptr;
+    }
+
+    // A constant index folds to a constant mask, which the plain form already handles optimally.
+    GenTree* indexNode = lshNode->gtGetOp2();
+    if (indexNode->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
+    // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them.
+    if (((binOp->gtFlags & GTF_SET_FLAGS) != 0) || ((lshNode->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((notNode != nullptr) && ((notNode->gtFlags & GTF_SET_FLAGS) != 0)))
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(binOp, &use))
+    {
+        return nullptr;
+    }
+
+    GenTree* oneNode = lshNode->gtGetOp1();
+
+    // op1 is the value (read-modify-write destination), op2 is the bit index.
+    GenTree* bitOpNode = m_compiler->gtNewOperNode(newOper, binOp->TypeGet(), srcNode, indexNode);
+
+    JITDUMP("Lower: optimize %s(X, %s)\n", GenTree::OpName(binOp->OperGet()),
+            (newOper == GT_BIT_CLEAR) ? "NOT(LSH(1, Y))" : "LSH(1, Y)");
+    DISPNODE(binOp);
+    JITDUMP("to:\n");
+    DISPNODE(bitOpNode);
+
+    BlockRange().InsertBefore(binOp, bitOpNode);
+    use.ReplaceWith(bitOpNode);
+
+    BlockRange().Remove(binOp);
+    if (notNode != nullptr)
+    {
+        BlockRange().Remove(notNode);
+    }
+    BlockRange().Remove(lshNode);
+    BlockRange().Remove(oneNode);
+
+    // Both operands must remain in registers, so no containment is performed on the new node.
+    return bitOpNode;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -6412,8 +6725,8 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit: Lowers a tree XOR(X, ADD(X, -1)) to
-// HWIntrinsic::GetMaskUpToLowestSetBit
+// Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit: Lowers a tree XOR(X, ADD(X, -1)) (or the
+// equivalent XOR(X, SUB(X, 1))) to HWIntrinsic::GetMaskUpToLowestSetBit
 //
 // Arguments:
 //    xorNode - GT_XOR node of integral type
@@ -6434,13 +6747,26 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
     }
 
     GenTree* op2 = xorNode->gtGetOp2();
-    if (!op2->OperIs(GT_ADD))
+
+    // op2 must be ADD(X, -1), or the equivalent, un-canonicalized SUB(X, 1). Global morph normally
+    // rewrites the subtraction into the addition form, but that only happens during global morph so
+    // a SUB introduced afterwards can still reach here.
+    ssize_t expectedConst;
+    if (op2->OperIs(GT_ADD))
+    {
+        expectedConst = -1;
+    }
+    else if (op2->OperIs(GT_SUB))
+    {
+        expectedConst = 1;
+    }
+    else
     {
         return nullptr;
     }
 
     GenTree* addOp2 = op2->gtGetOp2();
-    if (!addOp2->IsIntegralConst(-1))
+    if (!addOp2->IsIntegralConst(expectedConst))
     {
         return nullptr;
     }
@@ -6458,18 +6784,23 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
         return nullptr;
     }
 
+    if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        return nullptr;
+    }
+
     NamedIntrinsic intrinsic;
-    if (xorNode->TypeIs(TYP_LONG) && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2_X64))
+#if defined(TARGET_AMD64)
+    if (xorNode->TypeIs(TYP_LONG))
     {
         intrinsic = NamedIntrinsic::NI_AVX2_X64_GetMaskUpToLowestSetBit;
     }
-    else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-    {
-        intrinsic = NamedIntrinsic::NI_AVX2_GetMaskUpToLowestSetBit;
-    }
     else
+#endif // TARGET_AMD64
     {
-        return nullptr;
+        // On x86 longs are decomposed before lowering, so only the 32-bit form is reachable here.
+        assert(xorNode->TypeIs(TYP_INT));
+        intrinsic = NamedIntrinsic::NI_AVX2_GetMaskUpToLowestSetBit;
     }
 
     LIR::Use use;
