@@ -258,8 +258,10 @@ public interface IRuntimeTypeSystem : IContract
     // Or something else similar.
     // A no metadata method is also a StoredSigMethodDesc
     bool IsNoMetadataMethod(MethodDescHandle methodDesc, out string methodName) => throw new NotImplementedException();
-    // A StoredSigMethodDesc is a MethodDesc for which the signature isn't found in metadata.
-    bool IsStoredSigMethodDesc(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
+
+    // Gets the raw signature bytes for a MethodDesc by checking stored signature, async variant signature, then metadata.
+    // Returns false if no signature could be resolved.
+    bool TryGetMethodSignature(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature) => throw new NotImplementedException();
 
     // Return true for a MethodDesc that describes a method represented by the System.Reflection.Emit.DynamicMethod class
     // A DynamicMethod is also a StoredSigMethodDesc, and a NoMetadataMethod
