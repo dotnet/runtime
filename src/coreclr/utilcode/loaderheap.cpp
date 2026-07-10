@@ -174,7 +174,8 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     // Round to page size again
     dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
-    ReservedMemoryHolder pData = NULL;
+    ReservedMemoryHolder pDataHolder;
+    BYTE* pData = NULL;
     BOOL fReleaseMemory = TRUE;
 
     // We were provided with a reserved memory block at instance creation time, so use it if it's big enough.
@@ -226,9 +227,11 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     // and notify the user to provide more reserved mem.
     _ASSERTE((dwSizeToCommit <= dwSizeToReserve) && "Loaderheap tried to commit more memory than reserved by user");
 
-    if (!fReleaseMemory)
+    if (fReleaseMemory)
     {
-        pData.SuppressRelease();
+        // This method reserved the memory (or the caller asked us to release the
+        // provided block), so own it for automatic cleanup on the error paths below.
+        pDataHolder = pData;
     }
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
@@ -259,7 +262,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     m_dwTotalAlloc += dwSizeToCommit;
 
     pNewBlock.SuppressRelease();
-    pData.SuppressRelease();
+    pDataHolder.Detach();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
     pNewBlock->pVirtualAddress  = pData;

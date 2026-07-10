@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit.Sdk;
@@ -359,5 +360,274 @@ namespace System.IO.Compression
             Assert.Throws<ObjectDisposedException>(() => decompressionStream.Read(new byte[1], 0, 1));
         }
 
+        // Compresses data into a single Zstandard frame.
+        private static byte[] CompressToSingleFrame(byte[] data)
+        {
+            byte[] buffer = new byte[ZstandardEncoder.GetMaxCompressedLength(data.Length)];
+            Assert.True(ZstandardEncoder.TryCompress(data, buffer, out int compressedLength));
+            Array.Resize(ref buffer, compressedLength);
+            return buffer;
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_ConcatenatedFrames_DecompressesAllFrames(bool async)
+        {
+            // A Zstandard stream may be a sequence of frames concatenated back-to-back (RFC 8878 section 3),
+            // as produced by Content-Encoding: zstd for large HTTP bodies; decoding must cover every frame,
+            // not just the first. Two differently sized frames so the summed output length alone proves both
+            // were decoded.
+            byte[] first = ZstandardTestUtils.CreateTestData(300);
+            byte[] second = ZstandardTestUtils.CreateTestData(200);
+            byte[] expected = [.. first, .. second];
+
+            byte[] body = [.. CompressToSingleFrame(first), .. CompressToSingleFrame(second)];
+
+            using MemoryStream input = new(body);
+            using MemoryStream output = new();
+            using (ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await decompressor.CopyToAsync(output);
+                }
+                else
+                {
+                    decompressor.CopyTo(output);
+                }
+            }
+
+            Assert.Equal(expected.Length, output.Length);
+            Assert.Equal(expected, output.ToArray());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_ConcatenatedFrames_AcrossReads_DecompressesAllFrames(bool async)
+        {
+            // The next frame's magic number can be split across underlying reads. A stream that yields a
+            // single byte per read forces every frame boundary to be discovered across multiple reads, and
+            // also exercises the non-seekable path (no rewind), as used by HttpClient automatic decompression.
+            byte[] first = ZstandardTestUtils.CreateTestData(8_000);
+            byte[] second = ZstandardTestUtils.CreateTestData(5_000);
+            byte[] expected = [.. first, .. second];
+
+            byte[] body = [.. CompressToSingleFrame(first), .. CompressToSingleFrame(second)];
+
+            using Stream input = new SingleByteReadStream(body);
+            using MemoryStream output = new();
+            using (ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await decompressor.CopyToAsync(output);
+                }
+                else
+                {
+                    decompressor.CopyTo(output);
+                }
+            }
+
+            Assert.Equal(expected, output.ToArray());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_EmptyFramesAmongFrames_DecompressesAllFrames(bool async)
+        {
+            // A Zstandard frame can decode to zero bytes (for example, a frame whose content is empty). The
+            // decoder reports end-of-frame for it the same as any other frame, so a zero-output frame must be
+            // skipped rather than mistaken for the end of the stream, whether it is the leading, an
+            // intermediate, or the trailing frame.
+            byte[] first = ZstandardTestUtils.CreateTestData(5_000);
+            byte[] second = ZstandardTestUtils.CreateTestData(7_000);
+            byte[] expected = [.. first, .. second];
+
+            byte[] body =
+            [
+                .. CompressToSingleFrame([]),
+                .. CompressToSingleFrame(first),
+                .. CompressToSingleFrame([]),
+                .. CompressToSingleFrame(second),
+                .. CompressToSingleFrame([]),
+            ];
+
+            using MemoryStream input = new(body);
+            using MemoryStream output = new();
+            using (ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await decompressor.CopyToAsync(output);
+                }
+                else
+                {
+                    decompressor.CopyTo(output);
+                }
+            }
+
+            Assert.Equal(expected, output.ToArray());
+        }
+
+        [Theory]
+        [InlineData(false, 1)]
+        [InlineData(true, 1)]
+        [InlineData(false, 2)]
+        [InlineData(true, 2)]
+        [InlineData(false, 3)]
+        [InlineData(true, 3)]
+        public async Task ZstandardStream_FrameFollowedByShortTrailingData_StopsAtEndOfFrame(bool async, int trailingLength)
+        {
+            // Trailing data shorter than a frame magic number (1-3 bytes) after the final frame. This is the
+            // boundary case where the decoder cannot immediately tell a split next-frame magic from trailing
+            // data; the stream must still end cleanly and leave the trailing bytes on the (seekable) base
+            // stream. The 4-or-more-byte trailing-data case is covered by the inherited
+            // AutomaticStreamRewinds_WhenDecompressionFinishes test (CompressionStreamUnitTestBase).
+            byte[] payload = ZstandardTestUtils.CreateTestData(10_000);
+            byte[] frame = CompressToSingleFrame(payload);
+            byte[] trailing = Enumerable.Range(1, trailingLength).Select(i => (byte)i).ToArray();
+
+            using MemoryStream input = new([.. frame, .. trailing]);
+            using MemoryStream output = new();
+            using (ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await decompressor.CopyToAsync(output);
+                }
+                else
+                {
+                    decompressor.CopyTo(output);
+                }
+            }
+
+            Assert.Equal(payload, output.ToArray());
+
+            byte[] remainder = new byte[trailing.Length];
+            int read = input.Read(remainder, 0, remainder.Length);
+            Assert.Equal(trailing.Length, read);
+            Assert.Equal(trailing, remainder);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_FrameFollowedByCorruptFrame_Throws(bool async)
+        {
+            // A continuation chunk that begins with a valid frame magic but a corrupt header is corrupt input,
+            // the same as a corrupt first frame, so it must throw rather than be silently dropped as trailing data.
+            byte[] first = ZstandardTestUtils.CreateTestData(4_000);
+            byte[] corruptFrame = CompressToSingleFrame(ZstandardTestUtils.CreateTestData(4_000));
+
+            // Keep the 4-byte magic intact (so it is recognized as a following frame) but set the reserved
+            // bit in the frame header descriptor (the byte right after the magic), which a compliant decoder
+            // must reject.
+            corruptFrame[4] |= 0x08;
+
+            byte[] body = [.. CompressToSingleFrame(first), .. corruptFrame];
+
+            using MemoryStream input = new(body);
+            using MemoryStream output = new();
+            using ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => decompressor.CopyToAsync(output));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => decompressor.CopyTo(output));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_SkippableFrameBetweenFrames_DecompressesAllFrames(bool async)
+        {
+            // A skippable frame may appear between data frames and must not prevent subsequent
+            // frames from being decoded (RFC 8878 section 3.1.2).
+            byte[] first = ZstandardTestUtils.CreateTestData(4_000);
+            byte[] second = ZstandardTestUtils.CreateTestData(6_000);
+            byte[] expected = [.. first, .. second];
+
+            // A minimal skippable frame: magic 0x184D2A50, a 4-byte little-endian content size of 4, then 4
+            // bytes of (ignored) user data.
+            byte[] skippable = [0x50, 0x2A, 0x4D, 0x18, 0x04, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04];
+
+            byte[] body = [.. CompressToSingleFrame(first), .. skippable, .. CompressToSingleFrame(second)];
+
+            using MemoryStream input = new(body);
+            using MemoryStream output = new();
+            using (ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await decompressor.CopyToAsync(output);
+                }
+                else
+                {
+                    decompressor.CopyTo(output);
+                }
+            }
+
+            Assert.Equal(expected, output.ToArray());
+        }
+
+        // A non-seekable, read-only stream that returns at most one byte per read.
+        private sealed class SingleByteReadStream : Stream
+        {
+            private readonly byte[] _data;
+            private int _position;
+
+            public SingleByteReadStream(byte[] data) => _data = data;
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+            public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+            public override int Read(Span<byte> buffer)
+            {
+                if (buffer.IsEmpty || _position >= _data.Length)
+                {
+                    return 0;
+                }
+
+                buffer[0] = _data[_position++];
+                return 1;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled<int>(cancellationToken);
+                }
+
+                return Task.FromResult(Read(buffer.AsSpan(offset, count)));
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return ValueTask.FromCanceled<int>(cancellationToken);
+                }
+
+                return new ValueTask<int>(Read(buffer.Span));
+            }
+
+            public override void Flush() { }
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
     }
 }

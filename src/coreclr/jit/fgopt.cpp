@@ -5127,7 +5127,29 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     jitstd::vector<PredInfo> predInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<BasicBlock*>  retryBlocks(getAllocator(CMK_ArrayStack));
 
-    auto tryRemoveAndFixFlow = [&](BasicBlock* emptyBlock, BasicBlock* newTarget) -> bool {
+    auto sameEHRegionForTailMerge = [this](BasicBlock* block1, BasicBlock* block2) -> bool {
+        if (!BasicBlock::sameEHRegion(block1, block2))
+        {
+            return false;
+        }
+
+        if (!block1->hasHndIndex())
+        {
+            assert(!block2->hasHndIndex());
+            return true;
+        }
+
+        assert(block2->hasHndIndex());
+        EHblkDsc* const hndDsc = ehGetDsc(block1->getHndIndex());
+        if (!hndDsc->HasFilter())
+        {
+            return true;
+        }
+
+        return hndDsc->InFilterRegionBBRange(block1) == hndDsc->InFilterRegionBBRange(block2);
+    };
+
+    auto tryRemoveAndFixFlow = [this](BasicBlock* emptyBlock, BasicBlock* newTarget) -> bool {
         assert(emptyBlock->isEmpty());
         assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
 
@@ -5196,10 +5218,10 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // Find all matching candidates and partition them to
             // be continous in memory at [matchesBegin, matchesEnd - 1]
             //
-            matchesEnd = partition(matchesBegin + 1, predInfo.end(), [candidateA](PredInfo candidateB) {
+            matchesEnd = partition(matchesBegin + 1, predInfo.end(), [=](PredInfo candidateB) {
                 // Consider: bypass this for statements that can't cause exceptions.
                 //
-                if (!BasicBlock::sameEHRegion(candidateA.m_block, candidateB.m_block))
+                if (!sameEHRegionForTailMerge(candidateA.m_block, candidateB.m_block))
                 {
                     return false;
                 }
@@ -5221,7 +5243,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             //
             bool const hasCommSucc = (commSucc != nullptr);
             bool const predsInSameEHRegionAsSucc =
-                hasCommSucc && BasicBlock::sameEHRegion(candidateA.m_block, commSucc);
+                hasCommSucc && sameEHRegionForTailMerge(candidateA.m_block, commSucc);
             bool const canMergeAllPreds = hasCommSucc && (matchesCount == (int)commSucc->countOfInEdges());
             bool const canMergeIntoSucc = predsInSameEHRegionAsSucc && canMergeAllPreds;
 

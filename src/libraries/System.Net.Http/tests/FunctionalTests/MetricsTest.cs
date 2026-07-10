@@ -372,6 +372,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server.")]
         [ConditionalFact]
+        [SkipOnPlatform(TestPlatforms.Browser, "NameResolution (System.Net.Dns) is not supported on Browser")]
         public async Task ExternalServer_DurationMetrics_Recorded()
         {
             if (UseVersion == HttpVersion.Version30)

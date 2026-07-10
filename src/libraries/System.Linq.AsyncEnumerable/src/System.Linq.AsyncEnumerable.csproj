@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
     <Compile Include="System\Linq\AggregateAsync.cs" />
     <Compile Include="System\Linq\AggregateBy.cs" />
     <Compile Include="System\Linq\AllAsync.cs" />

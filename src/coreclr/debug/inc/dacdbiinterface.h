@@ -45,10 +45,6 @@ typedef void* * RefWalkHandle;
 
 #include "dacdbistructures.h"
 
-// This is the current format of code:DbiVersion.   It needs to be rev'ed when we decide to store something
-// else other than the product version of the DBI in DbiVersion (e.g. a timestamp).  See
-// code:CordbProcess::CordbProcess#DBIVersionChecking for more information.
-const DWORD kCurrentDbiVersionFormat = 1;
 
 //-----------------------------------------------------------------------------
 // This is a low-level interface between DAC and DBI.
@@ -177,20 +173,6 @@ public:
     //-----------------------------------------------------------------------------
     // Functions to control the behavior of the DacDbi implementation itself.
     //-----------------------------------------------------------------------------
-
-    //
-    // Check whether the version of the DBI matches the version of the runtime.
-    // This is only called when we are remote debugging.  On Windows, we should have checked all the
-    // versions before we call any API on the IDacDbiInterface.  See
-    // code:CordbProcess::CordbProcess#DBIVersionChecking for more information on version checks.
-    //
-    // Return Value:
-    //    S_OK on success.
-    //
-    // Notes:
-    //    THIS MUST BE THE FIRST API ON THE INTERFACE!
-    //
-    virtual HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion) = 0;
 
     //
     // Flush the DAC cache. This should be called when target memory changes.
@@ -1228,31 +1210,6 @@ public:
     //
 
     virtual HRESULT STDMETHODCALLTYPE GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal) = 0;
-
-    //
-    // Get the FramePointer of the current frame where the stackwalker is stopped at.
-    //
-    // Arguments:
-    //    pSFIHandle - the handle to the stackwalker
-    //    pRetVal - [out] The FramePointer of the current frame.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The FramePointer of a stack frame is:
-    //    the stack address of the return address on x86,
-    //    the current SP on AMD64,
-    //
-    //    On x86, to get the stack address of the return address, we need to unwind one more frame
-    //    and use the SP of the caller frame as the FramePointer of the callee frame.  This
-    //    function does NOT do that.  It just returns the SP.  The caller needs to handle the
-    //    unwinding.
-    //
-    //    The FramePointer of an explicit frame is just the stack address of the explicit frame.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal) = 0;
 
     //
     // Check whether the specified CONTEXT is the CONTEXT of the leaf frame.  This function doesn't care
