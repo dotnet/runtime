@@ -4827,7 +4827,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Half_Truncate:
             {
 #if defined(TARGET_XARCH)
-                // todo-xarch-half: We only optimize the single-argument overloads for now.
+                // TODO-CQ-XArch: We only optimize the single-argument overloads for now.
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1) && (sig->numArgs == 1))
                 {
                     GenTree* op1 = impPopStack().val;
@@ -4841,7 +4841,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
-                // todo-arm64-half: We only optimize the single-argument overloads for now.
+                // TODO-ARM64-CQ: We only optimize the single-argument overloads for now.
                 if (compOpportunisticallyDependsOn(InstructionSet_Fp16) && (sig->numArgs == 1))
                 {
                     // Arm64 has a dedicated rounding instruction per mode, so no rounding immediate is needed.
