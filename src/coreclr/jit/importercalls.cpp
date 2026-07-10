@@ -4578,6 +4578,121 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Half_op_Addition:
+            case NI_System_Half_op_Subtraction:
+            case NI_System_Half_op_Multiply:
+            case NI_System_Half_op_Division:
+            case NI_System_Half_Max:
+            case NI_System_Half_Min:
+            {
+#if defined(TARGET_XARCH)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+
+                    op2     = impSimdCreateScalarHalf(op2);
+                    op1     = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_HALF, 16);
+                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
+            case NI_System_Half_Sqrt:
+            case NI_System_Half_ReciprocalEstimate:
+            case NI_System_Half_ReciprocalSqrtEstimate:
+            {
+#if defined(TARGET_XARCH)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op1 = impPopStack().val;
+
+                    // These scalar ops compute their result from lane 0 of the second operand and take the
+                    // upper bits from the first. We only consume lane 0, so a zeroed upper-bits source is fine.
+                    GenTree* op2 = gtNewZeroConNode(TYP_SIMD16);
+                    op1          = impSimdCreateScalarHalf(op1);
+                    retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, opId, TYP_HALF, 16);
+                    retNode      = impSimdToScalarHalf(retNode, clsHnd);
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
+            case NI_System_Half_FusedMultiplyAdd:
+            {
+#if defined(TARGET_XARCH)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    GenTree* op3 = impPopStack().val;
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+
+                    op3     = impSimdCreateScalarHalf(op3);
+                    op2     = impSimdCreateScalarHalf(op2);
+                    op1     = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_FusedMultiplyAddScalar,
+                                                       TYP_HALF, 16);
+                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
+            case NI_System_Half_Round:
+            case NI_System_Half_Ceiling:
+            case NI_System_Half_Floor:
+            case NI_System_Half_Truncate:
+            {
+#if defined(TARGET_XARCH)
+                // todo-xarch-half: We only optimize the single-argument overloads for now.
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1) && (sig->numArgs == 1))
+                {
+                    GenTree* op1 = impPopStack().val;
+
+                    int halfRoundingMode = lookupHalfRoundingMode(ni);
+
+                    GenTree* op2 = gtNewZeroConNode(TYP_SIMD16);
+                    op1          = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(halfRoundingMode, TYP_INT),
+                                                       NI_AVX10v1_RoundScaleScalar, TYP_HALF, 16);
+                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
+            case NI_System_Half_op_GreaterThan:
+            case NI_System_Half_op_GreaterThanOrEqual:
+            case NI_System_Half_op_LessThan:
+            case NI_System_Half_op_LessThanOrEqual:
+            case NI_System_Half_op_Equality:
+            case NI_System_Half_op_Inequality:
+            {
+#if defined(TARGET_XARCH)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+
+                    op2     = impSimdCreateScalarHalf(op2);
+                    op1     = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, op2, opId, TYP_HALF, 16);
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
             case NI_System_Math_FusedMultiplyAdd:
             {
                 assert(varTypeIsFloating(callType));
@@ -10901,7 +11016,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     if (strcmp(className, "Half") == 0)
                     {
-                        result = lookupPrimitiveFloatNamedIntrinsic(method, methodName);
+                        result = lookupHalfNamedIntrinsic(method, methodName);
                     }
                     break;
                 }
@@ -12233,6 +12348,200 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
 
     return result;
 }
+
+//------------------------------------------------------------------------
+// lookupHalfNamedIntrinsic: map a System.Half method to its jit named intrinsic value
+//
+// Arguments:
+//    method     -- method handle for method
+//    methodName -- name of the method
+//
+// Return Value:
+//    Id for the named intrinsic, or Illegal if none.
+//
+// Notes:
+//    method should have CORINFO_FLG_INTRINSIC set in its attributes,
+//    otherwise it is not a named jit intrinsic.
+//
+NamedIntrinsic Compiler::lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName)
+{
+    NamedIntrinsic result = NI_Illegal;
+
+    if (strcmp(methodName, "op_Addition") == 0)
+    {
+        result = NI_System_Half_op_Addition;
+    }
+    else if (strcmp(methodName, "op_Subtraction") == 0)
+    {
+        result = NI_System_Half_op_Subtraction;
+    }
+    else if (strcmp(methodName, "op_Multiply") == 0)
+    {
+        result = NI_System_Half_op_Multiply;
+    }
+    else if (strcmp(methodName, "op_Division") == 0)
+    {
+        result = NI_System_Half_op_Division;
+    }
+    else if (strcmp(methodName, "op_Equality") == 0)
+    {
+        result = NI_System_Half_op_Equality;
+    }
+    else if (strcmp(methodName, "op_Inequality") == 0)
+    {
+        result = NI_System_Half_op_Inequality;
+    }
+    else if (strcmp(methodName, "op_GreaterThan") == 0)
+    {
+        result = NI_System_Half_op_GreaterThan;
+    }
+    else if (strcmp(methodName, "op_GreaterThanOrEqual") == 0)
+    {
+        result = NI_System_Half_op_GreaterThanOrEqual;
+    }
+    else if (strcmp(methodName, "op_LessThan") == 0)
+    {
+        result = NI_System_Half_op_LessThan;
+    }
+    else if (strcmp(methodName, "op_LessThanOrEqual") == 0)
+    {
+        result = NI_System_Half_op_LessThanOrEqual;
+    }
+    else if (strcmp(methodName, "op_Explicit") == 0)
+    {
+        result = NI_System_Half_op_Explicit;
+    }
+    else if (strcmp(methodName, "Max") == 0)
+    {
+        result = NI_System_Half_Max;
+    }
+    else if (strcmp(methodName, "Min") == 0)
+    {
+        result = NI_System_Half_Min;
+    }
+    else if (strcmp(methodName, "Sqrt") == 0)
+    {
+        result = NI_System_Half_Sqrt;
+    }
+    else if (strcmp(methodName, "ReciprocalEstimate") == 0)
+    {
+        result = NI_System_Half_ReciprocalEstimate;
+    }
+    else if (strcmp(methodName, "ReciprocalSqrtEstimate") == 0)
+    {
+        result = NI_System_Half_ReciprocalSqrtEstimate;
+    }
+    else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
+    {
+        result = NI_System_Half_FusedMultiplyAdd;
+    }
+    else if (strcmp(methodName, "Round") == 0)
+    {
+        result = NI_System_Half_Round;
+    }
+    else if (strcmp(methodName, "Ceiling") == 0)
+    {
+        result = NI_System_Half_Ceiling;
+    }
+    else if (strcmp(methodName, "Floor") == 0)
+    {
+        result = NI_System_Half_Floor;
+    }
+    else if (strcmp(methodName, "Truncate") == 0)
+    {
+        result = NI_System_Half_Truncate;
+    }
+
+    return result;
+}
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// lookupHalfIntrinsic: map a System.Half named intrinsic to the AVX10v1 scalar
+//    hardware intrinsic that implements it
+//
+// Arguments:
+//    ni -- the System.Half named intrinsic
+//
+// Return Value:
+//    The corresponding NI_AVX10v1_* intrinsic, or NI_Illegal if none.
+//
+NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
+{
+    assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
+
+    switch (ni)
+    {
+        case NI_System_Half_op_Addition:
+            return NI_AVX10v1_AddScalar;
+        case NI_System_Half_op_Subtraction:
+            return NI_AVX10v1_SubtractScalar;
+        case NI_System_Half_op_Multiply:
+            return NI_AVX10v1_MultiplyScalar;
+        case NI_System_Half_op_Division:
+            return NI_AVX10v1_DivideScalar;
+        case NI_System_Half_Max:
+            return NI_AVX10v1_MaxScalar;
+        case NI_System_Half_Min:
+            return NI_AVX10v1_MinScalar;
+        case NI_System_Half_Sqrt:
+            return NI_AVX10v1_SqrtScalar;
+        case NI_System_Half_ReciprocalEstimate:
+            return NI_AVX10v1_ReciprocalScalar;
+        case NI_System_Half_ReciprocalSqrtEstimate:
+            return NI_AVX10v1_ReciprocalSqrtScalar;
+        case NI_System_Half_FusedMultiplyAdd:
+            return NI_AVX10v1_FusedMultiplyAddScalar;
+        case NI_System_Half_op_GreaterThan:
+            return NI_AVX10v1_CompareScalarOrderedGreaterThan;
+        case NI_System_Half_op_GreaterThanOrEqual:
+            return NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual;
+        case NI_System_Half_op_LessThan:
+            return NI_AVX10v1_CompareScalarOrderedLessThan;
+        case NI_System_Half_op_LessThanOrEqual:
+            return NI_AVX10v1_CompareScalarOrderedLessThanOrEqual;
+        case NI_System_Half_op_Equality:
+            return NI_AVX10v1_CompareScalarOrderedEqual;
+        case NI_System_Half_op_Inequality:
+            return NI_AVX10v1_CompareScalarOrderedNotEqual;
+        case NI_System_Half_Round:
+        case NI_System_Half_Ceiling:
+        case NI_System_Half_Floor:
+        case NI_System_Half_Truncate:
+            return NI_AVX10v1_RoundScaleScalar;
+        default:
+            return NI_Illegal;
+    }
+}
+
+//------------------------------------------------------------------------
+// lookupHalfRoundingMode: map a System.Half rounding named intrinsic to the
+//    immediate rounding mode used by RoundScaleScalar
+//
+// Arguments:
+//    ni -- the System.Half named intrinsic
+//
+// Return Value:
+//    The rounding mode immediate (0=nearest, 1=+inf, 2=-inf, 3=zero).
+//
+int Compiler::lookupHalfRoundingMode(NamedIntrinsic ni)
+{
+    switch (ni)
+    {
+        case NI_System_Half_Round:
+            return 0; // Round to nearest
+        case NI_System_Half_Ceiling:
+            return 1; // Round towards +infinity
+        case NI_System_Half_Floor:
+            return 2; // Round towards -infinity
+        case NI_System_Half_Truncate:
+            return 3; // Round towards zero
+        default:
+            noway_assert(!"Should have one of the above Half intrinsics");
+            return -1;
+    }
+}
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
 //------------------------------------------------------------------------
 // lookupPrimitiveIntNamedIntrinsic: map method to jit named intrinsic value

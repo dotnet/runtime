@@ -155,6 +155,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator <(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -177,12 +178,14 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator >(Half left, Half right)
         {
             return right < left;
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator <=(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -205,12 +208,14 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator >=(Half left, Half right)
         {
             return right <= left;
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator ==(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -224,6 +229,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator !=(Half left, Half right)
         {
             return !(left == right);
@@ -1187,6 +1193,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator +(Half left, Half right) => (Half)((float)left + (float)right);
 
         //
@@ -1280,6 +1287,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator /(Half left, Half right) => (Half)((float)left / (float)right);
 
         //
@@ -1309,6 +1317,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        [Intrinsic]
         public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
@@ -1320,9 +1329,11 @@ namespace System
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        [Intrinsic]
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        [Intrinsic]
         public static Half Round(Half x) => (Half)MathF.Round((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
@@ -1335,6 +1346,7 @@ namespace System
         public static Half Round(Half x, int digits, MidpointRounding mode) => (Half)MathF.Round((float)x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        [Intrinsic]
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
@@ -1508,6 +1520,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
@@ -1545,9 +1558,11 @@ namespace System
         public static Half Lerp(Half value1, Half value2, Half amount) => (Half)float.Lerp((float)value1, (float)value2, (float)amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        [Intrinsic]
         public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        [Intrinsic]
         public static Half ReciprocalSqrtEstimate(Half x) => (Half)MathF.ReciprocalSqrtEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
@@ -1631,6 +1646,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator *(Half left, Half right) => (Half)((float)left * (float)right);
 
         //
@@ -1664,6 +1680,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         public static Half Max(Half x, Half y) => (Half)float.Max((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
@@ -1692,6 +1709,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         public static Half Min(Half x, Half y) => (Half)float.Min((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
@@ -2195,6 +2213,7 @@ namespace System
         public static Half RootN(Half x, int n) => (Half)float.RootN((float)x, n);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        [Intrinsic]
         public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
 
         //
@@ -2219,6 +2238,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator -(Half left, Half right) => (Half)((float)left - (float)right);
 
         //
