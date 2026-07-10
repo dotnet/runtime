@@ -141,39 +141,43 @@ ALTERNATE_ENTRY _RhpInterfaceDispatch
 
 FASTCALL_ENDFUNC
 
-;; Resolve helper for standard x86 calling convention.
-;; Arguments are passed on the stack: object, dispatch cell.
+;; Resolve helper for the standard managed calling convention.
+;; ecx = object instance, edx = dispatch cell, result returned in eax.
 RhpDispatchResolve PROC public
 ALTERNATE_ENTRY _RhpDispatchResolve
 
-        mov     ecx, dword ptr [esp + 4] ;; this
-        mov     eax, dword ptr [esp + 8] ;; dispatch cell
-
         ;; Load the MethodTable from the object instance in ecx.
         ;; Trigger an AV if we're dispatching on a null this.
-        mov     edx, dword ptr [ecx]
+        ;; The exception handling infrastructure is aware of the fact that this is the first
+        ;; instruction of the dispatch stub and uses it to translate an AV here
+        ;; to a NullReferenceException at the callsite.
+        mov     eax, dword ptr [ecx]     ;; eax = MethodTable
 
-        cmp     dword ptr [eax], edx     ;; is this the monomorphic MethodTable?
+        cmp     dword ptr [edx], eax     ;; is this the monomorphic MethodTable?
         jne     DispatchResolveHashtable
 
-        mov     eax, dword ptr [eax + 4] ;; return cached monomorphic resolved code address
-        ret     8
+        mov     eax, dword ptr [edx + 4] ;; return cached monomorphic resolved code address
+        ret
 
       DispatchResolveHashtable:
 
-        ;; edx = MethodTable, eax = cell
+        ;; eax = MethodTable, ecx = this, edx = cell
         ;; Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
         push    ebx
         push    esi
         push    edi
+        push    ecx                      ;; save this
+        push    edx                      ;; save cell
+        push    eax                      ;; save MethodTable
 
         ;; Stack layout from esp:
-        ;; [esp+0]  = saved edi
-        ;; [esp+4]  = saved esi
-        ;; [esp+8]  = saved ebx
-        ;; [esp+12] = return address
-        ;; [esp+16] = this
-        ;; [esp+20] = cell
+        ;; [esp+0]  = MethodTable
+        ;; [esp+4]  = cell
+        ;; [esp+8]  = this
+        ;; [esp+12] = saved edi
+        ;; [esp+16] = saved esi
+        ;; [esp+20] = saved ebx
+        ;; [esp+24] = return address
 
         ;; Load the _table field (Entry[]) from the cache struct.
         mov     edi, dword ptr [_g_pDispatchCache]
@@ -182,9 +186,9 @@ ALTERNATE_ENTRY _RhpDispatchResolve
         ;; Compute 32-bit hash from Key.GetHashCode():
         ;; hash = RotateLeft(dispatchCell, 16) ^ objectType
         ;; On 32-bit, IntPtr.GetHashCode() is identity.
-        mov     ecx, eax
+        mov     ecx, edx
         rol     ecx, 10h
-        xor     ecx, edx
+        xor     ecx, eax
 
         ;; HashToBucket: bucket = ((uint)hash * 0x9E3779B9) >> hashShift
         imul    ebx, ecx, -1640531527
@@ -204,11 +208,10 @@ ALTERNATE_ENTRY _RhpDispatchResolve
         jne     DispatchResolveProbeMiss
 
         ;; Compare key (dispatchCell, objectType)
-        mov     esi, dword ptr [esp + 20]
+        mov     esi, dword ptr [esp + 4]
         cmp     esi, dword ptr [eax + 4]
         jne     DispatchResolveProbeMiss
-        mov     esi, dword ptr [esp + 16]
-        mov     esi, dword ptr [esi]
+        mov     esi, dword ptr [esp]
         cmp     esi, dword ptr [eax + 8]
         jne     DispatchResolveProbeMiss
 
@@ -219,10 +222,11 @@ ALTERNATE_ENTRY _RhpDispatchResolve
 
         ;; Return cached target.
         mov     eax, esi
+        add     esp, 12                  ;; discard MethodTable, cell, this
         pop     edi
         pop     esi
         pop     ebx
-        ret     8
+        ret
 
       DispatchResolveProbeMiss:
         ;; If version is zero the rest of the bucket is unclaimed - stop probing.
@@ -239,6 +243,9 @@ ALTERNATE_ENTRY _RhpDispatchResolve
         jl      DispatchResolveProbeLoop
 
       DispatchResolveCacheMiss:
+        add     esp, 4                   ;; discard MethodTable
+        pop     edx                      ;; cell
+        pop     ecx                      ;; this
         pop     edi
         pop     esi
         pop     ebx
