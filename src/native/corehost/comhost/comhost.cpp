@@ -184,7 +184,7 @@ namespace
     std::once_flag s_com_activation_flag;
     com_activation_info s_com_activation;
 
-    void report_com_error_info(const GUID& guid, pal::string_t errs)
+    void report_com_error_info(const GUID& guid, const pal::string_t& errs)
     {
         ICreateErrorInfo *cei;
         if (!errs.empty() && SUCCEEDED(::CreateErrorInfo(&cei)))
