@@ -3349,6 +3349,10 @@ public:
                                var_types             type,
                                const DebugInfo&      di = DebugInfo());
 
+    GenTreeCall* gtNewUserCallNode(CORINFO_METHOD_HANDLE handle,
+                                   var_types             type,
+                                   const DebugInfo&      di = DebugInfo());
+
     GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(
@@ -3919,6 +3923,7 @@ public:
     bool gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity);
 
     GenTree* gtReverseCond(GenTree* tree);
+    bool     gtTryReverseCond(GenTree* tree);
 
     static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
@@ -7522,7 +7527,6 @@ private:
 public:
     PhaseStatus rangeCheckPhase();
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
-    GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
 
 protected:
@@ -9232,7 +9236,6 @@ public:
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
@@ -9684,6 +9687,8 @@ public:
     void eeSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause);
 
     CorInfoReloc eeGetRelocTypeHint(void* target);
+
+    uint32_t eeGetAddressAlignment(void* address);
 
     // ICorStaticInfo wrapper functions
 

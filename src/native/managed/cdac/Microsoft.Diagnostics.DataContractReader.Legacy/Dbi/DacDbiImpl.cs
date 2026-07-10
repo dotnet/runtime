@@ -993,7 +993,45 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetUserState(ulong vmThread, int* pRetVal)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pRetVal = default;
+            CorDebugUserState partialState;
+            hr = GetPartialUserState(vmThread, &partialState);
+            if (hr != HResults.S_OK)
+                throw Marshal.GetExceptionForHR(hr)!;
+
+            CorDebugUserState result = partialState;
+
+            TargetPointer threadPtr = new TargetPointer(vmThread);
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadPtr);
+
+            IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            byte[] contextBytes = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, context.FullContextFlags);
+            context.FillFromBuffer(contextBytes);
+            if (!_target.Contracts.ExecutionManager.IsGcSafe(context.InstructionPointer))
+                result |= CorDebugUserState.USER_UNSAFE_POINT;
+
+            *pRetVal = (int)result;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int retValLocal;
+            int hrLocal = _legacy.GetUserState(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetPartialUserState(ulong vmThread, CorDebugUserState* pRetVal)
     {
@@ -1296,8 +1334,84 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
+    public int GetNativeCodeSequencePointsAndVarInfo(
+        ulong vmMethodDesc,
+        ulong startAddress,
+        Interop.BOOL fCodeAvailable,
+        uint* pFixedArgCount,
+        delegate* unmanaged<NativeVarInfo*, void*, void> fpVarInfoCallback,
+        delegate* unmanaged<DbiOffsetMapping*, void*, void> fpSeqPointCallback,
+        nint pUserData)
+    {
+        // Fully materialize both arrays before invoking any callback to avoid delivering partial results on failure.
+        List<NativeVarInfo> cdacVarInfos = new();
+        List<DbiOffsetMapping> cdacSeqPoints = new();
+        int hr = HResults.S_OK;
+        if (pFixedArgCount != null)
+            *pFixedArgCount = 0;
+        try
+        {
+            Debug.Assert(vmMethodDesc != 0, $"vmMethodDesc is null");
+            Debug.Assert(fCodeAvailable != 0, $"fCodeAvailable is false");
+
+            Contracts.IDebugInfo debugInfo = _target.Contracts.DebugInfo;
+            TargetCodePointer codePointer = new TargetCodePointer(startAddress);
+
+            if (pFixedArgCount != null)
+                *pFixedArgCount = GetArgCount(vmMethodDesc);
+
+            bool hasDebugInfo = debugInfo.HasDebugInfo(codePointer);
+            if (!hasDebugInfo && (fpVarInfoCallback != null || fpSeqPointCallback != null))
+            {
+                hr = HResults.E_FAIL;
+            }
+
+            if (fpVarInfoCallback != null && hasDebugInfo)
+            {
+                IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out _);
+                foreach (DebugVarInfo varInfo in varInfos)
+                {
+                    cdacVarInfos.Add(ConvertToNativeVarInfo(varInfo));
+                }
+            }
+
+            if (fpSeqPointCallback != null && hasDebugInfo)
+            {
+                IEnumerable<Contracts.OffsetMapping> sequencePoints = debugInfo.GetMethodNativeMap(codePointer, preferUninstrumented: true, out _);
+                foreach (Contracts.OffsetMapping mapping in sequencePoints)
+                {
+                    cdacSeqPoints.Add(ConvertToDbiOffsetMapping(mapping));
+                }
+            }
+
+            foreach (NativeVarInfo nvi in cdacVarInfos)
+            {
+                NativeVarInfo entry = nvi;
+                fpVarInfoCallback(&entry, (void*)pUserData);
+            }
+
+            foreach (DbiOffsetMapping mapping in cdacSeqPoints)
+            {
+                DbiOffsetMapping entry = mapping;
+                fpSeqPointCallback(&entry, (void*)pUserData);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ValidateNativeCodeInfoAgainstLegacy(
+                vmMethodDesc, startAddress, fCodeAvailable,
+                pFixedArgCount, cdacVarInfos, cdacSeqPoints, hr,
+                varInfoRequested: fpVarInfoCallback != null,
+                seqPointsRequested: fpSeqPointCallback != null);
+        }
+#endif
+        return hr;
+    }
 
     public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal)
     {
@@ -1876,17 +1990,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #endif
         return hr;
-    }
-
-    public int GetFramePointer(nuint pSFIHandle, ulong* pRetVal)
-    {
-        if (pSFIHandle == 0)
-            return HResults.E_INVALIDARG;
-
-        nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
-            ? _legacy.GetFramePointer(legacyHandle, pRetVal)
-            : HResults.E_NOTIMPL;
     }
 
     private static nuint TryGetLegacyHandle(nuint pSFIHandle)

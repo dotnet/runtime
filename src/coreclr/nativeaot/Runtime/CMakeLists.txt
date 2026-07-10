@@ -149,6 +149,15 @@ if (WIN32)
 
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
 
+  if(CLR_CMAKE_TARGET_ARCH_ARM64)
+    list(APPEND FULL_RUNTIME_SOURCES
+      ../../unwinder/arm64/unwinder.cpp
+    )
+    include_directories(../../inc)
+    include_directories(../../unwinder)
+    include_directories(../../unwinder/arm64)
+  endif()
+
   set(ASM_SUFFIX asm)
 else()
 
@@ -290,7 +299,6 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_HIJACK)
 endif()
 
-add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
 if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_RISCV64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)

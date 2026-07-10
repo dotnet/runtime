@@ -52,9 +52,6 @@ public class CdacStressTests : CdacStressTestBase
     {
         GetTargetPlatform(out OSPlatform os, out _);
 
-        // TODO(https://github.com/dotnet/runtime/issues/130008): extend GCREFS stress coverage to non-Windows / ARM
-        // targets once ICallingConvention.TryComputeArgGCRefMapBlob supports them (SystemV-AMD64 / ARM64
-        // struct-in-register classification, ARM32 ABI port).
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
 
@@ -69,29 +66,10 @@ public class CdacStressTests : CdacStressTestBase
     [MemberData(nameof(Debuggees))]
     public async Task ArgIterStress_AllVerificationsPass(Debuggee debuggee)
     {
-        GetTargetPlatform(out OSPlatform os, out Architecture arch);
+        GetTargetPlatform(out OSPlatform os, out _);
 
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
-
-        // ARGITER stress requires a CdacTypeHandle whose calling-convention
-        // helpers are filled in for the target ABI. Currently validated:
-        //   - Windows x86 / x64        (TransitionBlock + IsTrivialPointerSizedStruct)
-        //   - Windows ARM64            (HFA via MethodTable enum_flag_IsHFA)
-        //   - Linux ARM / ARM64        (HFA, same path)
-        // Still skipped:
-        //   - Linux / macOS x64        (SystemV-AMD64 eightbyte classifier not ported)
-        //   - RISC-V / LoongArch64     (FP struct classifier not ported)
-        //   - WASM32                   (GetFieldAlignment not ported)
-        bool argIterSupported =
-               (os == OSPlatform.Windows && arch is Architecture.X86 or Architecture.X64 or Architecture.Arm64)
-            || (os == OSPlatform.Linux && arch is Architecture.Arm or Architecture.Arm64);
-        if (!argIterSupported)
-            throw new SkipTestException(
-                "ARGITER stress: needs follow-up work for this platform " +
-                "(SystemV-AMD64 struct classifier for linux/macOS x64, " +
-                "Windows ARM32 ABI port, RISC-V / LoongArch FP struct classifier, " +
-                "or WASM GetFieldAlignment).");
 
         CdacStressResults results = await RunArgIterStressAsync(debuggee.Name);
         AssertAllArgIterPassed(results, debuggee.Name);

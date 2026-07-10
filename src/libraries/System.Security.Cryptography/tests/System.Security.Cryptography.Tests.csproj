@@ -248,6 +248,20 @@
              Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemKeyTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanBaseTests.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanBaseTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanContractTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanImplementationTests.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanImplementationTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanKeyTests.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanKeyTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanNotSupportedTests.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanNotSupportedTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanTestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanTests.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PbeParametersTests.cs"
              Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
@@ -621,13 +635,6 @@
     <Compile Include="SymmetricAlgorithmTests.cs" />
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
-    <Compile Include="X25519DiffieHellmanBaseTests.cs" />
-    <Compile Include="X25519DiffieHellmanContractTests.cs" />
-    <Compile Include="X25519DiffieHellmanImplementationTests.cs" />
-    <Compile Include="X25519DiffieHellmanKeyTests.cs" />
-    <Compile Include="X25519DiffieHellmanNotSupportedTests.cs" />
-    <Compile Include="X25519DiffieHellmanTestData.cs" />
-    <Compile Include="X25519DiffieHellmanTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />
@@ -737,7 +744,8 @@
              Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
-    <Compile Include="X25519DiffieHellmanCngTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X25519DiffieHellmanCngTests.Windows.cs"
+             Link="CommonTest\System\Security\Cryptography\X25519DiffieHellmanCngTests.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
