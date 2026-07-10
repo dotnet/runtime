@@ -210,4 +210,28 @@
         callvirt instance void [System.Runtime]System.Threading.Tasks.Task::Wait()
         ret
     }
+
+    // --- Entry point for standalone executable ---------------------------
+
+    .method public hidebysig static int32 Main() cil managed
+    {
+        .entrypoint
+        .maxstack 1
+
+        .try
+        {
+            call void AsyncVersions::JmpToSuspendingTest()
+            call void AsyncVersions::JmpToCompletedTest()
+            call void AsyncVersions::TailToSuspendingTest()
+            call void AsyncVersions::TailToCompletedTest()
+            ldc.i4.s 100
+            ret
+        }
+        catch [System.Runtime]System.Exception
+        {
+            pop
+            ldc.i4.s 101
+            ret
+        }
+    }
 }
