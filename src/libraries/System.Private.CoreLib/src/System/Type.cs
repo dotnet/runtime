@@ -210,9 +210,13 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public abstract EventInfo? GetEvent(string name, BindingFlags bindingAttr);
 
+        /// <summary>Gets the public events of the current <see cref="Type"/>.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
         public virtual EventInfo[] GetEvents() => GetEvents(DefaultLookup);
 
+        /// <summary>When overridden in a derived class, searches for the events of the current <see cref="Type"/>, using the specified binding constraints.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public abstract EventInfo[] GetEvents(BindingFlags bindingAttr);
 
@@ -222,9 +226,13 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public abstract FieldInfo? GetField(string name, BindingFlags bindingAttr);
 
+        /// <summary>Gets the public fields of the current <see cref="Type"/>.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
         public FieldInfo[] GetFields() => GetFields(DefaultLookup);
 
+        /// <summary>When overridden in a derived class, searches for the fields of the current <see cref="Type"/>, using the specified binding constraints.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public abstract FieldInfo[] GetFields(BindingFlags bindingAttr);
 
@@ -232,6 +240,8 @@ namespace System
         public virtual Type GetFunctionPointerReturnType() => throw new NotSupportedException();
         public virtual Type[] GetFunctionPointerParameterTypes() => throw new NotSupportedException();
 
+        /// <summary>Gets the public members of the current <see cref="Type"/> that match the specified name.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods |
@@ -247,6 +257,8 @@ namespace System
         [DynamicallyAccessedMembers(GetAllMembers)]
         public virtual MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
+        /// <summary>Gets the public members of the current <see cref="Type"/>.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods |
@@ -288,6 +300,8 @@ namespace System
         private protected static ArgumentException CreateGetMemberWithSameMetadataDefinitionAsNotFoundException(MemberInfo member) =>
             new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
 
+        /// <summary>When overridden in a derived class, searches for the members of the current <see cref="Type"/>, using the specified binding constraints.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(GetAllMembers)]
         public abstract MemberInfo[] GetMembers(BindingFlags bindingAttr);
 
@@ -389,9 +403,13 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected virtual MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException();
 
+        /// <summary>Gets the public methods of the current <see cref="Type"/>.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo[] GetMethods() => GetMethods(DefaultLookup);
 
+        /// <summary>When overridden in a derived class, searches for the methods of the current <see cref="Type"/>, using the specified binding constraints.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public abstract MethodInfo[] GetMethods(BindingFlags bindingAttr);
 
@@ -449,9 +467,13 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         protected abstract PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers);
 
+        /// <summary>Gets the public properties of the current <see cref="Type"/>.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         public PropertyInfo[] GetProperties() => GetProperties(DefaultLookup);
 
+        /// <summary>When overridden in a derived class, searches for the properties of the current <see cref="Type"/>, using the specified binding constraints.</summary>
+        /// <remarks>The returned array is not guaranteed to be ordered in any particular way, such as alphabetically, by declaration order, or by inheritance hierarchy.</remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public abstract PropertyInfo[] GetProperties(BindingFlags bindingAttr);
 
