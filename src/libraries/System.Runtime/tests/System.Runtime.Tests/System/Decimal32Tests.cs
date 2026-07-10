@@ -499,6 +499,48 @@ namespace System.Tests
             yield return new object[] { Decimal32.NaN, canonical | 0x03FF_FFFFU };
         }
 
+        public static IEnumerable<object[]> Zero_NonCanonicalEncodings_TestData()
+        {
+            // A finite encoding whose significand exceeds MaxSignificand (9_999_999) is non-canonical and represents zero.
+            const uint PositiveZero = 0x3280_0000;
+            const uint NegativeZero = 0xB280_0000;
+
+            yield return new object[] { PositiveZero, 0x6CBF_FFFFU }; // significand 0x9F_FFFF
+            yield return new object[] { PositiveZero, 0x6CB8_9680U }; // significand 0x98_9680 (== 10_000_000)
+            yield return new object[] { NegativeZero, 0xECBF_FFFFU };
+            yield return new object[] { NegativeZero, 0xECB8_9680U };
+        }
+
+        [Theory]
+        [MemberData(nameof(Zero_NonCanonicalEncodings_TestData))]
+        public static void Finite_NonCanonicalEncodings_BehaveAsZero(uint canonicalZero, uint encoding)
+        {
+            Decimal32 zero = Unsafe.BitCast<uint, Decimal32>(canonicalZero);
+            Decimal32 nc = Unsafe.BitCast<uint, Decimal32>(encoding);
+            Decimal32 one = Unsafe.BitCast<uint, Decimal32>(0x3280_0001U);
+            Decimal32 inf = Decimal32.PositiveInfinity;
+
+            // A non-canonical finite encoding compares, hashes, and equals as zero.
+            Assert.Equal(0, zero.CompareTo(nc));
+            Assert.True(zero == nc);
+            Assert.Equal(zero.GetHashCode(), nc.GetHashCode());
+
+            // Arithmetic treats the non-canonical operand identically to canonical zero.
+            Assert.Equal(Bits(zero + one), Bits(nc + one));
+            Assert.Equal(Bits(zero - one), Bits(nc - one));
+            Assert.Equal(Bits(one + zero), Bits(one + nc));
+            Assert.Equal(Bits(zero * one), Bits(nc * one));
+            Assert.Equal(Bits(one * zero), Bits(one * nc));
+            Assert.Equal(Bits(zero / one), Bits(nc / one));
+
+            // Division-by-zero and invalid operations must trigger for non-canonical zero.
+            Assert.Equal(Bits(one / zero), Bits(one / nc)); // finite / 0 -> Infinity
+            Assert.Equal(Bits(zero / zero), Bits(nc / nc)); // 0 / 0 -> NaN
+            Assert.Equal(Bits(inf * zero), Bits(inf * nc)); // Infinity * 0 -> NaN
+
+            static uint Bits(Decimal32 value) => Unsafe.BitCast<Decimal32, uint>(value);
+        }
+
         public static IEnumerable<object[]> UnaryNegation_TestData()
         {
             yield return new object[] { 0x3280_0000U, 0xB280_0000U }; // +0 -> -0
@@ -652,36 +694,36 @@ namespace System.Tests
 
         public static IEnumerable<object[]> op_Subtraction_TestData()
         {
-            yield return new object[] { 0xFC000000U, 0x32800001U, 0xFC000000U }; // NaN + 1 -> NaN (sub)
-            yield return new object[] { 0x32800001U, 0xFC000000U, 0xFC000000U }; // 1 + NaN -> NaN (sub)
-            yield return new object[] { 0x78000000U, 0x32800001U, 0x78000000U }; // +Inf + 1 -> +Inf (sub)
-            yield return new object[] { 0x32800001U, 0x78000000U, 0xF8000000U }; // 1 + +Inf -> +Inf (sub)
-            yield return new object[] { 0x78000000U, 0xF8000000U, 0x78000000U }; // +Inf + -Inf -> NaN (sub)
-            yield return new object[] { 0xF8000000U, 0x78000000U, 0xF8000000U }; // -Inf + +Inf -> NaN (sub)
-            yield return new object[] { 0x78000000U, 0x78000000U, 0xFC000000U }; // +Inf + +Inf -> +Inf (sub)
-            yield return new object[] { 0xF8000000U, 0xF8000000U, 0xFC000000U }; // -Inf + -Inf -> -Inf (sub)
-            yield return new object[] { 0x32800000U, 0x32800000U, 0x32800000U }; // +0 + +0 -> +0 (sub)
-            yield return new object[] { 0xB2800000U, 0xB2800000U, 0x32800000U }; // -0 + -0 -> -0 (sub)
-            yield return new object[] { 0x32800000U, 0xB2800000U, 0x32800000U }; // +0 + -0 -> +0 (round-half-even) (sub)
-            yield return new object[] { 0xB2800000U, 0x32800000U, 0xB2800000U }; // -0 + +0 -> +0 (sub)
-            yield return new object[] { 0x32800001U, 0x32800000U, 0x32800001U }; // 1 + 0 -> 1 (sub)
-            yield return new object[] { 0x32800000U, 0x32800001U, 0xB2800001U }; // 0 + 1 -> 1 (sub)
-            yield return new object[] { 0x78000002U, 0x32800001U, 0x78000000U }; // non-canonical +Inf + 1 -> canonical +Inf (sub)
-            yield return new object[] { 0x32800001U, 0xF8000005U, 0x78000000U }; // 1 + non-canonical -Inf -> canonical -Inf (sub)
-            yield return new object[] { 0x7800000FU, 0xF8000003U, 0x78000000U }; // non-canonical +Inf + non-canonical -Inf -> NaN (sub)
-            yield return new object[] { 0x32800001U, 0x32800002U, 0xB2800001U }; // 1 + 2 -> 3 (sub)
-            yield return new object[] { 0x3200000FU, 0x32000019U, 0xB200000AU }; // 1.5 + 2.5 -> 4.0 (sub)
-            yield return new object[] { 0x32000001U, 0x32000002U, 0xB2000001U }; // 0.1 + 0.2 -> 0.3 (sub)
-            yield return new object[] { 0x32800001U, 0xB2800001U, 0x32800002U }; // 1 + -1 -> +0 (sub)
-            yield return new object[] { 0xB2800001U, 0x32800001U, 0xB2800002U }; // -1 + 1 -> +0 (sub)
-            yield return new object[] { 0x6CB8967FU, 0x32800001U, 0x6CB8967EU }; // all-nines + 1 (carry/overflow to next magnitude) (sub)
-            yield return new object[] { 0x6CB8967FU, 0x6CB8967FU, 0x32800000U }; // big + big (round) (sub)
-            yield return new object[] { 0x32800001U, 0x2F000001U, 0x6BD8967FU }; // 1 + 1e-P (alignment beyond precision) (sub)
-            yield return new object[] { 0x32800001U, 0x2C800001U, 0x2F8F4240U }; // 1 + tiny (sticky rounding) (sub)
-            yield return new object[] { 0x5F8F4240U, 0x5F8F4240U, 0x5F800000U }; // max-ish + max-ish (overflow to Inf) (sub)
-            yield return new object[] { 0x2F92D687U, 0x2FF4CBB1U, 0xAFE1F52AU }; // cohort / preferred exponent (sub)
-            yield return new object[] { 0x32800064U, 0x31000001U, 0x3101869FU }; // 100 + 0.001 (exponent spread) (sub)
-            yield return new object[] { 0x6CB8967FU, 0xECB8967EU, 0x331E8480U }; // cancellation leaving small (sub)
+            yield return new object[] { 0xFC000000U, 0x32800001U, 0xFC000000U }; // NaN - 1 -> NaN
+            yield return new object[] { 0x32800001U, 0xFC000000U, 0xFC000000U }; // 1 - NaN -> NaN
+            yield return new object[] { 0x78000000U, 0x32800001U, 0x78000000U }; // +Inf - 1 -> +Inf
+            yield return new object[] { 0x32800001U, 0x78000000U, 0xF8000000U }; // 1 - +Inf -> -Inf
+            yield return new object[] { 0x78000000U, 0xF8000000U, 0x78000000U }; // +Inf - -Inf -> +Inf
+            yield return new object[] { 0xF8000000U, 0x78000000U, 0xF8000000U }; // -Inf - +Inf -> -Inf
+            yield return new object[] { 0x78000000U, 0x78000000U, 0xFC000000U }; // +Inf - +Inf -> NaN
+            yield return new object[] { 0xF8000000U, 0xF8000000U, 0xFC000000U }; // -Inf - -Inf -> NaN
+            yield return new object[] { 0x32800000U, 0x32800000U, 0x32800000U }; // +0 - +0 -> +0
+            yield return new object[] { 0xB2800000U, 0xB2800000U, 0x32800000U }; // -0 - -0 -> +0 (round-half-even)
+            yield return new object[] { 0x32800000U, 0xB2800000U, 0x32800000U }; // +0 - -0 -> +0
+            yield return new object[] { 0xB2800000U, 0x32800000U, 0xB2800000U }; // -0 - +0 -> -0
+            yield return new object[] { 0x32800001U, 0x32800000U, 0x32800001U }; // 1 - 0 -> 1
+            yield return new object[] { 0x32800000U, 0x32800001U, 0xB2800001U }; // 0 - 1 -> -1
+            yield return new object[] { 0x78000002U, 0x32800001U, 0x78000000U }; // non-canonical +Inf - 1 -> canonical +Inf
+            yield return new object[] { 0x32800001U, 0xF8000005U, 0x78000000U }; // 1 - non-canonical -Inf -> canonical +Inf
+            yield return new object[] { 0x7800000FU, 0xF8000003U, 0x78000000U }; // non-canonical +Inf - non-canonical -Inf -> canonical +Inf
+            yield return new object[] { 0x32800001U, 0x32800002U, 0xB2800001U }; // 1 - 2 -> -1
+            yield return new object[] { 0x3200000FU, 0x32000019U, 0xB200000AU }; // 1.5 - 2.5 -> -1.0
+            yield return new object[] { 0x32000001U, 0x32000002U, 0xB2000001U }; // 0.1 - 0.2 -> -0.1
+            yield return new object[] { 0x32800001U, 0xB2800001U, 0x32800002U }; // 1 - -1 -> 2
+            yield return new object[] { 0xB2800001U, 0x32800001U, 0xB2800002U }; // -1 - 1 -> -2
+            yield return new object[] { 0x6CB8967FU, 0x32800001U, 0x6CB8967EU }; // all-nines - 1 -> 9_999_998
+            yield return new object[] { 0x6CB8967FU, 0x6CB8967FU, 0x32800000U }; // big - big -> +0
+            yield return new object[] { 0x32800001U, 0x2F000001U, 0x6BD8967FU }; // 1 - 1e-7 -> 0.9999999 (alignment beyond precision)
+            yield return new object[] { 0x32800001U, 0x2C800001U, 0x2F8F4240U }; // 1 - 1e-12 -> 1.000000 (sticky rounding)
+            yield return new object[] { 0x5F8F4240U, 0x5F8F4240U, 0x5F800000U }; // max-ish - max-ish -> +0 (preferred exponent retained)
+            yield return new object[] { 0x2F92D687U, 0x2FF4CBB1U, 0xAFE1F52AU }; // cohort / preferred exponent
+            yield return new object[] { 0x32800064U, 0x31000001U, 0x3101869FU }; // 100 - 0.001 -> 99.999 (exponent spread)
+            yield return new object[] { 0x6CB8967FU, 0xECB8967EU, 0x331E8480U }; // opposite signs subtract as add: 9_999_999 - -9_999_998 -> 2.0e7 (carry/rounding)
             yield return new object[] { 0x2F2C8C35U, 0x2A00002DU, 0x2F2C8C35U };
             yield return new object[] { 0xB8002104U, 0xB98043D6U, 0x389A7C4BU };
             yield return new object[] { 0xA8800010U, 0x34802213U, 0xECC51A38U };

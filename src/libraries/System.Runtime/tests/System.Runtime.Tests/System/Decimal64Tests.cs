@@ -505,6 +505,48 @@ namespace System.Tests
             yield return new object[] { Decimal64.NaN, canonical | 0x03FF_FFFF_FFFF_FFFFUL };
         }
 
+        public static IEnumerable<object[]> Zero_NonCanonicalEncodings_TestData()
+        {
+            // A finite encoding whose significand exceeds MaxSignificand (9_999_999_999_999_999) is non-canonical and represents zero.
+            const ulong PositiveZero = 0x31C0_0000_0000_0000;
+            const ulong NegativeZero = 0xB1C0_0000_0000_0000;
+
+            yield return new object[] { PositiveZero, 0x6C77_FFFF_FFFF_FFFFUL };
+            yield return new object[] { PositiveZero, 0x6C73_86F2_6FC1_0000UL };
+            yield return new object[] { NegativeZero, 0xEC77_FFFF_FFFF_FFFFUL };
+            yield return new object[] { NegativeZero, 0xEC73_86F2_6FC1_0000UL };
+        }
+
+        [Theory]
+        [MemberData(nameof(Zero_NonCanonicalEncodings_TestData))]
+        public static void Finite_NonCanonicalEncodings_BehaveAsZero(ulong canonicalZero, ulong encoding)
+        {
+            Decimal64 zero = Unsafe.BitCast<ulong, Decimal64>(canonicalZero);
+            Decimal64 nc = Unsafe.BitCast<ulong, Decimal64>(encoding);
+            Decimal64 one = Unsafe.BitCast<ulong, Decimal64>(0x31C0_0000_0000_0001UL);
+            Decimal64 inf = Decimal64.PositiveInfinity;
+
+            // A non-canonical finite encoding compares, hashes, and equals as zero.
+            Assert.Equal(0, zero.CompareTo(nc));
+            Assert.True(zero == nc);
+            Assert.Equal(zero.GetHashCode(), nc.GetHashCode());
+
+            // Arithmetic treats the non-canonical operand identically to canonical zero.
+            Assert.Equal(Bits(zero + one), Bits(nc + one));
+            Assert.Equal(Bits(zero - one), Bits(nc - one));
+            Assert.Equal(Bits(one + zero), Bits(one + nc));
+            Assert.Equal(Bits(zero * one), Bits(nc * one));
+            Assert.Equal(Bits(one * zero), Bits(one * nc));
+            Assert.Equal(Bits(zero / one), Bits(nc / one));
+
+            // Division-by-zero and invalid operations must trigger for non-canonical zero.
+            Assert.Equal(Bits(one / zero), Bits(one / nc)); // finite / 0 -> Infinity
+            Assert.Equal(Bits(zero / zero), Bits(nc / nc)); // 0 / 0 -> NaN
+            Assert.Equal(Bits(inf * zero), Bits(inf * nc)); // Infinity * 0 -> NaN
+
+            static ulong Bits(Decimal64 value) => Unsafe.BitCast<Decimal64, ulong>(value);
+        }
+
         public static IEnumerable<object[]> UnaryNegation_TestData()
         {
             yield return new object[] { 0x31C0_0000_0000_0000UL, 0xB1C0_0000_0000_0000UL }; // +0 -> -0
@@ -658,36 +700,36 @@ namespace System.Tests
 
         public static IEnumerable<object[]> op_Subtraction_TestData()
         {
-            yield return new object[] { 0xFC000000_00000000UL, 0x31C00000_00000001UL, 0xFC000000_00000000UL }; // NaN + 1 -> NaN (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0xFC000000_00000000UL, 0xFC000000_00000000UL }; // 1 + NaN -> NaN (sub)
-            yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // +Inf + 1 -> +Inf (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0x78000000_00000000UL, 0xF8000000_00000000UL }; // 1 + +Inf -> +Inf (sub)
-            yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0x78000000_00000000UL }; // +Inf + -Inf -> NaN (sub)
-            yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0xF8000000_00000000UL }; // -Inf + +Inf -> NaN (sub)
-            yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // +Inf + +Inf -> +Inf (sub)
-            yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // -Inf + -Inf -> -Inf (sub)
-            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000000UL, 0x31C00000_00000000UL }; // +0 + +0 -> +0 (sub)
-            yield return new object[] { 0xB1C00000_00000000UL, 0xB1C00000_00000000UL, 0x31C00000_00000000UL }; // -0 + -0 -> -0 (sub)
-            yield return new object[] { 0x31C00000_00000000UL, 0xB1C00000_00000000UL, 0x31C00000_00000000UL }; // +0 + -0 -> +0 (round-half-even) (sub)
-            yield return new object[] { 0xB1C00000_00000000UL, 0x31C00000_00000000UL, 0xB1C00000_00000000UL }; // -0 + +0 -> +0 (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000000UL, 0x31C00000_00000001UL }; // 1 + 0 -> 1 (sub)
-            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000001UL, 0xB1C00000_00000001UL }; // 0 + 1 -> 1 (sub)
-            yield return new object[] { 0x78000000_00000002UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // non-canonical +Inf + 1 -> canonical +Inf (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0xF8000000_00000005UL, 0x78000000_00000000UL }; // 1 + non-canonical -Inf -> canonical -Inf (sub)
-            yield return new object[] { 0x78000000_0000000FUL, 0xF8000000_00000003UL, 0x78000000_00000000UL }; // non-canonical +Inf + non-canonical -Inf -> NaN (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000002UL, 0xB1C00000_00000001UL }; // 1 + 2 -> 3 (sub)
-            yield return new object[] { 0x31A00000_0000000FUL, 0x31A00000_00000019UL, 0xB1A00000_0000000AUL }; // 1.5 + 2.5 -> 4.0 (sub)
-            yield return new object[] { 0x31A00000_00000001UL, 0x31A00000_00000002UL, 0xB1A00000_00000001UL }; // 0.1 + 0.2 -> 0.3 (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0xB1C00000_00000001UL, 0x31C00000_00000002UL }; // 1 + -1 -> +0 (sub)
-            yield return new object[] { 0xB1C00000_00000001UL, 0x31C00000_00000001UL, 0xB1C00000_00000002UL }; // -1 + 1 -> +0 (sub)
-            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x31C00000_00000001UL, 0x6C7386F2_6FC0FFFEUL }; // all-nines + 1 (carry/overflow to next magnitude) (sub)
-            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x6C7386F2_6FC0FFFFUL, 0x31C00000_00000000UL }; // big + big (round) (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0x2FC00000_00000001UL, 0x6BF386F2_6FC0FFFFUL }; // 1 + 1e-P (alignment beyond precision) (sub)
-            yield return new object[] { 0x31C00000_00000001UL, 0x2F200000_00000001UL, 0x2FE38D7E_A4C68000UL }; // 1 + tiny (sticky rounding) (sub)
-            yield return new object[] { 0x5FE38D7E_A4C68000UL, 0x5FE38D7E_A4C68000UL, 0x5FE00000_00000000UL }; // max-ish + max-ish (overflow to Inf) (sub)
-            yield return new object[] { 0x31000000_0012D687UL, 0x31000000_0074CBB1UL, 0xB1000000_0061F52AUL }; // cohort / preferred exponent (sub)
-            yield return new object[] { 0x31C00000_00000064UL, 0x31600000_00000001UL, 0x31600000_0001869FUL }; // 100 + 0.001 (exponent spread) (sub)
-            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0xEC7386F2_6FC0FFFEUL, 0x31E71AFD_498D0000UL }; // cancellation leaving small (sub)
+            yield return new object[] { 0xFC000000_00000000UL, 0x31C00000_00000001UL, 0xFC000000_00000000UL }; // NaN - 1 -> NaN
+            yield return new object[] { 0x31C00000_00000001UL, 0xFC000000_00000000UL, 0xFC000000_00000000UL }; // 1 - NaN -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // +Inf - 1 -> +Inf
+            yield return new object[] { 0x31C00000_00000001UL, 0x78000000_00000000UL, 0xF8000000_00000000UL }; // 1 - +Inf -> -Inf
+            yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0x78000000_00000000UL }; // +Inf - -Inf -> +Inf
+            yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0xF8000000_00000000UL }; // -Inf - +Inf -> -Inf
+            yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // +Inf - +Inf -> NaN
+            yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // -Inf - -Inf -> NaN
+            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000000UL, 0x31C00000_00000000UL }; // +0 - +0 -> +0
+            yield return new object[] { 0xB1C00000_00000000UL, 0xB1C00000_00000000UL, 0x31C00000_00000000UL }; // -0 - -0 -> +0 (round-half-even)
+            yield return new object[] { 0x31C00000_00000000UL, 0xB1C00000_00000000UL, 0x31C00000_00000000UL }; // +0 - -0 -> +0
+            yield return new object[] { 0xB1C00000_00000000UL, 0x31C00000_00000000UL, 0xB1C00000_00000000UL }; // -0 - +0 -> -0
+            yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000000UL, 0x31C00000_00000001UL }; // 1 - 0 -> 1
+            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000001UL, 0xB1C00000_00000001UL }; // 0 - 1 -> -1
+            yield return new object[] { 0x78000000_00000002UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // non-canonical +Inf - 1 -> canonical +Inf
+            yield return new object[] { 0x31C00000_00000001UL, 0xF8000000_00000005UL, 0x78000000_00000000UL }; // 1 - non-canonical -Inf -> canonical +Inf
+            yield return new object[] { 0x78000000_0000000FUL, 0xF8000000_00000003UL, 0x78000000_00000000UL }; // non-canonical +Inf - non-canonical -Inf -> canonical +Inf
+            yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000002UL, 0xB1C00000_00000001UL }; // 1 - 2 -> -1
+            yield return new object[] { 0x31A00000_0000000FUL, 0x31A00000_00000019UL, 0xB1A00000_0000000AUL }; // 1.5 - 2.5 -> -1.0
+            yield return new object[] { 0x31A00000_00000001UL, 0x31A00000_00000002UL, 0xB1A00000_00000001UL }; // 0.1 - 0.2 -> -0.1
+            yield return new object[] { 0x31C00000_00000001UL, 0xB1C00000_00000001UL, 0x31C00000_00000002UL }; // 1 - -1 -> 2
+            yield return new object[] { 0xB1C00000_00000001UL, 0x31C00000_00000001UL, 0xB1C00000_00000002UL }; // -1 - 1 -> -2
+            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x31C00000_00000001UL, 0x6C7386F2_6FC0FFFEUL }; // all-nines - 1 -> 9_999_999_999_999_998
+            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x6C7386F2_6FC0FFFFUL, 0x31C00000_00000000UL }; // big - big -> +0
+            yield return new object[] { 0x31C00000_00000001UL, 0x2FC00000_00000001UL, 0x6BF386F2_6FC0FFFFUL }; // 1 - 1e-16 -> 0.9999999999999999 (alignment beyond precision)
+            yield return new object[] { 0x31C00000_00000001UL, 0x2F200000_00000001UL, 0x2FE38D7E_A4C68000UL }; // 1 - 1e-21 -> 1.000000000000000 (sticky rounding)
+            yield return new object[] { 0x5FE38D7E_A4C68000UL, 0x5FE38D7E_A4C68000UL, 0x5FE00000_00000000UL }; // max-ish - max-ish -> +0 (preferred exponent retained)
+            yield return new object[] { 0x31000000_0012D687UL, 0x31000000_0074CBB1UL, 0xB1000000_0061F52AUL }; // cohort / preferred exponent
+            yield return new object[] { 0x31C00000_00000064UL, 0x31600000_00000001UL, 0x31600000_0001869FUL }; // 100 - 0.001 -> 99.999 (exponent spread)
+            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0xEC7386F2_6FC0FFFEUL, 0x31E71AFD_498D0000UL }; // opposite signs subtract as add: 9_999_999_999_999_999 - -9_999_999_999_999_998 -> 2.0e16 (carry/rounding)
             yield return new object[] { 0xAF200000_000023D2UL, 0xAFA34A58_43C82F35UL, 0x6BE0E772_A5D1D809UL };
             yield return new object[] { 0x19C00000_0006B3C8UL, 0xB2400000_000014EDUL, 0x30D30829_C20FD000UL };
             yield return new object[] { 0x31200054_42297730UL, 0x2F000063_A23BC84AUL, 0x30ACDB58_73BFC300UL };

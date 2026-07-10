@@ -75,6 +75,16 @@ namespace System
                 significand = decimalBits & TDecimal.GwPlus2ToGwPlus4SignificandMask;
             }
 
+            // A finite encoding whose significand exceeds the maximum representable coefficient is
+            // non-canonical and is treated as zero. This matches the non-canonical handling in
+            // `unpack_BID32`, `unpack_BID64`, and `unpack_BID128` from the Intel Decimal
+            // Floating-Point Math Library and keeps all downstream arithmetic and comparison
+            // logic robust for every finite bit pattern.
+            if (significand > TDecimal.MaxSignificand)
+            {
+                significand = TValue.Zero;
+            }
+
             return new DecodedDecimalIeee754<TValue>(signed, biasedExponent - TDecimal.ExponentBias, significand);
         }
 

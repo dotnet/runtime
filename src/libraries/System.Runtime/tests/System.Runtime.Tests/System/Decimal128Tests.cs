@@ -503,6 +503,49 @@ namespace System.Tests
             yield return new object[] { Decimal128.NaN, canonical | (((UInt128)1 << 110) - 1) };
         }
 
+        public static IEnumerable<object[]> Zero_NonCanonicalEncodings_TestData()
+        {
+            // A finite encoding whose significand exceeds MaxSignificand (10^34 - 1) is non-canonical and represents zero.
+            // For Decimal128 every large-coefficient (G0G1 == 11) finite encoding is non-canonical.
+            UInt128 positiveZero = new UInt128(0x3040_0000_0000_0000, 0);
+            UInt128 negativeZero = new UInt128(0xB040_0000_0000_0000, 0);
+
+            yield return new object[] { positiveZero, new UInt128(0x6C10_7FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF) };
+            yield return new object[] { positiveZero, new UInt128(0x6C10_0000_0000_0000, 0x0000_0000_0000_0001) };
+            yield return new object[] { negativeZero, new UInt128(0xEC10_7FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF) };
+            yield return new object[] { negativeZero, new UInt128(0xEC10_0000_0000_0000, 0x0000_0000_0000_0001) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Zero_NonCanonicalEncodings_TestData))]
+        public static void Finite_NonCanonicalEncodings_BehaveAsZero(UInt128 canonicalZero, UInt128 encoding)
+        {
+            Decimal128 zero = Unsafe.BitCast<UInt128, Decimal128>(canonicalZero);
+            Decimal128 nc = Unsafe.BitCast<UInt128, Decimal128>(encoding);
+            Decimal128 one = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x3040_0000_0000_0000, 1));
+            Decimal128 inf = Decimal128.PositiveInfinity;
+
+            // A non-canonical finite encoding compares, hashes, and equals as zero.
+            Assert.Equal(0, zero.CompareTo(nc));
+            Assert.True(zero == nc);
+            Assert.Equal(zero.GetHashCode(), nc.GetHashCode());
+
+            // Arithmetic treats the non-canonical operand identically to canonical zero.
+            Assert.Equal(Bits(zero + one), Bits(nc + one));
+            Assert.Equal(Bits(zero - one), Bits(nc - one));
+            Assert.Equal(Bits(one + zero), Bits(one + nc));
+            Assert.Equal(Bits(zero * one), Bits(nc * one));
+            Assert.Equal(Bits(one * zero), Bits(one * nc));
+            Assert.Equal(Bits(zero / one), Bits(nc / one));
+
+            // Division-by-zero and invalid operations must trigger for non-canonical zero.
+            Assert.Equal(Bits(one / zero), Bits(one / nc)); // finite / 0 -> Infinity
+            Assert.Equal(Bits(zero / zero), Bits(nc / nc)); // 0 / 0 -> NaN
+            Assert.Equal(Bits(inf * zero), Bits(inf * nc)); // Infinity * 0 -> NaN
+
+            static UInt128 Bits(Decimal128 value) => Unsafe.BitCast<Decimal128, UInt128>(value);
+        }
+
         public static IEnumerable<object[]> UnaryNegation_TestData()
         {
             yield return new object[] { new UInt128(0x3040_0000_0000_0000, 0), new UInt128(0xB040_0000_0000_0000, 0) }; // +0 -> -0
@@ -652,36 +695,36 @@ namespace System.Tests
 
         public static IEnumerable<object[]> op_Subtraction_TestData()
         {
-            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // NaN + 1 -> NaN (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // 1 + NaN -> NaN (sub)
-            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf + 1 -> +Inf (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) }; // 1 + +Inf -> +Inf (sub)
-            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf + -Inf -> NaN (sub)
-            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) }; // -Inf + +Inf -> NaN (sub)
-            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // +Inf + +Inf -> +Inf (sub)
-            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // -Inf + -Inf -> -Inf (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000) }; // +0 + +0 -> +0 (sub)
-            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000) }; // -0 + -0 -> -0 (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000) }; // +0 + -0 -> +0 (round-half-even) (sub)
-            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000000) }; // -0 + +0 -> +0 (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001) }; // 1 + 0 -> 1 (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000001) }; // 0 + 1 -> 1 (sub)
-            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000002), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x7800000000000000, 0x0000000000000000) }; // non-canonical +Inf + 1 -> canonical +Inf (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xF800000000000000, 0x0000000000000005), new UInt128(0x7800000000000000, 0x0000000000000000) }; // 1 + non-canonical -Inf -> canonical -Inf (sub)
-            yield return new object[] { new UInt128(0x7800000000000000, 0x000000000000000F), new UInt128(0xF800000000000000, 0x0000000000000003), new UInt128(0x7800000000000000, 0x0000000000000000) }; // non-canonical +Inf + non-canonical -Inf -> NaN (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000002), new UInt128(0xB040000000000000, 0x0000000000000001) }; // 1 + 2 -> 3 (sub)
-            yield return new object[] { new UInt128(0x303E000000000000, 0x000000000000000F), new UInt128(0x303E000000000000, 0x0000000000000019), new UInt128(0xB03E000000000000, 0x000000000000000A) }; // 1.5 + 2.5 -> 4.0 (sub)
-            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x0000000000000002), new UInt128(0xB03E000000000000, 0x0000000000000001) }; // 0.1 + 0.2 -> 0.3 (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000002) }; // 1 + -1 -> +0 (sub)
-            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000002) }; // -1 + 1 -> +0 (sub)
-            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFE) }; // all-nines + 1 (carry/overflow to next magnitude) (sub)
-            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3040000000000000, 0x0000000000000000) }; // big + big (round) (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x2FFC000000000000, 0x0000000000000001), new UInt128(0x2FFDED09BEAD87C0, 0x378D8E63FFFFFFFF) }; // 1 + 1e-P (alignment beyond precision) (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x2FF2000000000000, 0x0000000000000001), new UInt128(0x2FFE314DC6448D93, 0x38C15B0A00000000) }; // 1 + tiny (sticky rounding) (sub)
-            yield return new object[] { new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), new UInt128(0x5FFE000000000000, 0x0000000000000000) }; // max-ish + max-ish (overflow to Inf) (sub)
-            yield return new object[] { new UInt128(0x3034000000000000, 0x000000000012D687), new UInt128(0x3034000000000000, 0x000000000074CBB1), new UInt128(0xB034000000000000, 0x000000000061F52A) }; // cohort / preferred exponent (sub)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000064), new UInt128(0x303A000000000000, 0x0000000000000001), new UInt128(0x303A000000000000, 0x000000000001869F) }; // 100 + 0.001 (exponent spread) (sub)
-            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0xB041ED09BEAD87C0, 0x378D8E63FFFFFFFE), new UInt128(0x3042629B8C891B26, 0x7182B61400000000) }; // cancellation leaving small (sub)
+            yield return new object[] { new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // NaN - 1 -> NaN
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xFC00000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // 1 - NaN -> NaN
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf - 1 -> +Inf
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) }; // 1 - +Inf -> -Inf
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf - -Inf -> +Inf
+            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) }; // -Inf - +Inf -> -Inf
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // +Inf - +Inf -> NaN
+            yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xFC00000000000000, 0x0000000000000000) }; // -Inf - -Inf -> NaN
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000) }; // +0 - +0 -> +0
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000) }; // -0 - -0 -> +0 (round-half-even)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000) }; // +0 - -0 -> +0
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000000) }; // -0 - +0 -> -0
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001) }; // 1 - 0 -> 1
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000001) }; // 0 - 1 -> -1
+            yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000002), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x7800000000000000, 0x0000000000000000) }; // non-canonical +Inf - 1 -> canonical +Inf
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xF800000000000000, 0x0000000000000005), new UInt128(0x7800000000000000, 0x0000000000000000) }; // 1 - non-canonical -Inf -> canonical +Inf
+            yield return new object[] { new UInt128(0x7800000000000000, 0x000000000000000F), new UInt128(0xF800000000000000, 0x0000000000000003), new UInt128(0x7800000000000000, 0x0000000000000000) }; // non-canonical +Inf - non-canonical -Inf -> canonical +Inf
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000002), new UInt128(0xB040000000000000, 0x0000000000000001) }; // 1 - 2 -> -1
+            yield return new object[] { new UInt128(0x303E000000000000, 0x000000000000000F), new UInt128(0x303E000000000000, 0x0000000000000019), new UInt128(0xB03E000000000000, 0x000000000000000A) }; // 1.5 - 2.5 -> -1.0
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x0000000000000002), new UInt128(0xB03E000000000000, 0x0000000000000001) }; // 0.1 - 0.2 -> -0.1
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000002) }; // 1 - -1 -> 2
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000002) }; // -1 - 1 -> -2
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFE) }; // all-nines - 1
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3040000000000000, 0x0000000000000000) }; // big - big -> +0
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x2FFC000000000000, 0x0000000000000001), new UInt128(0x2FFDED09BEAD87C0, 0x378D8E63FFFFFFFF) }; // 1 - 1e-P -> 0.999... (alignment beyond precision)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x2FF2000000000000, 0x0000000000000001), new UInt128(0x2FFE314DC6448D93, 0x38C15B0A00000000) }; // 1 - tiny -> 1.000... (sticky rounding)
+            yield return new object[] { new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), new UInt128(0x5FFE000000000000, 0x0000000000000000) }; // max-ish - max-ish -> +0 (preferred exponent retained)
+            yield return new object[] { new UInt128(0x3034000000000000, 0x000000000012D687), new UInt128(0x3034000000000000, 0x000000000074CBB1), new UInt128(0xB034000000000000, 0x000000000061F52A) }; // cohort / preferred exponent
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000064), new UInt128(0x303A000000000000, 0x0000000000000001), new UInt128(0x303A000000000000, 0x000000000001869F) }; // 100 - 0.001 -> 99.999 (exponent spread)
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0xB041ED09BEAD87C0, 0x378D8E63FFFFFFFE), new UInt128(0x3042629B8C891B26, 0x7182B61400000000) }; // opposite signs subtract as add (magnitudes add, carry/rounding)
             yield return new object[] { new UInt128(0x300C000000000000, 0x0386DF690C6EF5BE), new UInt128(0xB018000000000000, 0x00022FCFF31AA0B9), new UInt128(0x300C000000000021, 0x6195AEA21B5DD5FE) };
             yield return new object[] { new UInt128(0x3016000000000000, 0x00000000025C222D), new UInt128(0xAFEE0000105989B6, 0x14E871DF7FB4E7FF), new UInt128(0x2FEE00001D248D5C, 0xB48BC0C20984E7FF) };
             yield return new object[] { new UInt128(0xAFE4004BC3F60664, 0xA2D28316972FB16C), new UInt128(0x3024000000000000, 0x336683344D857468), new UInt128(0xB006B69C6D6AD20B, 0x43BC6455A5EEF320) };
