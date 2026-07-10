@@ -1256,33 +1256,33 @@ namespace System.Tests
             yield return new object[] { 0x78000000U, 0x78000000U }; // +Inf
             yield return new object[] { 0xF8000000U, 0xF8000000U }; // -Inf
             yield return new object[] { 0x78000002U, 0x78000000U }; // non-canonical +Inf (canonicalizes)
-            yield return new object[] { 0x32800000U, 0x32800001U }; // +0 (++ -> 1, -- -> -1)
-            yield return new object[] { 0xB2800000U, 0x32800001U }; // -0 (++ -> 1, -- -> -1)
+            yield return new object[] { 0x32800000U, 0x32800001U }; // +0 -> 1
+            yield return new object[] { 0xB2800000U, 0x32800001U }; // -0 -> 1
             yield return new object[] { 0x35000000U, 0x32800001U }; // 0e5 (preferred exponent min(exp,0))
             yield return new object[] { 0x30000000U, 0x300186A0U }; // 0e-5
-            yield return new object[] { 0x32800001U, 0x32800002U }; // 1 (++ -> 2, -- -> 0)
-            yield return new object[] { 0xB2800001U, 0x32800000U }; // -1 (++ -> 0, -- -> -2)
+            yield return new object[] { 0x32800001U, 0x32800002U }; // 1 -> 2
+            yield return new object[] { 0xB2800001U, 0x32800000U }; // -1 -> 0
             yield return new object[] { 0x32800002U, 0x32800003U }; // 2
             yield return new object[] { 0xB2800002U, 0xB2800001U }; // -2
             yield return new object[] { 0x3280000AU, 0x3280000BU }; // 10
-            yield return new object[] { 0x32000005U, 0x3200000FU }; // 0.5 (++ -> 1.5, -- -> -0.5)
+            yield return new object[] { 0x32000005U, 0x3200000FU }; // 0.5 -> 1.5
             yield return new object[] { 0xB2000005U, 0x32000005U }; // -0.5
             yield return new object[] { 0x32000019U, 0x32000023U }; // 2.5
-            yield return new object[] { 0x32000001U, 0x3200000BU }; // 0.1 (++ -> 1.1)
+            yield return new object[] { 0x32000001U, 0x3200000BU }; // 0.1 -> 1.1
             yield return new object[] { 0x31800177U, 0x318001DBU }; // 3.75
             yield return new object[] { 0xB1800019U, 0x3180004BU }; // -0.25
-            yield return new object[] { 0x32800009U, 0x3280000AU }; // 9 (++ -> 10)
-            yield return new object[] { 0x6CB8967FU, 0x330F4240U }; // all-nines (++ overflows precision, rounds)
+            yield return new object[] { 0x32800009U, 0x3280000AU }; // 9 -> 10
+            yield return new object[] { 0x6CB8967FU, 0x330F4240U }; // all-nines (overflows precision, rounds)
             yield return new object[] { 0x328F4240U, 0x328F4241U }; // 10^(P-1)
             yield return new object[] { 0x328F423FU, 0x328F4240U }; // (P-1)-nines
-            yield return new object[] { 0x37000001U, 0x340F4240U }; // 1e(P+2) (1 below quantum, ++/-- no visible change)
+            yield return new object[] { 0x37000001U, 0x340F4240U }; // 1e(P+2) (1 below quantum, no visible change)
             yield return new object[] { 0x77E95440U, 0x77E95440U }; // near-max (1 negligible)
             yield return new object[] { 0xF7E95440U, 0xF7E95440U }; // near -max (1 negligible)
-            yield return new object[] { 0x02800001U, 0x2F8F4240U }; // tiny subnormal (++ ~ 1)
-            yield return new object[] { 0x82800001U, 0x2F8F4240U }; // tiny negative subnormal (-- ~ -1)
+            yield return new object[] { 0x02800001U, 0x2F8F4240U }; // tiny positive subnormal (++ ~ 1)
+            yield return new object[] { 0x82800001U, 0x2F8F4240U }; // tiny negative subnormal (++ ~ 1)
             yield return new object[] { 0x30000001U, 0x300186A1U }; // 1e-5
             yield return new object[] { 0x2F945855U, 0x2FA39A95U }; // 1.333... full precision
-            yield return new object[] { 0x6BF8967FU, 0x3010C8E0U }; // 9.999... full precision (++ carry)
+            yield return new object[] { 0x6BF8967FU, 0x3010C8E0U }; // 9.999... full precision (carry)
             yield return new object[] { 0x2F2C8C35U, 0x2F93B6ACU };
             yield return new object[] { 0x2A00002DU, 0x2F8F4240U };
             yield return new object[] { 0xB8002104U, 0xEDA0F7A0U };
@@ -1360,33 +1360,33 @@ namespace System.Tests
             yield return new object[] { 0x78000000U, 0x78000000U }; // +Inf
             yield return new object[] { 0xF8000000U, 0xF8000000U }; // -Inf
             yield return new object[] { 0x78000002U, 0x78000000U }; // non-canonical +Inf (canonicalizes)
-            yield return new object[] { 0x32800000U, 0xB2800001U }; // +0 (++ -> 1, -- -> -1)
-            yield return new object[] { 0xB2800000U, 0xB2800001U }; // -0 (++ -> 1, -- -> -1)
+            yield return new object[] { 0x32800000U, 0xB2800001U }; // +0 -> -1
+            yield return new object[] { 0xB2800000U, 0xB2800001U }; // -0 -> -1
             yield return new object[] { 0x35000000U, 0xB2800001U }; // 0e5 (preferred exponent min(exp,0))
             yield return new object[] { 0x30000000U, 0xB00186A0U }; // 0e-5
-            yield return new object[] { 0x32800001U, 0x32800000U }; // 1 (++ -> 2, -- -> 0)
-            yield return new object[] { 0xB2800001U, 0xB2800002U }; // -1 (++ -> 0, -- -> -2)
+            yield return new object[] { 0x32800001U, 0x32800000U }; // 1 -> 0
+            yield return new object[] { 0xB2800001U, 0xB2800002U }; // -1 -> -2
             yield return new object[] { 0x32800002U, 0x32800001U }; // 2
             yield return new object[] { 0xB2800002U, 0xB2800003U }; // -2
             yield return new object[] { 0x3280000AU, 0x32800009U }; // 10
-            yield return new object[] { 0x32000005U, 0xB2000005U }; // 0.5 (++ -> 1.5, -- -> -0.5)
+            yield return new object[] { 0x32000005U, 0xB2000005U }; // 0.5 -> -0.5
             yield return new object[] { 0xB2000005U, 0xB200000FU }; // -0.5
             yield return new object[] { 0x32000019U, 0x3200000FU }; // 2.5
-            yield return new object[] { 0x32000001U, 0xB2000009U }; // 0.1 (++ -> 1.1)
+            yield return new object[] { 0x32000001U, 0xB2000009U }; // 0.1 -> -0.9
             yield return new object[] { 0x31800177U, 0x31800113U }; // 3.75
             yield return new object[] { 0xB1800019U, 0xB180007DU }; // -0.25
-            yield return new object[] { 0x32800009U, 0x32800008U }; // 9 (++ -> 10)
-            yield return new object[] { 0x6CB8967FU, 0x6CB8967EU }; // all-nines (++ overflows precision, rounds)
+            yield return new object[] { 0x32800009U, 0x32800008U }; // 9 -> 8
+            yield return new object[] { 0x6CB8967FU, 0x6CB8967EU }; // all-nines (decrement in last place)
             yield return new object[] { 0x328F4240U, 0x328F423FU }; // 10^(P-1)
             yield return new object[] { 0x328F423FU, 0x328F423EU }; // (P-1)-nines
-            yield return new object[] { 0x37000001U, 0x340F4240U }; // 1e(P+2) (1 below quantum, ++/-- no visible change)
+            yield return new object[] { 0x37000001U, 0x340F4240U }; // 1e(P+2) (1 below quantum, no visible change)
             yield return new object[] { 0x77E95440U, 0x77E95440U }; // near-max (1 negligible)
             yield return new object[] { 0xF7E95440U, 0xF7E95440U }; // near -max (1 negligible)
-            yield return new object[] { 0x02800001U, 0xAF8F4240U }; // tiny subnormal (++ ~ 1)
+            yield return new object[] { 0x02800001U, 0xAF8F4240U }; // tiny positive subnormal (-- ~ -1)
             yield return new object[] { 0x82800001U, 0xAF8F4240U }; // tiny negative subnormal (-- ~ -1)
             yield return new object[] { 0x30000001U, 0xB001869FU }; // 1e-5
             yield return new object[] { 0x2F945855U, 0x2F851615U }; // 1.333... full precision
-            yield return new object[] { 0x6BF8967FU, 0x6BE9543FU }; // 9.999... full precision (++ carry)
+            yield return new object[] { 0x6BF8967FU, 0x6BE9543FU }; // 9.999... full precision
             yield return new object[] { 0x2F2C8C35U, 0xAF6C0A4BU };
             yield return new object[] { 0x2A00002DU, 0xAF8F4240U };
             yield return new object[] { 0xB8002104U, 0xEDA0F7A0U };

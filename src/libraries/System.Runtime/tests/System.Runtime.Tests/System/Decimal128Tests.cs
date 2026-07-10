@@ -1257,33 +1257,33 @@ namespace System.Tests
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) }; // -Inf
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000002), new UInt128(0x7800000000000000, 0x0000000000000000) }; // non-canonical +Inf (canonicalizes)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001) }; // +0 (++ -> 1, -- -> -1)
-            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001) }; // -0 (++ -> 1, -- -> -1)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001) }; // +0 -> 1
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001) }; // -0 -> 1
             yield return new object[] { new UInt128(0x304A000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000001) }; // 0e5 (preferred exponent min(exp,0))
             yield return new object[] { new UInt128(0x3036000000000000, 0x0000000000000000), new UInt128(0x3036000000000000, 0x00000000000186A0) }; // 0e-5
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000002) }; // 1 (++ -> 2, -- -> 0)
-            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000000) }; // -1 (++ -> 0, -- -> -2)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000002) }; // 1 -> 2
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000000) }; // -1 -> 0
             yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000002), new UInt128(0x3040000000000000, 0x0000000000000003) }; // 2
             yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000002), new UInt128(0xB040000000000000, 0x0000000000000001) }; // -2
             yield return new object[] { new UInt128(0x3040000000000000, 0x000000000000000A), new UInt128(0x3040000000000000, 0x000000000000000B) }; // 10
-            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000005), new UInt128(0x303E000000000000, 0x000000000000000F) }; // 0.5 (++ -> 1.5, -- -> -0.5)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000005), new UInt128(0x303E000000000000, 0x000000000000000F) }; // 0.5 -> 1.5
             yield return new object[] { new UInt128(0xB03E000000000000, 0x0000000000000005), new UInt128(0x303E000000000000, 0x0000000000000005) }; // -0.5
             yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000019), new UInt128(0x303E000000000000, 0x0000000000000023) }; // 2.5
-            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x000000000000000B) }; // 0.1 (++ -> 1.1)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x000000000000000B) }; // 0.1 -> 1.1
             yield return new object[] { new UInt128(0x303C000000000000, 0x0000000000000177), new UInt128(0x303C000000000000, 0x00000000000001DB) }; // 3.75
             yield return new object[] { new UInt128(0xB03C000000000000, 0x0000000000000019), new UInt128(0x303C000000000000, 0x000000000000004B) }; // -0.25
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000009), new UInt128(0x3040000000000000, 0x000000000000000A) }; // 9 (++ -> 10)
-            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3042314DC6448D93, 0x38C15B0A00000000) }; // all-nines (++ overflows precision, rounds)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000009), new UInt128(0x3040000000000000, 0x000000000000000A) }; // 9 -> 10
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3042314DC6448D93, 0x38C15B0A00000000) }; // all-nines (overflows precision, rounds)
             yield return new object[] { new UInt128(0x3040314DC6448D93, 0x38C15B0A00000000), new UInt128(0x3040314DC6448D93, 0x38C15B0A00000001) }; // 10^(P-1)
             yield return new object[] { new UInt128(0x3040314DC6448D93, 0x38C15B09FFFFFFFF), new UInt128(0x3040314DC6448D93, 0x38C15B0A00000000) }; // (P-1)-nines
-            yield return new object[] { new UInt128(0x3088000000000000, 0x0000000000000001), new UInt128(0x3046314DC6448D93, 0x38C15B0A00000000) }; // 1e(P+2) (1 below quantum, ++/-- no visible change)
+            yield return new object[] { new UInt128(0x3088000000000000, 0x0000000000000001), new UInt128(0x3046314DC6448D93, 0x38C15B0A00000000) }; // 1e(P+2) (1 below quantum, no visible change)
             yield return new object[] { new UInt128(0x5FFFBBBBF868FA2C, 0xFECC335A00000000), new UInt128(0x5FFFBBBBF868FA2C, 0xFECC335A00000000) }; // near-max (1 negligible)
             yield return new object[] { new UInt128(0xDFFFBBBBF868FA2C, 0xFECC335A00000000), new UInt128(0xDFFFBBBBF868FA2C, 0xFECC335A00000000) }; // near -max (1 negligible)
-            yield return new object[] { new UInt128(0x0040000000000000, 0x0000000000000001), new UInt128(0x2FFE314DC6448D93, 0x38C15B0A00000000) }; // tiny subnormal (++ ~ 1)
-            yield return new object[] { new UInt128(0x8040000000000000, 0x0000000000000001), new UInt128(0x2FFE314DC6448D93, 0x38C15B0A00000000) }; // tiny negative subnormal (-- ~ -1)
+            yield return new object[] { new UInt128(0x0040000000000000, 0x0000000000000001), new UInt128(0x2FFE314DC6448D93, 0x38C15B0A00000000) }; // tiny positive subnormal (++ ~ 1)
+            yield return new object[] { new UInt128(0x8040000000000000, 0x0000000000000001), new UInt128(0x2FFE314DC6448D93, 0x38C15B0A00000000) }; // tiny negative subnormal (++ ~ 1)
             yield return new object[] { new UInt128(0x3036000000000000, 0x0000000000000001), new UInt128(0x3036000000000000, 0x00000000000186A1) }; // 1e-5
             yield return new object[] { new UInt128(0x2FFE41BD085B676E, 0xF657240D55555555), new UInt128(0x2FFE730ACE9FF502, 0x2F187F1755555555) }; // 1.333... full precision
-            yield return new object[] { new UInt128(0x2FFFED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3000363BF3B1CEEE, 0xBE6E4A8B00000000) }; // 9.999... full precision (++ carry)
+            yield return new object[] { new UInt128(0x2FFFED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3000363BF3B1CEEE, 0xBE6E4A8B00000000) }; // 9.999... full precision (carry)
             yield return new object[] { new UInt128(0xB0000000000000B1, 0x4C1E4DF5ED261C68), new UInt128(0x300004EE2D6D40AA, 0x398EA18B12D9E398) };
             yield return new object[] { new UInt128(0xB02C000000008117, 0x952633E9760D3996), new UInt128(0xB02C000000008117, 0x952633E722015596) };
             yield return new object[] { new UInt128(0xAFF80000000000BC, 0x57570583228BEDE5), new UInt128(0x2FFDED09BEAD87BE, 0x556649372B2CAE43) };
@@ -1361,33 +1361,33 @@ namespace System.Tests
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000000), new UInt128(0x7800000000000000, 0x0000000000000000) }; // +Inf
             yield return new object[] { new UInt128(0xF800000000000000, 0x0000000000000000), new UInt128(0xF800000000000000, 0x0000000000000000) }; // -Inf
             yield return new object[] { new UInt128(0x7800000000000000, 0x0000000000000002), new UInt128(0x7800000000000000, 0x0000000000000000) }; // non-canonical +Inf (canonicalizes)
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000001) }; // +0 (++ -> 1, -- -> -1)
-            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000001) }; // -0 (++ -> 1, -- -> -1)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000001) }; // +0 -> -1
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000001) }; // -0 -> -1
             yield return new object[] { new UInt128(0x304A000000000000, 0x0000000000000000), new UInt128(0xB040000000000000, 0x0000000000000001) }; // 0e5 (preferred exponent min(exp,0))
             yield return new object[] { new UInt128(0x3036000000000000, 0x0000000000000000), new UInt128(0xB036000000000000, 0x00000000000186A0) }; // 0e-5
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000000) }; // 1 (++ -> 2, -- -> 0)
-            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000002) }; // -1 (++ -> 0, -- -> -2)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000001), new UInt128(0x3040000000000000, 0x0000000000000000) }; // 1 -> 0
+            yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000001), new UInt128(0xB040000000000000, 0x0000000000000002) }; // -1 -> -2
             yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000002), new UInt128(0x3040000000000000, 0x0000000000000001) }; // 2
             yield return new object[] { new UInt128(0xB040000000000000, 0x0000000000000002), new UInt128(0xB040000000000000, 0x0000000000000003) }; // -2
             yield return new object[] { new UInt128(0x3040000000000000, 0x000000000000000A), new UInt128(0x3040000000000000, 0x0000000000000009) }; // 10
-            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000005), new UInt128(0xB03E000000000000, 0x0000000000000005) }; // 0.5 (++ -> 1.5, -- -> -0.5)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000005), new UInt128(0xB03E000000000000, 0x0000000000000005) }; // 0.5 -> -0.5
             yield return new object[] { new UInt128(0xB03E000000000000, 0x0000000000000005), new UInt128(0xB03E000000000000, 0x000000000000000F) }; // -0.5
             yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000019), new UInt128(0x303E000000000000, 0x000000000000000F) }; // 2.5
-            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0xB03E000000000000, 0x0000000000000009) }; // 0.1 (++ -> 1.1)
+            yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0xB03E000000000000, 0x0000000000000009) }; // 0.1 -> -0.9
             yield return new object[] { new UInt128(0x303C000000000000, 0x0000000000000177), new UInt128(0x303C000000000000, 0x0000000000000113) }; // 3.75
             yield return new object[] { new UInt128(0xB03C000000000000, 0x0000000000000019), new UInt128(0xB03C000000000000, 0x000000000000007D) }; // -0.25
-            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000009), new UInt128(0x3040000000000000, 0x0000000000000008) }; // 9 (++ -> 10)
-            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFE) }; // all-nines (++ overflows precision, rounds)
+            yield return new object[] { new UInt128(0x3040000000000000, 0x0000000000000009), new UInt128(0x3040000000000000, 0x0000000000000008) }; // 9 -> 8
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFE) }; // all-nines (decrement in last place)
             yield return new object[] { new UInt128(0x3040314DC6448D93, 0x38C15B0A00000000), new UInt128(0x3040314DC6448D93, 0x38C15B09FFFFFFFF) }; // 10^(P-1)
             yield return new object[] { new UInt128(0x3040314DC6448D93, 0x38C15B09FFFFFFFF), new UInt128(0x3040314DC6448D93, 0x38C15B09FFFFFFFE) }; // (P-1)-nines
-            yield return new object[] { new UInt128(0x3088000000000000, 0x0000000000000001), new UInt128(0x3046314DC6448D93, 0x38C15B0A00000000) }; // 1e(P+2) (1 below quantum, ++/-- no visible change)
+            yield return new object[] { new UInt128(0x3088000000000000, 0x0000000000000001), new UInt128(0x3046314DC6448D93, 0x38C15B0A00000000) }; // 1e(P+2) (1 below quantum, no visible change)
             yield return new object[] { new UInt128(0x5FFFBBBBF868FA2C, 0xFECC335A00000000), new UInt128(0x5FFFBBBBF868FA2C, 0xFECC335A00000000) }; // near-max (1 negligible)
             yield return new object[] { new UInt128(0xDFFFBBBBF868FA2C, 0xFECC335A00000000), new UInt128(0xDFFFBBBBF868FA2C, 0xFECC335A00000000) }; // near -max (1 negligible)
-            yield return new object[] { new UInt128(0x0040000000000000, 0x0000000000000001), new UInt128(0xAFFE314DC6448D93, 0x38C15B0A00000000) }; // tiny subnormal (++ ~ 1)
+            yield return new object[] { new UInt128(0x0040000000000000, 0x0000000000000001), new UInt128(0xAFFE314DC6448D93, 0x38C15B0A00000000) }; // tiny positive subnormal (-- ~ -1)
             yield return new object[] { new UInt128(0x8040000000000000, 0x0000000000000001), new UInt128(0xAFFE314DC6448D93, 0x38C15B0A00000000) }; // tiny negative subnormal (-- ~ -1)
             yield return new object[] { new UInt128(0x3036000000000000, 0x0000000000000001), new UInt128(0xB036000000000000, 0x000000000001869F) }; // 1e-5
             yield return new object[] { new UInt128(0x2FFE41BD085B676E, 0xF657240D55555555), new UInt128(0x2FFE106F4216D9DB, 0xBD95C90355555555) }; // 1.333... full precision
-            yield return new object[] { new UInt128(0x2FFFED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x2FFFBBBBF868FA2C, 0xFECC3359FFFFFFFF) }; // 9.999... full precision (++ carry)
+            yield return new object[] { new UInt128(0x2FFFED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x2FFFBBBBF868FA2C, 0xFECC3359FFFFFFFF) }; // 9.999... full precision
             yield return new object[] { new UInt128(0xB0000000000000B1, 0x4C1E4DF5ED261C68), new UInt128(0xB00004EE2D6D420C, 0xD1CB3D76ED261C68) };
             yield return new object[] { new UInt128(0xB02C000000008117, 0x952633E9760D3996), new UInt128(0xB02C000000008117, 0x952633EBCA191D96) };
             yield return new object[] { new UInt128(0xAFF80000000000BC, 0x57570583228BEDE5), new UInt128(0xAFFE314DC6448D93, 0x68F87B8E7BAEBB60) };
