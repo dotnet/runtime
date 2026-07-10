@@ -14,18 +14,12 @@ internal readonly struct WindowsErrorReporting_1 : IWindowsErrorReporting
         _target = target;
     }
 
-    private (Data.Thread thread, Data.ExceptionInfo? exceptionInfo) GetThreadExceptionInfo(TargetPointer threadPointer)
-    {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        TargetPointer exceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
-        Data.ExceptionInfo? exceptionInfo = (exceptionTrackerPtr == TargetPointer.Null) ? null : _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionTrackerPtr);
-        return (thread, exceptionInfo);
-    }
-
     byte[] IWindowsErrorReporting.GetWatsonBuckets(TargetPointer threadPointer)
     {
         TargetPointer readFrom;
-        var (thread, exceptionInfo) = GetThreadExceptionInfo(threadPointer);
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        TargetPointer exceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
+        Data.ExceptionInfo? exceptionInfo = (exceptionTrackerPtr == TargetPointer.Null) ? null : _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionTrackerPtr);
         if (exceptionInfo == null)
             return Array.Empty<byte>();
         TargetPointer thrownObject = exceptionInfo.ThrownObject;
