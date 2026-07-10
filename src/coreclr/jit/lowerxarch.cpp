@@ -2017,7 +2017,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 LIR::Use use;
                 if (BlockRange().TryGetUse(node, &use))
                 {
-                    if ((use.User() == nullptr) || !use.User()->OperIsHWIntrinsic())
+                    if (!use.User()->OperIsHWIntrinsic())
                     {
                         break;
                     }
@@ -2589,7 +2589,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // ABI, so removing the node there would corrupt the copy size; keep the node for those.
 
             LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use) && (use.User() != nullptr) && use.User()->OperIsHWIntrinsic())
+            if (BlockRange().TryGetUse(node, &use) && use.User()->OperIsHWIntrinsic())
             {
                 GenTree* op1  = node->Op(1);
                 GenTree* next = node->gtNext;

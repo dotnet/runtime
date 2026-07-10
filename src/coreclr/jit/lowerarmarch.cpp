@@ -1742,7 +1742,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // the node there would corrupt the copy size; keep the node for those.
 
             LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use) && (use.User() != nullptr) && use.User()->OperIsHWIntrinsic())
+            if (BlockRange().TryGetUse(node, &use) && use.User()->OperIsHWIntrinsic())
             {
                 GenTree* op1  = node->Op(1);
                 GenTree* next = node->gtNext;
