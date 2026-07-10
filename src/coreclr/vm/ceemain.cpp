@@ -1680,6 +1680,16 @@ static void RuntimeThreadShutdown(void* thread)
             GCX_COOP_NO_DTOR_END();
         }
 
+#ifdef TARGET_WASM
+        // On wasm the thread can still be in cooperative GC mode at shutdown (for example when the
+        // process exits from managed code): unlike other OSes, the thread-local destructor that
+        // drives this path runs without the thread first returning to native/preemptive code.
+        // DetachThread requires preemptive mode (it asserts !PreemptiveGCDisabled()). The frame was
+        // reset to FRAME_TOP above, so the dying thread has no GC-scannable frames and it is safe to
+        // switch to preemptive here (no restore needed - the thread is being detached).
+        GCX_PREEMP_NO_DTOR();
+#endif // TARGET_WASM
+
         pThread->DetachThread(TRUE);
     }
     else
