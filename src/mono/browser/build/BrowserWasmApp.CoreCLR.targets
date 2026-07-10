@@ -27,7 +27,7 @@
     <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
 
-    <_WasmDefaultFlags>-fwasm-exceptions -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -465,6 +465,7 @@
       <_EmccCommonFlags Include="-v"  Condition="'$(EmccVerbose)' == 'true'" />
       <_EmccCommonFlags Include="-g"  Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
       <_EmccCommonFlags Include="-fwasm-exceptions" />
+      <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
     </ItemGroup>
 
@@ -746,9 +747,6 @@
 
       <!-- -lexports.js to set MINIFY_WASM_EXPORT_NAMES=0 -->
       <_EmccLinkStepArgs Include="-lexports.js" />
-      <!-- Ensure the CoreCLR WASM globals/tags are exported -->
-      <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
-      <_EmccLinkStepArgs Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" />
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />

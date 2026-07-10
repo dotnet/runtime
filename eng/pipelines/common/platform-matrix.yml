@@ -538,6 +538,25 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Browser WebAssembly on macOS
+
+- ${{ if containsValue(parameters.platforms, 'browser_wasm_mac') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: browser
+      archType: wasm
+      targetRid: browser-wasm
+      platform: browser_wasm_mac
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      jobParameters:
+        hostedOs: osx
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # FreeBSD
 - ${{ if containsValue(parameters.platforms, 'freebsd_x64') }}:
   - template: xplat-setup.yml

@@ -4388,33 +4388,59 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
             {
                 return Sse2.UnpackLow(left, right);
             }
-            else if (!AdvSimd.Arm64.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
-                ThrowHelper.ThrowNotSupportedException();
+                return AdvSimd.Arm64.ZipLow(left, right);
             }
-            return AdvSimd.Arm64.ZipLow(left, right);
+            else if (PackedSimd.IsSupported)
+            {
+                // Compose with two PackedSimd.Swizzle calls (clamp out-of-range to 0) plus OR.
+                // We call PackedSimd.Swizzle directly rather than Vector128.ShuffleNative because
+                // the latter goes through a Ssse3 -> AdvSimd.Arm64 -> PackedSimd dispatcher chain
+                // that the Mono SIMD intrinsic recognizer doesn't always lower cleanly.
+                // PackedSimd.Shuffle (two-vector i8x16.shuffle) requires constant lane indices
+                // and is impractical to call portably from generic code paths.
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
+                    Vector128.Create((byte)0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7, 0xFF));
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
+                    Vector128.Create((byte)0xFF, 0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7));
+                return leftPart | rightPart;
+            }
+            ThrowHelper.ThrowNotSupportedException();
+            return default;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
             {
                 return Sse2.UnpackHigh(left, right);
             }
-            else if (!AdvSimd.Arm64.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
-                ThrowHelper.ThrowNotSupportedException();
+                return AdvSimd.Arm64.ZipHigh(left, right);
             }
-            return AdvSimd.Arm64.ZipHigh(left, right);
+            else if (PackedSimd.IsSupported)
+            {
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
+                    Vector128.Create((byte)8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15, 0xFF));
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
+                    Vector128.Create((byte)0xFF, 8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15));
+                return leftPart | rightPart;
+            }
+            ThrowHelper.ThrowNotSupportedException();
+            return default;
         }
     }
 }

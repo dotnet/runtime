@@ -150,6 +150,17 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
+    bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
+    // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
+    // to 4, 8, or 16. Returns false otherwise (including on targets that don't
+    // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
+    // src/coreclr/vm/class.cpp.
+    bool TryGetHFAElementSize(TypeHandle typeHandle, out int elementSize)
+    {
+        elementSize = 0;
+        throw new NotImplementedException();
+    }
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
@@ -286,6 +297,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    bool IsUnboxingStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();
@@ -295,6 +307,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
+    TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();

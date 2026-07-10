@@ -2024,6 +2024,13 @@ void Compiler::compSetProcessor()
     // Add virtual vector ISAs. These are both supported as part of the required baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#elif defined(TARGET_WASM)
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
+
+    // Add virtual vector ISA. Vector128 is part of the required Wasm SIMD baseline.
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));

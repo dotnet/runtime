@@ -23,7 +23,6 @@ namespace System.IO.Compression
         private ZipVersionNeededValues _versionMadeBySpecification;
         private ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
-        private readonly bool _isEncrypted;
         private ZipCompressionMethod _storedCompressionMethod;
         private DateTimeOffset _lastModified;
         private long _compressedSize;
@@ -47,8 +46,18 @@ namespace System.IO.Compression
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
         private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
+        private ZipEncryptionMethod _encryptionMethod;
         private readonly CompressionLevel _compressionLevel;
-
+        private ZipCompressionMethod _headerCompressionMethod;
+        private ushort? _aeVersion;
+        // Cached derived key material for encrypted entries to allow updating in place.
+        // Only one of these is set at a time, depending on the encryption method.
+        private ZipCryptoKeys? _derivedZipCryptoKeyMaterial;
+        private WinZipAesKeyMaterial? _derivedAesKeyMaterial;
+        // Pre-read AES salt from the local file data area during central directory parsing.
+        // This allows async open methods to derive keys without synchronous I/O.
+        private byte[]? _aesSalt;
+        internal const ushort WinZipAesMethod = 99;
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
         {
@@ -66,8 +75,46 @@ namespace System.IO.Compression
             _versionMadeBySpecification = (ZipVersionNeededValues)cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
-            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
-            CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
+            // Initialize _headerCompressionMethod from the central directory.
+            // For AES entries, this will be 99 (WinZip AES wrapper indicator) and never changes.
+            _headerCompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
+            // For AES-encrypted entries, the real compression method is stored in the AES extra field (0x9901)
+            // Parse it now so that people can see the actual value before opening the entry.
+            if (IsEncrypted && cd.AesExtraField.HasValue)
+            {
+                WinZipAesExtraField aesField = cd.AesExtraField.Value;
+                // Set the real compression method from the AES extra field
+                CompressionMethod = (ZipCompressionMethod)aesField.CompressionMethod;
+
+                // Also parse remaining needed metadata now
+                _aeVersion = aesField.VendorVersion;
+                Encryption = aesField.AesStrength switch
+                {
+                    1 => ZipEncryptionMethod.Aes128,
+                    2 => ZipEncryptionMethod.Aes192,
+                    3 => ZipEncryptionMethod.Aes256,
+                    _ => throw new InvalidDataException(SR.InvalidAesStrength)
+                };
+            }
+            else if (IsEncrypted)
+            {
+                if ((_generalPurposeBitFlag & BitFlagValues.StrongEncryption) != 0)
+                {
+                    Encryption = ZipEncryptionMethod.Unknown;
+                }
+                else
+                {
+                    // Encrypted but no AES extra field means ZipCrypto
+                    Encryption = ZipEncryptionMethod.ZipCrypto;
+                }
+                CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
+            }
+            else
+            {
+                // Non-AES entry: compression method from CD is the real method
+                CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
+            }
+
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
             _uncompressedSize = cd.UncompressedSize;
@@ -97,7 +144,6 @@ namespace System.IO.Compression
 
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
         }
-
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
         internal ZipArchiveEntry(ZipArchive archive, string entryName, CompressionLevel compressionLevel)
             : this(archive, entryName)
@@ -150,7 +196,9 @@ namespace System.IO.Compression
             _fileComment = Array.Empty<byte>();
 
             if (_storedEntryNameBytes.Length > ushort.MaxValue)
+            {
                 throw new ArgumentException(SR.EntryNamesTooLong);
+            }
 
             // grab the stream if we're in create mode
             if (_archive.Mode == ZipArchiveMode.Create)
@@ -172,7 +220,19 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets a value that indicates whether the entry is encrypted.
         /// </summary>
-        public bool IsEncrypted => _isEncrypted;
+        public bool IsEncrypted => (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
+
+        /// <summary>
+        /// Gets the encryption method used to encrypt the entry.
+        /// </summary>
+        /// <value>
+        /// <see cref="ZipEncryptionMethod.None"/> if the entry is not encrypted;
+        /// <see cref="ZipEncryptionMethod.Unknown"/> if the entry uses an unsupported encryption method;
+        /// otherwise, the specific encryption method (e.g., <see cref="ZipEncryptionMethod.ZipCrypto"/>,
+        /// <see cref="ZipEncryptionMethod.Aes128"/>, <see cref="ZipEncryptionMethod.Aes192"/>,
+        /// or <see cref="ZipEncryptionMethod.Aes256"/>).
+        /// </value>
+        public ZipEncryptionMethod EncryptionMethod => _encryptionMethod;
 
         /// <summary>
         /// Gets the compression method used to compress the entry.
@@ -183,9 +243,13 @@ namespace System.IO.Compression
             private set
             {
                 if (value == ZipCompressionMethod.Deflate)
+                {
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate);
+                }
                 else if (value == ZipCompressionMethod.Deflate64)
+                {
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate64);
+                }
                 _storedCompressionMethod = value;
             }
         }
@@ -199,7 +263,9 @@ namespace System.IO.Compression
             get
             {
                 if (_everOpenedForWrite)
+                {
                     throw new InvalidOperationException(SR.LengthAfterWrite);
+                }
                 return _compressedSize;
             }
         }
@@ -276,6 +342,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Returns the relative path of the entry in the Zip archive, equivalent to <see cref="FullName"/>.
+        /// </summary>
+        public override string ToString() => FullName;
+
+        /// <summary>
         /// The last write time of the entry as stored in the Zip archive. When setting this property, the DateTime will be converted to the
         /// Zip timestamp format, which supports a resolution of two seconds. If the data in the last write time field is not a valid Zip timestamp,
         /// an indicator value of 1980 January 1 at midnight will be returned.
@@ -295,11 +366,17 @@ namespace System.IO.Compression
             {
                 ThrowIfInvalidArchive();
                 if (_archive.Mode == ZipArchiveMode.Read)
+                {
                     throw new NotSupportedException(SR.ReadOnlyArchive);
+                }
                 if (_archive.Mode == ZipArchiveMode.Create && _everOpenedForWrite)
+                {
                     throw new IOException(SR.FrozenAfterWrite);
+                }
                 if (value.DateTime.Year < ZipHelper.ValidZipDate_YearMin || value.DateTime.Year > ZipHelper.ValidZipDate_YearMax)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.DateTimeOutOfRange);
+                }
 
                 _lastModified = value;
                 Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
@@ -315,7 +392,9 @@ namespace System.IO.Compression
             get
             {
                 if (_everOpenedForWrite)
+                {
                     throw new InvalidOperationException(SR.LengthAfterWrite);
+                }
                 return _uncompressedSize;
             }
         }
@@ -324,6 +403,15 @@ namespace System.IO.Compression
         /// The filename of the entry. This is equivalent to the substring of Fullname that follows the final directory separator character.
         /// </summary>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
+
+        /// <summary>
+        /// Gets the "version made by" field of the entry as stored in the archive's central directory record.
+        /// </summary>
+        /// <remarks>
+        /// As defined by the ZIP file format specification, the low byte contains the version of the specification used to create the entry, and the high byte identifies the host system (platform) compatibility.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public ushort VersionMadeBy => (ushort)(((byte)_versionMadeByPlatform << 8) | (byte)_versionMadeBySpecification);
 
         internal ZipArchive.ChangeState Changes { get; private set; }
 
@@ -340,13 +428,19 @@ namespace System.IO.Compression
         public void Delete()
         {
             if (_archive == null)
+            {
                 return;
+            }
 
             if (_currentlyOpenForWrite)
+            {
                 throw new IOException(SR.DeleteOpenEntry);
+            }
 
             if (_archive.Mode != ZipArchiveMode.Update)
+            {
                 throw new NotSupportedException(SR.DeleteOnlyInUpdate);
+            }
 
             _archive.ThrowIfDisposed();
 
@@ -365,18 +459,30 @@ namespace System.IO.Compression
         public Stream Open()
         {
             ThrowIfInvalidArchive();
+            return OpenCore(InferAccessFromMode());
+        }
 
-            switch (_archive.Mode)
+
+        /// <summary>
+        /// Opens the entry for reading or updating with the specified password.
+        /// If the entry is not encrypted, the password is ignored and the entry is opened normally.
+        /// </summary>
+        /// <returns>A Stream that represents the contents of the entry.</returns>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <param name="password">The password used to decrypt the entry. If the entry is not encrypted, this parameter is ignored.</param>
+        public Stream Open(ReadOnlySpan<char> password)
+        {
+            ThrowIfInvalidArchive();
+
+            if (IsEncrypted && password.IsEmpty)
             {
-                case ZipArchiveMode.Read:
-                    return OpenInReadMode(checkOpenable: true);
-                case ZipArchiveMode.Create:
-                    return OpenInWriteMode();
-                case ZipArchiveMode.Update:
-                default:
-                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    return OpenInUpdateMode();
+                throw new ArgumentException(SR.PasswordRequired, nameof(password));
             }
+
+            return OpenCore(InferAccessFromMode(), password);
         }
 
         /// <summary>
@@ -400,46 +506,72 @@ namespace System.IO.Compression
         public Stream Open(FileAccess access)
         {
             ThrowIfInvalidArchive();
+            ValidateAccessForMode(access);
+            return OpenCore(access);
+        }
 
+        public Stream Open(FileAccess access, ReadOnlySpan<char> password)
+        {
+            ThrowIfInvalidArchive();
+            ValidateAccessForMode(access);
+
+            if (IsEncrypted && password.IsEmpty)
+            {
+                throw new ArgumentException(SR.PasswordRequired, nameof(password));
+            }
+
+            return OpenCore(access, password);
+        }
+
+        private FileAccess InferAccessFromMode() => _archive.Mode switch
+        {
+            ZipArchiveMode.Read => FileAccess.Read,
+            ZipArchiveMode.Create => FileAccess.Write,
+            _ => FileAccess.ReadWrite
+        };
+
+        private void ValidateAccessForMode(FileAccess access)
+        {
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+            {
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+            }
 
-            // Validate that the requested access is compatible with the archive's mode
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
                     if (access != FileAccess.Read)
+                    {
                         throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
-                    return OpenInReadMode(checkOpenable: true);
-
+                    }
+                    break;
                 case ZipArchiveMode.Create:
                     if (access == FileAccess.Read)
-                        throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
-                    return OpenInWriteMode();
-
-                case ZipArchiveMode.Update:
-                default:
-                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    switch (access)
                     {
-                        case FileAccess.Read:
-                            return OpenInReadMode(checkOpenable: true);
-                        case FileAccess.Write:
-                            return OpenInUpdateMode(loadExistingContent: false);
-                        case FileAccess.ReadWrite:
-                        default:
-                            return OpenInUpdateMode(loadExistingContent: true);
+                        throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
                     }
+                    break;
             }
         }
 
-        /// <summary>
-        /// Returns the FullName of the entry.
-        /// </summary>
-        /// <returns>FullName of the entry</returns>
-        public override string ToString()
+        private Stream OpenCore(FileAccess access, ReadOnlySpan<char> password = default)
         {
-            return FullName;
+            switch (_archive.Mode)
+            {
+                case ZipArchiveMode.Read:
+                    return OpenInReadMode(checkOpenable: true, password);
+                case ZipArchiveMode.Create:
+                    return OpenInWriteMode();
+                case ZipArchiveMode.Update:
+                default:
+                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                    return access switch
+                    {
+                        FileAccess.Read => OpenInReadMode(checkOpenable: true, password),
+                        FileAccess.Write => OpenInUpdateMode(loadExistingContent: false, password),
+                        _ => OpenInUpdateMode(loadExistingContent: true, password),
+                    };
+            }
         }
 
         private string DecodeEntryString(byte[] entryStringBytes)
@@ -465,21 +597,64 @@ namespace System.IO.Compression
         {
             if (_storedOffsetOfCompressedData == null)
             {
+                // Seek to local header
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
-                // to find start of data, but still using central directory size information
+
+                // Skip the local file header to get to the compressed data
+                // TrySkipBlock handles both AES and non-AES cases correctly
                 if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+                {
                     throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
+
                 _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
             }
+
             return _storedOffsetOfCompressedData.Value;
         }
 
-        private MemoryStream GetUncompressedData()
+        /// <summary>
+        /// Reads and caches the AES encryption salt from the local file data area.
+        /// Called during central directory parsing for AES-encrypted entries so that
+        /// the salt is available for key derivation without additional I/O at open time.
+        /// </summary>
+        internal void ReadEncryptionSaltIfNeeded()
+        {
+            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+            {
+                return;
+            }
+
+            long savedPosition = _archive.ArchiveStream.Position;
+            try
+            {
+                long offset = GetOffsetOfCompressedData();
+                _archive.ArchiveStream.Seek(offset, SeekOrigin.Begin);
+
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
+                _aesSalt = new byte[saltSize];
+                _archive.ArchiveStream.ReadExactly(_aesSalt);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException)
+            {
+                // These are the only exceptions GetOffsetOfCompressedData() and ReadExactly()
+                // can throw for corrupt or truncated data. Swallow them here and defer the error
+                // to when the entry is actually opened.
+                _aesSalt = null;
+            }
+            finally
+            {
+                _archive.ArchiveStream.Seek(savedPosition, SeekOrigin.Begin);
+            }
+        }
+
+        private MemoryStream GetUncompressedData(ReadOnlySpan<char> password = default)
         {
             if (_storedUncompressedData == null)
             {
                 // this means we have never opened it before
+
 
                 // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
                 // Validate up front before attempting the (int) cast.
@@ -493,7 +668,11 @@ namespace System.IO.Compression
 
                 if (_originallyInArchive)
                 {
-                    using (Stream decompressor = OpenInReadMode(false))
+                    Stream decompressor = !password.IsEmpty
+                        ? OpenInReadMode(checkOpenable: false, password)
+                        : OpenInReadMode(checkOpenable: false);
+
+                    using (decompressor)
                     {
                         try
                         {
@@ -510,6 +689,8 @@ namespace System.IO.Compression
                             _storedUncompressedData = null;
                             _currentlyOpenForWrite = false;
                             _everOpenedForWrite = false;
+                            _derivedZipCryptoKeyMaterial = null;
+                            _derivedAesKeyMaterial = null;
                             throw;
                         }
                     }
@@ -601,14 +782,27 @@ namespace System.IO.Compression
             }
 
 
+            WinZipAesExtraField? aesExtraField = null;
+            int aesExtraFieldSize = 0;
+
+            if (UseAesEncryption)
+            {
+                aesExtraField = CreateAesExtraField();
+                aesExtraFieldSize = WinZipAesExtraField.TotalSize;
+            }
+
             // determine if we can fit zip64 extra field and original extra fields all in
-            int currExtraFieldDataLength = ZipGenericExtraField.TotalSize(_cdUnknownExtraFields, _cdTrailingExtraFieldData?.Length ?? 0);
+            // When using AES encryption, exclude the AES tag from currExtraFieldDataLength since we're writing a new one
+            int currExtraFieldDataLength = UseAesEncryption
+                ? ZipGenericExtraField.TotalSizeExcludingTag(_cdUnknownExtraFields, _cdTrailingExtraFieldData?.Length ?? 0, WinZipAesExtraField.HeaderId)
+                : ZipGenericExtraField.TotalSize(_cdUnknownExtraFields, _cdTrailingExtraFieldData?.Length ?? 0);
             int bigExtraFieldLength = (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
+                                      + aesExtraFieldSize
                                       + currExtraFieldDataLength;
 
             if (bigExtraFieldLength > ushort.MaxValue)
             {
-                extraFieldLength = (ushort)(zip64ExtraField != null ? zip64ExtraField.TotalSize : 0);
+                extraFieldLength = (ushort)((zip64ExtraField != null ? zip64ExtraField.TotalSize : 0) + aesExtraFieldSize);
                 _cdUnknownExtraFields = null;
             }
             else
@@ -620,8 +814,7 @@ namespace System.IO.Compression
             {
                 long centralDirectoryHeaderLength = ZipCentralDirectoryFileHeader.FieldLocations.DynamicData
                     + _storedEntryNameBytes.Length
-                    + (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
-                    + currExtraFieldDataLength
+                    + extraFieldLength
                     + _fileComment.Length;
 
                 _archive.ArchiveStream.Seek(centralDirectoryHeaderLength, SeekOrigin.Current);
@@ -658,9 +851,16 @@ namespace System.IO.Compression
             cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.VersionMadeByCompatibility] = (byte)CurrentZipPlatform;
             BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.VersionNeededToExtract..], (ushort)_versionToExtract);
             BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.GeneralPurposeBitFlags..], (ushort)_generalPurposeBitFlag);
-            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressionMethod..], (ushort)CompressionMethod);
+
+            // For AES encryption, write compression method 99 (Aes) in the header
+            // _headerCompressionMethod preserves the original value from the central directory
+            ushort compressionMethodToWrite = UseAesEncryption ? (ushort)WinZipAesMethod : (ushort)CompressionMethod;
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressionMethod..], compressionMethodToWrite);
+
             BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
-            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.Crc32..], _crc32);
+            // when using aes encryption, ae-2 standard dictates crc to be 0
+            uint crcToWrite = UseAesEncryption ? 0 : _crc32;
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.Crc32..], crcToWrite);
             BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
             BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.UncompressedSize..], uncompressedSizeTruncated);
             BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.FilenameLength..], (ushort)_storedEntryNameBytes.Length);
@@ -686,8 +886,19 @@ namespace System.IO.Compression
                 // only write zip64ExtraField if we decided we need it (it's not null)
                 zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
 
-                // write extra fields (and any malformed trailing data).
-                ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
+                // Write AES extra field if using AES encryption
+                if (UseAesEncryption)
+                {
+                    CreateAesExtraField().WriteBlock(_archive.ArchiveStream);
+
+                    // write extra fields excluding existing AES extra field (and any malformed trailing data).
+                    ZipGenericExtraField.WriteAllBlocksExcludingTag(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId);
+                }
+                else
+                {
+                    // write extra fields (and any malformed trailing data).
+                    ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _cdTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
+                }
 
                 if (_fileComment.Length > 0)
                 {
@@ -750,7 +961,9 @@ namespace System.IO.Compression
         internal void ThrowIfNotOpenable(bool needToUncompress, bool needToLoadIntoMemory)
         {
             if (!IsOpenable(needToUncompress, needToLoadIntoMemory, out string? message))
+            {
                 throw new InvalidDataException(message);
+            }
         }
 
         private void DetectEntryNameVersion()
@@ -761,7 +974,8 @@ namespace System.IO.Compression
             }
         }
 
-        private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose)
+
+        private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose, Stream? streamForPosition = null)
         {
             // stream stack: backingStream -> DeflateStream -> CheckSumWriteStream
 
@@ -794,12 +1008,11 @@ namespace System.IO.Compression
                 default:
                     compressorStreamFactory = () => new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
                     break;
-
             }
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
             var checkSumStream = new CheckSumAndSizeWriteStream(
                 compressorStreamFactory,
-                backingStream,
+                streamForPosition ?? backingStream,
                 leaveCompressorStreamOpenOnClose,
                 this,
                 onClose,
@@ -814,6 +1027,79 @@ namespace System.IO.Compression
             return checkSumStream;
         }
 
+        private byte CalculateZipCryptoCheckByte()
+        {
+            // If data descriptor NOT used, the check byte is the MSB of CRC32
+            if ((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+            {
+                return (byte)((_crc32 >> 24) & 0xFF);
+            }
+
+            // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header
+            return (byte)((ZipHelper.DateTimeToDosTime(_lastModified.DateTime) >> 8) & 0xFF);
+        }
+
+        private bool IsZipCryptoEncrypted => (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0 && (ushort)_headerCompressionMethod != WinZipAesMethod;
+
+        private bool UseAesEncryption => Encryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256;
+
+        private bool IsAesEncrypted => (ushort)_headerCompressionMethod == WinZipAesMethod;
+
+        private static int GetAesKeySizeBits(ZipEncryptionMethod encryption)
+        {
+            // Get number of bits for AES key size based on the encryption method
+            // Only possible values are: AES-128 = 128 bits, AES-192 = 192 bits, AES-256 as per the specs
+            return encryption switch
+            {
+                ZipEncryptionMethod.Aes128 => 128,
+                ZipEncryptionMethod.Aes192 => 192,
+                ZipEncryptionMethod.Aes256 => 256,
+                _ => throw new InvalidDataException(SR.InvalidAesStrength)
+            };
+        }
+
+        /// <summary>
+        /// Creates the appropriate decryption stream for an encrypted entry.
+        /// For AES entries, uses the salt that was pre-read during central directory parsing.
+        /// </summary>
+        private Stream WrapWithDecryptionIfNeeded(Stream compressedStream, ReadOnlySpan<char> password)
+        {
+            if (Encryption == ZipEncryptionMethod.Unknown)
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+
+            if (password.IsEmpty)
+            {
+                throw new InvalidDataException(SR.PasswordRequired);
+            }
+
+            if (IsAesEncrypted)
+            {
+                if (_aesSalt is null)
+                {
+                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
+
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
+                return WinZipAesStream.Create(
+                    baseStream: compressedStream,
+                    keyMaterial: keyMaterial,
+                    totalStreamSize: _compressedSize,
+                    encrypting: false);
+            }
+
+            if (IsZipCryptoEncrypted)
+            {
+                byte expectedCheckByte = CalculateZipCryptoCheckByte();
+                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
+                return ZipCryptoStream.Create(compressedStream, keyMaterial, expectedCheckByte, encrypting: false);
+            }
+
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
+
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
             Stream? uncompressedStream;
@@ -826,11 +1112,15 @@ namespace System.IO.Compression
                     uncompressedStream = new DeflateManagedStream(compressedStreamToRead, ZipCompressionMethod.Deflate64, _uncompressedSize);
                     break;
                 case ZipCompressionMethod.Stored:
+                    uncompressedStream = compressedStreamToRead;
+                    break;
                 default:
-                    // we can assume that only deflate/deflate64/stored are allowed because we assume that
-                    // IsOpenable is checked before this function is called
-                    Debug.Assert(CompressionMethod == ZipCompressionMethod.Stored);
+                    // We should not get here with Aes as CompressionMethod anymore
+                    // as it should have been replaced with the actual compression method
+                    Debug.Assert((ushort)CompressionMethod != WinZipAesMethod,
+                        "AES compression method should have been replaced with actual compression method");
 
+                    // Fallback to stored if we somehow get here
                     uncompressedStream = compressedStreamToRead;
                     break;
             }
@@ -838,17 +1128,46 @@ namespace System.IO.Compression
             return uncompressedStream;
         }
 
-        private CrcValidatingReadStream OpenInReadMode(bool checkOpenable)
+        private Stream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
         {
             if (checkOpenable)
+            {
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
-            return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData());
+            }
+            return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
         }
 
-        private CrcValidatingReadStream OpenInReadModeGetDataCompressor(long offsetOfCompressedData)
+        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
-            Stream decompressedStream = GetDataDecompressor(compressedStream);
+            Stream streamToDecompress;
+
+            if (IsEncrypted)
+            {
+                streamToDecompress = WrapWithDecryptionIfNeeded(compressedStream, password);
+            }
+            else
+            {
+                streamToDecompress = compressedStream;
+            }
+
+            return BuildDecompressionPipeline(streamToDecompress);
+        }
+
+        /// <summary>
+        /// Wraps a (possibly decrypted) stream with decompression and CRC validation.
+        /// Shared by both sync and async read paths.
+        /// </summary>
+        private Stream BuildDecompressionPipeline(Stream streamToDecompress)
+        {
+            Stream decompressedStream = GetDataDecompressor(streamToDecompress);
+
+            // AE-2 encrypted entries store CRC as 0 so skip CRC validation for those.
+            // AE-1 version entries store a valid CRC.
+            if (IsAesEncrypted && _aeVersion == 2)
+            {
+                return decompressedStream;
+            }
 
             return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
         }
@@ -856,7 +1175,9 @@ namespace System.IO.Compression
         private WrappedStream OpenInWriteMode()
         {
             if (_everOpenedForWrite)
+            {
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
+            }
 
             // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
@@ -868,22 +1189,81 @@ namespace System.IO.Compression
         {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
-            CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object? o, EventArgs e) =>
+
+            // Use the encryption method pre-configured via PrepareEncryption (CreateEntry with password).
+            ZipEncryptionMethod encryptionMethod = Encryption;
+
+            // Build the stream stack with encryption if needed
+            Stream targetStream = _archive.ArchiveStream;
+            Stream? encryptionStream = null;
+
+            if (encryptionMethod == ZipEncryptionMethod.ZipCrypto)
             {
-                // release the archive stream
-                var entry = (ZipArchiveEntry)o!;
-                entry._archive.ReleaseArchiveStream(entry);
-                entry._outstandingWriteStream = null;
-            });
-            _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this);
+                ZipCryptoKeys keyMaterial = _derivedZipCryptoKeyMaterial
+                    ?? throw new InvalidOperationException(SR.EmptyPassword);
+
+                ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
+
+                targetStream = ZipCryptoStream.Create(
+                    baseStream: _archive.ArchiveStream,
+                    keys: keyMaterial,
+                    passwordVerifierLow2Bytes: verifierLow2Bytes,
+                    encrypting: true,
+                    crc32: null,
+                    leaveOpen: true);
+                encryptionStream = targetStream;
+            }
+            else if (encryptionMethod is ZipEncryptionMethod.Aes256 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes128)
+            {
+                WinZipAesKeyMaterial keyMaterial = _derivedAesKeyMaterial
+                    ?? throw new InvalidOperationException(SR.EmptyPassword);
+
+                targetStream = WinZipAesStream.Create(
+                    baseStream: _archive.ArchiveStream,
+                    keyMaterial: keyMaterial,
+                    totalStreamSize: -1,
+                    encrypting: true,
+                    leaveOpen: true);
+                encryptionStream = targetStream;
+            }
+
+            bool isAesEncryption = encryptionMethod is ZipEncryptionMethod.Aes256 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes128;
+
+            CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(
+                targetStream,
+                leaveBackingStreamOpen: !isAesEncryption,
+                (object? o, EventArgs e) =>
+                {
+                    // release the archive stream
+                    var entry = (ZipArchiveEntry)o!;
+                    entry._archive.ReleaseArchiveStream(entry);
+                    entry._outstandingWriteStream = null;
+                },
+                streamForPosition: encryptionMethod != ZipEncryptionMethod.None ? _archive.ArchiveStream : null);
+
+            _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this, encryptionMethod, encryptionStream);
 
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private WrappedStream OpenInUpdateMode(bool loadExistingContent = true)
+        private WrappedStream OpenInUpdateMode(bool loadExistingContent = true, ReadOnlySpan<char> password = default)
         {
             if (_currentlyOpenForWrite)
+            {
                 throw new IOException(SR.UpdateModeOneStream);
+            }
+
+            if (Encryption == ZipEncryptionMethod.Unknown)
+            {
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
+
+            // Encrypted entries always require a password for re-encryption,
+            // even when discarding existing content (write-only access).
+            if (IsEncrypted && password.IsEmpty)
+            {
+                throw new ArgumentException(SR.PasswordRequired, nameof(password));
+            }
 
             if (loadExistingContent)
             {
@@ -892,9 +1272,15 @@ namespace System.IO.Compression
 
             _currentlyOpenForWrite = true;
 
+            // Set up re-encryption key material so that the rewritten entry has valid encryption headers.
+            if (IsEncrypted)
+            {
+                SetupEncryptionKeyMaterial(password);
+            }
+
             if (loadExistingContent)
             {
-                _storedUncompressedData = GetUncompressedData();
+                _storedUncompressedData = GetUncompressedData(password);
             }
             else
             {
@@ -927,6 +1313,78 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Sets up encryption key material for re-encryption when writing back to the archive.
+        /// </summary>
+        private void SetupEncryptionKeyMaterial(ReadOnlySpan<char> password)
+        {
+            // Derive and save key material for re-encryption
+            if (IsZipCryptoEncrypted)
+            {
+                _derivedZipCryptoKeyMaterial = ZipCryptoStream.CreateKey(password);
+                Encryption = ZipEncryptionMethod.ZipCrypto;
+            }
+            else if (UseAesEncryption)
+            {
+                // Generate new salt and derive key material for AES
+                // This ensures each write uses a fresh random salt for security
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password, salt: null, keySizeBits);
+                // Encryption is already set from constructor (parsed from central directory AES extra field)
+            }
+        }
+
+        /// <summary>
+        /// Pre-derives encryption key material from a password for use when the entry is later opened for writing.
+        /// Called by <see cref="ZipArchive.CreateEntry(string, ReadOnlySpan{char}, ZipEncryptionMethod)"/>.
+        /// </summary>
+        internal void PrepareEncryption(ReadOnlySpan<char> password, ZipEncryptionMethod encryptionMethod)
+        {
+            if (password.IsEmpty)
+            {
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
+            }
+
+            if (encryptionMethod == ZipEncryptionMethod.ZipCrypto)
+            {
+                Encryption = encryptionMethod;
+                _derivedZipCryptoKeyMaterial = ZipCryptoStream.CreateKey(password);
+            }
+            else if (encryptionMethod is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
+            {
+
+                Encryption = encryptionMethod;
+                int keySizeBits = GetAesKeySizeBits(encryptionMethod);
+                _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password, salt: null, keySizeBits);
+            }
+            else
+            {
+                // Covers ZipEncryptionMethod.None, ZipEncryptionMethod.Unknown, and any undefined/out-of-range value.
+                throw new ArgumentOutOfRangeException(nameof(encryptionMethod), encryptionMethod, SR.EncryptionNotSpecified);
+            }
+        }
+
+        /// <summary>
+        /// Creates a WinZip AES extra field for writing to local/central directory headers.
+        /// </summary>
+        private WinZipAesExtraField CreateAesExtraField()
+        {
+            return new WinZipAesExtraField
+            {
+                VendorVersion = 2,
+                AesStrength = Encryption switch
+                {
+                    ZipEncryptionMethod.Aes128 => (byte)1,
+                    ZipEncryptionMethod.Aes192 => (byte)2,
+                    ZipEncryptionMethod.Aes256 => (byte)3,
+                    _ => throw new InvalidDataException(SR.InvalidAesStrength)
+                },
+                CompressionMethod = _compressionLevel == CompressionLevel.NoCompression
+                    ? (ushort)ZipCompressionMethod.Stored
+                    : (ushort)ZipCompressionMethod.Deflate
+            };
+        }
+
         private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)
         {
             message = null;
@@ -937,14 +1395,28 @@ namespace System.IO.Compression
                 {
                     return false;
                 }
-                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+
+                if (!IsEncrypted && !ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
                 {
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
+                else if (IsEncrypted && IsAesEncrypted)
+                {
+                    _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
+                    // AES case - skip the local file header and validate it exists.
+                    // The AES metadata (encryption strength, actual compression method) was already
+                    // parsed from the central directory in the constructor
+                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+                    {
+                        message = SR.LocalFileHeaderCorrupt;
+                        return false;
+                    }
+                }
 
-                // when this property gets called, some duplicated work
+                // Pass the detected encryption method to GetOffsetOfCompressedData
                 long offsetOfCompressedData = GetOffsetOfCompressedData();
+
                 if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
                 {
                     return false;
@@ -961,6 +1433,9 @@ namespace System.IO.Compression
             message = null;
             if (needToUncompress)
             {
+                // For AES-encrypted entries, CompressionMethod now contains the actual compression
+                // method (from the AES extra field), not the wrapper value 99. So we can use
+                // the same validation logic for both encrypted and non-encrypted entries.
                 if (CompressionMethod != ZipCompressionMethod.Stored &&
                     CompressionMethod != ZipCompressionMethod.Deflate &&
                     CompressionMethod != ZipCompressionMethod.Deflate64)
@@ -1071,6 +1546,7 @@ namespace System.IO.Compression
         private bool IsOffsetTooLarge => _offsetOfLocalHeader > uint.MaxValue;
 
         private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
+        internal ZipEncryptionMethod Encryption { get => _encryptionMethod; private set => _encryptionMethod = value; }
 
         private unsafe bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
         {
@@ -1084,6 +1560,10 @@ namespace System.IO.Compression
             // save offset
             _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
+            // for extra winzip aes header
+            WinZipAesExtraField? aesExtraField = null;
+            int aesExtraFieldSize = 0;
+
             // if we already know that we have an empty file don't worry about anything, just do a straight shot of the header
             if (isEmptyFile)
             {
@@ -1095,28 +1575,43 @@ namespace System.IO.Compression
             }
             else
             {
-                // if we have a non-seekable stream, don't worry about sizes at all, and just set the right bit
-                // if we are using the data descriptor, then sizes and crc should be set to 0 in the header
-                if (_archive.Mode == ZipArchiveMode.Create && !_archive.ArchiveStream.CanSeek)
+                bool isCreateMode = _archive.Mode == ZipArchiveMode.Create;
+
+                if (Encryption == ZipEncryptionMethod.ZipCrypto)
+                {
+                    _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                    compressedSizeTruncated = 0;
+                    uncompressedSizeTruncated = 0;
+                }
+                else if (UseAesEncryption)
+                {
+                    _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
+                    compressedSizeTruncated = 0;
+                    uncompressedSizeTruncated = 0;
+                    aesExtraField = CreateAesExtraField();
+                    aesExtraFieldSize = WinZipAesExtraField.TotalSize;
+                }
+                else if (isCreateMode && !_archive.ArchiveStream.CanSeek)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
-                    // the crc should not have been set if we are in create mode, but clear it just to be sure
                     Debug.Assert(_crc32 == 0);
                 }
-                else // if we are not in streaming mode, we have to decide if we want to write zip64 headers
+                else
                 {
+
                     if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
-                        || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
+                || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
 #endif
                         )
                     {
                         compressedSizeTruncated = ZipHelper.Mask32Bit;
                         uncompressedSizeTruncated = ZipHelper.Mask32Bit;
 
-                        // prepare Zip64 extra field object. If we have one of the sizes, the other must go in there
                         zip64ExtraField = new()
                         {
                             CompressedSize = _compressedSize,
@@ -1136,14 +1631,18 @@ namespace System.IO.Compression
             // save offset
             _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
-            // calculate extra field. if zip64 stuff + original extraField aren't going to fit, dump the original extraField, because this is more important
-            int currExtraFieldDataLength = ZipGenericExtraField.TotalSize(_lhUnknownExtraFields, _lhTrailingExtraFieldData?.Length ?? 0);
+            // Calculate extra field
+            // When using AES encryption, exclude the AES tag from currExtraFieldDataLength since we're writing a new one
+            int currExtraFieldDataLength = UseAesEncryption
+                ? ZipGenericExtraField.TotalSizeExcludingTag(_lhUnknownExtraFields, _lhTrailingExtraFieldData?.Length ?? 0, WinZipAesExtraField.HeaderId)
+                : ZipGenericExtraField.TotalSize(_lhUnknownExtraFields, _lhTrailingExtraFieldData?.Length ?? 0);
             int bigExtraFieldLength = (zip64ExtraField != null ? zip64ExtraField.TotalSize : 0)
+                                      + aesExtraFieldSize
                                       + currExtraFieldDataLength;
 
             if (bigExtraFieldLength > ushort.MaxValue)
             {
-                extraFieldLength = (ushort)(zip64ExtraField != null ? zip64ExtraField.TotalSize : 0);
+                extraFieldLength = (ushort)((zip64ExtraField != null ? zip64ExtraField.TotalSize : 0) + aesExtraFieldSize);
                 _lhUnknownExtraFields = null;
             }
             else
@@ -1153,18 +1652,19 @@ namespace System.IO.Compression
 
             crc32ToWrite = _crc32;
 
+            // For AE-2, CRC is always 0 in the local file header
+            if (UseAesEncryption)
+            {
+                crc32ToWrite = 0;
+            }
+
             // If this is an existing, unchanged entry then silently skip forwards.
             // If it's new or changed, write the header.
             if (_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite)
             {
-                _archive.ArchiveStream.Seek(ZipLocalFileHeader.SizeOfLocalHeader + _storedEntryNameBytes.Length, SeekOrigin.Current);
+                _archive.ArchiveStream.Seek(ZipLocalFileHeader.SizeOfLocalHeader + _storedEntryNameBytes.Length + extraFieldLength, SeekOrigin.Current);
 
-                if (zip64ExtraField != null)
-                {
-                    _archive.ArchiveStream.Seek(zip64ExtraField.TotalSize, SeekOrigin.Current);
-                }
 
-                _archive.ArchiveStream.Seek(currExtraFieldDataLength, SeekOrigin.Current);
 
                 return false;
             }
@@ -1186,7 +1686,7 @@ namespace System.IO.Compression
                         zip64ExtraField = new() { CompressedSize = 0, UncompressedSize = 0 };
                     }
                 }
-                else
+                else if (Encryption != ZipEncryptionMethod.ZipCrypto)
                 {
                     _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
                 }
@@ -1200,7 +1700,11 @@ namespace System.IO.Compression
             ZipLocalFileHeader.SignatureConstantBytes.CopyTo(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Signature..]);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.VersionNeededToExtract..], (ushort)_versionToExtract);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags..], (ushort)_generalPurposeBitFlag);
-            BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressionMethod..], (ushort)CompressionMethod);
+
+            // For AES encryption, write compression method 99 (Aes) in the header
+            ushort compressionMethodToWrite = UseAesEncryption ? (ushort)WinZipAesMethod : (ushort)CompressionMethod;
+            BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressionMethod..], compressionMethodToWrite);
+
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Crc32..], crc32);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
@@ -1221,16 +1725,28 @@ namespace System.IO.Compression
                 _archive.ArchiveStream.Write(lfStaticHeader);
                 _archive.ArchiveStream.Write(_storedEntryNameBytes);
 
-                // Only when handling zip64
+                // Write Zip64 extra field if needed
                 zip64ExtraField?.WriteBlock(_archive.ArchiveStream);
 
-                ZipGenericExtraField.WriteAllBlocks(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
+                // Write AES extra field if using AES encryption
+                if (UseAesEncryption)
+                {
+                    CreateAesExtraField().WriteBlock(_archive.ArchiveStream);
+
+                    // Write other extra fields, excluding any existing AES extra field to avoid duplication
+                    ZipGenericExtraField.WriteAllBlocksExcludingTag(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, WinZipAesExtraField.HeaderId);
+                }
+                else
+                {
+                    // Write other extra fields
+                    ZipGenericExtraField.WriteAllBlocks(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream);
+                }
             }
 
             return zip64ExtraField != null;
         }
 
-        private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
+        private unsafe void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
         {
             // Check if the entry's stored data was actually modified (StoredData flag is set).
             // If _storedUncompressedData is loaded but StoredData is not set, it means the entry
@@ -1251,19 +1767,98 @@ namespace System.IO.Compression
                 {
                     _uncompressedSize = _storedUncompressedData.Length;
 
-                    //The compressor fills in CRC and sizes
-                    //The DirectToArchiveWriterStream writes headers and such
-                    using (DirectToArchiveWriterStream entryWriter = new(
-                                                    GetDataCompressor(_archive.ArchiveStream, true, null),
-                                                    this))
+                    // Check if we need to re-encrypt with ZipCrypto (only if we have cached key material)
+                    if (Encryption == ZipEncryptionMethod.ZipCrypto && _derivedZipCryptoKeyMaterial is not null)
                     {
-                        _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-                        _storedUncompressedData.CopyTo(entryWriter);
+                        WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
+
+                        long startPosition = _archive.ArchiveStream.Position;
+
+                        ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
+
+                        using (ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                            baseStream: _archive.ArchiveStream,
+                            keys: _derivedZipCryptoKeyMaterial.Value,
+                            passwordVerifierLow2Bytes: verifierLow2Bytes,
+                            encrypting: true,
+                            crc32: null,
+                            leaveOpen: true))
+                        {
+                            using (CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
+                            {
+                                _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                                _storedUncompressedData.CopyTo(crcStream);
+                            }
+                        }
+
+                        _compressedSize = _archive.ArchiveStream.Position - startPosition;
+
+                        WriteDataDescriptor();
+
+                        _storedUncompressedData.Dispose();
+                        _storedUncompressedData = null;
+                    }
+                    else if (UseAesEncryption && _derivedAesKeyMaterial is not null)
+                    {
+
+                        bool usedZip64InLH = WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
+
+                        long startPosition = _archive.ArchiveStream.Position;
+
+                        bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
+
+                        using (WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                            baseStream: _archive.ArchiveStream,
+                            keyMaterial: _derivedAesKeyMaterial.Value,
+                            totalStreamSize: -1,
+                            encrypting: true,
+                            leaveOpen: true))
+                        {
+                            if (_storedUncompressedData.Length > 0)
+                            {
+                                ZipCompressionMethod savedMethod = CompressionMethod;
+                                CompressionMethod = useDeflate ? ZipCompressionMethod.Deflate : ZipCompressionMethod.Stored;
+
+                                try
+                                {
+                                    using (CheckSumAndSizeWriteStream crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
+                                    {
+                                        _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                                        _storedUncompressedData.CopyTo(crcStream);
+                                    }
+                                }
+                                finally
+                                {
+                                    CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
+                                }
+                            }
+                            else
+                            {
+                                _crc32 = 0;
+                                _uncompressedSize = 0;
+                            }
+                        }
+
+                        _compressedSize = _archive.ArchiveStream.Position - startPosition;
+
+                        WriteCrcAndSizesInLocalHeader(usedZip64InLH);
+
+                        _storedUncompressedData.Dispose();
+                        _storedUncompressedData = null;
+                    }
+                    else
+                    {
+                        // Non-encrypted: use standard path
+                        using (DirectToArchiveWriterStream entryWriter = new(GetDataCompressor(_archive.ArchiveStream, true, null, null), this))
+                        {
+                            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                            _storedUncompressedData.CopyTo(entryWriter);
+                        }
                         _storedUncompressedData.Dispose();
                         _storedUncompressedData = null;
                     }
                 }
-                else
+                else // _compressedBytes path - copying unchanged entry data
                 {
                     if (_uncompressedSize == 0)
                     {
@@ -1271,7 +1866,52 @@ namespace System.IO.Compression
                         _compressedSize = 0;
                     }
 
-                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: true);
+                    // For unchanged entries, we need to write the header correctly but avoid
+                    // WriteLocalFileHeader creating NEW encryption structures (which would have
+                    // wrong compression method from _compressionLevel).
+                    // The original AES extra field is preserved in _lhUnknownExtraFields.
+                    BitFlagValues savedFlags = _generalPurposeBitFlag;
+                    ZipEncryptionMethod savedEncryption = Encryption;
+                    ZipCompressionMethod savedCompressionMethod = CompressionMethod;
+
+                    try
+                    {
+                        // For AES entries: set CompressionMethod to Aes so header writes method 99,
+                        // but clear _encryptionMethod so WriteLocalFileHeader doesn't create a new
+                        // AES extra field (the original one in _lhUnknownExtraFields will be used).
+                        if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
+                        {
+                            CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
+                            Encryption = ZipEncryptionMethod.None;
+                        }
+
+                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: true);
+
+                        // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
+                        // (because Encryption was temporarily set to None and the stream is seekable).
+                        // If the original entry had a data descriptor, patch the general-purpose bit
+                        // flags in the already-written local header to match, so the header on disk
+                        // is consistent with the data descriptor we conditionally write below.
+                        if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
+                            (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+                        {
+                            long currentPos = _archive.ArchiveStream.Position;
+                            _archive.ArchiveStream.Seek(
+                                _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
+                                SeekOrigin.Begin);
+                            Span<byte> flagBytes = stackalloc byte[2];
+                            BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
+                            _archive.ArchiveStream.Write(flagBytes);
+                            _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
+                        }
+                    }
+                    finally
+                    {
+                        // Restore original state
+                        _generalPurposeBitFlag = savedFlags;
+                        Encryption = savedEncryption;
+                        CompressionMethod = savedCompressionMethod;
+                    }
 
                     // according to ZIP specs, zero-byte files MUST NOT include file data
                     if (_uncompressedSize != 0)
@@ -1281,6 +1921,12 @@ namespace System.IO.Compression
                         {
                             _archive.ArchiveStream.Write(compressedBytes, 0, compressedBytes.Length);
                         }
+                    }
+
+                    // Write data descriptor if the original entry had one
+                    if ((savedFlags & BitFlagValues.DataDescriptor) != 0)
+                    {
+                        WriteDataDescriptor();
                     }
                 }
             }
@@ -1399,8 +2045,9 @@ namespace System.IO.Compression
                 int relativeCrc32Location = ZipLocalFileHeader.FieldLocations.Crc32 - ZipLocalFileHeader.FieldLocations.Crc32;
                 int relativeCompressedSizeLocation = ZipLocalFileHeader.FieldLocations.CompressedSize - ZipLocalFileHeader.FieldLocations.Crc32;
                 int relativeUncompressedSizeLocation = ZipLocalFileHeader.FieldLocations.UncompressedSize - ZipLocalFileHeader.FieldLocations.Crc32;
-
-                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCrc32Location..], _crc32);
+                // when using aes encryption, ae-2 standard dictates crc to be 0
+                uint crcToWrite = UseAesEncryption ? 0 : _crc32;
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCrc32Location..], crcToWrite);
                 BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCompressedSizeLocation..], compressedSizeTruncated);
                 BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeUncompressedSizeLocation..], uncompressedSizeTruncated);
             }
@@ -1427,8 +2074,9 @@ namespace System.IO.Compression
             int relativeCrc32Location = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32 - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
             int relativeCompressedSizeLocation = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.CompressedSize - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
             int relativeUncompressedSizeLocation = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
-
-            BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer.Slice(relativeCrc32Location), _crc32);
+            // when using aes encryption, ae-2 standard dictates crc to be 0
+            uint crcToWrite = UseAesEncryption ? 0 : _crc32;
+            BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer.Slice(relativeCrc32Location), crcToWrite);
             BinaryPrimitives.WriteInt64LittleEndian(writeBuffer.Slice(relativeCompressedSizeLocation), _compressedSize);
             BinaryPrimitives.WriteInt64LittleEndian(writeBuffer.Slice(relativeUncompressedSizeLocation), _uncompressedSize);
 
@@ -1453,7 +2101,9 @@ namespace System.IO.Compression
             int bytesToWrite;
 
             ZipLocalFileHeader.DataDescriptorSignatureConstantBytes.CopyTo(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Signature..]);
-            BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Crc32..], _crc32);
+            // when using aes encryption, ae-2 standard dictates crc to be 0
+            uint crcToWrite = UseAesEncryption ? 0 : _crc32;
+            BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Crc32..], crcToWrite);
 
             if (AreSizesTooLarge)
             {
@@ -1503,7 +2153,9 @@ namespace System.IO.Compression
         private void ThrowIfInvalidArchive()
         {
             if (_archive == null)
+            {
                 throw new InvalidOperationException(SR.DeletedEntry);
+            }
             _archive.ThrowIfDisposed();
         }
 
@@ -1538,10 +2190,12 @@ namespace System.IO.Compression
             private readonly ZipArchiveEntry _entry;
             private bool _usedZip64inLH;
             private bool _canWrite;
+            private readonly ZipEncryptionMethod _encryption;
+            private readonly Stream? _encryptionStream;
 
             // makes the assumption that somewhere down the line, crcSizeStream is eventually writing directly to the archive
             // this class calls other functions on ZipArchiveEntry that write directly to the archive
-            public DirectToArchiveWriterStream(CheckSumAndSizeWriteStream crcSizeStream, ZipArchiveEntry entry)
+            public DirectToArchiveWriterStream(CheckSumAndSizeWriteStream crcSizeStream, ZipArchiveEntry entry, ZipEncryptionMethod encryptionMethod = ZipEncryptionMethod.None, Stream? encryptionStream = null)
             {
                 _position = 0;
                 _crcSizeStream = crcSizeStream;
@@ -1550,6 +2204,8 @@ namespace System.IO.Compression
                 _entry = entry;
                 _usedZip64inLH = false;
                 _canWrite = true;
+                _encryption = encryptionMethod;
+                _encryptionStream = encryptionStream;
             }
 
             public override long Length
@@ -1581,7 +2237,9 @@ namespace System.IO.Compression
             private void ThrowIfDisposed()
             {
                 if (_isDisposed)
+                {
                     throw new ObjectDisposedException(GetType().ToString(), SR.HiddenStreamName);
+                }
             }
 
             public override int Read(byte[] buffer, int offset, int count)
@@ -1625,7 +2283,9 @@ namespace System.IO.Compression
 
                 // if we're not actually writing anything, we don't want to trigger the header
                 if (count == 0)
+                {
                     return;
+                }
 
                 if (!_everWritten)
                 {
@@ -1645,7 +2305,9 @@ namespace System.IO.Compression
 
                 // if we're not actually writing anything, we don't want to trigger the header
                 if (source.Length == 0)
+                {
                     return;
+                }
 
                 if (!_everWritten)
                 {
@@ -1712,8 +2374,14 @@ namespace System.IO.Compression
                 {
                     _crcSizeStream.Dispose(); // now we have size/crc info
 
+                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
+                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
+                    // stream would be orphaned. Dispose it explicitly to finalize encryption
+                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
                     if (!_everWritten)
                     {
+                        _encryptionStream?.Dispose();
+
                         // write local header, no data, so we use stored
                         _entry.WriteLocalFileHeader(isEmptyFile: true, forceWrite: true);
                     }
@@ -1721,8 +2389,17 @@ namespace System.IO.Compression
                     {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
+                        {
                             // finish writing local header if we have seek capabilities
                             _entry.WriteCrcAndSizesInLocalHeader(_usedZip64inLH);
+
+                            // ZipCrypto entries retain DataDescriptor for check byte correctness;
+                            // write the trailing descriptor so the archive is consistent.
+                            if ((_entry._generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0)
+                            {
+                                _entry.WriteDataDescriptor();
+                            }
+                        }
                         else
                             // write out data descriptor if we don't have seek capabilities
                             _entry.WriteDataDescriptor();
@@ -1740,8 +2417,17 @@ namespace System.IO.Compression
                 {
                     await _crcSizeStream.DisposeAsync().ConfigureAwait(false); // now we have size/crc info
 
+                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
+                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
+                    // stream would be orphaned. Dispose it explicitly to finalize encryption
+                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
                     if (!_everWritten)
                     {
+                        if (_encryptionStream is not null)
+                        {
+                            await _encryptionStream.DisposeAsync().ConfigureAwait(false);
+                        }
+
                         // write local header, no data, so we use stored
                         await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
                     }
@@ -1749,8 +2435,17 @@ namespace System.IO.Compression
                     {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
+                        {
                             // finish writing local header if we have seek capabilities
                             await _entry.WriteCrcAndSizesInLocalHeaderAsync(_usedZip64inLH, cancellationToken: default).ConfigureAwait(false);
+
+                            // ZipCrypto entries retain DataDescriptor for check byte correctness;
+                            // write the trailing descriptor so the archive is consistent.
+                            if ((_entry._generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0)
+                            {
+                                await _entry.WriteDataDescriptorAsync(cancellationToken: default).ConfigureAwait(false);
+                            }
+                        }
                         else
                             // write out data descriptor if we don't have seek capabilities
                             await _entry.WriteDataDescriptorAsync(cancellationToken: default).ConfigureAwait(false);
@@ -1762,12 +2457,12 @@ namespace System.IO.Compression
                 await base.DisposeAsync().ConfigureAwait(false);
             }
         }
-
         [Flags]
         internal enum BitFlagValues : ushort
         {
             IsEncrypted = 0x1,
             DataDescriptor = 0x8,
+            StrongEncryption = 0x40,
             UnicodeFileNameAndComment = 0x800
         }
 

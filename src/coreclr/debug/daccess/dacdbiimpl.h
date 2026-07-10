@@ -66,9 +66,6 @@ public:
         bool fThrowEx);
 
 
-    // Check whether the version of the DBI matches the version of the runtime.
-    HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion);
-
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
 
@@ -717,9 +714,6 @@ public:
 
     // Return the stack parameter size of the given method.
     ULONG32 GetStackParameterSize(EECodeInfo * pCodeInfo);
-
-    // Return the FramePointer of the current frame at which the stackwalker is stopped.
-    HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal);
 
     FramePointer GetFramePointerWorker(StackFrameIterator * pIter);
 

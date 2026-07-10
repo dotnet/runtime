@@ -268,6 +268,8 @@ namespace System
             }
         }
 
+        internal new object? Target => GetTarget();
+
         internal override object? GetTarget()
         {
             return delegates?.Length > 0 ? delegates[delegates.Length - 1].GetTarget() : base.GetTarget();

@@ -710,7 +710,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
     {
         DWORD newFlags = enum_CustomQIRespondsToIMarshal_Inited;
 
-        SafeComHolder<IUnknown> pUnk;
+        ComHolderAnyMode<IUnknown> pUnk;
         if (GetComIPFromCCW_HandleCustomQI(GetMainWrapper(), IID_IMarshal, NULL, &pUnk))
         {
             newFlags |= enum_CustomQIRespondsToIMarshal;
@@ -1727,7 +1727,7 @@ void ComCallWrapper::Cleanup()
             // Check for an associated RCW
             RCWHolder pRCW(GetThread());
             pRCW.InitNoCheck(pSyncBlock);
-            NewRCWHolder pNewRCW = pRCW.GetRawRCWUnsafe();
+            NewRCWHolder pNewRCW{ pRCW.GetRawRCWUnsafe() };
 
             if (!pRCW.IsNull())
             {
@@ -2209,7 +2209,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         SyncBlock* pBlock = pWrap->GetSyncBlock();
         _ASSERTE(pBlock);
 
-        SafeComHolder<IUnknown> pUnk;
+        ComHolderAnyMode<IUnknown> pUnk;
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -2218,7 +2218,7 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
                                  : pRCW->GetComIPFromRCW(riid);
 
         RCWPROTECT_END(pRCW);
-        return pUnk.Extract();
+        return pUnk.Detach();
     }
 
     return NULL;
@@ -2588,7 +2588,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     if ((DefItfType == DefaultInterfaceType_AutoDual) || (DefItfType == DefaultInterfaceType_AutoDispatch))
     {
         // Make sure we release the BasicIP we're about to get.
-        SafeComHolder<IUnknown> pBasic = GetBasicIP();
+        ComHolderAnyMode<IUnknown> pBasic{ GetBasicIP() };
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pBasic);
         pCMT->CheckParentComVisibility();
     }
@@ -2636,7 +2636,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             SyncBlock* pBlock = GetSyncBlock();
             _ASSERTE(pBlock);
 
-            SafeComHolder<IDispatch> pDisp;
+            ComHolderAnyMode<IDispatch> pDisp;
 
             RCWHolder pRCW(GetThread());
             RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -2644,7 +2644,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
             pDisp = pRCW->GetIDispatch();
 
             RCWPROTECT_END(pRCW);
-            RETURN pDisp.Extract();
+            RETURN pDisp.Detach();
         }
 
         default:

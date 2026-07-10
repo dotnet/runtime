@@ -9,15 +9,6 @@ using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorEle
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct DbiVersion
-{
-    public uint m_dwFormat;
-    public uint m_dwDbiVersion;
-    public uint m_dwProtocolBreakingChangeCounter;
-    public uint m_dwReservedMustBeZero1;
-}
-
-[StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {
     public ulong token1;
@@ -375,6 +366,7 @@ public enum CorDebugUserState
     USER_UNSTARTED = 0x08,
     USER_STOPPED = 0x10,
     USER_WAIT_SLEEP_JOIN = 0x20,
+    USER_UNSAFE_POINT = 0x80,
     USER_THREADPOOL = 0x100,
 }
 
@@ -424,9 +416,6 @@ public enum CorDebugSetContextFlags
 [Guid("DB505C1B-A327-4A46-8C32-AF55A56F8E09")]
 public unsafe partial interface IDacDbiInterface
 {
-    [PreserveSig]
-    int CheckDbiVersion(DbiVersion* pVersion);
-
     [PreserveSig]
     int FlushCache();
 
@@ -582,9 +571,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetStackParameterSize(ulong controlPC, uint* pRetVal);
-
-    [PreserveSig]
-    int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
     int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
