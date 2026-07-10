@@ -290,10 +290,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
@@ -349,10 +346,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [Fact]
@@ -381,10 +375,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         /// <summary>
