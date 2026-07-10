@@ -283,6 +283,16 @@ namespace System.Numerics
             return new Decimal128(result);
         }
 
+        /// <summary>Multiplies two values together to compute their product.</summary>
+        /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
+        /// <param name="right">The value which multiplies <paramref name="left" />.</param>
+        /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal128 operator *(Decimal128 left, Decimal128 right)
+        {
+            UInt128 result = Number.MultiplyDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+            return new Decimal128(result);
+        }
+
         /// <summary>Compares two values to determine equality.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>
         /// <param name="right">The value to compare with <paramref name="left" />.</param>

@@ -323,7 +323,17 @@ namespace System
                 else if (numberDigitsRemove < number.DigitsCount)
                 {
                     int numberDigitsRemain = number.DigitsCount - numberDigitsRemove;
-                    Debug.Assert(numberDigitsRemain <= TDecimal.Precision);
+
+                    if (numberDigitsRemain > TDecimal.Precision)
+                    {
+                        // The coefficient still exceeds the format precision after shifting to the
+                        // minimum quantum, so the value is actually in the normal range rather than
+                        // subnormal. Round the full (exact) digit string to the format precision in a
+                        // single step; this avoids a double rounding and yields a quantum that is at or
+                        // above the minimum adjusted exponent.
+                        numberDigitsRemain = TDecimal.Precision;
+                    }
+
                     return DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigitsRemain);
                 }
                 else
@@ -410,9 +420,9 @@ namespace System
                 {
                     exponent = TDecimal.MinAdjustedExponent;
                 }
-                else if (exponent > TDecimal.MaxExponent)
+                else if (exponent > TDecimal.MaxAdjustedExponent)
                 {
-                    exponent = TDecimal.MaxExponent;
+                    exponent = TDecimal.MaxAdjustedExponent;
                 }
             }
 
@@ -761,6 +771,109 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Multiplies two IEEE 754 decimal values represented by their raw bit patterns and returns the
+        /// bit pattern of the correctly rounded (round-to-nearest, ties-to-even) product.
+        /// </summary>
+        /// <remarks>
+        /// The operands are decoded and their coefficients multiplied exactly in base 10 (the product can
+        /// require up to twice the format precision, so it is computed on digit spans rather than the
+        /// underlying integer width). The exact product exponent is the sum of the operand exponents, which
+        /// is also the IEEE 754 preferred exponent because trailing zeros of the product are retained. The
+        /// exact digit string is then fed into the shared rounding path. This mirrors the mathematical
+        /// behavior of the Intel reference implementation while remaining independent of the integer width.
+        /// </remarks>
+        internal static TValue MultiplyDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_mul`, `bid64_mul`, and `bid128_mul` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
+            {
+                return TDecimal.NaN;
+            }
+
+            // The sign of a product is always the exclusive-or of the operand signs, including zeros.
+            bool resultSign = TDecimal.IsNegative(left) ^ TDecimal.IsNegative(right);
+
+            bool leftInfinity = TDecimal.IsInfinity(left);
+            bool rightInfinity = TDecimal.IsInfinity(right);
+
+            if (leftInfinity || rightInfinity)
+            {
+                // Infinity multiplied by zero is invalid (NaN); any other product involving an infinity is
+                // an infinity carrying the exclusive-or sign.
+                bool otherZero = (leftInfinity && !rightInfinity && TValue.IsZero(UnpackDecimalIeee754<TDecimal, TValue>(right).Significand))
+                              || (rightInfinity && !leftInfinity && TValue.IsZero(UnpackDecimalIeee754<TDecimal, TValue>(left).Significand));
+
+                if (otherZero)
+                {
+                    return TDecimal.NaN;
+                }
+
+                return resultSign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(left);
+            DecodedDecimalIeee754<TValue> b = UnpackDecimalIeee754<TDecimal, TValue>(right);
+
+            int productExponent = a.UnbiasedExponent + b.UnbiasedExponent;
+
+            if (TValue.IsZero(a.Significand) || TValue.IsZero(b.Significand))
+            {
+                // Zero times a finite value is zero. The preferred exponent is the sum of the operand
+                // exponents (clamped to the representable range by the encoder).
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, TValue.Zero, productExponent);
+            }
+
+            int capacity = (2 * TDecimal.Precision) + 4;
+            Span<byte> leftDigits = stackalloc byte[capacity];
+            Span<byte> rightDigits = stackalloc byte[capacity];
+            Span<byte> productDigits = stackalloc byte[capacity];
+
+            int leftLength = WriteDigits(a.Significand, leftDigits, TDecimal.CountDigits(a.Significand));
+            int rightLength = WriteDigits(b.Significand, rightDigits, TDecimal.CountDigits(b.Significand));
+
+            int productLength = BigMultiply(leftDigits.Slice(0, leftLength), rightDigits.Slice(0, rightLength), productDigits);
+
+            int start = 0;
+            while (start < productLength && productDigits[start] == (byte)'0')
+            {
+                start++;
+            }
+            int digitsCount = productLength - start;
+            Debug.Assert(digitsCount > 0);
+
+            Span<byte> numberDigits = stackalloc byte[capacity + 2];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, numberDigits);
+            productDigits.Slice(start, digitsCount).CopyTo(number.Digits);
+            number.Digits[digitsCount] = 0;
+            number.DigitsCount = digitsCount;
+            number.Scale = digitsCount + productExponent;
+            number.IsNegative = resultSign;
+            number.CheckConsistency();
+
+            return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+
+            static int WriteDigits(TValue value, Span<byte> destination, int length)
+            {
+                TValue ten = TValue.CreateTruncating(10);
+
+                for (int i = length - 1; i >= 0; i--)
+                {
+                    (value, TValue remainder) = TValue.DivRem(value, ten);
+                    destination[i] = (byte)('0' + int.CreateTruncating(remainder));
+                }
+
+                return length;
+            }
+        }
+
         private static ReadOnlySpan<byte> TrimLeadingZeros(ReadOnlySpan<byte> digits)
         {
             int start = 0;
@@ -782,6 +895,48 @@ namespace System
             }
 
             return left.SequenceCompareTo(right);
+        }
+
+        // Multiplies two base-10 digit spans (big-endian, '0'..'9') using schoolbook multiplication.
+        // The product is written to `result` (which must have room for `left.Length + right.Length`
+        // digits) and may carry a single leading zero, which the caller trims.
+        private static int BigMultiply(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, Span<byte> result)
+        {
+            left = TrimLeadingZeros(left);
+            right = TrimLeadingZeros(right);
+
+            int leftLength = left.Length;
+            int rightLength = right.Length;
+
+            if (leftLength == 0 || rightLength == 0)
+            {
+                return 0;
+            }
+
+            int length = leftLength + rightLength;
+
+            for (int i = 0; i < length; i++)
+            {
+                result[i] = (byte)'0';
+            }
+
+            for (int i = leftLength - 1; i >= 0; i--)
+            {
+                int carry = 0;
+                int leftDigit = left[i] - '0';
+
+                for (int j = rightLength - 1; j >= 0; j--)
+                {
+                    int index = i + j + 1;
+                    int product = (leftDigit * (right[j] - '0')) + (result[index] - '0') + carry;
+                    result[index] = (byte)('0' + (product % 10));
+                    carry = product / 10;
+                }
+
+                result[i] = (byte)('0' + carry);
+            }
+
+            return length;
         }
 
         private static int BigAdd(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, Span<byte> result)

@@ -286,6 +286,15 @@ namespace System.Numerics
             return new Decimal32(Number.AddDecimalIeee754<Decimal32, uint>(left._value, right._value ^ SignMask));
         }
 
+        /// <summary>Multiplies two values together to compute their product.</summary>
+        /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
+        /// <param name="right">The value which multiplies <paramref name="left" />.</param>
+        /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal32 operator *(Decimal32 left, Decimal32 right)
+        {
+            return new Decimal32(Number.MultiplyDecimalIeee754<Decimal32, uint>(left._value, right._value));
+        }
+
         /// <summary>Compares two values to determine equality.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>
         /// <param name="right">The value to compare with <paramref name="left" />.</param>

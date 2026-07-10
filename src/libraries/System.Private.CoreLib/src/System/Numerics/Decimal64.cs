@@ -287,6 +287,15 @@ namespace System.Numerics
             return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(left._value, right._value ^ SignMask));
         }
 
+        /// <summary>Multiplies two values together to compute their product.</summary>
+        /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
+        /// <param name="right">The value which multiplies <paramref name="left" />.</param>
+        /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal64 operator *(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.MultiplyDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+        }
+
         /// <summary>Compares two values to determine equality.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>
         /// <param name="right">The value to compare with <paramref name="left" />.</param>
