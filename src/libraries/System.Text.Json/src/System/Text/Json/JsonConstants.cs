@@ -45,10 +45,12 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> NegativeInfinityValue => "-Infinity"u8;
         public const int MaximumFloatingPointConstantLength = 9;
 
-        // SkipWhiteSpace scans up to this many leading bytes with a scalar loop before falling
-        // back to a vectorized search. Short inter-token whitespace runs (the common case) stay
-        // at scalar cost, while longer runs (e.g. deeply indented or whitespace-heavy documents)
-        // are accelerated. Only used on .NET, where SearchValues-based scanning is available.
+        // On Mono/WASM AOT (browser), SkipWhiteSpace scans up to this many leading bytes with a
+        // scalar loop before promoting to a vectorized search, since the fixed per-call SIMD entry
+        // cost is high there relative to the short inter-token whitespace runs typical of indented
+        // JSON. Short runs (the common case) stay at scalar cost; longer runs promote to the
+        // vectorized path where it amortizes. Only consulted on the browser code path (see
+        // Utf8JsonReader.SkipWhiteSpace); other runtimes go straight to the vectorized search.
         public const int MaxScalarWhiteSpaceScanLength = 16;
 
         // Used to search for the end of a number
