@@ -4235,6 +4235,34 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             test->gtOp2 = bitOp->gtGetOp2();
             return true;
         }
+
+#ifdef TARGET_XARCH
+        // Also recognize the arithmetic form `(x >> y) & 1`, i.e. AND(RSH|RSZ(x, y), 1), which
+        // tests bit `y` of `x` just like `x & (1 << y)`. Only bit 0 of the shifted value is kept so
+        // the shift kind is irrelevant, and `bt` masks the bit index modulo the operand size, which
+        // matches the C# masked-shift semantics even for an out-of-range `y`. Restricted to a
+        // variable index because a constant index keeps the shift, and `bt` has no immediate form
+        // here (a constant mask `test` is already optimal).
+        GenTree* shiftOp = test->gtOp1;
+        GenTree* oneOp   = test->gtOp2;
+        if (!oneOp->IsIntegralConst(1))
+            std::swap(shiftOp, oneOp);
+
+        if (oneOp->IsIntegralConst(1) && shiftOp->OperIs(GT_RSH, GT_RSZ) && varTypeIsIntOrI(shiftOp) &&
+            !shiftOp->gtGetOp2()->IsIntegralConst())
+        {
+            BlockRange().Remove(oneOp);
+            BlockRange().Remove(shiftOp);
+            test->gtOp1 = shiftOp->gtGetOp1();
+            test->gtOp2 = shiftOp->gtGetOp2();
+
+            // ContainCheckCompare is skipped when this transform succeeds, so clear any containment
+            // the value operand picked up from the removed shift (e.g. a `shrx` memory source) --
+            // the reg,reg `bt` form requires it in a register.
+            test->gtOp1->ClearContained();
+            return true;
+        }
+#endif // TARGET_XARCH
         return false;
     };
 

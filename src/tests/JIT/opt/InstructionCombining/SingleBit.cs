@@ -117,6 +117,68 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int InvertNegatedBit(int a, int b) => ~(1 << a) ^ (1 << b);
 
+    // Bit-test recognition: testing a single bit to feed a branch should become 'bt'. Both the
+    // '(x >> y) & 1' and 'x & (1 << y)' shapes select bit 'y', and 'bt' masks the index modulo the
+    // operand size, matching the C# masked-shift semantics even for an out-of-range 'y'.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int TestBitShr(int a, int b)
+    {
+        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        if (((a >> b) & 1) != 0)
+        {
+            return 100;
+        }
+        return 200;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int TestBitShrEq(int a, int b)
+    {
+        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        if (((a >> b) & 1) == 0)
+        {
+            return 100;
+        }
+        return 200;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int TestBitShrLong(long a, int b)
+    {
+        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        if (((a >> b) & 1) != 0)
+        {
+            return 100;
+        }
+        return 200;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int TestBitMask(int a, int b)
+    {
+        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        if ((a & (1 << b)) != 0)
+        {
+            return 100;
+        }
+        return 200;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int TestBitShrConst(int a)
+    {
+        // A constant bit index keeps the shift folded into a 'test' with an immediate; 'bt' has no
+        // immediate form here so it must not be used.
+        // X64-NOT: bt
+        // X64: test {{[a-z]+}}, {{(32|0x20)}}
+        if (((a >> 5) & 1) != 0)
+        {
+            return 100;
+        }
+        return 200;
+    }
+
     [Fact]
     public static void Test()
     {
@@ -166,5 +228,20 @@ public static class SingleBit
         Assert.Equal(0x1_00000000L, InvertLong(0, 32));
         Assert.Equal(0L, InvertLong(0x1_00000000L, 32));
         Assert.Equal(unchecked((long)0x8000000000000000UL), InvertLong(0, 63));
+
+        // Bit-test recognition. Exercise a set and a clear bit, plus an out-of-range (masked) index.
+        Assert.Equal(100, TestBitShr(0b1000, 3));
+        Assert.Equal(200, TestBitShr(0b1000, 2));
+        Assert.Equal(100, TestBitShr(0b1000, 3 + 32));
+        Assert.Equal(200, TestBitShrEq(0b1000, 3));
+        Assert.Equal(100, TestBitShrEq(0b1000, 2));
+        Assert.Equal(100, TestBitShrLong(0x1_00000000L, 32));
+        Assert.Equal(200, TestBitShrLong(0x1_00000000L, 33));
+        Assert.Equal(100, TestBitShrLong(0x1_00000000L, 32 + 64));
+        Assert.Equal(100, TestBitMask(0b1000, 3));
+        Assert.Equal(200, TestBitMask(0b1000, 2));
+        Assert.Equal(100, TestBitMask(0b1000, 3 + 32));
+        Assert.Equal(100, TestBitShrConst(0b100000));
+        Assert.Equal(200, TestBitShrConst(0b010000));
     }
 }
