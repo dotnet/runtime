@@ -402,11 +402,17 @@ enum insOpts : unsigned
     INS_OPTS_S_TO_8BYTE,  // Single to INT64
     INS_OPTS_D_TO_8BYTE,  // Double to INT64
 
+    INS_OPTS_H_TO_4BYTE,  // Half to INT32
+    INS_OPTS_H_TO_8BYTE,  // Half to INT64
+
     INS_OPTS_4BYTE_TO_S,  // INT32 to Single
     INS_OPTS_4BYTE_TO_D,  // INT32 to Double
 
     INS_OPTS_8BYTE_TO_S,  // INT64 to Single
     INS_OPTS_8BYTE_TO_D,  // INT64 to Double
+
+    INS_OPTS_4BYTE_TO_H,  // INT32 to Half
+    INS_OPTS_8BYTE_TO_H,  // INT64 to Half
 
     INS_OPTS_S_TO_D,      // Single to Double
     INS_OPTS_D_TO_S,      // Double to Single
