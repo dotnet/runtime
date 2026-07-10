@@ -134,13 +134,27 @@ static const char* getISO3LanguageByLangCode(const char* langCode)
     return LANGUAGES_3[offset];
 }
 
-const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName)
+static NSLocale* GetNativeLocale(const char* localeName, int32_t useUserOverride)
+{
+    if (useUserOverride)
+    {
+        return [NSLocale currentLocale];
+    }
+
+    NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
+    return [[NSLocale alloc] initWithLocaleIdentifier:locName];
+}
+
+const char* GlobalizationNative_GetLocaleInfoStringNative(
+    const char* localeName,
+    LocaleStringData localeStringData,
+    const char* currentUILocaleName,
+    int32_t useUserOverride)
 {
     @autoreleasepool
     {
         NSString *value;
-        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
-        NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+        NSLocale *currentLocale = GetNativeLocale(localeName, useUserOverride);
         NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
         numberFormatter.locale = currentLocale;
         NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
@@ -521,7 +535,10 @@ static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData
     return value;
 }
 
-int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, LocaleNumberData localeNumberData)
+int32_t GlobalizationNative_GetLocaleInfoIntNative(
+    const char* localeName,
+    LocaleNumberData localeNumberData,
+    int32_t useUserOverride)
 {
     @autoreleasepool
     {
@@ -529,8 +546,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         bool isSuccess = true;
 #endif
         int32_t value;
-        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
-        NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+        NSLocale *currentLocale = GetNativeLocale(localeName, useUserOverride);
 
         switch (localeNumberData)
         {
@@ -632,12 +648,14 @@ GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative
 
 Returns primary grouping size for decimal and currency
 */
-int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* localeName, LocaleNumberData localeGroupingData)
+int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(
+    const char* localeName,
+    LocaleNumberData localeGroupingData,
+    int32_t useUserOverride)
 {
     @autoreleasepool
     {
-        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
-        NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+        NSLocale *currentLocale = GetNativeLocale(localeName, useUserOverride);
         NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
         numberFormatter.locale = currentLocale;
 
@@ -663,12 +681,14 @@ GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative
 
 Returns secondary grouping size for decimal and currency
 */
-int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName, LocaleNumberData localeGroupingData)
+int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(
+    const char* localeName,
+    LocaleNumberData localeGroupingData,
+    int32_t useUserOverride)
 {
     @autoreleasepool
     {
-        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
-        NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+        NSLocale *currentLocale = GetNativeLocale(localeName, useUserOverride);
         NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
         numberFormatter.locale = currentLocale;
 
@@ -839,4 +859,3 @@ int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
     }
 }
 #endif
-

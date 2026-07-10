@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Tests;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -43,6 +44,101 @@ namespace System.Globalization.Tests
             Assert.NotEqual(CultureInfo.CurrentCulture, CultureInfo.InvariantCulture);
             Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
         }
+
+        private static bool CurrentLocaleHasNumberFormatOverride =>
+            PlatformDetection.IsAppleMobile &&
+            (GetCurrentLocaleValue("decimalSeparator") != GetNamedLocaleValue(CultureInfo.CurrentCulture.Name, "decimalSeparator") ||
+             GetCurrentLocaleValue("groupingSeparator") != GetNamedLocaleValue(CultureInfo.CurrentCulture.Name, "groupingSeparator"));
+
+        [ConditionalFact(nameof(CurrentLocaleHasNumberFormatOverride))]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        public void CurrentCulture_NumberFormat_UsesCurrentLocale()
+        {
+            Assert.Equal(GetCurrentLocaleValue("decimalSeparator"), CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator);
+            Assert.Equal(GetCurrentLocaleValue("groupingSeparator"), CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        public void CultureWithoutUserOverrides_NumberFormat_UsesNamedLocale()
+        {
+            CultureInfo culture = new CultureInfo(CultureInfo.CurrentCulture.Name, useUserOverride: false);
+
+            Assert.Equal(GetNamedLocaleValue(culture.Name, "decimalSeparator"), culture.NumberFormat.NumberDecimalSeparator);
+            Assert.Equal(GetNamedLocaleValue(culture.Name, "groupingSeparator"), culture.NumberFormat.NumberGroupSeparator);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        public void CurrentNamedCulture_NumberFormat_UsesNamedLocale()
+        {
+            CultureInfo culture = new CultureInfo(CultureInfo.CurrentCulture.Name);
+
+            Assert.Equal(GetNamedLocaleValue(culture.Name, "decimalSeparator"), culture.NumberFormat.NumberDecimalSeparator);
+            Assert.Equal(GetNamedLocaleValue(culture.Name, "groupingSeparator"), culture.NumberFormat.NumberGroupSeparator);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        public void NonCurrentCulture_NumberFormat_UsesNamedLocale()
+        {
+            CultureInfo culture = new CultureInfo(CultureInfo.CurrentCulture.Name == "fr-FR" ? "en-US" : "fr-FR");
+
+            Assert.Equal(GetNamedLocaleValue(culture.Name, "decimalSeparator"), culture.NumberFormat.NumberDecimalSeparator);
+            Assert.Equal(GetNamedLocaleValue(culture.Name, "groupingSeparator"), culture.NumberFormat.NumberGroupSeparator);
+        }
+
+        private static string GetCurrentLocaleValue(string selectorName)
+        {
+            IntPtr localeClass = objc_getClass("NSLocale");
+            IntPtr currentLocale = objc_msgSend(localeClass, sel_registerName("currentLocale"));
+
+            return GetLocaleValue(currentLocale, selectorName);
+        }
+
+        private static string GetNamedLocaleValue(string localeName, string selectorName)
+        {
+            IntPtr localeNameUtf8 = Marshal.StringToCoTaskMemUTF8(localeName);
+            try
+            {
+                IntPtr localeClass = objc_getClass("NSLocale");
+                IntPtr stringClass = objc_getClass("NSString");
+                IntPtr nativeLocaleName = objc_msgSend(stringClass, sel_registerName("stringWithUTF8String:"), localeNameUtf8);
+                IntPtr locale = objc_msgSend(objc_msgSend(localeClass, sel_registerName("alloc")), sel_registerName("initWithLocaleIdentifier:"), nativeLocaleName);
+                try
+                {
+                    return GetLocaleValue(locale, selectorName);
+                }
+                finally
+                {
+                    objc_msgSend(locale, sel_registerName("release"));
+                }
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(localeNameUtf8);
+            }
+        }
+
+        private static string GetLocaleValue(IntPtr locale, string selectorName)
+        {
+            IntPtr value = objc_msgSend(locale, sel_registerName(selectorName));
+            IntPtr utf8Value = objc_msgSend(value, sel_registerName("UTF8String"));
+
+            return Marshal.PtrToStringUTF8(utf8Value)!;
+        }
+
+        [DllImport("/usr/lib/libobjc.A.dylib")]
+        private static extern IntPtr objc_getClass(string name);
+
+        [DllImport("/usr/lib/libobjc.A.dylib")]
+        private static extern IntPtr sel_registerName(string selectorName);
+
+        [DllImport("/usr/lib/libobjc.A.dylib")]
+        private static extern IntPtr objc_msgSend(IntPtr receiver, IntPtr selector);
+
+        [DllImport("/usr/lib/libobjc.A.dylib", EntryPoint = "objc_msgSend")]
+        private static extern IntPtr objc_msgSend(IntPtr receiver, IntPtr selector, IntPtr argument);
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]

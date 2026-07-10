@@ -16,7 +16,17 @@ namespace System.Globalization
             if (CultureData.GetDefaultLocaleName(out string? localeName))
             {
                 Debug.Assert(localeName != null);
-                cultureInfo = GetCultureByName(localeName);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    CultureData? cultureData = CultureData.GetUserDefaultCultureData(localeName);
+                    cultureInfo = cultureData is null ? InvariantCulture : new CultureInfo(cultureData, isReadOnly: true);
+                }
+                else
+#endif
+                {
+                    cultureInfo = GetCultureByName(localeName);
+                }
             }
             else
             {

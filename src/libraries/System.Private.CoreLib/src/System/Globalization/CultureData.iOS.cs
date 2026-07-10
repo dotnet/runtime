@@ -12,24 +12,42 @@ namespace System.Globalization
             return Interop.Globalization.GetLocaleNameNative(localeName);
         }
 
-        private string GetLocaleInfoNative(LocaleStringData type, string? uiLocaleName = null)
+        internal static CultureData? GetUserDefaultCultureData(string localeName)
+        {
+            Debug.Assert(GlobalizationMode.Hybrid);
+
+            if (GlobalizationMode.PredefinedCulturesOnly && !IcuIsEnsurePredefinedLocaleName(localeName))
+            {
+                return null;
+            }
+
+            CultureData? cultureData = CreateCultureData(localeName, useUserOverride: true);
+            if (cultureData is not null && !cultureData.IsInvariantCulture)
+            {
+                cultureData._bUseOverrides = true;
+            }
+
+            return cultureData;
+        }
+
+        private string GetLocaleInfoNative(LocaleStringData type, string? uiLocaleName = null, bool useUserOverride = false)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfoNative] Expected _sWindowsName to be populated already");
 
-            return GetLocaleInfoNative(_sWindowsName, type, uiLocaleName);
+            return GetLocaleInfoNative(_sWindowsName, type, uiLocaleName, useUserOverride);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        private static string GetLocaleInfoNative(string localeName, LocaleStringData type, string? uiLocaleName = null)
+        private static string GetLocaleInfoNative(string localeName, LocaleStringData type, string? uiLocaleName = null, bool useUserOverride = false)
         {
             Debug.Assert(localeName != null, "[CultureData.GetLocaleInfoNative] Expected localeName to be not be null");
 
-            return Interop.Globalization.GetLocaleInfoStringNative(localeName, (uint)type, uiLocaleName);
+            return Interop.Globalization.GetLocaleInfoStringNative(localeName, (uint)type, uiLocaleName, useUserOverride);
         }
 
-        private int GetLocaleInfoNative(LocaleNumberData type)
+        private int GetLocaleInfoNative(LocaleNumberData type, bool useUserOverride = false)
         {
             Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfoNative(LocaleNumberData)] Expected _sWindowsName to be populated already");
 
@@ -37,7 +55,7 @@ namespace System.Globalization
             if (type == LocaleNumberData.CalendarType)
                 return 0;
 
-            int value = Interop.Globalization.GetLocaleInfoIntNative(_sWindowsName, (uint)type);
+            int value = Interop.Globalization.GetLocaleInfoIntNative(_sWindowsName, (uint)type, useUserOverride);
             const int DEFAULT_VALUE = 0;
             if (value < 0)
             {
@@ -48,12 +66,12 @@ namespace System.Globalization
             return value;
         }
 
-        private int[] GetLocaleInfoNative(LocaleGroupingData type)
+        private int[] GetLocaleInfoNative(LocaleGroupingData type, bool useUserOverride = false)
         {
             Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfoNative(LocaleGroupingData)] Expected _sWindowsName to be populated already");
 
-            int primaryGroupingSize = Interop.Globalization.GetLocaleInfoPrimaryGroupingSizeNative(_sWindowsName, (uint)type);
-            int secondaryGroupingSize = Interop.Globalization.GetLocaleInfoSecondaryGroupingSizeNative(_sWindowsName, (uint)type);
+            int primaryGroupingSize = Interop.Globalization.GetLocaleInfoPrimaryGroupingSizeNative(_sWindowsName, (uint)type, useUserOverride);
+            int secondaryGroupingSize = Interop.Globalization.GetLocaleInfoSecondaryGroupingSizeNative(_sWindowsName, (uint)type, useUserOverride);
 
             if (secondaryGroupingSize == 0)
             {
