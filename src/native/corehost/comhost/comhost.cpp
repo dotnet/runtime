@@ -182,7 +182,7 @@ namespace
 
     // Resolve and cache the COM activation delegate so the hostfxr load and config parsing
     // only happens once per comhost. Failures are not cached, so they are retried.
-    int get_com_activation_delegate(const com_activation_info** delegate)
+    int get_com_activation_delegate(const com_activation_info** activation_info)
     {
         static std::atomic<bool> com_activation_initialized{ false };
         static pal::mutex_t com_activation_lock;
@@ -208,7 +208,7 @@ namespace
             }
         }
 
-        *delegate = &com_activation;
+        *activation_info = &com_activation;
         return StatusCode::Success;
     }
 
