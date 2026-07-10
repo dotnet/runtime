@@ -281,7 +281,7 @@ namespace System.Text.Json
         {
             Utf8JsonReader reader = new(utf8Json);
             while (reader.Read());
-            _tokenType = reader.TokenType;
+            return reader.TokenType;
         }
     }
 }
