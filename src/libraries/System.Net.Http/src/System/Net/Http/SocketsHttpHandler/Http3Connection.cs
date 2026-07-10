@@ -90,9 +90,11 @@ namespace System.Net.Http
             }
         }
 
-        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity)
+        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity, DnsEndPoint connectedEndPoint)
         {
-            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint);
+            // Report the exact DnsEndPoint used to establish the QUIC connection (Alt-Svc may point it at an authority
+            // distinct from the pool's origin), consistent with the connection's RemoteEndPoint.
+            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint, authority: _authority, connectedEndPoint: connectedEndPoint);
 
             _connection = connection;
 

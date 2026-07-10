@@ -2054,7 +2054,6 @@ namespace System.Net.Http.Functional.Tests
             var firstConnectionEvicted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var firstConnectionDisposalTokenCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             SocketsHttpConnectionEvictionContext capturedContext = null;
-            Uri serverUri = null;
             var connectCallbackIds = new System.Collections.Concurrent.ConcurrentBag<long>();
 
             using var handler = new SocketsHttpHandler
@@ -2081,7 +2080,7 @@ namespace System.Net.Http.Functional.Tests
                 // Only one connection is evaluated at a time in this test, so no synchronization is needed here.
                 if (useAsyncCallback)
                 {
-                    await Task.Yield(); // Exercise the path where the callback completes asynchronously.
+                    await Task.Delay(10); // Exercise the path where the callback completes asynchronously.
                 }
 
                 capturedContext ??= context;
@@ -2100,8 +2099,6 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                serverUri = uri;
-
                 // Connection A: serve request 1 with a keep-alive response, then block reading until the client
                 // tears the connection down. If anything other than eviction were to remove it, the read below
                 // would observe request 2 instead of EOF and the test's second accept would not be a new connection.
@@ -2115,11 +2112,11 @@ namespace System.Net.Http.Functional.Tests
 
                 // Wait for the maintenance timer to invoke the eviction callback for connection A, then for the
                 // pool to actually retire it (serverTaskA's read completes at EOF once the client disposes it).
-                await firstConnectionEvicted.Task.WaitAsync(TimeSpan.FromSeconds(30));
-                await serverTaskA.WaitAsync(TimeSpan.FromSeconds(30));
+                await firstConnectionEvicted.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                await serverTaskA.WaitAsync(TestHelper.PassingTestTimeout);
 
                 // Disposing the retired connection cancels the token that was passed to the eviction callback.
-                await firstConnectionDisposalTokenCanceled.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                await firstConnectionDisposalTokenCanceled.Task.WaitAsync(TestHelper.PassingTestTimeout);
 
                 // Request 2 must land on a brand new connection B, because A has been evicted.
                 Task<string> request2 = client.GetStringAsync(uri);
@@ -2129,15 +2126,15 @@ namespace System.Net.Http.Functional.Tests
                 });
 
                 Assert.Equal("2", await request2);
-            });
 
-            Assert.NotNull(capturedContext);
-            Assert.Equal(System.Net.HttpVersion.Version11, capturedContext.HttpVersion);
-            Assert.NotNull(capturedContext.RemoteEndPoint);
-            Assert.Equal(serverUri.Port, capturedContext.DnsEndPoint.Port);
-            Assert.Equal(serverUri.IdnHost, capturedContext.DnsEndPoint.Host);
-            // The evicted connection's id was observed by ConnectCallback when it was established.
-            Assert.Contains(capturedContext.ConnectionId, connectCallbackIds);
+                Assert.NotNull(capturedContext);
+                Assert.Equal(System.Net.HttpVersion.Version11, capturedContext.HttpVersion);
+                Assert.NotNull(capturedContext.RemoteEndPoint);
+                Assert.Equal(uri.Port, capturedContext.DnsEndPoint.Port);
+                Assert.Equal(uri.IdnHost, capturedContext.DnsEndPoint.Host);
+                // The evicted connection's id was observed by ConnectCallback when it was established.
+                Assert.Contains(capturedContext.ConnectionId, connectCallbackIds);
+            });
         }
 
         [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
@@ -2187,6 +2184,7 @@ namespace System.Net.Http.Functional.Tests
                         while (!stop.IsCancellationRequested)
                         {
                             await connection.ReadRequestHeaderAndSendResponseAsync(content: "hello");
+                            await Task.Delay(10, stop.Token); // Throttle the loop so the test doesn't spin the CPU while waiting for the callback.
                         }
                     }
                     catch { } // The connection is torn down during cleanup.
@@ -2194,7 +2192,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // The connection is never idle during a maintenance pass, so it can only be evaluated when it is
                 // returned to the pool between requests. Without that path the callback would never run here.
-                await connectionEvaluated.Task.WaitAsync(TimeSpan.FromSeconds(60));
+                await connectionEvaluated.Task.WaitAsync(TestHelper.PassingTestTimeout);
 
                 stop.Cancel();
                 await Task.WhenAny(Task.WhenAll(clientLoops), Task.Delay(TimeSpan.FromSeconds(10)));
@@ -2240,13 +2238,16 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal("hello", await request);
 
                 // The idle proxy connection is evaluated by the maintenance pass.
-                await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(30));
-            });
+                await callbackInvoked.Task.WaitAsync(TestHelper.PassingTestTimeout);
 
-            Assert.NotNull(capturedContext);
-            // A forwarding proxy connection targets the proxy itself, so the context reports the proxy's host and port.
-            Assert.Equal(proxyServer.Uri.IdnHost, capturedContext.DnsEndPoint.Host);
-            Assert.Equal(proxyServer.Uri.Port, capturedContext.DnsEndPoint.Port);
+                Assert.NotNull(capturedContext);
+                // A forwarding proxy connection targets the proxy itself, so the context reports the proxy's host and port.
+                Assert.Equal(proxyServer.Uri.IdnHost, capturedContext.DnsEndPoint.Host);
+                Assert.Equal(proxyServer.Uri.Port, capturedContext.DnsEndPoint.Port);
+                // The reported version reflects the request that used the connection, not the proxy hop. A plain
+                // forwarding proxy connection speaks HTTP/1.1, which is also what the request used here.
+                Assert.Equal(HttpVersion.Version11, capturedContext.HttpVersion);
+            });
         }
 
         [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
@@ -2255,22 +2256,23 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]  // The callback throws.
         public async Task ShouldEvictConnection_CallbackDoesNotEvict_ConnectionReused(bool callbackThrows)
         {
-            int callbackInvocations = 0;
             var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using var handler = new SocketsHttpHandler
             {
-                PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4),
+                // Use an infinite idle timeout so a slow/busy machine can't scavenge the connection for idleness in the
+                // window between the two requests. The eviction callback still runs promptly on the maintenance timer's
+                // minimum cadence (see ShouldEvictConnection_InfiniteIdleTimeout_CallbackInvokedOnMinimumCadence).
+                PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
                 PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
             };
 
             handler.ShouldEvictConnection = (context, _) =>
             {
-                Interlocked.Increment(ref callbackInvocations);
                 callbackInvoked.TrySetResult();
 
-                // A throwing callback must be treated the same as one that declined to evict: the exception is
-                // swallowed and the connection is left in the pool.
+                // A throwing callback is treated the same as one that declined to evict: the exception is
+                // swallowed and the connection is left in the pool. This is an implementation choice, not a guarantee.
                 if (callbackThrows)
                 {
                     throw new InvalidOperationException("Eviction callback failure should not affect the pool.");
@@ -2290,7 +2292,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("1", await request1);
 
                     // Wait until the callback has been invoked at least once, proving the maintenance timer ran.
-                    await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                    await callbackInvoked.Task.WaitAsync(TestHelper.PassingTestTimeout);
 
                     // Because nothing was evicted, the second request must be served on the same connection.
                     Task<string> request2 = client.GetStringAsync(uri);
@@ -2298,8 +2300,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("2", await request2);
                 });
             });
-
-            Assert.True(callbackInvocations > 0);
         }
 
         [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
@@ -2338,7 +2338,7 @@ namespace System.Net.Http.Functional.Tests
                 await request1;
 
                 // Wait for the maintenance timer to mark the HTTP/2 connection for eviction.
-                await firstConnectionEvicted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                await firstConnectionEvicted.Task.WaitAsync(TestHelper.PassingTestTimeout);
 
                 // Detach the first connection's socket so its eviction-triggered teardown doesn't interfere.
                 (SocketWrapper socket, Stream stream) = connection.ResetNetwork();
@@ -2351,10 +2351,10 @@ namespace System.Net.Http.Functional.Tests
                 await request2;
 
                 await socket.CloseAsync();
-            });
 
-            Assert.NotNull(capturedContext);
-            Assert.Equal(System.Net.HttpVersion.Version20, capturedContext.HttpVersion);
+                Assert.NotNull(capturedContext);
+                Assert.Equal(System.Net.HttpVersion.Version20, capturedContext.HttpVersion);
+            });
         }
 
         [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
@@ -2684,6 +2684,170 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    // Exercises the SocketsHttpHandler.ShouldEvictConnection eviction context across HTTP versions. The reported
+    // properties (version, endpoints, connection id) must reflect the actual connection, independent of protocol.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
+    public abstract class SocketsHttpHandler_ConnectionEviction_Test : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_ConnectionEviction_Test(ITestOutputHelper output) : base(output) { }
+
+        // Serves a single request and holds the connection open (idle and pooled on the client) until releaseSignal
+        // completes, so the pool's maintenance pass can evaluate it for eviction. Keep-alive handling is protocol
+        // specific, so each version supplies its own implementation.
+        protected abstract Task ServeRequestAndHoldConnectionAsync(GenericLoopbackServer server, Task releaseSignal);
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Fact]
+        public async Task ShouldEvictConnection_Context_ReportsRequestVersionAndEndpoint()
+        {
+            var evictionObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            SocketsHttpConnectionEvictionContext capturedContext = null;
+
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            SocketsHttpHandler socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+            socketsHandler.PooledConnectionLifetime = Timeout.InfiniteTimeSpan;
+            socketsHandler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4);
+            socketsHandler.ShouldEvictConnection = (context, _) =>
+            {
+                // Capture the context here (exceptions thrown from this callback are swallowed by the pool, so we
+                // assert on the client side instead).
+                capturedContext ??= context;
+                evictionObserved.TrySetResult();
+                return Task.FromResult(false); // Never evict; we only observe the context.
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
+                    {
+                        Assert.True(response.IsSuccessStatusCode);
+                    }
+
+                    // The idle connection is evaluated by the pool maintenance pass.
+                    await evictionObserved.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                    Assert.NotNull(capturedContext);
+                    // The context reports the version the request actually used and the endpoint it targeted.
+                    Assert.Equal(UseVersion, capturedContext.HttpVersion);
+                    Assert.Equal(uri.IdnHost, capturedContext.DnsEndPoint.Host);
+                    Assert.Equal(uri.Port, capturedContext.DnsEndPoint.Port);
+                    Assert.NotNull(capturedContext.RemoteEndPoint);
+                    // The id stamped on the request matches the eviction context's id: both refer to the same connection.
+                    Assert.Equal(request.ConnectionId, capturedContext.ConnectionId);
+                },
+                server => ServeRequestAndHoldConnectionAsync(server, evictionObserved.Task),
+                options: new GenericLoopbackOptions());
+        }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Fact]
+        public async Task ShouldEvictConnection_ThroughHttpsProxyTunnel_ReportsOriginAndRequestVersion()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                return; // HTTP/3 (QUIC) cannot be tunneled through an HTTP CONNECT proxy.
+            }
+
+            if (UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
+            {
+                return; // HTTP/2 over TLS requires ALPN to negotiate.
+            }
+
+            var evictionObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            SocketsHttpConnectionEvictionContext capturedContext = null;
+
+            using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            SocketsHttpHandler socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+            socketsHandler.PooledConnectionLifetime = Timeout.InfiniteTimeSpan;
+            socketsHandler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4);
+            handler.Proxy = new WebProxy(proxyServer.Uri);
+            socketsHandler.ShouldEvictConnection = (context, _) =>
+            {
+                capturedContext ??= context;
+                evictionObserved.TrySetResult();
+                return Task.FromResult(false);
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true))
+                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
+                    {
+                        Assert.True(response.IsSuccessStatusCode);
+                    }
+
+                    await evictionObserved.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                    Assert.NotNull(capturedContext);
+                    // The CONNECT tunnel to the proxy is always HTTP/1, but the reported version is the end-to-end
+                    // request version, and the DnsEndPoint is the tunneled origin (not the proxy).
+                    Assert.Equal(UseVersion, capturedContext.HttpVersion);
+                    Assert.Equal(uri.IdnHost, capturedContext.DnsEndPoint.Host);
+                    Assert.Equal(uri.Port, capturedContext.DnsEndPoint.Port);
+                },
+                server => ServeRequestAndHoldConnectionAsync(server, evictionObserved.Task),
+                // HTTPS origin forces the proxy hop to be an HTTP/1 CONNECT tunnel regardless of the request version.
+                options: new GenericLoopbackOptions { UseSsl = true });
+        }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
+    public sealed class SocketsHttpHandler_ConnectionEviction_Test_Http1 : SocketsHttpHandler_ConnectionEviction_Test
+    {
+        public SocketsHttpHandler_ConnectionEviction_Test_Http1(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version11;
+
+        protected override Task ServeRequestAndHoldConnectionAsync(GenericLoopbackServer server, Task releaseSignal) =>
+            ((LoopbackServer)server).AcceptConnectionAsync(async connection =>
+            {
+                await connection.ReadRequestHeaderAndSendResponseAsync(content: "hello");
+                await releaseSignal;
+            });
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
+    public sealed class SocketsHttpHandler_ConnectionEviction_Test_Http2 : SocketsHttpHandler_ConnectionEviction_Test
+    {
+        public SocketsHttpHandler_ConnectionEviction_Test_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+
+        protected override async Task ServeRequestAndHoldConnectionAsync(GenericLoopbackServer server, Task releaseSignal)
+        {
+            await using Http2LoopbackConnection connection = await ((Http2LoopbackServer)server).EstablishConnectionAsync();
+            int streamId = await connection.ReadRequestHeaderAsync();
+            await connection.SendDefaultResponseAsync(streamId);
+            await releaseSignal;
+        }
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
+    [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
+    public sealed class SocketsHttpHandler_ConnectionEviction_Test_Http3 : SocketsHttpHandler_ConnectionEviction_Test
+    {
+        public SocketsHttpHandler_ConnectionEviction_Test_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        protected override async Task ServeRequestAndHoldConnectionAsync(GenericLoopbackServer server, Task releaseSignal)
+        {
+            await using GenericLoopbackConnection connection = await server.EstablishGenericConnectionAsync();
+            Http3LoopbackStream stream = await ((Http3LoopbackConnection)connection).AcceptRequestStreamAsync();
+            await stream.HandleRequestAsync();
+            await releaseSignal;
+        }
+    }
+
     // System.Net.Sockets is not supported on this platform
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     [SkipOnPlatform(TestPlatforms.Wasi, "SocketsHttpHandler is not supported on WASI")]
@@ -2929,35 +3093,42 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClient client = new HttpClient(handler);
 
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-
-                Assert.Null(request.ConnectionId);
-
-                Task<HttpResponseMessage> requestTask = client.SendAsync(request);
-
-                if (requestFails)
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    await server.AcceptConnectionAsync(async connection =>
+                    using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                    Assert.Null(request.ConnectionId);
+
+                    if (requestFails)
                     {
-                        await connection.ReadRequestHeaderAsync();
-                        // A malformed status line makes the client throw a (non-retryable) HttpRequestException.
-                        await connection.SendResponseAsync("INVALID RESPONSE LINE\r\n\r\n");
-                    });
+                        await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                    }
+                    else
+                    {
+                        using HttpResponseMessage response = await client.SendAsync(request);
+                    }
 
-                    await Assert.ThrowsAsync<HttpRequestException>(() => requestTask);
-                }
-                else
+                    // The connection id is stamped on the request regardless of whether the send succeeded.
+                    Assert.NotNull(request.ConnectionId);
+                    Assert.Equal(connectCallbackId, request.ConnectionId.Value);
+                },
+                async server =>
                 {
-                    await server.AcceptConnectionSendResponseAndCloseAsync(content: "hello");
-                    using HttpResponseMessage response = await requestTask;
-                }
-
-                // The connection id is stamped on the request regardless of whether the send succeeded.
-                Assert.NotNull(request.ConnectionId);
-                Assert.Equal(connectCallbackId, request.ConnectionId.Value);
-            });
+                    if (requestFails)
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            await connection.ReadRequestHeaderAsync();
+                            // A malformed status line makes the client throw a (non-retryable) HttpRequestException.
+                            await connection.SendResponseAsync("INVALID RESPONSE LINE\r\n\r\n");
+                        });
+                    }
+                    else
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "hello");
+                    }
+                });
         }
 
         [Fact]
@@ -2985,27 +3156,30 @@ namespace System.Net.Http.Functional.Tests
 
             using HttpClient client = new HttpClient(handler);
 
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                Task<HttpResponseMessage> requestTask = client.SendAsync(request, cts.Token);
-
-                // First attempt: read the request, then close the connection so the request is gracefully retried.
-                await server.AcceptConnectionAsync(async connection =>
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    await connection.ReadRequestHeaderAsync();
+                    using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                    Task<HttpResponseMessage> requestTask = client.SendAsync(request, cts.Token);
+
+                    // Wait until the request is stuck establishing the next connection, then cancel it.
+                    await retryConnecting.Task;
+                    cts.Cancel();
+
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => requestTask);
+
+                    // The first connection was abandoned by the graceful retry and the retry never produced a
+                    // connection, so the request must not still point at the first connection.
+                    Assert.Null(request.ConnectionId);
+                },
+                async server =>
+                {
+                    // First attempt: read the request, then close the connection so the request is gracefully retried.
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                    });
                 });
-
-                // Wait until the request is stuck establishing the next connection, then cancel it.
-                await retryConnecting.Task;
-                cts.Cancel();
-
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => requestTask);
-
-                // The first connection was abandoned by the graceful retry and the retry never produced a
-                // connection, so the request must not still point at the first connection.
-                Assert.Null(request.ConnectionId);
-            });
         }
 
         [Fact]
@@ -3280,6 +3454,60 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        public async Task ShouldEvictConnection_Http2ConnectionAtStreamLimit_EvictedWhileInFlightRequestsComplete()
+        {
+            const int MaxConcurrentStreams = 2;
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            var saturatedConnectionEvaluated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            long firstConnectionId = -1;
+
+            using SocketsHttpHandler handler = CreateHandler();
+            handler.ShouldEvictConnection = (context, _) =>
+            {
+                // Only one connection exists at this point, saturated with in-flight requests, so the first id we
+                // observe is it. Evicting it verifies the callback runs for a connection that has reached its stream
+                // limit and has active requests in flight (such a connection can no longer accept new streams, so the
+                // pool routes new requests elsewhere).
+                Interlocked.CompareExchange(ref firstConnectionId, context.ConnectionId, -1);
+                bool evict = context.ConnectionId == Interlocked.Read(ref firstConnectionId);
+                if (evict)
+                {
+                    saturatedConnectionEvaluated.TrySetResult();
+                }
+                return Task.FromResult(evict);
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            // Establish a connection and fill all of its stream slots with in-flight (unanswered) requests.
+            var sendTasks = new List<Task<HttpResponseMessage>>();
+            Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+            AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+            int[] streamIds0 = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+
+            // The connection is at its stream limit with active requests, yet the maintenance pass must still evaluate
+            // and evict it.
+            await saturatedConnectionEvaluated.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+            // Even though the connection was evicted, its in-flight requests must complete normally.
+            await SendResponses(connection0, streamIds0);
+            await VerifySendTasks(sendTasks);
+
+            // A subsequent request must be served on a brand new connection, because the first was evicted.
+            Task<HttpResponseMessage> nextTask = client.GetAsync(server.Address);
+            Http2LoopbackConnection connection1 = await server.EstablishConnectionAsync(timeout: null, ackTimeout: TimeSpan.FromSeconds(10),
+                new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams }).WaitAsync(TestHelper.PassingTestTimeout);
+            (int nextStreamId, _) = await connection1.ReadAndParseRequestHeaderAsync().WaitAsync(TestHelper.PassingTestTimeout);
+            await connection1.SendDefaultResponseAsync(nextStreamId).WaitAsync(TestHelper.PassingTestTimeout);
+            using HttpResponseMessage nextResponse = await nextTask.WaitAsync(TestHelper.PassingTestTimeout);
+            Assert.True(nextResponse.IsSuccessStatusCode);
+        }
 
         [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()

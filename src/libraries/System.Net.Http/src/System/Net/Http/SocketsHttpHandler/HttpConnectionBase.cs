@@ -79,14 +79,15 @@ namespace System.Net.Http
         public HttpConnectionBase(HttpConnectionPool pool, long connectionId, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
             : this(pool, connectionId)
         {
-            MarkConnectionAsEstablished(connectionSetupActivity, remoteEndPoint);
+            // HTTP/1.1 and HTTP/2 connections always target the pool's origin authority.
+            MarkConnectionAsEstablished(connectionSetupActivity, remoteEndPoint, pool.OriginAuthority);
         }
 
         /// <summary>Allocates the next unique connection id. Generated before the connection object exists so that
         /// the same id can be surfaced to <see cref="SocketsHttpHandler.ConnectCallback"/> and telemetry.</summary>
         internal static long GetNextConnectionId() => Interlocked.Increment(ref s_connectionCounter);
 
-        protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
+        protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint, HttpAuthority authority, DnsEndPoint? connectedEndPoint = null)
         {
             ConnectionSetupActivity = connectionSetupActivity;
 
@@ -100,10 +101,11 @@ namespace System.Net.Http
 
                 _connectionDisposalCts = new CancellationTokenSource();
 
-                HttpAuthority authority = _pool.OriginAuthority;
-
+                // Report the endpoint this connection actually targets, consistent with remoteEndPoint. HTTP/3 passes
+                // the exact DnsEndPoint it used to establish the QuicConnection (which Alt-Svc may point at an authority
+                // distinct from the origin); HTTP/1.1 and HTTP/2 fall back to the pool's origin authority.
                 _evictionContext = new SocketsHttpConnectionEvictionContext(
-                    new DnsEndPoint(authority.IdnHost, authority.Port),
+                    connectedEndPoint ?? new DnsEndPoint(authority.IdnHost, authority.Port),
                     remoteEndPoint,
                     Id,
                     this is HttpConnection ? HttpVersion.Version11 : this is Http2Connection ? HttpVersion.Version20 : HttpVersion.Version30,
