@@ -585,9 +585,8 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(UnaryNegation_TestData))]
-        public static void op_UnaryPlus(UInt128 value, UInt128 expected)
+        public static void op_UnaryPlus(UInt128 value, UInt128 _)
         {
-            _ = expected;
             Decimal128 d = Unsafe.BitCast<UInt128, Decimal128>(value);
             Assert.Equal(value, Unsafe.BitCast<Decimal128, UInt128>(+d));
         }
@@ -822,7 +821,7 @@ namespace System.Tests
             yield return new object[] { new UInt128(0x3040000000000000, 0x000000000000000A), new UInt128(0x3040000000000000, 0x0000000000000001), false }; // 10 == 1 -> false
             yield return new object[] { new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), new UInt128(0x5FFE314DC6448D93, 0x38C15B0A00000000), true }; // large == large -> true
             yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), true }; // all-nines == all-nines -> true
-            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFE), false }; // all-nines != near -> false
+            yield return new object[] { new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFF), new UInt128(0x3041ED09BEAD87C0, 0x378D8E63FFFFFFFE), false }; // all-nines == near -> false
             yield return new object[] { new UInt128(0x303E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x0000000000000001), true }; // 0.1 == 0.1 -> true
             yield return new object[] { new UInt128(0xB03E000000000000, 0x0000000000000001), new UInt128(0x303E000000000000, 0x0000000000000001), false }; // -0.1 == 0.1 -> false
             yield return new object[] { new UInt128(0x304A000000000000, 0x0000000000000000), new UInt128(0x3040000000000000, 0x0000000000000000), true }; // +0 (exp 5) == +0 -> true (zero cohort)

@@ -827,7 +827,7 @@ namespace System.Tests
             yield return new object[] { 0x31C00000_0000000AUL, 0x31C00000_00000001UL, false }; // 10 == 1 -> false
             yield return new object[] { 0x5FE38D7E_A4C68000UL, 0x5FE38D7E_A4C68000UL, true }; // large == large -> true
             yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x6C7386F2_6FC0FFFFUL, true }; // all-nines == all-nines -> true
-            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x6C7386F2_6FC0FFFEUL, false }; // all-nines != near -> false
+            yield return new object[] { 0x6C7386F2_6FC0FFFFUL, 0x6C7386F2_6FC0FFFEUL, false }; // all-nines == near -> false
             yield return new object[] { 0x31A00000_00000001UL, 0x31A00000_00000001UL, true }; // 0.1 == 0.1 -> true
             yield return new object[] { 0xB1A00000_00000001UL, 0x31A00000_00000001UL, false }; // -0.1 == 0.1 -> false
             yield return new object[] { 0x32600000_00000000UL, 0x31C00000_00000000UL, true }; // +0 (exp 5) == +0 -> true (zero cohort)
