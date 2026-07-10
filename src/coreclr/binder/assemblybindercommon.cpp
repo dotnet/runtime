@@ -790,7 +790,8 @@ namespace BINDER_SPACE
                 }
 
                 // Set any found assembly. It is up to the caller to check the returned HRESULT for errors due to validation
-                *ppAssembly = pAssembly.Detach();
+                Assembly* pFoundAssembly = pAssembly.Detach();
+                *ppAssembly = pFoundAssembly;
                 if (FAILED(hr))
                     return hr;
 
@@ -800,7 +801,7 @@ namespace BINDER_SPACE
                 // we fail the bind.
 
                 // Compare requested AssemblyName with that from the candidate assembly
-                if (!TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
+                if (!TestCandidateRefMatchesDef(pRequestedAssemblyName, pFoundAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
                     return FUSION_E_REF_DEF_MISMATCH;
 
                 return S_OK;
