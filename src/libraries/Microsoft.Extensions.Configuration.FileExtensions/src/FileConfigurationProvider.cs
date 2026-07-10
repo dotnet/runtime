@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
@@ -33,9 +33,9 @@ namespace Microsoft.Extensions.Configuration
             {
                 _changeTokenRegistration = ChangeToken.OnChange(
                     () => Source.FileProvider.Watch(Source.Path!),
-                    () =>
+                    async () =>
                     {
-                        Thread.Sleep(Source.ReloadDelay);
+                        await Task.Delay(Source.ReloadDelay).ConfigureAwait(false);
                         Load(reload: true);
                     });
             }
