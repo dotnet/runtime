@@ -6378,10 +6378,12 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
 // Notes:
 //    Performs containment checks on the replacement node if one is created.
 //
-//    `bzhi(x, y)` copies `x` and clears the bits at position `y` and higher. When `y >= width`
-//    it leaves `x` unchanged, which differs from the C# masked-shift result of `(1 << y) - 1`.
-//    ECMA-335 leaves the result of a shift by an amount >= the operand width unspecified and `y`
-//    here is a runtime value, so emitting `bzhi` is a legal implementation of the source pattern.
+//    The bit index is masked to the operand width (`y & 31` for `int`, `y & 63` for `long`) before
+//    being handed to `bzhi`. C#'s `<<` masks the shift count modulo the operand width, so the mask
+//    `(1 << y) - 1` is well-defined for any `y` and this JIT already models `shl`/`shr` as masked
+//    (see `LowerShift`, which drops redundant `& 31`/`& 63`). `bzhi`, in contrast, leaves the source
+//    unchanged when the index is `>= width`, so without masking the index it would diverge from the
+//    source pattern for those inputs. Masking the index makes `bzhi` reproduce the result exactly.
 GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
 {
     assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
@@ -6477,14 +6479,24 @@ GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
 
     // The backend expects op1 to be the index (encoded in VEX.vvvv) and op2 to be the value
     // (which may be a memory operand), matching the import order for `ZeroHighBits`.
+    //
+    // Mask the index modulo the operand width so `bzhi` reproduces the C# masked-shift semantics of
+    // `1 << Y` even when `Y >= width` (where `bzhi` would otherwise leave the source unchanged). The
+    // index is never a constant here (a constant `1 << Y` folds to a constant mask during morph), so
+    // the mask is always applied to a variable and cannot be folded away.
+    GenTree* maskCns   = m_compiler->gtNewIconNode(andNode->TypeIs(TYP_LONG) ? 63 : 31, genActualType(indexNode));
+    GenTree* indexMask = m_compiler->gtNewOperNode(GT_AND, genActualType(indexNode), indexNode, maskCns);
+
     GenTreeHWIntrinsic* bzhiNode =
-        m_compiler->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), indexNode, srcNode, intrinsic);
+        m_compiler->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), indexMask, srcNode, intrinsic);
 
     JITDUMP("Lower: optimize AND(X, ADD(LSH(1, Y), -1))\n");
     DISPNODE(andNode);
     JITDUMP("to:\n");
     DISPNODE(bzhiNode);
 
+    BlockRange().InsertBefore(andNode, maskCns);
+    BlockRange().InsertBefore(andNode, indexMask);
     BlockRange().InsertBefore(andNode, bzhiNode);
     use.ReplaceWith(bzhiNode);
 
@@ -6494,10 +6506,16 @@ GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
     BlockRange().Remove(lshNode->gtGetOp1());
     BlockRange().Remove(constNode);
 
+    ContainCheckBinary(indexMask->AsOp());
     ContainCheckHWIntrinsic(bzhiNode);
 
     return bzhiNode;
 }
+
+#endif // FEATURE_HW_INTRINSICS
+
+// bts/btr/btc are not hardware intrinsics, so TryLowerBitwiseOpToBitOp lives outside the
+// FEATURE_HW_INTRINSICS region even though its neighbors above/below use HWIntrinsic nodes.
 
 //----------------------------------------------------------------------------------------------
 // Lowering::TryLowerBitwiseOpToBitOp: Lowers the single-bit manipulation idioms
@@ -6636,6 +6654,8 @@ GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
     // Both operands must remain in registers, so no containment is performed on the new node.
     return bitOpNode;
 }
+
+#ifdef FEATURE_HW_INTRINSICS
 
 //----------------------------------------------------------------------------------------------
 // Lowering::TryLowerAndOpToAndNot: Lowers a tree AND(X, NOT(Y)) to HWIntrinsic::AndNot

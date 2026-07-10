@@ -1156,6 +1156,11 @@ void CodeGen::genCodeForBitOp(GenTreeOp* treeNode)
 
     instruction ins = treeNode->OperIs(GT_BIT_SET) ? INS_bts : treeNode->OperIs(GT_BIT_CLEAR) ? INS_btr : INS_btc;
 
+    // LSRA marks op2 (the bit index) as delayFree for these read-modify-write nodes, so the target
+    // register can never alias the index. That guarantees the `mov` below (which loads the value into
+    // the destination) does not clobber the index before `bts`/`btr`/`btc` reads it.
+    assert(targetReg != op2->GetRegNum());
+
     // These are read-modify-write: the destination register also supplies the value operand.
     inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
 

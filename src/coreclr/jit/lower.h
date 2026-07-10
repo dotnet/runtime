@@ -454,6 +454,7 @@ private:
 
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
+    GenTree* TryLowerBitwiseOpToBitOp(GenTreeOp* binOp);
 #endif // TARGET_XARCH
 
 #ifdef TARGET_WASM
@@ -511,7 +512,6 @@ private:
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToZeroHighBits(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
-    GenTree* TryLowerBitwiseOpToBitOp(GenTreeOp* binOp);
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
