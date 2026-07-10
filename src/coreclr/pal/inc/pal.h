@@ -3654,13 +3654,6 @@ PAL_SetHardwareExceptionHandler(
     IN PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION exceptionCheckFunction);
 
 PALIMPORT
-int32_t
-PALAPI
-PAL_GetFatalErrorPlatformProperty(
-    IN int32_t prop,
-    OUT const void** value);
-
-PALIMPORT
 VOID
 PALAPI
 PAL_SetGetGcMarkerExceptionCode(

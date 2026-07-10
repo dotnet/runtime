@@ -31,42 +31,6 @@
 #include <minipal/debugger.h>
 #include "corexcep.h"
 
-// Per-fault hardware-exception records buffer, handed to the classlib FailFast when a
-// hardware fault goes unhandled. The buffer is a managed stackalloc owned by the
-// unhandled fault's ExInfo and begins with a two-pointer header {pInfo, pContext} that
-// points into the record bytes that follow (siginfo_t/ucontext_t on Unix,
-// EXCEPTION_RECORD/CONTEXT on Windows). It is only set at the single genuinely-unhandled
-// point (see UnhandledExceptionFailFastViaClasslib), so there is no nested-fault window.
-static thread_local void* t_pUnhandledHwRecordsBuffer;
-
-// Set by the unhandled-exception dispatch path when the fault is a hardware fault, just
-// before the classlib FailFast runs. The buffer stays valid until FailFast completes.
-FCIMPL1(void, RhpSetUnhandledHardwareExceptionRecords, void* pBuffer)
-{
-    t_pUnhandledHwRecordsBuffer = pBuffer;
-}
-FCIMPLEND
-
-// Consumed once by the classlib FailFast to surface the native records to the fatal
-// error handler. Returns true (and fills the out pointers from the buffer header) only
-// when an unhandled hardware fault set the buffer above, then clears it.
-FCIMPL2(FC_BOOL_RET, RhpGetHardwareExceptionRecords, void** ppInfo, void** ppContext)
-{
-    void* pBuffer = t_pUnhandledHwRecordsBuffer;
-    if (pBuffer == NULL)
-    {
-        *ppInfo = NULL;
-        *ppContext = NULL;
-        FC_RETURN_BOOL(false);
-    }
-
-    t_pUnhandledHwRecordsBuffer = NULL;
-    *ppInfo = ((void**)pBuffer)[0];
-    *ppContext = ((void**)pBuffer)[1];
-    FC_RETURN_BOOL(true);
-}
-FCIMPLEND
-
 struct MethodRegionInfo
 {
     void* hotStartAddress;
@@ -456,69 +420,6 @@ EXTERN_C void RhpContinueOnFatalErrors()
     g_ContinueOnFatalErrors = true;
 }
 
-// Durable per-thread copies of the Windows exception records, surfaced to the fatal
-// error handler when a hardware fault goes unhandled. The OS-provided records are
-// only valid for the duration of the vectored handler, so they are copied here
-// before the faulting context is redirected to RhpThrowHwEx.
-static thread_local EXCEPTION_RECORD t_hardwareExceptionRecord;
-static thread_local CONTEXT t_hardwareExceptionContext;
-
-static void CaptureHardwareExceptionRecords(PEXCEPTION_POINTERS pExPtrs)
-{
-    t_hardwareExceptionRecord = *pExPtrs->ExceptionRecord;
-    t_hardwareExceptionContext = *pExPtrs->ContextRecord;
-#ifdef CONTEXT_XSTATE
-    // The extended (XSTATE) portion of a CONTEXT is stored after the fixed-size structure,
-    // so a shallow copy does not capture it. Clear the flag so a consumer does not read
-    // extended state that was not copied into the durable thread-local record.
-    t_hardwareExceptionContext.ContextFlags &= ~(DWORD)CONTEXT_XSTATE;
-#endif
-}
-
-// The records are laid out at ALIGN_UP-ed offsets within the buffer, so the size includes
-// the worst-case padding needed to align each sub-record to its own alignment requirement.
-static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*)
-    + (alignof(EXCEPTION_RECORD) - 1) + sizeof(EXCEPTION_RECORD)
-    + (alignof(CONTEXT) - 1) + sizeof(CONTEXT));
-
-// Size of the per-fault buffer RhThrowHwEx stackallocs to hold a private copy of the
-// hardware-exception records: a two-pointer header {pInfo, pContext} followed by the
-// EXCEPTION_RECORD and CONTEXT bytes.
-FCIMPL0(int32_t, RhpGetHardwareExceptionRecordsBufferSize)
-{
-    return ExceptionRecordBufferSize;
-}
-FCIMPLEND
-
-// Copies the most recently captured hardware-exception records into the caller-provided
-// per-fault buffer and writes the header pointers. Called synchronously from RhThrowHwEx
-// right after the vectored handler captured the records, so the durable thread-local
-// copies are still those of the current fault.
-FCIMPL2(void, RhpCaptureHardwareExceptionRecordsToBuffer, void* pBuffer, int32_t cbBuffer)
-{
-    ASSERT(cbBuffer >= ExceptionRecordBufferSize);
-
-    uint8_t* p = (uint8_t*)pBuffer;
-    // The header holds two pointers, so the buffer must be at least pointer-aligned.
-    ASSERT(IS_ALIGNED(p, sizeof(void*)));
-    void** pHeader = (void**)p;
-    p += 2 * sizeof(void*);
-
-    // Each record is aligned to its own alignment requirement (CONTEXT is 16-byte aligned
-    // on x64/arm64) so the struct copies below (and any later typed access through the
-    // header pointers) are not misaligned.
-    EXCEPTION_RECORD* pRecord = (EXCEPTION_RECORD*)ALIGN_UP(p, alignof(EXCEPTION_RECORD));
-    *pRecord = t_hardwareExceptionRecord;
-    p = (uint8_t*)(pRecord + 1);
-
-    CONTEXT* pContext = (CONTEXT*)ALIGN_UP(p, alignof(CONTEXT));
-    *pContext = t_hardwareExceptionContext;
-
-    pHeader[0] = pRecord;
-    pHeader[1] = pContext;
-}
-FCIMPLEND
-
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 {
     uintptr_t faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
@@ -632,10 +533,6 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
     if (translateToManagedException)
     {
-        // Copy the OS exception records before redirecting the faulting context so
-        // that an unhandled fault can surface them to the fatal error handler.
-        CaptureHardwareExceptionRecords(pExPtrs);
-
         NATIVE_CONTEXT* pCtx = (NATIVE_CONTEXT*)pExPtrs->ContextRecord;
 
         pCtx->SetIp(PCODEToPINSTR((PCODE)&RhpThrowHwEx));

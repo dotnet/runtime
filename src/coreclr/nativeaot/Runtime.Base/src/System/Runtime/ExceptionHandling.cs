@@ -227,15 +227,6 @@ namespace System.Runtime
             void* pContext = null; // Fatal crash handler does not use the context on non-Windows
 #endif
 
-            // If this unhandled exception originated from a hardware fault, hand its per-fault
-            // native records (siginfo/ucontext or EXCEPTION_RECORD/CONTEXT) to the classlib
-            // FailFast so they can be surfaced to the user's fatal error handler. This is the
-            // single genuinely-unhandled point, so there is no nested-fault window here.
-            if (exInfo._pHwExceptionRecords != null)
-            {
-                InternalCalls.RhpSetUnhandledHardwareExceptionRecords(exInfo._pHwExceptionRecords);
-            }
-
             try
             {
                 ((delegate*<RhFailFastReason, object, IntPtr, void*, void>)pFailFastFunction)
@@ -314,7 +305,7 @@ namespace System.Runtime
             Exception? e = null;
             try
             {
-                e = ((delegate*<ExceptionIDs, Exception>)pGetRuntimeExceptionFunction)(id);
+                e = ((delegate*<ExceptionIDs, IntPtr, Exception>)pGetRuntimeExceptionFunction)(id, address);
             }
             catch when (true)
             {
@@ -369,7 +360,8 @@ namespace System.Runtime
             Exception? e = null;
             try
             {
-                e = ((delegate*<ExceptionIDs, Exception>)pGetRuntimeExceptionFunction)(id);
+                // The MethodTable-based lookup path has no faulting instruction pointer to surface.
+                e = ((delegate*<ExceptionIDs, IntPtr, Exception>)pGetRuntimeExceptionFunction)(id, IntPtr.Zero);
             }
             catch when (true)
             {
@@ -428,8 +420,9 @@ namespace System.Runtime
         // There are only a few cases where this happens now (the fast allocation helpers), so we limit the
         // exception types that MRT will return.
         [RuntimeExport("GetRuntimeException")]
-        public static Exception GetRuntimeException(ExceptionIDs id)
+        public static Exception GetRuntimeException(ExceptionIDs id, IntPtr faultingIP)
         {
+            _ = faultingIP;
             switch (id)
             {
                 case ExceptionIDs.OutOfMemory:
@@ -509,9 +502,6 @@ namespace System.Runtime
                 if (instructionFault)
                     _kind |= ExKind.InstructionFaultFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
-#if NATIVEAOT
-                _pHwExceptionRecords = null;
-#endif
             }
 
             internal void Init(object exceptionObj, ref ExInfo rethrownExInfo)
@@ -525,9 +515,6 @@ namespace System.Runtime
                 _exception = exceptionObj;
                 _kind = rethrownExInfo._kind | ExKind.RethrowFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
-#if NATIVEAOT
-                _pHwExceptionRecords = null;
-#endif
             }
 
             internal object ThrownException
@@ -564,14 +551,7 @@ namespace System.Runtime
 
             [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_notifyDebuggerSP)]
             internal volatile UIntPtr _notifyDebuggerSP;
-#if NATIVEAOT
-            // Per-fault copy of the native hardware-exception records (siginfo/ucontext on Unix,
-            // EXCEPTION_RECORD/CONTEXT on Windows). Set by RhThrowHwEx when a hardware fault is
-            // translated to a managed exception; surfaced to the fatal error handler if the fault
-            // goes unhandled. Stored per-ExInfo so nested faults do not clobber each other.
-            [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_pHwExceptionRecords)]
-            internal void* _pHwExceptionRecords;
-#else
+#if !NATIVEAOT
             [FieldOffset(AsmOffsets.OFFSETOF__ExInfo__m_pCatchHandler)]
             internal volatile byte* _pCatchHandler;
 
@@ -594,7 +574,7 @@ namespace System.Runtime
             internal volatile IntPtr _pReversePInvokePropagationContext;
 #endif // TARGET_UNIX
 
-#endif // NATIVEAOT
+#endif // !NATIVEAOT
         }
 
         //
@@ -675,34 +655,12 @@ namespace System.Runtime
                     break;
             }
 
-#if NATIVEAOT
-            // Take a per-fault copy of the native hardware-exception records captured by the
-            // signal/vectored handler *before* resolving the classlib exception below. For an
-            // uncatchable fault (access violation, illegal instruction, ...) the classlib's
-            // GetRuntimeException calls FailFast directly and never returns here, so both the copy
-            // and the unhandled hand-off must already be in place by then.
-            //
-            // Storing the records on this fault's ExInfo (rather than in a single shared
-            // thread-local) ensures a nested hardware fault handled while this fault is still in
-            // flight cannot clobber this fault's records.
-            int cbHwRecords = InternalCalls.RhpGetHardwareExceptionRecordsBufferSize();
-            Debug.Assert(cbHwRecords > 0);
-            byte* pHwRecords = stackalloc byte[cbHwRecords];
-            InternalCalls.RhpCaptureHardwareExceptionRecordsToBuffer(pHwRecords, cbHwRecords);
-            InternalCalls.RhpSetUnhandledHardwareExceptionRecords(pHwRecords);
-#endif
-
             if (exceptionId != default(ExceptionIDs))
             {
                 exceptionToThrow = GetClasslibException(exceptionId, faultingCodeAddress);
             }
 
             exInfo.Init(exceptionToThrow!, instructionFault);
-#if NATIVEAOT
-            // Init cleared _pHwExceptionRecords above; restore this fault's captured records so the
-            // unhandled dispatch path (UnhandledExceptionFailFastViaClasslib) can re-publish them.
-            exInfo._pHwExceptionRecords = pHwRecords;
-#endif
             DispatchEx(ref exInfo._frameIter, ref exInfo);
 #if NATIVEAOT
             FallbackFailFast(RhFailFastReason.InternalError, null);
@@ -974,17 +932,6 @@ namespace System.Runtime
                 }
 
                 InvokeSecondPass(ref exInfo, startIdx);
-            }
-
-            // This hardware fault is being handled (caught here or propagated to native code), so
-            // it will not reach the unhandled fatal-error path. Drop its pending unhandled records
-            // so a later FailFast cannot surface stale records backed by this fault's now-unwound
-            // RhThrowHwEx stack frame. Non-hardware exceptions never publish records, but an
-            // in-flight *outer* hardware fault may have: only clear when the fault being handled
-            // here is itself the hardware fault whose records are pending.
-            if ((exInfo._kind & ExKind.KindMask) == ExKind.HardwareFault)
-            {
-                InternalCalls.RhpSetUnhandledHardwareExceptionRecords(null);
             }
 
 #if FEATURE_OBJCMARSHAL

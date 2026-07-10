@@ -41,11 +41,9 @@ namespace System
             MachExceptionInfo = 0x7,
         }
 
-        // Native exception state surfaced to the handler through the property getter,
+        // The crash address surfaced to the handler through the property getter,
         // captured immediately before the handler is invoked.
         private static unsafe void* s_fatalErrorAddress;
-        private static unsafe void* s_fatalErrorInfo;
-        private static unsafe void* s_fatalErrorContext;
 
         // Each fragment is stored during crash info building and replayed on-demand
         // by GetFatalErrorLog (for the handler callback) or WriteCrashLogToStdErr
@@ -140,10 +138,9 @@ namespace System
 
         /// <summary>
         /// Property getter passed to the user's fatal error handler. Surfaces the crash
-        /// address, the platform-native signal/exception records, and the crash-log entry
-        /// point on demand. Matches the native FatalErrorPropertyGetter signature: returns a
-        /// nonzero value when the requested property is available (and <paramref name="value"/>
-        /// is written), or 0.
+        /// address and the crash-log entry point on demand. Matches the native
+        /// FatalErrorPropertyGetter signature: returns a nonzero value when the requested
+        /// property is available (and <paramref name="value"/> is written), or 0.
         /// </summary>
         [UnmanagedCallersOnly]
         private static unsafe int GetFatalErrorProperty(int prop, void** value)
@@ -164,36 +161,9 @@ namespace System
                     return 1;
 
                 default:
-                    return GetFatalErrorPlatformProperty((FatalErrorProperty)prop, value);
-            }
-        }
-
-        // Serves the platform-specific fatal error properties. NativeAOT is a single
-        // cross-platform build, so the platform is selected at runtime: the Windows
-        // exception record/context on Windows and POSIX signal info everywhere else
-        // (including Apple, which uses POSIX signals rather than Mach exceptions).
-        private static unsafe int GetFatalErrorPlatformProperty(FatalErrorProperty prop, void** value)
-        {
-            switch (prop)
-            {
-                // The signal/exception record.
-                case FatalErrorProperty.WindowsExceptionRecord when OperatingSystem.IsWindows():
-                case FatalErrorProperty.PosixSigInfo when !OperatingSystem.IsWindows():
-                    if (s_fatalErrorInfo == null)
-                        return 0;
-                    *value = s_fatalErrorInfo;
-                    return 1;
-
-                // The thread context, exposed as a Windows context record on Windows and a
-                // ucontext everywhere else.
-                case FatalErrorProperty.WindowsContextRecord when OperatingSystem.IsWindows():
-                case FatalErrorProperty.UContext when !OperatingSystem.IsWindows():
-                    if (s_fatalErrorContext == null)
-                        return 0;
-                    *value = s_fatalErrorContext;
-                    return 1;
-
-                default:
+                    // The platform-native signal/exception record properties are only
+                    // surfaced for fatal crashes in unmanaged code, which do not flow
+                    // through this managed FailFast path.
                     return 0;
             }
         }
@@ -213,7 +183,7 @@ namespace System
         // needs to throw an exception back to a method in a non-runtime module. The classlib is expected
         // to convert every code in the ExceptionIDs enum to an exception object.
         [RuntimeExport("GetRuntimeException")]
-        public static Exception? GetRuntimeException(ExceptionIDs id)
+        public static Exception? GetRuntimeException(ExceptionIDs id, IntPtr faultingIP)
         {
             if (!SafeToPerformRichExceptionSupport)
                 return null;
@@ -268,19 +238,19 @@ namespace System
                         return new NullReferenceException();
 
                     case ExceptionIDs.AccessViolation:
-                        FailFast("Access Violation: Attempted to read or write protected memory. This is often an indication that other memory is corrupt. The application will be terminated since this platform does not support throwing an AccessViolationException.");
+                        FailFast("Access Violation: Attempted to read or write protected memory. This is often an indication that other memory is corrupt. The application will be terminated since this platform does not support throwing an AccessViolationException.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.IllegalInstruction:
-                        FailFast("Illegal instruction: Attempted to execute an instruction code not defined by the processor.");
+                        FailFast("Illegal instruction: Attempted to execute an instruction code not defined by the processor.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.PrivilegedInstruction:
-                        FailFast("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode.");
+                        FailFast("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.InPageError:
-                        FailFast("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network.");
+                        FailFast("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.DataMisaligned:
@@ -533,22 +503,6 @@ namespace System
             if (fatalHandler != IntPtr.Zero)
             {
                 s_fatalErrorAddress = (void*)pExAddress;
-
-                // For a hardware fault, surface the platform-native signal/exception
-                // records captured by the runtime. Otherwise fall back to the context
-                // threaded through the fatal path (if any).
-                void* pNativeInfo = null;
-                void* pNativeContext = null;
-                if (RuntimeImports.RhpGetHardwareExceptionRecords(&pNativeInfo, &pNativeContext))
-                {
-                    s_fatalErrorInfo = pNativeInfo;
-                    s_fatalErrorContext = pNativeContext;
-                }
-                else
-                {
-                    s_fatalErrorInfo = null;
-                    s_fatalErrorContext = (void*)pExContext;
-                }
 
                 int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
                 skipDefault = (handlerResult == 1);

@@ -108,9 +108,8 @@ void BogusFunction()
     // Sample usage to generate the error
     FindCompileTimeConstant<sizeof(ExInfo)> bogus_variable;
     FindCompileTimeConstant<offsetof(ExInfo, m_notifyDebuggerSP)> bogus_variable2;
-    FindCompileTimeConstant<offsetof(ExInfo, m_pHwExceptionRecords)> bogus_variable3;
-    FindCompileTimeConstant<sizeof(StackFrameIterator)> bogus_variable4;
-    FindCompileTimeConstant<sizeof(PAL_LIMITED_CONTEXT)> bogus_variable5;
-    FindCompileTimeConstant<offsetof(PAL_LIMITED_CONTEXT, IP)> bogus_variable6;
+    FindCompileTimeConstant<sizeof(StackFrameIterator)> bogus_variable3;
+    FindCompileTimeConstant<sizeof(PAL_LIMITED_CONTEXT)> bogus_variable4;
+    FindCompileTimeConstant<offsetof(PAL_LIMITED_CONTEXT, IP)> bogus_variable5;
 }
 #endif // defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)

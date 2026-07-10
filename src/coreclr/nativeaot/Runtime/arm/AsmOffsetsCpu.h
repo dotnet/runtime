@@ -16,7 +16,6 @@ PLAT_ASM_OFFSET(0d, ExInfo, m_passNumber)
 PLAT_ASM_OFFSET(10, ExInfo, m_idxCurClause)
 PLAT_ASM_OFFSET(18, ExInfo, m_frameIter)
 PLAT_ASM_OFFSET(120, ExInfo, m_notifyDebuggerSP)
-PLAT_ASM_OFFSET(124, ExInfo, m_pHwExceptionRecords)
 
 PLAT_ASM_OFFSET(0, PInvokeTransitionFrame, m_FramePointer)
 PLAT_ASM_OFFSET(4, PInvokeTransitionFrame, m_RIP)

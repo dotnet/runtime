@@ -742,16 +742,9 @@ static thread_local PEXCEPTION_POINTERS t_crashExceptionInfo;
 static thread_local LPCWSTR t_crashErrorSource;
 static thread_local LPCWSTR t_crashExceptionString;
 
-// Native exception state surfaced to the handler through the property getter.
-// The crash address is platform-agnostic; the Windows exception records are
-// captured here because there is no PAL to hold them (on other platforms the
-// live signal/Mach state is served directly by the PAL).
+// The crash address surfaced to the handler through the property getter,
+// captured immediately before the handler is invoked.
 static thread_local void* t_crashAddress;
-
-#ifdef TARGET_WINDOWS
-static thread_local PEXCEPTION_RECORD t_crashExceptionRecord;
-static thread_local PCONTEXT t_crashContextRecord;
-#endif // TARGET_WINDOWS
 
 static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
@@ -776,40 +769,11 @@ static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogActio
     EmitCrashInfo(writer, t_crashExitCode, t_crashMessage, t_crashExceptionInfo, t_crashErrorSource, t_crashExceptionString);
 }
 
-// Serves the platform-specific fatal error properties. On Windows the native
-// exception records were captured from the exception pointers before the handler
-// was invoked.
-static int32_t GetFatalErrorPlatformProperty(FatalErrorProperty prop, const void** value)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef TARGET_WINDOWS
-    switch (prop)
-    {
-    case FEP_WindowsExceptionRecord:
-        if (t_crashExceptionRecord == nullptr)
-            return 0;
-        *value = t_crashExceptionRecord;
-        return 1;
-
-    case FEP_WindowsContextRecord:
-        if (t_crashContextRecord == nullptr)
-            return 0;
-        *value = t_crashContextRecord;
-        return 1;
-
-    default:
-        return 0;
-    }
-#else // TARGET_WINDOWS
-    return PAL_GetFatalErrorPlatformProperty(static_cast<int32_t>(prop), value);
-#endif // TARGET_WINDOWS
-}
-
 // Property getter passed to the user's fatal error handler. Surfaces the crash-log
-// entry point and stored crash address directly, and defers all platform-specific
-// native exception state to GetFatalErrorPlatformProperty. Returns a nonzero value
-// when the requested property is available (and *value is written), or 0 otherwise.
+// entry point and stored crash address. The platform-native signal/exception record
+// properties are only surfaced for fatal crashes in unmanaged code, which do not
+// flow through this managed fatal path. Returns a nonzero value when the requested
+// property is available (and *value is written), or 0 otherwise.
 static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty prop, const void** value)
 {
     WRAPPER_NO_CONTRACT;
@@ -830,13 +794,13 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
         return 1;
 
     default:
-        return GetFatalErrorPlatformProperty(prop, value);
+        return 0;
     }
 }
 
 // Invokes the user-registered fatal error handler if one has been set.
 // Returns true if the handler indicated that default handling should be skipped.
-static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_POINTERS pExceptionInfo)
+static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -845,18 +809,8 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
     if (pfnHandler == NULL)
         return false;
 
-    // Capture the crash address for the property getter. On Windows the native
-    // exception records are captured here from the exception pointers; on other
-    // platforms the live signal (Linux) or Mach (Apple) state is served on demand
-    // by the PAL, so there is nothing to capture here.
+    // Capture the crash address for the property getter.
     t_crashAddress = reinterpret_cast<void*>(address);
-#ifdef TARGET_WINDOWS
-    if (pExceptionInfo != NULL)
-    {
-        t_crashExceptionRecord = pExceptionInfo->ExceptionRecord;
-        t_crashContextRecord = pExceptionInfo->ContextRecord;
-    }
-#endif // TARGET_WINDOWS
 
     // Call user-defined fatal error handler.
     int result = pfnHandler(static_cast<int>(exitCode), FatalErrorPropertyGetterImpl);
@@ -996,7 +950,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     // invoke the handler earlier), but SkipDefaultHandler still skips Watson/crash dump.
     {
         UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
-        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
+        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress))
         {
             // SkipDefaultHandler — skip Watson and crash dump, proceed to exit.
             SafeExitProcess(COR_E_STACKOVERFLOW, SCA_ExitProcessWhenShutdownComplete);
@@ -1148,7 +1102,18 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         // Invoke the user's fatal error handler before Watson / RaiseFailFastException.
         // On Windows, WatsonLastChance (called from LogFatalError) invokes RaiseFailFastException
         // which terminates the process, so the handler must run first.
-        if (InvokeFatalErrorHandler(exitCode, address, pExceptionInfo))
+        //
+        // Prefer the faulting instruction pointer recorded on the exception record: the
+        // 'address' argument is 0 on the unhandled managed exception path (the real IP is
+        // carried by pExceptionInfo), while for synthesized exception pointers it already
+        // equals 'address'.
+        UINT_PTR faultAddress = address;
+        if (pExceptionInfo != NULL && pExceptionInfo->ExceptionRecord != NULL && pExceptionInfo->ExceptionRecord->ExceptionAddress != NULL)
+        {
+            faultAddress = reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress);
+        }
+
+        if (InvokeFatalErrorHandler(exitCode, faultAddress))
         {
             // SkipDefaultHandler — suppress crash output and crash dump, proceed to exit.
             SafeExitProcess(exitCode, SCA_ExitProcessWhenShutdownComplete);

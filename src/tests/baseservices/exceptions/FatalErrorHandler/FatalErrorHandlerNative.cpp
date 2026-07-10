@@ -67,40 +67,19 @@ static int DOTNET_CALLCONV HandlerWithLog(int /*hresult*/, FatalErrorPropertyGet
     return SkipDefaultHandler;
 }
 
-// Handler that reports which native exception properties were populated. Used to
-// verify that a native exception (for example, an access violation) supplies
-// the platform-specific siginfo/exception-record and thread context pointers.
+// Handler that reports whether the crash address (faulting instruction pointer)
+// was surfaced. The managed fatal path provides only the IP; the platform-native
+// signal/exception records are not surfaced for faults that flow through managed
+// code.
 static int DOTNET_CALLCONV HandlerCheckInfo(int /*hresult*/, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
 
     const void* pValue = NULL;
+    bool addressPopulated = getProperty(FEP_Address, &pValue) != 0 && pValue != NULL;
 
-    // "info" corresponds to the platform's exception/signal record. On Apple platforms
-    // CoreCLR uses Mach exceptions (so no signal record is provided), whereas NativeAOT
-    // uses POSIX signals (so a siginfo/ucontext is provided). Query both context shapes.
-#ifdef _WIN32
-    bool infoPopulated = getProperty(FEP_WindowsExceptionRecord, &pValue) != 0 && pValue != NULL;
-    pValue = NULL;
-    bool contextPopulated = getProperty(FEP_WindowsContextRecord, &pValue) != 0 && pValue != NULL;
-#elif defined(__APPLE__)
-    bool infoPopulated = getProperty(FEP_PosixSigInfo, &pValue) != 0 && pValue != NULL;
-    pValue = NULL;
-    bool contextPopulated = getProperty(FEP_MachExceptionInfo, &pValue) != 0 && pValue != NULL;
-    if (!contextPopulated)
-    {
-        pValue = NULL;
-        contextPopulated = getProperty(FEP_UContext, &pValue) != 0 && pValue != NULL;
-    }
-#else
-    bool infoPopulated = getProperty(FEP_PosixSigInfo, &pValue) != 0 && pValue != NULL;
-    pValue = NULL;
-    bool contextPopulated = getProperty(FEP_UContext, &pValue) != 0 && pValue != NULL;
-#endif
-
-    WriteStdErr("FATAL_INFO:");
-    WriteStdErr(infoPopulated ? "info=true," : "info=false,");
-    WriteStdErr(contextPopulated ? "context=true\n" : "context=false\n");
+    WriteStdErr("FATAL_ADDRESS:");
+    WriteStdErr(addressPopulated ? "addr=true\n" : "addr=false\n");
 
     return SkipDefaultHandler;
 }

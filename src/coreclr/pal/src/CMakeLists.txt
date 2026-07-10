@@ -37,8 +37,6 @@ endif(CORECLR_SET_RPATH)
 # Include directories
 
 include_directories(include)
-# For the shared fatal error handler property contract (public/FatalErrorHandling.h).
-include_directories(${CLR_SRC_NATIVE_DIR})
 
 # Compile options
 

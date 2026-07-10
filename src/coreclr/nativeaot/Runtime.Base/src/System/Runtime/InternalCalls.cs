@@ -216,18 +216,6 @@ namespace System.Runtime
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 #endif
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetHardwareExceptionRecordsBufferSize")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int RhpGetHardwareExceptionRecordsBufferSize();
-
-        [RuntimeImport(RuntimeLibrary, "RhpCaptureHardwareExceptionRecordsToBuffer")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpCaptureHardwareExceptionRecordsToBuffer(void* pBuffer, int cbBuffer);
-
-        [RuntimeImport(RuntimeLibrary, "RhpSetUnhandledHardwareExceptionRecords")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpSetUnhandledHardwareExceptionRecords(void* pBuffer);
-
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr RhCurrentNativeThreadId();

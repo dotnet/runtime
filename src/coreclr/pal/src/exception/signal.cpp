@@ -24,7 +24,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/palinternal.h"
 
 #include <clrconfignocache.h>
-#include <public/FatalErrorHandling.h>
 
 #include <errno.h>
 #include <signal.h>
@@ -115,59 +114,6 @@ struct sigaction g_previous_sigsegv;
 struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
 struct sigaction g_previous_sigabrt;
-
-// Thread-local stash for the native exception context. These are set in
-// common_signal_handler (signal-based platforms) or the Mach exception path
-// (Apple) before converting to PAL types, and surfaced to the fatal error
-// handler API through PAL_GetFatalErrorPlatformProperty.
-static thread_local void* t_lastSiginfo = NULL;
-static thread_local void* t_lastSigcontext = NULL;
-
-void PAL_GetNativeExceptionPointers(void** info, void** context)
-{
-    _ASSERTE(info != NULL);
-    _ASSERTE(context != NULL);
-    *info = t_lastSiginfo;
-    *context = t_lastSigcontext;
-}
-
-void PAL_SetNativeExceptionPointers(void* info, void* context)
-{
-    t_lastSiginfo = info;
-    t_lastSigcontext = context;
-}
-
-// Serves the platform-specific fatal error properties from the stashed native
-// exception state. Returns a nonzero value when the requested property is
-// available (and *value has been written), or 0 otherwise. On Apple the native
-// state is a Mach thread state; on other Unix platforms it is the POSIX
-// siginfo_t*/ucontext_t* pair.
-PALIMPORT int32_t PALAPI PAL_GetFatalErrorPlatformProperty(int32_t prop, const void** value)
-{
-    _ASSERTE(value != NULL);
-
-#if HAVE_MACH_EXCEPTIONS
-    if (prop == FEP_MachExceptionInfo && t_lastSigcontext != NULL)
-    {
-        *value = t_lastSigcontext;
-        return 1;
-    }
-#else // HAVE_MACH_EXCEPTIONS
-    if (prop == FEP_PosixSigInfo && t_lastSiginfo != NULL)
-    {
-        *value = t_lastSiginfo;
-        return 1;
-    }
-
-    if (prop == FEP_UContext && t_lastSigcontext != NULL)
-    {
-        *value = t_lastSigcontext;
-        return 1;
-    }
-#endif // HAVE_MACH_EXCEPTIONS
-
-    return 0;
-}
 
 #if !HAVE_MACH_EXCEPTIONS
 
@@ -1220,16 +1166,11 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     // The exception object takes ownership of the exceptionRecord and contextRecord
     PAL_SEHException exception(&exceptionRecord, &signalContextRecord, true);
 
+    if (SEHProcessException(&exception))
     {
-        // Stash native signal info for the fatal error handler API.
-        // The holder NULLs the TLS on scope exit.
-        NativeExceptionPointerHolder nativeExceptionPointers(siginfo, sigcontext);
-        if (SEHProcessException(&exception))
-        {
-            // Exception handling may have modified the context, so update it.
-            CONTEXTToNativeContext(exception.ExceptionPointers.ContextRecord, ucontext);
-            return true;
-        }
+        // Exception handling may have modified the context, so update it.
+        CONTEXTToNativeContext(exception.ExceptionPointers.ContextRecord, ucontext);
+        return true;
     }
 #endif // !HAVE_MACH_EXCEPTIONS
     return false;

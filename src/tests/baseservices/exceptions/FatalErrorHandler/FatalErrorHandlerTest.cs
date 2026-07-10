@@ -13,7 +13,7 @@ unsafe class FatalErrorHandlerTest
     // Marker strings written to stderr by the native handlers.
     const string HandlerInvokedMarker = "FATAL_HANDLER_INVOKED";
     const string LogReceivedMarker = "FATAL_LOG_RECEIVED:";
-    const string InfoMarker = "FATAL_INFO:";
+    const string AddressMarker = "FATAL_ADDRESS:";
 
     //
     // P/Invoke declarations for the native handler library.
@@ -73,8 +73,8 @@ unsafe class FatalErrorHandlerTest
     {
         ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckInfo());
         // Trigger an access violation from managed code. This is a fatal
-        // corrupted-state exception that reaches the handler with the
-        // platform-specific exception info and thread context populated.
+        // corrupted-state exception that reaches the handler with the faulting
+        // instruction pointer (IP) populated.
         *(int*)s_badAddress = 0;
     }
 
@@ -90,9 +90,8 @@ unsafe class FatalErrorHandlerTest
         //
         // This is the nested-exception case where "multiple exceptions get handled
         // before the original exception becomes unhandled": handling B must not
-        // discard the native signal/exception records captured for the still-in-flight
-        // outer fault A. When A finally reaches the fatal error handler, its own
-        // platform records must still be surfaced.
+        // prevent the still-in-flight outer fault A from reaching the fatal error
+        // handler with its own faulting instruction pointer.
         //
         // Uses null (catchable NullReferenceException) hardware faults rather than an
         // access violation so the outer fault dispatches through managed EH (running
@@ -118,8 +117,8 @@ unsafe class FatalErrorHandlerTest
         }
         catch
         {
-            // Swallow B. Catching a hardware fault clears the "current fault"
-            // record tracking, which under single-slot storage also loses A's records.
+            // Swallow B. Handling a nested hardware fault must not disrupt the
+            // still-in-flight outer fault's path to the fatal error handler.
         }
 
         return false;
@@ -256,38 +255,25 @@ unsafe class FatalErrorHandlerTest
         Console.WriteLine($"=== TestNativeException ({scenario}) ===");
         var (exitCode, stderr) = LaunchChild(scenario);
 
-        bool isNativeAot = TestLibrary.Utilities.IsNativeAot;
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        bool infoReceived = stderr.Contains(InfoMarker);
+        bool addressReported = stderr.Contains(AddressMarker);
 
-        // "info" is the platform's signal/exception record.
-        //  - CoreCLR: populated on signal-based Unix and Windows; on Apple platforms the
-        //    runtime uses Mach exceptions, so no such record is provided.
-        //  - NativeAOT: populated on all platforms (Windows exception record on Windows,
-        //    POSIX siginfo everywhere else, including Apple since NativeAOT uses signals).
-        bool infoExpected = isNativeAot || !OperatingSystem.IsMacOS();
-        bool infoPopulated = stderr.Contains(infoExpected ? "info=true" : "info=false");
-
-        // "context" is the thread context at the point of failure. Both runtimes surface
-        // it on every platform (Mach thread state on CoreCLR Apple, ucontext/CONTEXT
-        // elsewhere).
-        bool contextExpected = true;
-        bool contextPopulated = stderr.Contains(contextExpected ? "context=true" : "context=false");
+        // The managed fatal path surfaces only the faulting instruction pointer (IP).
+        // It is available on every platform and both runtimes.
+        bool addressPopulated = stderr.Contains("addr=true");
         bool exited = exitCode != 0;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, info expected: {infoExpected}, info ok: {infoPopulated}, context expected: {contextExpected}, context ok: {contextPopulated}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, exited: {exited}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
-        if (!infoReceived)
-            Console.WriteLine("  FAIL: Handler did not report native exception properties");
-        if (!infoPopulated)
-            Console.WriteLine($"  FAIL: exception record was {(infoExpected ? "not populated" : "unexpectedly populated")} for a native exception");
-        if (!contextPopulated)
-            Console.WriteLine($"  FAIL: thread context was {(contextExpected ? "not populated" : "unexpectedly populated")} for a native exception");
+        if (!addressReported)
+            Console.WriteLine("  FAIL: Handler did not report the crash address");
+        if (!addressPopulated)
+            Console.WriteLine("  FAIL: crash address (IP) was not populated for a native exception");
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && infoReceived && infoPopulated && contextPopulated && exited;
+        return handlerInvoked && addressReported && addressPopulated && exited;
     }
 
     static bool TestNestedHardwareFault()
@@ -305,27 +291,25 @@ unsafe class FatalErrorHandlerTest
         var (exitCode, stderr) = LaunchChild("nested-native-exception");
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        bool infoReceived = stderr.Contains(InfoMarker);
-        // The outer fault A is a hardware fault, so its native signal record and thread
-        // context must still be surfaced even though a nested fault B was handled while A
-        // was in flight. NativeAOT provides both on every platform.
-        bool infoPopulated = stderr.Contains("info=true");
-        bool contextPopulated = stderr.Contains("context=true");
+        bool addressReported = stderr.Contains(AddressMarker);
+
+        // Even though a nested hardware fault (B) was handled while the outer fault (A)
+        // was still in flight, A must still reach the fatal error handler with a valid
+        // faulting instruction pointer.
+        bool addressPopulated = stderr.Contains("addr=true");
         bool exited = exitCode != 0;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, info ok: {infoPopulated}, context ok: {contextPopulated}, exited: {exited}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, exited: {exited}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
-        if (!infoReceived)
-            Console.WriteLine("  FAIL: Handler did not report native exception properties");
-        if (!infoPopulated)
-            Console.WriteLine("  FAIL: exception record was lost for the outer fault after a nested fault was handled");
-        if (!contextPopulated)
-            Console.WriteLine("  FAIL: thread context was lost for the outer fault after a nested fault was handled");
+        if (!addressReported)
+            Console.WriteLine("  FAIL: Handler did not report the crash address");
+        if (!addressPopulated)
+            Console.WriteLine("  FAIL: crash address (IP) was not populated for the outer fault after a nested fault was handled");
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && infoReceived && infoPopulated && contextPopulated && exited;
+        return handlerInvoked && addressReported && addressPopulated && exited;
     }
 
     static bool TestSetNull()

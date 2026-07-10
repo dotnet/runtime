@@ -13,7 +13,6 @@
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
 #include "PalCreateDump.h"
-#include "CommonMacros.inl"
 
 #if defined(HOST_APPLE)
 #include <mach/mach.h>
@@ -58,87 +57,6 @@ struct sigaction g_previousSIGFPE;
 
 // Exception handler for hardware exceptions
 static PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
-
-// Durable per-thread copies of the signal records, surfaced to the fatal error
-// handler when a hardware fault goes unhandled. The kernel-provided siginfo_t and
-// ucontext_t are only valid for the duration of the signal handler (the faulting
-// context is redirected to RhpThrowHwEx and resumes on the original stack), so they
-// are copied here before the handler returns.
-static thread_local siginfo_t t_hardwareExceptionSiginfo;
-static thread_local ucontext_t t_hardwareExceptionUContext;
-#if defined(HOST_APPLE)
-// On Apple, ucontext_t::uc_mcontext is a pointer into the transient signal frame, so
-// deep-copy the pointed-to register state and repoint the copied ucontext at it.
-static thread_local __typeof__(*(((ucontext_t*)0)->uc_mcontext)) t_hardwareExceptionMContext;
-#endif
-
-static void CaptureHardwareExceptionRecords(siginfo_t* siginfo, void* context)
-{
-    t_hardwareExceptionSiginfo = *siginfo;
-    ucontext_t* uc = (ucontext_t*)context;
-    t_hardwareExceptionUContext = *uc;
-#if defined(HOST_APPLE)
-    t_hardwareExceptionMContext = *(uc->uc_mcontext);
-    t_hardwareExceptionUContext.uc_mcontext = &t_hardwareExceptionMContext;
-#endif
-}
-
-// The records are laid out at ALIGN_UP-ed offsets within the buffer, so the size includes
-// the worst-case padding needed to align each sub-record to its own alignment requirement.
-static constexpr int32_t ExceptionRecordBufferSize = (int32_t)(2 * sizeof(void*)
-        + (alignof(siginfo_t) - 1) + sizeof(siginfo_t)
-        + (alignof(ucontext_t) - 1) + sizeof(ucontext_t)
-#if defined(HOST_APPLE)
-        + (alignof(__typeof__(t_hardwareExceptionMContext)) - 1) + sizeof(t_hardwareExceptionMContext)
-#endif
-        );
-
-// Size of the per-fault buffer RhThrowHwEx stackallocs to hold a private copy of the
-// hardware-exception records: a two-pointer header {pInfo, pContext} followed by the
-// siginfo_t and ucontext_t bytes (plus the mcontext bytes on Apple).
-FCIMPL0(int32_t, RhpGetHardwareExceptionRecordsBufferSize)
-{
-    return ExceptionRecordBufferSize;
-}
-FCIMPLEND
-
-// Copies the most recently captured signal records into the caller-provided per-fault
-// buffer and writes the header pointers. Called synchronously from RhThrowHwEx right
-// after the signal handler captured the records, so the durable thread-local copies are
-// still those of the current fault.
-FCIMPL2(void, RhpCaptureHardwareExceptionRecordsToBuffer, void* pBuffer, int32_t cbBuffer)
-{
-    ASSERT(cbBuffer >= ExceptionRecordBufferSize);
-
-    uint8_t* p = (uint8_t*)pBuffer;
-    // The header holds two pointers, so the buffer must be at least pointer-aligned.
-    ASSERT(IS_ALIGNED(p, sizeof(void*)));
-    void** pHeader = (void**)p;
-    p += 2 * sizeof(void*);
-
-    // Each record is aligned to its own alignment requirement so the struct copies below
-    // (and any later typed access through the header pointers) are not misaligned.
-    siginfo_t* pInfo = (siginfo_t*)ALIGN_UP(p, alignof(siginfo_t));
-    *pInfo = t_hardwareExceptionSiginfo;
-    p = (uint8_t*)(pInfo + 1);
-
-    ucontext_t* pContext = (ucontext_t*)ALIGN_UP(p, alignof(ucontext_t));
-    *pContext = t_hardwareExceptionUContext;
-    p = (uint8_t*)(pContext + 1);
-
-#if defined(HOST_APPLE)
-    // Repoint uc_mcontext at the copy stored in the caller's buffer so the surfaced
-    // ucontext remains valid after the throwing thread's transient copy is overwritten.
-    __typeof__(t_hardwareExceptionMContext)* pMContext =
-        (__typeof__(t_hardwareExceptionMContext)*)ALIGN_UP(p, alignof(__typeof__(t_hardwareExceptionMContext)));
-    *pMContext = t_hardwareExceptionMContext;
-    pContext->uc_mcontext = pMContext;
-#endif
-
-    pHeader[0] = pInfo;
-    pHeader[1] = pContext;
-}
-FCIMPLEND
 
 #ifdef HOST_AMD64
 
@@ -614,11 +532,6 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
         int32_t disposition = g_hardwareExceptionHandler(faultCode, (uintptr_t)faultAddress, &palContext, &arg0Reg, &arg1Reg);
         if (disposition == EXCEPTION_CONTINUE_EXECUTION)
         {
-            // The fault is being translated to a managed exception. Copy the signal
-            // records before redirecting so an unhandled fault can surface them to
-            // the fatal error handler.
-            CaptureHardwareExceptionRecords(siginfo, context);
-
             // TODO: better name
             RedirectNativeContext(context, &palContext, arg0Reg, arg1Reg);
             return true;

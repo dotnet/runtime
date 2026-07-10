@@ -63,9 +63,6 @@ struct ExInfo
     uint32_t                m_idxCurClause;
     StackFrameIterator      m_frameIter;
     volatile void*          m_notifyDebuggerSP;
-    // Per-fault copy of the hardware exception records.
-    // Kept per-ExInfo so nested faults do not clobber each other.
-    void*                   m_pHwExceptionRecords;
 };
 
 struct GCFrameRegistration
