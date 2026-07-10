@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
@@ -61,6 +62,7 @@ namespace System.Xml.Serialization
         UsePrivateImplementation = 0x40000,
         GenericInterface = 0x80000,
         Unsupported = 0x100000,
+        UsesCollectionBuilder = 0x200000,
     }
 
     // Shorthands for common trimmer constants
@@ -263,6 +265,13 @@ namespace System.Xml.Serialization
             get { return (_flags & TypeFlags.GenericInterface) != 0; }
         }
 
+        internal bool UsesCollectionBuilder
+        {
+            get { return (_flags & TypeFlags.UsesCollectionBuilder) != 0; }
+        }
+
+        internal MethodInfo? CollectionBuilderMethod { get; set; }
+
         internal bool IsPrivateImplementation
         {
             get { return (_flags & TypeFlags.UsePrivateImplementation) != 0; }
@@ -387,7 +396,7 @@ namespace System.Xml.Serialization
 
         internal void CheckNeedConstructor()
         {
-            if (!IsValueType && !IsAbstract && !HasDefaultConstructor)
+            if (!IsValueType && !IsAbstract && !HasDefaultConstructor && !UsesCollectionBuilder)
             {
                 _flags |= TypeFlags.Unsupported;
                 _exception = new InvalidOperationException(SR.Format(SR.XmlConstructorInaccessible, FullName));
@@ -875,7 +884,18 @@ namespace System.Xml.Serialization
             else if (typeof(ICollection).IsAssignableFrom(type) && !IsArraySegment(type))
             {
                 kind = TypeKind.Collection;
-                arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}");
+                // For types decorated with [CollectionBuilder] (e.g. ImmutableHashSet<T>, ImmutableSortedSet<T>),
+                // skip the default-indexer / Add-method discovery. The element type is the generic argument of
+                // the factory method; the type is finalized later via the [CollectionBuilder] detection block.
+                Type? builderElementType = TryGetCollectionBuilderElementType(type);
+                if (builderElementType != null)
+                {
+                    arrayElementType = builderElementType;
+                }
+                else
+                {
+                    arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}");
+                }
                 flags |= GetConstructorFlags(type);
             }
             else if (type == typeof(XmlQualifiedName))
@@ -974,8 +994,38 @@ namespace System.Xml.Serialization
                     flags |= GetConstructorFlags(type);
                 }
             }
+
+            // Discover [CollectionBuilder] for Collection/Enumerable types (e.g. System.Collections.Immutable).
+            // This allows XmlSerializer to deserialize immutable collections by accumulating items into a T[]
+            // and then invoking the static factory method to build the immutable instance.
+            //
+            // IDictionary-implementing types are unsupported by XmlSerializer regardless of [CollectionBuilder]
+            // (see GetDefaultIndexer which unconditionally throws for them), so we skip them here to preserve
+            // the pre-existing NotSupportedException behavior instead of silently starting to accept them.
+            MethodInfo? collectionBuilderMethod = null;
+            if ((kind == TypeKind.Collection || kind == TypeKind.Enumerable) &&
+                arrayElementType != null &&
+                !typeof(IDictionary).IsAssignableFrom(type))
+            {
+#pragma warning disable IL3050 // RequiresDynamicCode — XmlSerializer ILGen already uses dynamic code.
+                collectionBuilderMethod = GetCollectionBuilderMethod(type, arrayElementType);
+#pragma warning restore IL3050
+                if (collectionBuilderMethod != null)
+                {
+                    // Builder-backed types don't have (or shouldn't use) a public parameterless ctor —
+                    // that's the whole point of [CollectionBuilder]. Do NOT set HasDefaultConstructor.
+                    // Instead, CannotNew / CheckNeedConstructor now also honor UsesCollectionBuilder so
+                    // downstream checks that ask "can we produce an instance of this?" get the right
+                    // answer while HasDefaultConstructor remains factually accurate.
+                    flags |= TypeFlags.UsesCollectionBuilder;
+                    flags &= ~TypeFlags.CtorInaccessible;
+                    exception = null; // suppress any earlier exception (e.g., no Add method)
+                }
+            }
+
             typeDesc = new TypeDesc(type, CodeIdentifier.MakeValid(TypeName(type)), type.ToString(), kind, null, flags, null);
             typeDesc.Exception = exception;
+            typeDesc.CollectionBuilderMethod = collectionBuilderMethod;
 
             if (directReference && (typeDesc.IsClass || kind == TypeKind.Serializable))
                 typeDesc.CheckNeedConstructor();
@@ -1075,7 +1125,12 @@ namespace System.Xml.Serialization
             else if (IsArraySegment(type))
                 return null;
             else if (typeof(ICollection).IsAssignableFrom(type))
+            {
+                Type? builderElementType = TryGetCollectionBuilderElementType(type);
+                if (builderElementType != null)
+                    return builderElementType;
                 return GetCollectionElementType(type, memberInfo);
+            }
             else if (typeof(IEnumerable).IsAssignableFrom(type))
             {
                 TypeFlags flags = TypeFlags.None;
@@ -1329,6 +1384,102 @@ namespace System.Xml.Serialization
             return 0;
         }
 
+        // Returns the static factory MethodInfo identified by [CollectionBuilderAttribute] on collectionType,
+        // bound to the collection's element type, or null if not applicable.
+        // Returns the element type for a [CollectionBuilder]-decorated single-T generic collection,
+        // or null if the type has no [CollectionBuilder] attribute or isn't a single-arg generic.
+        [RequiresUnreferencedCode("Looks up CollectionBuilderAttribute via reflection")]
+        internal static Type? TryGetCollectionBuilderElementType(Type collectionType)
+        {
+            if (!collectionType.IsGenericType)
+                return null;
+
+            if (collectionType.GetCustomAttribute<CollectionBuilderAttribute>(inherit: false) == null)
+                return null;
+
+            Type[] genArgs = collectionType.GetGenericArguments();
+            if (genArgs.Length != 1)
+                return null;
+
+            return genArgs[0];
+        }
+
+        // Prefers a Create<T>(T[]) overload, falls back to Create<T>(ReadOnlySpan<T>).
+        [RequiresUnreferencedCode("Looks up factory method via reflection")]
+        [RequiresDynamicCode("Calls MakeGenericMethod on the factory")]
+        internal static MethodInfo? GetCollectionBuilderMethod(Type collectionType, Type elementType)
+        {
+            if (!collectionType.IsGenericType)
+                return null;
+
+            CollectionBuilderAttribute? builder = collectionType.GetCustomAttribute<CollectionBuilderAttribute>(inherit: false);
+            if (builder == null)
+                return null;
+
+            Type builderType = builder.BuilderType;
+            string methodName = builder.MethodName;
+
+            // Try Create<T>(T[]) first.
+            MethodInfo? best = null;
+            foreach (MethodInfo m in builderType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (m.Name != methodName || !m.IsGenericMethodDefinition)
+                    continue;
+                Type[] genArgs = m.GetGenericArguments();
+                if (genArgs.Length != 1)
+                    continue;
+                ParameterInfo[] pars = m.GetParameters();
+                if (pars.Length != 1)
+                    continue;
+                Type pt = pars[0].ParameterType;
+                // Look for T[]
+                if (pt.IsArray && pt.GetElementType() == genArgs[0])
+                {
+                    best = m;
+                    break;
+                }
+            }
+
+            if (best == null)
+            {
+                // Fall back to Create<T>(ReadOnlySpan<T>)
+                foreach (MethodInfo m in builderType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                {
+                    if (m.Name != methodName || !m.IsGenericMethodDefinition)
+                        continue;
+                    Type[] genArgs = m.GetGenericArguments();
+                    if (genArgs.Length != 1)
+                        continue;
+                    ParameterInfo[] pars = m.GetParameters();
+                    if (pars.Length != 1)
+                        continue;
+                    Type pt = pars[0].ParameterType;
+                    if (pt.IsGenericType && pt.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>) &&
+                        pt.GetGenericArguments()[0] == genArgs[0])
+                    {
+                        best = m;
+                        break;
+                    }
+                }
+            }
+
+            if (best == null)
+                return null;
+
+            try
+            {
+                MethodInfo bound = best.MakeGenericMethod(elementType);
+                // Sanity check the return type assignability
+                if (!collectionType.IsAssignableFrom(bound.ReturnType))
+                    return null;
+                return bound;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         [RequiresUnreferencedCode("Needs to mark members on the return type of the GetEnumerator method")]
         private static Type? GetEnumeratorElementType(Type type, ref TypeFlags flags)
         {
@@ -1380,6 +1531,16 @@ namespace System.Xml.Serialization
                 }
                 if (addMethod == null)
                 {
+                    // If the type has a [CollectionBuilder] (e.g. ImmutableStack<T>, ImmutableHashSet<T>),
+                    // the deserializer will use the builder factory instead of calling Add; still return
+                    // a usable element type so the type can be classified as Enumerable.
+                    if (type.GetCustomAttribute<CollectionBuilderAttribute>(inherit: false) != null)
+                    {
+                        // Reset the Current property type as the element type when an explicit GetEnumerator
+                        // returns a generic enumerator.
+                        Type elementType = p?.PropertyType ?? typeof(object);
+                        return elementType;
+                    }
                     throw new InvalidOperationException(SR.Format(SR.XmlNoAddMethod, type.FullName, currentType, "IEnumerable"));
                 }
                 return currentType;
