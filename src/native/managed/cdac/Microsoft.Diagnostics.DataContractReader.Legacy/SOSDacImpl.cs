@@ -1068,14 +1068,14 @@ public sealed unsafe partial class SOSDacImpl
             TypeHandle ctx = rtsContract.GetTypeHandle(enclosingMT);
             TargetPointer modulePtr = rtsContract.GetModule(ctx);
 
-            // Resolve the MethodTable of the field's type from its (approximate) TypeHandle, following the
-            // DAC's TypeHandle::GetMethodTable rules used by SOS pretty-printing (src/coreclr/vm/typehandle.inl).
-            // This is an implementation detail of the DAC that we replicate here to get method tables for
-            // non-MT types that we can return to SOS for pretty-printing. In the future we may want to return
-            // a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
             TypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
             try
             {
+                // get the MT of the type
+                // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
+                // that we can return to SOS for pretty-printing.
+                // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
+                // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
                 if (foundTypeHandle.IsNull)
                 {
                     // if we can't find the MT (e.g in a minidump)
@@ -1107,7 +1107,7 @@ public sealed unsafe partial class SOSDacImpl
             }
             catch (VirtualReadException)
             {
-                // if we can't read the MT (e.g in a minidump)
+                // if we can't find the MT (e.g in a minidump)
                 data->MTOfType = 0;
             }
 
