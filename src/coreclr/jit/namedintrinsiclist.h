@@ -215,7 +215,7 @@ enum NamedIntrinsic : unsigned short
     NI_HW_INTRINSIC_START,
 
     // clang-format off
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, intCost, fltCost, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
     NI_##isa##_##name,
 #include "hwintrinsiclist.h"
     // clang-format on

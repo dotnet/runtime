@@ -30729,6 +30729,9 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX10v1_DivideScalar:
         case NI_AVX10v1_MultiplyScalar:
         case NI_AVX10v1_SubtractScalar:
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        case NI_AVX10v1_ConvertScalarToVector128Single:
+        case NI_AVX10v1_ConvertScalarToVector128Double:
         {
             return numArgs == 3;
         }

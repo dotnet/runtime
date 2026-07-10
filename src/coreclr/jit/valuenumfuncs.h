@@ -192,7 +192,7 @@ ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compos
 #if defined(FEATURE_HW_INTRINSICS)
 ValueNumFuncDef(HWI_INTRINSIC_START, -1, false, false)
 
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, intCost, fltCost, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS
 #include "hwintrinsiclist.h"
 

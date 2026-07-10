@@ -4519,61 +4519,132 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 if (retType == TYP_STRUCT)
                 {
+                    // Converting some arithmetic type -> Half
                     assert(isSystemHalfClass(retClsHnd));
                     assert(varTypeIsArithmetic(op1Type));
 
-                    switch (op1Type)
-                    {
-                        case TYP_FLOAT:
-                        {
 #if defined(TARGET_XARCH)
-                            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                            {
-                                GenTree* op1 = impPopStack().val;
-                                op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_FLOAT, 16);
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    {
+                        bool supported = false;
 
-                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0),
-                                                                   NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16);
-                                retNode = impSimdToScalarHalf(retNode, retClsHnd);
+                        switch (op1Type)
+                        {
+                            case TYP_FLOAT:
+                            case TYP_DOUBLE:
+                            case TYP_INT:
+                            case TYP_UINT:
+                                supported = true;
+                                break;
+#ifdef TARGET_AMD64
+                            case TYP_LONG:
+                            case TYP_ULONG:
+                                supported = true;
+                                break;
+#endif // TARGET_AMD64
+                            default:
+                                break;
+                        }
+
+                        if (supported)
+                        {
+                            GenTree* op1     = impPopStack().val;
+                            GenTree* zeroVec = gtNewZeroConNode(TYP_SIMD16);
+
+                            // The integer scalar convert instructions read the source directly from a general
+                            // purpose register, so only floating-point sources need to be moved into a vector.
+                            if (varTypeIsFloating(op1Type))
+                            {
+                                op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, op1Type, 16);
                             }
-#endif
+
+                            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, op1,
+                                                               NI_AVX10v1_ConvertScalarToVector128Half, op1Type, 16);
+                            retNode = impSimdToScalarHalf(retNode, retClsHnd);
                             break;
                         }
-
-                        default:
-                        {
-                            unreached();
-                        }
                     }
+
+                    if ((op1Type == TYP_FLOAT) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        GenTree* op1 = impPopStack().val;
+                        op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_FLOAT, 16);
+
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0),
+                                                           NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16);
+                        retNode = impSimdToScalarHalf(retNode, retClsHnd);
+                    }
+#endif // TARGET_XARCH
                 }
                 else
                 {
+                    // Converting Half -> some arithmetic type
                     assert(varTypeIsArithmetic(retType));
                     assert((op1Type == TYP_STRUCT) && isSystemHalfClass(op1ClsHnd));
 
-                    switch (retType)
-                    {
-                        case TYP_FLOAT:
-                        {
 #if defined(TARGET_XARCH)
-                            if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                            {
-                                GenTree* op1 = impPopStack().val;
-                                op1          = impSimdCreateScalarHalf(op1);
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    {
+                        NamedIntrinsic opId = NI_Illegal;
 
-                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX2_ConvertToVector128Single,
-                                                                   TYP_USHORT, 16);
-                                retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
+                        switch (retType)
+                        {
+                            case TYP_FLOAT:
+                                opId = NI_AVX10v1_ConvertScalarToVector128Single;
+                                break;
+                            case TYP_DOUBLE:
+                                opId = NI_AVX10v1_ConvertScalarToVector128Double;
+                                break;
+                            case TYP_INT:
+                                opId = NI_AVX10v1_ConvertToInt32WithTruncation;
+                                break;
+                            case TYP_UINT:
+                                opId = NI_AVX10v1_ConvertToUInt32WithTruncation;
+                                break;
+#ifdef TARGET_AMD64
+                            case TYP_LONG:
+                                opId = NI_AVX10v1_ConvertToInt64WithTruncation;
+                                break;
+                            case TYP_ULONG:
+                                opId = NI_AVX10v1_ConvertToUInt64WithTruncation;
+                                break;
+#endif // TARGET_AMD64
+                            default:
+                                break;
+                        }
+
+                        if (opId != NI_Illegal)
+                        {
+                            GenTree* op1 = impPopStack().val;
+                            op1          = impSimdCreateScalarHalf(op1);
+
+                            if (varTypeIsFloating(retType))
+                            {
+                                GenTree* zeroVec = gtNewZeroConNode(TYP_SIMD16);
+                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, op1, opId, TYP_USHORT, 16);
+                                retNode = gtNewSimdToScalarNode(retType, retNode, retType, 16);
                             }
-#endif
+                            else
+                            {
+                                // The result is produced directly in a general purpose register. The node
+                                // type must be the actual machine type (TYP_INT/TYP_LONG); signedness is
+                                // encoded by the selected instruction (vcvttsh2si vs vcvttsh2usi).
+                                retNode = gtNewSimdHWIntrinsicNode(genActualType(retType), op1, opId, TYP_USHORT, 16);
+                            }
                             break;
                         }
-
-                        default:
-                        {
-                            unreached();
-                        }
                     }
+
+                    if ((retType == TYP_FLOAT) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        GenTree* op1 = impPopStack().val;
+                        op1          = impSimdCreateScalarHalf(op1);
+
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX2_ConvertToVector128Single, TYP_USHORT, 16);
+                        retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
+                    }
+#endif // TARGET_XARCH
                 }
                 break;
             }
@@ -4594,7 +4665,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     op2     = impSimdCreateScalarHalf(op2);
                     op1     = impSimdCreateScalarHalf(op1);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, clsHnd);
                 }
 #endif // TARGET_XARCH
@@ -4617,7 +4688,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // upper bits from the first. We only consume lane 0, so a zeroed upper-bits source is fine.
                     GenTree* op2 = gtNewZeroConNode(TYP_SIMD16);
                     op1          = impSimdCreateScalarHalf(op1);
-                    retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, opId, TYP_HALF, 16);
+                    retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, opId, TYP_USHORT, 16);
                     retNode      = impSimdToScalarHalf(retNode, clsHnd);
                 }
 #endif // TARGET_XARCH
@@ -4637,7 +4708,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op2     = impSimdCreateScalarHalf(op2);
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_FusedMultiplyAddScalar,
-                                                       TYP_HALF, 16);
+                                                       TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, clsHnd);
                 }
 #endif // TARGET_XARCH
@@ -4660,7 +4731,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op2 = gtNewZeroConNode(TYP_SIMD16);
                     op1          = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(halfRoundingMode, TYP_INT),
-                                                       NI_AVX10v1_RoundScaleScalar, TYP_HALF, 16);
+                                                       NI_AVX10v1_RoundScaleScalar, TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, clsHnd);
                 }
 #endif // TARGET_XARCH
@@ -4685,7 +4756,32 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     op2     = impSimdCreateScalarHalf(op2);
                     op1     = impSimdCreateScalarHalf(op1);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, op2, opId, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, op2, opId, TYP_USHORT, 16);
+                }
+#endif // TARGET_XARCH
+                break;
+            }
+
+            case NI_System_Half_op_Increment:
+            case NI_System_Half_op_Decrement:
+            {
+#if defined(TARGET_XARCH)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op1 = impPopStack().val;
+
+                    // Materialize 1.0 as a Half in lane 0 of a vector by converting 1.0f -> half.
+                    GenTree* oneVec  = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
+                    GenTree* zeroVec = gtNewZeroConNode(TYP_SIMD16);
+                    oneVec           = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, oneVec,
+                                                                NI_AVX10v1_ConvertScalarToVector128Half, TYP_FLOAT, 16);
+
+                    op1     = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, oneVec, opId, TYP_USHORT, 16);
+                    retNode = impSimdToScalarHalf(retNode, clsHnd);
                 }
 #endif // TARGET_XARCH
                 break;
@@ -12441,6 +12537,14 @@ NamedIntrinsic Compiler::lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, 
     {
         result = NI_System_Half_Truncate;
     }
+    else if (strcmp(methodName, "op_Increment") == 0)
+    {
+        result = NI_System_Half_op_Increment;
+    }
+    else if (strcmp(methodName, "op_Decrement") == 0)
+    {
+        result = NI_System_Half_op_Decrement;
+    }
 
     return result;
 }
@@ -12464,7 +12568,11 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
     {
         case NI_System_Half_op_Addition:
             return NI_AVX10v1_AddScalar;
+        case NI_System_Half_op_Increment:
+            return NI_AVX10v1_AddScalar;
         case NI_System_Half_op_Subtraction:
+            return NI_AVX10v1_SubtractScalar;
+        case NI_System_Half_op_Decrement:
             return NI_AVX10v1_SubtractScalar;
         case NI_System_Half_op_Multiply:
             return NI_AVX10v1_MultiplyScalar;
