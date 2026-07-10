@@ -2161,7 +2161,7 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
     else
     {
         instGen_Set_Reg_To_Imm(size, dstReg, imm);
-        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, baseReg, dstReg);
     }
 }
 
