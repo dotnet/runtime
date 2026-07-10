@@ -283,7 +283,10 @@ public static partial class XmlSerializerTests
         string xml = Serialize(collection, null, () => serializer, skipStringCompare: true);
         var rttCollection = Deserialize(serializer, xml);
         Assert.NotNull(rttCollection);
-        Assert.Equal(((IEnumerable)collection).Cast<object>().ToArray(), ((IEnumerable)rttCollection).Cast<object>().ToArray());
+         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ImmutableHashSet<>))
+             Assert.Equal(((IEnumerable)collection).Cast<object>().ToHashSet(), ((IEnumerable)rttCollection).Cast<object>().ToHashSet());
+         else
+             Assert.Equal(((IEnumerable)collection).Cast<object>().ToArray(), ((IEnumerable)rttCollection).Cast<object>().ToArray());
     }
 
     public static IEnumerable<object[]> Xml_ImmutableCollections_MemberData()

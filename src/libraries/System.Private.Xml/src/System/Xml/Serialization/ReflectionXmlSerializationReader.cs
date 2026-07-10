@@ -24,6 +24,11 @@ namespace System.Xml.Serialization
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
+        // Cache of compiled invokers for [CollectionBuilder] factories that take ReadOnlySpan<T>.
+        // Keyed by the bound (generic-arguments-supplied) factory MethodInfo so each collection/element
+        // type pair pays the Expression.Compile cost at most once per process.
+        private static readonly ConcurrentDictionary<MethodInfo, Func<Array, object>> s_collectionBuilderSpanInvokerCache = new();
+
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
             Init(xmlReader, events, encodingStyle);
@@ -611,18 +616,24 @@ namespace System.Xml.Serialization
             if (paramType.IsGenericType && paramType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>))
             {
                 // ReadOnlySpan<T> is a ref struct and cannot be passed via MethodBase.Invoke.
-                // Build an Expression that converts the array to ReadOnlySpan<T> and invokes the factory.
-                MethodInfo? op = paramType.GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static,
-                    new Type[] { elementType.MakeArrayType() });
-                if (op == null)
-                    return false;
-                ParameterExpression p = Expression.Parameter(typeof(Array), "arr");
-                Expression call = Expression.Call(factory, Expression.Call(op, Expression.Convert(p, elementType.MakeArrayType())));
-                if (factory.ReturnType != typeof(object))
+                // Compile an Expression that converts the array to ReadOnlySpan<T> and invokes the factory,
+                // caching the compiled invoker per factory MethodInfo so we pay the Compile cost at most
+                // once per (collection, element) type pair.
+                Func<Array, object> invoker = s_collectionBuilderSpanInvokerCache.GetOrAdd(factory, static staticFactory =>
                 {
-                    call = Expression.Convert(call, typeof(object));
-                }
-                Func<Array, object> invoker = Expression.Lambda<Func<Array, object>>(call, p).Compile();
+                    Type staticParamType = staticFactory.GetParameters()[0].ParameterType;
+                    Type staticElementType = staticParamType.GetGenericArguments()[0];
+                    Type staticArrayType = staticElementType.MakeArrayType();
+                    MethodInfo? staticOp = staticParamType.GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static, new Type[] { staticArrayType });
+                    Debug.Assert(staticOp != null);
+                    ParameterExpression p = Expression.Parameter(typeof(Array), "arr");
+                    Expression call = Expression.Call(staticFactory, Expression.Call(staticOp!, Expression.Convert(p, staticArrayType)));
+                    if (staticFactory.ReturnType != typeof(object))
+                    {
+                        call = Expression.Convert(call, typeof(object));
+                    }
+                    return Expression.Lambda<Func<Array, object>>(call, p).Compile();
+                });
                 built = invoker(buffer);
                 return true;
             }
