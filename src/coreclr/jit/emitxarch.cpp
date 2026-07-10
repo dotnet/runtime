@@ -11986,6 +11986,11 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 
         case EA_2BYTE:
         {
+            if (IsXMMReg(reg))
+            {
+                return emitXMMregName(reg);
+            }
+
 #if defined(TARGET_AMD64)
             if (reg > REG_RDI)
             {
