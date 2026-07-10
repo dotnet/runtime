@@ -1009,7 +1009,7 @@ DEFINE_METHOD(EXCEPTION_DISPATCH_INFO, CAPTURE, Capture, NoSig)
 DEFINE_METHOD(EXCEPTION_DISPATCH_INFO, THROW, Throw, IM_RetVoid)
 
 DEFINE_CLASS(FIRSTCHANCE_EVENTARGS, ExceptionServices,        FirstChanceExceptionEventArgs)
-DEFINE_METHOD(FIRSTCHANCE_EVENTARGS, CTOR, .ctor, IM_Exception_RetVoid)
+DEFINE_FIELD(FIRSTCHANCE_EVENTARGS, EXCEPTION, _exception)
 
 DEFINE_CLASS_U(Loader,             AssemblyLoadContext,           AssemblyLoadContextBaseObject)
 DEFINE_FIELD_U(_unloadLock,                 AssemblyLoadContextBaseObject, _unloadLock)

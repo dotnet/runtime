@@ -9365,16 +9365,7 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
             // https://github.com/dotnet/runtime/issues/123590.
             EX_TRY
             {
-                MethodTable *pMTEventArgs = CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
-                gc.oEventArgs = AllocateObject(pMTEventArgs);
-
-                MethodDescCallSite ctor(METHOD__FIRSTCHANCE_EVENTARGS__CTOR, &gc.oEventArgs);
-                ARG_SLOT ctorArgs[] =
-                {
-                    ObjToArgSlot(gc.oEventArgs),
-                    ObjToArgSlot(gc.oThrowable),
-                };
-                ctor.Call(ctorArgs);
+                gc.oEventArgs = AllocateObject(CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS));
             }
             EX_CATCH
             {
@@ -9382,6 +9373,11 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
                 UNREACHABLE();
             }
             EX_END_CATCH
+
+            // Set the Exception field directly. This neither allocates nor runs
+            // managed code, so it cannot re-enter first-chance delivery.
+            FieldDesc *pExceptionField = CoreLibBinder::GetField(FIELD__FIRSTCHANCE_EVENTARGS__EXCEPTION);
+            SetObjectReference((OBJECTREF *)pExceptionField->GetInstanceAddress(gc.oEventArgs), gc.oThrowable);
 
             EX_TRY
             {
