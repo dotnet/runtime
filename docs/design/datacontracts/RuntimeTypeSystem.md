@@ -2219,7 +2219,7 @@ The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following global
 
 | Global name | Meaning |
 | --- | --- |
-| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc::DWord2` indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
+| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc`'s offset bitfield (`m_dwOffset`, i.e. `DWord2 & OffsetMask`) indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
 | `FieldOffsetNewEnc` | Sentinel value of `FieldDesc`'s offset bitfield indicating the field was added via Edit-and-Continue and does not yet have backing storage. |
 
 The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following data descriptors:
