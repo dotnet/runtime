@@ -2417,11 +2417,11 @@ namespace System
                         {
                             // Whereas on arm64, this pattern can be faster
                             var mask = ~((1UL << (Vector128<byte>.Count - remaining.Length * sizeof(char) * 8)) - 1);
-                            ulong cmp0, cmp1;
+                            ulong cmp1;
     
                             if (remaining.Length > Vector128<ushort>.Count)
                             {
-                                cmp0 = cmp.GetElement(0) & 0x0101010101010101UL & mask;
+                                var cmp0 = cmp.GetElement(0) & 0x0101010101010101UL & mask;
     
                                 while (cmp0 != 0)
                                 {
@@ -2434,7 +2434,6 @@ namespace System
                             }
                             else
                             {
-                                cmp0 = 0;
                                 cmp1 = cmp.GetElement(1) & 0x0101010101010101UL & mask;
                             }
     
