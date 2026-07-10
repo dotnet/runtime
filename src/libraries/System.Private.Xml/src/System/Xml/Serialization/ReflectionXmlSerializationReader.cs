@@ -612,17 +612,22 @@ namespace System.Xml.Serialization
             {
                 // ReadOnlySpan<T> is a ref struct and cannot be passed via MethodBase.Invoke.
                 // Build an Expression that converts the array to ReadOnlySpan<T> and invokes the factory.
-                MethodInfo? op = paramType.GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static,
-                    new Type[] { elementType.MakeArrayType() });
-                if (op == null)
-                    return false;
-                ParameterExpression p = Expression.Parameter(typeof(Array), "arr");
-                Expression call = Expression.Call(factory, Expression.Call(op, Expression.Convert(p, elementType.MakeArrayType())));
-                if (factory.ReturnType != typeof(object))
+                // The compiled delegate is cached per factory MethodInfo so Expression.Compile is paid once.
+                if (!s_spanInvokerCache.TryGetValue(factory, out Func<Array, object>? invoker))
                 {
-                    call = Expression.Convert(call, typeof(object));
+                    MethodInfo? op = paramType.GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static,
+                        new Type[] { elementType.MakeArrayType() });
+                    if (op == null)
+                        return false;
+                    ParameterExpression p = Expression.Parameter(typeof(Array), "arr");
+                    Expression call = Expression.Call(factory, Expression.Call(op, Expression.Convert(p, elementType.MakeArrayType())));
+                    if (factory.ReturnType != typeof(object))
+                    {
+                        call = Expression.Convert(call, typeof(object));
+                    }
+                    Func<Array, object> newInvoker = Expression.Lambda<Func<Array, object>>(call, p).Compile();
+                    invoker = s_spanInvokerCache.GetOrAdd(factory, newInvoker);
                 }
-                Func<Array, object> invoker = Expression.Lambda<Func<Array, object>>(call, p).Compile();
                 built = invoker(buffer);
                 return true;
             }
@@ -670,6 +675,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        private static readonly ConcurrentDictionary<MethodInfo, Func<Array, object>> s_spanInvokerCache = new();
         private static readonly ContextAwareTables<Hashtable> s_setMemberValueDelegateCache = new ContextAwareTables<Hashtable>();
 
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
