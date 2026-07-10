@@ -2401,7 +2401,7 @@ namespace System
 
                 for (int i = 0; i < remaining.Length; i++)
                 {
-                    char v = remaining[i];
+                    char v = (char)remaining[i];
                     if (v == c || v == c2 || v == c3)
                     {
                         sepListBuilder.Append(i);
