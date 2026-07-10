@@ -4731,7 +4731,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op2     = impSimdCreateScalarHalf(op2);
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_USHORT, 16);
-                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
                 if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
@@ -4745,7 +4745,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op2     = impSimdCreateScalarHalf(op2);
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_USHORT, 16);
-                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #endif // TARGET_XARCH
                 break;
@@ -4768,7 +4768,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op2 = gtNewZeroConNode(TYP_SIMD16);
                     op1          = impSimdCreateScalarHalf(op1);
                     retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, opId, TYP_USHORT, 16);
-                    retNode      = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode      = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
                 if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
@@ -4779,7 +4779,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op1 = impPopStack().val;
                     op1          = impSimdCreateScalarHalf(op1);
                     retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, opId, TYP_USHORT, 16);
-                    retNode      = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode      = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #endif // TARGET_XARCH
                 break;
@@ -4799,7 +4799,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_FusedMultiplyAddScalar,
                                                        TYP_USHORT, 16);
-                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
                 if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
@@ -4815,7 +4815,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // fmadd computes Rd = Rn * Rm + Ra, so (op1 * op2) + op3 == x * y + z.
                     retNode =
                         gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_Fp16_FusedMultiplyAdd, TYP_USHORT, 16);
-                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #endif // TARGET_XARCH
                 break;
@@ -4838,7 +4838,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1          = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(halfRoundingMode, TYP_INT),
                                                        NI_AVX10v1_RoundScaleScalar, TYP_USHORT, 16);
-                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
                 // todo-arm64-half: We only optimize the single-argument overloads for now.
@@ -4851,7 +4851,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op1 = impPopStack().val;
                     op1          = impSimdCreateScalarHalf(op1);
                     retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, opId, TYP_USHORT, 16);
-                    retNode      = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode      = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #endif // TARGET_XARCH
                 break;
@@ -4905,15 +4905,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     GenTree* op1 = impPopStack().val;
 
-                    // Materialize 1.0 as a Half in lane 0 of a vector by converting 1.0f -> half.
-                    GenTree* oneVec  = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
-                    GenTree* zeroVec = gtNewZeroConNode(TYP_SIMD16);
-                    oneVec           = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, oneVec,
-                                                                NI_AVX10v1_ConvertScalarToVector128Half, TYP_FLOAT, 16);
+                    // Increment/decrement by the Half constant 1.0 (0x3C00). Creating the constant
+                    // directly avoids a runtime float -> half conversion.
+                    GenTree* oneVec =
+                        gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewIconNode(0x3C00, TYP_INT), TYP_USHORT, 16);
 
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, oneVec, opId, TYP_USHORT, 16);
-                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
                 if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
@@ -4923,15 +4922,75 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     GenTree* op1 = impPopStack().val;
 
-                    // Materialize 1.0 as a Half in lane 0 of a vector by converting 1.0f -> half.
-                    GenTree* oneVec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
-                    oneVec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oneVec, NI_Fp16_ConvertToHalf, TYP_FLOAT, 16);
+                    // Increment/decrement by the Half constant 1.0 (0x3C00). Creating the constant
+                    // directly avoids a runtime float -> half conversion.
+                    GenTree* oneVec =
+                        gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewIconNode(0x3C00, TYP_INT), TYP_USHORT, 16);
 
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, oneVec, opId, TYP_USHORT, 16);
-                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #endif // TARGET_XARCH
+                break;
+            }
+
+            case NI_System_Half_get_MinValue:
+            case NI_System_Half_get_MaxValue:
+            case NI_System_Half_get_Epsilon:
+            case NI_System_Half_get_NaN:
+            case NI_System_Half_get_PositiveInfinity:
+            case NI_System_Half_get_NegativeInfinity:
+            case NI_System_Half_get_One:
+            case NI_System_Half_get_Zero:
+            {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+                uint16_t halfBits = 0;
+
+                switch (ni)
+                {
+                    case NI_System_Half_get_MinValue:
+                        halfBits = 0xFBFF; // -65504
+                        break;
+                    case NI_System_Half_get_MaxValue:
+                        halfBits = 0x7BFF; // 65504
+                        break;
+                    case NI_System_Half_get_Epsilon:
+                        halfBits = 0x0001; // ~5.9604645e-08 (smallest positive subnormal)
+                        break;
+                    case NI_System_Half_get_NaN:
+                        halfBits = 0xFE00; // Negative NaN
+                        break;
+                    case NI_System_Half_get_PositiveInfinity:
+                        halfBits = 0x7C00; // +Infinity
+                        break;
+                    case NI_System_Half_get_NegativeInfinity:
+                        halfBits = 0xFC00; // -Infinity
+                        break;
+                    case NI_System_Half_get_One:
+                        halfBits = 0x3C00; // 1.0
+                        break;
+                    case NI_System_Half_get_Zero:
+                        halfBits = 0x0000; // 0.0
+                        break;
+                    default:
+                        unreached();
+                }
+
+#if defined(TARGET_XARCH)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+#else
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+#endif
+                {
+                    // Create the Half constant directly from its bit pattern rather than materializing
+                    // it via a runtime conversion. The return type is always System.Half, so its class
+                    // handle can be taken from the signature (which is reliable even when the getter is
+                    // reached via a generic constrained call).
+                    retNode = gtNewSimdCreateScalarNode(TYP_SIMD16, gtNewIconNode(halfBits, TYP_INT), TYP_USHORT, 16);
+                    retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
+                }
+#endif // TARGET_XARCH || TARGET_ARM64
                 break;
             }
 
@@ -12692,6 +12751,38 @@ NamedIntrinsic Compiler::lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, 
     else if (strcmp(methodName, "op_Decrement") == 0)
     {
         result = NI_System_Half_op_Decrement;
+    }
+    else if (strcmp(methodName, "get_MinValue") == 0)
+    {
+        result = NI_System_Half_get_MinValue;
+    }
+    else if (strcmp(methodName, "get_MaxValue") == 0)
+    {
+        result = NI_System_Half_get_MaxValue;
+    }
+    else if (strcmp(methodName, "get_Epsilon") == 0)
+    {
+        result = NI_System_Half_get_Epsilon;
+    }
+    else if (strcmp(methodName, "get_NaN") == 0)
+    {
+        result = NI_System_Half_get_NaN;
+    }
+    else if (strcmp(methodName, "get_PositiveInfinity") == 0)
+    {
+        result = NI_System_Half_get_PositiveInfinity;
+    }
+    else if (strcmp(methodName, "get_NegativeInfinity") == 0)
+    {
+        result = NI_System_Half_get_NegativeInfinity;
+    }
+    else if (strcmp(methodName, "get_One") == 0)
+    {
+        result = NI_System_Half_get_One;
+    }
+    else if (strcmp(methodName, "get_Zero") == 0)
+    {
+        result = NI_System_Half_get_Zero;
     }
 
     return result;
