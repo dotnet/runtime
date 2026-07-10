@@ -402,6 +402,9 @@ CodeGen::CodeGen(Compiler* theCompiler)
     m_cgEmitter->codeGen = this;
     m_cgEmitter->gcInfo  = &gcInfo;
 
+    // On wasm this is never set by register allocation, so initialize it here.
+    calleeRegArgMaskLiveIn = RBM_NONE;
+
 #ifdef DEBUG
     setVerbose(m_compiler->verbose);
 #endif // DEBUG

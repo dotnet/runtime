@@ -292,7 +292,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         // Spill the parameter if referenced. Liveness is not reliable in codegen currently.
-        if (varDsc->lvRefCnt() == 0)
+        if (varDsc->lvTracked && !m_compiler->compJmpOpUsed && (varDsc->lvRefCnt() == 0))
         {
             return;
         }
