@@ -115,7 +115,16 @@ namespace System.Runtime.CompilerServices
         {
             try
             {
-                awaiter.OnCompleted(GetStateMachineBox(ref stateMachine, ref box).MoveNextAction);
+                IAsyncStateMachineBox ibox = GetStateMachineBox(ref stateMachine, ref box);
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        ibox = AsyncStateMachineDispatcherInfo.CreateDispatcher(ibox, flags);
+                    }
+                }
+
+                awaiter.OnCompleted(ibox.MoveNextAction);
             }
             catch (Exception e)
             {
