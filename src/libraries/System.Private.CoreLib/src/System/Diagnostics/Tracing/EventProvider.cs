@@ -1190,9 +1190,14 @@ namespace System.Diagnostics.Tracing
                 //
                 // Check if Keyword is enabled
                 //
-
+                // A session that specifies an "any" keyword mask of 0 matches all keywords,
+                // which mirrors the convention used by EventSource.IsEnabledCommon. Without this,
+                // events written through the object[] varargs path (EventProvider.WriteEvent) are
+                // dropped for EventPipe sessions enabled with keyword 0, even though the manifest
+                // (specialized) write path emits them.
+                //
                 if ((keywords == 0) ||
-                    (((keywords & _anyKeywordMask) != 0) &&
+                    ((_anyKeywordMask == 0 || (keywords & _anyKeywordMask) != 0) &&
                      ((keywords & _allKeywordMask) == _allKeywordMask)))
                 {
                     return true;
