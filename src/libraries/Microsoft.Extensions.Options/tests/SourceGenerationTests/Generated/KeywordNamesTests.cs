@@ -41,4 +41,32 @@ public class KeywordNamesTests
         var validator = new FirstValidator();
         Assert.Equal(ValidateOptionsResult.Success, validator.Validate("KeywordNames", model));
     }
+
+    [Fact]
+    public void KeywordNamespaceInvalid()
+    {
+        var model = new @struct.@interface.SecondModel
+        {
+            @public = "XXX",
+            @return = new @struct.@interface.@sealed { @string = "XXX" },
+        };
+
+        var validator = new @struct.@interface.SecondValidator();
+        var vr = validator.Validate("KeywordNamespace", model);
+
+        Utils.VerifyValidateOptionsResult(vr, 2, "public", "return");
+    }
+
+    [Fact]
+    public void KeywordNamespaceValid()
+    {
+        var model = new @struct.@interface.SecondModel
+        {
+            @public = "ABCDE",
+            @return = new @struct.@interface.@sealed { @string = "ABCDE" },
+        };
+
+        var validator = new @struct.@interface.SecondValidator();
+        Assert.Equal(ValidateOptionsResult.Success, validator.Validate("KeywordNamespace", model));
+    }
 }

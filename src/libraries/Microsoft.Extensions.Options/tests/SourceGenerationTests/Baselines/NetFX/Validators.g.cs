@@ -109,6 +109,82 @@ partial class SecondValidatorNoNamespace
         return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
     }
 }
+namespace @struct.@interface
+{
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+    internal sealed partial class __sealedValidator__
+    {
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>Validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::@struct.@interface.@sealed options)
+        {
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "sealed", null, null);
+            #else
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
+
+            context.MemberName = "string";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "string" : $"{name}.string";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.@string, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+    }
+}
+namespace @struct.@interface
+{
+    partial class SecondValidator
+    {
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>Validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::@struct.@interface.SecondModel options)
+        {
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
+
+            context.MemberName = "public";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "public" : $"{name}.public";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.@public, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            if (options.@return is not null)
+            {
+                (builder ??= new()).AddResult(global::@struct.@interface.__sealedValidator__.Validate(string.IsNullOrEmpty(name) ? "return" : $"{name}.return", options.@return));
+            }
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+    }
+}
 namespace CustomAttr
 {
     partial class FirstValidator

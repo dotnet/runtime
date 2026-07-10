@@ -38,3 +38,28 @@ namespace KeywordNames
     {
     }
 }
+
+namespace @struct.@interface
+{
+    public class @sealed
+    {
+        [Required]
+        [MinLength(5)]
+        public string? @string { get; set; }
+    }
+
+    public class SecondModel
+    {
+        [Required]
+        [MinLength(5)]
+        public string? @public { get; set; }
+
+        [ValidateObjectMembers]
+        public @sealed? @return { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class SecondValidator : IValidateOptions<SecondModel>
+    {
+    }
+}
