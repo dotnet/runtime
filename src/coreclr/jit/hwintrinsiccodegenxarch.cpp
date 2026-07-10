@@ -1036,6 +1036,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
         case InstructionSet_AVX512v2:
+        case InstructionSet_AVX10v1:
         case InstructionSet_AVX10v2:
         case InstructionSet_AVX10v2_X64:
         case InstructionSet_AVXVNNIINT:
@@ -1890,6 +1891,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 
         case NI_AVX512_FusedMultiplyAdd:
         case NI_AVX512_FusedMultiplyAddScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         case NI_AVX512_FusedMultiplyAddNegated:
         case NI_AVX512_FusedMultiplyAddNegatedScalar:
         case NI_AVX512_FusedMultiplyAddSubtract:
