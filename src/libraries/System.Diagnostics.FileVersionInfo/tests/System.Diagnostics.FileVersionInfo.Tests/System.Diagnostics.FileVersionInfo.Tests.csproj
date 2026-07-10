@@ -15,7 +15,6 @@
     <Content Include="SecondNativeLibrary.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- Embedded as a managed resource; written to a temp file at run time. -->
     <EmbeddedResource Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
       <LogicalName>Assembly1.cs</LogicalName>
     </EmbeddedResource>

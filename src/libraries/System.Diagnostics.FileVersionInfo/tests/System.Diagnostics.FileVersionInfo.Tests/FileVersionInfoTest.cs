@@ -16,7 +16,6 @@ namespace System.Diagnostics.Tests
         private const string TestCsFileName = "Assembly1.cs";
         private const string TestNotFoundFileName = "notfound.dll";
 
-        // Written to a temp file at run time so the tests do not depend on files deployed next to the test app.
         private string WriteEmbeddedResourceToFile(string resourceName)
         {
             string path = GetTestFilePath();
