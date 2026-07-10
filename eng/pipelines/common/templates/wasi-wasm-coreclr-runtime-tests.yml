@@ -8,14 +8,21 @@ parameters:
 jobs:
 
 #
-# Build the whole product using Mono and run runtime tests
+# Build CoreCLR + libraries for WASI and run a subset of src/tests on
+# Helix under wasmtime. Mirrors wasm-runtime-tests.yml (Mono variant),
+# with runtimeFlavor=coreclr and a curated -tree: subset (see the
+# testBuildArgs below).
 #
+# Merged-runner mode; xharness dispatches via helixpublishwitharcade.proj.
+# Reuses the wasi_wasm helix queue (ubuntu-26.04-helix-webassembly-amd64).
+#
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
-    runtimeFlavor: mono
+    runtimeFlavor: coreclr
     platforms: ${{ parameters.platforms }}
     variables:
       - name: alwaysRunVar
@@ -29,14 +36,13 @@ jobs:
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
             eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_mono_runtimetests.containsChange'], true))
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: AllSubsets_Mono_RuntimeTests
-      runtimeVariant: monointerpreter
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:MonoEnableAssertMessages=true /p:InstallV8ForTests=false ${{ parameters.extraBuildArgs }}
+      nameSuffix: CoreCLR_WASI_RuntimeTests
+      buildArgs: -s clr+libs+packs -c $(_BuildConfig) ${{ parameters.extraBuildArgs }} /p:TestAssemblies=false
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -46,12 +52,17 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            testBuildArgs: /p:InstallV8ForTests=false
-            # Build the runtime tests for browser, but don't send them to Helix to run on V8: the
-            # V8 baked into the helix-webassembly container doesn't support exnref
-            # yet, so the tests abort at startup. Re-enable the run once the new V8 image is
-            # available. See ActiveIssue https://github.com/dotnet/runtime/issues/129849
-            sendToHelix: false
+            testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
+            # Curated test-tree subset -- expand as gates stabilize.
+            testBuildArgs: >-
+              -priority1
+              -tree:JIT/CodeGenBringUpTests
+              -tree:JIT/Generics
+              -tree:JIT/Directed
+              -tree:JIT/opt
+              -tree:JIT/jit64
+              -tree:Loader
+              -tree:Exceptions
+              -tree:reflection
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
