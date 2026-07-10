@@ -23,7 +23,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task TarReader_LeaveOpen_False(bool async)
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
@@ -55,7 +55,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task TarReader_LeaveOpen_True(bool async)
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");
@@ -88,7 +88,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task TarReader_LeaveOpen_False_CopiedDataNotDisposed(bool async)
         {
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.pax, "many_small_files");

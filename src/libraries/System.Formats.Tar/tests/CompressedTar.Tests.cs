@@ -11,7 +11,7 @@ namespace System.Formats.Tar.Tests
     public class CompressedTar_Tests : TarTestsBase
     {
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task TarGz_TarWriter_TarReader(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -74,7 +74,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task TarGz_TarFile_CreateFromDir_ExtractToDir(bool async)
         {
             using TempDirectory root = new TempDirectory();

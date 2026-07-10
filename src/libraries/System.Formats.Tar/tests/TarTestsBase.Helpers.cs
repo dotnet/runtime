@@ -15,7 +15,14 @@ namespace System.Formats.Tar.Tests
     {
         protected static readonly bool[] Booleans = [false, true];
 
-        public static IEnumerable<object[]> Get_Boolean_Data() => Booleans.Select(b => new object[] { b });
+        public static IEnumerable<object[]> GetBooleanData() => Booleans.Select(b => new object[] { b });
+
+        public static IEnumerable<object[]> GetFormatBooleanData()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+                foreach (bool async in Booleans)
+                    yield return new object[] { format, async };
+        }
 
         protected static TarReader CreateTarReader(Stream archiveStream, bool leaveOpen = false)
         {

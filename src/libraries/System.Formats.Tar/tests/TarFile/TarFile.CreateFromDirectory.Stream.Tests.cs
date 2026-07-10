@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -21,7 +21,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task InvalidPath_Throws(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -30,14 +30,14 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task NullStream_Throws(bool async)
         {
             await Assert.ThrowsAsync<ArgumentNullException>(() => CreateFromDirectory(sourceDirectoryName: "path", destination: null, includeBaseDirectory: false, async));
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task UnwritableStream_Throws(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -46,7 +46,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task NonExistentDirectory_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -57,28 +57,25 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetTarEntryFormats))]
-        public async Task CreateFromDirectory_WithFormat(TarEntryFormat format)
+        [MemberData(nameof(GetFormatBooleanData))]
+        public async Task CreateFromDirectory_WithFormat(TarEntryFormat format, bool async)
         {
-            foreach (bool async in Booleans)
-            {
-                using TempDirectory source = new TempDirectory();
-                string fileName = "file.txt";
-                File.Create(Path.Join(source.Path, fileName)).Dispose();
+            using TempDirectory source = new TempDirectory();
+            string fileName = "file.txt";
+            File.Create(Path.Join(source.Path, fileName)).Dispose();
 
-                using MemoryStream archive = new MemoryStream();
-                await CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format, async);
+            using MemoryStream archive = new MemoryStream();
+            await CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format, async);
 
-                archive.Position = 0;
-                using TarReader reader = new TarReader(archive);
+            archive.Position = 0;
+            using TarReader reader = new TarReader(archive);
 
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(format, entry.Format);
-                Assert.Equal(fileName, entry.Name);
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
 
-                Assert.Null(reader.GetNextEntry());
-            }
+            Assert.Null(reader.GetNextEntry());
         }
 
         [Theory]
@@ -96,26 +93,25 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CreateFromDirectory_UsesWriterOptions(bool toggle)
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task CreateFromDirectory_UsesWriterOptions(bool toggle, bool async)
         {
-            foreach (bool async in Booleans)
+            bool preserveLinks = toggle;
+
+            using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
+
+            TarWriterOptions options = new TarWriterOptions()
             {
-                bool preserveLinks = toggle;
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
+            };
 
-                using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
+            using MemoryStream archive = new MemoryStream();
+            await CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, options, async);
 
-                TarWriterOptions options = new TarWriterOptions()
-                {
-                    HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
-                };
-
-                using MemoryStream archive = new MemoryStream();
-                await CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, options, async);
-
-                VerifyCreateFromDirectory_UsesWriterOptions(archive, preserveLinks);
-            }
+            VerifyCreateFromDirectory_UsesWriterOptions(archive, preserveLinks);
         }
     }
 }

@@ -21,7 +21,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task InvalidPaths_Throw(bool async)
         {
             await Assert.ThrowsAsync<ArgumentNullException>(() => ExtractToDirectory(sourceArchiveFileName: null, destinationDirectoryName: "path", overwriteFiles: false, async));
@@ -31,7 +31,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task NonExistentFile_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -45,7 +45,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task NonExistentDirectory_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -59,7 +59,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task SetsLastModifiedTimeOnExtractedFiles(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -87,7 +87,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task SetsLastModifiedTimeOnExtractedDirectories(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -150,7 +150,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Extract_Archive_File_OverwriteTrue(bool async)
         {
             string testCaseName = "file";
@@ -178,7 +178,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Extract_Archive_File_OverwriteFalse(bool async)
         {
             string sourceArchiveFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.pax, "file");
@@ -192,7 +192,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Extract_AllSegmentsOfPath(bool async)
         {
             using TempDirectory source = new TempDirectory();
@@ -225,7 +225,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task ExtractArchiveWithEntriesThatStartWithSlashDotPrefix(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -356,7 +356,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task LinkBeforeTarget(bool async)
         {
             using TempDirectory source = new TempDirectory();
@@ -438,7 +438,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task HardLinkExtraction_CopyContents(bool async)
         {
             using TempDirectory root = new TempDirectory();

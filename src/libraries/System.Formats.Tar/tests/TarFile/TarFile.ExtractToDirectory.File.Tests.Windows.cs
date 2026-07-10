@@ -11,7 +11,7 @@ namespace System.Formats.Tar.Tests
     public partial class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
     {
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Extract_SpecialFiles_Windows_ThrowsInvalidOperation(bool async)
         {
             string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");

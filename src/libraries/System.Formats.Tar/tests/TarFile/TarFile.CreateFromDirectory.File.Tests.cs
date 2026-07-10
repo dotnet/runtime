@@ -21,7 +21,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task InvalidPaths_Throw(bool async)
         {
             await Assert.ThrowsAsync<ArgumentNullException>(() => CreateFromDirectory(sourceDirectoryName: null, destinationArchiveFileName: "path", includeBaseDirectory: false, async));
@@ -31,7 +31,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task NonExistentDirectory_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -41,7 +41,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task DestinationExists_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -135,7 +135,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task IncludeBaseDirectoryIfEmpty(bool async)
         {
             using TempDirectory source = new TempDirectory();
@@ -210,7 +210,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task SkipRecursionIntoDirectorySymlinks(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -242,7 +242,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task SkipRecursionIntoBaseDirectorySymlink(bool async)
         {
             using TempDirectory root = new TempDirectory();

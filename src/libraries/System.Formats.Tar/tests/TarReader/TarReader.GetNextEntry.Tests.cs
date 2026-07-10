@@ -25,7 +25,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task MalformedArchive_TooSmall(bool async)
         {
             using MemoryStream malformed = new MemoryStream();
@@ -52,7 +52,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task MalformedArchive_HeaderSize(bool async)
         {
             using MemoryStream malformed = new MemoryStream();
@@ -80,7 +80,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task EmptyArchive(bool async)
         {
             using MemoryStream empty = new MemoryStream();
@@ -96,7 +96,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task LongEndMarkers_DoNotAdvanceStream(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -132,7 +132,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task GetNextEntry_CopyDataTrue_SeekableArchive(bool async)
         {
             string expectedText = "Hello world!";
@@ -186,7 +186,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task GetNextEntry_CopyDataTrue_UnseekableArchive(bool async)
         {
             string expectedText = "Hello world!";
@@ -423,7 +423,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task GetNextEntry_UnseekableArchive_DisposedDataStream_DoesNotThrow(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -474,7 +474,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task GetNextEntry_UnseekableArchive_DisposedDataStream_PartiallyRead_DoesNotThrow(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -525,7 +525,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task GetNextEntry_UnseekableArchive_DisposedDataStream_NotRead_DoesNotThrow(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -701,7 +701,7 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
         }
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_PaxEntryWithOnlyLinkpath_PreservesUstarPrefix(bool async)
         {
             string expectedName = "./sdk/tools/net11.0/any/SomeAssembly.dll";

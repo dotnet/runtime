@@ -24,12 +24,12 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public Task NullStream_Throws(bool async) =>
             Assert.ThrowsAsync<ArgumentNullException>(() => ExtractToDirectory(source: null, destinationDirectoryName: "path", overwriteFiles: false, async));
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task InvalidPath_Throws(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -38,7 +38,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task UnreadableStream_Throws(bool async)
         {
             using MemoryStream archive = new MemoryStream();
@@ -47,7 +47,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task NonExistentDirectory_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -58,7 +58,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task ExtractEntry_ManySubfolderSegments_NoPrecedingDirectoryEntries(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -262,7 +262,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task PaxNameCollision_DedupInExtendedAttributes(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -373,7 +373,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "The temporary directory on Apple mobile platforms exceeds the path length limit.")]
         public async Task ExtractToDirectory_ExactRootDirMatch_Directory_Relative_Throws(bool async)
         {
@@ -425,7 +425,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task ExtractToDirectory_ExactRootDirMatch_SymLinks_TargetOutside_Throws(bool async)
         {
             string entryFolderName = "folder";

@@ -11,7 +11,7 @@ namespace System.Formats.Tar.Tests
     public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
     {
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task ThrowIf_AddFile_AfterDispose(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -29,7 +29,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task FileName_NullOrEmpty(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -54,7 +54,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task EntryName_NullOrEmpty(bool async)
         {
             using TempDirectory root = new TempDirectory();

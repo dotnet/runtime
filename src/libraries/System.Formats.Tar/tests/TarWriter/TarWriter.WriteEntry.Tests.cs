@@ -13,7 +13,7 @@ namespace System.Formats.Tar.Tests
     public class TarWriter_WriteEntry_Tests : TarWriter_WriteEntry_Base
     {
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteEntry_AfterDispose_Throws(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();

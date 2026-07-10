@@ -12,72 +12,72 @@ namespace System.Formats.Tar.Tests
     public class TarReader_File_GlobalExtendedAttributes_Tests : TarReader_File_Tests_Base
     {
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_File(bool async) =>
             await Read_Archive_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_File_HardLink(bool async) =>
             await Read_Archive_File_HardLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_File_SymbolicLink(bool async) =>
             await Read_Archive_File_SymbolicLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_Folder_File(bool async) =>
             await Read_Archive_Folder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_Folder_File_Utf8(bool async) =>
             await Read_Archive_Folder_File_Utf8_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_Folder_Subfolder_File(bool async) =>
             await Read_Archive_Folder_Subfolder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_FolderSymbolicLink_Folder_Subfolder_File(bool async) =>
             await Read_Archive_FolderSymbolicLink_Folder_Subfolder_File_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_Many_Small_Files(bool async) =>
             await Read_Archive_Many_Small_Files_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_LongPath_Splitable_Under255(bool async) =>
             await Read_Archive_LongPath_Splitable_Under255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_SpecialFiles(bool async) =>
             await Read_Archive_SpecialFiles_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_File_LongSymbolicLink(bool async) =>
             await Read_Archive_File_LongSymbolicLink_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_LongFileName_Over100_Under255(bool async) =>
             await Read_Archive_LongFileName_Over100_Under255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Read_Archive_LongPath_Over255(bool async) =>
             await Read_Archive_LongPath_Over255_Internal(TarEntryFormat.Pax, TestTarFormat.pax_gea, async);
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task ExtractGlobalExtendedAttributesEntry_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
@@ -99,14 +99,8 @@ namespace System.Formats.Tar.Tests
             try
             {
                 TarEntry entry = await GetNextEntry(reader, async: async);
-                if (async)
-                {
-                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await ExtractToFile(entry, Path.Join(root.Path, "file"), overwrite: true, async));
-                }
-                else
-                {
-                    Assert.Throws<InvalidOperationException>(() => ExtractToFile(entry, Path.Join(root.Path, "file"), overwrite: true, async).GetAwaiter().GetResult());
-                }
+                Assert.NotNull(entry);
+                await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, Path.Join(root.Path, "file"), overwrite: true, async));
             }
             finally
             {

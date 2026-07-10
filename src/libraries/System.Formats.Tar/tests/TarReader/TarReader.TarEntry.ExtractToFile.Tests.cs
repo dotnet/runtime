@@ -10,7 +10,7 @@ namespace System.Formats.Tar.Tests
     public partial class TarReader_TarEntry_ExtractToFile_Tests : TarTestsBase
     {
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task EntriesWithSlashDotPrefix(bool async)
         {
             using TempDirectory root = new TempDirectory();

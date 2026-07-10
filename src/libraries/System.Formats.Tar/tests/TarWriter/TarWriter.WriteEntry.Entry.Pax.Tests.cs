@@ -13,7 +13,7 @@ namespace System.Formats.Tar.Tests
     public class TarWriter_WriteEntry_Pax_Tests : TarWriter_WriteEntry_Base
     {
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteEntry_Null_Throws(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -36,7 +36,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteRegularFile(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -67,7 +67,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteHardLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -98,7 +98,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteSymbolicLink(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -129,7 +129,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteDirectory(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -160,7 +160,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteCharacterDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -191,7 +191,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteBlockDevice(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -222,7 +222,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WriteFifo(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -253,7 +253,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WritePaxAttributes_CustomAttribute(bool async)
         {
             string expectedKey = "MyExtendedAttributeKey";
@@ -301,7 +301,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WritePaxAttributes_Timestamps_AutomaticallyAdded(bool async)
         {
             DateTimeOffset minimumTime = DateTimeOffset.UtcNow - TimeSpan.FromHours(1);
@@ -333,7 +333,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WritePaxAttributes_Timestamps_UserProvided(bool async)
         {
             Dictionary<string, string> extendedAttributes = new();
@@ -371,7 +371,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WritePaxAttributes_LongGroupName_LongUserName(bool async)
         {
             string userName = "IAmAUserNameWhoseLengthIsWayBeyondTheThirtyTwoByteLimit";
@@ -425,7 +425,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WritePaxAttributes_Name_AutomaticallyAdded(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -456,7 +456,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task WritePaxAttributes_LongLinkName_AutomaticallyAdded(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -508,7 +508,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Add_Empty_GlobalExtendedAttributes(bool async)
         {
             using MemoryStream archive = new MemoryStream();

@@ -20,7 +20,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Constructors_LeaveOpen(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -85,7 +85,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Constructor_NoEntryInsertion_WritesNothing(bool async)
         {
             using MemoryStream archiveStream = new MemoryStream();
@@ -95,7 +95,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Boolean_Data))]
+        [MemberData(nameof(GetBooleanData))]
         public async Task Write_To_UnseekableStream(bool async)
         {
             using MemoryStream inner = new MemoryStream();
