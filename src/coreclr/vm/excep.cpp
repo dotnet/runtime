@@ -9337,20 +9337,56 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
         if (g_firstChanceExceptionHasHandler.Load())
         {
             GCX_COOP();
-            OBJECTREF oThrowable = NULL;
-            GCPROTECT_BEGIN(oThrowable);
+            struct
+            {
+                OBJECTREF oThrowable;
+                OBJECTREF oEventArgs;
+            } gc;
+            gc.oThrowable = NULL;
+            gc.oEventArgs = NULL;
+            GCPROTECT_BEGIN(gc);
 
-            oThrowable = pCurTES->GetThrowable();
-            _ASSERTE(oThrowable != NULL);
-            _ASSERTE(IsException(oThrowable->GetMethodTable()));
+            gc.oThrowable = pCurTES->GetThrowable();
+            _ASSERTE(gc.oThrowable != NULL);
+            _ASSERTE(IsException(gc.oThrowable->GetMethodTable()));
 
             // Prevent any async exceptions from this moment on this thread
             ThreadPreventAsyncHolder prevAsync;
 
+            // Allocate the FirstChanceExceptionEventArgs instance in the VM rather
+            // than in managed code. If this allocation fails, we fail fast.
+            //
+            // Allocating the event args in managed code from this first-chance
+            // dispatch path is unsafe: an OutOfMemoryException thrown while
+            // allocating would itself trigger first-chance delivery, allocate
+            // again, fail again, and recurse until the stack overflows. Passing a
+            // null event args instance to the managed handlers is also not
+            // something handlers expect. See
+            // https://github.com/dotnet/runtime/issues/123590.
+            EX_TRY
+            {
+                MethodTable *pMTEventArgs = CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
+                gc.oEventArgs = AllocateObject(pMTEventArgs);
+
+                MethodDescCallSite ctor(METHOD__FIRSTCHANCE_EVENTARGS__CTOR, &gc.oEventArgs);
+                ARG_SLOT ctorArgs[] =
+                {
+                    ObjToArgSlot(gc.oEventArgs),
+                    ObjToArgSlot(gc.oThrowable),
+                };
+                ctor.Call(ctorArgs);
+            }
+            EX_CATCH
+            {
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_OUTOFMEMORY);
+                UNREACHABLE();
+            }
+            EX_END_CATCH
+
             EX_TRY
             {
                 UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
-                deliverNotification.InvokeThrowing(&oThrowable);
+                deliverNotification.InvokeThrowing(&gc.oEventArgs);
             }
             EX_CATCH
             {

@@ -134,16 +134,20 @@ namespace System
         {
             if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                FirstChanceExceptionEventArgs args = new(e);
-                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                InvokeFirstChanceExceptionHandlers(handlers, new FirstChanceExceptionEventArgs(e), sender);
+            }
+        }
+
+        private static void InvokeFirstChanceExceptionHandlers(EventHandler<FirstChanceExceptionEventArgs> handlers, FirstChanceExceptionEventArgs args, object? sender)
+        {
+            foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+            {
+                try
                 {
-                    try
-                    {
-                        handler(sender, args);
-                    }
-                    catch
-                    {
-                    }
+                    handler(sender, args);
+                }
+                catch
+                {
                 }
             }
         }
