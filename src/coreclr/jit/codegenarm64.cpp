@@ -2161,7 +2161,9 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
     else
     {
         instGen_Set_Reg_To_Imm(size, dstReg, imm);
-        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+        // baseReg might be SP, which must be reg2
+        // an "add R0, R1, SP" is not encodable
+        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, baseReg, dstReg);
     }
 }
 
