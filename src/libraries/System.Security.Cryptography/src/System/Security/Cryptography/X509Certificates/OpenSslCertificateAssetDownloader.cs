@@ -200,11 +200,20 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (ignoredEntry || req is null)
                     {
+                        // Since the response will be cached, raise the timeout to the default,
+                        // if it's lower.
+                        TimeSpan timeout = downloadTimeout;
+
+                        if (timeout < ChainPal.DefaultRetrievalTimeout)
+                        {
+                            timeout = ChainPal.DefaultRetrievalTimeout;
+                        }
+
                         req = AddOrUpdate(
                             hashCode,
                             uri,
                             new CachedRequest(
-                                System.Net.Http.X509ResourceClient.DownloadAssetAsync(uri, downloadTimeout)),
+                                System.Net.Http.X509ResourceClient.DownloadAssetAsync(uri, timeout)),
                             out evicted,
                             replaced: out _);
                     }
