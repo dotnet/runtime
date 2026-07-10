@@ -204,7 +204,7 @@ namespace System.Text.Json
             }
 
             int maxByteCount = json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding;
-            int separatorLength = _currentDepth < 0 ? 1 : 0;
+            /*int separatorLength = _currentDepth < 0 ? 1 : 0;
 
             if (_memory.Length - BytesPending >= maxByteCount + separatorLength)
             {
@@ -223,7 +223,7 @@ namespace System.Text.Json
                 BytesPending += actualByteCount;
                 SetFlagToAddListSeparatorBeforeNextItem();
                 return;
-            }
+            }*/
 
             byte[]? tempArray = null;
 
