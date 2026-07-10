@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="NonExceptionThrower.ilproj" />
+    <ProjectReference Include="NoWrapThrowers.csproj" />
+  </ItemGroup>
+</Project>

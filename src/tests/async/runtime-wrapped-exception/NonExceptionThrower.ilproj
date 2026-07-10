@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The C# helper attribute injected by the directory props is not applicable to IL. -->
+    <Compile Remove="..\RuntimeAsyncMethodGenerationAttribute.cs" />
+    <Compile Include="NonExceptionThrower.il" />
+  </ItemGroup>
+</Project>
