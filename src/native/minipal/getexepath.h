@@ -70,6 +70,30 @@ static inline char* minipal_getexepath(void)
         return NULL;
     }
 
+    // if it's a bare command name (e.g. "dotnet" without a '/'), search the path for the executable.
+    if (strchr(argv[0], '/') == NULL)
+    {
+        const char *p = getenv("PATH");
+        while (*p != '\0')
+        {
+            size_t len = strcspn(p, ":");
+            char testPath[PATH_MAX];
+            if (snprintf(testPath, sizeof(testPath), "%.*s/%s", (int)len, p, argv[0]) < (int)sizeof(testPath))
+            {
+                if (access(testPath, X_OK) == 0)
+                {
+                    return realpath(testPath, NULL);
+                }
+            }
+
+            p += len;
+            if (*p == ':')
+            {
+                p++;
+            }
+        }
+    }
+
     return realpath((char *)argv[0], NULL);
 #elif defined(__sun)
     const char* path = getexecname();
