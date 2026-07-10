@@ -291,7 +291,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         assert(segment.IsPassedInRegister());
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        // Spill the parameter if referenced. Liveness is not reliable in codegen currently.
+        if (varDsc->lvRefCnt() == 0)
         {
             return;
         }
