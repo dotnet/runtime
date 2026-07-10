@@ -42,7 +42,8 @@
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Embedded as a managed resource; written to a temp file at run time. -->
+    <!-- Embed the test assembly as a managed resource. FileVersionInfoTest writes it to a temp file at run time and
+         inspects that. -->
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>EmbeddedResource</OutputItemType>

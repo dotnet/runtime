@@ -9,7 +9,6 @@ namespace System.Diagnostics.Tests
 {
     public partial class FileVersionInfoTest : FileCleanupTestBase
     {
-        private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
         // On Unix the internal name's extension is .exe if OutputType is exe even though the TargetExt is .dll.
         private readonly string OriginalTestAssemblyInternalName = PlatformDetection.IsWindows ?
             "System.Diagnostics.FileVersionInfo.TestAssembly.dll" :
@@ -30,10 +29,13 @@ namespace System.Diagnostics.Tests
             return path;
         }
 
+        private string WriteTestAssemblyToFile() =>
+            WriteEmbeddedResourceToFile("System.Diagnostics.FileVersionInfo.TestAssembly.dll");
+
         [Fact]
         public void FileVersionInfo_CustomManagedAssembly()
         {
-            string filePath = WriteEmbeddedResourceToFile(TestAssemblyFileName);
+            string filePath = WriteTestAssemblyToFile();
             VerifyVersionInfo(filePath, new MyFVI()
             {
                 Comments = "Have you played a Contoso amusement device today?",
