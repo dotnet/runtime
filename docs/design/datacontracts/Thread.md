@@ -90,8 +90,6 @@ TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr);
 ```
 
-Windows Error Reporting Watson bucket access is documented in [WindowsErrorReporting](WindowsErrorReporting.md).
-
 ## Version 1
 
 The contract depends on the following globals
