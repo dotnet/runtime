@@ -3418,6 +3418,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 #endif
 
+    if (calleeRegArgMaskLiveIn == RBM_NONE)
+    {
+        return;
+    }
+
     regMaskTP paramRegs = calleeRegArgMaskLiveIn;
     if (m_compiler->opts.OptimizationDisabled())
     {
@@ -5837,16 +5842,7 @@ void CodeGen::genFnProlog()
 
         genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
 
-#ifdef TARGET_WASM
-        // Wasm has no register argument mask (no LSRA populates calleeRegArgMaskLiveIn), so always
-        // home the (wasm-local) parameters into their frame slots.
         genHomeRegisterParams(initReg, &initRegZeroed);
-#else
-        if (calleeRegArgMaskLiveIn != RBM_NONE)
-        {
-            genHomeRegisterParams(initReg, &initRegZeroed);
-        }
-#endif
 
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();
