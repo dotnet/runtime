@@ -6080,6 +6080,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
         }
 
+        if (JitConfig.EnableArm64Fp16() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Fp16);
+        }
+
         if (JitConfig.EnableArm64Sha1() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sha1);

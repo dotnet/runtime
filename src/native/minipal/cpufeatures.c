@@ -52,6 +52,14 @@
 #ifndef HWCAP_ASIMDRDM
 #define HWCAP_ASIMDRDM  (1 << 12)
 #endif
+
+#ifndef HWCAP_FPHP
+#define HWCAP_FPHP      (1 << 9)
+#endif
+
+#ifndef HWCAP_ASIMDHP
+#define HWCAP_ASIMDHP   (1 << 10)
+#endif
 #ifndef HWCAP_LRCPC
 #define HWCAP_LRCPC     (1 << 15)
 #endif
@@ -549,6 +557,10 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
 
+    // FEAT_FP16 provides both scalar (FPHP) and Advanced SIMD (ASIMDHP) half-precision arithmetic.
+    if ((hwCap & HWCAP_FPHP) && (hwCap & HWCAP_ASIMDHP))
+        result |= ARM64IntrinsicConstants_Fp16;
+
     if (hwCap & HWCAP_SVE)
         result |= ARM64IntrinsicConstants_Sve;
 
@@ -603,6 +615,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_RDM", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rdm;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_FP16", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Fp16;
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SHA1", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Sha1;
@@ -686,6 +701,8 @@ int minipal_getcpufeatures(void)
     }
 
     // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+    // TODO: IsProcessorFeaturePresent doesn't support FEAT_FP16 (half-precision) yet.
 
     if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
     {
