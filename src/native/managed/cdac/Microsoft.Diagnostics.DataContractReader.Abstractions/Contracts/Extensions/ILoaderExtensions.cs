@@ -8,8 +8,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 public static class ILoaderExtensions
 {
-    private const uint mdtAssemblyRef = 0x23 << 24;
-
     // Resolves an AssemblyRef token (defined in <paramref name="referencingModule"/>'s metadata) to
     // the referenced assembly's module via the module's AssemblyRef -> Module map.
     public static bool TryResolveAssemblyRefToModule(
@@ -20,12 +18,13 @@ public static class ILoaderExtensions
     {
         foundModule = default;
 
-        uint rid = (uint)MetadataTokens.GetRowNumber(assemblyRef);
-        if (rid == 0)
+        if (MetadataTokens.GetRowNumber(assemblyRef) == 0)
             return false;
 
+        uint token = (uint)MetadataTokens.GetToken(assemblyRef);
+
         ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
-        TargetPointer modulePtr = loader.GetModuleLookupMapElement(tables.ManifestModuleReferences, mdtAssemblyRef | rid, out _);
+        TargetPointer modulePtr = loader.GetModuleLookupMapElement(tables.ManifestModuleReferences, token, out _);
         if (modulePtr == TargetPointer.Null)
             return false;
 

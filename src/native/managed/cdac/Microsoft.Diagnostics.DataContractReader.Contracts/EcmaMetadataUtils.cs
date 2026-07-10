@@ -47,7 +47,7 @@ public static class EcmaMetadataUtils
         return (uint)TokenType.mdtFieldDef | tokenParts;
     }
 
-    public static bool TryFindTopLevelTypeDef(MetadataReader reader, string @namespace, string name, out TypeDefinitionHandle result)
+    private static bool TryFindTopLevelTypeDef(MetadataReader reader, string @namespace, string name, out TypeDefinitionHandle result)
     {
         foreach (TypeDefinitionHandle handle in reader.TypeDefinitions)
         {
@@ -65,7 +65,7 @@ public static class EcmaMetadataUtils
         return false;
     }
 
-    public static bool TryFindNestedTypeDef(MetadataReader reader, TypeDefinitionHandle declaringType, string name, out TypeDefinitionHandle result)
+    private static bool TryFindNestedTypeDef(MetadataReader reader, TypeDefinitionHandle declaringType, string name, out TypeDefinitionHandle result)
     {
         TypeDefinition declaring = reader.GetTypeDefinition(declaringType);
         foreach (TypeDefinitionHandle handle in declaring.GetNestedTypes())
