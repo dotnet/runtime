@@ -231,9 +231,7 @@ namespace Tracing.Tests.EnableDisableValidation
 
         private static void StopSession(EventPipeSession session, EventPipeEventSource source)
         {
-            source.Dynamic.All += (TraceEvent traceEvent) =>
-            {
-            };
+            source.Dynamic.All += _ => { };
 
             Task.Run(source.Process);
             session.Stop();
