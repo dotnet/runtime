@@ -1709,6 +1709,78 @@ namespace System.Threading.Tasks.Tests
             AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_ConfigureAwaitFalse_Marker));
         }
 
+        // Generic async chain. Each method is generic over T and uses its parameter after the await, so the
+        // compiler emits a generic state machine (<Marker>d__N`1). Instantiated with a reference type the JIT
+        // reaches the async body through the shared (__Canon) generic code, whose per-instantiation MethodDesc
+        // is an instantiating (wrapper) stub. The V1 methodId is the native code start of MoveNext, so
+        // RuntimeMethodHandle_GetNativeCode must peel wrapper stubs to the shared body's code for the id to map
+        // back to a managed method; otherwise a frame would carry a stub thunk address that resolves to null.
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<T> StateMachineAsync_GenericChain_Leaf_Marker<T>(T value)
+        {
+            await Task.Delay(100).ConfigureAwait(false);
+            return value;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<T> StateMachineAsync_GenericChain_FramesResolveToSharedBody_Mid_Marker<T>(T value)
+        {
+            T result = await StateMachineAsync_GenericChain_Leaf_Marker<T>(value).ConfigureAwait(false);
+            return result;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<T> StateMachineAsync_GenericChain_FramesResolveToSharedBody_Marker<T>(T value)
+        {
+            T result = await StateMachineAsync_GenericChain_FramesResolveToSharedBody_Mid_Marker<T>(value).ConfigureAwait(false);
+            return result;
+        }
+
+        // CoreCLR-only: the primary IP->name resolver (StackFrame.GetMethodFromNativeIP) exists only on CoreCLR,
+        // and the Mono reverse-map fallback (CollectStateMachineMoveNextMethods) deliberately skips generic state
+        // machines (ContainsGenericParameters), so a generic frame can't be named on Mono without proper rundown
+        // or JIT-map data.
+        //
+        // A reference type (string) reaches the shared __Canon body through an instantiating (wrapper) stub that
+        // RuntimeMethodHandle_GetNativeCode must peel; a value type (int) is fully specialized into its own code
+        // (no wrapper stub) and resolves directly. Both must symbolize to their managed names.
+        [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported), nameof(IsNotMonoRuntime))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int))]
+        public void StateMachineAsync_GenericChain_FramesResolveToSharedBody(Type argType)
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                if (argType == typeof(int))
+                {
+                    RunScenarioAndFlush(() => StateMachineAsync_GenericChain_FramesResolveToSharedBody_Marker<int>(42));
+                }
+                else
+                {
+                    RunScenarioAndFlush(() => StateMachineAsync_GenericChain_FramesResolveToSharedBody_Marker<string>("value"));
+                }
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_GenericChain_FramesResolveToSharedBody_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            var frameNames = markerCallstacks[0].Frames
+                .Select(f => GetMethodNameFromMethodId(markerCallstacks[0].CallstackType, f.MethodId))
+                .Where(n => n is not null)
+                .ToList();
+
+            // Every generic-chain frame must resolve to its managed name.
+            AssertContains(stream, nameof(StateMachineAsync_GenericChain_Leaf_Marker), frameNames);
+            AssertContains(stream, nameof(StateMachineAsync_GenericChain_FramesResolveToSharedBody_Mid_Marker), frameNames);
+        }
+
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task StateMachineAsync_FaultedTask_Inner_Marker()

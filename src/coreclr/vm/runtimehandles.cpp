@@ -2015,22 +2015,17 @@ extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod
 
     _ASSERTE(pMethod != NULL);
 
-    // Value-type state machines expose an unboxing-stub MethodDesc via reflection; the actual JITted/R2R MoveNext
-    // body lives on the wrapped (unboxed) MethodDesc. Unwrap first, then return the native code entry point of the
-    // real body (not the unboxing stub / precode) so the caller can use it as an IP that symbolicates like any
-    // other frame (perfmap / rundown / ProcessSymbol). GetNativeCodeAnyVersion keeps R2R/tiered/rejitted methods
-    // resolvable even if the default code slot is momentarily unset; GetInterpreterCodeFromEntryPointIfPresent then
-    // maps an interpreter entry (InterpreterPrecode stub) to the IR bytecode address that method events actually
-    // report, so the id symbolicates uniformly whether the method is JITted, R2R, or interpreted (0 if none).
-    if (pMethod->IsUnboxingStub())
+    while (pMethod->IsWrapperStub())
     {
-        pMethod = pMethod->GetWrappedMethodDesc();
+        MethodDesc* pWrapped = pMethod->GetWrappedMethodDesc();
+        if (pWrapped == NULL || pWrapped == pMethod)
+        {
+            break;
+        }
+        pMethod = pWrapped;
     }
 
-    if (pMethod != NULL)
-    {
-        result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
-    }
+    result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
 
     END_QCALL;
 
