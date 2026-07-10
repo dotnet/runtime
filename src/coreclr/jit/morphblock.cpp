@@ -1397,6 +1397,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             indirFlags |= GTF_IND_TGT_NOT_HEAP;
                         }
                     }
+                    if (m_store->OperIsCopyBlkOp() && !varTypeIsGC(srcType))
+                    {
+                        // This store is one piece of copying an entire struct from source to destination.
+                        // Our memory model allows us to do this in a non-atomic way, so we can mark this store as such.
+                        indirFlags |= GTF_IND_ALLOW_NON_ATOMIC;
+                    }
                     dstFldStore = m_compiler->gtNewStoreIndNode(srcType, fldAddr, srcFld, indirFlags);
                 }
             }
