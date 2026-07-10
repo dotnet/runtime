@@ -146,8 +146,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         private sealed class RequestCache : X509MruCache<CachedRequest>
         {
+            private static readonly TimeSpan s_refreshInterval = TimeSpan.FromMinutes(6);
+
             internal static RequestCache Instance { get; } = new();
-            internal static TimeSpan s_refreshInterval = TimeSpan.FromMinutes(6);
 
             internal byte[]? Get(string uri, TimeSpan downloadTimeout)
             {
@@ -156,7 +157,7 @@ namespace System.Security.Cryptography.X509Certificates
                     OpenSslX509ChainEventSource.Log.HttpCacheQuery(uri);
                 }
 
-                int hashCode = uri.GetHashCode();
+                int hashCode = GetHashCode(uri);
                 Node? toRefresh = null;
                 CachedRequest? req = null;
                 byte[]? ret = null;

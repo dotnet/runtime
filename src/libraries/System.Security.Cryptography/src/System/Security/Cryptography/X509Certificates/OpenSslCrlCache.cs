@@ -501,6 +501,25 @@ namespace System.Security.Cryptography.X509Certificates
                     ret.CrlHandle.DangerousAddRef(ref ignore);
                 }
 
+                // Technically speaking, at most one of these three paths can be hit.
+                // 1) The key was not in the cache, and there's space
+                //   ret==value, evicted==null, replaced==null
+                // 2) The key was not in the cache, and adding the new value caused an eviction
+                //   ret==newValue, evicted==oldValue, replaced==null
+                // 3) The key was in the cache, and the new value replaced the old value
+                //   ret==newValue, evicted==null, replaced==oldValue
+                // 4) The key was in the cache, and the new value did not replace the old value
+                //   ret!=newValue, evicted==null, replaced==null
+                //
+                // But rather than encode that with else if, just let all three paths test.
+
+                if (!ReferenceEquals(ret, value))
+                {
+                    // The value we tried inserting into the cache was not used,
+                    // so we can release the SafeHandle.
+                    value.CrlHandle.Dispose();
+                }
+
                 replaced?.CrlHandle.Dispose();
 
                 if (evicted is not null)
