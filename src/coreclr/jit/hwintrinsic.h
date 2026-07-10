@@ -1472,26 +1472,7 @@ struct HWIntrinsic final
 
     inline bool needsJumpTableFallback() const
     {
-        // Set during Lowering when the immediate operand is not a constant.
-        assert(m_node != nullptr);
-        bool needs = m_node->NeedsJumpTableFallback();
-        assert(needs == !getImmOp()->IsCnsIntOrI());
-        return needs;
-    }
-
-    GenTree* getImmOp() const
-    {
-        int imm1Pos = -1;
-        int imm2Pos = -1;
-        HWIntrinsicInfo::GetImmOpsPositions(id, &imm1Pos, &imm2Pos);
-        // We only expect one immediate operand for Wasm SIMD
-        assert(imm1Pos >= 0 && imm2Pos < 0);
-
-        GenTree* ops[] = {op1, op2, op3};
-
-        assert(imm1Pos <= (int)numOperands);
-        GenTree* immOp = ops[imm1Pos - 1];
-        return immOp;
+        return !m_node->GetImmOp()->IsCnsIntOrI();
     }
 
     uint8_t GetImmediateLaneOperand() const
@@ -1499,7 +1480,7 @@ struct HWIntrinsic final
         assert(category == HW_Category_IMM || category == HW_Category_MemoryLoad ||
                category == HW_Category_MemoryStore);
 
-        GenTree* immOp = getImmOp();
+        GenTree* immOp = m_node->GetImmOp();
         assert(immOp->IsCnsIntOrI());
         ssize_t lane = immOp->AsIntCon()->IconValue();
         assert(FitsIn<uint8_t>(lane));

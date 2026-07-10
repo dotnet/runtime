@@ -711,9 +711,11 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
 //    temporary registers for its operands.
 void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // Only intrinsics that need a jump-table fallback have operands marked
+    GenTree* op = node->GetImmOp();
+
+    // Only intrinsics that have a non-constant immediate need a jump-table fallback, and mark operands
     // MultiplyUsed during Lowering (see Lowering::LowerHWIntrinsic in lowerwasm.cpp).
-    if (!node->NeedsJumpTableFallback())
+    if (!op->IsCnsIntOrI())
     {
         return;
     }

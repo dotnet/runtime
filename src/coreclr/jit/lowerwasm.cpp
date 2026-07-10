@@ -818,18 +818,6 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     }
 }
 
-static GenTree* getImmOp(GenTreeHWIntrinsic* node)
-{
-    int imm1Pos = -1;
-    int imm2Pos = -1;
-    HWIntrinsicInfo::GetImmOpsPositions(node->GetHWIntrinsicId(), &imm1Pos, &imm2Pos);
-
-    // We only expect one immediate operand for Wasm SIMD
-    assert(imm1Pos >= 0 && imm2Pos < 0);
-
-    return node->Op(imm1Pos);
-}
-
 // --------------------------------------------------------
 // LowerHWIntrinsic: Lower a hardware intrinsic node.
 //
@@ -909,13 +897,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //  nested blocks).
 GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
 {
-    GenTree* immOp = getImmOp(node);
+    GenTree* immOp = node->GetImmOp();
     if (!immOp->IsCnsIntOrI())
     {
         // This node has a non-constant immediate operand, so it will need a jump table
         // to cover all the possible immediate values. On Wasm this involves introducing nested blocks,
         // which requires us to set the operands as "multiply used" so regalloc assigns them locals.
-        node->SetNeedsJumpTableFallback();
         for (size_t i = 1; i <= node->GetOperandCount(); i++)
         {
             GenTree* op = node->Op(i);
@@ -1229,7 +1216,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case HWIntrinsicCategory::HW_Category_IMM:
         {
-            GenTree* immOp = getImmOp(node);
+            GenTree* immOp = node->GetImmOp();
             if (immOp->IsCnsIntOrI())
             {
                 MakeSrcContained(node, immOp);

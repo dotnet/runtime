@@ -113,7 +113,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
     int               immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(info.id, simdSize, info.baseType);
     WasmValueType     resultType    = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
 
-    GenTree*  immOp  = info.getImmOp();
+    GenTree*  immOp  = node->GetImmOp();
     regNumber immReg = GetMultiUseOperandReg(immOp);
 
     // Drop all incoming operands to actually consume them, they
