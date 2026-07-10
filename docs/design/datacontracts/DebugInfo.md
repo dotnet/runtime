@@ -337,6 +337,7 @@ public readonly struct DebugVarInfo
     public uint VarNumber { get; init; }
     public DebugVarLocKind Kind { get; init; }
     public bool IsByRef { get; init; }
+    public bool IsFloatingPoint { get; init; }
     public uint Register { get; init; }
     public uint Register2 { get; init; }
     public uint BaseRegister { get; init; }

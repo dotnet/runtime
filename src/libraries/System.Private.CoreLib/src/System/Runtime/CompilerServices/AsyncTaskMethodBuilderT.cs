@@ -61,7 +61,16 @@ namespace System.Runtime.CompilerServices
         {
             try
             {
-                awaiter.OnCompleted(GetStateMachineBox(ref stateMachine, ref taskField).MoveNextAction);
+                IAsyncStateMachineBox box = GetStateMachineBox(ref stateMachine, ref taskField);
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                {
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                    }
+                }
+
+                awaiter.OnCompleted(box.MoveNextAction);
             }
             catch (Exception e)
             {
@@ -136,6 +145,14 @@ namespace System.Runtime.CompilerServices
                 // The awaiter isn't specially known. Fall back to doing a normal await.
                 try
                 {
+                    if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
+                    {
+                        if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                        {
+                            box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                        }
+                    }
+
                     awaiter.UnsafeOnCompleted(box.MoveNextAction);
                 }
                 catch (Exception e)
