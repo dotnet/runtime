@@ -45,6 +45,12 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> NegativeInfinityValue => "-Infinity"u8;
         public const int MaximumFloatingPointConstantLength = 9;
 
+        // SkipWhiteSpace scans up to this many leading bytes with a scalar loop before falling
+        // back to a vectorized search. Short inter-token whitespace runs (the common case) stay
+        // at scalar cost, while longer runs (e.g. deeply indented or whitespace-heavy documents)
+        // are accelerated. Only used on .NET, where SearchValues-based scanning is available.
+        public const int MaxScalarWhiteSpaceScanLength = 16;
+
         // Used to search for the end of a number
         public static ReadOnlySpan<byte> Delimiters => ",}] \n\r\t/"u8;
 
