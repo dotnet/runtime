@@ -1991,16 +1991,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             // A floating-point CreateScalarUnsafe is a pure reinterpret: the scalar value already
             // resides in the lowest element of a SIMD register and the upper elements are explicitly
-            // undefined ("Unsafe"). There is therefore nothing for codegen to do, so we remove the
-            // node here in LIR and let its user consume the underlying scalar directly.
+            // undefined ("Unsafe"). When the consumer is another GenTreeHWIntrinsic it reads the
+            // scalar directly from that register, so there is nothing for codegen to do and we remove
+            // the node here in LIR, letting the user consume the underlying scalar directly.
             //
             // The scalar is intentionally left at its natural (scalar) type - retyping it to a SIMD
             // type would corrupt spill and memory-access sizes for other consumers. Correctness is
-            // preserved because any consumer that reads the value from a register sees the full SIMD
-            // register (with the undefined upper elements matching the Unsafe contract), while any
-            // consumer that could fold the scalar as a memory operand is gated by the width-aware
-            // containment logic in IsContainableHWIntrinsicOp (a 4/8-byte scalar cannot be contained
-            // where a wider operand is required).
+            // preserved because a GenTreeHWIntrinsic consumer that reads the value from a register
+            // sees the full SIMD register (with the undefined upper elements matching the Unsafe
+            // contract), while any consumer that could fold the scalar as a memory operand is gated
+            // by the width-aware containment logic in IsContainableHWIntrinsicOp (a 4/8-byte scalar
+            // cannot be contained where a wider operand is required). A store, return, or call
+            // argument instead materializes a value of the node's SIMD type and size, so keep the
+            // node for those and let it fall through to standard containment and codegen.
             //
             // Integral scalars (and decomposed longs) still require an explicit movd/movq to move the
             // value from a general-purpose register into a SIMD register, so those keep the
@@ -2014,6 +2017,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 LIR::Use use;
                 if (BlockRange().TryGetUse(node, &use))
                 {
+                    if ((use.User() == nullptr) || !use.User()->OperIsHWIntrinsic())
+                    {
+                        break;
+                    }
                     use.ReplaceWith(op1);
                 }
                 else
@@ -2570,18 +2577,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // ToVector*Unsafe widens a narrower vector into a wider one where the upper bits are
             // undefined; GetLower/GetLower128 narrows a wider vector by reading only its low bits.
             // At the register level both are a no-op: the value already occupies the low bits of a
-            // register, so the consumer can read op1 directly at its own size. Remove the node,
-            // which avoids a register-to-register copy when the source is still live and keeps the
-            // node out of LIR entirely.
+            // register, so the node can be removed and the consumer read op1 directly, avoiding a
+            // register-to-register copy when the source is still live.
             //
-            // The consumer reads op1 from a register at its own size; for the widening case the
-            // upper bits are undefined, which is exactly the contract of those nodes. Nothing
-            // observes the node for sizing, and containment performs its own size check
-            // (operandSize >= expectedSize), so op1 can never be read from an undersized contained
-            // memory operand.
+            // This is only valid when the consumer is another GenTreeHWIntrinsic. Such a consumer
+            // reads op1 as a register operand at the intrinsic's own size (the widening case relies
+            // on the upper bits being undefined, which is exactly the contract of these nodes), and
+            // containment performs its own size check (operandSize >= expectedSize) so op1 can never
+            // be read from an undersized contained memory operand. Any other consumer (a store,
+            // return, or call argument) materializes a value of the node's own type and size via the
+            // ABI, so removing the node there would corrupt the copy size; keep the node for those.
 
             LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
+            if (BlockRange().TryGetUse(node, &use) && (use.User() != nullptr) && use.User()->OperIsHWIntrinsic())
             {
                 GenTree* op1  = node->Op(1);
                 GenTree* next = node->gtNext;
