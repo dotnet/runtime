@@ -11740,8 +11740,10 @@ bool Compiler::impWrapTopOfStackInAwait()
         return true;
     }
 
-    CORINFO_LOOKUP        instArgLookup;
-    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
+    CORINFO_LOOKUP         instArgLookup;
+    CORINFO_CONTEXT_HANDLE contextHandle;
+    CORINFO_METHOD_HANDLE  awaitMethod =
+        info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &contextHandle, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
     info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);
@@ -11804,6 +11806,11 @@ bool Compiler::impWrapTopOfStackInAwait()
         }
     }
 
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod           = awaitMethod;
+    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(awaitMethod);
+    impMarkInlineCandidate(awaitCall, contextHandle, &callInfo, compInlineContext);
+
     GenTree* toPush = awaitCall;
     if (varTypeIsStruct(callRetType))
     {
@@ -11840,6 +11847,27 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     awaitCall->SetIsAsync(asyncInfo);
+
+    if (awaitCall->IsInlineCandidate())
+    {
+        // The struct return fixup does not create a new node for inline
+        // candidates, so 'toPush' is still the call itself.
+        assert(toPush == awaitCall);
+
+        // Make the call its own statement and hand back a GT_RET_EXPR (or
+        // nothing for void) as the placeholder for the inliner.
+        impAppendTree(awaitCall, CHECK_SPILL_ALL, impCurStmtDI, /* checkConsumedDebugInfo */ false);
+
+        if (callRetType == TYP_VOID)
+        {
+            assert(info.compRetType == TYP_VOID);
+            return true;
+        }
+
+        GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(awaitCall, genActualType(awaitCall->TypeGet()));
+        awaitCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+        toPush                                             = retExpr;
+    }
 
     if (info.compRetType == TYP_VOID)
     {

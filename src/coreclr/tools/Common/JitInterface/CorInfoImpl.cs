@@ -3592,7 +3592,7 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
-        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
+        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
         {
             instArg.lookupKind.needsRuntimeLookup = false;
             instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
@@ -3631,6 +3631,11 @@ namespace Internal.JitInterface
             }
 
             MethodDesc result = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            // Use the runtime-determined method as the context for inlining the
+            // await call, exactly as getCallInfo reports its contextHandle
+            // (which may be an approximate/shared instantiation).
+            *contextHandle = contextFromMethod(runtimeDeterminedResult);
 
             if (result.RequiresInstArg())
             {
