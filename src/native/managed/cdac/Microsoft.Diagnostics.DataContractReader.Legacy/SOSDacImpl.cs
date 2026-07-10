@@ -1636,7 +1636,7 @@ public sealed unsafe partial class SOSDacImpl
                     Type = h.Type,
                     StrongReference = h.StrongReference ? 1 : 0,
                     RefCount = h.RefCount,
-                    JupiterRefCount = h.JupiterRefCount,
+                    JupiterRefCount = 0,
                     IsPegged = h.IsPegged ? 1 : 0,
                 };
             }
