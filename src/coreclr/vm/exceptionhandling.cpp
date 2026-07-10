@@ -620,7 +620,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         // Failfast if exception indicates corrupted process state
         if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, /* throwable */ NULL))
         {
-            EEPOLICY_HANDLE_FATAL_ERROR(pExceptionRecord->ExceptionCode);
+            // This is a genuinely-unmanaged fatal fault (its faulting instruction pointer is
+            // native code) that unwound into managed code without being translated into a
+            // managed exception. Forward the live EXCEPTION_RECORD/CONTEXT so the fatal error
+            // handler (ExceptionHandling.SetFatalErrorHandler) can surface them.
+            EXCEPTION_POINTERS exceptionInfo;
+            exceptionInfo.ExceptionRecord = pExceptionRecord;
+            exceptionInfo.ContextRecord = pContextRecord;
+            EEPOLICY_HANDLE_FATAL_ERROR_USING_EXCEPTION_INFO(pExceptionRecord->ExceptionCode, &exceptionInfo);
         }
 
 #ifdef TARGET_X86

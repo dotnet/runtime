@@ -296,11 +296,11 @@ unsafe class FatalErrorHandlerTest
         Console.WriteLine("=== TestNativeCodeException ===");
 
         // A genuinely unmanaged fatal fault (an access violation whose faulting
-        // instruction pointer is inside native code). Only NativeAOT currently routes
-        // this to the fatal error handler.
-        if (!TestLibrary.Utilities.IsNativeAot)
+        // instruction pointer is inside native code). NativeAOT routes this on all
+        // platforms; CoreCLR routes it on Windows. CoreCLR on Unix/macOS is not yet wired.
+        if (!TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows())
         {
-            Console.WriteLine("  SKIP: only implemented on NativeAOT");
+            Console.WriteLine("  SKIP: only implemented on NativeAOT and CoreCLR/Windows");
             return true;
         }
 

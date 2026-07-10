@@ -746,6 +746,14 @@ static thread_local LPCWSTR t_crashExceptionString;
 // captured immediately before the handler is invoked.
 static thread_local void* t_crashAddress;
 
+#ifdef TARGET_WINDOWS
+// Path B (Windows) only: the live platform-native fault records for a genuinely-unmanaged
+// fatal fault, surfaced through FEP_WindowsExceptionRecord/FEP_WindowsContextRecord. Null on
+// the managed fatal path (Path A), which does not surface these records.
+static thread_local PEXCEPTION_RECORD t_crashExceptionRecord;
+static thread_local PCONTEXT t_crashContextRecord;
+#endif // TARGET_WINDOWS
+
 static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     LIMITED_METHOD_CONTRACT;
@@ -770,10 +778,10 @@ static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogActio
 }
 
 // Property getter passed to the user's fatal error handler. Surfaces the crash-log
-// entry point and stored crash address. The platform-native signal/exception record
-// properties are only surfaced for fatal crashes in unmanaged code, which do not
-// flow through this managed fatal path. Returns a nonzero value when the requested
-// property is available (and *value is written), or 0 otherwise.
+// entry point and stored crash address. On Windows the live EXCEPTION_RECORD/CONTEXT are
+// additionally surfaced for a genuinely-unmanaged fatal fault (Path B); they are unavailable
+// on the managed fatal path (Path A). Returns a nonzero value when the requested property is
+// available (and *value is written), or 0 otherwise.
 static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty prop, const void** value)
 {
     WRAPPER_NO_CONTRACT;
@@ -792,6 +800,20 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
             return 0;
         *value = t_crashAddress;
         return 1;
+
+#ifdef TARGET_WINDOWS
+    case FEP_WindowsExceptionRecord:
+        if (t_crashExceptionRecord == nullptr)
+            return 0;
+        *value = t_crashExceptionRecord;
+        return 1;
+
+    case FEP_WindowsContextRecord:
+        if (t_crashContextRecord == nullptr)
+            return 0;
+        *value = t_crashContextRecord;
+        return 1;
+#endif // TARGET_WINDOWS
 
     default:
         return 0;
@@ -816,6 +838,38 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
     int result = pfnHandler(static_cast<int>(exitCode), FatalErrorPropertyGetterImpl);
     return result == SkipDefaultHandler;
 }
+
+#ifdef TARGET_WINDOWS
+
+// Genuinely-fatal hardware fault codes handled by the unmanaged fatal path (Path B). Mirrors
+// the NativeAOT Windows choke point. STATUS_STACK_OVERFLOW is deliberately excluded: it has a
+// dedicated fatal path and too little stack remains to transition back into managed code.
+static bool IsFatalHardwareExceptionForFatalErrorHandler(DWORD exceptionCode)
+{
+    switch (exceptionCode)
+    {
+    case STATUS_ACCESS_VIOLATION:
+    case STATUS_IN_PAGE_ERROR:
+    case STATUS_DATATYPE_MISALIGNMENT:
+    case STATUS_ILLEGAL_INSTRUCTION:
+    case STATUS_PRIVILEGED_INSTRUCTION:
+    case STATUS_ARRAY_BOUNDS_EXCEEDED:
+    case STATUS_INTEGER_DIVIDE_BY_ZERO:
+    case STATUS_INTEGER_OVERFLOW:
+    case STATUS_FLOAT_DIVIDE_BY_ZERO:
+    case STATUS_FLOAT_INVALID_OPERATION:
+    case STATUS_FLOAT_OVERFLOW:
+    case STATUS_FLOAT_UNDERFLOW:
+    case STATUS_FLOAT_INEXACT_RESULT:
+    case STATUS_FLOAT_DENORMAL_OPERAND:
+    case STATUS_FLOAT_STACK_CHECK:
+        return true;
+    default:
+        return false;
+    }
+}
+
+#endif // TARGET_WINDOWS
 
 void DisplayStackOverflowException()
 {
@@ -1047,6 +1101,10 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     EXCEPTION_POINTERS exceptionPointers;
     CONTEXT            context;
 
+    // Whether a live hardware EXCEPTION_POINTERS was supplied by the caller (as opposed to the
+    // synthesized one built below for the managed FailFast path).
+    bool hasHardwareExceptionInfo = (pExceptionInfo != NULL);
+
     if (pExceptionInfo == NULL)
     {
         ZeroMemory(&exceptionPointers, sizeof(exceptionPointers));
@@ -1112,6 +1170,22 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         {
             faultAddress = reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress);
         }
+
+#ifdef TARGET_WINDOWS
+        // Path B (Windows): a genuinely-unmanaged fatal fault (a live hardware fault whose
+        // faulting instruction pointer is native code) is never translated into a managed
+        // exception, so surface the live EXCEPTION_RECORD/CONTEXT to the handler through the
+        // property getter. Faults whose IP is managed code flow through the managed fatal path
+        // and surface only the fault address, so they are excluded here.
+        if (hasHardwareExceptionInfo
+            && pExceptionInfo->ExceptionRecord != NULL
+            && IsFatalHardwareExceptionForFatalErrorHandler(pExceptionInfo->ExceptionRecord->ExceptionCode)
+            && !ExecutionManager::IsManagedCode(static_cast<PCODE>(faultAddress)))
+        {
+            t_crashExceptionRecord = pExceptionInfo->ExceptionRecord;
+            t_crashContextRecord = pExceptionInfo->ContextRecord;
+        }
+#endif // TARGET_WINDOWS
 
         if (InvokeFatalErrorHandler(exitCode, faultAddress))
         {
