@@ -6445,6 +6445,16 @@ GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
     }
     GenTree* indexNode = lshNode->gtGetOp2();
 
+    // A constant shift count folds `(1 << Y) - 1` to a constant mask during morph, so a constant
+    // index should never reach here. Enforce that variable-index contract explicitly: `bzhi` takes
+    // its index in a register (there is no immediate form), so lowering a constant index would
+    // regress the optimal `and reg, imm` into `mov reg, imm` + `bzhi`. Bail and let the plain `and`
+    // stand -- this mirrors how the SUB form above guards against post-morph shapes.
+    if (indexNode->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
     if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((maskNode->gtFlags & GTF_SET_FLAGS) != 0) ||
         ((lshNode->gtFlags & GTF_SET_FLAGS) != 0))
@@ -6482,8 +6492,8 @@ GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
     //
     // Mask the index modulo the operand width so `bzhi` reproduces the C# masked-shift semantics of
     // `1 << Y` even when `Y >= width` (where `bzhi` would otherwise leave the source unchanged). The
-    // index is never a constant here (a constant `1 << Y` folds to a constant mask during morph), so
-    // the mask is always applied to a variable and cannot be folded away.
+    // index is guaranteed non-constant here (enforced by the bail above), so the mask is always
+    // applied to a variable and cannot be folded away.
     GenTree* maskCns   = m_compiler->gtNewIconNode(andNode->TypeIs(TYP_LONG) ? 63 : 31, genActualType(indexNode));
     GenTree* indexMask = m_compiler->gtNewOperNode(GT_AND, genActualType(indexNode), indexNode, maskCns);
 
