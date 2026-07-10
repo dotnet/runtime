@@ -133,7 +133,11 @@ function Get-NextMilestoneVersion {
                 Format-Milestone $devVersion.Major $devVersion.Minor "ga" $null
             }
         }
-        default { $version = Format-Milestone $devVersion.Major $devVersion.Minor "ga" $null }
+        default {
+            # Highest branched milestone is GA:
+            # a change on main that isn't in it ships in the *next* major's first preview.
+            $version = Format-Milestone ($devVersion.Major + 1) 0 "preview" 1
+        }
     }
 
     return [pscustomobject]@{
