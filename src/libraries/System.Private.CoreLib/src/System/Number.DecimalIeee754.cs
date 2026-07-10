@@ -666,7 +666,7 @@ namespace System
             // Align `hi` to the common exponent by scaling its coefficient up by 10^effectiveDifference. The
             // scaled coefficient can exceed a single limb (up to ~10^(2*Precision+1)), so it is held at double
             // width. The scale factor fits a single limb because effectiveDifference <= Precision + 2.
-            WideMultiply(hi.Significand, PowerOfTen<TValue>(effectiveDifference), out TValue magnitudeHigh, out TValue magnitudeLow);
+            WideMultiply(hi.Significand, AlignmentScaleFactor<TDecimal, TValue>(effectiveDifference), out TValue magnitudeHigh, out TValue magnitudeLow);
 
             // Align `lo` to the common exponent by discarding its `droppedDigits` least-significant digits, which
             // fall below the retained range and only contribute stickiness. The retained portion fits a single limb.
@@ -942,23 +942,28 @@ namespace System
         }
 
         /// <summary>
-        /// Computes <c>10^<paramref name="exponent"/></c> as a single <typeparamref name="TValue"/> limb. Unlike the
-        /// format's <c>Power10</c> lookup table (which only covers exponents up to <c>Precision - 1</c>), this supports
-        /// the slightly larger exponents needed when aligning operands (up to <c>Precision + 2</c>), which still fit a
-        /// single limb for every supported format.
+        /// Computes the scale factor <c>10^<paramref name="exponent"/></c> used to align addition operands. Exponents
+        /// within the format's <c>Power10</c> lookup range (<c>0..Precision - 1</c>) come straight from that table,
+        /// matching the existing parsing/formatting paths. The slightly larger alignment exponents
+        /// (<c>Precision..Precision + 2</c>, which the table does not cover) reduce the exponent by the largest table
+        /// entry each iteration and finish with a single lookup for the remainder. The result always fits a single limb
+        /// for every supported format.
         /// </summary>
-        private static TValue PowerOfTen<TValue>(int exponent)
+        private static TValue AlignmentScaleFactor<TDecimal, TValue>(int exponent)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            TValue ten = TValue.CreateTruncating(10);
+            int highestTableExponent = TDecimal.Precision - 1;
+            TValue largest = TDecimal.Power10(highestTableExponent);
             TValue result = TValue.One;
 
-            for (int i = 0; i < exponent; i++)
+            while (exponent > highestTableExponent)
             {
-                result *= ten;
+                result *= largest;
+                exponent -= highestTableExponent;
             }
 
-            return result;
+            return result * TDecimal.Power10(exponent);
         }
 
         /// <summary>
