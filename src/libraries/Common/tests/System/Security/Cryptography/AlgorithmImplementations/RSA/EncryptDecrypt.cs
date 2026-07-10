@@ -861,7 +861,6 @@ namespace System.Security.Cryptography.Rsa.Tests
                 yield return new object[] { RSAEncryptionPadding.OaepSHA256, true, false };
                 yield return new object[] { RSAEncryptionPadding.OaepSHA384, true, false };
                 yield return new object[] { RSAEncryptionPadding.OaepSHA512, true, false };
-                
                 yield return new object[] { RSAEncryptionPadding.OaepSHA3_256, false, true };
                 yield return new object[] { RSAEncryptionPadding.OaepSHA3_384, false, true };
                 yield return new object[] { RSAEncryptionPadding.OaepSHA3_512, false, true };
