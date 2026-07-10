@@ -269,6 +269,24 @@ namespace System.Numerics
         /// <returns>The unary negation of <paramref name="value" />.</returns>
         public static Decimal64 operator -(Decimal64 value) => new Decimal64(value._value ^ SignMask);
 
+        /// <summary>Adds two values together to compute their sum.</summary>
+        /// <param name="left">The value to which <paramref name="right" /> is added.</param>
+        /// <param name="right">The value which is added to <paramref name="left" />.</param>
+        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal64 operator +(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+        }
+
+        /// <summary>Subtracts two values to compute their difference.</summary>
+        /// <param name="left">The value from which <paramref name="right" /> is subtracted.</param>
+        /// <param name="right">The value which is subtracted from <paramref name="left" />.</param>
+        /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
+        public static Decimal64 operator -(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(left._value, right._value ^ SignMask));
+        }
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.BufferLength => Number.Decimal64NumberBufferLength;

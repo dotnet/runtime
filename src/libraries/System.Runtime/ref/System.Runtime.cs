@@ -11404,6 +11404,8 @@ namespace System.Numerics
 
         public static Decimal32 operator +(Decimal32 value) { throw null; }
         public static Decimal32 operator -(Decimal32 value) { throw null; }
+        public static Decimal32 operator +(Decimal32 left, Decimal32 right) { throw null; }
+        public static Decimal32 operator -(Decimal32 left, Decimal32 right) { throw null; }
     }
 
     public readonly struct Decimal64
@@ -11448,6 +11450,8 @@ namespace System.Numerics
 
         public static Decimal64 operator +(Decimal64 value) { throw null; }
         public static Decimal64 operator -(Decimal64 value) { throw null; }
+        public static Decimal64 operator +(Decimal64 left, Decimal64 right) { throw null; }
+        public static Decimal64 operator -(Decimal64 left, Decimal64 right) { throw null; }
     }
 
     public readonly struct Decimal128
@@ -11492,6 +11496,8 @@ namespace System.Numerics
 
         public static Decimal128 operator +(Decimal128 value) { throw null; }
         public static Decimal128 operator -(Decimal128 value) { throw null; }
+        public static Decimal128 operator +(Decimal128 left, Decimal128 right) { throw null; }
+        public static Decimal128 operator -(Decimal128 left, Decimal128 right) { throw null; }
     }
 
     public readonly partial struct BFloat16 : System.IComparable, System.IComparable<System.Numerics.BFloat16>, System.IEquatable<System.Numerics.BFloat16>, System.IFormattable, System.IParsable<System.Numerics.BFloat16>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.BFloat16>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.BFloat16>, System.Numerics.IAdditionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IBinaryFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IBinaryNumber<System.Numerics.BFloat16>, System.Numerics.IBitwiseOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IComparisonOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IDecrementOperators<System.Numerics.BFloat16>, System.Numerics.IDivisionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IEqualityOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, bool>, System.Numerics.IExponentialFunctions<System.Numerics.BFloat16>, System.Numerics.IFloatingPoint<System.Numerics.BFloat16>, System.Numerics.IFloatingPointConstants<System.Numerics.BFloat16>, System.Numerics.IFloatingPointIeee754<System.Numerics.BFloat16>, System.Numerics.IHyperbolicFunctions<System.Numerics.BFloat16>, System.Numerics.IIncrementOperators<System.Numerics.BFloat16>, System.Numerics.ILogarithmicFunctions<System.Numerics.BFloat16>, System.Numerics.IMinMaxValue<System.Numerics.BFloat16>, System.Numerics.IModulusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplicativeIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IMultiplyOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.INumber<System.Numerics.BFloat16>, System.Numerics.INumberBase<System.Numerics.BFloat16>, System.Numerics.IPowerFunctions<System.Numerics.BFloat16>, System.Numerics.IRootFunctions<System.Numerics.BFloat16>, System.Numerics.ISignedNumber<System.Numerics.BFloat16>, System.Numerics.ISubtractionOperators<System.Numerics.BFloat16, System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.ITrigonometricFunctions<System.Numerics.BFloat16>, System.Numerics.IUnaryNegationOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>, System.Numerics.IUnaryPlusOperators<System.Numerics.BFloat16, System.Numerics.BFloat16>

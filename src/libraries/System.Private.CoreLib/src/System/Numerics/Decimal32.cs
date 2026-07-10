@@ -268,6 +268,24 @@ namespace System.Numerics
         /// <returns>The unary negation of <paramref name="value" />.</returns>
         public static Decimal32 operator -(Decimal32 value) => new Decimal32(value._value ^ SignMask);
 
+        /// <summary>Adds two values together to compute their sum.</summary>
+        /// <param name="left">The value to which <paramref name="right" /> is added.</param>
+        /// <param name="right">The value which is added to <paramref name="left" />.</param>
+        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal32 operator +(Decimal32 left, Decimal32 right)
+        {
+            return new Decimal32(Number.AddDecimalIeee754<Decimal32, uint>(left._value, right._value));
+        }
+
+        /// <summary>Subtracts two values to compute their difference.</summary>
+        /// <param name="left">The value from which <paramref name="right" /> is subtracted.</param>
+        /// <param name="right">The value which is subtracted from <paramref name="left" />.</param>
+        /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
+        public static Decimal32 operator -(Decimal32 left, Decimal32 right)
+        {
+            return new Decimal32(Number.AddDecimalIeee754<Decimal32, uint>(left._value, right._value ^ SignMask));
+        }
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.BufferLength => Number.Decimal32NumberBufferLength;

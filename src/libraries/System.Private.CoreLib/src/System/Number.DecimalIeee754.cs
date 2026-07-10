@@ -471,5 +471,334 @@ namespace System
 
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
         }
+
+        /// <summary>
+        /// Adds two IEEE 754 decimal values represented by their raw bit patterns and returns the
+        /// bit pattern of the correctly rounded (round-to-nearest, ties-to-even) sum.
+        /// </summary>
+        /// <remarks>
+        /// The two operands are decoded, aligned to their common (smaller) exponent, and summed
+        /// exactly in base 10. Digits that fall below the retained precision are folded into a
+        /// sticky flag so the shared rounding path produces the same result as computing the exact
+        /// sum. This mirrors the mathematical behavior of the Intel reference implementation while
+        /// remaining independent of the underlying integer width.
+        /// </remarks>
+        internal static TValue AddDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_add`, `bid64_add`, and `bid128_add` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
+            {
+                return TDecimal.NaN;
+            }
+
+            if (TDecimal.IsInfinity(left))
+            {
+                // Inf + Inf with opposing signs is invalid (NaN); every other combination
+                // that includes at least one infinity returns that infinity (canonicalized).
+                if (TDecimal.IsInfinity(right) && (TDecimal.IsNegative(left) != TDecimal.IsNegative(right)))
+                {
+                    return TDecimal.NaN;
+                }
+                return TDecimal.IsNegative(left) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            if (TDecimal.IsInfinity(right))
+            {
+                return TDecimal.IsNegative(right) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            DecodedDecimalIeee754<TValue> a = UnpackDecimalIeee754<TDecimal, TValue>(left);
+            DecodedDecimalIeee754<TValue> b = UnpackDecimalIeee754<TDecimal, TValue>(right);
+
+            bool aZero = TValue.IsZero(a.Significand);
+            bool bZero = TValue.IsZero(b.Significand);
+
+            if (aZero && bZero)
+            {
+                // The sum of two zeros keeps the shared sign, otherwise it is +0 under
+                // round-to-nearest. The preferred exponent for a zero result is the smaller one.
+                bool zeroSign = a.Signed == b.Signed && a.Signed;
+                int zeroExponent = Math.Min(a.UnbiasedExponent, b.UnbiasedExponent);
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(zeroSign, TValue.Zero, zeroExponent);
+            }
+
+            if (aZero || bZero)
+            {
+                // Adding zero yields the other operand's value, but the preferred exponent is the
+                // smaller of the two exponents. When the zero's exponent is larger there is nothing
+                // to do; otherwise the coefficient is padded with trailing zeros (bounded by the
+                // available precision) to lower the exponent toward the zero's exponent.
+                DecodedDecimalIeee754<TValue> nonZero = aZero ? b : a;
+                TValue nonZeroBits = aZero ? right : left;
+                int zeroExponent = aZero ? a.UnbiasedExponent : b.UnbiasedExponent;
+
+                if (zeroExponent >= nonZero.UnbiasedExponent)
+                {
+                    return nonZeroBits;
+                }
+
+                int nonZeroDigits = TDecimal.CountDigits(nonZero.Significand);
+                int pad = Math.Min(nonZero.UnbiasedExponent - zeroExponent, TDecimal.Precision - nonZeroDigits);
+                TValue paddedSignificand = nonZero.Significand * TDecimal.Power10(pad);
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(nonZero.Signed, paddedSignificand, nonZero.UnbiasedExponent - pad);
+            }
+
+            // Both operands are finite and non-zero. Order them so `hi` has the larger (or equal)
+            // exponent, then align `lo` to `hi` by scaling `hi` up. The exponent difference is
+            // capped: anything beyond `guard` extra digits cannot influence the retained precision
+            // except through rounding, so those low-order digits of `lo` become a sticky flag.
+            DecodedDecimalIeee754<TValue> hi;
+            DecodedDecimalIeee754<TValue> lo;
+
+            if (a.UnbiasedExponent >= b.UnbiasedExponent)
+            {
+                hi = a;
+                lo = b;
+            }
+            else
+            {
+                hi = b;
+                lo = a;
+            }
+
+            int exponentDifference = hi.UnbiasedExponent - lo.UnbiasedExponent;
+            int guard = TDecimal.Precision + 2;
+            int effectiveDifference = Math.Min(exponentDifference, guard);
+            int droppedDigits = exponentDifference - effectiveDifference;
+            int commonExponent = hi.UnbiasedExponent - effectiveDifference;
+
+            int capacity = (2 * TDecimal.Precision) + 4;
+            Span<byte> hiDigits = stackalloc byte[capacity];
+            Span<byte> loDigits = stackalloc byte[capacity];
+
+            int hiLength = WriteDigits(hi.Significand, hiDigits, TDecimal.CountDigits(hi.Significand));
+            for (int i = 0; i < effectiveDifference; i++)
+            {
+                hiDigits[hiLength++] = (byte)'0';
+            }
+
+            int loRawLength = TDecimal.CountDigits(lo.Significand);
+            bool sticky = false;
+            int loLength;
+
+            if (droppedDigits >= loRawLength)
+            {
+                // Every digit of `lo` falls below the retained range; it only contributes stickiness.
+                loLength = 0;
+                sticky = true;
+            }
+            else if (droppedDigits > 0)
+            {
+                Span<byte> loRaw = stackalloc byte[capacity];
+                WriteDigits(lo.Significand, loRaw, loRawLength);
+                loLength = loRawLength - droppedDigits;
+                loRaw.Slice(0, loLength).CopyTo(loDigits);
+
+                for (int i = loLength; i < loRawLength; i++)
+                {
+                    if (loRaw[i] != (byte)'0')
+                    {
+                        sticky = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                loLength = WriteDigits(lo.Significand, loDigits, loRawLength);
+            }
+
+            bool sameSign = hi.Signed == lo.Signed;
+            bool resultSign;
+            int magnitudeLength;
+            Span<byte> magnitude = stackalloc byte[capacity + 1];
+
+            if (sameSign)
+            {
+                magnitudeLength = BigAdd(hiDigits.Slice(0, hiLength), loDigits.Slice(0, loLength), magnitude);
+                resultSign = hi.Signed;
+            }
+            else
+            {
+                int comparison = BigCompare(hiDigits.Slice(0, hiLength), loDigits.Slice(0, loLength));
+
+                if (comparison > 0)
+                {
+                    magnitudeLength = BigSub(hiDigits.Slice(0, hiLength), loDigits.Slice(0, loLength), magnitude);
+                    resultSign = hi.Signed;
+
+                    if (sticky)
+                    {
+                        // The true `lo` magnitude is slightly larger than its retained digits, so the
+                        // exact difference is one unit smaller with a non-zero fractional remainder.
+                        BigDecrement(magnitude.Slice(0, magnitudeLength));
+                    }
+                }
+                else if (comparison < 0)
+                {
+                    // `droppedDigits` is always zero here, so there is no sticky remainder to account for.
+                    magnitudeLength = BigSub(loDigits.Slice(0, loLength), hiDigits.Slice(0, hiLength), magnitude);
+                    resultSign = lo.Signed;
+                }
+                else
+                {
+                    // Exact cancellation produces +0 under round-to-nearest.
+                    return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(false, TValue.Zero, commonExponent);
+                }
+            }
+
+            int start = 0;
+            while (start < magnitudeLength && magnitude[start] == (byte)'0')
+            {
+                start++;
+            }
+            int digitsCount = magnitudeLength - start;
+
+            if (digitsCount == 0)
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(false, TValue.Zero, commonExponent);
+            }
+
+            Span<byte> numberDigits = stackalloc byte[capacity + 2];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, numberDigits);
+            magnitude.Slice(start, digitsCount).CopyTo(number.Digits);
+            number.Digits[digitsCount] = 0;
+            number.DigitsCount = digitsCount;
+            number.Scale = digitsCount + commonExponent;
+            number.IsNegative = resultSign;
+            number.HasNonZeroTail = sticky;
+            number.CheckConsistency();
+
+            return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+
+            static int WriteDigits(TValue value, Span<byte> destination, int length)
+            {
+                TValue ten = TValue.CreateTruncating(10);
+
+                for (int i = length - 1; i >= 0; i--)
+                {
+                    (value, TValue remainder) = TValue.DivRem(value, ten);
+                    destination[i] = (byte)('0' + int.CreateTruncating(remainder));
+                }
+
+                return length;
+            }
+        }
+
+        private static ReadOnlySpan<byte> TrimLeadingZeros(ReadOnlySpan<byte> digits)
+        {
+            int start = 0;
+            while (start < digits.Length && digits[start] == (byte)'0')
+            {
+                start++;
+            }
+            return digits.Slice(start);
+        }
+
+        private static int BigCompare(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+        {
+            left = TrimLeadingZeros(left);
+            right = TrimLeadingZeros(right);
+
+            if (left.Length != right.Length)
+            {
+                return left.Length < right.Length ? -1 : 1;
+            }
+
+            return left.SequenceCompareTo(right);
+        }
+
+        private static int BigAdd(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, Span<byte> result)
+        {
+            int leftLength = left.Length;
+            int rightLength = right.Length;
+            int length = Math.Max(leftLength, rightLength) + 1;
+            int carry = 0;
+
+            for (int position = 0; position < length; position++)
+            {
+                int sum = carry;
+
+                if (position < leftLength)
+                {
+                    sum += left[leftLength - 1 - position] - '0';
+                }
+                if (position < rightLength)
+                {
+                    sum += right[rightLength - 1 - position] - '0';
+                }
+
+                if (sum >= 10)
+                {
+                    sum -= 10;
+                    carry = 1;
+                }
+                else
+                {
+                    carry = 0;
+                }
+
+                result[length - 1 - position] = (byte)('0' + sum);
+            }
+
+            return length;
+        }
+
+        // Subtracts `right` from `left`, which must be greater than or equal to `right` in magnitude.
+        private static int BigSub(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, Span<byte> result)
+        {
+            left = TrimLeadingZeros(left);
+            right = TrimLeadingZeros(right);
+
+            int leftLength = left.Length;
+            int rightLength = right.Length;
+            int borrow = 0;
+
+            for (int position = 0; position < leftLength; position++)
+            {
+                int difference = (left[leftLength - 1 - position] - '0') - borrow;
+
+                if (position < rightLength)
+                {
+                    difference -= right[rightLength - 1 - position] - '0';
+                }
+
+                if (difference < 0)
+                {
+                    difference += 10;
+                    borrow = 1;
+                }
+                else
+                {
+                    borrow = 0;
+                }
+
+                result[leftLength - 1 - position] = (byte)('0' + difference);
+            }
+
+            return leftLength;
+        }
+
+        // Subtracts one from a non-zero magnitude in place. The caller guarantees no underflow.
+        private static void BigDecrement(Span<byte> magnitude)
+        {
+            for (int position = magnitude.Length - 1; position >= 0; position--)
+            {
+                if (magnitude[position] > (byte)'0')
+                {
+                    magnitude[position]--;
+                    return;
+                }
+
+                magnitude[position] = (byte)'9';
+            }
+        }
     }
 }
