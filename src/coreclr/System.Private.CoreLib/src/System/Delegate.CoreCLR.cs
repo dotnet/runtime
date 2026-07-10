@@ -255,7 +255,13 @@ namespace System
             }
 
             MethodTable* methodTable = RuntimeHelpers.GetMethodTable(this);
-            int hashCode = HashCode.Combine((nuint)(methodTable->HasTypeEquivalence ? null : methodTable), (nuint)MethodDesc);
+#if FEATURE_TYPEEQUIVALENCE
+            if (methodTable->HasTypeEquivalence)
+            {
+                methodTable = null;
+            }
+#endif
+            int hashCode = HashCode.Combine((nuint)methodTable, (nuint)MethodDesc);
             if (_methodPtrAux == 0 && _target != null)
             {
                 hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
