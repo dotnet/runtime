@@ -12506,7 +12506,9 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "IsNegative",
        "IsWhiteSpace",
        "IsSurrogate",
-       "AddByteOffset"
+       "AddByteOffset",
+       "IndexOfAnyChar",
+       "NullRef"
 
 
     };
@@ -12573,6 +12575,14 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         { "OverrideEventProvider",".ctor"},
         { "System.Diagnostics.Tracing.EventPipeEventProvider",".ctor"},
         { "System.Runtime.InteropServices.GCHandle",".ctor"},
+	{ "System.Reflection.MethodBase",".ctor"},
+	{ "System.Reflection.MemberInfo",".ctor"},
+	{ "System.Reflection.ConstructorInfo",".ctor"},
+	{ "System.Reflection.ConstructorInfo",".cctor"},
+	{ "IntroducedMethodEnumerator",".ctor"},
+	{ "Filter",".ctor"},
+	{ "System.MdUtf8String",".ctor"},
+
     };
 
     const size_t numInclusions = sizeof(jitInclusionList) / sizeof(jitInclusionList[0]);
