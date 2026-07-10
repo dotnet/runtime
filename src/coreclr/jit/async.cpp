@@ -2749,13 +2749,24 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     GenTree* storeContinuation = m_compiler->gtNewStoreLclVarNode(GetReturnedContinuationVar(), continuationArg);
     LIR::AsRange(block).InsertAfter(callDefInfo.InsertAfter, continuationArg, storeContinuation);
 
-    GenTree* null                 = m_compiler->gtNewNull();
-    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
-    GenTree* neNull               = m_compiler->gtNewOperNode(GT_NE, TYP_INT, returnedContinuation, null);
-    GenTree* jtrue                = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+    // Some async helpers always suspend. For calls to those we can skip the
+    // check for a null continuation and unconditionally branch to the
+    // suspension.
+    const bool alwaysSuspends = call->GetAsyncInfo().AlwaysSuspends;
 
-    LIR::AsRange(block).InsertAfter(storeContinuation, null, returnedContinuation, neNull, jtrue);
-    *remainder = m_compiler->fgSplitBlockAfterNode(block, jtrue);
+    GenTree* lastNode = storeContinuation;
+    if (!alwaysSuspends)
+    {
+        GenTree* null                 = m_compiler->gtNewNull();
+        GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+        GenTree* neNull               = m_compiler->gtNewOperNode(GT_NE, TYP_INT, returnedContinuation, null);
+        GenTree* jtrue                = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+
+        LIR::AsRange(block).InsertAfter(storeContinuation, null, returnedContinuation, neNull, jtrue);
+        lastNode = jtrue;
+    }
+
+    *remainder = m_compiler->fgSplitBlockAfterNode(block, lastNode);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
     // For non-inlined calls adjust offset for the split. We have the exact
@@ -2772,11 +2783,33 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
         (*remainder)->bbCodeOffs = awaitOffset + 1;
     }
 
-    FlowEdge* retBBEdge = m_compiler->fgAddRefPred(suspendBB, block);
-    block->SetCond(retBBEdge, block->GetTargetEdge());
+    if (alwaysSuspends)
+    {
+        // Unconditionally branch to the suspension. The remainder is only
+        // reachable via resumption (or unreachable for tail awaits).
+        m_compiler->fgRemoveRefPred(block->GetTargetEdge());
+        FlowEdge* retBBEdge = m_compiler->fgAddRefPred(suspendBB, block);
+        block->SetTargetEdge(retBBEdge);
 
-    block->GetTrueEdge()->setLikelihood(0);
-    block->GetFalseEdge()->setLikelihood(1);
+        // We normally assume awaits complete synchronously, but these always
+        // suspend ones do not. Thus the weight in the target actually came
+        // from the resumption path. But we have already computed weights in
+        // the front end under the view that all the async calls returned
+        // normally, and we cannot reconcile that locally.
+        if (m_compiler->fgPgoConsistent)
+        {
+            JITDUMP("Marking profile inconsistent due to always-suspend helper [%06u]\n", Compiler::dspTreeID(call));
+            m_compiler->fgPgoConsistent = false;
+        }
+    }
+    else
+    {
+        FlowEdge* retBBEdge = m_compiler->fgAddRefPred(suspendBB, block);
+        block->SetCond(retBBEdge, block->GetTargetEdge());
+
+        block->GetTrueEdge()->setLikelihood(0);
+        block->GetFalseEdge()->setLikelihood(1);
+    }
 }
 
 //------------------------------------------------------------------------
