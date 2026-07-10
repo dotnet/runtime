@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [Flags]
-        internal enum SocketEvents : int
+        internal enum HandleEvents : int
         {
             None = 0x00,
             Read = 0x01,

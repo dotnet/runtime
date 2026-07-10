@@ -31,7 +31,7 @@ namespace System.Net.Sockets
 #endif
         }
 
-        private Flags _flags = Flags.IsSocket | (SocketAsyncEngine.InlineSocketCompletionsEnabled ? Flags.PreferInlineCompletions : 0);
+        private Flags _flags = Flags.IsSocket | (SocketAsyncContext.InlineSocketCompletionsEnabled ? Flags.PreferInlineCompletions : 0);
 
         private void SetFlag(Flags flag, bool value)
         {
@@ -63,12 +63,7 @@ namespace System.Net.Sockets
             set
             {
                 SetFlag(Flags.PreferInlineCompletions, value);
-
-                if (value != SocketAsyncEngine.InlineSocketCompletionsEnabled)
-                {
-                    // Tell the event loop that it can no longer assume the process-wide default.
-                    SocketAsyncEngine.OnInlineCompletionsOverride();
-                }
+                AsyncContext.SetInlineCompletions(value);
             }
         }
 
@@ -107,6 +102,7 @@ namespace System.Net.Sockets
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
             target.IsSocket = IsSocket;
+            target.PreferInlineCompletions = PreferInlineCompletions;
 #if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             target.TfoEnabled = TfoEnabled;
 #endif
