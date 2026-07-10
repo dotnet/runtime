@@ -2392,37 +2392,17 @@ namespace System
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
                 if (!Sse.IsSupported || remaining.Length > 0)
                 {
-                    if (Vector64.IsHardwareAccelerated && remaining.Length <= Vector64<ushort>.Count)
+                    Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
+                    if (cmp != Vector128<byte>.Zero)
                     {
-                        Vector64<ushort> vector = Vector64.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector64<ushort>.Count));
-                        Vector64<byte> cmp = Vector64.Equals(vector, v1.GetLower()).AsByte() | Vector64.Equals(vector, v2.GetLower()).AsByte() | Vector64.Equals(vector, v3.GetLower()).AsByte();
-                        ulong cmpU64 = cmp.AsUInt64().GetElement(0);
-                        if (cmpU64 != 0)
+                        int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
                         {
-                            int finalIndex = sourceSpanUInt16.Length - Vector64<ushort>.Count;
-                            cmpU64 &= 0x0101010101010101UL & ~((1UL << (Vector64<byte>.Count - remaining.Length * sizeof(char) * 8)) - 1);
-                            while (cmpU64 != 0)
-                            {
-                                uint bitPos = (uint)BitOperations.TrailingZeroCount(cmpU64) / (sizeof(char) * 8);
-                                sepListBuilder.Append(finalIndex + (int)bitPos);
-                                cmpU64 = BitOperations.ResetLowestSetBit(cmpU64);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
-                        Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
-                        if (cmp != Vector128<byte>.Zero)
-                        {
-                            int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
-                            uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                            while (mask != 0)
-                            {
-                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                                sepListBuilder.Append(finalIndex + (int)bitPos);
-                                mask = BitOperations.ResetLowestSetBit(mask);
-                            }
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
                 }
