@@ -1609,10 +1609,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (handleData.IsValid)
             {
                 IStackWalk sw = _target.Contracts.StackWalk;
-                StackwalkFlag flags = (handleData.Current.State == StackWalkState.NativeMarker)
-                    ? StackwalkFlag.X86ESPIgnoresCalleePoppedArgs
-                    : StackwalkFlag.Default;
-                byte[] context = sw.GetRawContext(handleData.Current, flags);
+                byte[] context = sw.GetRawContext(handleData.Current);
 
                 // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
                 RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
