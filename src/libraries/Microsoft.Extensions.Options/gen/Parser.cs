@@ -183,6 +183,9 @@ namespace Microsoft.Extensions.Options.Generators
                 _ => type.Keyword.ValueText,
             };
 
+        // AddMiscellaneousOptions must be used here rather than WithMiscellaneousOptions, which would replace
+        // the format's default options and drop EscapeKeywordIdentifiers, emitting keyword-named identifiers
+        // (e.g. a type declared as @class) unescaped into code that does not compile.
         private static string GetFQN(ISymbol type)
             => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
