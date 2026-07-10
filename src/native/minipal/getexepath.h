@@ -78,19 +78,15 @@ static inline char* minipal_getexepath(void)
         {
             size_t len = strcspn(p, ":");
             char testPath[PATH_MAX];
-            if (snprintf(testPath, sizeof(testPath), "%.*s/%s", (int)len, p, argv[0]) < (int)sizeof(testPath))
+            if (snprintf(testPath, sizeof(testPath), "%.*s/%s", (int)len, p, argv[0]) < (int)sizeof(testPath) &&
+                access(testPath, X_OK) == 0)
             {
-                if (access(testPath, X_OK) == 0)
-                {
-                    return realpath(testPath, NULL);
-                }
+                return realpath(testPath, NULL);
             }
 
             p += len;
             if (*p == ':')
-            {
                 p++;
-            }
         }
     }
 
