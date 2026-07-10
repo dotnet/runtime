@@ -3001,11 +3001,6 @@ AGAIN:
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            if ((op1->gtFlags & GTF_HW_ZERO_OR_ALL_BITS_SET) != (op2->gtFlags & GTF_HW_ZERO_OR_ALL_BITS_SET))
-            {
-                return false;
-            }
-
             return GenTreeHWIntrinsic::Equals(op1->AsHWIntrinsic(), op2->AsHWIntrinsic());
 #endif
 
@@ -33996,19 +33991,31 @@ bool GenTree::IsInvariant() const
 //
 bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
 {
+    return IsVectorPerElementMask(nullptr, simdBaseType, simdSize);
+}
+
+bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, unsigned simdSize) const
+{
 #ifdef FEATURE_SIMD
     // This should be kept in sync with ValueNumStore::IsVectorPerElementMask
 
     var_types simdType     = TypeGet();
     unsigned  elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
 
-    assert(varTypeIsSIMD(simdType));
-    assert(genTypeSize(simdType) == simdSize);
+    if (!varTypeIsSIMD(simdType) || (genTypeSize(simdType) != simdSize))
+    {
+        return false;
+    }
 
     if (IsCnsVec())
     {
         const GenTreeVecCon* vecCon = AsVecCon();
         return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal, simdBaseType, elementCount);
+    }
+
+    if ((comp != nullptr) && OperIs(GT_LCL_VAR))
+    {
+        return comp->lvaGetDesc(AsLclVar())->IsVectorPerElementMask(simdBaseType);
     }
 
     if (!OperIsHWIntrinsic())
@@ -34049,6 +34056,11 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+    if (!isScalar && GenTree::OperIsCmpCompare(oper))
+    {
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+
     switch (oper)
     {
         case GT_AND:
@@ -34064,14 +34076,14 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
             // there isn't any way to statically determine this for non-constants and
             // the constant cases should've already been folded.
 
-            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
-                   intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
+            return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize) &&
+                   intrinsic->Op(2)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
         }
 
         case GT_NOT:
         {
             // We are a unary bitwise operation where the input is a per-element mask
-            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
+            return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
         }
 
         default:

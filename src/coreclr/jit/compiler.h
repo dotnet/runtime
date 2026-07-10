@@ -668,6 +668,9 @@ private:
 
     unsigned char lvIsSpan : 1; // The local is a Span<T>
 
+    unsigned char lvIsVectorPerElementMask           : 1; // The local is known to be a per-element mask
+    unsigned char lvVectorPerElementMaskElemSizeLog2 : 2; // Maximum log2(element size) for the local mask
+
 public:
     union
     {
@@ -868,6 +871,58 @@ public:
     {
         lvIsSpan = value;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Is this local a per-element mask compatible with the given base type?
+    bool IsVectorPerElementMask(var_types simdBaseType) const
+    {
+        return lvIsVectorPerElementMask &&
+               (GetVectorPerElementMaskElemSizeLog2(simdBaseType) <= lvVectorPerElementMaskElemSizeLog2);
+    }
+
+    // Mark this local as a per-element mask with the given base type.
+    void SetIsVectorPerElementMask(var_types simdBaseType)
+    {
+        unsigned elemSizeLog2 = GetVectorPerElementMaskElemSizeLog2(simdBaseType);
+
+        if (!lvIsVectorPerElementMask || (elemSizeLog2 > lvVectorPerElementMaskElemSizeLog2))
+        {
+            lvVectorPerElementMaskElemSizeLog2 = static_cast<unsigned char>(elemSizeLog2);
+        }
+
+        lvIsVectorPerElementMask = true;
+    }
+
+private:
+    static unsigned GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return 0;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return 1;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return 2;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return 3;
+
+            default:
+                unreached();
+        }
+    }
+
+public:
+#endif // FEATURE_HW_INTRINSICS
 
     /////////////////////
 
@@ -10480,42 +10535,6 @@ public:
                 unreached();
         }
     }
-
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
-    //----------------------------------------------------------------------------------------------
-    // IsHWIntrinsicCmpMask: Checks if the hwintrinsic produces a SIMD comparison mask.
-    //
-    // Arguments:
-    //    intrinsic - The hwintrinsic id
-    //
-    // Return Value:
-    //    True if the hwintrinsic produces a mask where each SIMD element is either all-bits-set or zero.
-    //
-    static bool IsHWIntrinsicCmpMask(NamedIntrinsic intrinsic)
-    {
-        switch (intrinsic)
-        {
-            case NI_AdvSimd_CompareEqual:
-            case NI_AdvSimd_CompareGreaterThan:
-            case NI_AdvSimd_CompareGreaterThanOrEqual:
-            case NI_AdvSimd_CompareLessThan:
-            case NI_AdvSimd_CompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareGreaterThan:
-            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareLessThan:
-            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
-            {
-                return true;
-            }
-
-            default:
-            {
-                return false;
-            }
-        }
-    }
-#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
 
 private:
     unsigned getSIMDInitTempVarNum(var_types simdType);

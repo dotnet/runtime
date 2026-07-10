@@ -541,7 +541,6 @@ enum GenTreeFlags : unsigned
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
-    GTF_HW_ZERO_OR_ALL_BITS_SET   = 0x40000000, // GT_HWINTRINSIC -- each SIMD element is either zero or all-bits-set
 #endif // FEATURE_HW_INTRINSICS
 };
 
@@ -2540,6 +2539,7 @@ public:
 
     bool IsInvariant() const;
     bool IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const;
+    bool IsVectorPerElementMask(class Compiler* comp, var_types simdBaseType, unsigned simdSize) const;
 
     bool IsNeverNegative(Compiler* comp) const;
     bool IsNeverNegativeOne(Compiler* comp) const;

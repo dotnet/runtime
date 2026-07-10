@@ -1402,12 +1402,13 @@ static var_types NormalizeCmpMaskSimdBaseType(var_types simdBaseType)
 // comparison mask.
 //
 // Arguments:
+//    comp - The compiler instance.
 //    node - The hwintrinsic node.
 //
 // Return Value:
 //    True if the node is an ExtractMostSignificantBits over a SIMD comparison mask.
 //
-static bool IsHWIntrinsicCmpMaskExtractMsb(GenTreeHWIntrinsic* node)
+static bool IsHWIntrinsicCmpMaskExtractMsb(Compiler* comp, GenTreeHWIntrinsic* node)
 {
     if ((node->GetHWIntrinsicId() != NI_Vector64_ExtractMostSignificantBits) &&
         (node->GetHWIntrinsicId() != NI_Vector128_ExtractMostSignificantBits))
@@ -1415,19 +1416,16 @@ static bool IsHWIntrinsicCmpMaskExtractMsb(GenTreeHWIntrinsic* node)
         return false;
     }
 
-    if (NormalizeCmpMaskSimdBaseType(node->GetSimdBaseType()) == TYP_UNDEF)
+    var_types simdBaseType = NormalizeCmpMaskSimdBaseType(node->GetSimdBaseType());
+
+    if (simdBaseType == TYP_UNDEF)
     {
         return false;
     }
 
     GenTree* op1 = node->Op(1);
 
-    if (((node->gtFlags & GTF_HW_ZERO_OR_ALL_BITS_SET) != 0) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-    {
-        return true;
-    }
-
-    return op1->OperIsHWIntrinsic() && Compiler::IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId());
+    return op1->IsVectorPerElementMask(comp, simdBaseType, node->GetSimdSize());
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1582,7 +1580,7 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::
 
     GenTree* op1 = node->Op(1);
 
-    if (!IsHWIntrinsicCmpMaskExtractMsb(node))
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, node))
     {
         return false;
     }
@@ -1670,7 +1668,7 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Co
         return false;
     }
 
-    if (!IsHWIntrinsicCmpMaskExtractMsb(extractNode))
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode))
     {
         return false;
     }
@@ -1782,7 +1780,7 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(GenTree** use, C
         return false;
     }
 
-    if (!IsHWIntrinsicCmpMaskExtractMsb(extractNode))
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode))
     {
         return false;
     }
@@ -1918,7 +1916,7 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
     }
 
     if ((parents.Height() > 1) && (IsPrimitivePopCount(parents.Top(1)) || IsZeroCount(parents.Top(1))) &&
-        IsHWIntrinsicCmpMaskExtractMsb(node))
+        IsHWIntrinsicCmpMaskExtractMsb(m_compiler, node))
     {
         return;
     }

@@ -80,7 +80,7 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
 //----------------------------------------------------------------------------------------------
-// optAssertionProp_HWIntrinsic: Propagate VN-derived facts to hwintrinsic tree flags.
+// optAssertionProp_HWIntrinsic: Propagate VN-derived facts to local var metadata.
 //
 // Arguments:
 //    comp - The compiler instance
@@ -99,7 +99,14 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 
     GenTree* op1 = tree->Op(1);
 
-    if (op1->OperIsHWIntrinsic() && !Compiler::IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
+
+    if (!varDsc->lvSingleDef)
     {
         return;
     }
@@ -128,7 +135,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 
     if (comp->vnStore->VNVisitReachingVNs(op1VN, vnVisitor) == ValueNumStore::VNVisit::Continue)
     {
-        tree->gtFlags |= GTF_HW_ZERO_OR_ALL_BITS_SET;
+        varDsc->SetIsVectorPerElementMask(tree->GetSimdBaseType());
     }
 }
 #endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
