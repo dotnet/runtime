@@ -16,22 +16,22 @@ namespace System.Threading
         public bool IsReadReady(out int observedSequenceNumber) { throw new PlatformNotSupportedException(); }
         public bool IsWriteReady(out int observedSequenceNumber) { throw new PlatformNotSupportedException(); }
 
-        public AsyncResult ReadAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult StartAsyncRead(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public AsyncResult WriteAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult StartAsyncWrite(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public SyncResult ReadSync(Operation operation, int observedSequenceNumber, int timeout)
+        public SyncResult Read(Operation operation, int observedSequenceNumber, int timeout)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public SyncResult WriteSync(Operation operation, int observedSequenceNumber, int timeout)
+        public SyncResult Write(Operation operation, int observedSequenceNumber, int timeout)
         {
             throw new PlatformNotSupportedException();
         }

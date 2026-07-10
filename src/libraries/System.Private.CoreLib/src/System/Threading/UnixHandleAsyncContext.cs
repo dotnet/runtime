@@ -477,22 +477,22 @@ namespace System.Threading
         public bool InlineCompletions { get; set; }
 
         /// <summary>
-        /// Returns a sequence number to pass to <see cref="ReadAsync"/> or <see cref="ReadSync"/>.
+        /// Returns a sequence number to pass to <see cref="StartAsyncRead"/> or <see cref="Read"/>.
         /// If the method returns <see langword="true"/>, the caller must first try executing the operation.
-        /// If the operation is pending, then the caller calls the ReadAsync/ReadSync method to execute the operation.
+        /// If the operation is pending, then the caller calls the StartAsyncRead/Read method to execute the operation.
         /// </summary>
-        /// <param name="observedSequenceNumber">A sequence number to pass to <see cref="ReadAsync"/> or <see cref="ReadSync"/>.</param>
+        /// <param name="observedSequenceNumber">A sequence number to pass to <see cref="StartAsyncRead"/> or <see cref="Read"/>.</param>
         /// <returns><see langword="true"/> if the handle is ready for reading; otherwise, <see langword="false"/>.</returns>
         /// <remarks>Returns <see langword="false"/> when the instance is disposed.</remarks>
         public bool IsReadReady(out int observedSequenceNumber)
             => _readQueue.IsReady(out observedSequenceNumber);
 
         /// <summary>
-        /// Returns a sequence number to pass to <see cref="WriteAsync"/> or <see cref="WriteSync"/>.
+        /// Returns a sequence number to pass to <see cref="StartAsyncWrite"/> or <see cref="Write"/>.
         /// If the method returns <see langword="true"/>, the caller must first try executing the operation.
-        /// If the operation is pending, then the caller calls the WriteAsync/WriteSync method to execute the operation.
+        /// If the operation is pending, then the caller calls the StartAsyncWrite/Write method to execute the operation.
         /// </summary>
-        /// <param name="observedSequenceNumber">A sequence number to pass to <see cref="WriteAsync"/> or <see cref="WriteSync"/>.</param>
+        /// <param name="observedSequenceNumber">A sequence number to pass to <see cref="StartAsyncWrite"/> or <see cref="Write"/>.</param>
         /// <returns><see langword="true"/> if the handle is ready for writing; otherwise, <see langword="false"/>.</returns>
         /// <remarks>Returns <see langword="false"/> when the instance is disposed.</remarks>
         public bool IsWriteReady(out int observedSequenceNumber)
@@ -513,7 +513,7 @@ namespace System.Threading
         /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="AsyncResult.Completed"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public AsyncResult ReadAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult StartAsyncRead(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
             => _readQueue.StartOperation(this, operation, isReadOperation: true, observedSequenceNumber, cancellationToken);
 
         /// <summary>
@@ -531,7 +531,7 @@ namespace System.Threading
         /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="AsyncResult.Completed"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public AsyncResult WriteAsync(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        public AsyncResult StartAsyncWrite(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
             => _writeQueue.StartOperation(this, operation, isReadOperation: false, observedSequenceNumber, cancellationToken);
 
         /// <summary>
@@ -546,7 +546,7 @@ namespace System.Threading
         /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="SyncResult.Completed"/> or <see cref="SyncResult.TimedOut"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public SyncResult ReadSync(Operation operation, int observedSequenceNumber, int timeout)
+        public SyncResult Read(Operation operation, int observedSequenceNumber, int timeout)
             => ExecuteSync(ref _readQueue, operation, isReadOperation: true, observedSequenceNumber, timeout);
 
         /// <summary>
@@ -561,7 +561,7 @@ namespace System.Threading
         /// <para>The <paramref name="operation"/> may be reused for another operation when the method returns <see cref="SyncResult.Completed"/> or <see cref="SyncResult.TimedOut"/>.</para>
         /// </remarks>
         /// <returns>The result of the operation.</returns>
-        public SyncResult WriteSync(Operation operation, int observedSequenceNumber, int timeout)
+        public SyncResult Write(Operation operation, int observedSequenceNumber, int timeout)
             => ExecuteSync(ref _writeQueue, operation, isReadOperation: false, observedSequenceNumber, timeout);
 
         private SyncResult ExecuteSync(ref OperationQueue queue, Operation operation, bool isReadOperation, int observedSequenceNumber, int timeout)
