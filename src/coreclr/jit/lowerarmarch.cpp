@@ -1526,6 +1526,73 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case GT_NOT:
+        {
+            // ~Vector.Equals(value, Zero) is equivalent to AdvSimd.CompareTest(value, value) for integer elements.
+            if (intrinsicId != NI_AdvSimd_Not)
+            {
+                break;
+            }
+
+            GenTree* op1 = node->Op(1);
+            if (!op1->OperIsHWIntrinsic(NI_AdvSimd_CompareEqual))
+            {
+                break;
+            }
+
+            GenTreeHWIntrinsic* compare      = op1->AsHWIntrinsic();
+            var_types           simdBaseType = compare->GetSimdBaseType();
+            if (node->GetSimdBaseType() != simdBaseType ||
+                (simdBaseType != TYP_BYTE && simdBaseType != TYP_UBYTE && simdBaseType != TYP_SHORT &&
+                 simdBaseType != TYP_USHORT && simdBaseType != TYP_INT && simdBaseType != TYP_UINT))
+            {
+                break;
+            }
+
+            GenTree* zero    = nullptr;
+            unsigned valueOp = 0;
+
+            if (compare->Op(1)->IsVectorZero())
+            {
+                zero    = compare->Op(1);
+                valueOp = 2;
+            }
+            else if (compare->Op(2)->IsVectorZero())
+            {
+                zero    = compare->Op(2);
+                valueOp = 1;
+            }
+
+            if (zero != nullptr)
+            {
+                LIR::Use valueUse(BlockRange(), &compare->Op(valueOp), compare);
+                GenTree* value      = ReplaceWithLclVar(valueUse);
+                GenTree* valueClone = m_compiler->gtClone(value);
+                BlockRange().InsertAfter(value, valueClone);
+
+                GenTreeHWIntrinsic* compareTest =
+                    m_compiler->gtNewSimdHWIntrinsicNode(node->TypeGet(), value, valueClone, NI_AdvSimd_CompareTest,
+                                                         simdBaseType, node->GetSimdSize());
+                BlockRange().InsertBefore(node, compareTest);
+
+                LIR::Use use;
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(compareTest);
+                }
+                else
+                {
+                    compareTest->SetUnusedValue();
+                }
+
+                BlockRange().Remove(zero);
+                BlockRange().Remove(compare);
+                BlockRange().Remove(node);
+                return LowerNode(compareTest);
+            }
+            break;
+        }
+
         default:
         {
             break;

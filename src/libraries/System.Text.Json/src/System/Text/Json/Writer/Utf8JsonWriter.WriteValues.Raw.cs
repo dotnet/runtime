@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -192,9 +193,36 @@ namespace System.Text.Json
 
         private unsafe void TranscodeAndWriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation)
         {
+            if (json.IsEmpty)
+            {
+                ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
+            }
+
             if (json.Length > JsonConstants.MaxUtf16RawValueLength)
             {
                 ThrowHelper.ThrowArgumentException_ValueTooLarge(json.Length);
+            }
+
+            int maxByteCount = json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding;
+            int separatorLength = _currentDepth < 0 ? 1 : 0;
+
+            if (_memory.Length - BytesPending >= maxByteCount + separatorLength)
+            {
+                Span<byte> output = _memory.Span;
+                int valueStart = BytesPending + separatorLength;
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, output.Slice(valueStart, maxByteCount));
+                ReadOnlySpan<byte> transcodedValue = output.Slice(valueStart, actualByteCount);
+
+                _tokenType = skipInputValidation ? JsonTokenType.String : ValidateRawValue(transcodedValue);
+
+                if (separatorLength != 0)
+                {
+                    output[BytesPending++] = JsonConstants.ListSeparator;
+                }
+
+                BytesPending += actualByteCount;
+                SetFlagToAddListSeparatorBeforeNextItem();
+                return;
             }
 
             byte[]? tempArray = null;
@@ -204,7 +232,7 @@ namespace System.Text.Json
                 // Use stack memory
                 json.Length <= (JsonConstants.StackallocByteThreshold / JsonConstants.MaxExpansionFactorWhileTranscoding) ? stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 // Use a pooled array
-                json.Length <= (JsonConstants.ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ? tempArray = ArrayPool<byte>.Shared.Rent(json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
+                json.Length <= (JsonConstants.ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ? tempArray = ArrayPool<byte>.Shared.Rent(maxByteCount) :
                 // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)
                 // and by using a normal alloc we can avoid the Clear().
                 new byte[JsonReaderHelper.GetUtf8ByteCount(json)];
@@ -250,10 +278,7 @@ namespace System.Text.Json
             }
             else
             {
-                // Utilize reader validation.
-                Utf8JsonReader reader = new(utf8Json);
-                while (reader.Read());
-                _tokenType = reader.TokenType;
+                _tokenType = ValidateRawValue(utf8Json);
             }
 
             // TODO (https://github.com/dotnet/runtime/issues/29293):
@@ -276,6 +301,16 @@ namespace System.Text.Json
             BytesPending += len;
 
             SetFlagToAddListSeparatorBeforeNextItem();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static JsonTokenType ValidateRawValue(ReadOnlySpan<byte> utf8Json)
+        {
+            Utf8JsonReader reader = new(utf8Json);
+            while (reader.Read())
+            {
+            }
+            return reader.TokenType;
         }
     }
 }
