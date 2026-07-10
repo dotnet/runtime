@@ -10,7 +10,6 @@
 #include "error_codes.h"
 #include "utils.h"
 #include <type_traits>
-#include <atomic>
 #include <mutex>
 #include <minipal/utils.h>
 #include <coreclr_delegates.h>
@@ -175,42 +174,15 @@ namespace
     // COM activation state resolved from the runtime. Cached for the lifetime of the loaded comhost module.
     struct com_activation_info
     {
+        int status;
         pal::string_t app_path;
         com_delegates delegates;
         void* load_context;
+        pal::string_t error;
     };
 
-    // Resolve and cache the COM activation delegate so the hostfxr load and config parsing
-    // only happens once per comhost. Failures are not cached, so they are retried.
-    int get_com_activation_delegate(const com_activation_info** activation_info)
-    {
-        static std::atomic<bool> com_activation_initialized{ false };
-        static pal::mutex_t com_activation_lock;
-        static com_activation_info com_activation;
-
-        if (!com_activation_initialized.load(std::memory_order_acquire))
-        {
-            std::lock_guard<pal::mutex_t> lock{ com_activation_lock };
-            if (!com_activation_initialized.load(std::memory_order_relaxed))
-            {
-                trace::setup();
-                reset_redirected_error_writer();
-
-                error_writer_scope_t writer_scope(redirected_error_writer);
-
-                int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &com_activation.app_path, com_activation.delegates, &com_activation.load_context);
-                if (ec != StatusCode::Success)
-                    return ec;
-
-                assert(com_activation.delegates.delegate != nullptr || com_activation.load_context == ISOLATED_CONTEXT);
-
-                com_activation_initialized.store(true, std::memory_order_release);
-            }
-        }
-
-        *activation_info = &com_activation;
-        return StatusCode::Success;
-    }
+    std::once_flag s_com_activation_flag;
+    com_activation_info s_com_activation;
 
     void report_com_error_info(const GUID& guid, pal::string_t errs)
     {
@@ -255,14 +227,28 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
         return CLASS_E_CLASSNOTAVAILABLE;
 
     HRESULT hr;
-    const com_activation_info* activation;
+
+    // Resolve and store the COM activation delegate info.
+    std::call_once(s_com_activation_flag, []()
     {
-        int ec = get_com_activation_delegate(&activation);
-        if (ec != StatusCode::Success)
-        {
-            report_com_error_info(rclsid, std::move(get_redirected_error_string()));
-            return __HRESULT_FROM_WIN32(ec);
-        }
+        trace::setup();
+        reset_redirected_error_writer();
+
+        error_writer_scope_t writer_scope(redirected_error_writer);
+
+        s_com_activation.status = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &s_com_activation.app_path, s_com_activation.delegates, &s_com_activation.load_context);
+        if (s_com_activation.status != StatusCode::Success)
+            s_com_activation.error = get_redirected_error_string();
+
+        assert(s_com_activation.status != StatusCode::Success
+            || s_com_activation.delegates.delegate != nullptr
+            || s_com_activation.load_context == ISOLATED_CONTEXT);
+    });
+
+    if (s_com_activation.status != StatusCode::Success)
+    {
+        report_com_error_info(rclsid, s_com_activation.error);
+        return __HRESULT_FROM_WIN32(s_com_activation.status);
     }
 
     // Query the CLR for the type
@@ -272,18 +258,18 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     {
         rclsid,
         riid,
-        activation->app_path.c_str(),
+        s_com_activation.app_path.c_str(),
         iter->second.assembly.c_str(),
         iter->second.type.c_str(),
         (void**)&classFactory
     };
-    if (activation->delegates.delegate != nullptr)
+    if (s_com_activation.delegates.delegate != nullptr)
     {
-        RETURN_IF_FAILED(activation->delegates.delegate(&cxt, activation->load_context));
+        RETURN_IF_FAILED(s_com_activation.delegates.delegate(&cxt, s_com_activation.load_context));
     }
     else
     {
-        RETURN_IF_FAILED(activation->delegates.delegate_no_load_cxt(&cxt));
+        RETURN_IF_FAILED(s_com_activation.delegates.delegate_no_load_cxt(&cxt));
     }
     assert(classFactory != nullptr);
 
