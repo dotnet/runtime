@@ -35,6 +35,14 @@
 #include <x86intrin.h>
 #endif
 
+#if defined(TARGET_OSX)
+// The runtime globally aliases open to open$NOCANCEL, but Samply discovers jitdump files by
+// interposing the regular open symbol. Bind this call directly to that symbol.
+extern "C" int JitDumpOpen(const char* path, int flags, ...) __asm("_open");
+#else
+#define JitDumpOpen open
+#endif
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 namespace
@@ -211,7 +219,7 @@ struct PerfJitDumpState
         if (result >= PATH_MAX)
             return FatalError();
 
-        result = open(jitdumpPath, O_CREAT|O_TRUNC|O_RDWR|O_CLOEXEC, S_IRUSR|S_IWUSR );
+        result = JitDumpOpen(jitdumpPath, O_CREAT|O_TRUNC|O_RDWR|O_CLOEXEC, S_IRUSR|S_IWUSR);
 
         if (result == -1)
             return FatalError();
