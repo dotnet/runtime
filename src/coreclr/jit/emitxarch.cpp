@@ -3187,7 +3187,6 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //                          2. A map number from 0 to 7 (For AVX10.2 and above)
         leadingBytes = check;
         assert((leadingBytes == 0x0F) || ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
-                                           m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
                                            (m_compiler->compIsaSupportedDebugOnly(InstructionSet_APX))) &&
                                           (leadingBytes >= 0x00) && (leadingBytes <= 0x07)));
 
@@ -3215,7 +3214,6 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         leadingBytes = (code >> 16) & 0xFF;
         assert(leadingBytes == 0x0F ||
                ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
-                 m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
                  m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM)) &&
                 leadingBytes >= 0x00 && leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
@@ -3271,8 +3269,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x05:
         {
-            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
-                   m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
             evexPrefix |= (0x05 << 16);
             break;
         }
