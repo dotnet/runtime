@@ -4574,6 +4574,21 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                            NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16);
                         retNode = impSimdToScalarHalf(retNode, retClsHnd);
                     }
+#elif defined(TARGET_ARM64)
+                    if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                    {
+                        GenTree* op1 = impPopStack().val;
+
+                        // The integer scalar convert instructions read the source directly from a general
+                        // purpose register, so only floating-point sources need to be moved into a vector.
+                        if (varTypeIsFloating(op1Type))
+                        {
+                            op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, op1Type, 16);
+                        }
+
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Fp16_ConvertToHalf, op1Type, 16);
+                        retNode = impSimdToScalarHalf(retNode, retClsHnd);
+                    }
 #endif // TARGET_XARCH
                 }
                 else
@@ -4644,6 +4659,46 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX2_ConvertToVector128Single, TYP_USHORT, 16);
                         retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
                     }
+#elif defined(TARGET_ARM64)
+                    if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                    {
+                        NamedIntrinsic opId = NI_Illegal;
+
+                        switch (retType)
+                        {
+                            case TYP_FLOAT:
+                                opId = NI_Fp16_ConvertToSingle;
+                                break;
+                            case TYP_DOUBLE:
+                                opId = NI_Fp16_ConvertToDouble;
+                                break;
+                            case TYP_INT:
+                                opId = NI_Fp16_ConvertToInt32;
+                                break;
+                            case TYP_UINT:
+                                opId = NI_Fp16_ConvertToUInt32;
+                                break;
+                            case TYP_LONG:
+                                opId = NI_Fp16_ConvertToInt64;
+                                break;
+                            case TYP_ULONG:
+                                opId = NI_Fp16_ConvertToUInt64;
+                                break;
+                            default:
+                                break;
+                        }
+
+                        if (opId != NI_Illegal)
+                        {
+                            GenTree* op1 = impPopStack().val;
+                            op1          = impSimdCreateScalarHalf(op1);
+
+                            // The Arm64 scalar convert instructions produce their result directly in the
+                            // target register (an FP register for float/double, a general purpose register
+                            // for integers), so no vector extraction is needed.
+                            retNode = gtNewSimdHWIntrinsicNode(genActualType(retType), op1, opId, TYP_USHORT, 16);
+                        }
+                    }
 #endif // TARGET_XARCH
                 }
                 break;
@@ -4656,6 +4711,20 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
 #if defined(TARGET_XARCH)
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+
+                    op2     = impSimdCreateScalarHalf(op2);
+                    op1     = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_USHORT, 16);
+                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                }
+#elif defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
@@ -4691,6 +4760,17 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, opId, TYP_USHORT, 16);
                     retNode      = impSimdToScalarHalf(retNode, clsHnd);
                 }
+#elif defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op1 = impPopStack().val;
+                    op1          = impSimdCreateScalarHalf(op1);
+                    retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, opId, TYP_USHORT, 16);
+                    retNode      = impSimdToScalarHalf(retNode, clsHnd);
+                }
 #endif // TARGET_XARCH
                 break;
             }
@@ -4709,6 +4789,22 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_FusedMultiplyAddScalar,
                                                        TYP_USHORT, 16);
+                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                }
+#elif defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                {
+                    GenTree* op3 = impPopStack().val;
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+
+                    op3 = impSimdCreateScalarHalf(op3);
+                    op2 = impSimdCreateScalarHalf(op2);
+                    op1 = impSimdCreateScalarHalf(op1);
+
+                    // fmadd computes Rd = Rn * Rm + Ra, so (op1 * op2) + op3 == x * y + z.
+                    retNode =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_Fp16_FusedMultiplyAdd, TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, clsHnd);
                 }
 #endif // TARGET_XARCH
@@ -4734,6 +4830,19 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                        NI_AVX10v1_RoundScaleScalar, TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, clsHnd);
                 }
+#elif defined(TARGET_ARM64)
+                // todo-arm64-half: We only optimize the single-argument overloads for now.
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16) && (sig->numArgs == 1))
+                {
+                    // Arm64 has a dedicated rounding instruction per mode, so no rounding immediate is needed.
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op1 = impPopStack().val;
+                    op1          = impSimdCreateScalarHalf(op1);
+                    retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, opId, TYP_USHORT, 16);
+                    retNode      = impSimdToScalarHalf(retNode, clsHnd);
+                }
 #endif // TARGET_XARCH
                 break;
             }
@@ -4747,6 +4856,19 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
 #if defined(TARGET_XARCH)
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+
+                    op2     = impSimdCreateScalarHalf(op2);
+                    op1     = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, op2, opId, TYP_USHORT, 16);
+                }
+#elif defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
@@ -4778,6 +4900,22 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* zeroVec = gtNewZeroConNode(TYP_SIMD16);
                     oneVec           = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, oneVec,
                                                                 NI_AVX10v1_ConvertScalarToVector128Half, TYP_FLOAT, 16);
+
+                    op1     = impSimdCreateScalarHalf(op1);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, oneVec, opId, TYP_USHORT, 16);
+                    retNode = impSimdToScalarHalf(retNode, clsHnd);
+                }
+#elif defined(TARGET_ARM64)
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                {
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
+
+                    GenTree* op1 = impPopStack().val;
+
+                    // Materialize 1.0 as a Half in lane 0 of a vector by converting 1.0f -> half.
+                    GenTree* oneVec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
+                    oneVec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oneVec, NI_Fp16_ConvertToHalf, TYP_FLOAT, 16);
 
                     op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, oneVec, opId, TYP_USHORT, 16);
@@ -12549,19 +12687,20 @@ NamedIntrinsic Compiler::lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, 
     return result;
 }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
 //------------------------------------------------------------------------
-// lookupHalfIntrinsic: map a System.Half named intrinsic to the AVX10v1 scalar
+// lookupHalfIntrinsic: map a System.Half named intrinsic to the internal scalar
 //    hardware intrinsic that implements it
 //
 // Arguments:
 //    ni -- the System.Half named intrinsic
 //
 // Return Value:
-//    The corresponding NI_AVX10v1_* intrinsic, or NI_Illegal if none.
+//    The corresponding scalar hardware intrinsic, or NI_Illegal if none.
 //
 NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
 {
+#if defined(TARGET_XARCH)
     assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
 
     switch (ni)
@@ -12606,8 +12745,59 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
         default:
             return NI_Illegal;
     }
-}
+#elif defined(TARGET_ARM64)
+    assert(compOpportunisticallyDependsOn(InstructionSet_Fp16));
 
+    switch (ni)
+    {
+        case NI_System_Half_op_Addition:
+            return NI_Fp16_Add;
+        case NI_System_Half_op_Increment:
+            return NI_Fp16_Add;
+        case NI_System_Half_op_Subtraction:
+            return NI_Fp16_Subtract;
+        case NI_System_Half_op_Decrement:
+            return NI_Fp16_Subtract;
+        case NI_System_Half_op_Multiply:
+            return NI_Fp16_Multiply;
+        case NI_System_Half_op_Division:
+            return NI_Fp16_Divide;
+        case NI_System_Half_Sqrt:
+            return NI_Fp16_Sqrt;
+        case NI_System_Half_ReciprocalEstimate:
+            return NI_Fp16_ReciprocalEstimate;
+        case NI_System_Half_ReciprocalSqrtEstimate:
+            return NI_Fp16_ReciprocalSqrtEstimate;
+        case NI_System_Half_FusedMultiplyAdd:
+            return NI_Fp16_FusedMultiplyAdd;
+        case NI_System_Half_op_GreaterThan:
+            return NI_Fp16_CompareGreaterThan;
+        case NI_System_Half_op_GreaterThanOrEqual:
+            return NI_Fp16_CompareGreaterThanOrEqual;
+        case NI_System_Half_op_LessThan:
+            return NI_Fp16_CompareLessThan;
+        case NI_System_Half_op_LessThanOrEqual:
+            return NI_Fp16_CompareLessThanOrEqual;
+        case NI_System_Half_op_Equality:
+            return NI_Fp16_CompareEqual;
+        case NI_System_Half_op_Inequality:
+            return NI_Fp16_CompareNotEqual;
+        case NI_System_Half_Round:
+            return NI_Fp16_RoundToNearest;
+        case NI_System_Half_Ceiling:
+            return NI_Fp16_Ceiling;
+        case NI_System_Half_Floor:
+            return NI_Fp16_Floor;
+        case NI_System_Half_Truncate:
+            return NI_Fp16_Truncate;
+        default:
+            return NI_Illegal;
+    }
+#endif // TARGET_ARM64
+}
+#endif // FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 //------------------------------------------------------------------------
 // lookupHalfRoundingMode: map a System.Half rounding named intrinsic to the
 //    immediate rounding mode used by RoundScaleScalar
