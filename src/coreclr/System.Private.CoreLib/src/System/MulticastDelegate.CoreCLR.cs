@@ -11,6 +11,7 @@ using System.Threading;
 
 namespace System
 {
+#pragma warning disable CS0660, CS0661 // Defining operators, but not overriding Equals/GetHashCode
     [ClassInterface(ClassInterfaceType.None)]
     [ComVisible(true)]
     public abstract partial class MulticastDelegate : Delegate
@@ -260,9 +261,6 @@ namespace System
             return this;
         }
 
-        public sealed override bool Equals([NotNullWhen(true)] object? obj) => base.Equals(obj);
-        public sealed override int GetHashCode() => base.GetHashCode();
-
         // this should help inlining
         [DoesNotReturn]
         [DebuggerNonUserCode]
@@ -349,4 +347,5 @@ namespace System
         }
 #pragma warning restore IDE0060
     }
+#pragma warning restore CS0660, CS0661
 }

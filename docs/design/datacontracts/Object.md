@@ -92,7 +92,7 @@ Global variables used:
 Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
-| `unmanagedMarker` | nint | Sentinel value for detecting unmanaged pointer delegates. | `-1` |
+| `UnmanagedMarker` | nint | Sentinel value for detecting unmanaged pointer delegates. | `-1` |
 
 Contracts used:
 | Contract Name |
@@ -228,7 +228,7 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     // Check for multicast and unmanaged first.
     bool isMulticast = false;
     TargetPointer helperObject = target.ReadPointer(address + /* Delegate::HelperObject offset */);
-    if (helperObject == TargetPointer.Null)
+    if (helperObject != TargetPointer.Null)
     {
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
 
@@ -238,9 +238,9 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
         isMulticast = rts.IsArray(rts.GetTypeHandle(mt), out _);
     }
 
-    const nint unmanagedMarker = -1;
+    const nint UnmanagedMarker = -1;
     DelegateType delegateType = DelegateType.Unknown;
-    if (!isMulticast && target.ReadNInt(address + /* Delegate::ExtraData offset */) != unmanagedMarker)
+    if (!isMulticast && target.ReadNInt(address + /* Delegate::ExtraData offset */) != UnmanagedMarker)
     {
         delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
     }

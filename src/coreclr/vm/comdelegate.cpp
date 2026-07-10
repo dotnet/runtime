@@ -1806,8 +1806,8 @@ MethodDesc* COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     if (extraData != 0)
     {
         // this is one of the following:
-        // - multicast - _invocationList is Array && _invocationCount != 0
-        // - unmanaged ftn ptr - _invocationList == null && _invocationCount == -1
+        // - multicast - _helperObject is Array && _extraData != 0
+        // - unmanaged ftn ptr - _helperObject == null && _extraData == -1
         // - MethodDesc already cached
 
         // we return the method desc for the invoke for the first two cases
@@ -2095,7 +2095,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
 
-        // compare LoopCounter with InvocationCount. If less then branch to nextDelegate
+        // compare LoopCounter with _extraData. If less then branch to nextDelegate
         pCode->EmitLDLOC(dwLoopCounterNum);
         pCode->EmitLoadThis();
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__EXTRA_DATA)));

@@ -50,7 +50,7 @@ namespace System
         public object? Target =>
             TryGetInvocations(out ReadOnlySpan<object> invocations)
                 ? ((Delegate)invocations[^1]).Target
-                : IsUnmanagedFunctionPtr || _methodPtrAux != 0 ? null : _target;
+                : _methodPtrAux != 0 ? null : _target;
 
         private unsafe MethodDesc* MethodDesc
         {
@@ -169,9 +169,9 @@ namespace System
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
 
-        // equals returns true IIF the delegate is not null and has the
-        // same target, method and invocation list as this object
-        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
+        // Equals returns true IIF the delegate is not null and has the
+        // same target, method and invocation list as this object.
+        public sealed override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -180,71 +180,64 @@ namespace System
             if (!InternalEqualTypes(this, obj))
                 return false;
 
-            // Since this is a Delegate and we know the types are the same, obj should also be a Delegate
+            // Since this is a Delegate, and we know the types are the same, obj should also be a Delegate
             Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
             Delegate other = Unsafe.As<Delegate>(obj);
 
-            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
-            {
-                if (!other.TryGetInvocations(out ReadOnlySpan<object> otherInvocations) || invocations.Length != otherInvocations.Length)
-                    return false;
-
-                for (int i = 0; i < invocations.Length; i++)
-                {
-                    if (!invocations[i].Equals(otherInvocations[i]))
-                        return false;
-                }
-
-                return true;
-            }
-
-            if (IsUnmanagedFunctionPtr)
-            {
-                return other.IsUnmanagedFunctionPtr &&
-                       _methodPtr == other._methodPtr &&
-                       _methodPtrAux == other._methodPtrAux;
-            }
-
-            // Try checking full equality for other types, this is hopefully cheap enough to be worth it
-            if (_target == other._target &&
-                _methodPtr == other._methodPtr &&
-                _methodPtrAux == other._methodPtrAux)
-                return true;
-
-            // even though the fields were not all equals the delegates may still match
-            // When target carries the delegate itself the 2 targets (delegates) may be different instances
-            // but the delegates are logically the same
-            // It may also happen that the method pointer was not jitted when creating one delegate and jitted in the other
-            // if that's the case the delegates may still be equals but we need to make a more complicated check
-
+            // Check closed delegates first
             if (_methodPtrAux == 0)
             {
+                // different delegate kind
                 if (other._methodPtrAux != 0)
-                    return false; // different delegate kind
+                    return false;
 
-                // they are both closed over the first arg
+                // different instances
                 if (_target != other._target)
                     return false;
 
-                // fall through method handle check
+                if (_methodPtr == other._methodPtr)
+                    return true;
             }
             else
             {
+                // different delegate kinds
                 if (other._methodPtrAux == 0)
-                    return false; // different delegate kind
+                    return false;
 
-                // Ignore the target as it will be the delegate instance, though it may be a different one
+                // multicast
+                if (TryGetInvocations(out ReadOnlySpan<object> invocations))
+                {
+                    if (!other.TryGetInvocations(out ReadOnlySpan<object> otherInvocations) || invocations.Length != otherInvocations.Length)
+                        return false;
 
+                    for (int i = 0; i < invocations.Length; i++)
+                    {
+                        if (!invocations[i].Equals(otherInvocations[i]))
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                // unmanaged
+                if (IsUnmanagedFunctionPtr)
+                {
+                    return other.IsUnmanagedFunctionPtr &&
+                           _methodPtr == other._methodPtr &&
+                           _methodPtrAux == other._methodPtrAux;
+                }
+
+                // both delegates are open
                 if (_methodPtrAux == other._methodPtrAux)
                     return true;
-
-                // fall through method handle check
             }
 
+            // It's possible that the method pointer was JITted in one delegate but not the other.
+            // In such case the delegates may still be equal, but we need to check the MethodDescs.
             return MethodDesc == other.MethodDesc;
         }
 
-        public override unsafe int GetHashCode()
+        public sealed override unsafe int GetHashCode()
         {
             if (TryGetInvocations(out ReadOnlySpan<object> invocations))
             {
@@ -258,10 +251,10 @@ namespace System
 
             if (IsUnmanagedFunctionPtr)
             {
-                return HashCode.Combine(_methodPtr, _methodPtr);
+                return HashCode.Combine(_methodPtr, _methodPtrAux);
             }
 
-            int hashCode = ((nuint)MethodDesc).GetHashCode();
+            int hashCode = HashCode.Combine((nuint)RuntimeHelpers.GetMethodTable(this), (nuint)MethodDesc);
             if (_methodPtrAux == 0 && _target != null)
             {
                 hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
@@ -299,17 +292,9 @@ namespace System
             // need a proper declaring type instance method on a generic type
             if (declaringType.IsGenericType)
             {
+                Debug.Assert(!IsUnmanagedFunctionPtr);
                 bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != 0;
-                if (IsUnmanagedFunctionPtr)
-                {
-                    // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
-                    // be treated as open delegates, resulting in failure to get the MethodInfo
-
-                    // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
-                    RuntimeType reflectedType = (RuntimeType)GetType();
-                    declaringType = reflectedType;
-                }
-                else if (!isStatic)
+                if (!isStatic)
                 {
                     if (_methodPtrAux == 0)
                     {
