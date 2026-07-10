@@ -188,10 +188,10 @@ namespace
         static pal::mutex_t com_activation_lock;
         static com_activation_info com_activation;
 
-        if (!com_activation_initialized.load())
+        if (!com_activation_initialized.load(std::memory_order_acquire))
         {
             std::lock_guard<pal::mutex_t> lock{ com_activation_lock };
-            if (!com_activation_initialized.load())
+            if (!com_activation_initialized.load(std::memory_order_relaxed))
             {
                 trace::setup();
                 reset_redirected_error_writer();
@@ -204,7 +204,7 @@ namespace
 
                 assert(com_activation.delegates.delegate != nullptr || com_activation.load_context == ISOLATED_CONTEXT);
 
-                com_activation_initialized.store(true);
+                com_activation_initialized.store(true, std::memory_order_release);
             }
         }
 
