@@ -215,5 +215,96 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 }
             }).Dispose();
         }
+
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]
+        [Fact]
+        public static void AiaCompletionHasLimits()
+        {
+            const int IntermediateCount = 6;
+
+            CertificateAuthority.BuildPrivatePki(
+                PkiOptions.AllRevocation,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority[] intermediates,
+                out X509Certificate2 endEntity,
+                intermediateAuthorityCount: IntermediateCount,
+                pkiOptionsInSubject: false);
+
+            using (responder)
+            using (root)
+            using (endEntity)
+            {
+                try
+                {
+                    RetryHelper.Execute(
+                        () =>
+                        {
+                            using (ChainHolder holder = new ChainHolder())
+                            {
+                                // This test shows that we only download two certificates at a time.
+                                // This is a Windows black-box behavior that we're matching.
+                                // White-box suggests it's supposed to be 3, but maybe there's an off-by-one.
+                                // Windows also allow registry customization... but this test can't tolerate it.
+
+                                try
+                                {
+                                    X509Chain chain = holder.Chain;
+                                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                    chain.ChainPolicy.VerificationFlags |=
+                                        X509VerificationFlags.AllowUnknownCertificateAuthority;
+                                    chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                                    chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
+                                    chain.ChainPolicy.ExtraStore.Add(intermediates[^2].CloneIssuerCert());
+
+                                    // EE, intermediate0 (AIA), intermediate1 (ExtraStore), intermediate2 (AIA).
+                                    AssertExtensions.TrueExpression(chain.Build(endEntity));
+                                    Assert.Equal(4, chain.ChainElements.Count);
+                                    AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+
+                                    CloneIntoExtraStore(chain, 1);
+                                    CloneIntoExtraStore(chain, 3);
+                                    holder.DisposeChainElements();
+
+                                    // Previous 4 plus intermediate3 and intermediate4.
+                                    AssertExtensions.TrueExpression(chain.Build(endEntity));
+                                    Assert.Equal(6, chain.ChainElements.Count);
+                                    AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+
+                                    CloneIntoExtraStore(chain, 4);
+                                    CloneIntoExtraStore(chain, 5);
+                                    holder.DisposeChainElements();
+
+                                    // AIA fetches intermediate5 and root, chain finishes.
+                                    AssertExtensions.TrueExpression(chain.Build(endEntity));
+                                    Assert.Equal(8, chain.ChainElements.Count);
+                                    Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                                }
+                                finally
+                                {
+                                    foreach (X509Certificate2 cert in holder.Chain.ChainPolicy.ExtraStore)
+                                    {
+                                        cert.Dispose();
+                                    }
+                                }
+                            }
+                        });
+                }
+                finally
+                {
+                    foreach (CertificateAuthority intermediate in intermediates)
+                    {
+                        intermediate.Dispose();
+                    }
+                }
+
+                static void CloneIntoExtraStore(X509Chain chain, int index)
+                {
+                    ReadOnlySpan<byte> source = chain.ChainElements[index].Certificate.RawDataMemory.Span;
+                    X509Certificate2 cert = X509CertificateLoader.LoadCertificate(source);
+                    chain.ChainPolicy.ExtraStore.Add(cert);
+                }
+            }
+        }
     }
 }
