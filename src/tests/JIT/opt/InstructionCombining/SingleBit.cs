@@ -10,21 +10,21 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Set(int a, int b)
     {
-        // X64: bts {{[a-z]+}}, {{[a-z]+}}
+        // X64: bts {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return a | (1 << b);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int SetSwap(int a, int b)
     {
-        // X64: bts {{[a-z]+}}, {{[a-z]+}}
+        // X64: bts {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return (1 << b) | a;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static long SetLong(long a, int b)
     {
-        // X64: bts {{[a-z]+}}, {{[a-z]+}}
+        // X64: bts {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return a | (1L << b);
     }
 
@@ -33,7 +33,7 @@ public static class SingleBit
     {
         // A constant bit index folds to a plain 'or' with an immediate; it must not use 'bts'.
         // X64-NOT: bts
-        // X64: or {{[a-z]+}}, 0x400
+        // X64: or {{[a-z0-9]+}}, 0x400
         return a | (1 << 10);
     }
 
@@ -50,21 +50,21 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Clear(int a, int b)
     {
-        // X64: btr {{[a-z]+}}, {{[a-z]+}}
+        // X64: btr {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return a & ~(1 << b);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int ClearSwap(int a, int b)
     {
-        // X64: btr {{[a-z]+}}, {{[a-z]+}}
+        // X64: btr {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return ~(1 << b) & a;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static long ClearLong(long a, int b)
     {
-        // X64: btr {{[a-z]+}}, {{[a-z]+}}
+        // X64: btr {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return a & ~(1L << b);
     }
 
@@ -87,21 +87,21 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Invert(int a, int b)
     {
-        // X64: btc {{[a-z]+}}, {{[a-z]+}}
+        // X64: btc {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return a ^ (1 << b);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int InvertSwap(int a, int b)
     {
-        // X64: btc {{[a-z]+}}, {{[a-z]+}}
+        // X64: btc {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return (1 << b) ^ a;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static long InvertLong(long a, int b)
     {
-        // X64: btc {{[a-z]+}}, {{[a-z]+}}
+        // X64: btc {{[a-z0-9]+}}, {{[a-z0-9]+}}
         return a ^ (1L << b);
     }
 
@@ -124,7 +124,7 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int TestBitShr(int a, int b)
     {
-        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        // X64: bt {{[a-z0-9]+}}, {{[a-z0-9]+}}
         if (((a >> b) & 1) != 0)
         {
             return 100;
@@ -135,7 +135,7 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int TestBitShrEq(int a, int b)
     {
-        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        // X64: bt {{[a-z0-9]+}}, {{[a-z0-9]+}}
         if (((a >> b) & 1) == 0)
         {
             return 100;
@@ -146,7 +146,7 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int TestBitShrLong(long a, int b)
     {
-        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        // X64: bt {{[a-z0-9]+}}, {{[a-z0-9]+}}
         if (((a >> b) & 1) != 0)
         {
             return 100;
@@ -157,7 +157,7 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int TestBitMask(int a, int b)
     {
-        // X64: bt {{[a-z]+}}, {{[a-z]+}}
+        // X64: bt {{[a-z0-9]+}}, {{[a-z0-9]+}}
         if ((a & (1 << b)) != 0)
         {
             return 100;
@@ -171,7 +171,7 @@ public static class SingleBit
         // A constant bit index keeps the shift folded into a 'test' with an immediate; 'bt' has no
         // immediate form here so it must not be used.
         // X64-NOT: bt
-        // X64: test {{[a-z]+}}, {{(32|0x20)}}
+        // X64: test {{[a-z0-9]+}}, {{(32|0x20)}}
         if (((a >> 5) & 1) != 0)
         {
             return 100;
