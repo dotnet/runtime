@@ -457,7 +457,7 @@ namespace System.Numerics.Tensors.Tests
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
             // Even with FMA, ARM64 vectorized trig can diverge a few tens of ULPs from scalar.
             T? trigTolerance = IsFmaSupported
-                ? Helpers.DetermineTolerance<T>(doubleTolerance: 3e-14, floatTolerance: 1e-5f)
+                ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-5f)
                 : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
             T? tanTolerance = IsFmaSupported
                 ? Helpers.DetermineTolerance<T>(doubleTolerance: 3e-13, floatTolerance: 1e-4f)
