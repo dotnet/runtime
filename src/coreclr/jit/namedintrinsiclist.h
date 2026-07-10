@@ -25,7 +25,40 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_SpanHelpers_Memmove,
 
+    NI_System_Half_FusedMultiplyAdd,
+    NI_System_Half_Max,
+    NI_System_Half_Min,
+    NI_System_Half_ReciprocalEstimate,
+    NI_System_Half_ReciprocalSqrtEstimate,
+    NI_System_Half_Round,
+    NI_System_Half_Sqrt,
+
+    NI_System_Half_op_Addition,
+    NI_System_Half_op_Decrement,
+    NI_System_Half_op_Division,
+    NI_System_Half_op_Equality,
     NI_System_Half_op_Explicit,
+    NI_System_Half_op_GreaterThan,
+    NI_System_Half_op_GreaterThanOrEqual,
+    NI_System_Half_op_Increment,
+    NI_System_Half_op_Inequality,
+    NI_System_Half_op_LessThan,
+    NI_System_Half_op_LessThanOrEqual,
+    NI_System_Half_op_Multiply,
+    NI_System_Half_op_Subtraction,
+
+    NI_System_Half_get_MinValue,
+    NI_System_Half_get_MaxValue,
+    NI_System_Half_get_Epsilon,
+    NI_System_Half_get_NaN,
+    NI_System_Half_get_PositiveInfinity,
+    NI_System_Half_get_NegativeInfinity,
+    NI_System_Half_get_One,
+    NI_System_Half_get_Zero,
+
+    NI_System_Half_Ceiling,
+    NI_System_Half_Floor,
+    NI_System_Half_Truncate,
 
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
@@ -184,7 +217,7 @@ enum NamedIntrinsic : unsigned short
     NI_HW_INTRINSIC_START,
 
     // clang-format off
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, intCost, fltCost, category, flag) \
     NI_##isa##_##name,
 #include "hwintrinsiclist.h"
     // clang-format on

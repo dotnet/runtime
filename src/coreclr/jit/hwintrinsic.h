@@ -549,7 +549,7 @@ struct HWIntrinsicInfo
     const char*         name;     // 4 or 8-bytes
     HWIntrinsicFlag     flags;    // 8-bytes
     NamedIntrinsic      id;       // 2-bytes
-    uint16_t            ins[10];  // 10 * 2-bytes
+    uint16_t            ins[11];  // 11 * 2-bytes
     uint8_t             isa;      // 1-byte
     int8_t              simdSize; // 1-byte
     int8_t              numArgs;  // 1-byte
