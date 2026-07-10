@@ -92,6 +92,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" Link="Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IPCodeSymbolNode.cs" Link="Compiler\DependencyAnalysis\IPCodeSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
@@ -268,7 +269,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\IObjectNodeWithAlignment.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InliningInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />

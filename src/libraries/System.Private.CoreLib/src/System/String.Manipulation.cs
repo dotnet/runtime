@@ -39,6 +39,16 @@ namespace System
             public static readonly SearchValues<char> WhiteSpaceChars =
                 SearchValues.Create("\t\n\v\f\r\u0020\u0085\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000");
 
+            // All ASCII characters except the lowercase letters 'a'-'z'. The first character outside this set is
+            // the first one ToUpperOrdinal must change (a lowercase ASCII letter or a non-ASCII character).
+            public static readonly SearchValues<char> AsciiExceptLowercase =
+                SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\e\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~\u007F");
+
+            // All ASCII characters except the uppercase letters 'A'-'Z'. The first character outside this set is
+            // the first one ToLowerOrdinal must change (an uppercase ASCII letter or a non-ASCII character).
+            public static readonly SearchValues<char> AsciiExceptUppercase =
+                SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\e\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007F");
+
 #if DEBUG
             static SearchValuesStorage()
             {
@@ -152,6 +162,16 @@ namespace System
         public static unsafe string Concat(IEnumerable<string?> values)
         {
             ArgumentNullException.ThrowIfNull(values);
+
+            if (values.GetType() == typeof(List<string?>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
+            {
+                return Concat(CollectionsMarshal.AsSpan((List<string?>)values));
+            }
+
+            if (values is string?[] valuesArray)
+            {
+                return Concat((ReadOnlySpan<string?>)valuesArray);
+            }
 
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
@@ -2574,6 +2594,81 @@ namespace System
         public string ToUpperInvariant()
         {
             return TextInfo.ToUpperInvariant(this);
+        }
+
+        /// <summary>
+        /// Returns a copy of this string converted to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <returns>The uppercase equivalent of the current string.</returns>
+        /// <remarks>
+        /// The conversion uses a simple, one-to-one mapping that preserves the length of the string.
+        /// Two strings are equal under <see cref="StringComparison.OrdinalIgnoreCase"/> if and only if
+        /// their <see cref="ToUpperOrdinal"/> results are ordinally equal.
+        /// </remarks>
+        public string ToUpperOrdinal()
+        {
+            if (Length == 0)
+            {
+                return Empty;
+            }
+
+            return ChangeCaseOrdinal(toUpper: true);
+        }
+
+        /// <summary>
+        /// Returns a copy of this string converted to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <returns>The lowercase equivalent of the current string.</returns>
+        /// <remarks>
+        /// The conversion uses a simple, one-to-one mapping that preserves the length of the string.
+        /// </remarks>
+        public string ToLowerOrdinal()
+        {
+            if (Length == 0)
+            {
+                return Empty;
+            }
+
+            return ChangeCaseOrdinal(toUpper: false);
+        }
+
+        private string ChangeCaseOrdinal(bool toUpper)
+        {
+            Debug.Assert(Length > 0);
+
+            // Fast path: scan the leading run of ASCII characters that is already in the requested case.
+            // If the entire string is ASCII and needs no change, return the same instance to avoid an
+            // allocation. This mirrors the behavior of TextInfo.ChangeCaseCommon used by ToUpper(Invariant)/ToLower.
+            int consumed = toUpper
+                ? this.AsSpan().IndexOfAnyExcept(SearchValuesStorage.AsciiExceptLowercase)
+                : this.AsSpan().IndexOfAnyExcept(SearchValuesStorage.AsciiExceptUppercase);
+
+            if (consumed < 0)
+            {
+                // The whole string is ASCII and already in the requested case.
+                return this;
+            }
+
+            // The leading [0, consumed) chars are ASCII already in the requested case, so copy
+            // them verbatim and run the ordinal casing over the remainder.
+            string result = FastAllocateString(Length);
+            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), Length);
+            if (consumed > 0)
+            {
+                this.AsSpan(0, consumed).CopyTo(resultSpan);
+            }
+
+            if (toUpper)
+            {
+                Globalization.Ordinal.ToUpperOrdinal(this.AsSpan(consumed), resultSpan.Slice(consumed));
+            }
+            else
+            {
+                Globalization.Ordinal.ToLowerOrdinal(this.AsSpan(consumed), resultSpan.Slice(consumed));
+            }
+
+            return result;
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by

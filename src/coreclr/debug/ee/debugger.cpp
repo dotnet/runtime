@@ -3027,7 +3027,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
         (void)pModule; //prevent "unused variable" error from GCC
         _ASSERTE(pModule != NULL);
 
-        SafeComHolder<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
+        ComHolderPreemp<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
 
         // If we got a reader, use it.
         if (pReader != NULL)
@@ -12722,6 +12722,20 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
         LOG((LF_CORDB,LL_INFO10000,"D::UF: JITted version number (it hasn't been jitted yet), which is fine\n"));
         return S_OK;
     }
+
+#ifdef FEATURE_INTERPRETER
+    // The interpreter does not support on-stack replacement via EnC remap.
+    // Skip planting remap breakpoints so we never offer a RemapOpportunity
+    // that we cannot fulfill.
+    {
+        EECodeInfo codeInfo((PCODE)pJitInfo->m_addrOfCode);
+        if (codeInfo.IsInterpretedCode())
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::UF: method is interpreted, skipping EnC remap breakpoints\n"));
+            return S_OK;
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
     //
     // Mine the old version of the method with patches so that we can provide

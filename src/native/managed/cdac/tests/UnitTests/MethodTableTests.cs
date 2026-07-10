@@ -3,7 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
@@ -28,6 +32,7 @@ public class MethodTableTests
             [DataType.ParamTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.ParamTypeDescLayout),
             [DataType.TypeVarTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.TypeVarTypeDescLayout),
             [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.GCCoverageInfoLayout),
+            [DataType.FieldDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.FieldDescLayout),
             [DataType.ContinuationObject] = new Target.TypeInfo { Size = rtsBuilder.ContinuationObjectSize },
         };
 
@@ -41,6 +46,7 @@ public class MethodTableTests
             (nameof(Constants.Globals.MulticastDelegateMethodTable), rtsBuilder.MulticastDelegateMethodTableGlobalAddress),
             (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
             (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
+            (nameof(Constants.Globals.FieldOffsetBigRVA), MockRTS.FieldOffsetBigRVAValue),
         ];
 
     public static IEnumerable<object[]> StdArchBool()
@@ -1320,5 +1326,80 @@ public class MethodTableTests
             .AddGlobals(CreateContractGlobals(rtsBuilder))
             .AddContract<IRuntimeTypeSystem>(version: "c1")
             .Build();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFieldDescOffset_NonBigRVA_ReturnsMaskedOffset(MockTarget.Architecture arch)
+    {
+        const uint fieldOffset = 0x40;
+        TargetPointer fieldDescPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            // A normal (non-RVA) field with a non-zero type in the high bits of DWord2; the offset must be
+            // masked out of the packed word.
+            rtsBuilder => fieldDescPtr = rtsBuilder.AddFieldDesc(mtOfEnclosingClass: 0, CorElementType.Class, fieldOffset).Address);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Assert.Equal(fieldOffset, contract.GetFieldDescOffset(fieldDescPtr, fieldDef: null));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFieldDescOffset_BigRVA_ResolvesFromMetadata(MockTarget.Architecture arch)
+    {
+        // A big-RVA field packs the FIELD_OFFSET_BIG_RVA sentinel into DWord2's low 27 bits together with a
+        // non-zero type in the high 5 bits. Detection must mask off the type before comparing the sentinel,
+        // otherwise the branch is never taken and the sentinel leaks out as the offset.
+        const int rva = 0x1234;
+        byte[] metadata = BuildMetadataWithRvaField(rva, out FieldDefinitionHandle fieldHandle);
+        using MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(metadata));
+        MetadataReader reader = provider.GetMetadataReader();
+        FieldDefinition fieldDef = reader.GetFieldDefinition(fieldHandle);
+
+        TargetPointer fieldDescPtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder => fieldDescPtr = rtsBuilder.AddFieldDesc(mtOfEnclosingClass: 0, CorElementType.I4, MockRTS.FieldOffsetBigRVAValue).Address);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Assert.Equal((uint)rva, contract.GetFieldDescOffset(fieldDescPtr, fieldDef));
+    }
+
+    // Builds a minimal metadata image containing a single static field with a FieldRVA row.
+    private static byte[] BuildMetadataWithRvaField(int rva, out FieldDefinitionHandle fieldHandle)
+    {
+        var mdBuilder = new MetadataBuilder();
+        mdBuilder.AddModule(
+            0,
+            mdBuilder.GetOrAddString("TestModule"),
+            mdBuilder.GetOrAddGuid(Guid.Empty),
+            default, default);
+        mdBuilder.AddAssembly(
+            mdBuilder.GetOrAddString("TestAssembly"),
+            new Version(1, 0, 0, 0),
+            default, default, 0,
+            AssemblyHashAlgorithm.None);
+
+        var fieldSig = new BlobBuilder();
+        new BlobEncoder(fieldSig).FieldSignature().Int32();
+        BlobHandle fieldSigHandle = mdBuilder.GetOrAddBlob(fieldSig);
+
+        fieldHandle = mdBuilder.AddFieldDefinition(
+            FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasFieldRVA,
+            mdBuilder.GetOrAddString("RvaField"),
+            fieldSigHandle);
+        mdBuilder.AddFieldRelativeVirtualAddress(fieldHandle, rva);
+
+        // The <Module> type owns the field (required first type row).
+        mdBuilder.AddTypeDefinition(
+            default, default,
+            mdBuilder.GetOrAddString("<Module>"),
+            default, fieldHandle, MetadataTokens.MethodDefinitionHandle(1));
+
+        var rootBuilder = new MetadataRootBuilder(mdBuilder);
+        var blobBuilder = new BlobBuilder();
+        rootBuilder.Serialize(blobBuilder, 0, 0);
+        return blobBuilder.ToArray();
     }
 }
