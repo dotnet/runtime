@@ -49,15 +49,23 @@ public:
             return typeContext.m_classInst;
         }
 
-#ifdef _DEBUG
-        // Typical instantiation (= open type). Non-NULL only when loading any non-typical instantiation.
-        // NULL if 'this' is a typical instantiation or a non-generic type.
-        MethodTable * dbg_pTypicalInstantiationMT;
+        // Typical instantiation (= open type) MethodTable. Non-NULL only when loading a
+        // non-typical instantiation of a generic type. NULL if 'this' is a typical
+        // instantiation or a non-generic type. Used to reuse the typical instantiation's
+        // DispatchMap for non-typical instantiations.
+        MethodTable * pTypicalInstantiationMT;
 
+        inline MethodTable * GetTypicalMethodTable() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return pTypicalInstantiationMT;
+        }
+
+#ifdef _DEBUG
         inline MethodTable * Debug_GetTypicalMethodTable() const
         {
             LIMITED_METHOD_CONTRACT;
-            return dbg_pTypicalInstantiationMT;
+            return pTypicalInstantiationMT;
         }
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
@@ -2764,6 +2772,14 @@ private:
     // See comment in implementation for more details.
     VOID
     PlaceInterfaceMethods();
+
+    // --------------------------------------------------------------------------------------------
+    // If the type being built is a non-typical instantiation of a generic class/valuetype whose
+    // typical instantiation has already been loaded with a DispatchMap, returns that typical
+    // instantiation's MethodTable so that its (instantiation-independent) DispatchMap can be
+    // reused instead of being rebuilt. Returns NULL when the DispatchMap must be built normally.
+    MethodTable *
+    GetTypicalMethodTableForDispatchMapReuse();
 
     // --------------------------------------------------------------------------------------------
     // For every MethodImpl pair (represented by Entry) in bmtMethodImpl, place the body in the

@@ -1694,7 +1694,19 @@ MethodTableBuilder::BuildMethodTableThrowing(
         //
         ComputeInterfaceMapEquivalenceSet();
 
+#ifdef _DEBUG
+        // In debug builds always run PlaceInterfaceMethods so that the DispatchMap built for a
+        // specific instantiation can be validated against the reused typical instantiation map
+        // (see AllocateNewMT).
         PlaceInterfaceMethods();
+#else
+        // In release builds, skip the (potentially expensive) interface method placement when the
+        // typical instantiation's DispatchMap can be reused for this non-typical instantiation.
+        if (GetTypicalMethodTableForDispatchMapReuse() == NULL)
+        {
+            PlaceInterfaceMethods();
+        }
+#endif // _DEBUG
 
         ProcessMethodImpls();
         ProcessInexactMethodImpls();
@@ -8024,6 +8036,39 @@ MethodTableBuilder::PlaceInterfaceMethods()
 
 
 //*******************************************************************************
+// If the type being built is a non-typical instantiation of a generic class or valuetype
+// whose typical instantiation already has a DispatchMap, return that typical instantiation's
+// MethodTable. The encoded DispatchMap is instantiation-independent (it consists of type IDs
+// and slot numbers only), so it can be reused directly, avoiding a redundant - and potentially
+// expensive - run of PlaceInterfaceMethods for every instantiation. Returns NULL when the
+// DispatchMap must be built normally.
+MethodTable *
+MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse()
+{
+    STANDARD_VM_CONTRACT;
+
+    // DispatchMaps are not built for interfaces.
+    if (IsInterface())
+        return NULL;
+
+    // Only non-typical instantiations of generic types have a distinct typical instantiation.
+    if (bmtGenerics->IsTypicalTypeDefinition())
+        return NULL;
+
+    MethodTable *pTypicalMT = bmtGenerics->GetTypicalMethodTable();
+    if (pTypicalMT == NULL)
+        return NULL;
+
+    // Only reuse when the typical instantiation actually has its own DispatchMap. If it has none,
+    // this non-typical instantiation would produce none either, so the normal (empty) path is taken.
+    if (!pTypicalMT->HasDispatchMapSlot())
+        return NULL;
+
+    return pTypicalMT;
+} // MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse
+
+
+//*******************************************************************************
 //
 // Used by BuildMethodTable
 //
@@ -10899,7 +10944,19 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     BYTE *pbDispatchMapTemp = NULL;
     UINT32 cbDispatchMapTemp = 0;
     size_t dispatchMapAllocationSize = 0;
-    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+
+    // Determine whether this (non-typical) generic instantiation can reuse its typical
+    // instantiation's DispatchMap. The encoded map is instantiation-independent.
+    MethodTable *pTypicalMTForDispatchMap = GetTypicalMethodTableForDispatchMapReuse();
+
+    if (bmtVT->pDispatchMapBuilder->Count() > 0
+#ifndef _DEBUG
+        // In release builds, when reusing the typical instantiation's map, PlaceInterfaceMethods
+        // was skipped, so the builder only holds a partial (method-impl-only) map. Don't bother
+        // encoding it; it would just be discarded below.
+        && pTypicalMTForDispatchMap == NULL
+#endif // !_DEBUG
+        )
     {
         DispatchMapBuilder          *pDispatchMapBuilder = bmtVT->pDispatchMapBuilder;
         CONSISTENCY_CHECK(CheckPointer(pDispatchMapBuilder));
@@ -10913,6 +10970,31 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
         // Now determine the size of the dispatch map, so that we can allocate it in the MethodTableAuxiliaryData
         dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
+    }
+
+    if (pTypicalMTForDispatchMap != NULL)
+    {
+        DispatchMap *pTypicalDispatchMap = pTypicalMTForDispatchMap->GetDispatchMap();
+        // The reuse helper only returns a MethodTable that has its own DispatchMap slot.
+        CONSISTENCY_CHECK(CheckPointer(pTypicalDispatchMap));
+        BYTE  *pbTypicalMap = pTypicalDispatchMap->GetEncodedMapData();
+        UINT32 cbTypicalMap = pTypicalDispatchMap->GetMapSize();
+
+#ifdef _DEBUG
+        // Validate that the DispatchMap we just built for this specific instantiation is
+        // byte-for-byte identical to the typical instantiation's DispatchMap. If this fires,
+        // the DispatchMap is not actually instantiation-independent and cannot be reused.
+        _ASSERTE_MSG(cbTypicalMap == cbDispatchMapTemp,
+            "Typical instantiation DispatchMap size differs from the specific instantiation's DispatchMap");
+        _ASSERTE_MSG((cbTypicalMap == 0) || (memcmp(pbTypicalMap, pbDispatchMapTemp, cbTypicalMap) == 0),
+            "Typical instantiation DispatchMap contents differ from the specific instantiation's DispatchMap");
+#else
+        // Reuse the typical instantiation's encoded DispatchMap directly. It is fully constructed
+        // and immutable; the DispatchMap constructor below copies the bytes into this type's map.
+        pbDispatchMapTemp = pbTypicalMap;
+        cbDispatchMapTemp = cbTypicalMap;
+        dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
+#endif // _DEBUG
     }
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
@@ -10988,7 +11070,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
-    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+    if (dispatchMapAllocationSize > 0)
     {
         pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
@@ -12630,15 +12712,13 @@ MethodTableBuilder::GatherGenericsInfo(
             bmtGenericsInfo->fSharedByGenericInstantiations = TypeHandle::IsCanonicalSubtypeInstantiation(inst);
             _ASSERTE(bmtGenericsInfo->fSharedByGenericInstantiations == ClassLoader::IsSharableInstantiation(inst));
 
-#ifdef _DEBUG
             // Set typical instantiation MethodTable
             {
                 MethodTable * pTypicalInstantiationMT = pModule->LookupTypeDef(cl).AsMethodTable();
                 // Typical instantiation was already loaded by code:ClassLoader::LoadApproxTypeThrowing
                 _ASSERTE(pTypicalInstantiationMT != NULL);
-                bmtGenericsInfo->dbg_pTypicalInstantiationMT = pTypicalInstantiationMT;
+                bmtGenericsInfo->pTypicalInstantiationMT = pTypicalInstantiationMT;
             }
-#endif //_DEBUG
         }
 
         TypeHandle * pDestInst = (TypeHandle *)inst.GetRawArgs();
