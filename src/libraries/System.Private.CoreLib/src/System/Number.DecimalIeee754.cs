@@ -983,6 +983,12 @@ namespace System
         /// Divides the double-width value in (<paramref name="high"/>, <paramref name="low"/>) by ten in place,
         /// returning the discarded least-significant decimal digit. Used to strip low-order digits during rounding.
         /// </summary>
+        /// <remarks>
+        /// The Intel reference implementation avoids hardware division here by multiplying with precomputed
+        /// reciprocals of powers of ten (e.g. <c>bid_reciprocals10_64</c>) and shifting. This helper instead uses
+        /// direct integer division for simplicity; adopting the reciprocal-multiply tables is a possible future
+        /// performance optimization.
+        /// </remarks>
         private static int WideDivideByTen<TValue>(ref TValue high, ref TValue low)
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
