@@ -22,7 +22,7 @@ namespace System.Xml
     // Optimize StringHandle.CompareTo
     // Fix FixXmlAttribute - Temporary until we actually write an XmlAttribute node
 
-    internal abstract class XmlBaseReader : XmlDictionaryReader
+    internal abstract class XmlBaseReader : XmlDictionaryReader, IXmlNamespaceResolver
     {
         private readonly XmlBufferReader _bufferReader;
         private XmlNode _node;
@@ -678,6 +678,21 @@ namespace System.Xml
             if (prefix == xmlns)
                 return xmlnsNamespace;
             return null;
+        }
+
+        IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
+        {
+            return _nsMgr.GetNamespacesInScope(scope, NameTable);
+        }
+
+        string? IXmlNamespaceResolver.LookupNamespace(string prefix)
+        {
+            return LookupNamespace(prefix);
+        }
+
+        string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+        {
+            return _nsMgr.LookupPrefix(namespaceName, NameTable);
         }
 
         protected Namespace LookupNamespace(PrefixHandleType prefix)
@@ -2950,6 +2965,58 @@ namespace System.Xml
                 }
                 if (prefix == "xml")
                     return XmlNamespace;
+                return null;
+            }
+
+            public Dictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope, XmlNameTable nameTable)
+            {
+                Dictionary<string, string> namespaces = new Dictionary<string, string>();
+                if (scope == XmlNamespaceScope.Local)
+                {
+                    for (int i = 0; i < _nsCount; i++)
+                    {
+                        Namespace nameSpace = _namespaces![i];
+                        if (nameSpace.Depth == _depth)
+                            namespaces[nameSpace.Prefix.GetString(nameTable)] = nameSpace.Uri.GetString(nameTable);
+                    }
+                }
+                else
+                {
+                    // _namespaces[0.._nsCount) holds every binding currently in scope, outermost first.
+                    // A later entry shadows an earlier one for the same prefix, so overwriting as we go
+                    // leaves the closest in-scope binding for each prefix.
+                    for (int i = 0; i < _nsCount; i++)
+                    {
+                        Namespace nameSpace = _namespaces![i];
+                        string prefix = nameSpace.Prefix.GetString(nameTable);
+                        string uri = nameSpace.Uri.GetString(nameTable);
+                        if (prefix.Length == 0 && uri.Length == 0)
+                            namespaces.Remove(prefix); // xmlns="" undeclares the default namespace
+                        else
+                            namespaces[prefix] = uri;
+                    }
+                    if (scope == XmlNamespaceScope.All)
+                        namespaces["xml"] = xmlNamespace;
+                }
+                return namespaces;
+            }
+
+            public string? LookupPrefix(string namespaceUri, XmlNameTable nameTable)
+            {
+                ArgumentNullException.ThrowIfNull(namespaceUri);
+                for (int i = _nsCount - 1; i >= 0; i--)
+                {
+                    Namespace nameSpace = _namespaces![i];
+                    if (nameSpace.IsUri(namespaceUri))
+                    {
+                        string prefix = nameSpace.Prefix.GetString(nameTable);
+                        // Ensure the prefix isn't shadowed by a closer binding to a different namespace.
+                        if (LookupNamespace(prefix) == nameSpace)
+                            return prefix;
+                    }
+                }
+                if (namespaceUri == xmlNamespace)
+                    return xml;
                 return null;
             }
 
