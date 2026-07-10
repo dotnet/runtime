@@ -2398,10 +2398,10 @@ namespace System
             }
             else
             {
-                for (int i = 0; i < source.Length; i++)
+                for (int i = 0; i < sourceSpan.Length; i++)
                 {
-                    char c = source[i];
-                    if (c == sep0 || c == sep1 || c == sep2)
+                    char v = sourceSpan[i];
+                    if (v == c || v == c2 || v == c3)
                     {
                         sepListBuilder.Append(i);
                     }
