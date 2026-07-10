@@ -254,7 +254,8 @@ namespace System
                 return HashCode.Combine(_methodPtr, _methodPtrAux);
             }
 
-            int hashCode = HashCode.Combine((nuint)RuntimeHelpers.GetMethodTable(this), (nuint)MethodDesc);
+            MethodTable* methodTable = RuntimeHelpers.GetMethodTable(this);
+            int hashCode = HashCode.Combine((nuint)(methodTable->HasTypeEquivalence ? null : methodTable), (nuint)MethodDesc);
             if (_methodPtrAux == 0 && _target != null)
             {
                 hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
