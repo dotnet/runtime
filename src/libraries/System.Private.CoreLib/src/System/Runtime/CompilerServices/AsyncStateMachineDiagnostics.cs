@@ -68,11 +68,11 @@ namespace System.Runtime.CompilerServices
             if (methodInfo is not null)
             {
 #if MONO
-                return (ulong)RuntimeMethodHandle.GetNativeCodeInternal(methodInfo.MethodHandle.Value);
+                return (ulong)(nuint)RuntimeMethodHandle.GetNativeCodeInternal(methodInfo.MethodHandle.Value);
 #else
                 if (methodInfo is IRuntimeMethodInfo runtimeMethodInfo)
                 {
-                    return (ulong)RuntimeMethodHandle.GetNativeCodeInternal(runtimeMethodInfo);
+                    return (ulong)(nuint)RuntimeMethodHandle.GetNativeCodeInternal(runtimeMethodInfo);
                 }
 #endif
             }

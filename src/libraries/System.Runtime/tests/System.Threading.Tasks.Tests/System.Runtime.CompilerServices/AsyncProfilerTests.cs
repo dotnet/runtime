@@ -352,7 +352,7 @@ namespace System.Threading.Tasks.Tests
                 object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNextHandle });
                 if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
                 {
-                    s_methodIdToName.TryAdd((ulong)ip, methodName);
+                    s_methodIdToName.TryAdd((ulong)(nuint)ip, methodName);
                 }
             }
         }
@@ -384,7 +384,7 @@ namespace System.Threading.Tasks.Tests
             object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNext.MethodHandle.Value });
             if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
             {
-                s_methodIdToName.TryAdd((ulong)ip, asyncMethod.Name);
+                s_methodIdToName.TryAdd((ulong)(nuint)ip, asyncMethod.Name);
             }
         }
 
