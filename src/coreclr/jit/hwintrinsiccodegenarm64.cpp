@@ -1293,13 +1293,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
-            case NI_Fp16_ConvertToSingle:
+            case NI_ArmBase_ConvertToSingle:
                 GetEmitter()->emitIns_R_R(ins, EA_4BYTE, targetReg, op1Reg, INS_OPTS_H_TO_S);
                 break;
 
-            case NI_Fp16_ConvertToDouble:
+            case NI_ArmBase_ConvertToDouble:
                 GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg, INS_OPTS_H_TO_D);
                 break;
+
+            case NI_ArmBase_ConvertToHalf:
+            {
+                // Baseline FCVT precision conversion; the source (base) type selects the width.
+                assert((intrin.baseType == TYP_FLOAT) || (intrin.baseType == TYP_DOUBLE));
+                insOpts cvtOption = (intrin.baseType == TYP_FLOAT) ? INS_OPTS_S_TO_H : INS_OPTS_D_TO_H;
+                GetEmitter()->emitIns_R_R(ins, EA_2BYTE, targetReg, op1Reg, cvtOption);
+                break;
+            }
 
             case NI_Fp16_ConvertToInt32:
             case NI_Fp16_ConvertToUInt32:
@@ -1319,12 +1328,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 switch (intrin.baseType)
                 {
-                    case TYP_FLOAT:
-                        cvtOption = INS_OPTS_S_TO_H;
-                        break;
-                    case TYP_DOUBLE:
-                        cvtOption = INS_OPTS_D_TO_H;
-                        break;
                     case TYP_INT:
                     case TYP_UINT:
                         cvtOption = INS_OPTS_4BYTE_TO_H;

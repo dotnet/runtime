@@ -4575,16 +4575,22 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         retNode = impSimdToScalarHalf(retNode, retClsHnd);
                     }
 #elif defined(TARGET_ARM64)
-                    if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                    // FCVT between half and single/double is part of the Armv8.0 FP baseline and does not
+                    // require FEAT_FP16, so those conversions are always accelerated. Integer -> half
+                    // conversions (SCVTF/UCVTF with a half destination) require FEAT_FP16.
+                    if (varTypeIsFloating(op1Type))
                     {
                         GenTree* op1 = impPopStack().val;
+                        op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, op1Type, 16);
 
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_ArmBase_ConvertToHalf, op1Type, 16);
+                        retNode = impSimdToScalarHalf(retNode, retClsHnd);
+                    }
+                    else if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                    {
                         // The integer scalar convert instructions read the source directly from a general
-                        // purpose register, so only floating-point sources need to be moved into a vector.
-                        if (varTypeIsFloating(op1Type))
-                        {
-                            op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, op1Type, 16);
-                        }
+                        // purpose register, so no move into a vector register is required.
+                        GenTree* op1 = impPopStack().val;
 
                         retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Fp16_ConvertToHalf, op1Type, 16);
                         retNode = impSimdToScalarHalf(retNode, retClsHnd);
@@ -4660,44 +4666,48 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
                     }
 #elif defined(TARGET_ARM64)
-                    if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                    // Half -> single/double is a baseline FCVT (no FEAT_FP16 needed); Half -> integer
+                    // (FCVTZS/FCVTZU with a half operand) requires FEAT_FP16.
+                    NamedIntrinsic opId   = NI_Illegal;
+                    bool           isFp16 = false;
+
+                    switch (retType)
                     {
-                        NamedIntrinsic opId = NI_Illegal;
+                        case TYP_FLOAT:
+                            opId = NI_ArmBase_ConvertToSingle;
+                            break;
+                        case TYP_DOUBLE:
+                            opId = NI_ArmBase_ConvertToDouble;
+                            break;
+                        case TYP_INT:
+                            opId   = NI_Fp16_ConvertToInt32;
+                            isFp16 = true;
+                            break;
+                        case TYP_UINT:
+                            opId   = NI_Fp16_ConvertToUInt32;
+                            isFp16 = true;
+                            break;
+                        case TYP_LONG:
+                            opId   = NI_Fp16_ConvertToInt64;
+                            isFp16 = true;
+                            break;
+                        case TYP_ULONG:
+                            opId   = NI_Fp16_ConvertToUInt64;
+                            isFp16 = true;
+                            break;
+                        default:
+                            break;
+                    }
 
-                        switch (retType)
-                        {
-                            case TYP_FLOAT:
-                                opId = NI_Fp16_ConvertToSingle;
-                                break;
-                            case TYP_DOUBLE:
-                                opId = NI_Fp16_ConvertToDouble;
-                                break;
-                            case TYP_INT:
-                                opId = NI_Fp16_ConvertToInt32;
-                                break;
-                            case TYP_UINT:
-                                opId = NI_Fp16_ConvertToUInt32;
-                                break;
-                            case TYP_LONG:
-                                opId = NI_Fp16_ConvertToInt64;
-                                break;
-                            case TYP_ULONG:
-                                opId = NI_Fp16_ConvertToUInt64;
-                                break;
-                            default:
-                                break;
-                        }
+                    if ((opId != NI_Illegal) && (!isFp16 || compOpportunisticallyDependsOn(InstructionSet_Fp16)))
+                    {
+                        GenTree* op1 = impPopStack().val;
+                        op1          = impSimdCreateScalarHalf(op1);
 
-                        if (opId != NI_Illegal)
-                        {
-                            GenTree* op1 = impPopStack().val;
-                            op1          = impSimdCreateScalarHalf(op1);
-
-                            // The Arm64 scalar convert instructions produce their result directly in the
-                            // target register (an FP register for float/double, a general purpose register
-                            // for integers), so no vector extraction is needed.
-                            retNode = gtNewSimdHWIntrinsicNode(genActualType(retType), op1, opId, TYP_USHORT, 16);
-                        }
+                        // The Arm64 scalar convert instructions produce their result directly in the
+                        // target register (an FP register for float/double, a general purpose register
+                        // for integers), so no vector extraction is needed.
+                        retNode = gtNewSimdHWIntrinsicNode(genActualType(retType), op1, opId, TYP_USHORT, 16);
                     }
 #endif // TARGET_XARCH
                 }
