@@ -193,11 +193,6 @@ namespace System.Text.Json
 
         private unsafe void TranscodeAndWriteRawValue(ReadOnlySpan<char> json, bool skipInputValidation)
         {
-            if (json.IsEmpty)
-            {
-                ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
-            }
-
             if (json.Length > JsonConstants.MaxUtf16RawValueLength)
             {
                 ThrowHelper.ThrowArgumentException_ValueTooLarge(json.Length);
