@@ -82,15 +82,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
             {
-                if (!method.IsAsync)
-                {
-                    // IL may be needed for async version of non-async Task-returning method
-                    return true;
-                }
-
                 MethodDesc asyncVariant = method.GetAsyncVariant().GetTypicalMethodDefinition();
                 if (!factory.OptimizationFlags.CompiledMethodDefs.Contains(asyncVariant))
                 {
+                    // IL may be needed to compile the async variant at runtime
                     return true;
                 }
             }
