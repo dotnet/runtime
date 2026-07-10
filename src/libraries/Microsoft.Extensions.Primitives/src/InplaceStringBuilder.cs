@@ -84,6 +84,7 @@ namespace Microsoft.Extensions.Primitives
 
             ArgumentNullException.ThrowIfNull(value);
             ArgumentOutOfRangeException.ThrowIfLessThan(offset, 0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(count, value.Length - offset, nameof(offset));
             if (Capacity - _offset < count)
             {
