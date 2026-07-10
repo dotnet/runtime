@@ -1416,5 +1416,75 @@ namespace System.Tests
             Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
         }
 
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+
+            // Trailing invalid characters after a valid number
+            yield return new object[] { "123abc", style, CultureInfo.InvariantCulture, Decimal128.Parse("123", CultureInfo.InvariantCulture), 3 };
+            yield return new object[] { "12.5xyz", style, CultureInfo.InvariantCulture, Decimal128.Parse("12.5", CultureInfo.InvariantCulture), 4 };
+            yield return new object[] { "+7e2!!", style, CultureInfo.InvariantCulture, Decimal128.Parse("7e2", CultureInfo.InvariantCulture), 4 };
+            yield return new object[] { "-8.0#", style, CultureInfo.InvariantCulture, Decimal128.Parse("-8.0", CultureInfo.InvariantCulture), 4 };
+
+            // No trailing invalid characters
+            yield return new object[] { "123", style, CultureInfo.InvariantCulture, Decimal128.Parse("123", CultureInfo.InvariantCulture), 3 };
+
+            // Special values with trailing invalid characters
+            yield return new object[] { "Infinityabc", style, CultureInfo.InvariantCulture, Decimal128.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinityxyz", style, CultureInfo.InvariantCulture, Decimal128.NegativeInfinity, 9 };
+            yield return new object[] { "NaNabc", style, CultureInfo.InvariantCulture, Decimal128.NaN, 3 };
+
+            // Special values always consume surrounding whitespace (independent of AllowLeadingWhite/AllowTrailingWhite) before stopping on the first non-whitespace invalid character
+            yield return new object[] { "Infinity   ", style, CultureInfo.InvariantCulture, Decimal128.PositiveInfinity, 11 };
+            yield return new object[] { "Infinity  x", style, CultureInfo.InvariantCulture, Decimal128.PositiveInfinity, 10 };
+            yield return new object[] { "+Infinity  x", style, CultureInfo.InvariantCulture, Decimal128.PositiveInfinity, 11 };
+            yield return new object[] { "-Infinity  x", style, CultureInfo.InvariantCulture, Decimal128.NegativeInfinity, 11 };
+            yield return new object[] { "NaN  x", style, CultureInfo.InvariantCulture, Decimal128.NaN, 5 };
+
+            // AllowTrailingWhite has no effect on special values; the surrounding whitespace is still consumed
+            yield return new object[] { "Infinity  x", (NumberStyles.Float & ~NumberStyles.AllowTrailingWhite) | NumberStyles.AllowTrailingInvalidCharacters, CultureInfo.InvariantCulture, Decimal128.PositiveInfinity, 10 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, Decimal128 expected, int expectedCharsConsumed)
+        {
+            Assert.True(Decimal128.TryParse(value, style, provider, out Decimal128 result, out int charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            Assert.True(Decimal128.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
+            Assert.True(Decimal128.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.Equal(expected, result);
+            Assert.Equal(expectedCharsConsumed, bytesConsumed);
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            NumberStyles style = NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters;
+
+            yield return new object[] { "", style, CultureInfo.InvariantCulture };
+            yield return new object[] { "abc", style, CultureInfo.InvariantCulture };
+            yield return new object[] { ".abc", style, CultureInfo.InvariantCulture };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            Assert.False(Decimal128.TryParse(value, style, provider, out Decimal128 result, out int charsConsumed));
+            Assert.Equal(0, charsConsumed);
+
+            Assert.False(Decimal128.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0, charsConsumed);
+
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(value);
+            Assert.False(Decimal128.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
+            Assert.Equal(0, bytesConsumed);
+        }
     }
 }

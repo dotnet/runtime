@@ -157,7 +157,7 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result)
         {
             NumberFormatInfo.ValidateParseStyleDecimal(style);
-            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <summary>
@@ -171,13 +171,7 @@ namespace System.Numerics
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result)
         {
             NumberFormatInfo.ValidateParseStyleDecimal(style);
-
-            if (s == null)
-            {
-                result = default;
-                return false;
-            }
-            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="IComparable.CompareTo(object?)" />
@@ -376,6 +370,31 @@ namespace System.Numerics
         public static bool operator >=(Decimal128 left, Decimal128 right)
         {
             return Number.GreaterThanOrEqualDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Decimal128 result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Decimal128 result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimalIeee754<char, Decimal128, UInt128>(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Decimal128 result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimalIeee754<byte, Decimal128, UInt128>(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
         private static readonly UInt128[] UInt128Powers10 =
