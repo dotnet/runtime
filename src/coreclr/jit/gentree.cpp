@@ -4463,6 +4463,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX_Divide:
                     case NI_AVX512_Divide:
                     case NI_AVX512_DivideScalar:
+                    case NI_AVX10v1_DivideScalar:
                     {
                         costEx = (simdBaseType == TYP_DOUBLE) ? 14 : 11;
                         break;
@@ -4513,6 +4514,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_AVX_Sqrt:
                     case NI_AVX512_Sqrt:
                     case NI_AVX512_SqrtScalar:
+                    case NI_AVX10v1_SqrtScalar:
                     {
                         costEx = (simdBaseType == TYP_DOUBLE) ? 16 : 12;
                         break;
@@ -30705,6 +30707,7 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_FusedMultiplySubtractNegated:
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         {
             return numArgs == 4;
         }
@@ -30722,6 +30725,10 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_X64_ConvertScalarToVector128Double:
         case NI_AVX512_X64_ConvertScalarToVector128Single:
 #endif // TARGET_AMD64
+        case NI_AVX10v1_AddScalar:
+        case NI_AVX10v1_DivideScalar:
+        case NI_AVX10v1_MultiplyScalar:
+        case NI_AVX10v1_SubtractScalar:
         {
             return numArgs == 3;
         }
