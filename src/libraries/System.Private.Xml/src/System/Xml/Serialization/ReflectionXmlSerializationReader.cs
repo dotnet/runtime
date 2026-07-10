@@ -26,8 +26,10 @@ namespace System.Xml.Serialization
 
         // Cache of compiled invokers for [CollectionBuilder] factories that take ReadOnlySpan<T>.
         // Keyed by the bound (generic-arguments-supplied) factory MethodInfo so each collection/element
-        // type pair pays the Expression.Compile cost at most once per process.
-        private static readonly ConcurrentDictionary<MethodInfo, Func<Array, object>> s_collectionBuilderSpanInvokerCache = new();
+        // type pair pays the Expression.Compile cost at most once. A ConditionalWeakTable is used (rather
+        // than a strong dictionary) so that a bound MethodInfo referencing a collectible AssemblyLoadContext
+        // type does not keep that ALC alive.
+        private static readonly ConditionalWeakTable<MethodInfo, Func<Array, object>> s_collectionBuilderSpanInvokerCache = new();
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
@@ -619,7 +621,7 @@ namespace System.Xml.Serialization
                 // Compile an Expression that converts the array to ReadOnlySpan<T> and invokes the factory,
                 // caching the compiled invoker per factory MethodInfo so we pay the Compile cost at most
                 // once per (collection, element) type pair.
-                Func<Array, object> invoker = s_collectionBuilderSpanInvokerCache.GetOrAdd(factory, static staticFactory =>
+                Func<Array, object> invoker = s_collectionBuilderSpanInvokerCache.GetValue(factory, static staticFactory =>
                 {
                     Type staticParamType = staticFactory.GetParameters()[0].ParameterType;
                     Type staticElementType = staticParamType.GetGenericArguments()[0];
