@@ -411,15 +411,17 @@ session_free (EventPipeSession *session)
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
 
-#if HAVE_UNISTD_H
 	// Close the user_events data fd if still open. For a USEREVENTS session that was enabled,
 	// ep_session_disable already closed it and set it to -1 (making this a no-op); this also releases it for
 	// inert or alloc-error teardowns that never run ep_session_disable. Closing the fd drops the kernel
 	// tracepoint registrations bound to it, and the per-provider tracepoint state is freed with the provider
 	// list above. Non-USEREVENTS sessions keep the fd at its -1 default (set in ep_session_alloc).
-	if (session->session_type == EP_SESSION_TYPE_USEREVENTS && session->user_events_data_fd != -1)
+	if (session->session_type == EP_SESSION_TYPE_USEREVENTS && session->user_events_data_fd != -1) {
+#if HAVE_UNISTD_H
 		close (session->user_events_data_fd);
 #endif
+		session->user_events_data_fd = -1;
+	}
 
 	ep_rt_object_free (session);
 }

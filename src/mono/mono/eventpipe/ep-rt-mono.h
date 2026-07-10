@@ -597,8 +597,14 @@ inline
 uint32_t
 ep_rt_config_value_get_buffering_mode (void)
 {
-	/* Unsupported */
-	return 0;
+	uint32_t buffering_mode = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeBufferingMode");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeBufferingMode");
+	if (value)
+		buffering_mode = strtoul (value, NULL, 10);
+	g_free (value);
+	return buffering_mode;
 }
 
 static
