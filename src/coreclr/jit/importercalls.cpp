@@ -12522,20 +12522,20 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
 //    ni -- the System.Half named intrinsic
 //
 // Return Value:
-//    The rounding mode immediate (0=nearest, 1=+inf, 2=-inf, 3=zero).
+//    The rounding mode immediate (0=nearest, 1=-inf, 2=+inf, 3=zero).
 //
 int Compiler::lookupHalfRoundingMode(NamedIntrinsic ni)
 {
     switch (ni)
     {
         case NI_System_Half_Round:
-            return 0; // Round to nearest
+            return static_cast<int>(FloatRoundingMode::ToNearestInteger);
         case NI_System_Half_Ceiling:
-            return 1; // Round towards +infinity
+            return static_cast<int>(FloatRoundingMode::ToPositiveInfinity);
         case NI_System_Half_Floor:
-            return 2; // Round towards -infinity
+            return static_cast<int>(FloatRoundingMode::ToNegativeInfinity);
         case NI_System_Half_Truncate:
-            return 3; // Round towards zero
+            return static_cast<int>(FloatRoundingMode::ToZero);
         default:
             noway_assert(!"Should have one of the above Half intrinsics");
             return -1;
