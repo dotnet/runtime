@@ -295,10 +295,9 @@ unsafe class FatalErrorHandlerTest
     {
         Console.WriteLine("=== TestNativeCodeException ===");
 
-        // A genuinely-unmanaged fatal fault (an access violation whose faulting
+        // A genuinely unmanaged fatal fault (an access violation whose faulting
         // instruction pointer is inside native code). Only NativeAOT currently routes
-        // this to the fatal error handler, at the Unix signal chokepoint, forwarding the
-        // live siginfo_t and ucontext_t. CoreCLR Stage 2 wiring is not yet implemented.
+        // this to the fatal error handler.
         if (!TestLibrary.Utilities.IsNativeAot)
         {
             Console.WriteLine("  SKIP: only implemented on NativeAOT");
@@ -308,26 +307,43 @@ unsafe class FatalErrorHandlerTest
         var (exitCode, stderr) = LaunchChild("native-code-exception");
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        // For the unmanaged fatal path the runtime forwards the live platform-native
-        // signal structures: the faulting IP, the siginfo_t, and the ucontext_t.
+        // For the unmanaged fatal path the runtime forwards the live platform-native fault
+        // structures.
         bool addressPopulated = stderr.Contains("addr=true");
-        bool sigInfoPopulated = stderr.Contains("siginfo=true");
-        bool contextPopulated = stderr.Contains("ucontext=true");
         bool exited = exitCode != 0;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, siginfo ok: {sigInfoPopulated}, ucontext ok: {contextPopulated}, exited: {exited}");
+        bool firstStructPopulated;
+        bool secondStructPopulated;
+        string firstStructName;
+        string secondStructName;
+        if (OperatingSystem.IsWindows())
+        {
+            firstStructPopulated = stderr.Contains("excrec=true");
+            secondStructPopulated = stderr.Contains("ctxrec=true");
+            firstStructName = "EXCEPTION_RECORD";
+            secondStructName = "CONTEXT";
+        }
+        else
+        {
+            firstStructPopulated = stderr.Contains("siginfo=true");
+            secondStructPopulated = stderr.Contains("ucontext=true");
+            firstStructName = "siginfo_t";
+            secondStructName = "ucontext_t";
+        }
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, {firstStructName} ok: {firstStructPopulated}, {secondStructName} ok: {secondStructPopulated}, exited: {exited}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
         if (!addressPopulated)
             Console.WriteLine("  FAIL: crash address (IP) was not populated for a native-code exception");
-        if (!sigInfoPopulated)
-            Console.WriteLine("  FAIL: siginfo_t was not surfaced for a native-code exception");
-        if (!contextPopulated)
-            Console.WriteLine("  FAIL: ucontext_t was not surfaced for a native-code exception");
+        if (!firstStructPopulated)
+            Console.WriteLine($"  FAIL: {firstStructName} was not surfaced for a native-code exception");
+        if (!secondStructPopulated)
+            Console.WriteLine($"  FAIL: {secondStructName} was not surfaced for a native-code exception");
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && addressPopulated && sigInfoPopulated && contextPopulated && exited;
+        return handlerInvoked && addressPopulated && firstStructPopulated && secondStructPopulated && exited;
     }
 
     static bool TestNestedHardwareFault()

@@ -84,9 +84,9 @@ static int DOTNET_CALLCONV HandlerCheckInfo(int /*hresult*/, FatalErrorPropertyG
     return SkipDefaultHandler;
 }
 
-// Handler that reports whether the live platform-native signal structures were surfaced
-// for a genuinely-unmanaged fatal exception (a fault whose instruction pointer is inside
-// native code). On signal-based platforms these are the siginfo_t and ucontext_t.
+// Handler that reports whether the live platform-native fault structures were surfaced
+// for a genuinely unmanaged fatal exception (a fault whose instruction pointer is inside
+// native code).
 static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
@@ -95,6 +95,15 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
     bool addressPopulated = getProperty(FEP_Address, &pAddress) != 0 && pAddress != NULL;
     WriteStdErr(addressPopulated ? "FATAL_ADDRESS:addr=true\n" : "FATAL_ADDRESS:addr=false\n");
 
+#ifdef _WIN32
+    const void* pExceptionRecord = NULL;
+    bool exceptionRecordPopulated = getProperty(FEP_WindowsExceptionRecord, &pExceptionRecord) != 0 && pExceptionRecord != NULL;
+    WriteStdErr(exceptionRecordPopulated ? "FATAL_EXCEPTIONRECORD:excrec=true\n" : "FATAL_EXCEPTIONRECORD:excrec=false\n");
+
+    const void* pContextRecord = NULL;
+    bool contextRecordPopulated = getProperty(FEP_WindowsContextRecord, &pContextRecord) != 0 && pContextRecord != NULL;
+    WriteStdErr(contextRecordPopulated ? "FATAL_CONTEXTRECORD:ctxrec=true\n" : "FATAL_CONTEXTRECORD:ctxrec=false\n");
+#else
     const void* pSigInfo = NULL;
     bool sigInfoPopulated = getProperty(FEP_PosixSigInfo, &pSigInfo) != 0 && pSigInfo != NULL;
     WriteStdErr(sigInfoPopulated ? "FATAL_SIGINFO:siginfo=true\n" : "FATAL_SIGINFO:siginfo=false\n");
@@ -102,6 +111,7 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
     const void* pContext = NULL;
     bool contextPopulated = getProperty(FEP_UContext, &pContext) != 0 && pContext != NULL;
     WriteStdErr(contextPopulated ? "FATAL_UCONTEXT:ucontext=true\n" : "FATAL_UCONTEXT:ucontext=false\n");
+#endif
 
     return SkipDefaultHandler;
 }

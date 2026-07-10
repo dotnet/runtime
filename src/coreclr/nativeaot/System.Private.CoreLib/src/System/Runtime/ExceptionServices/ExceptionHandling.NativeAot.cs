@@ -16,7 +16,7 @@ namespace System.Runtime.ExceptionServices
 
             // Route genuinely-unmanaged fatal exceptions (faults in native code that are
             // never translated to a managed exception) to the handler as well. The native
-            // chokepoints only divert when this callback is registered, so the default
+            // choke points only divert when this callback is registered, so the default
             // fatal handling is unchanged until a handler is installed.
             RuntimeImports.RhpRegisterFatalErrorHandlerForNativeException(
                 &RuntimeExceptionHelpers.InvokeFatalErrorHandlerForNativeException);

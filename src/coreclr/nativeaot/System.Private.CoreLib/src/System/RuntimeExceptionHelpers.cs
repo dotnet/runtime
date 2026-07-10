@@ -45,12 +45,12 @@ namespace System
         // captured immediately before the handler is invoked.
         private static unsafe void* s_fatalErrorAddress;
 
-        // Live platform-native signal structures for a genuinely-unmanaged fatal
-        // exception. These are non-null only for the duration of the native fatal
-        // path (InvokeFatalErrorHandlerForNativeException); the managed fatal path
-        // leaves them null and surfaces only the faulting instruction pointer.
-        private static unsafe void* s_fatalErrorSigInfo;
-        private static unsafe void* s_fatalErrorUContext;
+        // Live platform-native fault structures for a genuinely-unmanaged fatal
+        // exception, non-null only for the duration of the native fatal path
+        // (InvokeFatalErrorHandlerForNativeException). Data0/Data1 are the Windows
+        // EXCEPTION_RECORD/CONTEXT or the Unix siginfo_t/ucontext_t.
+        private static unsafe void* s_fatalErrorPlatformData0;
+        private static unsafe void* s_fatalErrorPlatformData1;
 
         // Each fragment is stored during crash info building and replayed on-demand
         // by GetFatalErrorLog (for the handler callback) or WriteCrashLogToStdErr
@@ -167,54 +167,55 @@ namespace System
                     *value = s_fatalErrorAddress;
                     return 1;
 
-                case FatalErrorProperty.PosixSigInfo:
-                    if (s_fatalErrorSigInfo == null)
+                case FatalErrorProperty.WindowsExceptionRecord when OperatingSystem.IsWindows():
+                case FatalErrorProperty.PosixSigInfo when !OperatingSystem.IsWindows():
+                    if (s_fatalErrorPlatformData0 == null)
                         return 0;
-                    *value = s_fatalErrorSigInfo;
+                    *value = s_fatalErrorPlatformData0;
                     return 1;
 
-                case FatalErrorProperty.UContext:
-                    if (s_fatalErrorUContext == null)
+                case FatalErrorProperty.WindowsContextRecord when OperatingSystem.IsWindows():
+                case FatalErrorProperty.UContext when !OperatingSystem.IsWindows():
+                    if (s_fatalErrorPlatformData1 == null)
                         return 0;
-                    *value = s_fatalErrorUContext;
+                    *value = s_fatalErrorPlatformData1;
                     return 1;
 
                 default:
-                    // The remaining platform-native records (Windows exception/context
-                    // and Mach thread state) are surfaced by other fatal paths and are
-                    // not available here.
+                    // The remaining platform-native records not applicable to the
+                    // current platform (and Mach thread state) are surfaced by other
+                    // fatal paths and are not available here.
                     return 0;
             }
         }
 
         /// <summary>
-        /// Bridge invoked by the native fatal chokepoints for a genuinely-unmanaged fatal
+        /// Bridge invoked by the native fatal choke points for a genuinely-unmanaged fatal
         /// exception (one whose faulting instruction pointer is not managed code, so it is
         /// never translated to a managed exception). Forwards the live, untransformed
-        /// platform-native signal structures to the user's fatal error handler. The pointers
-        /// are valid only for the duration of this call. Returns SkipDefaultHandler
-        /// (1) if the runtime should terminate immediately without its default crash reporting,
-        /// or RunDefaultHandler (0) to continue with the default fatal handling.
+        /// platform-native fault structures to the user's fatal error handler.
         /// </summary>
         [UnmanagedCallersOnly]
         internal static unsafe int InvokeFatalErrorHandlerForNativeException(
-            int errorCode, void* faultAddress, void* pSigInfo, void* pUContext)
+            int errorCode, void* faultAddress, void* pPlatformData0, void* pPlatformData1)
         {
             IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
             if (fatalHandler == IntPtr.Zero)
                 return 0; // RunDefaultHandler: no handler registered, leave the native path unchanged.
 
             s_fatalErrorAddress = faultAddress;
-            s_fatalErrorSigInfo = pSigInfo;
-            s_fatalErrorUContext = pUContext;
+            s_fatalErrorPlatformData0 = pPlatformData0;
+            s_fatalErrorPlatformData1 = pPlatformData1;
 
+            // Invoke the user-installed fatal error handler.
+            // See src/native/public/FatalErrorHandling.h for the handler contract.
             int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
 
             s_fatalErrorAddress = null;
-            s_fatalErrorSigInfo = null;
-            s_fatalErrorUContext = null;
+            s_fatalErrorPlatformData0 = null;
+            s_fatalErrorPlatformData1 = null;
 
-            return handlerResult == 1 ? 1 : 0;
+            return handlerResult;
         }
 
         //------------------------------------------------------------------------------------------------------------
