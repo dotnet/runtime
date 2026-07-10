@@ -2402,47 +2402,12 @@ namespace System
                     {
                         cmp &= Vector128.Create(0x0101010101010101UL).AsByte();
                         int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
-                        if (X86Base.IsSupported)
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
                         {
-                            // X86 has fast ExtractMostSignificantBits, so we just use that pattern here
-                            uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                            while (mask != 0)
-                            {
-                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                                sepListBuilder.Append(finalIndex + (int)bitPos);
-                                mask = BitOperations.ResetLowestSetBit(mask);
-                            }
-                        }
-                        else
-                        {
-                            // Whereas on arm64, this pattern can be faster
-                            var mask = ~((1UL << (Vector128<byte>.Count - remaining.Length * sizeof(char) * 8)) - 1);
-                            ulong cmp1;
-
-                            if (remaining.Length > Vector128<ushort>.Count)
-                            {
-                                var cmp0 = cmp.GetElement(0) & 0x0101010101010101UL & mask;
-
-                                while (cmp0 != 0)
-                                {
-                                    uint bitPos = (uint)BitOperations.TrailingZeroCount(cmp0) / (uint)(sizeof(char) * 8);
-                                    sepListBuilder.Append(finalIndex + (int)bitPos);
-                                    cmp0 = BitOperations.ResetLowestSetBit(cmp0);
-                                }
-
-                                cmp1 = cmp.GetElement(1);
-                            }
-                            else
-                            {
-                                cmp1 = cmp.GetElement(1) & 0x0101010101010101UL & mask;
-                            }
-
-                            while (cmp1 != 0)
-                            {
-                                uint bitPos = (uint)BitOperations.TrailingZeroCount(cmp1) / (uint)(sizeof(char) * 8);
-                                sepListBuilder.Append(finalIndex + (int)bitPos);
-                                cmp1 = BitOperations.ResetLowestSetBit(cmp1);
-                            }
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
                 }
