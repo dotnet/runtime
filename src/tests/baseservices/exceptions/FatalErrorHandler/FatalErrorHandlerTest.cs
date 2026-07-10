@@ -31,6 +31,12 @@ unsafe class FatalErrorHandlerTest
     [DllImport("FatalErrorHandlerNative")]
     private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckInfo();
 
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckNativeInfo();
+
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern void TriggerNativeAccessViolation();
+
     //
     // Child process entry points — register handler, trigger FailFast.
     //
@@ -76,6 +82,15 @@ unsafe class FatalErrorHandlerTest
         // corrupted-state exception that reaches the handler with the faulting
         // instruction pointer (IP) populated.
         *(int*)s_badAddress = 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildNativeCodeException()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckNativeInfo());
+        // Trigger an access violation from *native* code (inside the P/Invoked
+        // TriggerNativeAccessViolation).
+        TriggerNativeAccessViolation();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -276,6 +291,45 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && addressReported && addressPopulated && exited;
     }
 
+    static bool TestNativeCodeException()
+    {
+        Console.WriteLine("=== TestNativeCodeException ===");
+
+        // A genuinely-unmanaged fatal fault (an access violation whose faulting
+        // instruction pointer is inside native code). Only NativeAOT currently routes
+        // this to the fatal error handler, at the Unix signal chokepoint, forwarding the
+        // live siginfo_t and ucontext_t. CoreCLR Stage 2 wiring is not yet implemented.
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            Console.WriteLine("  SKIP: only implemented on NativeAOT");
+            return true;
+        }
+
+        var (exitCode, stderr) = LaunchChild("native-code-exception");
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        // For the unmanaged fatal path the runtime forwards the live platform-native
+        // signal structures: the faulting IP, the siginfo_t, and the ucontext_t.
+        bool addressPopulated = stderr.Contains("addr=true");
+        bool sigInfoPopulated = stderr.Contains("siginfo=true");
+        bool contextPopulated = stderr.Contains("ucontext=true");
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, siginfo ok: {sigInfoPopulated}, ucontext ok: {contextPopulated}, exited: {exited}");
+        if (!handlerInvoked)
+            Console.WriteLine("  FAIL: Handler was not invoked");
+        if (!addressPopulated)
+            Console.WriteLine("  FAIL: crash address (IP) was not populated for a native-code exception");
+        if (!sigInfoPopulated)
+            Console.WriteLine("  FAIL: siginfo_t was not surfaced for a native-code exception");
+        if (!contextPopulated)
+            Console.WriteLine("  FAIL: ucontext_t was not surfaced for a native-code exception");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        return handlerInvoked && addressPopulated && sigInfoPopulated && contextPopulated && exited;
+    }
+
     static bool TestNestedHardwareFault()
     {
         Console.WriteLine("=== TestNestedHardwareFault ===");
@@ -350,6 +404,7 @@ unsafe class FatalErrorHandlerTest
                 case "run-handler":  RunChildRunHandler();  return 1;
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
+                case "native-code-exception":   RunChildNativeCodeException();      return 1;
                 case "nested-native-exception": RunChildNestedNativeException();   return 1;
                 case "set-null":     return RunChildSetNull();
                 case "set-twice":    return RunChildSetTwice();
@@ -364,6 +419,7 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestRunHandler();
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
+        allPassed &= TestNativeCodeException();
         allPassed &= TestNestedHardwareFault();
         allPassed &= TestSetNull();
         allPassed &= TestSetTwice();

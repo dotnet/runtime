@@ -9,9 +9,19 @@ namespace System.Runtime.ExceptionServices
     {
         internal static IntPtr s_fatalErrorHandler;
 
-        private static bool TrySetFatalErrorHandler(IntPtr handler)
+        private static unsafe bool TrySetFatalErrorHandler(IntPtr handler)
         {
-            return Interlocked.CompareExchange(ref s_fatalErrorHandler, handler, IntPtr.Zero) == IntPtr.Zero;
+            if (Interlocked.CompareExchange(ref s_fatalErrorHandler, handler, IntPtr.Zero) != IntPtr.Zero)
+                return false;
+
+            // Route genuinely-unmanaged fatal exceptions (faults in native code that are
+            // never translated to a managed exception) to the handler as well. The native
+            // chokepoints only divert when this callback is registered, so the default
+            // fatal handling is unchanged until a handler is installed.
+            RuntimeImports.RhpRegisterFatalErrorHandlerForNativeException(
+                &RuntimeExceptionHelpers.InvokeFatalErrorHandlerForNativeException);
+
+            return true;
         }
     }
 }

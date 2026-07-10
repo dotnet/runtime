@@ -84,6 +84,28 @@ static int DOTNET_CALLCONV HandlerCheckInfo(int /*hresult*/, FatalErrorPropertyG
     return SkipDefaultHandler;
 }
 
+// Handler that reports whether the live platform-native signal structures were surfaced
+// for a genuinely-unmanaged fatal exception (a fault whose instruction pointer is inside
+// native code). On signal-based platforms these are the siginfo_t and ucontext_t.
+static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPropertyGetter getProperty)
+{
+    WriteStdErr("FATAL_HANDLER_INVOKED\n");
+
+    const void* pAddress = NULL;
+    bool addressPopulated = getProperty(FEP_Address, &pAddress) != 0 && pAddress != NULL;
+    WriteStdErr(addressPopulated ? "FATAL_ADDRESS:addr=true\n" : "FATAL_ADDRESS:addr=false\n");
+
+    const void* pSigInfo = NULL;
+    bool sigInfoPopulated = getProperty(FEP_PosixSigInfo, &pSigInfo) != 0 && pSigInfo != NULL;
+    WriteStdErr(sigInfoPopulated ? "FATAL_SIGINFO:siginfo=true\n" : "FATAL_SIGINFO:siginfo=false\n");
+
+    const void* pContext = NULL;
+    bool contextPopulated = getProperty(FEP_UContext, &pContext) != 0 && pContext != NULL;
+    WriteStdErr(contextPopulated ? "FATAL_UCONTEXT:ucontext=true\n" : "FATAL_UCONTEXT:ucontext=false\n");
+
+    return SkipDefaultHandler;
+}
+
 // Exported accessors — managed code P/Invokes these to get native function pointers.
 using FatalErrorHandler = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPropertyGetter getProperty);
 
@@ -105,4 +127,18 @@ extern "C" DLL_EXPORT FatalErrorHandler GetHandlerWithLog()
 extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckInfo()
 {
     return HandlerCheckInfo;
+}
+
+extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckNativeInfo()
+{
+    return HandlerCheckNativeInfo;
+}
+
+// Triggers an access violation from native code — a genuinely-unmanaged fatal fault whose
+// faulting instruction pointer is not managed code, so the runtime does not translate it
+// into a managed exception. Reaches the runtime's unmanaged fatal chokepoint directly.
+extern "C" DLL_EXPORT void TriggerNativeAccessViolation()
+{
+    volatile int* p = NULL;
+    *p = 0;
 }

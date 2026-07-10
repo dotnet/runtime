@@ -39,6 +39,19 @@ struct MethodRegionInfo
     size_t coldSize;
 };
 
+// Class-library callback that routes a genuinely-unmanaged fatal exception (a fault whose
+// instruction pointer is not managed code, so it is never translated to a managed exception)
+// to a user-installed fatal error handler. NULL unless a handler has been registered, which
+// keeps the runtime's default fatal handling unchanged when the feature is unused. Read from
+// the platform-specific fatal chokepoints (e.g. the Unix signal handlers).
+void* g_pfnFatalErrorHandlerForNativeException = NULL;
+
+FCIMPL1(void, RhpRegisterFatalErrorHandlerForNativeException, void* pCallback)
+{
+    g_pfnFatalErrorHandlerForNativeException = pCallback;
+}
+FCIMPLEND
+
 FCIMPL3(FC_BOOL_RET, RhpEHEnumInitFromStackFrameIterator,
     StackFrameIterator* pFrameIter, MethodRegionInfo* pMethodRegionInfoOut, EHEnum* pEHEnum)
 {

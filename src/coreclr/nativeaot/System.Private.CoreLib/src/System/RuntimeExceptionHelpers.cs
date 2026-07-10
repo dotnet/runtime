@@ -45,6 +45,13 @@ namespace System
         // captured immediately before the handler is invoked.
         private static unsafe void* s_fatalErrorAddress;
 
+        // Live platform-native signal structures for a genuinely-unmanaged fatal
+        // exception. These are non-null only for the duration of the native fatal
+        // path (InvokeFatalErrorHandlerForNativeException); the managed fatal path
+        // leaves them null and surfaces only the faulting instruction pointer.
+        private static unsafe void* s_fatalErrorSigInfo;
+        private static unsafe void* s_fatalErrorUContext;
+
         // Each fragment is stored during crash info building and replayed on-demand
         // by GetFatalErrorLog (for the handler callback) or WriteCrashLogToStdErr
         // (for the default RunDefaultHandler path). This avoids a fixed-size UTF-8
@@ -160,12 +167,54 @@ namespace System
                     *value = s_fatalErrorAddress;
                     return 1;
 
+                case FatalErrorProperty.PosixSigInfo:
+                    if (s_fatalErrorSigInfo == null)
+                        return 0;
+                    *value = s_fatalErrorSigInfo;
+                    return 1;
+
+                case FatalErrorProperty.UContext:
+                    if (s_fatalErrorUContext == null)
+                        return 0;
+                    *value = s_fatalErrorUContext;
+                    return 1;
+
                 default:
-                    // The platform-native signal/exception record properties are only
-                    // surfaced for fatal crashes in unmanaged code, which do not flow
-                    // through this managed FailFast path.
+                    // The remaining platform-native records (Windows exception/context
+                    // and Mach thread state) are surfaced by other fatal paths and are
+                    // not available here.
                     return 0;
             }
+        }
+
+        /// <summary>
+        /// Bridge invoked by the native fatal chokepoints for a genuinely-unmanaged fatal
+        /// exception (one whose faulting instruction pointer is not managed code, so it is
+        /// never translated to a managed exception). Forwards the live, untransformed
+        /// platform-native signal structures to the user's fatal error handler. The pointers
+        /// are valid only for the duration of this call. Returns SkipDefaultHandler
+        /// (1) if the runtime should terminate immediately without its default crash reporting,
+        /// or RunDefaultHandler (0) to continue with the default fatal handling.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        internal static unsafe int InvokeFatalErrorHandlerForNativeException(
+            int errorCode, void* faultAddress, void* pSigInfo, void* pUContext)
+        {
+            IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
+            if (fatalHandler == IntPtr.Zero)
+                return 0; // RunDefaultHandler: no handler registered, leave the native path unchanged.
+
+            s_fatalErrorAddress = faultAddress;
+            s_fatalErrorSigInfo = pSigInfo;
+            s_fatalErrorUContext = pUContext;
+
+            int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
+
+            s_fatalErrorAddress = null;
+            s_fatalErrorSigInfo = null;
+            s_fatalErrorUContext = null;
+
+            return handlerResult == 1 ? 1 : 0;
         }
 
         //------------------------------------------------------------------------------------------------------------
