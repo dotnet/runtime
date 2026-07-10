@@ -301,6 +301,42 @@ namespace System.Numerics
             return !(left == right);
         }
 
+        /// <summary>Compares two values to determine which is less.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <(Decimal128 left, Decimal128 right)
+        {
+            return Number.LessThanDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine which is greater.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >(Decimal128 left, Decimal128 right)
+        {
+            return Number.GreaterThanDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine which is less or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <=(Decimal128 left, Decimal128 right)
+        {
+            return Number.LessThanOrEqualDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
+        /// <summary>Compares two values to determine which is greater or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >=(Decimal128 left, Decimal128 right)
+        {
+            return Number.GreaterThanOrEqualDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
+        }
+
         private static readonly UInt128[] UInt128Powers10 =
             [
                 new UInt128(0, 1),

@@ -855,5 +855,112 @@ namespace System.Tests
             Assert.Equal(!expected, l != r);
         }
 
+        public static IEnumerable<object[]> op_Comparison_TestData()
+        {
+            yield return new object[] { 0xFC000000U, 0x32800001U, false, false, false, false }; // NaN vs 1 -> unordered
+            yield return new object[] { 0x32800001U, 0xFC000000U, false, false, false, false }; // 1 vs NaN -> unordered
+            yield return new object[] { 0xFC000000U, 0xFC000000U, false, false, false, false }; // NaN vs NaN -> unordered
+            yield return new object[] { 0xFE000000U, 0x32800001U, false, false, false, false }; // sNaN vs 1 -> unordered
+            yield return new object[] { 0xFC000000U, 0x78000000U, false, false, false, false }; // NaN vs +Inf -> unordered
+            yield return new object[] { 0x78000000U, 0x32800001U, false, true, false, true }; // +Inf vs 1
+            yield return new object[] { 0x32800001U, 0x78000000U, true, false, true, false }; // 1 vs +Inf
+            yield return new object[] { 0xF8000000U, 0x32800001U, true, false, true, false }; // -Inf vs 1
+            yield return new object[] { 0x32800001U, 0xF8000000U, false, true, false, true }; // 1 vs -Inf
+            yield return new object[] { 0xF8000000U, 0x78000000U, true, false, true, false }; // -Inf vs +Inf
+            yield return new object[] { 0x78000000U, 0x78000000U, false, false, true, true }; // +Inf vs +Inf (equal)
+            yield return new object[] { 0xF8000000U, 0xF8000000U, false, false, true, true }; // -Inf vs -Inf (equal)
+            yield return new object[] { 0x78000002U, 0x78000000U, false, false, true, true }; // non-canonical +Inf vs +Inf (equal)
+            yield return new object[] { 0x32800000U, 0xB2800000U, false, false, true, true }; // +0 vs -0 (equal)
+            yield return new object[] { 0xB2800000U, 0x32800000U, false, false, true, true }; // -0 vs +0 (equal)
+            yield return new object[] { 0x32800000U, 0x32800001U, true, false, true, false }; // 0 vs 1
+            yield return new object[] { 0xB2800001U, 0x32800000U, true, false, true, false }; // -1 vs 0
+            yield return new object[] { 0x32800001U, 0x32800002U, true, false, true, false }; // 1 vs 2
+            yield return new object[] { 0x32800002U, 0x32800001U, false, true, false, true }; // 2 vs 1
+            yield return new object[] { 0xB2800001U, 0x32800001U, true, false, true, false }; // -1 vs 1
+            yield return new object[] { 0x32800001U, 0xB2800001U, false, true, false, true }; // 1 vs -1
+            yield return new object[] { 0xB2800001U, 0xB2800002U, false, true, false, true }; // -1 vs -2
+            yield return new object[] { 0x32800001U, 0x3200000AU, false, false, true, true }; // 1 vs 1.0 (cohort equal)
+            yield return new object[] { 0x3200000AU, 0x32800001U, false, false, true, true }; // 1.0 vs 1 (cohort equal)
+            yield return new object[] { 0x32800064U, 0x33800001U, false, false, true, true }; // 100 vs 1e2 (cohort equal)
+            yield return new object[] { 0x3280000AU, 0x32800001U, false, true, false, true }; // 10 vs 1
+            yield return new object[] { 0x32000001U, 0x32000002U, true, false, true, false }; // 0.1 vs 0.2
+            yield return new object[] { 0x6BF8967FU, 0x6BF8967EU, false, true, false, true }; // close values
+            yield return new object[] { 0x6CB8967FU, 0x6CB8967EU, false, true, false, true }; // all-nines vs near
+            yield return new object[] { 0x5F8F4240U, 0x5F8186A0U, false, true, false, true }; // large magnitudes
+            yield return new object[] { 0xDF8F4240U, 0x5F8F4240U, true, false, true, false }; // -large vs +large
+            yield return new object[] { 0x2F2C8C35U, 0xBD800001U, false, true, false, true };
+            yield return new object[] { 0x2A80BFA3U, 0x2E80F146U, true, false, true, false };
+            yield return new object[] { 0xEDA7AB71U, 0x33800054U, true, false, true, false };
+            yield return new object[] { 0xA71C20DCU, 0x2C8C18CBU, true, false, true, false };
+            yield return new object[] { 0xB48003B6U, 0xB3817318U, false, false, true, true };
+            yield return new object[] { 0xB980002FU, 0x4CC66EF1U, true, false, true, false };
+            yield return new object[] { 0x3171BC43U, 0x28803E6EU, false, true, false, true };
+            yield return new object[] { 0xB9855F56U, 0xB935B95CU, false, false, true, true };
+            yield return new object[] { 0xA80003C8U, 0xA7017A20U, false, false, true, true };
+            yield return new object[] { 0x08000005U, 0x39801340U, true, false, true, false };
+            yield return new object[] { 0xCA000C33U, 0x29000379U, true, false, true, false };
+            yield return new object[] { 0x33000001U, 0x31800012U, false, true, false, true };
+            yield return new object[] { 0x36000003U, 0x340C7831U, true, false, true, false };
+            yield return new object[] { 0xAE808F1FU, 0x3782B3D3U, true, false, true, false };
+            yield return new object[] { 0xB885B1AEU, 0xB838F0CCU, false, false, true, true };
+            yield return new object[] { 0x2A80014CU, 0x29800003U, false, true, false, true };
+            yield return new object[] { 0x3280024CU, 0x3A083505U, true, false, true, false };
+            yield return new object[] { 0x3685C05CU, 0x31000002U, false, true, false, true };
+            yield return new object[] { 0x300090CAU, 0x6543374AU, false, true, false, true };
+            yield return new object[] { 0xB4800019U, 0xAD847994U, true, false, true, false };
+            yield return new object[] { 0xAD00004EU, 0x33001329U, true, false, true, false };
+            yield return new object[] { 0xB98025B8U, 0xB88EBBE0U, false, false, true, true };
+            yield return new object[] { 0xAF8E5E1FU, 0xEBCFAD36U, false, false, true, true };
+            yield return new object[] { 0xA987E16CU, 0xA94ECE38U, false, false, true, true };
+            yield return new object[] { 0xA9006A4FU, 0x30000002U, true, false, true, false };
+            yield return new object[] { 0xB2950EABU, 0x27802665U, true, false, true, false };
+            yield return new object[] { 0xBA800028U, 0xAA05B8ADU, true, false, true, false };
+            yield return new object[] { 0xB8013769U, 0xB779A504U, false, false, true, true };
+            yield return new object[] { 0xB680005AU, 0xB6000384U, false, false, true, true };
+            yield return new object[] { 0x2B000471U, 0xAE800008U, false, true, false, true };
+            yield return new object[] { 0xAE00009FU, 0xDD9AF653U, false, true, false, true };
+            yield return new object[] { 0x3A800006U, 0x3A00003CU, false, false, true, true };
+            yield return new object[] { 0xB2002198U, 0xB9000008U, false, true, false, true };
+            yield return new object[] { 0xA8000116U, 0x2E80D42FU, true, false, true, false };
+            yield return new object[] { 0x8C801CF2U, 0x8B711150U, false, false, true, true };
+            yield return new object[] { 0x49800395U, 0x48816634U, false, false, true, true };
+            yield return new object[] { 0x34800368U, 0x2E800341U, false, true, false, true };
+            yield return new object[] { 0xB80000CEU, 0xB7005078U, false, false, true, true };
+            yield return new object[] { 0x39800003U, 0xB300195BU, false, true, false, true };
+            yield return new object[] { 0x33800008U, 0xB7000028U, false, true, false, true };
+            yield return new object[] { 0xBF033649U, 0x35F38F19U, true, false, true, false };
+            yield return new object[] { 0x58095C61U, 0xB0BD637DU, false, true, false, true };
+            yield return new object[] { 0x6BB0F7CAU, 0x36013C4DU, true, false, true, false };
+            yield return new object[] { 0x530001F8U, 0xD1000009U, false, true, false, true };
+            yield return new object[] { 0xDD8E1313U, 0x30001D6CU, true, false, true, false };
+            yield return new object[] { 0xB06FD858U, 0xA888673CU, true, false, true, false };
+            yield return new object[] { 0xB80004B6U, 0xB700011AU, true, false, true, false };
+            yield return new object[] { 0x2A807402U, 0x3180012EU, true, false, true, false };
+            yield return new object[] { 0x180002F8U, 0x2E000002U, true, false, true, false };
+            yield return new object[] { 0xCC801631U, 0xB180033BU, true, false, true, false };
+            yield return new object[] { 0x0D80010EU, 0xBB800002U, false, true, false, true };
+            yield return new object[] { 0x310000DCU, 0xB60002EEU, false, true, false, true };
+            yield return new object[] { 0x07D3490CU, 0x2B0EF5D7U, true, false, true, false };
+            yield return new object[] { 0xAF000001U, 0xAE000064U, false, false, true, true };
+            yield return new object[] { 0xAB8002D0U, 0xB0800377U, false, true, false, true };
+            yield return new object[] { 0xB6802125U, 0xEDA8258FU, false, true, false, true };
+            yield return new object[] { 0xAC000001U, 0xAB0DD4BDU, false, true, false, true };
+            yield return new object[] { 0x34011190U, 0x2A00159EU, false, true, false, true };
+            yield return new object[] { 0xAD01FF37U, 0x37837CF9U, true, false, true, false };
+            yield return new object[] { 0xB58001C6U, 0x2D000A26U, true, false, true, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(op_Comparison_TestData))]
+        public static void op_Comparison(uint left, uint right, bool lessThan, bool greaterThan, bool lessThanOrEqual, bool greaterThanOrEqual)
+        {
+            Decimal32 l = Unsafe.BitCast<uint, Decimal32>(left);
+            Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
+            Assert.Equal(lessThan, l < r);
+            Assert.Equal(greaterThan, l > r);
+            Assert.Equal(lessThanOrEqual, l <= r);
+            Assert.Equal(greaterThanOrEqual, l >= r);
+        }
+
     }
 }

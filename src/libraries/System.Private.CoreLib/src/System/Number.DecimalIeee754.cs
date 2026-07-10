@@ -239,6 +239,52 @@ namespace System
             return CompareDecimalIeee754<TDecimal, TValue>(leftDecimalBits, rightDecimalBits) == 0;
         }
 
+        /// <summary>
+        /// Determines the ordering of two IEEE 754 decimal values represented by their raw bit
+        /// patterns using the semantics required by the relational operators
+        /// (<c>&lt;</c>, <c>&gt;</c>, <c>&lt;=</c>, <c>&gt;=</c>).
+        /// </summary>
+        /// <remarks>
+        /// A NaN operand is unordered: every relational comparison that involves one is
+        /// <see langword="false"/>. When neither operand is NaN the values are ordered by numeric
+        /// value using <see cref="CompareDecimalIeee754{TDecimal, TValue}"/>, so the two zeros
+        /// compare equal and different members of the same cohort compare equal.
+        /// </remarks>
+        internal static bool LessThanDecimalIeee754<TDecimal, TValue>(TValue leftDecimalBits, TValue rightDecimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return !TDecimal.IsNaN(leftDecimalBits) && !TDecimal.IsNaN(rightDecimalBits)
+                && CompareDecimalIeee754<TDecimal, TValue>(leftDecimalBits, rightDecimalBits) < 0;
+        }
+
+        /// <inheritdoc cref="LessThanDecimalIeee754{TDecimal, TValue}(TValue, TValue)"/>
+        internal static bool GreaterThanDecimalIeee754<TDecimal, TValue>(TValue leftDecimalBits, TValue rightDecimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return !TDecimal.IsNaN(leftDecimalBits) && !TDecimal.IsNaN(rightDecimalBits)
+                && CompareDecimalIeee754<TDecimal, TValue>(leftDecimalBits, rightDecimalBits) > 0;
+        }
+
+        /// <inheritdoc cref="LessThanDecimalIeee754{TDecimal, TValue}(TValue, TValue)"/>
+        internal static bool LessThanOrEqualDecimalIeee754<TDecimal, TValue>(TValue leftDecimalBits, TValue rightDecimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return !TDecimal.IsNaN(leftDecimalBits) && !TDecimal.IsNaN(rightDecimalBits)
+                && CompareDecimalIeee754<TDecimal, TValue>(leftDecimalBits, rightDecimalBits) <= 0;
+        }
+
+        /// <inheritdoc cref="LessThanDecimalIeee754{TDecimal, TValue}(TValue, TValue)"/>
+        internal static bool GreaterThanOrEqualDecimalIeee754<TDecimal, TValue>(TValue leftDecimalBits, TValue rightDecimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return !TDecimal.IsNaN(leftDecimalBits) && !TDecimal.IsNaN(rightDecimalBits)
+                && CompareDecimalIeee754<TDecimal, TValue>(leftDecimalBits, rightDecimalBits) >= 0;
+        }
+
         private static TValue NumberToDecimalIeee754Bits<TDecimal, TValue>(ref NumberBuffer number)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>

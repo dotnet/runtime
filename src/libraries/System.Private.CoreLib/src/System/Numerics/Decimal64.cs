@@ -305,6 +305,42 @@ namespace System.Numerics
             return !(left == right);
         }
 
+        /// <summary>Compares two values to determine which is less.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <(Decimal64 left, Decimal64 right)
+        {
+            return Number.LessThanDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine which is greater.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >(Decimal64 left, Decimal64 right)
+        {
+            return Number.GreaterThanDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine which is less or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <=(Decimal64 left, Decimal64 right)
+        {
+            return Number.LessThanOrEqualDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine which is greater or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >=(Decimal64 left, Decimal64 right)
+        {
+            return Number.GreaterThanOrEqualDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.BufferLength => Number.Decimal64NumberBufferLength;
