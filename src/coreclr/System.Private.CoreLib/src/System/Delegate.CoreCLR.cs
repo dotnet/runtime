@@ -629,12 +629,7 @@ namespace System
         private unsafe MethodDesc* GetMethodDesc()
         {
             Delegate instance = this;
-            MethodDesc* methodDesc = GetMethodDesc(ObjectHandleOnStack.Create(ref instance));
-            if (!IsUnmanagedFunctionPtr)
-            {
-                _extraData = (nint)methodDesc;
-            }
-            return methodDesc;
+            return GetMethodDesc(ObjectHandleOnStack.Create(ref instance));
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
