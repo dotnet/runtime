@@ -1,0 +1,9 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="CopyAllNativeTestProjectBinaries">
+    <ItemGroup>
+      <HttpConnectionPool Include="src\System.Net.Http\HttpConnectionPool.cs">
+        <Action>Update</Action>
+      </HttpConnectionPool>
+    </ItemGroup>
+  </Target>
+</Project>
