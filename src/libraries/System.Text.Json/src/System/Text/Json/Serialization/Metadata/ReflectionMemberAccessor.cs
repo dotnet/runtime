@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Metadata
             return () => ctorInfo.InvokeNoWrapExceptions(null);
         }
 
-        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override Func<object?[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type type = typeof(T);
 
