@@ -1030,6 +1030,27 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => d.ToString("E000001000000000"));
         }
 
+        [Theory]
+        // A value that rounds to zero in a two-section format falls back to the first (positive)
+        // section, which supplies the sign. The formatter must not also emit its own sign.
+        [InlineData(-0.001, "+0.00;-0.00", "+0.00")]
+        [InlineData(-0.0, "+0.00;-0.00", "+0.00")]
+        [InlineData(0.0, "+0.00;-0.00", "+0.00")]
+        [InlineData(0.001, "+0.00;-0.00", "+0.00")]
+        [InlineData(1.5, "+0.00;-0.00", "+1.50")]
+        [InlineData(-1.5, "+0.00;-0.00", "-1.50")]
+        // A two-section format whose first section is unsigned must not gain a leading sign on fallback.
+        [InlineData(-0.001, "0.00;minus 0.00", "0.00")]
+        // A single-section format still emits the sign for negative values that round to zero (by design).
+        [InlineData(-0.001, "0.00", "-0.00")]
+        [InlineData(-0.0, "0.00", "-0.00")]
+        // A three-section format routes rounds-to-zero values to the dedicated zero section.
+        [InlineData(-0.001, "+0.00;-0.00;zero", "zero")]
+        public static void ToString_SectionSeparator(double d, string format, string expected)
+        {
+            Assert.Equal(expected, d.ToString(format, NumberFormatInfo.InvariantInfo));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
         [SkipOnMono("Frequently throws OOM on Mono")]

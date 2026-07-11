@@ -517,7 +517,15 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale != 0))
+            // A dedicated negative section (the portion after the first ';') is responsible for
+            // emitting the sign of negative values. When a negative value rounds to zero -- or is
+            // negative zero -- it can fall back to the first section (for example -0.001 or -0.0
+            // with "+0.00;-0.00"). In that case the first section already contains the caller's
+            // desired representation and we must not emit an extra sign, which would otherwise
+            // produce output such as "-+0.00".
+            bool signHandledBySection = number.IsNegative && FindSection(format, 1) != 0;
+
+            if (number.IsNegative && (section == 0) && (number.Scale != 0) && !signHandledBySection)
             {
                 vlb.Append(info.NegativeSignTChar<TChar>());
             }
@@ -705,7 +713,7 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0))
+            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0) && !signHandledBySection)
             {
                 vlb.Insert(0, info.NegativeSignTChar<TChar>());
             }
