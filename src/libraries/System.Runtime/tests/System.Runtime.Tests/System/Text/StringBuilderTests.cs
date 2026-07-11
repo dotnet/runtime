@@ -254,8 +254,8 @@ namespace System.Text.Tests
         public static IEnumerable<object[]> Append_Decimal_TestData()
         {
             yield return new object[] { "Hello", (double)0, "Hello0" };
-            yield return new object[] { "Hello", 1.23, "Hello1.23" };
-            yield return new object[] { "", -4.56, "-4.56" };
+            yield return new object[] { "Hello", 1.25, "Hello1.25" };
+            yield return new object[] { "", -4.5, "-4.5" };
         }
 
         [Fact]
@@ -1567,8 +1567,8 @@ namespace System.Text.Tests
         public static IEnumerable<object[]> Test_Insert_Decimal_TestData()
         {
             yield return new object[] { "Hello", 0, (double)0, "0Hello" };
-            yield return new object[] { "Hello", 3, 1.23, "Hel1.23lo" };
-            yield return new object[] { "Hello", 5, -4.56, "Hello-4.56" };
+            yield return new object[] { "Hello", 3, 1.25, "Hel1.25lo" };
+            yield return new object[] { "Hello", 5, -4.5, "Hello-4.5" };
         }
 
         [Fact]

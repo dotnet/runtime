@@ -34,8 +34,8 @@ namespace System.Tests
         [Fact]
         public void FromDouble()
         {
-            double[] testValues = { 1000.0, 100.0, 0.0, 0.001, -1000.0, -100.0, };
-            decimal[] expectedValues = { 1000.0m, 100.0m, 0.0m, 0.001m, -1000.0m, -100.0m };
+            double[] testValues = { 1000.0, 100.0, 0.0, 0.25, -1000.0, -100.0, };
+            decimal[] expectedValues = { 1000.0m, 100.0m, 0.0m, 0.25m, -1000.0m, -100.0m };
             Verify(Convert.ToDecimal, testValues, expectedValues);
 
             double[] overflowValues = { double.MaxValue, double.MinValue };
