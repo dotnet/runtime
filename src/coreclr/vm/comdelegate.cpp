@@ -1814,7 +1814,7 @@ MethodDesc* COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         if (!HasSingleTarget(thisDel) || extraData == DELEGATE_MARKER_UNMANAGEDFPTR)
             return FindDelegateInvokeMethod(thisDel->GetMethodTable());
 
-        return GetCachedMethodDesc(thisDel);
+        return (MethodDesc*)extraData;
     }
 
     // Next, check for an open delegate
