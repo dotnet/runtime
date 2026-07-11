@@ -333,11 +333,11 @@ namespace System
                 }
             }
 
-            MethodInfo? method = (MethodInfo?)RuntimeType.GetMethodBase(declaringType, method);
-            Debug.Assert(method is not null);
+            MethodInfo? methodInfo = (MethodInfo?)RuntimeType.GetMethodBase(declaringType, method);
+            Debug.Assert(methodInfo is not null);
 
-            _helperObject = method;
-            return method;
+            _helperObject = methodInfo;
+            return methodInfo;
         }
 
         [RequiresUnreferencedCode("The target method might be removed")]
