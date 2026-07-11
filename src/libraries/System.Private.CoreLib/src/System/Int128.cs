@@ -1209,28 +1209,19 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Int128 CopySign(Int128 value, Int128 sign)
         {
-            // Int128 isn't hardware accelerated, so we operate on the halves directly and compute the
-            // sign mask once rather than materializing the intermediate Int128 values that the general
-            // `(value ^ signMask) - signMask` form would produce.
-
             // signMask is all-bits-set when value and sign differ in sign, in which case value needs to be negated.
-            ulong signMask = (ulong)((long)(value._upper ^ sign._upper) >> 63);
+            Int128 signMask = (value ^ sign) >> 127;
 
             // Branchless conditional negate: (x ^ -1) - (-1) == -x; (x ^ 0) - 0 == x
-            ulong lower = value._lower ^ signMask;
-            ulong upper = value._upper ^ signMask;
+            Int128 result = (value ^ signMask) - signMask;
 
-            ulong resultLower = lower - signMask;
-            ulong borrow = (resultLower > lower) ? 1UL : 0UL;
-            ulong resultUpper = upper - signMask - borrow;
-
-            if (((long)sign._upper >= 0) && ((long)resultUpper < 0))
+            if (IsPositive(sign) && IsNegative(result))
             {
                 // value was Int128.MinValue and a non-negative result was requested, which is unrepresentable.
                 Math.ThrowNegateTwosCompOverflow();
             }
 
-            return new Int128(resultUpper, resultLower);
+            return result;
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
