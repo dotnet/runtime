@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -1266,9 +1265,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqual()
         {
-            string assemblyPath = Path.Combine(Environment.CurrentDirectory, "TestDelegateEquivalentTypeAssembly.dll");
-            Assembly testAssembly = Assembly.LoadFrom(assemblyPath);
-            Type otherDelegateType = testAssembly.GetType(typeof(EquivalentDelegate).FullName!);
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, TestDelegateEquivalentTypeAssembly");
             Assert.NotNull(otherDelegateType);
 
             MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
@@ -1282,9 +1279,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TypeEquivalentDelegatesPointingToSameMethod_HaveSameHashCode()
         {
-            string assemblyPath = Path.Combine(Environment.CurrentDirectory, "TestDelegateEquivalentTypeAssembly.dll");
-            Assembly testAssembly = Assembly.LoadFrom(assemblyPath);
-            Type otherDelegateType = testAssembly.GetType(typeof(EquivalentDelegate).FullName!);
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, TestDelegateEquivalentTypeAssembly");
             Assert.NotNull(otherDelegateType);
 
             MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
