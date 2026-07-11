@@ -29,14 +29,9 @@ namespace System
 
         private const int maxRoundingDigits = 15;
 
-        private const double doubleRoundLimit = 1e16d;
-
-        // This table is required for the Round function which can specify the number of digits to round to
-        private static ReadOnlySpan<double> RoundPower10Double =>
-        [
-            1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7, 1E8,
-            1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
-        ];
+        // Below this boundary a double may have a fractional portion; at or above it every
+        // representable value is already an integer (2^52).
+        private const double doubleIntegerBoundary = 4503599627370496.0;
 
         private const double SCALEB_C1 = 8.98846567431158E+307; // 0x1p1023
 
@@ -1411,10 +1406,17 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits(nameof(digits));
             }
 
-            if (Abs(value) < doubleRoundLimit)
+            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
             {
-                double power10 = RoundPower10Double[digits];
-                value = Round(value * power10, mode) / power10;
+                ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+            }
+
+            // Only finite values with a magnitude below the integer boundary can have a fractional
+            // portion to round. All other values (including NaN and Infinity) are returned unchanged;
+            // this comparison is naturally false for those cases.
+            if (Abs(value) < doubleIntegerBoundary)
+            {
+                value = Number.RoundToDecimalDigits<double>(value, digits, mode);
             }
 
             return value;

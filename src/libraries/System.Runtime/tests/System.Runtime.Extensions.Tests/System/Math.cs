@@ -1248,6 +1248,56 @@ namespace System.Tests
             Assert.Equal(double.NegativeInfinity, Math.Round(double.NegativeInfinity, 3, MidpointRounding.AwayFromZero));
         }
 
+        public static IEnumerable<object[]> Round_Double_Digits_ExactValue_TestData()
+        {
+            // 655.925 is not exactly representable; the nearest double is 655.924999999999954525...,
+            // which is just below the 655.925 decimal midpoint. Scaling by 100 produces exactly 65592.5
+            // and so the value used to incorrectly round as if it were a midpoint.
+            yield return new object[] { 655.925, 2, MidpointRounding.ToEven, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.AwayFromZero, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.ToZero, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.ToNegativeInfinity, 655.92 };
+            yield return new object[] { 655.925, 2, MidpointRounding.ToPositiveInfinity, 655.93 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToEven, -655.92 };
+            yield return new object[] { -655.925, 2, MidpointRounding.AwayFromZero, -655.92 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToZero, -655.92 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToNegativeInfinity, -655.93 };
+            yield return new object[] { -655.925, 2, MidpointRounding.ToPositiveInfinity, -655.92 };
+
+            // Large magnitudes below the integer boundary previously lost their fractional bits when
+            // scaled by a power of 10 (1111111111111111.5 * 10 is not exactly representable).
+            yield return new object[] { 1111111111111111.5, 1, MidpointRounding.ToEven, 1111111111111111.5 };
+            yield return new object[] { 1111111111111111.5, 1, MidpointRounding.AwayFromZero, 1111111111111111.5 };
+
+            // 0.25 is an exactly representable decimal midpoint at one fractional digit.
+            yield return new object[] { 0.25, 1, MidpointRounding.ToEven, 0.2 };
+            yield return new object[] { 0.25, 1, MidpointRounding.AwayFromZero, 0.3 };
+            yield return new object[] { 0.35, 1, MidpointRounding.ToEven, 0.3 }; // 0.35 -> 0.34999999999999997...
+            yield return new object[] { 0.35, 1, MidpointRounding.AwayFromZero, 0.3 };
+
+            // Values at or above the integer boundary (2^52) are already integers and are unchanged.
+            yield return new object[] { 4503599627370496.0, 5, MidpointRounding.AwayFromZero, 4503599627370496.0 };
+            yield return new object[] { 2e16, 3, MidpointRounding.AwayFromZero, 2e16 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Round_Double_Digits_ExactValue_TestData))]
+        public static void Round_Double_Digits_ExactValue(double value, int digits, MidpointRounding mode, double expected)
+        {
+            double actual = Math.Round(value, digits, mode);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual));
+        }
+
+        [Theory]
+        [InlineData(0.5)]                    // below the integer boundary
+        [InlineData(9e15)]                   // between the integer boundary (2^52) and the old 1e16 limit
+        [InlineData(double.NaN)]
+        [InlineData(double.PositiveInfinity)]
+        public static void Round_Double_Digits_InvalidMidpointRounding_ThrowsArgumentException(double value)
+        {
+            AssertExtensions.Throws<ArgumentException>("mode", () => Math.Round(value, 3, (MidpointRounding)(-1)));
+        }
+
         [Fact]
         public static void Sign_Decimal()
         {

@@ -28,13 +28,9 @@ namespace System
 
         private const int maxRoundingDigits = 6;
 
-        // This table is required for the Round function which can specify the number of digits to round to
-        private static ReadOnlySpan<float> RoundPower10Single =>
-        [
-            1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
-        ];
-
-        private const float singleRoundLimit = 1e8f;
+        // Below this boundary a float may have a fractional portion; at or above it every
+        // representable value is already an integer (2^23).
+        private const float singleIntegerBoundary = 8388608.0f;
 
         private const float SCALEB_C1 = 1.7014118E+38f; // 0x1p127f
 
@@ -434,10 +430,17 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits_MathF(nameof(digits));
             }
 
-            if (Abs(x) < singleRoundLimit)
+            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
             {
-                float power10 = RoundPower10Single[digits];
-                x = Round(x * power10, mode) / power10;
+                ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+            }
+
+            // Only finite values with a magnitude below the integer boundary can have a fractional
+            // portion to round. All other values (including NaN and Infinity) are returned unchanged;
+            // this comparison is naturally false for those cases.
+            if (Abs(x) < singleIntegerBoundary)
+            {
+                x = Number.RoundToDecimalDigits<float>(x, digits, mode);
             }
 
             return x;

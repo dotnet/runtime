@@ -1235,6 +1235,45 @@ namespace System.Tests
             AssertExtensions.Equal(expected, MathF.Round(x, digits, mode), CrossPlatformMachineEpsilon * 10);
         }
 
+        public static IEnumerable<object[]> Round_Digits_ExactValue_TestData()
+        {
+            // Cases where scaling the input by a power of 10 produced an inexact intermediate and so
+            // rounded incorrectly. Expected values are the correctly rounded results of the exact input.
+            yield return new object[] { 55392.164f, 2, MidpointRounding.AwayFromZero, 55392.16f };
+            yield return new object[] { -2052.5215f, 3, MidpointRounding.AwayFromZero, -2052.521f };
+            yield return new object[] { 7379.389f, 4, MidpointRounding.ToPositiveInfinity, 7379.389f };
+            yield return new object[] { 87101.12f, 5, MidpointRounding.ToZero, 87101.12f };
+            yield return new object[] { 20.932291f, 6, MidpointRounding.ToEven, 20.932291f };
+            yield return new object[] { -422486.8f, 5, MidpointRounding.ToEven, -422486.8f };
+            yield return new object[] { -122072.92f, 2, MidpointRounding.ToNegativeInfinity, -122072.93f };
+
+            // 0.25 is an exactly representable decimal midpoint at one fractional digit.
+            yield return new object[] { 0.25f, 1, MidpointRounding.ToEven, 0.2f };
+            yield return new object[] { 0.25f, 1, MidpointRounding.AwayFromZero, 0.3f };
+
+            // Values at or above the integer boundary (2^23) are already integers and are unchanged.
+            yield return new object[] { 8388608.0f, 5, MidpointRounding.AwayFromZero, 8388608.0f };
+            yield return new object[] { 2e7f, 3, MidpointRounding.AwayFromZero, 2e7f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Round_Digits_ExactValue_TestData))]
+        public static void Round_Digits_ExactValue(float value, int digits, MidpointRounding mode, float expected)
+        {
+            float actual = MathF.Round(value, digits, mode);
+            Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual));
+        }
+
+        [Theory]
+        [InlineData(0.5f)]                   // below the integer boundary
+        [InlineData(9e6f)]                   // between the integer boundary (2^23) and the old 1e8 limit
+        [InlineData(float.NaN)]
+        [InlineData(float.PositiveInfinity)]
+        public static void Round_Digits_InvalidMidpointRounding_ThrowsArgumentException(float value)
+        {
+            AssertExtensions.Throws<ArgumentException>("mode", () => MathF.Round(value, 3, (MidpointRounding)(-1)));
+        }
+
         [Theory]
         [InlineData(float.NegativeInfinity, unchecked((int)(0x7FFFFFFF)), float.NegativeInfinity, 0)]
         [InlineData(float.PositiveInfinity, unchecked((int)(0x7FFFFFFF)), float.PositiveInfinity, 0)]
