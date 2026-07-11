@@ -440,7 +440,11 @@ namespace System
             // this comparison is naturally false for those cases.
             if (Abs(x) < singleIntegerBoundary)
             {
-                x = Number.RoundToDecimalDigits<float>(x, digits, mode);
+                if (!Number.TryRoundToDecimalDigitsFast(x, digits, mode, out float rounded))
+                {
+                    rounded = Number.RoundToDecimalDigits<float>(x, digits, mode);
+                }
+                x = rounded;
             }
 
             return x;

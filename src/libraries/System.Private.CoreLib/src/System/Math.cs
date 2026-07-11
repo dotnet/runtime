@@ -1416,7 +1416,11 @@ namespace System
             // this comparison is naturally false for those cases.
             if (Abs(value) < doubleIntegerBoundary)
             {
-                value = Number.RoundToDecimalDigits<double>(value, digits, mode);
+                if (!Number.TryRoundToDecimalDigitsFast(value, digits, mode, out double rounded))
+                {
+                    rounded = Number.RoundToDecimalDigits<double>(value, digits, mode);
+                }
+                value = rounded;
             }
 
             return value;

@@ -1254,6 +1254,14 @@ namespace System.Tests
             // Values at or above the integer boundary (2^23) are already integers and are unchanged.
             yield return new object[] { 8388608.0f, 5, MidpointRounding.AwayFromZero, 8388608.0f };
             yield return new object[] { 2e7f, 3, MidpointRounding.AwayFromZero, 2e7f };
+
+            // Subnormals and other tiny magnitudes have an enormous binary exponent, so the fraction sits
+            // far below the midpoint and rounds to zero except when directed rounding forces it up.
+            yield return new object[] { float.Epsilon, 6, MidpointRounding.ToEven, 0.0f };
+            yield return new object[] { float.Epsilon, 6, MidpointRounding.AwayFromZero, 0.0f };
+            yield return new object[] { float.Epsilon, 6, MidpointRounding.ToPositiveInfinity, 1e-6f };
+            yield return new object[] { -float.Epsilon, 6, MidpointRounding.ToNegativeInfinity, -1e-6f };
+            yield return new object[] { 1.5e-40f, 6, MidpointRounding.ToEven, 0.0f };
         }
 
         [Theory]
