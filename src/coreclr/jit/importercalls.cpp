@@ -12826,18 +12826,22 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
             return NI_AVX10v1_ReciprocalSqrtScalar;
         case NI_System_Half_FusedMultiplyAdd:
             return NI_AVX10v1_FusedMultiplyAddScalar;
+        // The System.Half comparison operators explicitly return false for NaN inputs, matching the
+        // IEEE quiet (non-signaling) predicates, so map to the Unordered (VUCOMISH) forms rather than
+        // the Ordered (VCOMISH) forms. This avoids signaling invalid-operation on quiet NaN inputs and
+        // matches how float/double comparisons lower (ucomiss/ucomisd). The EFLAGS result is identical.
         case NI_System_Half_op_GreaterThan:
-            return NI_AVX10v1_CompareScalarOrderedGreaterThan;
+            return NI_AVX10v1_CompareScalarUnorderedGreaterThan;
         case NI_System_Half_op_GreaterThanOrEqual:
-            return NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual;
+            return NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual;
         case NI_System_Half_op_LessThan:
-            return NI_AVX10v1_CompareScalarOrderedLessThan;
+            return NI_AVX10v1_CompareScalarUnorderedLessThan;
         case NI_System_Half_op_LessThanOrEqual:
-            return NI_AVX10v1_CompareScalarOrderedLessThanOrEqual;
+            return NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual;
         case NI_System_Half_op_Equality:
-            return NI_AVX10v1_CompareScalarOrderedEqual;
+            return NI_AVX10v1_CompareScalarUnorderedEqual;
         case NI_System_Half_op_Inequality:
-            return NI_AVX10v1_CompareScalarOrderedNotEqual;
+            return NI_AVX10v1_CompareScalarUnorderedNotEqual;
         case NI_System_Half_Round:
         case NI_System_Half_Ceiling:
         case NI_System_Half_Floor:
