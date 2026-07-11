@@ -86,15 +86,16 @@ namespace ILCompiler.ObjectWriter
         }
 
         // Returns the RegNum value used for the "ambient SP" pseudo-register on the
-        // given architecture. It is defined as REGNUM_COUNT + 1 in ICorDebugInfo::RegNum.
+        // given architecture. It is defined as REGNUM_COUNT + 1 in ICorDebugInfo::RegNum
+        // and must match DBG_TARGET_REGNUM_AMBIENT_SP in debug/inc/DbgIPCEvents.h.
         private static int AmbientSpRegNum(TargetArchitecture architecture)
         {
             return architecture switch
             {
                 TargetArchitecture.X86 => (int)RegNumX86.REGNUM_COUNT + 1,
                 TargetArchitecture.X64 => (int)RegNumAmd64.REGNUM_COUNT + 1,
-                TargetArchitecture.ARM64 => 66,  // 33 int + 32 V registers, +1
-                TargetArchitecture.ARM => 25,    // 16 int + 8 D registers, +1
+                TargetArchitecture.ARM64 => 34, // 33 int registers (X0-X28, FP, LR, SP, PC), +1
+                TargetArchitecture.ARM => 17,   // 16 int registers (R0-R12, SP, LR, PC), +1
                 _ => -1
             };
         }
