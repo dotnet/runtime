@@ -2090,13 +2090,14 @@ namespace System
 
         private static void MakeSeparatorListFewChars(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
-            Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
-            int baseIndex = 0;
-            ReadOnlySpan<ushort> remaining = MemoryMarshal.Cast<char, ushort>(sourceSpan);
-
             // Attempt to run vectorized version
             if (Vector128.IsHardwareAccelerated && sourceSpan.Length >= Vector128<ushort>.Count*2)
             {
+                Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
+                int baseIndex = 0;
+                ReadOnlySpan<ushort> sourceSpanUInt16 = MemoryMarshal.Cast<char, ushort>(sourceSpan);
+                ReadOnlySpan<ushort> remaining = sourceSpanUInt16;
+
                 if (Vector512.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
                 {
                     Vector512<ushort> v1 = Vector512.Create((ushort)c);
@@ -2154,7 +2155,7 @@ namespace System
                         }
                     }
 
-                    while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count)
+                    while ((uint)remaining.Length > (uint)Vector512<ushort>.Count)
                     {
                         Vector512<ushort> vector = Vector512.Create(remaining);
                         Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
@@ -2173,6 +2174,28 @@ namespace System
 
                         baseIndex += Vector512<ushort>.Count;
                         remaining = remaining.Slice(Vector512<ushort>.Count);
+                    }
+
+                    // Handle the last chunk in a vectorized way also.
+                    // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                    // Note: ExtractMostSignificantBits is too expensive on non-xarch platforms for the vectorized fixup handling to be worth it.
+                    if (X86Base.IsSupported && remaining.Length > 0)
+                    {
+                        Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
+                        Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
+                        if (cmp != Vector512<byte>.Zero)
+                        {
+                            int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
+                            ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                            while (mask != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                                sepListBuilder.Append(finalIndex + (int)bitPos);
+                                mask = BitOperations.ResetLowestSetBit(mask);
+                            }
+                        }
+
+                        return;
                     }
                 }
                 else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
@@ -2232,7 +2255,7 @@ namespace System
                         }
                     }
 
-                    while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count)
+                    while ((uint)remaining.Length > (uint)Vector256<ushort>.Count)
                     {
                         Vector256<ushort> vector = Vector256.Create(remaining);
                         Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
@@ -2251,6 +2274,28 @@ namespace System
 
                         baseIndex += Vector256<ushort>.Count;
                         remaining = remaining.Slice(Vector256<ushort>.Count);
+                    }
+
+                    // Handle the last chunk in a vectorized way also.
+                    // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                    // Note: ExtractMostSignificantBits is too expensive on non-xarch platforms for the vectorized fixup handling to be worth it.
+                    if (X86Base.IsSupported && remaining.Length > 0)
+                    {
+                        Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
+                        Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
+                        if (cmp != Vector256<byte>.Zero)
+                        {
+                            int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
+                            uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                            while (mask != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                                sepListBuilder.Append(finalIndex + (int)bitPos);
+                                mask = BitOperations.ResetLowestSetBit(mask);
+                            }
+                        }
+
+                        return;
                     }
                 }
                 else if (Vector128.IsHardwareAccelerated)
@@ -2330,16 +2375,51 @@ namespace System
                         baseIndex += Vector128<ushort>.Count;
                         remaining = remaining.Slice(Vector128<ushort>.Count);
                     }
+
+                    // Handle the last chunk in a vectorized way also.
+                    // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                    // Note: ExtractMostSignificantBits is too expensive on non-xarch platforms for the vectorized fixup handling to be worth it.
+                    if (X86Base.IsSupported && remaining.Length > 0)
+                    {
+                        Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
+                        Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
+                        if (cmp != Vector128<byte>.Zero)
+                        {
+                            int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
+                            uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                            while (mask != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                                sepListBuilder.Append(finalIndex + (int)bitPos);
+                                mask = BitOperations.ResetLowestSetBit(mask);
+                            }
+                        }
+
+                        return;
+                    }
+                }
+
+                for (int i = 0; i < remaining.Length; i++)
+                {
+                    char v = (char)remaining[i];
+                    if (v == c || v == c2 || v == c3)
+                    {
+                        sepListBuilder.Append(i);
+                    }
                 }
             }
-
-            for (int i = 0; i < remaining.Length; i++)
+            else
             {
-                char v = (char)remaining[i];
-                if (v == c || v == c2 || v == c3)
+                for (int i = 0; i < sourceSpan.Length; i++)
                 {
-                    sepListBuilder.Append(i + baseIndex);
+                    char v = sourceSpan[i];
+                    if (v == c || v == c2 || v == c3)
+                    {
+                        sepListBuilder.Append(i);
+                    }
                 }
+
+                return;
             }
         }
 
