@@ -1263,30 +1263,23 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
-        public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqual()
+        public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqualAndHaveSameHashCode()
         {
-            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes");
+            // Load the other assembly that contains an equivalent EquivalentDelegate type.
+            // Both types are compiled from TestEquivalentTypes/System.TestEquivalentTypes.cs.
+            Assembly otherAssembly = Assembly.Load("System.TestEquivalentTypes");
+            Type otherDelegateType = otherAssembly.GetType(typeof(EquivalentDelegate).FullName!);
             Assert.NotNull(otherDelegateType);
+            Assert.False(typeof(EquivalentDelegate).Equals(otherDelegateType));
+            Assert.True(typeof(EquivalentDelegate).IsEquivalentTo(otherDelegateType));
 
             MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
             Delegate a = Delegate.CreateDelegate(typeof(EquivalentDelegate), methodInfo);
             Delegate b = Delegate.CreateDelegate(otherDelegateType, methodInfo);
 
-            // Delegates of type-equivalent types pointing to the same method should be equal.
+            // Delegates of type-equivalent types pointing to the same method should be equal
+            // and must return the same hash code.
             Assert.True(a.Equals(b));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
-        public static void TypeEquivalentDelegatesPointingToSameMethod_HaveSameHashCode()
-        {
-            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes");
-            Assert.NotNull(otherDelegateType);
-
-            MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
-            Delegate a = Delegate.CreateDelegate(typeof(EquivalentDelegate), methodInfo);
-            Delegate b = Delegate.CreateDelegate(otherDelegateType, methodInfo);
-
-            // Delegates that are equal must return the same hash code.
             Assert.Equal(a.GetHashCode(), b.GetHashCode());
         }
 
@@ -1402,15 +1395,6 @@ namespace System.Tests
         private static void SharedTargetMethod() { }
         #endregion Test Setup
     }
-}
-
-// This type must have the same name, namespace, TypeIdentifier scope, and TypeIdentifier identifier
-// as EquivalentDelegate in System.TestEquivalentTypes, so that the two types are considered
-// type-equivalent by the .NET type equivalence mechanism (see TypeIdentifierAttribute).
-namespace System.Tests
-{
-    [TypeIdentifier("31F8EDB4-A306-4EBB-8C3D-B9F4B28F1DE9", "7B43F12E-AEF2-4987-B01D-B8B6B39E8C41")]
-    public delegate void EquivalentDelegate();
 }
 
 internal class DummyGenericClassForDelegateTests<T> { }
