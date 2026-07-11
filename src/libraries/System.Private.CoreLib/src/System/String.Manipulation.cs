@@ -2090,6 +2090,20 @@ namespace System
 
         private static void MakeSeparatorListFewChars(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
+            if (!Vector128.IsHardwareAccelerated || (uint)sourceSpan.Length < (uint)Vector128<ushort>.Count*2)
+            {
+                for (int i = 0; i < sourceSpan.Length; i++)
+                {
+                    char v = sourceSpan[i];
+                    if (v == c || v == c2 || v == c3)
+                    {
+                        sepListBuilder.Append(i);
+                    }
+                }
+
+                return;
+            }
+
             Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
             int baseIndex = 0;
             ReadOnlySpan<ushort> sourceSpanUInt16 = MemoryMarshal.Cast<char, ushort>(sourceSpan);
@@ -2291,8 +2305,11 @@ namespace System
                     }
                 }
             }
-            else if (Vector128.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector128<ushort>.Count*2)
+            else
             {
+                Debug.Assert(Vector128.IsHardwareAccelerated);
+                Debug.Assert(remaining.Length >= Vector128<ushort>.Length*2);
+
                 Vector128<ushort> v1 = Vector128.Create((ushort)c);
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
                 Vector128<ushort> v3 = Vector128.Create((ushort)c3);
@@ -2385,17 +2402,6 @@ namespace System
                             sepListBuilder.Append(finalIndex + (int)bitPos);
                             mask = BitOperations.ResetLowestSetBit(mask);
                         }
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < remaining.Length; i++)
-                {
-                    char v = (char)remaining[i];
-                    if (v == c || v == c2 || v == c3)
-                    {
-                        sepListBuilder.Append(i);
                     }
                 }
             }
