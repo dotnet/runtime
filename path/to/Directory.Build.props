@@ -1,0 +1,7 @@
+# Complete code for Directory.Build.props
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ErrorReport>summary</ErrorReport>
+    <ErrorReportAfterBuild>summary</ErrorReportAfterBuild>
+  </PropertyGroup>
+</Project>

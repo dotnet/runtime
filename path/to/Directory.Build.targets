@@ -1,0 +1,17 @@
+# Complete code for Directory.Build.targets
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="AfterBuild">
+    <ItemGroup>
+      <FilesToLog Include="**\*.csproj">
+        <LogMessage>$(ProjectName) build completed.</LogMessage>
+      </FilesToLog>
+    </ItemGroup>
+  </Target>
+  <Target Name="OnFailedBuild" AfterTargets="Build">
+    <ItemGroup>
+      <FilesToLog Include="**\*.csproj">
+        <LogMessage>$(ProjectName) build failed.</LogMessage>
+      </FilesToLog>
+    </ItemGroup>
+  </Target>
+</Project>
