@@ -1262,6 +1262,27 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(
                 () => Delegate.CreateDelegate(typeof(NullableIntToString), num, mi));
         }
+
+        [Fact]
+        public static void EquivalentDelegateTypesPointingToSameMethod_AreEqual()
+        {
+            DelegateTypeA a = SharedTargetMethod;
+            DelegateTypeB b = SharedTargetMethod;
+
+            // Delegates of different types pointing to the same method should be equal.
+            Assert.True(a.Equals(b));
+        }
+
+        [Fact]
+        public static void EquivalentDelegateTypesPointingToSameMethod_HaveSameHashCode()
+        {
+            DelegateTypeA a = SharedTargetMethod;
+            DelegateTypeB b = SharedTargetMethod;
+
+            // Delegates that are equal must return the same hash code.
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        }
+
         #endregion Tests
 
         #region Test Setup
@@ -1370,6 +1391,12 @@ namespace System.Tests
         public delegate int E(C c);
 
         delegate string NullableIntToString(ref int? obj);
+
+        // Two structurally equivalent delegate types used to test cross-type equality and GetHashCode.
+        public delegate void DelegateTypeA();
+        public delegate void DelegateTypeB();
+
+        private static void SharedTargetMethod() { }
         #endregion Test Setup
     }
 }
