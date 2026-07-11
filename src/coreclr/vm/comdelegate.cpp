@@ -1983,17 +1983,17 @@ extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnSta
 {
     QCALL_CONTRACT;
 
-    MethodDesc* fRet = nullptr;
+    MethodDesc* pMD = nullptr;
 
     BEGIN_QCALL;
 
     GCX_COOP();
 
-    fRet = COMDelegate::GetMethodDesc(instance.Get());
+    pMD = COMDelegate::GetMethodDesc(instance.Get());
 
     END_QCALL;
 
-    return fRet;
+    return pMD;
 }
 
 FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
