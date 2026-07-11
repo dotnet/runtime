@@ -397,20 +397,22 @@ namespace System.Net.Security.Tests
         }
 
         // Cross-platform baseline: SslStream on BOTH sides, server rejects client cert.
-        // - TLS 1.2: server validates client cert before sending ServerFinished, so the client's
-        //   AuthenticateAsClientAsync must throw AuthenticationException.
-        // - TLS 1.3: server sends Finished before processing the client's Certificate, so the
-        //   client's AuthenticateAsClientAsync completes; the rejection surfaces only on the
-        //   first encrypted I/O after handshake (per TLS 1.3 spec, RFC 8446 §4.4.2.4).
+        // - TLS 1.2 with OpenSSL: server validates client cert before sending ServerFinished, so the
+        //   client's AuthenticateAsClientAsync must throw AuthenticationException.
+        // - TLS 1.3 (all backends), and TLS 1.2 on Windows SChannel: server sends its Finished before
+        //   the user RemoteCertificateValidationCallback runs, so the client's AuthenticateAsClientAsync
+        //   completes; the rejection surfaces only on the first encrypted I/O after handshake
+        //   (TLS 1.3 per RFC 8446 §4.4.2.4; SChannel because the user callback fires after ASC).
         // This pins the protocol-level expectation against which TlsSession behavior is compared.
         [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
         public async Task SslStreamServer_RejectsClientCert_ClientObservesAlert(SslProtocols protocol)
         {
-            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
             {
-                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                // Skip TLS 1.3 rows on platforms where TLS 1.3 is unavailable (macOS SecureTransport,
+                // Windows Server 2019 legacy SCHANNEL_CRED path, etc.).
                 return;
             }
 
@@ -440,7 +442,11 @@ namespace System.Net.Security.Tests
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth.WaitAsync(TimeSpan.FromSeconds(30)));
 
-                if (protocol == SslProtocols.Tls12)
+                // Only OpenSSL Tls12 rejects the handshake mid-flight (ServerFinished withheld);
+                // TLS 1.3 and Windows SChannel Tls12 complete the client-side handshake and surface
+                // the alert on the first encrypted I/O.
+                bool inHandshake = protocol == SslProtocols.Tls12 && !OperatingSystem.IsWindows();
+                if (inHandshake)
                 {
                     await Assert.ThrowsAsync<AuthenticationException>(() => clientAuth.WaitAsync(TimeSpan.FromSeconds(30)));
                     Assert.False(clientSsl.IsAuthenticated);
@@ -472,9 +478,10 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13)]
         public async Task ServerSession_RemoteCertificateValidationCallback_IsInvokedPostHoc(SslProtocols protocol)
         {
-            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
             {
-                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                // Skip TLS 1.3 rows on platforms where TLS 1.3 is unavailable (macOS SecureTransport,
+                // Windows Server 2019 legacy SCHANNEL_CRED path, etc.).
                 return;
             }
 
@@ -544,9 +551,10 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13)]
         public async Task ServerSession_ExternalValidation_RejectsClientCert_ServerFaultsPostHoc(SslProtocols protocol)
         {
-            if (protocol == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            if (protocol == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
             {
-                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                // Skip TLS 1.3 rows on platforms where TLS 1.3 is unavailable (macOS SecureTransport,
+                // Windows Server 2019 legacy SCHANNEL_CRED path, etc.).
                 return;
             }
 
@@ -871,9 +879,10 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls13)]
         public void TwoSessions_HandshakeAndPingPong_InMemory_Succeeds(SslProtocols protocols)
         {
-            if (protocols == SslProtocols.Tls13 && OperatingSystem.IsMacOS())
+            if (protocols == SslProtocols.Tls13 && !PlatformDetection.SupportsTls13)
             {
-                // SecureTransport (the legacy macOS TLS backend used here) does not implement TLS 1.3.
+                // Skip TLS 1.3 rows on platforms where TLS 1.3 is unavailable (macOS SecureTransport,
+                // Windows Server 2019 legacy SCHANNEL_CRED path, etc.).
                 return;
             }
 
@@ -2390,10 +2399,10 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SocketBoundSession_DeferredOptions_ProtocolMismatch_Fails()
         {
-            if (OperatingSystem.IsMacOS())
+            if (!PlatformDetection.SupportsTls13)
             {
-                // Test uses TLS 1.3 on the server side; SecureTransport (the legacy macOS TLS
-                // backend used here) does not implement TLS 1.3.
+                // Test uses TLS 1.3 on the server side; skip where TLS 1.3 is unavailable
+                // (macOS SecureTransport, Windows Server 2019 legacy SCHANNEL_CRED path, etc.).
                 return;
             }
 
