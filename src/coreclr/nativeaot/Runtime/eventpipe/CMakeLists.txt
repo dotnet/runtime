@@ -177,15 +177,13 @@ if (CLR_CMAKE_TARGET_WIN32)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dn-containers.pdb" DESTINATION aotsdk COMPONENT nativeaot)
 endif()
 
-if(FEATURE_EVENT_TRACE)
-  list(APPEND EVENTPIPE_SOURCES
-    ${AOT_EVENTPIPE_SHIM_SOURCES}
-    ${AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES}
-    ${AOT_EVENTTRACE_SOURCES}
-    ${GEN_EVENTPIPE_PROVIDER_SOURCES}
-    ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
-  )
-endif()
+list(APPEND EVENTPIPE_SOURCES
+  ${AOT_EVENTPIPE_SHIM_SOURCES}
+  ${AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES}
+  ${AOT_EVENTTRACE_SOURCES}
+  ${GEN_EVENTPIPE_PROVIDER_SOURCES}
+  ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
+)
 
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${NATIVEAOT_RUNTIME_DIR}/DisabledEventPipeInterface.cpp
@@ -195,20 +193,16 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES}
 )
 
-if(FEATURE_EVENT_TRACE)
-  add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
+add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
 
-  target_link_libraries(eventpipe-enabled PRIVATE eventpipe-shared-objects dn-containers-no-lto)
-  add_dependencies(eventpipe-enabled aot_eventing_headers)
-  if(CLR_CMAKE_TARGET_WIN32)
-    add_dependencies(eventpipe-enabled aot_etw_headers)
-  endif()
+target_link_libraries(eventpipe-enabled PRIVATE eventpipe-shared-objects dn-containers-no-lto)
+add_dependencies(eventpipe-enabled aot_eventing_headers)
+if(CLR_CMAKE_TARGET_WIN32)
+  add_dependencies(eventpipe-enabled aot_etw_headers)
 endif()
 
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
 add_dependencies(eventpipe-disabled aot_eventing_headers)
 
-if(FEATURE_EVENT_TRACE)
 install_static_library(eventpipe-enabled aotsdk nativeaot)
-endif()
 install_static_library(eventpipe-disabled aotsdk nativeaot)

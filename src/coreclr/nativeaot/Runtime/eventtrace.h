@@ -175,7 +175,6 @@ namespace ETW
         static HRESULT ForceGCForDiagnostics();
         static void ForceGC(LONGLONG l64ClientSequenceNumber);
         static void FireGcStart(ETW_GC_INFO * pGcInfo);
-#if defined(FEATURE_EVENT_TRACE)
         static void RootReference(
             LPVOID pvHandle,
             Object * pRootedNode,
@@ -191,7 +190,6 @@ namespace ETW
             ULONGLONG cRefs,
             Object ** rgObjReferenceTargets);
         static void EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext);
-#endif
         static void BeginMovedReferences(size_t * pProfilingContext);
         static void MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
         static void EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);

@@ -41,9 +41,9 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     Info.SuspendEE.Reason = reason;
     Info.SuspendEE.GcCount = (((reason == SUSPEND_FOR_GC) || (reason == SUSPEND_FOR_GC_PREP)) ?
         (uint32_t)GCHeapUtilities::GetGCHeap()->GetGcCount() : (uint32_t)-1);
+#endif // FEATURE_EVENT_TRACE
 
     FireEtwGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
-#endif // FEATURE_EVENT_TRACE
 
     GetThreadStore()->LockThreadStore();
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
