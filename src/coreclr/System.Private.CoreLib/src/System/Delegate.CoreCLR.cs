@@ -248,11 +248,6 @@ namespace System
                 return hash;
             }
 
-            if (IsUnmanagedFunctionPtr)
-            {
-                return HashCode.Combine(_methodPtr, _methodPtrAux);
-            }
-
             MethodTable* methodTable = RuntimeHelpers.GetMethodTable(this);
 #if FEATURE_TYPEEQUIVALENCE
             if (methodTable->HasTypeEquivalence)
@@ -260,6 +255,11 @@ namespace System
                 methodTable = null;
             }
 #endif
+
+            if (IsUnmanagedFunctionPtr)
+            {
+                return HashCode.Combine((nuint)methodTable, _methodPtrAux);
+            }
             int hashCode = HashCode.Combine((nuint)methodTable, (nuint)MethodDesc);
             if (_methodPtrAux == 0 && _target != null)
             {
