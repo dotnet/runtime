@@ -175,8 +175,9 @@ internal readonly struct Object_1 : IObject
             isMulticast = typeSystemContract.IsArray(typeSystemContract.GetTypeHandle(mt), out _);
         }
 
+        const long UnmanagedMarker = -1;
         DelegateType delegateType = DelegateType.Unknown;
-        if (!isMulticast && del.ExtraData.Value != Data.Delegate.UnmanagedMarker)
+        if (!isMulticast && del.ExtraData.Value != UnmanagedMarker)
         {
             delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
         }
