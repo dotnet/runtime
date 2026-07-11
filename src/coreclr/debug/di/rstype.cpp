@@ -1752,7 +1752,7 @@ HRESULT CordbType::ReturnedByValue()
 
     // Whether the value occupies two registers (size in (8, 16] bytes on a
     // 64-bit target). Single-register (<= pointer-sized) returns only support
-    // the original simple cases: a single integer/pointer-sized non-FP field.
+    // integer/pointer-sized non-FP fields.
     // Floating-point and generic (unbound type-parameter) fields are only
     // encodable for the two-register case (where VLT_REG_REG with unified
     // RegNum handles all int/FP combinations). Enabling them for single-register
