@@ -33,7 +33,7 @@ inline void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 inline void GCToEEInterface::RestartEE()
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->RestartEE(bFinishedGC);
+    g_theGCToCLR->RestartEE();
 }
 
 inline void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)

@@ -208,7 +208,7 @@ public:
     // Resumes all paused threads, with a boolean indicating
     // if the EE is being restarted because a GC is complete.
     virtual
-    void RestartEE(bool bFinishedGC) PURE_VIRTUAL
+    void RestartEE() PURE_VIRTUAL
 
     // Performs a stack walk of all managed threads and invokes the given promote_func
     // on all GC roots encountered on the stack. Depending on the condemned generation,
