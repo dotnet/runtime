@@ -26,6 +26,9 @@ EC_KEY* AndroidCryptoNative_NewEcKeyFromKeys(JNIEnv *env, jobject /*ECPublicKey*
         return NULL;
 
     jobject curveParameters = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetParams);
+    if (CheckJNIExceptions(env) || curveParameters == NULL)
+        return NULL;
+
     return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), AndroidCryptoNative_CreateKeyPair(env, publicKey, privateKey));
 }
 
@@ -73,73 +76,63 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
     abort_if_invalid_pointer_argument (oid);
 
     JNIEnv* env = GetJNIEnv();
+    EC_KEY* ret = NULL;
+    INIT_LOCALS(loc, oidStr, ec, paramSpec, keyPairGenerator, keyPair, keyFactory, publicKey, keySpec, curveParameters);
 
     // Older versions of Android don't support mapping an OID to a curve name,
     // so do some of the common mappings here.
-    jstring oidStr;
     if (strcmp(oid, "1.3.132.0.33") == 0)
     {
-        oidStr = make_java_string(env, "secp224r1");
+        loc[oidStr] = make_java_string(env, "secp224r1");
     }
     else if (strcmp(oid, "1.3.132.0.34") == 0 || strcmp(oid, "nistP384") == 0)
     {
-        oidStr = make_java_string(env, "secp384r1");
+        loc[oidStr] = make_java_string(env, "secp384r1");
     }
     else if (strcmp(oid, "1.3.132.0.35") == 0 || strcmp(oid, "nistP521") == 0)
     {
-        oidStr = make_java_string(env, "secp521r1");
+        loc[oidStr] = make_java_string(env, "secp521r1");
     }
     else if (strcmp(oid, "1.2.840.10045.3.1.7") == 0 || strcmp(oid, "nistP256") == 0)
     {
-        oidStr = make_java_string(env, "secp256r1");
+        loc[oidStr] = make_java_string(env, "secp256r1");
     }
     else
     {
-        oidStr = make_java_string(env, oid);
+        loc[oidStr] = make_java_string(env, oid);
     }
-    jstring ec = make_java_string(env, "EC");
+    loc[ec] = make_java_string(env, "EC");
 
     // First, generate the key pair based on the curve defined by the oid.
-    jobject paramSpec = (*env)->NewObject(env, g_ECGenParameterSpecClass, g_ECGenParameterSpecCtor, oidStr);
-    ReleaseLRef(env, oidStr);
+    loc[paramSpec] = (*env)->NewObject(env, g_ECGenParameterSpecClass, g_ECGenParameterSpecCtor, loc[oidStr]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jobject keyPairGenerator =
-        (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
-    (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeWithParamsMethod, paramSpec);
+    loc[keyPairGenerator] =
+        (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, loc[ec]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[keyPairGenerator], g_keyPairGenInitializeWithParamsMethod, loc[paramSpec]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    ReleaseLRef(env, paramSpec);
-    if (CheckJNIExceptions(env))
-    {
-        LOG_DEBUG("Failed to create curve");
-        ReleaseLRef(env, ec);
-        ReleaseLRef(env, keyPairGenerator);
-        return NULL;
-    }
-
-    jobject keyPair = (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod);
-
-    ReleaseLRef(env, keyPairGenerator);
+    loc[keyPair] = (*env)->CallObjectMethod(env, loc[keyPairGenerator], g_keyPairGenGenKeyPairMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // Now that we have the key pair, we can get the curve parameters from the public key.
-    jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, ec);
-    jobject publicKey = (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPublicMethod);
-    jobject keySpec =
-        (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGetKeySpecMethod, publicKey, g_ECPublicKeySpecClass);
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[ec]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[publicKey] = (*env)->CallObjectMethod(env, loc[keyPair], g_keyPairGetPublicMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[keySpec] =
+        (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_ECPublicKeySpecClass);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    ReleaseLRef(env, ec);
-    ReleaseLRef(env, publicKey);
-    ReleaseLRef(env, keyFactory);
+    loc[curveParameters] = (*env)->CallObjectMethod(env, loc[keySpec], g_ECPublicKeySpecGetParams);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    if (CheckJNIExceptions(env))
-    {
-        ReleaseLRef(env, keySpec);
-        ReleaseLRef(env, keyPair);
-        return NULL;
-    }
+    ret = AndroidCryptoNative_NewEcKey(AddGRef(env, loc[curveParameters]), AddGRef(env, loc[keyPair]));
 
-    jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
-    ReleaseLRef(env, keySpec);
-    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
@@ -187,16 +180,16 @@ int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curv
 
     jstring curveNameStr = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurveName);
 
-    if (!curveNameStr)
-    {
-        *curveName = NULL;
-        return SUCCESS;
-    }
-
     if (CheckJNIExceptions(env))
     {
         *curveName = NULL;
         return FAIL;
+    }
+
+    if (!curveNameStr)
+    {
+        *curveName = NULL;
+        return SUCCESS;
     }
 
     jsize nameLength = (*env)->GetStringLength(env, curveNameStr);
@@ -207,6 +200,13 @@ int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curv
 
     (*env)->GetStringRegion(env, curveNameStr, 0, nameLength, (jchar*)buffer);
     (*env)->DeleteLocalRef(env, curveNameStr);
+
+    if (CheckJNIExceptions(env))
+    {
+        free(buffer);
+        *curveName = NULL;
+        return FAIL;
+    }
 
     *curveName = buffer;
 

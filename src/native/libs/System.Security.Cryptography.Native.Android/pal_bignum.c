@@ -13,13 +13,18 @@ int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
 
     // bigNum.toByteArray()
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = -1;
+    jsize bytesLen = 0;
+    jsize startingIndex = 0;
+    jbyte leadingByte = 0;
+
     jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
-    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    bytesLen = (*env)->GetArrayLength(env, bytes);
 
     // We strip the leading zero byte from the byte array.
-    jsize startingIndex = 0;
-    jbyte leadingByte;
     (*env)->GetByteArrayRegion(env, bytes, 0, 1, &leadingByte);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (leadingByte == 0)
     {
         startingIndex++;
@@ -27,8 +32,12 @@ int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
     }
 
     (*env)->GetByteArrayRegion(env, bytes, startingIndex, bytesLen, (jbyte*)output);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int32_t)bytesLen;
+
+cleanup:
     (*env)->DeleteLocalRef(env, bytes);
-    return CheckJNIExceptions(env) ? FAIL : (int32_t)bytesLen;
+    return ret;
 }
 
 int32_t AndroidCryptoNative_GetBigNumBytes(jobject bignum)
@@ -65,8 +74,13 @@ int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bi
     // Use the array here to get the leading zero byte if it exists.
     // bigNum.toByteArray().length();
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+
     jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
-    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int32_t)(*env)->GetArrayLength(env, bytes);
+
+cleanup:
     (*env)->DeleteLocalRef(env, bytes);
-    return CheckJNIExceptions(env) ? FAIL : (int32_t)bytesLen;
+    return ret;
 }

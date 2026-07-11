@@ -112,6 +112,8 @@ internal static partial class Interop
         internal static ValidationError[] X509ChainGetErrors(SafeX509ChainContextHandle ctx)
         {
             int count = Interop.AndroidCrypto.X509ChainGetErrorCount(ctx);
+            if (count < 0)
+                throw new CryptographicException();
             if (count == 0)
                 return Array.Empty<ValidationError>();
 

@@ -786,7 +786,9 @@ int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, const c
     loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ret = SUCCESS;
 
@@ -844,7 +846,9 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
     */
 
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferFlip));
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     int32_t rem = (*env)->CallIntMethod(env, sslStream->appInBuffer, g_ByteBufferRemaining);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (rem == 0)
     {
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferCompact));
@@ -859,6 +863,7 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
         }
 
         IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferFlip));
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
         if (IsHandshaking(handshakeStatus))
         {
@@ -867,6 +872,7 @@ AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int32_t
         }
 
         rem = (*env)->CallIntMethod(env, sslStream->appInBuffer, g_ByteBufferRemaining);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     if (rem > 0)
@@ -1122,6 +1128,8 @@ void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStre
 
     // sslEngine.setWantClientAuth(true);
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetWantClientAuth, true);
+    // This function cannot report failure, so at least ensure a thrown exception doesn't leak to the next JNI call.
+    (void)CheckJNIExceptions(env);
 }
 
 int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStream,
@@ -1165,6 +1173,7 @@ int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStrea
     (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetApplicationProtocols, loc[protocols]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ret = SUCCESS;
 

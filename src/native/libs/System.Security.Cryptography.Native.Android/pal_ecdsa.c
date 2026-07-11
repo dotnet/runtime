@@ -33,7 +33,7 @@ int32_t AndroidCryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint
     }
 
     jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
-    if (!privateKey)
+    if (CheckJNIExceptions(env) || !privateKey)
     {
         ReleaseLRef(env, signatureObject);
         return FAIL;

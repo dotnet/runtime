@@ -18,8 +18,9 @@ int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
 
     jstring javaAlgorithmName = make_java_string(env, algorithmName);
     jbyteArray passwordBytes = make_java_byte_array(env, passwordLength);
-    jobject destinationBuffer = (*env)->NewDirectByteBuffer(env, destination, destinationLength);
     jobject saltByteBuffer = NULL;
+    jobject destinationBuffer = (*env)->NewDirectByteBuffer(env, destination, destinationLength);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     if (javaAlgorithmName == NULL || passwordBytes == NULL || destinationBuffer == NULL)
     {
@@ -29,11 +30,13 @@ int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
     if (password && passwordLength > 0)
     {
         (*env)->SetByteArrayRegion(env, passwordBytes, 0, passwordLength, (const jbyte*)password);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     if (salt && saltLength > 0)
     {
         saltByteBuffer = (*env)->NewDirectByteBuffer(env, salt, saltLength);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
         if (saltByteBuffer == NULL)
         {
