@@ -323,7 +323,7 @@ typedef struct PInvokeTable {
 } PInvokeTable;
 
 static PInvokeTable s_PInvokeTables[] = {
-    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
+    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
     {"libSystem.Native", s_libSystem_Native, 94},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},

@@ -15,9 +15,9 @@
     <Content Include="SecondNativeLibrary.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\Assembly1.cs">
+      <LogicalName>Assembly1.cs</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <!-- Identifies native libraries that should be skipped during AOT -->
