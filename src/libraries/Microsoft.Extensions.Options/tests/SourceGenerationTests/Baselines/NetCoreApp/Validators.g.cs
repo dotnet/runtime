@@ -803,6 +803,48 @@ namespace KeywordNames
         }
     }
 }
+namespace KeywordNamesNested
+{
+    partial class @base 
+    {
+        partial class @void
+        {
+            /// <summary>
+            /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+            /// </summary>
+            /// <param name="name">The name of the options instance being validated.</param>
+            /// <param name="options">The options instance.</param>
+            /// <returns>Validation result.</returns>
+            [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+            #if !NET
+            [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+                 Justification = "The created ValidationContext object is used in a way that never call reflection")]
+            #endif
+            public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::KeywordNames.@class options)
+            {
+                global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+                #if NET
+                var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "class", null, null);
+                #else
+                var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                #endif
+                var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
+
+                context.MemberName = "string";
+                context.DisplayName = string.IsNullOrEmpty(name) ? "string" : $"{name}.string";
+                validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+                validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+                if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.@string, context, validationResults, validationAttributes))
+                {
+                    (builder ??= new()).AddResults(validationResults);
+                }
+
+                return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+            }
+        }
+    }
+}
 namespace MultiModelValidator
 {
     partial struct MultiValidator

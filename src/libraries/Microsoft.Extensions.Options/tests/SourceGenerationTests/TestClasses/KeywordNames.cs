@@ -39,6 +39,19 @@ namespace KeywordNames
     }
 }
 
+// A separate letters-only namespace so the keyword-named validator's sort key inside the emitter
+// is never decided by comparing '@' against other characters, which ICU and NLS order differently.
+namespace KeywordNamesNested
+{
+    public partial class @base
+    {
+        [OptionsValidator]
+        public partial class @void : IValidateOptions<KeywordNames.@class>
+        {
+        }
+    }
+}
+
 namespace @struct.@interface
 {
     public class @sealed

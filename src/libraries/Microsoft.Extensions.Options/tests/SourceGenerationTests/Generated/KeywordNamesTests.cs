@@ -43,6 +43,26 @@ public class KeywordNamesTests
     }
 
     [Fact]
+    public void KeywordValidatorTypeInvalid()
+    {
+        var model = new @class { @string = "XXX" };
+
+        var validator = new KeywordNamesNested.@base.@void();
+        var vr = validator.Validate("KeywordValidator", model);
+
+        Utils.VerifyValidateOptionsResult(vr, 1, "string");
+    }
+
+    [Fact]
+    public void KeywordValidatorTypeValid()
+    {
+        var model = new @class { @string = "ABCDE" };
+
+        var validator = new KeywordNamesNested.@base.@void();
+        Assert.Equal(ValidateOptionsResult.Success, validator.Validate("KeywordValidator", model));
+    }
+
+    [Fact]
     public void KeywordNamespaceInvalid()
     {
         var model = new @struct.@interface.SecondModel
