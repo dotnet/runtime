@@ -272,21 +272,10 @@ namespace System
         {
             return TryGetInvocations(out ReadOnlySpan<object> invocations)
                 ? ((Delegate)invocations[^1]).Method
-                : _helperObject as MethodInfo ?? GetMethodImplSlow();
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            MethodInfo GetMethodImplSlow()
-            {
-                Debug.Assert(HasSingleTarget);
-
-                MethodInfo method = GetMethodImplUncached();
-                Debug.Assert(method is not null);
-
-                _helperObject = method;
-                return method;
-            }
+                : _helperObject as MethodInfo ?? GetMethodImplUncached();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private unsafe MethodInfo GetMethodImplUncached()
         {
             // should be handled by GetMethodImpl
@@ -343,7 +332,12 @@ namespace System
                     }
                 }
             }
-            return (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+
+            MethodInfo? method = (MethodInfo?)RuntimeType.GetMethodBase(declaringType, method);
+            Debug.Assert(method is not null);
+
+            _helperObject = method;
+            return method;
         }
 
         [RequiresUnreferencedCode("The target method might be removed")]
