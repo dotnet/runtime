@@ -530,7 +530,7 @@ void gc_heap::gc_thread_function ()
             gc_heap::add_bgc_pause_duration_0();
 #endif //BACKGROUND_GC
             BEGIN_TIMING(restart_ee_during_log);
-            GCToEEInterface::RestartEE(TRUE);
+            GCToEEInterface::RestartEE();
             END_TIMING(restart_ee_during_log);
             process_sync_log_stats();
 
@@ -1590,7 +1590,7 @@ int gc_heap::refresh_memory_limit()
     }
 #endif //COMMITTED_BYTES_SHADOW
 
-    GCToEEInterface::RestartEE(TRUE);
+    GCToEEInterface::RestartEE();
 
     return (int)status;
 }

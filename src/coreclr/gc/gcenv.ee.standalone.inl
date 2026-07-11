@@ -30,7 +30,7 @@ inline void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     g_theGCToCLR->SuspendEE(reason);
 }
 
-inline void GCToEEInterface::RestartEE(bool bFinishedGC)
+inline void GCToEEInterface::RestartEE()
 {
     assert(g_theGCToCLR != nullptr);
     g_theGCToCLR->RestartEE(bFinishedGC);

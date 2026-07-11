@@ -5374,7 +5374,7 @@ void Thread::UnmarkForSuspension(ULONG mask)
 
 //----------------------------------------------------------------------------
 
-void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
+void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
 {
     ThreadSuspend::s_fSuspended = false;
 #ifdef TIME_SUSPEND
@@ -5681,7 +5681,7 @@ retry_for_debugger:
             "***** Giving up on current GC suspension due to debugger *****\n"));
 
         // Mark that we're done with the gc, so that the debugger can proceed.
-        RestartEE(FALSE, FALSE);
+        RestartEE(FALSE);
 
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 

@@ -1980,7 +1980,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
         gc_heap::add_bgc_pause_duration_0();
 #endif //BACKGROUND_GC
         BEGIN_TIMING(restart_ee_during_log);
-        GCToEEInterface::RestartEE(TRUE);
+        GCToEEInterface::RestartEE();
         END_TIMING(restart_ee_during_log);
     }
     process_sync_log_stats();

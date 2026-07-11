@@ -202,7 +202,7 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 FORCEINLINE void UpdateGCStressInstructionWithoutGC ()
 {
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-    ThreadSuspend::RestartEE(TRUE, TRUE);
+    ThreadSuspend::RestartEE(TRUE);
 }
 
 #if defined(TARGET_X86)

@@ -661,7 +661,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         if (!IsAtProcessExit())
         {
             // Resume the EE.
-            ThreadSuspend::RestartEE(FALSE, TRUE);
+            ThreadSuspend::RestartEE(TRUE);
         }
 
         // Because RegisterLoaderAllocatorForDeletion is modifying m_pLoaderAllocatorDestroyNext, we are saving it here
