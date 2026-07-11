@@ -522,10 +522,10 @@ namespace System
             // negative zero -- it can fall back to the first section (for example -0.001 or -0.0
             // with "+0.00;-0.00"). In that case the first section already contains the caller's
             // desired representation and we must not emit an extra sign, which would otherwise
-            // produce output such as "-+0.00".
-            bool signHandledBySection = number.IsNegative && FindSection(format, 1) != 0;
-
-            if (number.IsNegative && (section == 0) && (number.Scale != 0) && !signHandledBySection)
+            // produce output such as "-+0.00". This only matters when 'section == 0', so
+            // 'HasNegativeSection' is evaluated lazily behind that check to avoid an extra format
+            // scan on the common path where the negative section is used directly ('section != 0').
+            if (number.IsNegative && (section == 0) && (number.Scale != 0) && !HasNegativeSection(format))
             {
                 vlb.Append(info.NegativeSignTChar<TChar>());
             }
@@ -713,7 +713,7 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0) && !signHandledBySection)
+            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0) && !HasNegativeSection(format))
             {
                 vlb.Insert(0, info.NegativeSignTChar<TChar>());
             }
@@ -1129,6 +1129,11 @@ namespace System
                 return digit >= '5';
             }
         }
+
+        // A distinct negative section always begins after the first ';', so its offset is > 0.
+        // FindSection returns 0 both for the first section and when no such section exists, so a
+        // non-zero result reliably indicates the format defines a dedicated negative section.
+        private static bool HasNegativeSection(ReadOnlySpan<char> format) => FindSection(format, 1) != 0;
 
         private static unsafe int FindSection(ReadOnlySpan<char> format, int section)
         {
