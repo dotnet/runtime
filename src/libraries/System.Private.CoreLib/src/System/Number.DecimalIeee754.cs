@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 
@@ -974,6 +975,24 @@ namespace System
         private static void WideMultiply<TValue>(TValue left, TValue right, out TValue high, out TValue low)
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
+            // For the 32-bit and 64-bit formats the full product fits in a single wider C# integer (ulong and
+            // UInt128 respectively), so it comes from one native multiply. The 128-bit format has no wider
+            // native type and uses the schoolbook half-limb decomposition below.
+            if (typeof(TValue) == typeof(uint))
+            {
+                ulong product = (ulong)uint.CreateTruncating(left) * uint.CreateTruncating(right);
+                high = TValue.CreateTruncating(product >> 32);
+                low = TValue.CreateTruncating(product);
+                return;
+            }
+            else if (typeof(TValue) == typeof(ulong))
+            {
+                UInt128 product = (UInt128)ulong.CreateTruncating(left) * ulong.CreateTruncating(right);
+                high = TValue.CreateTruncating(product >> 64);
+                low = TValue.CreateTruncating(product);
+                return;
+            }
+
             int bits = TValue.Zero.GetByteCount() * 8;
             int half = bits / 2;
             TValue lowMask = (TValue.One << half) - TValue.One;
@@ -999,10 +1018,12 @@ namespace System
         /// returning the discarded least-significant decimal digit. Used to strip low-order digits during rounding.
         /// </summary>
         /// <remarks>
-        /// The Intel reference implementation avoids hardware division here by multiplying with precomputed
-        /// reciprocals of powers of ten (e.g. <c>bid_reciprocals10_64</c>) and shifting. This helper instead uses
-        /// direct integer division for simplicity; adopting the reciprocal-multiply tables is a possible future
-        /// performance optimization.
+        /// Only the 128-bit format reaches this helper: the 32-bit and 64-bit formats widen the limb pair to a
+        /// single native integer and divide directly (see <see cref="DropDigits{TValue}"/> and
+        /// <see cref="WideDigitCount{TDecimal, TValue}"/>). The Intel reference implementation avoids hardware
+        /// division here by multiplying with precomputed reciprocals of powers of ten (e.g.
+        /// <c>bid_reciprocals10_64</c>) and shifting; this helper instead uses direct integer division for
+        /// simplicity, and adopting the reciprocal-multiply tables is a possible future performance optimization.
         /// </remarks>
         private static int WideDivideByTen<TValue>(ref TValue high, ref TValue low)
             where TValue : unmanaged, IBinaryInteger<TValue>
@@ -1042,6 +1063,21 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
+            // For the 32-bit and 64-bit formats the (high, low) limb pair fits in a single wider C# integer
+            // (ulong and UInt128 respectively), so the digit count comes straight from the existing helpers
+            // instead of stripping the high limb a digit at a time. The 128-bit format has no wider native
+            // type and falls back to the generic limb loop below.
+            if (typeof(TValue) == typeof(uint))
+            {
+                ulong wide = ((ulong)uint.CreateTruncating(high) << 32) | uint.CreateTruncating(low);
+                return FormattingHelpers.CountDigits(wide);
+            }
+            else if (typeof(TValue) == typeof(ulong))
+            {
+                UInt128 wide = ((UInt128)ulong.CreateTruncating(high) << 64) | ulong.CreateTruncating(low);
+                return FormattingHelpers.CountDigits(wide);
+            }
+
             int count = 0;
 
             while (!TValue.IsZero(high))
@@ -1063,6 +1099,56 @@ namespace System
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             roundDigit = 0;
+
+            if (dropCount == 0)
+            {
+                return low;
+            }
+
+            // For the 32-bit and 64-bit formats the (high, low) limb pair fits in a single wider C# integer
+            // (ulong and UInt128 respectively), so the requested digits are dropped with one native division
+            // by 10^dropCount rather than a per-digit long-division loop. The remainder holds the removed
+            // low-order digits: its most-significant digit is the rounding digit and everything below it is
+            // folded into the sticky bit. The 128-bit format has no wider native type and uses the generic
+            // limb loop below.
+            if (typeof(TValue) == typeof(uint))
+            {
+                ulong wide = ((ulong)uint.CreateTruncating(high) << 32) | uint.CreateTruncating(low);
+
+                ulong scale = 1;
+                for (int i = 1; i < dropCount; i++)
+                {
+                    scale *= 10;
+                }
+                ulong power = scale * 10;
+
+                (ulong quotient, ulong remainder) = ulong.DivRem(wide, power);
+                roundDigit = int.CreateTruncating(remainder / scale);
+                sticky |= (remainder % scale) != 0;
+
+                high = TValue.Zero;
+                low = TValue.CreateTruncating(quotient);
+                return low;
+            }
+            else if (typeof(TValue) == typeof(ulong))
+            {
+                UInt128 wide = ((UInt128)ulong.CreateTruncating(high) << 64) | ulong.CreateTruncating(low);
+
+                UInt128 scale = UInt128.One;
+                for (int i = 1; i < dropCount; i++)
+                {
+                    scale *= 10;
+                }
+                UInt128 power = scale * 10;
+
+                (UInt128 quotient, UInt128 remainder) = UInt128.DivRem(wide, power);
+                roundDigit = int.CreateTruncating(remainder / scale);
+                sticky |= (remainder % scale) != UInt128.Zero;
+
+                high = TValue.Zero;
+                low = TValue.CreateTruncating(quotient);
+                return low;
+            }
 
             for (int i = 0; i < dropCount; i++)
             {
