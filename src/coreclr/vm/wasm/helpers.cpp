@@ -1439,6 +1439,50 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
 {
     STANDARD_VM_CONTRACT;
 
+    // String constructors use a special calling convention: they are compiled (both the R2R body and
+    // the caller-side thunks in crossgen2, see WasmLowering.GetStringCtorActualSignature) as static
+    // factory methods that allocate and return the string, i.e. "String Ctor(args)" rather than the
+    // declared "void .ctor(this, args)". The interpreter->R2R thunk selected here must therefore match
+    // that factory shape. This mirrors the R2R->interpreter direction in
+    // GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
+    if (pContextMD != NULL && pContextMD->IsCtor() && pContextMD->GetMethodTable()->IsString())
+    {
+        const char *thunkKey = nullptr;
+
+        if (metaSig.NumFixedArgs() == 1 && metaSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+        {
+            thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+        }
+        else
+        {
+            switch (metaSig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Miip";
+                    break;
+                case 2:
+                    thunkKey = "Miiip";
+                    break;
+                case 3:
+                    thunkKey = "Miiiip";
+                    break;
+                case 4:
+                    thunkKey = "Miiiiip";
+                    break;
+                default:
+                    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk for string constructor");
+                    return NULL;
+            }
+        }
+
+        InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
+        if (stringCtorThunk == NULL)
+        {
+            PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+        }
+        return stringCtorThunk;
+    }
+
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
     {
