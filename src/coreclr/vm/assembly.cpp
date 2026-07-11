@@ -1157,6 +1157,12 @@ static void RunMainInternal(Param* pParam)
 
     pParam->pFD->EnsureActive();
     PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // The entry point is invoked from R2R-compiled code (Environment.CallEntryPoint performs an
+    // indirect call through this address), so it must resolve to real code (native R2R or a
+    // correctly-typed interpreter thunk) rather than an uninitialized portable entry point.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     BOOL hasReturnValue = !pParam->pFD->IsVoid();
     PTRARRAYREF* pArgument = (pParam->EntryType == EntryManagedMain) ? &StrArgArray : NULL;
