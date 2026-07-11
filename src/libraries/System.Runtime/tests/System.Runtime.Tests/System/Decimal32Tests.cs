@@ -1528,5 +1528,45 @@ namespace System.Tests
             Assert.False(Decimal32.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
             Assert.Equal(0, bytesConsumed);
         }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Arithmetic), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void op_Arithmetic_IntelReferenceVectors(string operation, uint left, uint right, uint expected)
+        {
+            Decimal32 l = Unsafe.BitCast<uint, Decimal32>(left);
+            Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
+
+            Decimal32 result = operation switch
+            {
+                "add" => l + r,
+                "sub" => l - r,
+                "mul" => l * r,
+                "div" => l / r,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal32Comparison), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void op_Comparison_IntelReferenceVectors(string operation, uint left, uint right, bool expected)
+        {
+            Decimal32 l = Unsafe.BitCast<uint, Decimal32>(left);
+            Decimal32 r = Unsafe.BitCast<uint, Decimal32>(right);
+
+            bool result = operation switch
+            {
+                "quiet_equal" => l == r,
+                "quiet_not_equal" => l != r,
+                "quiet_less" => l < r,
+                "quiet_greater" => l > r,
+                "quiet_less_equal" => l <= r,
+                "quiet_greater_equal" => l >= r,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, result);
+        }
     }
 }

@@ -1528,5 +1528,45 @@ namespace System.Tests
             Assert.False(Decimal128.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out int bytesConsumed));
             Assert.Equal(0, bytesConsumed);
         }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Arithmetic), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void op_Arithmetic_IntelReferenceVectors(string operation, UInt128 left, UInt128 right, UInt128 expected)
+        {
+            Decimal128 l = Unsafe.BitCast<UInt128, Decimal128>(left);
+            Decimal128 r = Unsafe.BitCast<UInt128, Decimal128>(right);
+
+            Decimal128 result = operation switch
+            {
+                "add" => l + r,
+                "sub" => l - r,
+                "mul" => l * r,
+                "div" => l / r,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(result));
+        }
+
+        [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]
+        [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Comparison), MemberType = typeof(DecimalIeee754IntelTestData))]
+        public static void op_Comparison_IntelReferenceVectors(string operation, UInt128 left, UInt128 right, bool expected)
+        {
+            Decimal128 l = Unsafe.BitCast<UInt128, Decimal128>(left);
+            Decimal128 r = Unsafe.BitCast<UInt128, Decimal128>(right);
+
+            bool result = operation switch
+            {
+                "quiet_equal" => l == r,
+                "quiet_not_equal" => l != r,
+                "quiet_less" => l < r,
+                "quiet_greater" => l > r,
+                "quiet_less_equal" => l <= r,
+                "quiet_greater_equal" => l >= r,
+                _ => throw new InvalidOperationException($"Unexpected operation '{operation}'."),
+            };
+
+            Assert.Equal(expected, result);
+        }
     }
 }
