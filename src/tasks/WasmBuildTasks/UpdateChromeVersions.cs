@@ -25,6 +25,11 @@ public partial class UpdateChromeVersions : MBU.Task
     private const string s_v8CanaryBaseUrl = "https://storage.googleapis.com/chromium-v8/official/canary";
     private const int s_versionCheckThresholdDays = 1;
 
+    // The V8 used for testing must support the standardized exnref exception-handling proposal.
+    // Chrome milestones can map to older V8 builds, so never downgrade the pinned V8 below this
+    // floor. See https://github.com/dotnet/runtime/issues/129849
+    private static readonly Version s_minV8Version = new(15, 1, 103);
+
     private static readonly HttpClient s_httpClient = new();
 
     [GeneratedRegex("#define V8_BUILD_NUMBER (\\d+)")]
@@ -215,23 +220,24 @@ public partial class UpdateChromeVersions : MBU.Task
 
         string foundV8Version = await FindV8VersionFromChromeVersion(foundRelease.version).ConfigureAwait(false);
 
+        // Never downgrade V8 below the exnref-capable floor, even if the Chrome milestone maps to an older build.
+        if (Version.TryParse(foundV8Version, out Version? candidateV8Version) && candidateV8Version < s_minV8Version)
+        {
+            string existingV8Version = GetExistingV8Version(osIdentifier);
+            Log.LogWarning($"Computed V8 version {foundV8Version} for {osIdentifier} is below the minimum " +
+                            $"exnref-capable version {s_minV8Version} — keeping the existing V8 version {existingV8Version}.");
+            foundV8Version = existingV8Version;
+            if (string.IsNullOrEmpty(foundV8Version))
+                throw new LogAsErrorException($"Computed V8 version for {osIdentifier} is below {s_minV8Version} and no existing version found in {ChromeVersionsPath}");
+        }
         // Validate that a prebuilt V8 binary exists on the CDN that jsvu uses for downloading.
-        if (!await IsV8BinaryAvailableAsync(osPrefix, foundV8Version).ConfigureAwait(false))
+        else if (!await IsV8BinaryAvailableAsync(osPrefix, foundV8Version).ConfigureAwait(false))
         {
             string v8BinaryUrl = GetV8BinaryUrl(osPrefix, foundV8Version);
             Log.LogWarning($"V8 binary not available at {v8BinaryUrl} — keeping the existing V8 version for {osIdentifier}.");
 
             // Fall back to the existing V8 version from BrowserVersions.props
-            XmlDocument existingDoc = new XmlDocument();
-            existingDoc.Load(ChromeVersionsPath);
-            string existingV8VersionNodeName = string.Equals(osIdentifier, "linux", StringComparison.OrdinalIgnoreCase)
-                ? "linux_V8Version"
-                : string.Equals(osIdentifier, "windows", StringComparison.OrdinalIgnoreCase)
-                    ? "win_V8Version"
-                    : string.Equals(osIdentifier, "Mac", StringComparison.OrdinalIgnoreCase)
-                        ? "macos_V8Version"
-                        : throw new LogAsErrorException($"Unknown OS identifier '{osIdentifier}' for V8 version fallback");
-            foundV8Version = GetNodeValue(existingDoc, existingV8VersionNodeName);
+            foundV8Version = GetExistingV8Version(osIdentifier);
             if (string.IsNullOrEmpty(foundV8Version))
                 throw new LogAsErrorException($"V8 binary for {osIdentifier} not available on CDN and no existing version found in {ChromeVersionsPath}");
         }
@@ -277,6 +283,20 @@ public partial class UpdateChromeVersions : MBU.Task
                 throw new LogAsErrorException($"Failed to parse chrome version '{chromeVersion}' to extract the milestone: {ex.Message}");
             }
         }
+    }
+
+    private string GetExistingV8Version(string osIdentifier)
+    {
+        XmlDocument existingDoc = new XmlDocument();
+        existingDoc.Load(ChromeVersionsPath);
+        string existingV8VersionNodeName = string.Equals(osIdentifier, "linux", StringComparison.OrdinalIgnoreCase)
+            ? "linux_V8Version"
+            : string.Equals(osIdentifier, "windows", StringComparison.OrdinalIgnoreCase)
+                ? "win_V8Version"
+                : string.Equals(osIdentifier, "Mac", StringComparison.OrdinalIgnoreCase)
+                    ? "macos_V8Version"
+                    : throw new LogAsErrorException($"Unknown OS identifier '{osIdentifier}' for V8 version fallback");
+        return GetNodeValue(existingDoc, existingV8VersionNodeName);
     }
 
     private static string GetV8BinaryUrl(string osPrefix, string v8Version)
