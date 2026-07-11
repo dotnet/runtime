@@ -1356,8 +1356,95 @@ void emitter::emitIns_R_R_R(instruction ins,
 
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
 {
-    //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    // Load from address: ireg = [reg + offs]
+    // This is used for loading from arbitrary memory locations (e.g., incoming parameter area)
+    
+    emitAttr size = EA_SIZE(attr);
+    ssize_t imm = offs;
+    insFormat fmt = IF_NONE;
+    
+    /* Validate the instruction form and operand sizes */
+    switch (ins)
+    {
+        case INS_lbz:
+            assert(isGeneralRegister(ireg));
+            assert(size == EA_1BYTE);
+            fmt = IF_LS_2A;
+            break;
+
+        case INS_lhz:
+            assert(isGeneralRegister(ireg));
+            assert(size == EA_2BYTE);
+            fmt = IF_LS_2A;
+            break;
+
+        case INS_lha:
+            assert(isGeneralRegister(ireg));
+            assert(size == EA_2BYTE);
+            fmt = IF_LS_2A;
+            break;
+
+        case INS_lwz:
+            assert(isGeneralRegister(ireg));
+            assert(size == EA_4BYTE);
+            fmt = IF_LS_2A;
+            break;
+
+        case INS_lwa:
+            assert(isGeneralRegister(ireg));
+            assert(size == EA_4BYTE);
+            assert((imm & 0x3) == 0);
+            fmt = IF_LS_2E;
+            break;
+
+        case INS_ld:
+            assert(isGeneralRegister(ireg));
+            assert(size == EA_8BYTE);
+            assert((imm & 0x3) == 0);
+            fmt = IF_LS_2C;
+            break;
+
+        case INS_lfs:
+            assert(isFloatReg(ireg));
+            assert(size == EA_4BYTE);
+            fmt = IF_LS_2G;
+            break;
+
+        case INS_lfd:
+            assert(isFloatReg(ireg));
+            assert(size == EA_8BYTE);
+            fmt = IF_LS_2H;
+            break;
+
+        default:
+            NYI("emitIns_R_AR - unsupported instruction");
+            return;
+    }
+
+    // Validate immediate range
+    if ((ins == INS_lwa) || (ins == INS_ld))
+    {
+        // DS-form: displacement must be 4-byte aligned
+        assert(imm >= -32768 && imm <= 32764);
+        assert((imm & 0x3) == 0);
+    }
+    else
+    {
+        // D-form: 16-bit signed immediate
+        assert(imm >= -32768 && imm <= 32767);
+    }
+
+    // Create instruction descriptor
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idReg1(ireg);
+    id->idReg2(reg);
+    id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)

@@ -703,6 +703,25 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         bool      isHfaArg = false;
         var_types hfaType  = TYP_UNDEF;
 
+#ifdef TARGET_POWERPC64
+        // PPC64LE: Check if this is an HFA struct
+        // If so, mark it as "do not enregister" so lvaInitUserArgs doesn't try to
+        // assign it to integer registers. The new ABI classification system will
+        // handle it correctly.
+        if (!info.compIsVarArgs && varTypeIsStruct(argType))
+        {
+            unsigned numFields = 0;
+            var_types ppc64leHfaType = TYP_UNDEF;
+            if (IsPpc64leHfaLikeStruct(this, typeHnd, &ppc64leHfaType, &numFields))
+            {
+                // This is an HFA struct - don't let lvaInitUserArgs classify it
+                // The actual ABI classification will be done by the new system
+                lvaSetVarDoNotEnregister(varDscInfo->varNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+                JITDUMP("[PPC64LE HFA DEBUG] lvaInitUserArgs - V%02u marked as HFA struct (type=%s, fields=%u), set DNER to prevent integer register assignment\n",
+                       varDscInfo->varNum, varTypeName(ppc64leHfaType), numFields);
+            }
+        }
+#else
         // Methods that use VarArg or SoftFP cannot have HFA arguments except
         // Native varargs on arm64 unix use the regular calling convention.
         if (((TargetOS::IsUnix && TargetArchitecture::IsArm64) || !info.compIsVarArgs) && !opts.compUseSoftFP)
@@ -715,6 +734,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 isHfaArg = varTypeIsValidHfaType(hfaType);
             }
         }
+#endif // TARGET_POWERPC64
         else if (info.compIsVarArgs)
         {
             // Currently native varargs is not implemented on non windows targets.
