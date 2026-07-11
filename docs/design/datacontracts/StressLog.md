@@ -13,16 +13,13 @@ internal record struct StressLogData(
     int TotalChunks,
     ulong TickFrequency,
     ulong StartTimestamp,
+    ulong StartTime,
     TargetPointer Logs);
 
 internal record struct ThreadStressLogData(
-    TargetPointer NextPointer,
+    TargetPointer Address,
     ulong ThreadId,
-    bool WriteHasWrapped,
-    TargetPointer CurrentPointer,
-    TargetPointer ChunkListHead,
-    TargetPointer ChunkListTail,
-    TargetPointer CurrentWriteChunk);
+    bool WriteHasWrapped);
 
 internal record struct StressMsgData(
     uint Facility,
@@ -36,7 +33,7 @@ bool HasStressLog();
 StressLogData GetStressLogData();
 StressLogData GetStressLogData(TargetPointer stressLogPointer);
 IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs);
-IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog);
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress);
 bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
 
@@ -52,6 +49,7 @@ Data descriptors used:
 | StressLog | TotalChunks | Total number of chunks across all thread-specific logs |
 | StressLog | TickFrequency | Number of ticks per second for stresslog timestamps |
 | StressLog | StartTimestamp | Timestamp when the stress log was started |
+| StressLog | StartTime | Wall-clock time when the stress log was started (FILETIME, 100ns units since Jan 1 1601) |
 | StressLog | ModuleOffset | Offset of the module in the stress log |
 | StressLog | Modules | Offset of the stress log's module table (if StressLogHasModuleTable is `1`) |
 | StressLog | Logs | Pointer to the thread-specific logs |
@@ -64,7 +62,6 @@ Data descriptors used:
 | ThreadStressLog | ChunkListHead | Pointer to the head of the chunk list |
 | ThreadStressLog | ChunkListTail | Pointer to the tail of the chunk list |
 | ThreadStressLog | CurrentWriteChunk | Pointer to the chunk currently being written to |
-| StressLogChunk | Prev | Pointer to the previous chunk |
 | StressLogChunk | Next | Pointer to the next chunk |
 | StressLogChunk | Buf | The data stored in the chunk |
 | StressLogChunk | Sig1 | First byte of the chunk signature (to ensure validity) |
@@ -104,6 +101,7 @@ StressLogData GetStressLogData()
         stressLog.TotalChunks,
         stressLog.TickFrequency,
         stressLog.StartTimestamp,
+        stressLog.StartTime,
         stressLog.Logs);
 }
 
@@ -118,6 +116,7 @@ StressLogData GetStressLogData(TargetPointer stressLogPointer)
         stressLog.TotalChunks,
         stressLog.TickFrequency,
         stressLog.StartTimestamp,
+        stressLog.StartTime,
         stressLog.Logs);
 }
 
@@ -151,20 +150,16 @@ IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
         }
 
         yield return new ThreadStressLogData(
-            threadStressLog.Next,
+            currentPointer,
             threadStressLog.ThreadId,
-            threadStressLog.WriteHasWrapped,
-            threadStressLog.CurrentPtr,
-            threadStressLog.ChunkListHead,
-            threadStressLog.ChunkListTail,
-            threadStressLog.CurrentWriteChunk);
+            threadStressLog.WriteHasWrapped);
 
         currentPointer = threadStressLog.Next;
     }
 }
 
 // Return messages going in reverse chronological order, newest first.
-IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog)
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress)
 {
     // 1. Get the current message pointer from the log and the info about the current chunk the runtime is writing into.
     //    Record our current read pointer as the current message pointer.

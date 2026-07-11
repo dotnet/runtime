@@ -194,6 +194,84 @@ internal sealed class MockDelegateObjectData : TypedView
     }
 }
 
+internal sealed class MockContinuationObjectData : TypedView
+{
+    public const string MethodTableFieldName = "m_pMethTab";
+    public const string NextFieldName = "Next";
+    public const string ResumeInfoFieldName = "ResumeInfo";
+    public const string FlagsFieldName = "Flags";
+    public const string StateFieldName = "State";
+
+    public static Layout<MockContinuationObjectData> CreateLayout(MockTarget.Architecture architecture)
+    {
+        SequentialLayoutBuilder builder = new("ContinuationObject", architecture);
+        return builder
+            .AddPointerField(MethodTableFieldName)
+            .AddPointerField(NextFieldName)
+            .AddPointerField(ResumeInfoFieldName)
+            .AddField(FlagsFieldName, sizeof(int))
+            .AddField(StateFieldName, sizeof(int))
+            .Build<MockContinuationObjectData>();
+    }
+
+    public ulong MethodTable
+    {
+        get => ReadPointerField(MethodTableFieldName);
+        set => WritePointerField(MethodTableFieldName, value);
+    }
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+
+    public ulong ResumeInfo
+    {
+        get => ReadPointerField(ResumeInfoFieldName);
+        set => WritePointerField(ResumeInfoFieldName, value);
+    }
+
+    public int Flags
+    {
+        get => unchecked((int)ReadUInt32Field(FlagsFieldName));
+        set => WriteUInt32Field(FlagsFieldName, unchecked((uint)value));
+    }
+
+    public int State
+    {
+        get => unchecked((int)ReadUInt32Field(StateFieldName));
+        set => WriteUInt32Field(StateFieldName, unchecked((uint)value));
+    }
+}
+
+internal sealed class MockAsyncResumeInfoData : TypedView
+{
+    public const string ResumeFieldName = "Resume";
+    public const string DiagnosticIPFieldName = "DiagnosticIP";
+
+    public static Layout<MockAsyncResumeInfoData> CreateLayout(MockTarget.Architecture architecture)
+    {
+        SequentialLayoutBuilder builder = new("AsyncResumeInfo", architecture);
+        return builder
+            .AddPointerField(ResumeFieldName)
+            .AddPointerField(DiagnosticIPFieldName)
+            .Build<MockAsyncResumeInfoData>();
+    }
+
+    public ulong Resume
+    {
+        get => ReadPointerField(ResumeFieldName);
+        set => WritePointerField(ResumeFieldName, value);
+    }
+
+    public ulong DiagnosticIP
+    {
+        get => ReadPointerField(DiagnosticIPFieldName);
+        set => WritePointerField(DiagnosticIPFieldName, value);
+    }
+}
+
 internal partial class MockDescriptors
 {
     internal sealed class MockObjectBuilder
@@ -219,6 +297,8 @@ internal partial class MockDescriptors
         internal Layout<MockStringObjectData> StringLayout { get; }
         internal Layout<MockArrayObjectData> ArrayLayout { get; }
         internal Layout<MockDelegateObjectData> DelegateLayout { get; }
+        internal Layout<MockContinuationObjectData> ContinuationLayout { get; }
+        internal Layout<MockAsyncResumeInfoData> AsyncResumeInfoLayout { get; }
         internal Layout<MockSyncTableEntry> SyncTableEntryLayout { get; }
         internal ulong TestStringMethodTableAddress { get; private set; }
         internal Layout<MockSyncBlock> SyncBlockLayout => SyncBlockBuilder.SyncBlockLayout;
@@ -243,6 +323,8 @@ internal partial class MockDescriptors
             StringLayout = MockStringObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             ArrayLayout = MockArrayObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
             DelegateLayout = MockDelegateObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
+            ContinuationLayout = MockContinuationObjectData.CreateLayout(Builder.TargetTestHelpers.Arch);
+            AsyncResumeInfoLayout = MockAsyncResumeInfoData.CreateLayout(Builder.TargetTestHelpers.Arch);
             SyncTableEntryLayout = MockSyncTableEntry.CreateLayout(Builder.TargetTestHelpers.Arch);
 
             Debug.Assert(ArrayLayout.Size == Builder.TargetTestHelpers.ArrayBaseSize);
@@ -339,6 +421,27 @@ internal partial class MockDescriptors
             mockDelegate.MethodPtr = methodPtr;
             mockDelegate.MethodPtrAux = methodPtrAux;
             mockDelegate.InvocationCount = invocationCount;
+            return fragment.Address;
+        }
+
+        internal ulong AddContinuationObject(ulong methodTable, ulong next, ulong resumeInfo, int state, int flags = 0)
+        {
+            MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)ContinuationLayout.Size, $"Continuation : MT = '{methodTable}'");
+            MockContinuationObjectData mockContinuation = ContinuationLayout.Create(fragment);
+            mockContinuation.MethodTable = methodTable;
+            mockContinuation.Next = next;
+            mockContinuation.ResumeInfo = resumeInfo;
+            mockContinuation.Flags = flags;
+            mockContinuation.State = state;
+            return fragment.Address;
+        }
+
+        internal ulong AddAsyncResumeInfo(ulong diagnosticIP, ulong resume = 0)
+        {
+            MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)AsyncResumeInfoLayout.Size, $"AsyncResumeInfo : DiagnosticIP = '{diagnosticIP}'");
+            MockAsyncResumeInfoData mockResumeInfo = AsyncResumeInfoLayout.Create(fragment);
+            mockResumeInfo.Resume = resume;
+            mockResumeInfo.DiagnosticIP = diagnosticIP;
             return fragment.Address;
         }
 

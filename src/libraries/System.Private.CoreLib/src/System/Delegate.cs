@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -68,17 +69,25 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
 #if !NATIVEAOT
-        protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
+        protected Delegate CombineImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).CombineImpl(d);
 
-        protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
+        protected Delegate? RemoveImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).RemoveImpl(d);
 
-        public virtual Delegate[] GetInvocationList() => [this];
+        public Delegate[] GetInvocationList() => Unsafe.As<MulticastDelegate>(this).GetInvocationList();
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.
         /// </summary>
         /// <value>true if the <see cref="Delegate"/> has a single invocation target.</value>
         public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
+
+        public object? Target => Unsafe.As<MulticastDelegate>(this).Target;
+
+        internal object GetTargetForSingleCastInstanceDelegate()
+        {
+            Debug.Assert(HasSingleTarget && Target == _target && _target != null);
+            return _target;
+        }
 #endif
 
         /// <summary>

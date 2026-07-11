@@ -633,20 +633,6 @@ namespace ILCompiler.DependencyAnalysis
                         (MethodWithToken)helperArgument,
                         methodContext);
 
-                case ReadyToRunHelperId.MethodDictionary:
-                    return GenericLookupMethodHelper(
-                        runtimeLookupKind,
-                        ReadyToRunFixupKind.MethodHandle,
-                        (MethodWithToken)helperArgument,
-                        methodContext);
-
-                case ReadyToRunHelperId.TypeDictionary:
-                    return GenericLookupTypeHelper(
-                        runtimeLookupKind,
-                        ReadyToRunFixupKind.TypeDictionary,
-                        (TypeDesc)helperArgument,
-                        methodContext);
-
                 case ReadyToRunHelperId.VirtualDispatchCell:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,

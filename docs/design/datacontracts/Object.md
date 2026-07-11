@@ -17,6 +17,12 @@ public readonly record struct DelegateInfo(
     TargetCodePointer TargetMethodPtr,
     DelegateType DelegateType);
 
+// DiagnosticIP is TargetPointer.Null when the continuation has no ResumeInfo.
+public readonly record struct ContinuationInfo(
+    TargetPointer Next,
+    TargetPointer DiagnosticIP,
+    uint State);
+
 // Get the method table address for the object
 TargetPointer GetMethodTableAddress(TargetPointer address);
 
@@ -42,6 +48,8 @@ TargetPointer GetSyncBlockAddress(TargetPointer address);
 
 DelegateInfo GetDelegateInfo(TargetPointer address);
 
+// Get the linked-list / diagnostic-IP / state triple for a runtime-async continuation object.
+ContinuationInfo GetContinuationInfo(TargetPointer address);
 // Returns the logical size of the object in bytes (base size plus any variable-size component data).
 ulong GetSize(TargetPointer address);
 ```
@@ -62,6 +70,10 @@ Data descriptors used:
 | `Delegate` | `MethodPtr` | Primary method pointer |
 | `Delegate` | `MethodPtrAux` | Auxiliary method pointer |
 | `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/unmanaged/special delegates) |
+| `ContinuationObject` | `Next` | Pointer to the next continuation in the linked list |
+| `ContinuationObject` | `ResumeInfo` | Pointer to the `ResumeInfo` for this suspension point (may be null) |
+| `ContinuationObject` | `State` | State index identifying the suspension point within the resumed method |
+| `AsyncResumeInfo` | `DiagnosticIP` | Native IP into the resumed method used for diagnostics (may be null) |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -209,6 +221,7 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     Data.Delegate del = new Data.Delegate(target, address);
 
     // Classify the delegate from its invocation count and auxiliary pointer.
+    // This does not handle open virtual delegates correctly.
     DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
     {
         0  => del.MethodPtrAux == TargetCodePointer.Null
@@ -229,6 +242,23 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     };
 
     return new DelegateInfo(targetObject, targetMethodPtr, delegateType);
+}
+
+ContinuationInfo GetContinuationInfo(TargetPointer address)
+{
+    TargetPointer next       = target.ReadPointer(address + /* ContinuationObject::Next offset */);
+    TargetPointer resumeInfo = target.ReadPointer(address + /* ContinuationObject::ResumeInfo offset */);
+    uint state               = (uint)target.Read<int>(address + /* ContinuationObject::State offset */);
+
+    // ResumeInfo may be null
+    TargetPointer diagnosticIP = resumeInfo != TargetPointer.Null
+        ? target.ReadPointer(resumeInfo + /* AsyncResumeInfo::DiagnosticIP offset */)
+        : TargetPointer.Null;
+
+    return new ContinuationInfo(
+        Next: next,
+        DiagnosticIP: diagnosticIP,
+        State: state);
 }
 
 ulong GetSize(TargetPointer address)
