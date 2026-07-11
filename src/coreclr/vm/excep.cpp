@@ -9337,52 +9337,20 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
         if (g_firstChanceExceptionHasHandler.Load())
         {
             GCX_COOP();
-            struct
-            {
-                OBJECTREF oThrowable;
-                OBJECTREF oEventArgs;
-            } gc;
-            gc.oThrowable = NULL;
-            gc.oEventArgs = NULL;
-            GCPROTECT_BEGIN(gc);
+            OBJECTREF oThrowable = NULL;
+            GCPROTECT_BEGIN(oThrowable);
 
-            gc.oThrowable = pCurTES->GetThrowable();
-            _ASSERTE(gc.oThrowable != NULL);
-            _ASSERTE(IsException(gc.oThrowable->GetMethodTable()));
+            oThrowable = pCurTES->GetThrowable();
+            _ASSERTE(oThrowable != NULL);
+            _ASSERTE(IsException(oThrowable->GetMethodTable()));
 
             // Prevent any async exceptions from this moment on this thread
             ThreadPreventAsyncHolder prevAsync;
 
-            // Allocate the FirstChanceExceptionEventArgs instance in the VM rather
-            // than in managed code. If this allocation fails, we fail fast.
-            //
-            // Allocating the event args in managed code from this first-chance
-            // dispatch path is unsafe: an OutOfMemoryException thrown while
-            // allocating would itself trigger first-chance delivery, allocate
-            // again, fail again, and recurse until the stack overflows. Passing a
-            // null event args instance to the managed handlers is also not
-            // something handlers expect. See
-            // https://github.com/dotnet/runtime/issues/123590.
-            EX_TRY
-            {
-                gc.oEventArgs = AllocateObject(CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS));
-            }
-            EX_CATCH
-            {
-                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_OUTOFMEMORY);
-                UNREACHABLE();
-            }
-            EX_END_CATCH
-
-            // Set the Exception field directly. This neither allocates nor runs
-            // managed code, so it cannot re-enter first-chance delivery.
-            FieldDesc *pExceptionField = CoreLibBinder::GetField(FIELD__FIRSTCHANCE_EVENTARGS__EXCEPTION);
-            SetObjectReference((OBJECTREF *)pExceptionField->GetInstanceAddress(gc.oEventArgs), gc.oThrowable);
-
             EX_TRY
             {
                 UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
-                deliverNotification.InvokeThrowing(&gc.oEventArgs);
+                deliverNotification.InvokeThrowing(&oThrowable);
             }
             EX_CATCH
             {
