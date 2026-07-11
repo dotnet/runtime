@@ -32382,8 +32382,18 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsSIMD(simdType));
 
+#ifdef DEBUG
+    // Once in LIR, lowering may feed a size-changing SIMD reinterpret operand directly -- e.g. an
+    // elided GetLower or ToVectorXXXUnsafe. It still occupies a full SIMD register and is consumed
+    // at the node's width, so treat any SIMD-typed operand as a full-vector operand rather than
+    // requiring an exact size match. In HIR the operand size must still be exact.
+    auto isFullVectorOp = [=](GenTree* op) -> bool {
+        return op->TypeIs(simdType) || ((comp->fgNodeThreading == NodeThreading::LIR) && varTypeIsSIMD(op));
+    };
+#endif // DEBUG
+
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+    assert(isFullVectorOp(op1));
     assert(op2 != nullptr);
 
 #if defined(TARGET_XARCH)
@@ -32435,7 +32445,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     {
         case GT_EQ:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isFullVectorOp(op2));
 
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
@@ -32477,7 +32487,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 
         case GT_GE:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isFullVectorOp(op2));
 
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
@@ -32524,7 +32534,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 
         case GT_GT:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isFullVectorOp(op2));
 
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
@@ -32585,7 +32595,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 
         case GT_LE:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isFullVectorOp(op2));
 
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
@@ -32632,7 +32642,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 
         case GT_LT:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isFullVectorOp(op2));
 
             // !GE
 
@@ -32695,7 +32705,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 
         case GT_NE:
         {
-            assert(op2->TypeIs(simdType));
+            assert(isFullVectorOp(op2));
 
 #if defined(TARGET_XARCH)
             if (varTypeIsMask(type))
