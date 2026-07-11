@@ -45,7 +45,6 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     bool isFirst = true);
 
 // Gets the thread context at the given stack dataframe.
-// `flags` lets the caller request platform-specific shaping of the returned context.
 byte[] GetRawContext(
     IStackDataFrameHandle stackDataFrameHandle,
     StackwalkFlag flags = StackwalkFlag.Default);
@@ -54,7 +53,6 @@ byte[] GetRawContext(
 enum StackwalkFlag
 {
     Default = 0,
-    X86ESPIgnoresCalleePoppedArgs = 0x1,
 }
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
@@ -490,10 +488,6 @@ byte[] GetRawContext(
     IStackDataFrameHandle stackDataFrameHandle,
     StackwalkFlag flags = StackwalkFlag.Default);
 ```
-
-##### `StackwalkFlag.X86ESPIgnoresCalleePoppedArgs`
-See [comment](https://github.com/dotnet/runtime/blob/7f8276da27a20943339702df0abdfc02e21110a4/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L1016-L1063)
-
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
 If the Frame is not valid, returns `TargetPointer.Null`.
