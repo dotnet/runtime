@@ -568,7 +568,8 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             delete threadStubArgs;
             return false;
         }
-        strcpy(name_copy, name);
+
+        strlcpy(name_copy, name, name_length + 1);
         threadStubArgs->m_name = name_copy;
     }
 
