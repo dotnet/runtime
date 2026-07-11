@@ -1517,7 +1517,11 @@ void EEJitManager::SetCpuInfo()
 
 #if defined(TARGET_WASM)
     CPUCompileFlags.Set(InstructionSet_WasmBase);
-    CPUCompileFlags.Set(InstructionSet_PackedSimd);
+    // NOTE: InstructionSet_PackedSimd (and the virtual Vector128 ISA) are intentionally not reported as
+    // supported yet: wasm SIMD codegen is incomplete and bails to the SIMD-less interpreter. This must
+    // stay in sync with the JIT baseline ISAs (Compiler::compSetProcessor) and the crossgen2 supported
+    // set (InstructionSetHelpers.cs); otherwise R2R images built without SIMD fail the instruction-set
+    // support check at load.
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
