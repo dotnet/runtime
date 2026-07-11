@@ -24,14 +24,6 @@ WARNING:   When setting properties based on their current state (for example:
 
     <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
     <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
-
-    <!--
-      The AOT compiler normalizes the libc flavor internally (e.g. linux-bionic on arm => armel
-      softfp ABI). TargetOS is plain 'linux' for bionic/musl, so forward the flavored PortableOS to
-      preserve the correct ABI; other platforms are unaffected.
-    -->
-    <_Crossgen2TargetOS>$(TargetOS)</_Crossgen2TargetOS>
-    <_Crossgen2TargetOS Condition="'$(TargetsLinuxBionic)' == 'true' or '$(TargetsLinuxMusl)' == 'true'">$(PortableOS)</_Crossgen2TargetOS>
   </PropertyGroup>
 
   <!--
@@ -135,7 +127,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -o:"$__OutputFile" >> "$__ResponseFile"
         echo -O >> "$__ResponseFile"
         echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
-        echo --targetos:$(_Crossgen2TargetOS) >> "$__ResponseFile"
+        echo --targetos:$(PortableOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
         echo --method-layout:random >> "$__ResponseFile"
         if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
@@ -348,7 +340,7 @@ if defined RunCrossGen2 (
     echo -O>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
-    echo --targetos:$(_Crossgen2TargetOS)>>!__ResponseFile!
+    echo --targetos:$(PortableOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (

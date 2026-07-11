@@ -42,14 +42,6 @@
     <_linuxLibcFlavor Condition="$(_targetOS.StartsWith($(_linuxToken)))">$(_targetOS.SubString($(_linuxToken.Length)))</_linuxLibcFlavor>
     <_linuxLibcFlavor Condition="'$(_targetOS)' == 'android'">bionic</_linuxLibcFlavor>
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
-
-    <!--
-      The OS presented to the AOT compiler via targetos. The compiler normalizes the libc flavor
-      internally (e.g. linux-bionic/android on arm => armel softfp ABI), so forward the flavored RID
-      rather than the plain 'linux' used for build integration conditionals above.
-    -->
-    <_ilcTargetOS>$(_targetOS)</_ilcTargetOS>
-    <_ilcTargetOS Condition="'$(_targetOS)' == 'linux' and '$(_linuxLibcFlavor)' != ''">linux-$(_linuxLibcFlavor)</_ilcTargetOS>
   </PropertyGroup>
 
   <PropertyGroup>

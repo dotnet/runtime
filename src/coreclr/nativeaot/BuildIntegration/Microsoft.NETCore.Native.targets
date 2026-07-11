@@ -261,7 +261,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(IlcSatelliteAssembly->'--satellite:%(Identity)')" />
       <IlcArg Include="@(MibcFile->'--mibc:%(Identity)')" />
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
-      <IlcArg Condition="'$(_ilcTargetOS)' != ''" Include="--targetos:$(_ilcTargetOS)" />
+      <!-- Pass the flavored RID OS (e.g. linux-bionic/linux-musl/android) so the compiler can infer the correct ABI; _targetOS is normalized to 'linux' for build-integration conditionals. -->
+      <IlcArg Condition="'$(_originalTargetOS)' != ''" Include="--targetos:$(_originalTargetOS)" />
       <IlcArg Condition="$(_targetArchitecture) != ''" Include="--targetarch:$(_targetArchitecture)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and ($(_targetOS) != 'win' or '$(OptimizationPreference)' == 'Size' or '$(IlcDehydrate)' == 'true')" Include="--dehydrate" />
