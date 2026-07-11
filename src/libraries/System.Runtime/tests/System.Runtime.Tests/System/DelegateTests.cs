@@ -1265,7 +1265,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqual()
         {
-            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, TestDelegateEquivalentTypeAssembly");
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes");
             Assert.NotNull(otherDelegateType);
 
             MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
@@ -1279,7 +1279,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TypeEquivalentDelegatesPointingToSameMethod_HaveSameHashCode()
         {
-            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, TestDelegateEquivalentTypeAssembly");
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes");
             Assert.NotNull(otherDelegateType);
 
             MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
@@ -1405,7 +1405,7 @@ namespace System.Tests
 }
 
 // This type must have the same name, namespace, TypeIdentifier scope, and TypeIdentifier identifier
-// as EquivalentDelegate in TestDelegateEquivalentTypeAssembly, so that the two types are considered
+// as EquivalentDelegate in System.TestEquivalentTypes, so that the two types are considered
 // type-equivalent by the .NET type equivalence mechanism (see TypeIdentifierAttribute).
 namespace System.Tests
 {
