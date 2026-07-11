@@ -56,11 +56,11 @@ public class RuntimeAsyncNonExceptionThrows
     //   * async1 lets the raw non-Exception escape the resumed state machine onto
     //     the thread pool where it becomes an unhandled exception and crashes the
     //     process, so it can never be observed by the caller.
-    // Enable this test once async1 and async2 agree (see the tracking issue).
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/123194")]
-    [Fact]
-    public static void CatchAfterYield_NoWrap_Async1()
-        => AssertNonExceptionWrapped(NoWrapThrowers.ThrowAfterYieldAsync1);
+    // async1 behavior here is terminal to the process, thus we will not test it:
+    //
+    // [Fact]
+    // public static void CatchAfterYield_NoWrap_Async1()
+    //     => AssertNonExceptionWrapped(NoWrapThrowers.ThrowAfterYieldAsync1);
 
     [Fact]
     public static void CatchBeforeYield_NoWrap_Async2()
