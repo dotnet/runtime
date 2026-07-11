@@ -12307,9 +12307,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
-            code |= insEncodeFloatElemsize(elemsize); // X
-            code |= insEncodeReg_Vd(id->idReg1());    // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
+            if ((elemsize == EA_2BYTE) && ((ins == INS_frecpe) || (ins == INS_frsqrte)))
+            {
+                // FRECPE/FRSQRTE are "Advanced SIMD scalar two-register miscellaneous" ops. Unlike the
+                // ftype-selected scalar ops in this format (fsqrt, frintX, fcvtXX, ...), their half-precision
+                // forms live in the dedicated FP16 sub-encoding, so setting ftype=11 would emit the Dd,Dn form.
+                // Set the FP16 sz/opcode bits explicitly so we emit e.g. FRECPE Hd,Hn (0x5EF9D800) rather than
+                // FRECPE Dd,Dn (0x5EE1D800).
+                code |= 0x00580000;
+            }
+            else
+            {
+                code |= insEncodeFloatElemsize(elemsize); // X
+            }
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 

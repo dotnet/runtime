@@ -2575,5 +2575,52 @@ namespace System.Tests
             Assert.Equal((Half)0.0, result);
             Assert.Equal(0, bytesConsumed);
         }
+
+        // Half.ReciprocalEstimate/ReciprocalSqrtEstimate are hardware-accelerated on some
+        // targets (e.g. Arm64 FRECPE/FRSQRTE, x86 RCPPH/RSQRTPH). The special-value results
+        // below are exact on every path and specifically guard against bad scalar codegen -- a
+        // wrong Arm64 half encoding previously emitted the double-precision form, producing +0.0
+        // for all of these inputs. The finite cases use a generous variance that comfortably
+        // exceeds the estimate error plus Half rounding so they don't depend on the exact
+        // hardware estimate.
+        public static IEnumerable<object[]> ReciprocalEstimate_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity,                   BitConverter.UInt16BitsToHalf(0x8000), (Half)0.0f };      // -Infinity -> -0.0
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000),   Half.NegativeInfinity,                 (Half)0.0f };      // -0.0      -> -Infinity
+            yield return new object[] { Half.NaN,                                Half.NaN,                              (Half)0.0f };
+            yield return new object[] { (Half)0.0f,                              Half.PositiveInfinity,                 (Half)0.0f };
+            yield return new object[] { Half.PositiveInfinity,                   (Half)0.0f,                            (Half)0.0f };
+            yield return new object[] { (Half)1.0f,                              (Half)1.0f,                            (Half)0.0625f };
+            yield return new object[] { (Half)2.0f,                              (Half)0.5f,                            (Half)0.03125f };
+            yield return new object[] { (Half)0.5f,                              (Half)2.0f,                            (Half)0.125f };
+            yield return new object[] { (Half)4.0f,                              (Half)0.25f,                           (Half)0.015625f };
+        }
+
+        [Theory]
+        [MemberData(nameof(ReciprocalEstimate_TestData))]
+        public static void ReciprocalEstimate(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, Half.ReciprocalEstimate(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> ReciprocalSqrtEstimate_TestData()
+        {
+            yield return new object[] { Half.NegativeInfinity,                   Half.NaN,                              (Half)0.0f };
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000),   Half.NegativeInfinity,                 (Half)0.0f };      // -0.0      -> -Infinity
+            yield return new object[] { (Half)(-1.0f),                           Half.NaN,                              (Half)0.0f };
+            yield return new object[] { Half.NaN,                                Half.NaN,                              (Half)0.0f };
+            yield return new object[] { (Half)0.0f,                              Half.PositiveInfinity,                 (Half)0.0f };
+            yield return new object[] { Half.PositiveInfinity,                   (Half)0.0f,                            (Half)0.0f };
+            yield return new object[] { (Half)1.0f,                              (Half)1.0f,                            (Half)0.0625f };
+            yield return new object[] { (Half)4.0f,                              (Half)0.5f,                            (Half)0.03125f };
+            yield return new object[] { (Half)0.25f,                             (Half)2.0f,                            (Half)0.125f };
+        }
+
+        [Theory]
+        [MemberData(nameof(ReciprocalSqrtEstimate_TestData))]
+        public static void ReciprocalSqrtEstimate(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, Half.ReciprocalSqrtEstimate(value), allowedVariance);
+        }
     }
 }
