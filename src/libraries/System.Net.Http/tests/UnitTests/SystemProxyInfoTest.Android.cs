@@ -18,6 +18,15 @@ namespace System.Net.Http.Tests
         {
             await RemoteExecutor.Invoke((switchValue, expectedTypeName) =>
             {
+                // The child process may inherit HTTP(S)_PROXY / NO_PROXY (etc.) from the CI
+                // environment. ConstructSystemProxy checks those first, so clear them to make
+                // sure we actually exercise the AndroidPlatformProxy / HttpNoProxy selection.
+                foreach (string envVar in new[] { "http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY",
+                                                  "all_proxy", "ALL_PROXY", "no_proxy", "NO_PROXY", "GATEWAY_INTERFACE" })
+                {
+                    Environment.SetEnvironmentVariable(envVar, null);
+                }
+
                 AppContext.SetSwitch("System.Net.Http.UseAndroidSystemProxy", bool.Parse(switchValue));
 
                 IWebProxy proxy = SystemProxyInfo.ConstructSystemProxy();
@@ -32,6 +41,9 @@ namespace System.Net.Http.Tests
         [InlineData(Interop.AndroidCrypto.AndroidProxyType.Socks, "proxy.example", 1080, true, "socks5://proxy.example:1080/")]
         [InlineData((Interop.AndroidCrypto.AndroidProxyType)42, "proxy.example", 8080, false, null)]
         [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "", 8080, false, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", 0, false, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Http, "proxy.example", -1, false, null)]
+        [InlineData(Interop.AndroidCrypto.AndroidProxyType.Socks, "proxy.example", 70000, false, null)]
         public void AndroidPlatformProxy_TryCreateProxyUri_PreservesProxySelectorEntrySemantics(
             Interop.AndroidCrypto.AndroidProxyType proxyType,
             string? host,

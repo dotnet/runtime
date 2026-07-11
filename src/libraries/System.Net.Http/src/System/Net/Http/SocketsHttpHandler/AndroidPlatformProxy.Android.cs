@@ -108,6 +108,15 @@ namespace System.Net.Http
                 return false;
             }
 
+            // entry.Port originates from java.net.InetSocketAddress.getPort() and crosses the
+            // JNI boundary, so treat it as untrusted. A usable proxy needs a real port; anything
+            // outside the valid TCP range would make UriBuilder throw, which the caller would see
+            // as a failed entry. Skip it instead so a later ProxySelector entry can be tried.
+            if (entry.Port is < 1 or > 65535)
+            {
+                return false;
+            }
+
             proxyUri = new UriBuilder(scheme, host, entry.Port).Uri;
 
             return true;
