@@ -404,6 +404,33 @@ public:
 template <typename TFunc>
 BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile)
 {
+
+    // True if this block is a try entry or a try side-entry.
+    //
+    auto isGeneralizedTryEntry = [comp](BasicBlock* block) -> bool {
+        EHblkDsc* const ehDsc = comp->ehGetBlockTryDsc(block);
+
+        if (ehDsc == nullptr)
+        {
+            return false;
+        }
+
+        if (comp->bbIsTryBeg(block))
+        {
+            return true;
+        }
+
+        for (BasicBlock* const blockPred : block->PredBlocks())
+        {
+            if (blockPred->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     // Special case throw helper blocks that are not yet connected in the flow graph.
     //
     Compiler::AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
@@ -411,7 +438,7 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
     {
         // Behave as if these blocks have edges from their respective region entry blocks.
         //
-        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || comp->bbIsTryBeg(block))
+        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || isGeneralizedTryEntry(block))
         {
             Compiler::AcdKeyDesignator dsg;
             const unsigned             blockData = comp->bbThrowIndex(block, &dsg);

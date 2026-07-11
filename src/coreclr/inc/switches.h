@@ -119,10 +119,6 @@
 
 #endif // _DEBUG
 
-// MUST NEVER CHECK IN WITH THIS ENABLED.
-// This is just for convenience in doing performance investigations in a checked-out enlistment.
-// #define FEATURE_ENABLE_NO_RANGE_CHECKS
-
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled
 // in Silverlight (just to avoid thinking about whether the extra code space is worthwhile).

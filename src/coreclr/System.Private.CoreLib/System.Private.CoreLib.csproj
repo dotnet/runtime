@@ -207,6 +207,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InitHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncHelpers.RuntimeAsyncYielder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncProfiler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeAsyncTaskContinuation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
@@ -291,7 +292,7 @@
   <ItemGroup Condition="'$(FeatureCominterop)' != 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.PlatformNotSupported.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.PlatformNotSupported.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>

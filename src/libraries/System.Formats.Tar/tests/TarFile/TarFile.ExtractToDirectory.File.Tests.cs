@@ -544,8 +544,17 @@ namespace System.Formats.Tar.Tests
 
             if (OperatingSystem.IsWindows())
             {
-                // Windows only creates file symlinks and trying to process a directory symlink will throw UnauthorizedAccessException instead of IOException
-                Assert.Throws<UnauthorizedAccessException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+                // Windows always creates file symlinks (FileInfo.CreateAsSymbolicLink), so entry "a/b" becomes a
+                // *file* symlink whose target (".") is a *directory*. Processing the nested entries forces the
+                // extractor to resolve/descend through that type-mismatched reparse point, which Windows rejects,
+                // but the surfaced exception depends on the OS build:
+                //   - Some builds throw UnauthorizedAccessException while resolving the link (FileInfo.ResolveLinkTarget
+                //     during the traversal-safety walk in FilePathEscapesDirectory).
+                //   - Others resolve the link successfully, then fail creating a directory where the file symlink
+                //     already exists, throwing IOException ("a file or directory with the same name already exists").
+                // Either way the archive is rejected and nothing escapes (verified below), so accept both.
+                Exception ex = Assert.ThrowsAny<Exception>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+                Assert.True(ex is IOException or UnauthorizedAccessException, $"Unexpected exception type: {ex}");
             }
             else
             {

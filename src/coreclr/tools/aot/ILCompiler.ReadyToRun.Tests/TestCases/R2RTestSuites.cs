@@ -1181,7 +1181,6 @@ public class R2RTestSuites
     /// to the underlying EcmaMethod.
     /// </summary>
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/129524")]
     public void CompositeAsyncDevirtNonAsyncCallee()
     {
         // Compiled WITHOUT runtime-async so the awaited virtuals get synthesized async-variant thunks.
@@ -1600,6 +1599,34 @@ public class R2RTestSuites
 
             // Test7: Static virtual generic method
             Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
+        }
+    }
+
+    [Fact]
+    public void VirtualMethodGenericsGenericLookup()
+    {
+        var genericLookupLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(VirtualMethodGenericsGenericLookup),
+            SourceResourceNames = ["VirtualMethodGenerics/GenericLookup.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualMethodGenericsGenericLookup),
+            [
+                new(nameof(VirtualMethodGenericsGenericLookup), [new CrossgenAssembly(genericLookupLib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            // The generic type instantiation is reached only through a GenericLookupSignature
+            // fixup, so its virtual method must still be discovered and compiled.
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "TestA`2<__Canon,int>", "TestMethod", out diag), diag);
         }
     }
 }
