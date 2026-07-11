@@ -402,6 +402,9 @@ CodeGen::CodeGen(Compiler* theCompiler)
     m_cgEmitter->codeGen = this;
     m_cgEmitter->gcInfo  = &gcInfo;
 
+    // On wasm this is never set by register allocation, so initialize it here.
+    calleeRegArgMaskLiveIn = RBM_NONE;
+
 #ifdef DEBUG
     setVerbose(m_compiler->verbose);
 #endif // DEBUG
@@ -3415,6 +3418,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 #endif
 
+    if (calleeRegArgMaskLiveIn == RBM_NONE)
+    {
+        return;
+    }
+
     regMaskTP paramRegs = calleeRegArgMaskLiveIn;
     if (m_compiler->opts.OptimizationDisabled())
     {
@@ -5834,10 +5842,7 @@ void CodeGen::genFnProlog()
 
         genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
 
-        if (calleeRegArgMaskLiveIn != RBM_NONE)
-        {
-            genHomeRegisterParams(initReg, &initRegZeroed);
-        }
+        genHomeRegisterParams(initReg, &initRegZeroed);
 
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();
