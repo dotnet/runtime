@@ -46,10 +46,13 @@ namespace System.Net.Http
 
             try
             {
-                // ProxySelector returns entries in preference order. We take the first.
-                // SocketsHttpHandler does not currently have an opt-in fallback API for
-                // multiple proxies; if the chosen proxy is unreachable the user sees the
-                // connect error rather than an automatic retry.
+                // ProxySelector returns entries in preference order. We surface only the
+                // first usable one as a single Uri. SocketsHttpHandler can fail over across
+                // multiple proxies when the IWebProxy also implements IMultiWebProxy (see
+                // HttpConnectionPoolManager / HttpWindowsProxy), but AndroidPlatformProxy does
+                // not implement that interface, so the remaining ProxySelector entries are not
+                // used for automatic fallback: if the chosen proxy is unreachable the caller
+                // sees the connect error rather than an automatic retry.
                 for (int i = 0; i < count; i++)
                 {
                     if (TryCreateProxyUri(proxies[i], out Uri? proxyUri))
