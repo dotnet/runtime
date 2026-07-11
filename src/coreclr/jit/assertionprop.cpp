@@ -1766,27 +1766,8 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    // Loop condition like "(uint)i < (uint)bnd" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
-    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
-    if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
-    {
-        ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
-        ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
-
-        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
-        AssertionIndex index = optAddAssertion(dsc);
-        if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
-        {
-            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
-            // after i < bnd so we need to change the assertion edge to "next".
-            return AssertionInfo::ForNextEdge(index);
-        }
-        return index;
-    }
-
     // "CheckedBnd <relop> X"
-    if (vnStore->IsVNCheckedBound(op1VN))
+    if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op1VN))
     {
         // For equality relops where the non-bound side is a constant (e.g. "len != 0"), the
         // LCLVAR-based equality assertion created below by optAssertionGenJtrue is strictly more
@@ -1805,7 +1786,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     // "X <relop> CheckedBnd"
-    if (vnStore->IsVNCheckedBound(op2VN))
+    if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
     {
         // Symmetric guard: leave constant-vs-CheckedBound equality assertions to the LCLVAR path.
         if (!(isEqualityRelop && vnStore->IsVNConstant(op1VN)))
@@ -1848,6 +1829,24 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return idx;
     }
 
+    // Loop condition like "(uint)i < (uint)bnd" or equivalent
+    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
+    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
+    {
+        ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
+        ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
+
+        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+        AssertionIndex index = optAddAssertion(dsc);
+        if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
+        {
+            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
+            // after i < bnd so we need to change the assertion edge to "next".
+            return AssertionInfo::ForNextEdge(index);
+        }
+        return index;
+    }
 
     // Create "X relop CNS" assertion (both signed and unsigned relops)
     // Ignore non-positive constants for unsigned relops as they don't add any useful information.
@@ -5616,117 +5615,19 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
             }
         }
     }
-    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1))
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_UMOD, &idxOp0, &idxOp1) && (idxOp1 == vnCurLen))
     {
-        if (idxOp0 == vnCurLen)
-        {
-            Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
-
-            if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
-            {
-                BitVecOps::Iter iter(apTraits, assertions);
-                unsigned        index = 0;
-                while (iter.NextElem(&index))
-                {
-                    AssertionIndex assertionIndex = GetAssertionIndex(index);
-                    const Compiler::AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
-
-                    if (curAssertion.GetOp1().GetVN() == vnCurLen && curAssertion.GetOp2().GetVN() == idxOp1)
-                    {
-                        if (curAssertion.KindIs(OAK_GT_UN))
-                        {
-                            // when length > index, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(INDEBUG(
-                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and a.Length > X"));
-                        }
-                        else if (curAssertion.KindIs(OAK_GE_UN))
-                        {
-                            // when length >= index, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(INDEBUG(
-                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and a.Length >= X"));
-                        }
-                    }
-                    else if (curAssertion.GetOp1().GetVN() == idxOp1 && curAssertion.GetOp2().GetVN() == vnCurLen)
-                    {
-                        if (curAssertion.KindIs(OAK_LT_UN))
-                        {
-                            // when index < length, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(INDEBUG(
-                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and X < a.Length"));
-                        }
-                        else if (curAssertion.KindIs(OAK_LE_UN))
-                        {
-                            // when index <= length, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(INDEBUG(
-                                "a[a.Length u% X] is always within bounds when a.Length is known to be > 0 and X <= a.Length"));
-                        }
-                    }
-                }
-            }
-        }
-        else if (idxOp1 == vnCurLen)
-        {
-            // If arr.Length is 0 we technically should keep the bounds check, but since the expression
-            // has to throw DivideByZeroException anyway - no special handling needed.
-            return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
-        }
+        // If arr.Length is 0 we technically should keep the bounds check, but since the expression
+        // has to throw DivideByZeroException anyway - no special handling needed.
+        return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
     }
-    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_MOD, &idxOp0, &idxOp1))
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_MOD, &idxOp0, &idxOp1) && (idxOp1 == vnCurLen))
     {
-        if (idxOp0 == vnCurLen)
+        Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
+
+        if (idxRng.LowerLimit().IsConstant() && idxRng.LowerLimit().GetConstant() >= 0)
         {
-            Range lenRng = GetRange(this, arrBndsChkLen, block, assertions, /*fast*/ true);
-
-            if (lenRng.LowerLimit().IsConstant() && lenRng.LowerLimit().GetConstant() > 0)
-            {
-                BitVecOps::Iter iter(apTraits, assertions);
-                unsigned        index = 0;
-                while (iter.NextElem(&index))
-                {
-                    AssertionIndex assertionIndex = GetAssertionIndex(index);
-                    const Compiler::AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
-
-                    if (curAssertion.GetOp1().GetVN() == vnCurLen && curAssertion.GetOp2().GetVN() == idxOp1)
-                    {
-                        if (curAssertion.KindIs(OAK_GT))
-                        {
-                            // when length > index, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(
-                                INDEBUG("a[a.Length % X] is always within bounds when a.Length is known to be > 0 and a.Length > X"));
-                        }
-                        else if (curAssertion.KindIs(OAK_GE))
-                        {
-                            // when length >= index, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(
-                                INDEBUG("a[a.Length % X] is always within bounds when a.Length is known to be > 0 and a.Length >= X"));
-                        }
-                    }
-                    else if (curAssertion.GetOp1().GetVN() == idxOp1 && curAssertion.GetOp2().GetVN() == vnCurLen)
-                    {
-                        if (curAssertion.KindIs(OAK_LT))
-                        {
-                            // when index < length, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(INDEBUG(
-                                "a[a.Length % X] is always within bounds when a.Length is known to be > 0 and X < a.Length"));
-                        }
-                        else if (curAssertion.KindIs(OAK_LE))
-                        {
-                            // when index <= length, length % index has the range [0..length - 1]
-                            return dropBoundsCheck(INDEBUG(
-                                "a[a.Length % X] is always within bounds when a.Length is known to be > 0 and X <= a.Length"));
-                        }
-                    }
-                }
-            }
-        }
-        else if (idxOp1 == vnCurLen)
-        {
-            Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
-
-            if (idxRng.LowerLimit().IsConstant() && idxRng.LowerLimit().GetConstant() >= 0)
-            {
-                return dropBoundsCheck(INDEBUG("a[X % a.Length] is always within bounds when X is known to be >= 0"));
-            }
+            return dropBoundsCheck(INDEBUG("a[X % a.Length] is always within bounds when X is known to be >= 0"));
         }
     }
 
