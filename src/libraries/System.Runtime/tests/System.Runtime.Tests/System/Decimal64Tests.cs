@@ -602,8 +602,8 @@ namespace System.Tests
             yield return new object[] { 0x31C00000_00000001UL, 0xFC000000_00000000UL, 0xFC000000_00000000UL }; // 1 + NaN -> NaN
             yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // +Inf + 1 -> +Inf
             yield return new object[] { 0x31C00000_00000001UL, 0x78000000_00000000UL, 0x78000000_00000000UL }; // 1 + +Inf -> +Inf
-            yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // +Inf + -Inf -> NaN
-            yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // -Inf + +Inf -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0x7C000000_00000000UL }; // +Inf + -Inf -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0x7C000000_00000000UL }; // -Inf + +Inf -> +QNaN (canonical invalid-operation result)
             yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0x78000000_00000000UL }; // +Inf + +Inf -> +Inf
             yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0xF8000000_00000000UL }; // -Inf + -Inf -> -Inf
             yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000000UL, 0x31C00000_00000000UL }; // +0 + +0 -> +0
@@ -614,7 +614,7 @@ namespace System.Tests
             yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000001UL, 0x31C00000_00000001UL }; // 0 + 1 -> 1
             yield return new object[] { 0x78000000_00000002UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // non-canonical +Inf + 1 -> canonical +Inf
             yield return new object[] { 0x31C00000_00000001UL, 0xF8000000_00000005UL, 0xF8000000_00000000UL }; // 1 + non-canonical -Inf -> canonical -Inf
-            yield return new object[] { 0x78000000_0000000FUL, 0xF8000000_00000003UL, 0xFC000000_00000000UL }; // non-canonical +Inf + non-canonical -Inf -> NaN
+            yield return new object[] { 0x78000000_0000000FUL, 0xF8000000_00000003UL, 0x7C000000_00000000UL }; // non-canonical +Inf + non-canonical -Inf -> +QNaN (canonical invalid-operation result)
             yield return new object[] { 0x31C00000_00000001UL, 0x31C00000_00000002UL, 0x31C00000_00000003UL }; // 1 + 2 -> 3
             yield return new object[] { 0x31A00000_0000000FUL, 0x31A00000_00000019UL, 0x31A00000_00000028UL }; // 1.5 + 2.5 -> 4.0
             yield return new object[] { 0x31A00000_00000001UL, 0x31A00000_00000002UL, 0x31A00000_00000003UL }; // 0.1 + 0.2 -> 0.3
@@ -706,8 +706,8 @@ namespace System.Tests
             yield return new object[] { 0x31C00000_00000001UL, 0x78000000_00000000UL, 0xF8000000_00000000UL }; // 1 - +Inf -> -Inf
             yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0x78000000_00000000UL }; // +Inf - -Inf -> +Inf
             yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0xF8000000_00000000UL }; // -Inf - +Inf -> -Inf
-            yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // +Inf - +Inf -> NaN
-            yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // -Inf - -Inf -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0x7C000000_00000000UL }; // +Inf - +Inf -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0x7C000000_00000000UL }; // -Inf - -Inf -> +QNaN (canonical invalid-operation result)
             yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000000UL, 0x31C00000_00000000UL }; // +0 - +0 -> +0
             yield return new object[] { 0xB1C00000_00000000UL, 0xB1C00000_00000000UL, 0x31C00000_00000000UL }; // -0 - -0 -> +0 (round-half-even)
             yield return new object[] { 0x31C00000_00000000UL, 0xB1C00000_00000000UL, 0x31C00000_00000000UL }; // +0 - -0 -> +0
@@ -1015,10 +1015,10 @@ namespace System.Tests
             yield return new object[] { 0xFC000000_00000000UL, 0x31C00000_00000001UL, 0xFC000000_00000000UL }; // NaN * 1 -> NaN
             yield return new object[] { 0x31C00000_00000001UL, 0xFC000000_00000000UL, 0xFC000000_00000000UL }; // 1 * NaN -> NaN
             yield return new object[] { 0xFC000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // NaN * +Inf -> NaN
-            yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000000UL, 0xFC000000_00000000UL }; // +Inf * +0 -> NaN
-            yield return new object[] { 0x31C00000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // +0 * +Inf -> NaN
-            yield return new object[] { 0xF8000000_00000000UL, 0x31C00000_00000000UL, 0xFC000000_00000000UL }; // -Inf * +0 -> NaN
-            yield return new object[] { 0x78000000_00000000UL, 0xB1C00000_00000000UL, 0xFC000000_00000000UL }; // +Inf * -0 -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000000UL, 0x7C000000_00000000UL }; // +Inf * +0 -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0x31C00000_00000000UL, 0x78000000_00000000UL, 0x7C000000_00000000UL }; // +0 * +Inf -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0xF8000000_00000000UL, 0x31C00000_00000000UL, 0x7C000000_00000000UL }; // -Inf * +0 -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0x78000000_00000000UL, 0xB1C00000_00000000UL, 0x7C000000_00000000UL }; // +Inf * -0 -> +QNaN (canonical invalid-operation result)
             yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // +Inf * 1 -> +Inf
             yield return new object[] { 0x78000000_00000000UL, 0xB1C00000_00000001UL, 0xF8000000_00000000UL }; // +Inf * -1 -> -Inf
             yield return new object[] { 0xF8000000_00000000UL, 0x31C00000_00000002UL, 0xF8000000_00000000UL }; // -Inf * 2 -> -Inf
@@ -1131,10 +1131,10 @@ namespace System.Tests
             yield return new object[] { 0xFC000000_00000000UL, 0x31C00000_00000001UL, 0xFC000000_00000000UL }; // NaN / 1 -> NaN
             yield return new object[] { 0x31C00000_00000001UL, 0xFC000000_00000000UL, 0xFC000000_00000000UL }; // 1 / NaN -> NaN
             yield return new object[] { 0xFC000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // NaN / +Inf -> NaN
-            yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // +Inf / +Inf -> NaN
-            yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // +Inf / -Inf -> NaN
-            yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0xFC000000_00000000UL }; // -Inf / +Inf -> NaN
-            yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0xFC000000_00000000UL }; // -Inf / -Inf -> NaN
+            yield return new object[] { 0x78000000_00000000UL, 0x78000000_00000000UL, 0x7C000000_00000000UL }; // +Inf / +Inf -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0x78000000_00000000UL, 0xF8000000_00000000UL, 0x7C000000_00000000UL }; // +Inf / -Inf -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0xF8000000_00000000UL, 0x78000000_00000000UL, 0x7C000000_00000000UL }; // -Inf / +Inf -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0xF8000000_00000000UL, 0xF8000000_00000000UL, 0x7C000000_00000000UL }; // -Inf / -Inf -> +QNaN (canonical invalid-operation result)
             yield return new object[] { 0x78000000_00000000UL, 0x31C00000_00000001UL, 0x78000000_00000000UL }; // +Inf / 1 -> +Inf
             yield return new object[] { 0x78000000_00000000UL, 0xB1C00000_00000001UL, 0xF8000000_00000000UL }; // +Inf / -1 -> -Inf
             yield return new object[] { 0xF8000000_00000000UL, 0x31C00000_00000002UL, 0xF8000000_00000000UL }; // -Inf / 2 -> -Inf
@@ -1152,9 +1152,9 @@ namespace System.Tests
             yield return new object[] { 0xB1C00000_00000005UL, 0x31C00000_00000000UL, 0xF8000000_00000000UL }; // -5 / +0 -> -Inf
             yield return new object[] { 0x31C00000_00000005UL, 0xB1C00000_00000000UL, 0xF8000000_00000000UL }; // 5 / -0 -> -Inf
             yield return new object[] { 0xB1C00000_00000005UL, 0xB1C00000_00000000UL, 0x78000000_00000000UL }; // -5 / -0 -> +Inf
-            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000000UL, 0xFC000000_00000000UL }; // +0 / +0 -> NaN
-            yield return new object[] { 0xB1C00000_00000000UL, 0xB1C00000_00000000UL, 0xFC000000_00000000UL }; // -0 / -0 -> NaN
-            yield return new object[] { 0x31C00000_00000000UL, 0xB1C00000_00000000UL, 0xFC000000_00000000UL }; // +0 / -0 -> NaN
+            yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000000UL, 0x7C000000_00000000UL }; // +0 / +0 -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0xB1C00000_00000000UL, 0xB1C00000_00000000UL, 0x7C000000_00000000UL }; // -0 / -0 -> +QNaN (canonical invalid-operation result)
+            yield return new object[] { 0x31C00000_00000000UL, 0xB1C00000_00000000UL, 0x7C000000_00000000UL }; // +0 / -0 -> +QNaN (canonical invalid-operation result)
             yield return new object[] { 0x31C00000_00000000UL, 0x31C00000_00000005UL, 0x31C00000_00000000UL }; // +0 / 5 -> +0 (ideal exp)
             yield return new object[] { 0xB1C00000_00000000UL, 0x31C00000_00000005UL, 0xB1C00000_00000000UL }; // -0 / 5 -> -0 (ideal exp, sign xor)
             yield return new object[] { 0x32000000_00000000UL, 0x31C00000_00000005UL, 0x32000000_00000000UL }; // 0e2 / 5 -> 0e2 (ideal exp)

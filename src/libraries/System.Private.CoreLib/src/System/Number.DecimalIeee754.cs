@@ -563,6 +563,41 @@ namespace System
         }
 
         /// <summary>
+        /// Produces the quiet NaN that an arithmetic operation propagates from its NaN operands, following the
+        /// IEEE 754-2019 §6.2.3 recommendation to preserve the payload of the first NaN operand.
+        /// </summary>
+        /// <remarks>
+        /// The first NaN operand (<paramref name="left" /> before <paramref name="right" />) supplies the sign and
+        /// payload of the result. A signaling NaN is quieted and a payload that is too large to be canonical
+        /// (greater than or equal to 10^(<c>Precision</c> - 1)) is discarded, matching the behavior of the Intel
+        /// reference implementation.
+        /// </remarks>
+        private static TValue PropagateNaN<TDecimal, TValue>(TValue left, TValue right)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `unpack_BID32`, `unpack_BID64`, and `unpack_BID128_value_BLE` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TValue nanBits = TDecimal.IsNaN(left) ? left : right;
+
+            // The payload occupies the trailing significand field; a value at or above the canonical
+            // bound is non-canonical and reads as zero. Re-encoding through the NaN combination mask
+            // clears the signaling bit, yielding a canonical quiet NaN that keeps the operand's sign.
+            TValue payload = nanBits & ((TValue.One << TDecimal.NumberBitsSignificand) - TValue.One);
+
+            if (payload >= TDecimal.Power10(TDecimal.Precision - 1))
+            {
+                payload = TValue.Zero;
+            }
+
+            return (nanBits & TDecimal.SignMask) | TDecimal.NaNMask | payload;
+        }
+
+        /// <summary>
         /// Adds two IEEE 754 decimal values represented by their raw bit patterns and returns the
         /// bit pattern of the correctly rounded (round-to-nearest, ties-to-even) sum.
         /// </summary>
@@ -585,7 +620,7 @@ namespace System
 
             if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
             {
-                return TDecimal.NaN;
+                return PropagateNaN<TDecimal, TValue>(left, right);
             }
 
             if (TDecimal.IsInfinity(left))
@@ -594,7 +629,10 @@ namespace System
                 // that includes at least one infinity returns that infinity (canonicalized).
                 if (TDecimal.IsInfinity(right) && (TDecimal.IsNegative(left) != TDecimal.IsNegative(right)))
                 {
-                    return TDecimal.NaN;
+                    // An invalid operation produces the canonical quiet NaN, which the Intel reference
+                    // emits with a positive sign and empty payload (`NaNMask`), unlike the negative
+                    // `TDecimal.NaN` constant.
+                    return TDecimal.NaNMask;
                 }
                 return TDecimal.IsNegative(left) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
             }
@@ -753,6 +791,32 @@ namespace System
         }
 
         /// <summary>
+        /// Subtracts one IEEE 754 decimal value from another, both represented by their raw bit patterns, and
+        /// returns the bit pattern of the correctly rounded (round-to-nearest, ties-to-even) difference.
+        /// </summary>
+        /// <remarks>
+        /// Subtraction negates the right operand and defers to <see cref="AddDecimalIeee754" />. The sign of a NaN
+        /// operand is left untouched so that a NaN result propagates the same payload and sign as addition would.
+        /// </remarks>
+        internal static TValue SubtractDecimalIeee754<TDecimal, TValue>(TValue left, TValue right)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            // This code is based on `bid32_sub`, `bid64_sub`, and `bid128_sub` from Intel(R) Decimal Floating-Point Math Library
+            // Copyright (c) 2007-2025, Intel Corp. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (!TDecimal.IsNaN(right))
+            {
+                right ^= TDecimal.SignMask;
+            }
+
+            return AddDecimalIeee754<TDecimal, TValue>(left, right);
+        }
+
+        /// <summary>
         /// Multiplies two IEEE 754 decimal values represented by their raw bit patterns and returns the
         /// bit pattern of the correctly rounded (round-to-nearest, ties-to-even) product.
         /// </summary>
@@ -775,7 +839,7 @@ namespace System
 
             if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
             {
-                return TDecimal.NaN;
+                return PropagateNaN<TDecimal, TValue>(left, right);
             }
 
             // The sign of a product is always the exclusive-or of the operand signs, including zeros.
@@ -793,7 +857,10 @@ namespace System
 
                 if (otherZero)
                 {
-                    return TDecimal.NaN;
+                    // An invalid operation produces the canonical quiet NaN, which the Intel reference
+                    // emits with a positive sign and empty payload (`NaNMask`), unlike the negative
+                    // `TDecimal.NaN` constant.
+                    return TDecimal.NaNMask;
                 }
 
                 return resultSign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
@@ -845,7 +912,7 @@ namespace System
 
             if (TDecimal.IsNaN(left) || TDecimal.IsNaN(right))
             {
-                return TDecimal.NaN;
+                return PropagateNaN<TDecimal, TValue>(left, right);
             }
 
             // The sign of a quotient is always the exclusive-or of the operand signs, including zeros.
@@ -857,7 +924,10 @@ namespace System
                 // an infinity carrying the exclusive-or sign.
                 if (TDecimal.IsInfinity(right))
                 {
-                    return TDecimal.NaN;
+                    // An invalid operation produces the canonical quiet NaN, which the Intel reference
+                    // emits with a positive sign and empty payload (`NaNMask`), unlike the negative
+                    // `TDecimal.NaN` constant.
+                    return TDecimal.NaNMask;
                 }
 
                 return resultSign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
@@ -879,7 +949,10 @@ namespace System
                 // carrying the exclusive-or sign (division by zero).
                 if (TValue.IsZero(a.Significand))
                 {
-                    return TDecimal.NaN;
+                    // An invalid operation produces the canonical quiet NaN, which the Intel reference
+                    // emits with a positive sign and empty payload (`NaNMask`), unlike the negative
+                    // `TDecimal.NaN` constant.
+                    return TDecimal.NaNMask;
                 }
 
                 return resultSign ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;

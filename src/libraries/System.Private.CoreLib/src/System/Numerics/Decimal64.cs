@@ -278,7 +278,7 @@ namespace System.Numerics
         /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
         public static Decimal64 operator --(Decimal64 value)
         {
-            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(value._value, OneValue ^ SignMask));
+            return new Decimal64(Number.SubtractDecimalIeee754<Decimal64, ulong>(value._value, OneValue));
         }
 
         /// <summary>Adds two values together to compute their sum.</summary>
@@ -296,7 +296,7 @@ namespace System.Numerics
         /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
         public static Decimal64 operator -(Decimal64 left, Decimal64 right)
         {
-            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(left._value, right._value ^ SignMask));
+            return new Decimal64(Number.SubtractDecimalIeee754<Decimal64, ulong>(left._value, right._value));
         }
 
         /// <summary>Multiplies two values together to compute their product.</summary>

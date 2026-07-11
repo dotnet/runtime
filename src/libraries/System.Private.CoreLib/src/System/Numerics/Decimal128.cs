@@ -272,8 +272,7 @@ namespace System.Numerics
         /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
         public static Decimal128 operator --(Decimal128 value)
         {
-            UInt128 negativeOne = new UInt128(OneValue.Upper ^ SignMaskUpper, OneValue.Lower);
-            UInt128 result = Number.AddDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), negativeOne);
+            UInt128 result = Number.SubtractDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), OneValue);
             return new Decimal128(result);
         }
 
@@ -293,8 +292,7 @@ namespace System.Numerics
         /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
         public static Decimal128 operator -(Decimal128 left, Decimal128 right)
         {
-            UInt128 negatedRight = new UInt128(right._upper ^ SignMaskUpper, right._lower);
-            UInt128 result = Number.AddDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), negatedRight);
+            UInt128 result = Number.SubtractDecimalIeee754<Decimal128, UInt128>(new UInt128(left._upper, left._lower), new UInt128(right._upper, right._lower));
             return new Decimal128(result);
         }
 

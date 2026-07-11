@@ -277,7 +277,7 @@ namespace System.Numerics
         /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
         public static Decimal32 operator --(Decimal32 value)
         {
-            return new Decimal32(Number.AddDecimalIeee754<Decimal32, uint>(value._value, OneValue ^ SignMask));
+            return new Decimal32(Number.SubtractDecimalIeee754<Decimal32, uint>(value._value, OneValue));
         }
 
         /// <summary>Adds two values together to compute their sum.</summary>
@@ -295,7 +295,7 @@ namespace System.Numerics
         /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
         public static Decimal32 operator -(Decimal32 left, Decimal32 right)
         {
-            return new Decimal32(Number.AddDecimalIeee754<Decimal32, uint>(left._value, right._value ^ SignMask));
+            return new Decimal32(Number.SubtractDecimalIeee754<Decimal32, uint>(left._value, right._value));
         }
 
         /// <summary>Multiplies two values together to compute their product.</summary>
