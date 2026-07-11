@@ -423,7 +423,7 @@ typedef struct PInvokeTable {
 } PInvokeTable;
 
 static PInvokeTable s_PInvokeTables[] = {
-    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
+    {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
     {"libSystem.Native", s_libSystem_Native, 146},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
