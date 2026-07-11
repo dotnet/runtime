@@ -34,7 +34,12 @@ namespace System.Text.Json.Serialization.Metadata
                     : null;
             }
 
+#if NET
+            ConstructorInvoker invoker = ConstructorInvoker.Create(ctorInfo);
+            return invoker.Invoke;
+#else
             return () => ctorInfo.InvokeNoWrapExceptions(null);
+#endif
         }
 
         public override Func<object?[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
@@ -46,22 +51,24 @@ namespace System.Text.Json.Serialization.Metadata
 
             int parameterCount = constructor.GetParameters().Length;
 
+#if NET
+            ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
+            return arguments => (T)invoker.Invoke(arguments.AsSpan(0, parameterCount));
+#else
             return (arguments) =>
             {
                 // The input array was rented from the shared ArrayPool, so its size is likely to be larger than the param count.
                 // The emit equivalent of this method does not (need to) allocate here + transfer the objects.
                 object[] argsToPass = new object[parameterCount];
 
-                for (int i = 0; i < parameterCount; i++)
-                {
-                    argsToPass[i] = arguments[i];
-                }
+                Array.Copy(arguments, 0, argsToPass, 0, parameterCount);
 
                 // Not wrapping in TargetInvocationException also plumbs ArgumentException through for
                 // tuples with more than 7 generic parameters, e.g.
                 // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
                 return (T)constructor.InvokeNoWrapExceptions(argsToPass);
             };
+#endif
         }
 
         public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
@@ -73,36 +80,55 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
+#if NET
+            ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
+#endif
 
             Debug.Assert(parameterCount <= JsonConstants.UnboxedParameterCountThreshold);
 
             return (arg0, arg1, arg2, arg3) =>
             {
-                object[] arguments = new object[parameterCount];
-
-                for (int i = 0; i < parameterCount; i++)
+#if NET
+                switch (parameterCount)
                 {
-                    switch (i)
-                    {
-                        case 0:
-                            arguments[0] = arg0!;
-                            break;
-                        case 1:
-                            arguments[1] = arg1!;
-                            break;
-                        case 2:
-                            arguments[2] = arg2!;
-                            break;
-                        case 3:
-                            arguments[3] = arg3!;
-                            break;
-                        default:
-                            Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
-                            throw new InvalidOperationException();
-                    }
+                    case 0:
+                        return (T)invoker.Invoke();
+                    case 1:
+                        return (T)invoker.Invoke(arg0);
+                    case 2:
+                        return (T)invoker.Invoke(arg0, arg1);
+                    case 3:
+                        return (T)invoker.Invoke(arg0, arg1, arg2);
+                    case 4:
+                        return (T)invoker.Invoke(arg0, arg1, arg2, arg3);
+                    default:
+                        Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
+                        throw new InvalidOperationException();
+                }
+#else
+                object?[] arguments = new object?[parameterCount];
+
+                switch (parameterCount)
+                {
+                    case > 4:
+                        Debug.Fail("We shouldn't be here if there are more than 4 parameters.");
+                        throw new InvalidOperationException();
+                    case 4:
+                        arguments[3] = arg3;
+                        goto case 3;
+                    case 3:
+                        arguments[2] = arg2;
+                        goto case 2;
+                    case 2:
+                        arguments[1] = arg1;
+                        goto case 1;
+                    case 1:
+                        arguments[0] = arg0;
+                        break;
                 }
 
                 return (T)constructor.InvokeNoWrapExceptions(arguments);
+#endif
             };
         }
 
@@ -114,10 +140,12 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
             Debug.Assert(constructor.GetParameters().Length == 1);
 
-            return value =>
-            {
-                return (T)constructor.InvokeNoWrapExceptions(new object?[] { value });
-            };
+#if NET
+            ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
+            return value => (T)invoker.Invoke(value);
+#else
+            return value => (T)constructor.InvokeNoWrapExceptions(new object?[] { value });
+#endif
         }
 
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
@@ -127,11 +155,12 @@ namespace System.Text.Json.Serialization.Metadata
 
             // We verified this won't be null when we created the converter for the collection type.
             MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
-
-            return delegate (TCollection collection, object? element)
-            {
-                addMethod.InvokeNoWrapExceptions(collection, new object[] { element! });
-            };
+#if NET
+            MethodInvoker invoker = MethodInvoker.Create(addMethod);
+            return (collection, element) => invoker.Invoke(collection, element);
+#else
+            return (collection, element) => addMethod.InvokeNoWrapExceptions(collection, new object[] { element });
+#endif
         }
 
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>()
@@ -150,32 +179,31 @@ namespace System.Text.Json.Serialization.Metadata
 
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo)
         {
-            MethodInfo getMethodInfo = propertyInfo.GetMethod!;
-
-            return delegate (object obj)
-            {
-                return (TProperty)getMethodInfo.InvokeNoWrapExceptions(obj, null)!;
-            };
+            return CreatePropertyGetter<object, TProperty>(propertyInfo);
         }
 
         public override Func<TDeclaringType, TProperty> CreatePropertyGetter<TDeclaringType, TProperty>(PropertyInfo propertyInfo)
         {
             MethodInfo getMethodInfo = propertyInfo.GetMethod!;
 
-            return delegate (TDeclaringType obj)
-            {
-                return (TProperty)getMethodInfo.InvokeNoWrapExceptions(obj, null)!;
-            };
+#if NET
+            MethodInvoker invoker = MethodInvoker.Create(getMethodInfo);
+            return obj => (TProperty)invoker.Invoke(obj)!;
+#else
+            return obj => (TProperty)getMethodInfo.InvokeNoWrapExceptions(obj, null)!;
+#endif
         }
 
         public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo)
         {
             MethodInfo setMethodInfo = propertyInfo.SetMethod!;
 
-            return delegate (object obj, TProperty value)
-            {
-                setMethodInfo.InvokeNoWrapExceptions(obj, new object[] { value! });
-            };
+#if NET
+            MethodInvoker invoker = MethodInvoker.Create(setMethodInfo);
+            return (obj, value) => invoker.Invoke(obj, value);
+#else
+            return (obj, value) => setMethodInfo.InvokeNoWrapExceptions(obj, new object[] { value });
+#endif
         }
 
         public override Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo) =>
