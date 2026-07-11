@@ -2308,7 +2308,7 @@ namespace System
             else
             {
                 Debug.Assert(Vector128.IsHardwareAccelerated);
-                Debug.Assert(remaining.Length >= Vector128<ushort>.Length*2);
+                Debug.Assert(remaining.Length >= Vector128<ushort>.Count*2);
 
                 Vector128<ushort> v1 = Vector128.Create((ushort)c);
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
