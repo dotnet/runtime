@@ -3,7 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -48,14 +47,11 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void OnFirstChanceException(object* pEventArgs, Exception* pOutException)
+        internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
         {
             try
             {
-                if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
-                {
-                    InvokeFirstChanceExceptionHandlers(handlers, Unsafe.As<FirstChanceExceptionEventArgs>(*pEventArgs), AppDomain.CurrentDomain);
-                }
+                OnFirstChanceException(*pException, AppDomain.CurrentDomain);
             }
             catch (Exception ex)
             {

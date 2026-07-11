@@ -130,24 +130,42 @@ namespace System
             }
         }
 
+        [ThreadStatic]
+        private static bool t_deliveringFirstChanceNotification;
+
         private static void OnFirstChanceException(Exception e, object? sender)
         {
             if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                InvokeFirstChanceExceptionHandlers(handlers, new FirstChanceExceptionEventArgs(e), sender);
-            }
-        }
+                // Guard against reentrancy. Allocating the event args below or running a
+                // handler may itself throw (e.g. OutOfMemoryException in a low-memory
+                // situation). That exception would trigger another first-chance
+                // notification on this same thread, allocate again, throw again, and
+                // recurse until the stack overflows. Skip nested notifications to break
+                // the recursion.
+                if (t_deliveringFirstChanceNotification)
+                {
+                    return;
+                }
 
-        private static void InvokeFirstChanceExceptionHandlers(EventHandler<FirstChanceExceptionEventArgs> handlers, FirstChanceExceptionEventArgs args, object? sender)
-        {
-            foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
-            {
+                t_deliveringFirstChanceNotification = true;
                 try
                 {
-                    handler(sender, args);
+                    FirstChanceExceptionEventArgs args = new(e);
+                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                    {
+                        try
+                        {
+                            handler(sender, args);
+                        }
+                        catch
+                        {
+                        }
+                    }
                 }
-                catch
+                finally
                 {
+                    t_deliveringFirstChanceNotification = false;
                 }
             }
         }
