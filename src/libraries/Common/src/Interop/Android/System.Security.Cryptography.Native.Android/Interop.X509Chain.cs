@@ -72,9 +72,9 @@ internal static partial class Interop
             }
             finally
             {
-                // The native side can populate part of certPtrs and then fail (returning 0) if a JNI
-                // exception is thrown mid-loop, so release every non-null entry rather than only the
-                // first `res` entries.
+                // X509Certificate2 above duplicates each global ref, so release the native-returned
+                // refs here. On failure the native side already released and cleared its entries, so
+                // the surviving non-null entries are the ones we still own.
                 for (int i = 0; i < certPtrs.Length; i++)
                 {
                     if (certPtrs[i] != IntPtr.Zero)

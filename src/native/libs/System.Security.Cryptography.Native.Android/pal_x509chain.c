@@ -202,7 +202,7 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
 
     int32_t ret = FAIL;
     int certCount = 0;
-    int32_t i = 0;
+    int32_t added = 0;
     INIT_LOCALS(loc, certPathList, trustedCert);
 
     // List<Certificate> certPathList = certPath.getCertificates();
@@ -215,33 +215,41 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
 
     abort_if_invalid_pointer_argument (certs);
 
+    // Populate `certs`, tracking how many entries we've stored (`added`) so that any failure
+    // can roll them back -- the caller must never observe a partially populated array.
     // for (int i = 0; i < certPathList.size(); ++i) {
     //     Certificate cert = certPathList.get(i);
     //     certs[i] = cert;
     // }
-    for (i = 0; i < certCount; ++i)
+    for (int32_t i = 0; i < certCount; ++i)
     {
         jobject cert = (*env)->CallObjectMethod(env, loc[certPathList], g_ListGet, i);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        certs[i] = ToGRef(env, cert);
+        certs[added++] = ToGRef(env, cert);
     }
 
     // Certificate trustedCert = trustAnchor.getTrustedCert();
     // certs[i] = trustedCert;
     loc[trustedCert] = (*env)->CallObjectMethod(env, ctx->trustAnchor, g_TrustAnchorGetTrustedCert);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (i == 0 || !(*env)->IsSameObject(env, certs[i-1], loc[trustedCert]))
+    if (added == 0 || !(*env)->IsSameObject(env, certs[added - 1], loc[trustedCert]))
     {
-        certs[i] = AddGRef(env, loc[trustedCert]);
-        ret = i + 1;
-    }
-    else
-    {
-        ret = i;
-        certs[i] = NULL;
+        certs[added++] = AddGRef(env, loc[trustedCert]);
     }
 
+    ret = added;
+
 cleanup:
+    if (ret == FAIL)
+    {
+        // Release any global refs we already stored and clear the slots so the caller never
+        // observes a partially populated array when we fail partway through.
+        for (int32_t i = 0; i < added; ++i)
+        {
+            ReleaseGRef(env, certs[i]);
+            certs[i] = NULL;
+        }
+    }
     RELEASE_LOCALS(loc, env);
     return ret;
 }
