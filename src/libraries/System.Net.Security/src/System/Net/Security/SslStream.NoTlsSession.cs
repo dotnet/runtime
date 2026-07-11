@@ -3,8 +3,9 @@
 
 namespace System.Net.Security
 {
-    // Stub partial impls for non-Linux/FreeBSD platforms. Always returns false so
-    // SslStream's existing PAL paths run unchanged.
+    // Stub partial impls for platforms that do not compile the TlsSession wedge
+    // (Apple SecureTransport / Network.framework, Android). Always returns false
+    // so SslStream's existing PAL paths run unchanged.
     public partial class SslStream
     {
 #pragma warning disable CA1822 // partial method signature must match the Unix impl which is non-static
