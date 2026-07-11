@@ -17,13 +17,14 @@ int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
     jsize bytesLen = 0;
     jsize startingIndex = 0;
     jbyte leadingByte = 0;
+    INIT_LOCALS(loc, bytes);
 
-    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
+    loc[bytes] = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    bytesLen = (*env)->GetArrayLength(env, bytes);
+    bytesLen = (*env)->GetArrayLength(env, loc[bytes]);
 
     // We strip the leading zero byte from the byte array.
-    (*env)->GetByteArrayRegion(env, bytes, 0, 1, &leadingByte);
+    (*env)->GetByteArrayRegion(env, loc[bytes], 0, 1, &leadingByte);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (leadingByte == 0)
     {
@@ -31,12 +32,12 @@ int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
         bytesLen--;
     }
 
-    (*env)->GetByteArrayRegion(env, bytes, startingIndex, bytesLen, (jbyte*)output);
+    (*env)->GetByteArrayRegion(env, loc[bytes], startingIndex, bytesLen, (jbyte*)output);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ret = (int32_t)bytesLen;
 
 cleanup:
-    (*env)->DeleteLocalRef(env, bytes);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -75,12 +76,13 @@ int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bi
     // bigNum.toByteArray().length();
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
+    INIT_LOCALS(loc, bytes);
 
-    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
+    loc[bytes] = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = (int32_t)(*env)->GetArrayLength(env, bytes);
+    ret = (int32_t)(*env)->GetArrayLength(env, loc[bytes]);
 
 cleanup:
-    (*env)->DeleteLocalRef(env, bytes);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }

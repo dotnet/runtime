@@ -99,18 +99,21 @@ ARGS_NON_NULL_ALL static int32_t DoFinal(JNIEnv* env, jobject mac, uint8_t* data
 {
     int32_t ret = FAIL;
     jsize dataBytesLen = 0;
+    INIT_LOCALS(loc, dataBytes);
+
+    *len = 0;
 
     // mac.doFinal();
-    jbyteArray dataBytes = (jbyteArray)(*env)->CallObjectMethod(env, mac, g_MacDoFinal);
+    loc[dataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, mac, g_MacDoFinal);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    dataBytesLen = (*env)->GetArrayLength(env, dataBytes);
-    (*env)->GetByteArrayRegion(env, dataBytes, 0, dataBytesLen, (jbyte*) data);
+    dataBytesLen = (*env)->GetArrayLength(env, loc[dataBytes]);
+    (*env)->GetByteArrayRegion(env, loc[dataBytes], 0, dataBytesLen, (jbyte*) data);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *len = (int32_t)dataBytesLen;
     ret = SUCCESS;
 
 cleanup:
-    (*env)->DeleteLocalRef(env, dataBytes);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

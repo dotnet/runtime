@@ -244,15 +244,16 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
+    INIT_LOCALS(loc, inDataBytes);
+    loc[inDataBytes] = make_java_byte_array(env, inl);
+    (*env)->SetByteArrayRegion(env, loc[inDataBytes], 0, inl, (jbyte*)in);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, inDataBytes);
+    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, loc[inDataBytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ret = SUCCESS;
 
 cleanup:
-    (*env)->DeleteLocalRef(env, inDataBytes);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -270,27 +271,28 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;
-    jbyteArray outDataBytes = NULL;
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    INIT_LOCALS(loc, inDataBytes, outDataBytes);
 
     *outl = 0;
-    outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
+
+    loc[inDataBytes] = make_java_byte_array(env, inl);
+    (*env)->SetByteArrayRegion(env, loc[inDataBytes], 0, inl, (jbyte*)in);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    if (outDataBytes && outm)
+    loc[outDataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, loc[inDataBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[outDataBytes] && outm)
     {
-        jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
-        (*env)->GetByteArrayRegion(env, outDataBytes, 0, outDataBytesLen, (jbyte*) outm);
+        jsize outDataBytesLen = (*env)->GetArrayLength(env, loc[outDataBytes]);
+        (*env)->GetByteArrayRegion(env, loc[outDataBytes], 0, outDataBytesLen, (jbyte*) outm);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         *outl = outDataBytesLen;
     }
     ret = SUCCESS;
 
 cleanup:
-    (*env)->DeleteLocalRef(env, outDataBytes);
-    (*env)->DeleteLocalRef(env, inDataBytes);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

@@ -168,47 +168,47 @@ cleanup:
 int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curveName)
 {
     abort_if_invalid_pointer_argument (curveName);
+
+    *curveName = NULL;
+
     if (!g_ECParameterSpecGetCurveName)
     {
         // We can't get the curve name. Treat all curves as unnamed.
-        *curveName = NULL;
         return SUCCESS;
     }
 
     abort_if_invalid_pointer_argument (key);
     JNIEnv* env = GetJNIEnv();
 
-    jstring curveNameStr = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurveName);
+    int32_t ret = FAIL;
+    uint16_t* buffer = NULL;
+    INIT_LOCALS(loc, curveNameStr);
 
-    if (CheckJNIExceptions(env))
+    loc[curveNameStr] = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurveName);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (!loc[curveNameStr])
     {
-        *curveName = NULL;
-        return FAIL;
+        // No curve name available; treat as an unnamed curve.
+        ret = SUCCESS;
+        goto cleanup;
     }
 
-    if (!curveNameStr)
-    {
-        *curveName = NULL;
-        return SUCCESS;
-    }
-
-    jsize nameLength = (*env)->GetStringLength(env, curveNameStr);
+    jsize nameLength = (*env)->GetStringLength(env, loc[curveNameStr]);
 
     // add one for the null terminator.
-    uint16_t* buffer = xmalloc(sizeof(int16_t) * (size_t)(nameLength + 1));
+    buffer = xmalloc(sizeof(int16_t) * (size_t)(nameLength + 1));
     buffer[nameLength] = 0;
 
-    (*env)->GetStringRegion(env, curveNameStr, 0, nameLength, (jchar*)buffer);
-    (*env)->DeleteLocalRef(env, curveNameStr);
-
-    if (CheckJNIExceptions(env))
-    {
-        free(buffer);
-        *curveName = NULL;
-        return FAIL;
-    }
+    (*env)->GetStringRegion(env, loc[curveNameStr], 0, nameLength, (jchar*)buffer);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     *curveName = buffer;
+    buffer = NULL;
+    ret = SUCCESS;
 
-    return SUCCESS;
+cleanup:
+    free(buffer);
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }

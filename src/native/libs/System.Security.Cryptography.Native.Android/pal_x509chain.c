@@ -178,17 +178,18 @@ int32_t AndroidCryptoNative_X509ChainGetCertificateCount(X509ChainContext* ctx)
 
     int32_t ret = 0;
     int certCount = 0;
+    INIT_LOCALS(loc, certPathList);
 
     // List<Certificate> certPathList = certPath.getCertificates();
-    jobject certPathList = (*env)->CallObjectMethod(env, ctx->certPath, g_CertPathGetCertificates);
+    loc[certPathList] = (*env)->CallObjectMethod(env, ctx->certPath, g_CertPathGetCertificates);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    certCount = (int)(*env)->CallIntMethod(env, certPathList, g_CollectionSize);
+    certCount = (int)(*env)->CallIntMethod(env, loc[certPathList], g_CollectionSize);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ret = certCount + 1; // +1 for the trust anchor
 
 cleanup:
-    (*env)->DeleteLocalRef(env, certPathList);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -202,12 +203,12 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
     int32_t ret = FAIL;
     int certCount = 0;
     int32_t i = 0;
-    jobject trustedCert = NULL;
+    INIT_LOCALS(loc, certPathList, trustedCert);
 
     // List<Certificate> certPathList = certPath.getCertificates();
-    jobject certPathList = (*env)->CallObjectMethod(env, ctx->certPath, g_CertPathGetCertificates);
+    loc[certPathList] = (*env)->CallObjectMethod(env, ctx->certPath, g_CertPathGetCertificates);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    certCount = (int)(*env)->CallIntMethod(env, certPathList, g_CollectionSize);
+    certCount = (int)(*env)->CallIntMethod(env, loc[certPathList], g_CollectionSize);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     if (certsLen < certCount + 1)
         goto cleanup;
@@ -220,18 +221,18 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
     // }
     for (i = 0; i < certCount; ++i)
     {
-        jobject cert = (*env)->CallObjectMethod(env, certPathList, g_ListGet, i);
+        jobject cert = (*env)->CallObjectMethod(env, loc[certPathList], g_ListGet, i);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         certs[i] = ToGRef(env, cert);
     }
 
     // Certificate trustedCert = trustAnchor.getTrustedCert();
     // certs[i] = trustedCert;
-    trustedCert = (*env)->CallObjectMethod(env, ctx->trustAnchor, g_TrustAnchorGetTrustedCert);
+    loc[trustedCert] = (*env)->CallObjectMethod(env, ctx->trustAnchor, g_TrustAnchorGetTrustedCert);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (i == 0 || !(*env)->IsSameObject(env, certs[i-1], trustedCert))
+    if (i == 0 || !(*env)->IsSameObject(env, certs[i-1], loc[trustedCert]))
     {
-        certs[i] = ToGRef(env, trustedCert);
+        certs[i] = AddGRef(env, loc[trustedCert]);
         ret = i + 1;
     }
     else
@@ -241,7 +242,7 @@ int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
     }
 
 cleanup:
-    (*env)->DeleteLocalRef(env, certPathList);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -346,8 +347,7 @@ static int32_t PopulateValidationError(JNIEnv* env, jobject error, bool isRevoca
     int index = -1;
     PAL_X509ChainStatusFlags chainStatus = PAL_X509ChainNoError;
     uint16_t* messagePtr = NULL;
-    jobject reason = NULL;
-    jobject message = NULL;
+    INIT_LOCALS(loc, reason, message);
 
     if ((*env)->IsInstanceOf(env, error, g_CertPathValidatorExceptionClass))
     {
@@ -355,25 +355,25 @@ static int32_t PopulateValidationError(JNIEnv* env, jobject error, bool isRevoca
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
         // Get the reason and convert it to a chain status flag.
-        reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
+        loc[reason] = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
+        chainStatus = ChainStatusFromValidatorExceptionReason(env, loc[reason]);
     }
     else
     {
         chainStatus = isRevocationError ? PAL_X509ChainRevocationStatusUnknown : PAL_X509ChainPartialChain;
     }
 
-    message = (*env)->CallObjectMethod(env, error, g_ThrowableGetMessage);
+    loc[message] = (*env)->CallObjectMethod(env, error, g_ThrowableGetMessage);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    if (message != NULL)
+    if (loc[message] != NULL)
     {
-        jsize messageLen = (*env)->GetStringLength(env, message);
+        jsize messageLen = (*env)->GetStringLength(env, loc[message]);
 
         // +1 for null terminator
         messagePtr = xmalloc(sizeof(uint16_t) * (size_t)(messageLen + 1));
         messagePtr[messageLen] = '\0';
-        (*env)->GetStringRegion(env, message, 0, messageLen, (jchar*)messagePtr);
+        (*env)->GetStringRegion(env, loc[message], 0, messageLen, (jchar*)messagePtr);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
@@ -392,8 +392,7 @@ static int32_t PopulateValidationError(JNIEnv* env, jobject error, bool isRevoca
 
 cleanup:
     free(messagePtr);
-    (*env)->DeleteLocalRef(env, reason);
-    (*env)->DeleteLocalRef(env, message);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -478,30 +477,31 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
+    INIT_LOCALS(loc, anchors);
 
     // HashSet<TrustAnchor> anchors = new HashSet<TrustAnchor>(customTrustStoreLen);
     // for (Certificate cert : customTrustStore) {
     //     TrustAnchor anchor = new TrustAnchor(cert, null);
     //     anchors.Add(anchor);
     // }
-    jobject anchors = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, customTrustStoreLen);
+    loc[anchors] = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, customTrustStoreLen);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     for (int i = 0; i < customTrustStoreLen; ++i)
     {
         jobject anchor = (*env)->NewObject(env, g_TrustAnchorClass, g_TrustAnchorCtor, customTrustStore[i], NULL);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-        (*env)->CallBooleanMethod(env, anchors, g_HashSetAdd, anchor);
+        (*env)->CallBooleanMethod(env, loc[anchors], g_HashSetAdd, anchor);
         (*env)->DeleteLocalRef(env, anchor);
         ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     // params.setTrustAnchors(anchors);
-    (*env)->CallVoidMethod(env, ctx->params, g_PKIXBuilderParametersSetTrustAnchors, anchors);
+    (*env)->CallVoidMethod(env, ctx->params, g_PKIXBuilderParametersSetTrustAnchors, loc[anchors]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ret = SUCCESS;
 
 cleanup:
-    (*env)->DeleteLocalRef(env, anchors);
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
