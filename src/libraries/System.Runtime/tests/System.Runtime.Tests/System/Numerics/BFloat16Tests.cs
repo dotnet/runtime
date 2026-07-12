@@ -721,6 +721,132 @@ namespace System.Numerics.Tests
             AssertEqual(expected, b16);
         }
 
+        public static IEnumerable<object[]> ExplicitConversion_FromInt64_TestData()
+        {
+            (long, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                (0x100_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                // high-magnitude boundary near 2^62 (2^62 + 2^54)
+                (0x403F_FFFF_FFFF_FFFF, BitConverter.UInt16BitsToBFloat16(0x5E80)), // rounds lower
+                (0x4040_0000_0000_0000, BitConverter.UInt16BitsToBFloat16(0x5E80)), // rounds to even
+                (0x4040_0000_0000_0001, BitConverter.UInt16BitsToBFloat16(0x5E81)), // rounds higher
+                (long.MaxValue, BitConverter.UInt16BitsToBFloat16(0x5F00)),
+                (-0x4040_0000_0000_0001, BitConverter.UInt16BitsToBFloat16(0xDE81)), // rounds lower
+                (long.MinValue, BitConverter.UInt16BitsToBFloat16(0xDF00)),
+            };
+
+            foreach ((long original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt64(long i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt64_TestData()
+        {
+            (ulong, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                (0x100_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                // high-magnitude boundary near 2^63 (2^63 + 2^55)
+                (0x807F_FFFF_FFFF_FFFF, BitConverter.UInt16BitsToBFloat16(0x5F00)), // rounds lower
+                (0x8080_0000_0000_0000, BitConverter.UInt16BitsToBFloat16(0x5F00)), // rounds to even
+                (0x8080_0000_0000_0001, BitConverter.UInt16BitsToBFloat16(0x5F01)), // rounds higher
+                (ulong.MaxValue, BitConverter.UInt16BitsToBFloat16(0x5F80)),
+            };
+
+            foreach ((ulong original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt64(ulong i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt128_TestData()
+        {
+            Int128 highBit = Int128.One << 100;
+            Int128 roundBit = Int128.One << 92;
+
+            (Int128, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                ((Int128)0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // rounds higher
+                // high-magnitude boundary near 2^100 (2^100 + 2^92)
+                (highBit + roundBit - 1, BitConverter.UInt16BitsToBFloat16(0x7180)), // rounds lower
+                (highBit + roundBit, BitConverter.UInt16BitsToBFloat16(0x7180)), // rounds to even
+                (highBit + roundBit + 1, BitConverter.UInt16BitsToBFloat16(0x7181)), // rounds higher
+                (Int128.MaxValue, BitConverter.UInt16BitsToBFloat16(0x7F00)),
+                (-(highBit + roundBit + 1), BitConverter.UInt16BitsToBFloat16(0xF181)), // rounds lower
+                (Int128.MinValue, BitConverter.UInt16BitsToBFloat16(0xFF00)),
+            };
+
+            foreach ((Int128 original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt128_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt128(Int128 i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt128_TestData()
+        {
+            UInt128 highBit = UInt128.One << 127;
+            UInt128 roundBit = UInt128.One << 119;
+
+            (UInt128, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                ((UInt128)0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // rounds higher
+                // high-magnitude boundary near 2^127 (2^127 + 2^119)
+                (highBit + roundBit - 1, BitConverter.UInt16BitsToBFloat16(0x7F00)), // rounds lower
+                (highBit + roundBit, BitConverter.UInt16BitsToBFloat16(0x7F00)), // rounds to even
+                (highBit + roundBit + 1, BitConverter.UInt16BitsToBFloat16(0x7F01)), // rounds higher
+                (UInt128.MaxValue, BitConverter.UInt16BitsToBFloat16(0x7F80)), // overflow to infinity
+            };
+
+            foreach ((UInt128 original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt128_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt128(UInt128 i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
