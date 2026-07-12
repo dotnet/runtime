@@ -474,6 +474,9 @@ namespace System.Numerics.Tests
                 (BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
                 (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
                 (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
+                (BitConverter.UInt32BitsToSingle(0x7F800001), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Positive NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0xFF800001), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1000000)), // Negative NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0x7FA00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1100000)), // Signalling Positive NaN with surviving high payload bit
                 (float.Epsilon, BitConverter.UInt16BitsToBFloat16(0)), // Underflow
                 (-float.Epsilon, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
                 (1f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
