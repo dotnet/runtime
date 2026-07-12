@@ -269,7 +269,7 @@ namespace System.CodeDom.Tests
             public override async Task FlushAsync(CancellationToken cancellationToken)
             {
                 await base.FlushAsync(cancellationToken);
-                LastCalledMethod = nameof(FlushAsync);
+                LastCalledMethod = nameof(FlushAsync) + "Cancelable";
             }
 
             public override async Task WriteAsync(char value)
