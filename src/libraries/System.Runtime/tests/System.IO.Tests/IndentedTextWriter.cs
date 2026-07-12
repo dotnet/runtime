@@ -44,6 +44,12 @@ namespace System.CodeDom.Tests
                 LastCalledMethod = nameof(Write);
             }
 
+            public override void Write(ReadOnlySpan<char> buffer)
+            {
+                base.Write(buffer);
+                LastCalledMethod = nameof(Write);
+            }
+
             public override void Write(decimal value)
             {
                 base.Write(value);
@@ -158,6 +164,12 @@ namespace System.CodeDom.Tests
                 LastCalledMethod = nameof(WriteLine);
             }
 
+            public override void WriteLine(ReadOnlySpan<char> buffer)
+            {
+                base.WriteLine(buffer);
+                LastCalledMethod = nameof(WriteLine);
+            }
+
             public override void WriteLine(decimal value)
             {
                 base.WriteLine(value);
@@ -259,7 +271,7 @@ namespace System.CodeDom.Tests
             public override Task FlushAsync(CancellationToken cancellationToken)
             {
                 Task result = base.FlushAsync();
-                LastCalledMethod = nameof(FlushAsync) + "Cancelable";
+                LastCalledMethod = nameof(FlushAsync);
 
                 return result;
             }
@@ -275,6 +287,14 @@ namespace System.CodeDom.Tests
             public override Task WriteAsync(char[] buffer, int index, int count)
             {
                 Task result = base.WriteAsync(buffer, index, count);
+                LastCalledMethod = nameof(WriteAsync);
+
+                return result;
+            }
+
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken)
+            {
+                Task result = base.WriteAsync(buffer, cancellationToken);
                 LastCalledMethod = nameof(WriteAsync);
 
                 return result;
@@ -307,6 +327,14 @@ namespace System.CodeDom.Tests
             public override Task WriteLineAsync(char[] buffer, int index, int count)
             {
                 Task result = base.WriteLineAsync(buffer, index, count);
+                LastCalledMethod = nameof(WriteLineAsync);
+
+                return result;
+            }
+
+            public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken)
+            {
+                Task result = base.WriteLineAsync(buffer, cancellationToken);
                 LastCalledMethod = nameof(WriteLineAsync);
 
                 return result;
@@ -430,6 +458,7 @@ namespace System.CodeDom.Tests
             itw.Write("{0} {1} {2}", 15, 16, 17);
             itw.Write("{0} {1} {2} {3}", new object[] { 15, 16, 17, 18 });
             itw.Write("{0} {1} {2} {3}", (ReadOnlySpan<object>)new object[] { 15, 16, 17, 18 });
+            itw.Write("19".AsSpan());
 
             itw.WriteLine(true);
             itw.WriteLine('a');
@@ -449,6 +478,7 @@ namespace System.CodeDom.Tests
             itw.WriteLine("{0} {1} {2}", 15, 16, 17);
             itw.WriteLine("{0} {1} {2} {3}", new object[] { 15, 16, 17, 18 });
             itw.WriteLine("{0} {1} {2} {3}", (ReadOnlySpan<object>)new object[] { 15, 16, 17, 18 });
+            itw.WriteLine("19".AsSpan());
 
             await itw.WriteAsync('a');
             await itw.WriteAsync(new char[] { 'b', 'c' });
@@ -464,7 +494,7 @@ namespace System.CodeDom.Tests
 
             Assert.Equal(
                 "t" + newline +
-                "tTrueabcde45.66.789101112131415 1615 16 1715 16 17 1815 16 17 18True" + newline +
+                "tTrueabcde45.66.789101112131415 1615 16 1715 16 17 1815 16 17 1819True" + newline +
                 "ta" + newline +
                 "tbc" + newline +
                 "tde" + newline +
@@ -482,6 +512,7 @@ namespace System.CodeDom.Tests
                 "t15 16 17" + newline +
                 "t15 16 17 18" + newline +
                 "t15 16 17 18" + newline +
+                "t19" + newline +
                 "tabcde1a" + newline +
                 "tbc" + newline +
                 "tde" + newline +
@@ -502,6 +533,7 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.Write(true), true.ToString());
                 yield return CreateParameters(x => x.Write('c'), "c");
                 yield return CreateParameters(x => x.Write("Hello World".ToCharArray()), "Hello World");
+                yield return CreateParameters(x => x.Write("Hello World".AsSpan()), "Hello World");
                 yield return CreateParameters(x => x.Write(1.234m), (1.234m).ToString(CultureInfo.InvariantCulture));
                 yield return CreateParameters(x => x.Write(12345.0), (12345.0).ToString(CultureInfo.InvariantCulture));
                 yield return CreateParameters(x => x.Write(12345.0f), (12345.0f).ToString(CultureInfo.InvariantCulture));
@@ -517,6 +549,7 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.Write("Hello {0} {1} {2} World{3}", new object[] { "Digital", "Dot", "NET", "!!" }), "Hello Digital Dot NET World!!");
                 yield return CreateParameters(x => x.Write("Hello {0} {1} {2} World{3}", (ReadOnlySpan<object>)new object[] { "Digital", "Dot", "NET", "!!" }), "Hello Digital Dot NET World!!");
                 yield return CreateParameters(x => x.Write("Hello World".ToCharArray(), 6, 5), "World");
+                yield return CreateParameters(x => x.Write("Hello World".AsSpan(6, 5)), "World");
             }
         }
 
@@ -533,6 +566,7 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.WriteLine(true), $"{true}{NewLine}");
                 yield return CreateParameters(x => x.WriteLine('c'), $"c{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello World".ToCharArray()), $"Hello World{NewLine}");
+                yield return CreateParameters(x => x.WriteLine("Hello World".AsSpan()), $"Hello World{NewLine}");
                 yield return CreateParameters(x => x.WriteLine(3.14159m), $"{(3.14159m).ToString(CultureInfo.InvariantCulture)}{NewLine}");
                 yield return CreateParameters(x => x.WriteLine(12345.0), $"{(12345.0).ToString(CultureInfo.InvariantCulture)}{NewLine}");
                 yield return CreateParameters(x => x.WriteLine(12345.0f), $"{(12345.0f).ToString(CultureInfo.InvariantCulture)}{NewLine}");
@@ -546,6 +580,7 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.WriteLine("Hello {0} {1} World", "Dot", "NET"), $"Hello Dot NET World{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello {0} {1} World{2}", "Dot", "NET", "!!"), $"Hello Dot NET World!!{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello World".ToCharArray(), 6, 5), $"World{NewLine}");
+                yield return CreateParameters(x => x.WriteLine("Hello World".AsSpan(6, 5)), $"World{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello {0} {1} {2} World{3}", new object[] { "Digital", "Dot", "NET", "!!" }), $"Hello Digital Dot NET World!!{NewLine}");
                 yield return CreateParameters(x => x.WriteLine("Hello {0} {1} {2} World{3}", (ReadOnlySpan<object>)new object[] { "Digital", "Dot", "NET", "!!" }), $"Hello Digital Dot NET World!!{NewLine}");
             }
@@ -563,6 +598,8 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.WriteAsync('c'), "c");
                 yield return CreateParameters(x => x.WriteAsync("Hello World".ToCharArray(), 6, 5), "World");
                 yield return CreateParameters(x => x.WriteAsync("Hello World"), "Hello World");
+                yield return CreateParameters(x => x.WriteAsync("Hello World".AsMemory()), "Hello World");
+                yield return CreateParameters(x => x.WriteAsync("Hello World".AsMemory(6, 5)), "World");
             }
         }
 
@@ -579,6 +616,8 @@ namespace System.CodeDom.Tests
                 yield return CreateParameters(x => x.WriteLineAsync('c'), $"c{NewLine}");
                 yield return CreateParameters(x => x.WriteLineAsync("Hello World".ToCharArray(), 6, 5), $"World{NewLine}");
                 yield return CreateParameters(x => x.WriteLineAsync("Hello World"), $"Hello World{NewLine}");
+                yield return CreateParameters(x => x.WriteLineAsync("Hello World".AsMemory()), $"Hello World{NewLine}");
+                yield return CreateParameters(x => x.WriteLineAsync("Hello World".AsMemory(6, 5)), $"World{NewLine}");
             }
         }
 
