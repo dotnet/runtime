@@ -373,5 +373,94 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(0, stats.Count);
             Assert.Equal(0, stats.Sum);
         }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(32)]
+        public void ConcurrentUpdatesAndCollectsPreserveEveryMeasurement(int producerCount)
+        {
+            const int Iterations = 20_000;
+            ExponentialHistogramAggregator aggregator = new(new QuantileAggregation(0, 0.5, 1));
+            using Barrier barrier = new(producerCount + 1);
+            int producersRemaining = producerCount;
+            int collectedCount = 0;
+            double collectedSum = 0;
+            Exception? collectorException = null;
+            Exception? producerException = null;
+
+            Thread collector = new(() =>
+            {
+                try
+                {
+                    barrier.SignalAndWait();
+                    while (Volatile.Read(ref producersRemaining) != 0)
+                    {
+                        Collect();
+                        Thread.Yield();
+                    }
+
+                    Collect();
+                }
+                catch (Exception e)
+                {
+                    collectorException = e;
+                }
+
+                void Collect()
+                {
+                    HistogramStatistics stats = (HistogramStatistics)aggregator.Collect();
+                    if (stats.Count != 0)
+                    {
+                        Assert.All(stats.Quantiles, quantile => Assert.Equal(1, quantile.Value));
+                        Assert.Equal(stats.Count, stats.Sum);
+                    }
+
+                    collectedCount += stats.Count;
+                    collectedSum += stats.Sum;
+                }
+            });
+
+            Thread[] producers = new Thread[producerCount];
+            for (int i = 0; i < producers.Length; i++)
+            {
+                producers[i] = new(() =>
+                {
+                    try
+                    {
+                        barrier.SignalAndWait();
+                        for (int j = 0; j < Iterations; j++)
+                        {
+                            aggregator.Update(1);
+                        }
+
+                        aggregator.Update(double.NaN);
+                        aggregator.Update(double.PositiveInfinity);
+                        aggregator.Update(double.NegativeInfinity);
+                    }
+                    catch (Exception e)
+                    {
+                        Interlocked.CompareExchange(ref producerException, e, null);
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref producersRemaining);
+                    }
+                });
+                producers[i].Start();
+            }
+
+            collector.Start();
+            foreach (Thread producer in producers)
+            {
+                producer.Join();
+            }
+            collector.Join();
+
+            Assert.Null(collectorException);
+            Assert.Null(producerException);
+            Assert.Equal(producerCount * Iterations, collectedCount);
+            Assert.Equal(collectedCount, collectedSum);
+        }
     }
 }

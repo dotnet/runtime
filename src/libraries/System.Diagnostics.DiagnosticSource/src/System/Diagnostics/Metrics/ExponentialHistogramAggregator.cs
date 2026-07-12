@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Diagnostics.Metrics
 {
@@ -26,28 +28,35 @@ namespace System.Diagnostics.Metrics
     // Note: we should be able to refine this to return the bucket midpoint rather than bucket lower bound, halving the number of
     // buckets to achieve the same error bound.
     //
-    // Implementation: The histogram buckets are implemented as an array of arrays (a tree). The top level has a fixed 4096 entries
-    // corresponding to every possible sign+exponent in the encoding of a double (IEEE 754 spec). The 2nd level has variable size
-    // depending on how many buckets are needed to achieve the error bounds. For ease of insertion we round the 2nd level size up to
-    // the nearest power of 2. This lets us mask off the first k bits in the mantissa to map a measurement to one of 2^k 2nd level
-    // buckets. The top level array is pre-allocated but the 2nd level arrays are created on demand.
-    //
-    // PERF Note: This histogram has a fast Update() but the _counters array has a sizable memory footprint (32KB+ on 64 bit)
-    // It is probably well suited for tracking 10s or maybe 100s of histograms but if we wanted to go higher
-    // we probably want to trade a little more CPU cost in Update() + code complexity to avoid eagerly allocating 4096
-    // top level entries.
+    // The uncontended implementation uses a 4096-entry array indexed by the sign and exponent from the IEEE 754 representation,
+    // with mantissa bucket arrays allocated on demand. After repeated contention it switches permanently to a bounded set of
+    // stripes. Each stripe uses a sparse two-level exponent tree so that parallelism does not multiply the 32KB top-level array.
+    // Collect locks all active state, atomically detaches the interval, and merges the stripes outside the locks.
     internal sealed class ExponentialHistogramAggregator : Aggregator
     {
         private const int ExponentArraySize = 4096;
+        private const int ExponentGroupShift = 6;
+        private const int ExponentGroupSize = 1 << ExponentGroupShift;
+        private const int ExponentGroupMask = ExponentGroupSize - 1;
+        private const int ContentionThreshold = 64;
+        private const int MaxStripeCount = 8;
         private const int ExponentShift = 52;
         private const double MinRelativeError = 0.0001;
         private const int PositiveIntAndNan = ExponentArraySize / 2 - 1;
         private const int NegativeIntAndNan = ExponentArraySize - 1;
 
+        [ThreadStatic]
+        private static int t_stripeIndex;
+
         private readonly QuantileAggregation _config;
-        private int[]?[] _counters;
-        private int _count;
-        private double _sum;
+        private readonly object _singleLock = new object();
+        private readonly HistogramStripe[] _stripes;
+        private int[]?[]? _singleCounters = new int[ExponentArraySize][];
+        private int _singleCount;
+        private double _singleSum;
+        private int _contentionCount;
+        private bool _collecting;
+        private bool _useStripes;
         private readonly int _mantissaMax;
         private readonly int _mantissaMask;
         private readonly int _mantissaShift;
@@ -63,10 +72,72 @@ namespace System.Diagnostics.Metrics
             public int Count;
         }
 
+        private sealed class HistogramStripe
+        {
+            public HistogramBuckets? Buckets;
+            public int Count;
+            public double Sum;
+        }
+
+        private sealed class ExponentGroup
+        {
+            public readonly int[]?[] Exponents = new int[ExponentGroupSize][];
+        }
+
+        private sealed class HistogramBuckets
+        {
+            private readonly ExponentGroup?[] _groups = new ExponentGroup[ExponentArraySize / ExponentGroupSize];
+            private readonly int _mantissaMax;
+
+            public HistogramBuckets(int mantissaMax)
+            {
+                _mantissaMax = mantissaMax;
+            }
+
+            public void Increment(int exponent, int mantissa)
+            {
+                ExponentGroup group = _groups[exponent >> ExponentGroupShift] ??= new ExponentGroup();
+                ref int[]? counts = ref group.Exponents[exponent & ExponentGroupMask];
+                counts ??= new int[_mantissaMax];
+                counts[mantissa]++;
+            }
+
+            public int[]? GetCounts(int exponent) =>
+                _groups[exponent >> ExponentGroupShift]?.Exponents[exponent & ExponentGroupMask];
+
+            public void MergeFrom(HistogramBuckets source)
+            {
+                for (int groupIndex = 0; groupIndex < source._groups.Length; groupIndex++)
+                {
+                    ExponentGroup? sourceGroup = source._groups[groupIndex];
+                    if (sourceGroup is null)
+                    {
+                        continue;
+                    }
+
+                    ExponentGroup targetGroup = _groups[groupIndex] ??= new ExponentGroup();
+                    for (int exponentIndex = 0; exponentIndex < sourceGroup.Exponents.Length; exponentIndex++)
+                    {
+                        int[]? sourceCounts = sourceGroup.Exponents[exponentIndex];
+                        if (sourceCounts is null)
+                        {
+                            continue;
+                        }
+
+                        ref int[]? targetCounts = ref targetGroup.Exponents[exponentIndex];
+                        targetCounts ??= new int[_mantissaMax];
+                        for (int mantissa = 0; mantissa < sourceCounts.Length; mantissa++)
+                        {
+                            targetCounts[mantissa] += sourceCounts[mantissa];
+                        }
+                    }
+                }
+            }
+        }
+
         public ExponentialHistogramAggregator(QuantileAggregation config)
         {
             _config = config;
-            _counters = new int[ExponentArraySize][];
             if (_config.MaxRelativeError < MinRelativeError)
             {
                 // Ensure that we don't create enormous histograms trying to get overly high precision
@@ -76,21 +147,79 @@ namespace System.Diagnostics.Metrics
             _mantissaShift = 52 - mantissaBits;
             _mantissaMax = 1 << mantissaBits;
             _mantissaMask = _mantissaMax - 1;
+
+            _stripes = new HistogramStripe[Math.Min(Environment.ProcessorCount, MaxStripeCount)];
+            for (int i = 0; i < _stripes.Length; i++)
+            {
+                _stripes[i] = new HistogramStripe();
+            }
         }
 
         public override IAggregationStatistics Collect()
         {
-            int[]?[] counters;
-            int count;
-            double sum;
-            lock (this)
+            int[]?[]? singleCounters = null;
+            HistogramBuckets?[] snapshots = new HistogramBuckets?[_stripes.Length];
+            int count = 0;
+            double sum = 0;
+            bool singleLockTaken = false;
+            int locksTaken = 0;
+            Volatile.Write(ref _collecting, true);
+            try
             {
-                counters = _counters;
-                count = _count;
-                sum = _sum;
-                _counters = new int[ExponentArraySize][];
-                _count = 0;
-                _sum = 0;
+                Monitor.Enter(_singleLock, ref singleLockTaken);
+                for (; locksTaken < _stripes.Length; locksTaken++)
+                {
+                    Monitor.Enter(_stripes[locksTaken]);
+                }
+
+                singleCounters = _singleCounters;
+                count = _singleCount;
+                sum = _singleSum;
+                _singleCounters = Volatile.Read(ref _useStripes) ? null : new int[ExponentArraySize][];
+                _singleCount = 0;
+                _singleSum = 0;
+                _contentionCount = 0;
+
+                for (int i = 0; i < _stripes.Length; i++)
+                {
+                    HistogramStripe stripe = _stripes[i];
+                    snapshots[i] = stripe.Buckets;
+                    count += stripe.Count;
+                    sum += stripe.Sum;
+                    stripe.Buckets = null;
+                    stripe.Count = 0;
+                    stripe.Sum = 0;
+                }
+            }
+            finally
+            {
+                while (locksTaken != 0)
+                {
+                    Monitor.Exit(_stripes[--locksTaken]);
+                }
+
+                if (singleLockTaken)
+                {
+                    Monitor.Exit(_singleLock);
+                }
+
+                Volatile.Write(ref _collecting, false);
+            }
+
+            HistogramBuckets? counters = null;
+            foreach (HistogramBuckets? snapshot in snapshots)
+            {
+                if (snapshot is not null)
+                {
+                    if (counters is null)
+                    {
+                        counters = snapshot;
+                    }
+                    else
+                    {
+                        counters.MergeFrom(snapshot);
+                    }
+                }
             }
 
             QuantileValue[] quantiles = new QuantileValue[_config.Quantiles.Length];
@@ -107,7 +236,13 @@ namespace System.Diagnostics.Metrics
 
             // the total number of entries in all buckets iterated so far
             int cur = 0;
-            foreach (Bucket b in IterateBuckets(counters))
+            if (singleCounters is null && counters is null)
+            {
+                Debug.Assert(count == 0);
+                return new HistogramStatistics(Array.Empty<QuantileValue>(), count, sum);
+            }
+
+            foreach (Bucket b in IterateBuckets(singleCounters, counters))
             {
                 cur += b.Count;
                 while (cur > target)
@@ -127,21 +262,22 @@ namespace System.Diagnostics.Metrics
             return new HistogramStatistics(Array.Empty<QuantileValue>(), count, sum);
         }
 
-        private IEnumerable<Bucket> IterateBuckets(int[]?[] counters)
+        private IEnumerable<Bucket> IterateBuckets(int[]?[]? singleCounters, HistogramBuckets? counters)
         {
             // iterate over the negative exponent buckets
             const int LowestNegativeOffset = ExponentArraySize / 2;
             // exponent = ExponentArraySize-1 encodes infinity and NaN, which we want to ignore
             for (int exponent = ExponentArraySize - 2; exponent >= LowestNegativeOffset; exponent--)
             {
-                int[]? mantissaCounts = counters[exponent];
-                if (mantissaCounts == null)
+                int[]? singleMantissaCounts = singleCounters?[exponent];
+                int[]? stripedMantissaCounts = counters?.GetCounts(exponent);
+                if (singleMantissaCounts is null && stripedMantissaCounts is null)
                 {
                     continue;
                 }
                 for (int mantissa = _mantissaMax - 1; mantissa >= 0; mantissa--)
                 {
-                    int count = mantissaCounts[mantissa];
+                    int count = (singleMantissaCounts?[mantissa] ?? 0) + (stripedMantissaCounts?[mantissa] ?? 0);
                     if (count > 0)
                     {
                         yield return new Bucket(GetBucketCanonicalValue(exponent, mantissa), count);
@@ -153,14 +289,15 @@ namespace System.Diagnostics.Metrics
             // exponent = lowestNegativeOffset-1 encodes infinity and NaN, which we want to ignore
             for (int exponent = 0; exponent < LowestNegativeOffset - 1; exponent++)
             {
-                int[]? mantissaCounts = counters[exponent];
-                if (mantissaCounts == null)
+                int[]? singleMantissaCounts = singleCounters?[exponent];
+                int[]? stripedMantissaCounts = counters?.GetCounts(exponent);
+                if (singleMantissaCounts is null && stripedMantissaCounts is null)
                 {
                     continue;
                 }
                 for (int mantissa = 0; mantissa < _mantissaMax; mantissa++)
                 {
-                    int count = mantissaCounts[mantissa];
+                    int count = (singleMantissaCounts?[mantissa] ?? 0) + (stripedMantissaCounts?[mantissa] ?? 0);
                     if (count > 0)
                     {
                         yield return new Bucket(GetBucketCanonicalValue(exponent, mantissa), count);
@@ -171,26 +308,93 @@ namespace System.Diagnostics.Metrics
 
         public override void Update(double measurement)
         {
-            lock (this)
+            // This is relying on the bit representation of IEEE 754 to decompose
+            // the double. The sign bit + exponent bits land in exponent, the
+            // remainder lands in mantissa.
+            // the bucketing precision comes entirely from how many significant
+            // bits of the mantissa are preserved.
+            ulong bits = (ulong)BitConverter.DoubleToInt64Bits(measurement);
+            int exponent = (int)(bits >> ExponentShift);
+            int mantissa = (int)(bits >> _mantissaShift) & _mantissaMask;
+
+            if (!Volatile.Read(ref _useStripes))
             {
-                // This is relying on the bit representation of IEEE 754 to decompose
-                // the double. The sign bit + exponent bits land in exponent, the
-                // remainder lands in mantissa.
-                // the bucketing precision comes entirely from how many significant
-                // bits of the mantissa are preserved.
-                ulong bits = (ulong)BitConverter.DoubleToInt64Bits(measurement);
-                int exponent = (int)(bits >> ExponentShift);
-                int mantissa = (int)(bits >> _mantissaShift) & _mantissaMask;
-                ref int[]? mantissaCounts = ref _counters[exponent];
-                mantissaCounts ??= new int[_mantissaMax];
-                mantissaCounts[mantissa]++;
+                bool lockTaken = false;
+                try
+                {
+                    Monitor.TryEnter(_singleLock, ref lockTaken);
+                    if (lockTaken && !Volatile.Read(ref _useStripes))
+                    {
+                        UpdateSingle(exponent, mantissa, measurement);
+                        return;
+                    }
+                }
+                finally
+                {
+                    if (lockTaken)
+                    {
+                        Monitor.Exit(_singleLock);
+                    }
+                }
+
+                if (Volatile.Read(ref _collecting))
+                {
+                    lock (_singleLock)
+                    {
+                        if (!Volatile.Read(ref _useStripes))
+                        {
+                            UpdateSingle(exponent, mantissa, measurement);
+                            return;
+                        }
+                    }
+                }
+                else if (Interlocked.Increment(ref _contentionCount) < ContentionThreshold)
+                {
+                    lock (_singleLock)
+                    {
+                        if (!Volatile.Read(ref _useStripes))
+                        {
+                            UpdateSingle(exponent, mantissa, measurement);
+                            return;
+                        }
+                    }
+                }
+
+                Volatile.Write(ref _useStripes, true);
+            }
+
+            int stripeIndex = t_stripeIndex;
+            if (stripeIndex == 0)
+            {
+                stripeIndex = t_stripeIndex = (Environment.CurrentManagedThreadId % MaxStripeCount) + 1;
+            }
+
+            HistogramStripe stripe = _stripes[(stripeIndex - 1) % _stripes.Length];
+
+            lock (stripe)
+            {
+                (stripe.Buckets ??= new HistogramBuckets(_mantissaMax)).Increment(exponent, mantissa);
 
                 // Don't increase the count if there are any NaN or +/-Infinity values that were logged
                 if (exponent != PositiveIntAndNan && exponent != NegativeIntAndNan)
                 {
-                    _count++;
-                    _sum += measurement;
+                    stripe.Count++;
+                    stripe.Sum += measurement;
                 }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UpdateSingle(int exponent, int mantissa, double measurement)
+        {
+            ref int[]? mantissaCounts = ref _singleCounters![exponent];
+            mantissaCounts ??= new int[_mantissaMax];
+            mantissaCounts[mantissa]++;
+
+            if (exponent != PositiveIntAndNan && exponent != NegativeIntAndNan)
+            {
+                _singleCount++;
+                _singleSum += measurement;
             }
         }
 

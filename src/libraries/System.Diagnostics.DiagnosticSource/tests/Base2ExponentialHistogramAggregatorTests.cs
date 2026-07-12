@@ -11,6 +11,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -647,6 +648,90 @@ namespace System.Diagnostics.Metrics
             stats = histogram.Collect() as Base2ExponentialHistogramStatistics;
             ValidateStats(stats, expectedCount: 5, expectedZeroCount: 0, expectedScale: -2, expectedSum: currentSum, expectedMin: 1.1, expectedMax: 1000_000.5, [2, 1, 1, 0, 1]);
             ValidateHistogram(histogram, expectedScale: -2, expectedSum: 0, expectedCount: 0, expectedZeroCount: 0, expectedMin: double.MaxValue, expectedMax: double.MinValue);
+        }
+
+        [Fact]
+        public void ConcurrentUpdatesAndDeltaCollectsPreserveEveryBucket()
+        {
+            const int Iterations = 20_000;
+            int producerCount = Math.Min(Environment.ProcessorCount * 2, 32);
+            Base2ExponentialHistogramAggregator histogram = new(reportDeltas: true);
+            using Barrier barrier = new(producerCount + 1);
+            int producersRemaining = producerCount;
+            long collectedCount = 0;
+            double collectedSum = 0;
+            Exception? collectorException = null;
+            Exception? producerException = null;
+
+            Thread collector = new(() =>
+            {
+                try
+                {
+                    barrier.SignalAndWait();
+                    while (Volatile.Read(ref producersRemaining) != 0)
+                    {
+                        Collect();
+                        Thread.Yield();
+                    }
+
+                    Collect();
+                }
+                catch (Exception e)
+                {
+                    collectorException = e;
+                }
+
+                void Collect()
+                {
+                    Base2ExponentialHistogramStatistics stats = (Base2ExponentialHistogramStatistics)histogram.Collect();
+                    Assert.Equal(stats.Count, stats.PositiveBuckets.Sum());
+                    Assert.Equal(stats.Count, stats.Sum);
+                    collectedCount += stats.Count;
+                    collectedSum += stats.Sum;
+                }
+            });
+
+            Thread[] producers = new Thread[producerCount];
+            for (int i = 0; i < producers.Length; i++)
+            {
+                producers[i] = new(() =>
+                {
+                    try
+                    {
+                        barrier.SignalAndWait();
+                        for (int j = 0; j < Iterations; j++)
+                        {
+                            histogram.Update(1);
+                        }
+
+                        histogram.Update(-1);
+                        histogram.Update(double.NaN);
+                        histogram.Update(double.PositiveInfinity);
+                        histogram.Update(double.NegativeInfinity);
+                    }
+                    catch (Exception e)
+                    {
+                        Interlocked.CompareExchange(ref producerException, e, null);
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref producersRemaining);
+                    }
+                });
+                producers[i].Start();
+            }
+
+            collector.Start();
+            foreach (Thread producer in producers)
+            {
+                producer.Join();
+            }
+            collector.Join();
+
+            Assert.Null(collectorException);
+            Assert.Null(producerException);
+            Assert.Equal(producerCount * Iterations, collectedCount);
+            Assert.Equal(collectedCount, collectedSum);
         }
 
         [Theory]
