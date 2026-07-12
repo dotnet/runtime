@@ -77,6 +77,7 @@ namespace System.Diagnostics.Metrics
             public HistogramBuckets? Buckets;
             public int Count;
             public double Sum;
+            public bool Dirty;
         }
 
         private sealed class ExponentGroup
@@ -133,6 +134,27 @@ namespace System.Diagnostics.Metrics
                     }
                 }
             }
+
+            public void Clear()
+            {
+                foreach (ExponentGroup? group in _groups)
+                {
+                    if (group is not null)
+                    {
+                        foreach (int[]? counts in group.Exponents)
+                        {
+                            if (counts is not null)
+                            {
+#if NET
+                                Array.Clear(counts);
+#else
+                                Array.Clear(counts, 0, counts.Length);
+#endif
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public ExponentialHistogramAggregator(QuantileAggregation config)
@@ -158,7 +180,7 @@ namespace System.Diagnostics.Metrics
         public override IAggregationStatistics Collect()
         {
             int[]?[]? singleCounters = null;
-            HistogramBuckets?[] snapshots = new HistogramBuckets?[_stripes.Length];
+            HistogramBuckets? counters = null;
             int count = 0;
             double sum = 0;
             bool singleLockTaken = false;
@@ -183,10 +205,30 @@ namespace System.Diagnostics.Metrics
                 for (int i = 0; i < _stripes.Length; i++)
                 {
                     HistogramStripe stripe = _stripes[i];
-                    snapshots[i] = stripe.Buckets;
+                    if (stripe.Dirty)
+                    {
+                        if (stripe.Buckets is HistogramBuckets stripeBuckets)
+                        {
+                            // Merge while updates are blocked so that the sparse stripe storage can be
+                            // cleared and reused without allocating a replacement on every interval.
+                            if (stripe.Count != 0)
+                            {
+                                (counters ??= new HistogramBuckets(_mantissaMax)).MergeFrom(stripeBuckets);
+                            }
+
+                            stripeBuckets.Clear();
+                        }
+
+                        stripe.Dirty = false;
+                    }
+                    else
+                    {
+                        // Release storage retained by a stripe that remained inactive for a full interval.
+                        stripe.Buckets = null;
+                    }
+
                     count += stripe.Count;
                     sum += stripe.Sum;
-                    stripe.Buckets = null;
                     stripe.Count = 0;
                     stripe.Sum = 0;
                 }
@@ -204,22 +246,6 @@ namespace System.Diagnostics.Metrics
                 }
 
                 Volatile.Write(ref _collecting, false);
-            }
-
-            HistogramBuckets? counters = null;
-            foreach (HistogramBuckets? snapshot in snapshots)
-            {
-                if (snapshot is not null)
-                {
-                    if (counters is null)
-                    {
-                        counters = snapshot;
-                    }
-                    else
-                    {
-                        counters.MergeFrom(snapshot);
-                    }
-                }
             }
 
             QuantileValue[] quantiles = new QuantileValue[_config.Quantiles.Length];
@@ -373,6 +399,7 @@ namespace System.Diagnostics.Metrics
 
             lock (stripe)
             {
+                stripe.Dirty = true;
                 (stripe.Buckets ??= new HistogramBuckets(_mantissaMax)).Increment(exponent, mantissa);
 
                 // Don't increase the count if there are any NaN or +/-Infinity values that were logged
