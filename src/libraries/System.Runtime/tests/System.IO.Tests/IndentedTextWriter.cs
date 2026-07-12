@@ -260,92 +260,70 @@ namespace System.CodeDom.Tests
                 LastCalledMethod = nameof(Flush);
             }
 
-            public override Task FlushAsync()
+            public override async Task FlushAsync()
             {
-                Task result = base.FlushAsync();
+                await base.FlushAsync();
                 LastCalledMethod = nameof(FlushAsync);
-
-                return result;
             }
 
-            public override Task FlushAsync(CancellationToken cancellationToken)
+            public override async Task FlushAsync(CancellationToken cancellationToken)
             {
-                Task result = base.FlushAsync();
+                await base.FlushAsync(cancellationToken);
                 LastCalledMethod = nameof(FlushAsync);
-
-                return result;
             }
 
-            public override Task WriteAsync(char value)
+            public override async Task WriteAsync(char value)
             {
-                Task result = base.WriteAsync(value);
+                await base.WriteAsync(value);
                 LastCalledMethod = nameof(WriteAsync);
-
-                return result;
             }
 
-            public override Task WriteAsync(char[] buffer, int index, int count)
+            public override async Task WriteAsync(char[] buffer, int index, int count)
             {
-                Task result = base.WriteAsync(buffer, index, count);
+                await base.WriteAsync(buffer, index, count);
                 LastCalledMethod = nameof(WriteAsync);
-
-                return result;
             }
 
-            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken)
+            public override async Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken)
             {
-                Task result = base.WriteAsync(buffer, cancellationToken);
+                await base.WriteAsync(buffer, cancellationToken);
                 LastCalledMethod = nameof(WriteAsync);
-
-                return result;
             }
 
-            public override Task WriteAsync(string value)
+            public override async Task WriteAsync(string value)
             {
-                Task result = base.WriteAsync(value);
+                await base.WriteAsync(value);
                 LastCalledMethod = nameof(WriteAsync);
-
-                return result;
             }
 
-            public override Task WriteLineAsync()
+            public override async Task WriteLineAsync()
             {
-                Task result = base.WriteLineAsync();
+                await base.WriteLineAsync();
                 LastCalledMethod = nameof(WriteLineAsync);
-
-                return result;
             }
 
-            public override Task WriteLineAsync(char value)
+            public override async Task WriteLineAsync(char value)
             {
-                Task result = base.WriteLineAsync(value);
+                await base.WriteLineAsync(value);
                 LastCalledMethod = nameof(WriteLineAsync);
-
-                return result;
             }
 
-            public override Task WriteLineAsync(char[] buffer, int index, int count)
+            public override async Task WriteLineAsync(char[] buffer, int index, int count)
             {
-                Task result = base.WriteLineAsync(buffer, index, count);
+                await base.WriteLineAsync(buffer, index, count);
                 LastCalledMethod = nameof(WriteLineAsync);
-
-                return result;
             }
 
-            public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken)
+            public override async Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken)
             {
-                Task result = base.WriteLineAsync(buffer, cancellationToken);
+                await base.WriteLineAsync(buffer, cancellationToken);
                 LastCalledMethod = nameof(WriteLineAsync);
-
-                return result;
             }
 
-            public override Task WriteLineAsync(string value)
+            public override async Task WriteLineAsync(string value)
             {
-                Task result = base.WriteLineAsync(value);
+                await base.WriteLineAsync(value);
                 LastCalledMethod = nameof(WriteLineAsync);
-
-                return result;
             }
         }
 
