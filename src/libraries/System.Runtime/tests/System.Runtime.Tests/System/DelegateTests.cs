@@ -1267,9 +1267,7 @@ namespace System.Tests
         {
             // Load the other assembly that contains an equivalent EquivalentDelegate type.
             // Both types are compiled from TestEquivalentTypes/System.TestEquivalentTypes.cs.
-            Assembly otherAssembly = Assembly.Load("System.TestEquivalentTypes");
-            Type otherDelegateType = otherAssembly.GetType(typeof(EquivalentDelegate).FullName!);
-            Assert.NotNull(otherDelegateType);
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes", throwOnError: true)!;
             Assert.False(typeof(EquivalentDelegate).Equals(otherDelegateType));
             Assert.True(typeof(EquivalentDelegate).IsEquivalentTo(otherDelegateType));
 
