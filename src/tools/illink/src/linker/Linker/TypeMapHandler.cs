@@ -128,8 +128,10 @@ namespace Mono.Linker
 
         void MarkAssemblyTargetIfReady(TypeReference typeMapGroup, CustomAttributeWithOrigin entry, AssemblyDefinition? targetAssembly, MethodDefinition? callingMethod)
         {
-            // If the target assembly could not be resolved, the attribute cannot safely be kept: at runtime
-            // Assembly.Load would throw FileNotFoundException. Drop it silently.
+            // If the target assembly could not be resolved (it is not present in the linker input),
+            // the attribute cannot safely be kept: at runtime Assembly.Load would throw
+            // FileNotFoundException. Drop it silently; the assembly simply does not participate
+            // in the type map.
             if (targetAssembly is null)
                 return;
 
@@ -146,12 +148,12 @@ namespace Mono.Linker
             }
         }
 
-        void TriggerPendingAssemblyTargets(AssemblyDefinition markedAssembly)
+        void TriggerPendingAssemblyTargets(AssemblyDefinition newlyMarkedAssembly)
         {
             // When a TypeMap/TypeMapAssociation entry is marked, its origin assembly becomes alive. If there
             // are any TypeMapAssemblyTarget attributes waiting for this assembly to be alive, mark them now.
             // The group visibility check is implicit: entries are only added to this dict after the group is seen.
-            if (!_pendingAssemblyTargetsByAssembly.Remove(markedAssembly, out List<(TypeReference Group, CustomAttributeWithOrigin Attr, MethodDefinition? CallingMethod)>? waiting))
+            if (!_pendingAssemblyTargetsByAssembly.Remove(newlyMarkedAssembly, out List<(TypeReference Group, CustomAttributeWithOrigin Attr, MethodDefinition? CallingMethod)>? waiting))
                 return;
 
             foreach (var (_, attr, callingMethod) in waiting)
