@@ -922,7 +922,23 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Reverse()
             {
+#if NET || NETSTANDARD2_1_OR_GREATER
                 Array.Reverse<T>(_elements, 0, _count);
+#else
+                // The non-generic Array.Reverse is not used because it does not perform
+                // well for non-primitive value types.
+                int i = 0;
+                int j = _count - 1;
+                T[] array = _elements;
+                while (i < j)
+                {
+                    T temp = array[i];
+                    array[i] = array[j];
+                    array[j] = temp;
+                    i++;
+                    j--;
+                }
+#endif
             }
 
             /// <summary>
