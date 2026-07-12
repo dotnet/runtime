@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\ConcurrentDictionaryPolyfills.cs" Link="Common\Polyfills\ConcurrentDictionaryPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
   </ItemGroup>
 

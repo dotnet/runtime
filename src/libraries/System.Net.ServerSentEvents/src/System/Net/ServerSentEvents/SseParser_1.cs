@@ -444,11 +444,7 @@ namespace System.Net.ServerSentEvents
                 // Spec: "If the field value consists of only ASCII digits, then interpret the field value as an integer in base ten,
                 // and set the event stream's reconnection time to that integer. Otherwise, ignore the field."
                 if (long.TryParse(
-#if NET
                     fieldValue,
-#else
-                    Encoding.UTF8.GetString(fieldValue),
-#endif
                     NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds) &&
                     0 <= milliseconds && milliseconds <= TimeSpan_MaxValueMilliseconds)
                 {

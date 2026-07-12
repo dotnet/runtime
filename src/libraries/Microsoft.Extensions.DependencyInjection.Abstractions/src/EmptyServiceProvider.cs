@@ -119,13 +119,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static bool IsEnumerable(Type serviceType) =>
             serviceType.IsConstructedGenericType && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
 
-        // Wraps RuntimeFeature.IsDynamicCodeSupported across target frameworks.
-        private static bool IsDynamicCodeSupported =>
-#if NETFRAMEWORK || NETSTANDARD2_0
-            true;
-#else
-            RuntimeFeature.IsDynamicCodeSupported;
-#endif
+        private static bool IsDynamicCodeSupported => RuntimeFeature.IsDynamicCodeSupported;
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "The element type is guaranteed not to be a ValueType when dynamic code isn't supported.")]

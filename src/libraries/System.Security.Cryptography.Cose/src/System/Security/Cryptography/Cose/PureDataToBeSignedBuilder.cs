@@ -20,11 +20,7 @@ namespace System.Security.Cryptography.Cose
 
         internal override void AppendToBeSigned(ReadOnlySpan<byte> data)
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            _stream.Write(data.ToArray(), 0, data.Length);
-#else
             _stream.Write(data);
-#endif
         }
 
         internal override void AppendToBeSigned(byte[] data, int offset, int length)

@@ -852,13 +852,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
-#if NET
-                if (entry.Key is string s ? _stringEntries.TryRemove(KeyValuePair.Create(s, entry))
-                    : _nonStringEntries.TryRemove(KeyValuePair.Create(entry.Key, entry)))
-#else
-                if (entry.Key is string s ? ((ICollection<KeyValuePair<string, CacheEntry>>)_stringEntries).Remove(new KeyValuePair<string, CacheEntry>(s, entry))
-                    : ((ICollection<KeyValuePair<object, CacheEntry>>)_nonStringEntries).Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
-#endif
+                if (entry.Key is string s ? _stringEntries.TryRemove(new KeyValuePair<string, CacheEntry>(s, entry))
+                    : _nonStringEntries.TryRemove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
                 {
                     if (options.HasSizeLimit)
                     {
