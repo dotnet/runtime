@@ -569,7 +569,7 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             return false;
         }
 
-        strncpy(name_copy, name, name_length + 1);
+        memcpy(name_copy, name, name_length);
         name_copy[name_length] = '\0';
         threadStubArgs->m_name = name_copy;
     }
