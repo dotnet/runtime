@@ -1265,9 +1265,10 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
         public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqualAndHaveSameHashCode()
         {
-            // Load the other assembly that contains an equivalent EquivalentDelegate type.
+            // Load the same assembly again using Assembly.LoadFile to get a new anonymous ALC instance.
             // Both types are compiled from TestEquivalentTypes/System.TestEquivalentTypes.cs.
-            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes", throwOnError: true)!;
+            Assembly otherAssembly = Assembly.LoadFile(typeof(EquivalentDelegate).Assembly.Location);
+            Type otherDelegateType = otherAssembly.GetType(typeof(EquivalentDelegate).FullName!)!;
             Assert.False(typeof(EquivalentDelegate).Equals(otherDelegateType));
             Assert.True(typeof(EquivalentDelegate).IsEquivalentTo(otherDelegateType));
 
