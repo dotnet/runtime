@@ -545,11 +545,6 @@ struct ThreadStubArguments
     void* m_pRealContext;
     CLREventStatic m_ThreadStartedEvent;
     const char* m_name;
-
-    ~ThreadStubArguments()
-    {
-        delete[] m_name;
-    }
 };
 
 static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, const char* name)
@@ -589,6 +584,8 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             PalSetCurrentThreadName(pStartContext->m_name);
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
+
+            delete[] pStartContext->m_name;
             delete pStartContext;
 
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
