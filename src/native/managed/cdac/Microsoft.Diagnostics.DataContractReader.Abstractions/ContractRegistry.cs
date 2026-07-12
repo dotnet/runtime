@@ -180,6 +180,31 @@ public abstract class ContractRegistry
     }
 
     /// <summary>
+    /// Determines whether this cDAC can provide the requested contract for the target. Implementations
+    /// should resolve the target-advertised version against the registered implementations only, without
+    /// instantiating the contract, so that validation performs no target memory reads (safe on partial or
+    /// triage dumps) and never triggers contract-to-contract chaining.
+    /// </summary>
+    /// <typeparam name="TContract">The contract type to validate.</typeparam>
+    /// <param name="failureException">
+    /// When this method returns <see langword="false"/>, contains the exception describing why the
+    /// contract cannot be provided; otherwise, <see langword="null"/>.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the contract is advertised by the target and a matching implementation
+    /// is registered; otherwise, <see langword="false"/>.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation delegates to <see cref="TryGetContract{TContract}(out TContract, out System.Exception?)"/>,
+    /// which instantiates the contract and therefore does read target memory. Registries that need the
+    /// no-instantiation guarantee above must override this method (<c>CachingContractRegistry</c> does).
+    /// </remarks>
+    public virtual bool TryValidate<TContract>([NotNullWhen(false)] out System.Exception? failureException) where TContract : IContract
+    {
+        return TryGetContract<TContract>(out _, out failureException);
+    }
+
+    /// <summary>
     /// Register a contract implementation for a specific version.
     /// External packages use this to add contract versions or entirely new contract interfaces.
     /// </summary>

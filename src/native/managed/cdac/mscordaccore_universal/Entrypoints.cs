@@ -180,6 +180,12 @@ internal static class Entrypoints
             object? legacyImpl = legacyImplPtr != IntPtr.Zero
                 ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
                 : null;
+
+            // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+            // the complete data-access contract set before publishing the interface.
+            if (legacyImpl is null)
+                Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
+
             Legacy.SOSDacImpl impl = new(target, legacyImpl);
             nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
             *obj = ptr;
@@ -293,7 +299,10 @@ internal static class Entrypoints
         if (hr != 0)
         {
             throw new InvalidOperationException(
-                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.")
+            {
+                HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND
+            };
         }
 
         // Build the allocVirtual delegate if the target supports ICLRDataTarget2
@@ -367,6 +376,11 @@ internal static class Entrypoints
             },
             allocVirtual,
             [Contracts.CoreCLRContracts.Register]);
+
+        // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+        // the complete data-access contract set before publishing the interface.
+        if (legacyImpl is null)
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);

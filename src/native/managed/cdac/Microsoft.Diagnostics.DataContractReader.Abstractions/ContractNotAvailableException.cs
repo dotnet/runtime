@@ -96,3 +96,36 @@ public sealed class ContractObsoleteException : ContractUnsupportedException
         : base(contractName, contractVersion, $"Contract '{contractName}' version {contractVersion} is advertised by the target and recognized by this cDAC, but is intentionally not implemented.")
     { }
 }
+
+/// <summary>
+/// Exception thrown when eager validation of the contracts required to service an SOS /
+/// <c>IXCLRDataProcess</c> interface fails during creation. Unlike the lazy
+/// <see cref="ContractNotAvailableException"/> hierarchy (which carries <c>E_NOTIMPL</c> so that
+/// individual SOS APIs degrade gracefully), this exception carries a distinct <see cref="CdacHResults"/>
+/// value identifying the failure category so the native loader can decide how to proceed.
+/// </summary>
+public sealed class ContractValidationException : Exception
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContractValidationException"/> class.
+    /// </summary>
+    /// <param name="hResult">The <see cref="CdacHResults"/> value describing the validation failure category.</param>
+    /// <param name="inner">The underlying <see cref="ContractNotAvailableException"/> describing which contract failed and why.</param>
+    public ContractValidationException(int hResult, ContractNotAvailableException inner)
+        : base(inner.Message, inner)
+    {
+        HResult = hResult;
+        ContractName = inner.ContractName;
+        ContractVersion = inner.ContractVersion;
+    }
+
+    /// <summary>
+    /// Gets the name of the contract whose validation failed.
+    /// </summary>
+    public string ContractName { get; }
+
+    /// <summary>
+    /// Gets the target-advertised version of the contract whose validation failed, or <see langword="null"/> if the target did not advertise the contract.
+    /// </summary>
+    public string? ContractVersion { get; }
+}
