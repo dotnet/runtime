@@ -545,6 +545,11 @@ struct ThreadStubArguments
     void* m_pRealContext;
     CLREventStatic m_ThreadStartedEvent;
     const char* m_name;
+
+    ~ThreadStubArguments()
+    {
+        delete[] m_name;
+    }
 };
 
 static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, const char* name)
