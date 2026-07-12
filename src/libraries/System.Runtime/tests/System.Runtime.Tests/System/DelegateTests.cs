@@ -1271,7 +1271,7 @@ namespace System.Tests
             Assert.False(typeof(EquivalentDelegate).Equals(otherDelegateType));
             Assert.True(typeof(EquivalentDelegate).IsEquivalentTo(otherDelegateType));
 
-            MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            MethodInfo methodInfo = typeof(CreateDelegateTests).GetMethod(nameof(SharedTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
             Delegate a = Delegate.CreateDelegate(typeof(EquivalentDelegate), methodInfo);
             Delegate b = Delegate.CreateDelegate(otherDelegateType, methodInfo);
 
