@@ -3,6 +3,8 @@
 
 using Xunit;
 using System.Collections.Generic;
+using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
 
@@ -1270,6 +1272,32 @@ namespace System.Tests
         {
             float actual = MathF.Round(value, digits, mode);
             Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Round_Digits_ExactValue_IntegerFallback()
+        {
+            // The digit-rounding fast path uses a double-double FusedMultiplyAdd implementation where the
+            // hardware accelerates it (FMA3 on x86, baseline on Arm64) and an exact integer implementation
+            // otherwise. On accelerated hardware the theory above only covers the FusedMultiplyAdd path, so
+            // re-run the same vectors with hardware intrinsics disabled to deterministically exercise the
+            // integer fallback and confirm it produces bit-for-bit identical results.
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_EnableHWIntrinsic", "0");
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                foreach (object[] testData in Round_Digits_ExactValue_TestData())
+                {
+                    float value = (float)testData[0];
+                    int digits = (int)testData[1];
+                    MidpointRounding mode = (MidpointRounding)testData[2];
+                    float expected = (float)testData[3];
+
+                    float actual = MathF.Round(value, digits, mode);
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual));
+                }
+            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         [Theory]
