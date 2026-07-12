@@ -14,7 +14,7 @@ namespace standalone
             ::GCToEEInterface::SuspendEE(reason);
         }
 
-        void RestartEE(bool bFinishedGC)
+        void RestartEE()
         {
             ::GCToEEInterface::RestartEE();
         }
