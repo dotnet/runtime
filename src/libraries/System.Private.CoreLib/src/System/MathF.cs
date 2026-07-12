@@ -435,6 +435,13 @@ namespace System
                 ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
             }
 
+            // Rounding to zero fractional digits is just rounding to an integer, which the dedicated
+            // overload does with a single hardware instruction on most platforms.
+            if (digits == 0)
+            {
+                return Round(x, mode);
+            }
+
             // Only finite values with a magnitude below the integer boundary can have a fractional
             // portion to round. All other values (including NaN and Infinity) are returned unchanged;
             // this comparison is naturally false for those cases.
