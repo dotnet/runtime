@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                while (_code.FindOptimizations.TryFindNextStartingPositionLeftToRight(text, ref runtextpos, runtextstart))
+                while (_code.FindOptimizations.TryFindNextStartingPositionLeftToRightInterpreter(text, ref runtextpos, runtextstart))
                 {
                     CheckTimeout();
 

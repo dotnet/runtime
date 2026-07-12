@@ -230,6 +230,8 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [InlineData(@"[ab]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "ab")]
+        [InlineData(@"[acegik]", 0, (int)FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight, "acegik")]
+        [InlineData(@"[^acegik]", 0, (int)FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight, "acegik")]
         [InlineData(@"[Aa]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]
         [InlineData(@"a", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]
         [InlineData(@"ab|cd|ef|gh", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "aceg")]
@@ -252,6 +254,16 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(1, opts.FixedDistanceSets.Count);
             Assert.Equal(0, opts.FixedDistanceSets[0].Distance);
             Assert.Equal(expectedChars, new string(opts.FixedDistanceSets[0].Chars));
+        }
+
+        [Fact]
+        public void FixedDistanceSet_UsesSearchValues()
+        {
+            RegexFindOptimizations opts = ComputeOptimizations(@".[acegik]", RegexOptions.None);
+
+            Assert.Equal(FindNextStartingPositionMode.FixedDistanceSets_SearchValues_LeftToRight, opts.FindMode);
+            Assert.Equal(1, opts.FixedDistanceSets[0].Distance);
+            Assert.Equal("acegik", new string(opts.FixedDistanceSets[0].Chars));
         }
 
         [Theory]

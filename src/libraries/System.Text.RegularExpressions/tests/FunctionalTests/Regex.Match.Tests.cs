@@ -52,6 +52,23 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("ab\uFFFE", "ab\uFFFE", RegexOptions.None, 0, 3, true, "ab\uFFFE");
             yield return ("[\u2028\u2029\uFFFE]", "x\u2029y", RegexOptions.None, 0, 3, true, "\u2029");
 
+            // Leading sets large enough to use SearchValues in find optimizations.
+            yield return (@"[acegik]", "xxxxxxxxa", RegexOptions.None, 0, 9, true, "a");
+            yield return (@"[acegik]", "xxxxxxxxx", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@".[acegik]", "xxxxxxxxa", RegexOptions.None, 0, 9, true, "xa");
+            yield return (@".[acegik]", "xxxxxxxxx", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@"[^acegik]", "aaaaaaaax", RegexOptions.None, 0, 9, true, "x");
+            yield return (@"[^acegik]", "aaaaaaaaa", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@"[αγεηικμ]", "ΩΩΩΩΩΩΩΩα", RegexOptions.None, 0, 9, true, "α");
+            yield return (@"[acegik]", "xxxxxxxxA", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "A");
+            yield return (@"([acegik])", "xxxxxxxxa", RegexOptions.None, 2, 7, true, "a");
+            yield return (@"(?m)^[acegik]", "x\nx\na", RegexOptions.None, 0, 5, true, "a");
+            if (!RegexHelpers.IsNonBacktracking(engine))
+            {
+                yield return (@"[acegik]", "xxxxxxxxa", RegexOptions.ECMAScript, 0, 9, true, "a");
+                yield return (@"[acegik](?![\s\S])", "axxxxxxxa", RegexOptions.None, 0, 9, true, "a");
+            }
+
             // Using long loop prefix
             yield return (@"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10));
             yield return (@"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100));
@@ -1421,6 +1438,66 @@ namespace System.Text.RegularExpressions.Tests
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void LargeSet_InterpreterMatchesCompiled()
+        {
+            (string Pattern, RegexOptions Options, string Culture)[] cases =
+            [
+                (@"[acegik]", RegexOptions.None, ""),
+                (@".[acegik]", RegexOptions.None, ""),
+                (@"[^acegik]", RegexOptions.None, ""),
+                (@"([acegik])", RegexOptions.None, ""),
+                (@"[αγεηικμ]", RegexOptions.None, ""),
+                (@"[acegik](?![\s\S])", RegexOptions.None, ""),
+                (@"[acegik]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, ""),
+                (@"[acegik]", RegexOptions.ECMAScript, ""),
+                (@"[iİıIacegk]", RegexOptions.IgnoreCase, "tr-TR"),
+                (@"(?m)^[acegik]", RegexOptions.None, ""),
+                (@"[acegik]", RegexOptions.RightToLeft, ""),
+                (@"\w", RegexOptions.None, ""),
+            ];
+
+            const string Alphabet = "acegikACEGIKxyzαγεηικμΩıİ!";
+            var random = new Random(42);
+
+            foreach ((string pattern, RegexOptions options, string culture) in cases)
+            {
+                using var _ = new ThreadCultureChange(culture.Length == 0 ? CultureInfo.InvariantCulture : new CultureInfo(culture));
+                var interpreter = new Regex(pattern, options, TimeSpan.FromSeconds(1));
+                var compiled = new Regex(pattern, options | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+
+                for (int iteration = 0; iteration < 100; iteration++)
+                {
+                    char[] chars = new char[random.Next(129)];
+                    for (int i = 0; i < chars.Length; i++)
+                    {
+                        chars[i] = Alphabet[random.Next(Alphabet.Length)];
+                    }
+
+                    string input = new(chars);
+                    int startAt = random.Next(input.Length + 1);
+                    Match expected = interpreter.Match(input, startAt);
+                    Match actual = compiled.Match(input, startAt);
+
+                    Assert.Equal(expected.Success, actual.Success);
+                    Assert.Equal(expected.Index, actual.Index);
+                    Assert.Equal(expected.Length, actual.Length);
+                    Assert.Equal(expected.Value, actual.Value);
+                    Assert.Equal(expected.Groups.Count, actual.Groups.Count);
+                    for (int groupIndex = 0; groupIndex < expected.Groups.Count; groupIndex++)
+                    {
+                        Group expectedGroup = expected.Groups[groupIndex];
+                        Group actualGroup = actual.Groups[groupIndex];
+                        Assert.Equal(expectedGroup.Success, actualGroup.Success);
+                        Assert.Equal(expectedGroup.Index, actualGroup.Index);
+                        Assert.Equal(expectedGroup.Length, actualGroup.Length);
+                        Assert.Equal(expectedGroup.Value, actualGroup.Value);
+                        Assert.Equal(expectedGroup.Captures.Count, actualGroup.Captures.Count);
                     }
                 }
             }

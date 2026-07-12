@@ -3,6 +3,7 @@
 
 #if SYSTEM_TEXT_REGULAREXPRESSIONS
 using System.Buffers;
+using System.Threading;
 #endif
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,6 +15,11 @@ namespace System.Text.RegularExpressions
     {
         /// <summary>Lookup table used for optimizing ASCII when doing set queries.</summary>
         private readonly uint[]?[]? _asciiLookups;
+
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+        /// <summary>Search values lazily created when the primary set is too large for specialized IndexOfAny overloads.</summary>
+        private SearchValues<char>? _searchValues;
+#endif
 
         public static RegexFindOptimizations Create(RegexNode root, RegexOptions options)
         {
@@ -255,9 +261,17 @@ namespace System.Text.RegularExpressions
 
                         // Store the sets, and compute which mode to use.
                         FixedDistanceSets = fixedDistanceSets;
-                        FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ?
-                            FindNextStartingPositionMode.LeadingSet_LeftToRight :
-                            FindNextStartingPositionMode.FixedDistanceSets_LeftToRight;
+                        bool useSearchValues =
+                            interpreter &&
+                            LeadingAnchor != RegexNodeKind.Bol &&
+                            fixedDistanceSets[0].Chars is { Length: > 5 };
+                        FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0, useSearchValues) switch
+                        {
+                            (true, false) => FindNextStartingPositionMode.LeadingSet_LeftToRight,
+                            (true, true) => FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight,
+                            (false, false) => FindNextStartingPositionMode.FixedDistanceSets_LeftToRight,
+                            (false, true) => FindNextStartingPositionMode.FixedDistanceSets_SearchValues_LeftToRight,
+                        };
                         _asciiLookups = new uint[fixedDistanceSets.Count][];
                     }
                     return;
@@ -866,6 +880,107 @@ namespace System.Text.RegularExpressions
                     return true;
             }
         }
+
+        /// <summary>Interpreter entry point that handles its lazily initialized search values before shared find modes.</summary>
+        public bool TryFindNextStartingPositionLeftToRightInterpreter(ReadOnlySpan<char> textSpan, ref int pos, int start)
+        {
+            if (FindMode is FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight or
+                FindNextStartingPositionMode.FixedDistanceSets_SearchValues_LeftToRight)
+            {
+                if (pos > textSpan.Length - MinRequiredLength)
+                {
+                    pos = textSpan.Length;
+                    return false;
+                }
+
+                return FindMode == FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight ?
+                    TryFindLeadingSetWithSearchValues(textSpan, ref pos) :
+                    TryFindFixedDistanceSetsWithSearchValues(textSpan, ref pos);
+            }
+
+            return TryFindNextStartingPositionLeftToRight(textSpan, ref pos, start);
+        }
+
+        /// <summary>Gets or creates the cached search values for the primary fixed-distance set.</summary>
+        private SearchValues<char> GetOrCreateSearchValues()
+        {
+            char[] chars = FixedDistanceSets![0].Chars!;
+            Debug.Assert(chars.Length > 5);
+
+            SearchValues<char>? searchValues = Volatile.Read(ref _searchValues);
+            if (searchValues is null)
+            {
+                SearchValues<char> newSearchValues = SearchValues.Create(chars);
+                searchValues = Interlocked.CompareExchange(ref _searchValues, newSearchValues, null) ?? newSearchValues;
+            }
+
+            return searchValues;
+        }
+
+        private bool TryFindLeadingSetWithSearchValues(ReadOnlySpan<char> textSpan, ref int pos)
+        {
+            FixedDistanceSet primarySet = FixedDistanceSets![0];
+            Debug.Assert(primarySet.Chars is { Length: > 5 });
+
+            ReadOnlySpan<char> span = textSpan.Slice(pos);
+            SearchValues<char> searchValues = GetOrCreateSearchValues();
+            int i = primarySet.Negated ? span.IndexOfAnyExcept(searchValues) : span.IndexOfAny(searchValues);
+            if (i >= 0)
+            {
+                pos += i;
+                return true;
+            }
+
+            pos = textSpan.Length;
+            return false;
+        }
+
+        private bool TryFindFixedDistanceSetsWithSearchValues(ReadOnlySpan<char> textSpan, ref int pos)
+        {
+            List<FixedDistanceSet> sets = FixedDistanceSets!;
+            FixedDistanceSet primarySet = sets[0];
+            Debug.Assert(primarySet.Chars is { Length: > 5 });
+
+            int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
+            SearchValues<char> searchValues = GetOrCreateSearchValues();
+
+            for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
+            {
+                int offset = inputPosition + primarySet.Distance;
+                ReadOnlySpan<char> textSpanAtOffset = textSpan.Slice(offset);
+                int index = primarySet.Negated ? textSpanAtOffset.IndexOfAnyExcept(searchValues) : textSpanAtOffset.IndexOfAny(searchValues);
+                if (index < 0)
+                {
+                    break;
+                }
+
+                index += offset;
+                inputPosition = index - primarySet.Distance;
+                if (inputPosition > endMinusRequiredLength)
+                {
+                    break;
+                }
+
+                for (int i = 1; i < sets.Count; i++)
+                {
+                    FixedDistanceSet nextSet = sets[i];
+                    char c = textSpan[inputPosition + nextSet.Distance];
+                    if (!RegexCharClass.CharInClass(c, nextSet.Set, ref _asciiLookups![i]))
+                    {
+                        goto Bumpalong;
+                    }
+                }
+
+                pos = inputPosition;
+                return true;
+
+            Bumpalong:;
+            }
+
+            pos = textSpan.Length;
+            return false;
+        }
+
 #endif
 
         /// <summary>
@@ -969,6 +1084,11 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A literal (single character, multi-char string, or set with small number of characters) after a non-overlapping set loop at the start of the pattern.</summary>
         LiteralAfterLoop_LeftToRight,
+
+        /// <summary>A set starting the pattern searched with SearchValues.</summary>
+        LeadingSet_SearchValues_LeftToRight,
+        /// <summary>One or more sets at a fixed distance from the start of the pattern searched with SearchValues.</summary>
+        FixedDistanceSets_SearchValues_LeftToRight,
 
         /// <summary>Nothing to search for. Nop.</summary>
         NoSearch,
