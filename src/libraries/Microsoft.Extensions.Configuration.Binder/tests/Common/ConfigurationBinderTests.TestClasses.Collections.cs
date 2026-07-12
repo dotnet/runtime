@@ -507,5 +507,75 @@ namespace Microsoft.Extensions
 
             bool IReadOnlyDictionary<string, string>.TryGetValue(string key, out string value) => _dictionary.TryGetValue(key, out value);
         }
+
+        public class OrderRecordingCollectionOptions
+        {
+            public OrderRecordingCollection Items { get; set; } = new();
+        }
+
+        // A concrete ICollection<int> whose Add records the exact value it received, in call order.
+        // Used to prove the reflection binder overwrites the reused argument array correctly per item.
+        public sealed class OrderRecordingCollection : ICollection<int>
+        {
+            private readonly List<int> _items = new();
+
+            public List<int> AddOrder { get; } = new();
+
+            public void Add(int item)
+            {
+                AddOrder.Add(item);
+                _items.Add(item);
+            }
+
+            public int Count => _items.Count;
+            public bool IsReadOnly => false;
+            public void Clear() => _items.Clear();
+            public bool Contains(int item) => _items.Contains(item);
+            public void CopyTo(int[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+            public bool Remove(int item) => _items.Remove(item);
+            public IEnumerator<int> GetEnumerator() => _items.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
+        }
+
+        public class OrderRecordingDictionaryOptions
+        {
+            public OrderRecordingDictionary Items { get; set; } = new();
+        }
+
+        // A concrete IDictionary<string, int> whose indexer setter records each (key, value) set,
+        // in call order. Used to prove the reflection binder overwrites the reused indexer argument
+        // array correctly per key and preserves overwrite semantics.
+        public sealed class OrderRecordingDictionary : IDictionary<string, int>
+        {
+            private readonly Dictionary<string, int> _dictionary = new();
+
+            public List<KeyValuePair<string, int>> SetOrder { get; } = new();
+
+            public int this[string key]
+            {
+                get => _dictionary[key];
+                set
+                {
+                    SetOrder.Add(new KeyValuePair<string, int>(key, value));
+                    _dictionary[key] = value;
+                }
+            }
+
+            public ICollection<string> Keys => _dictionary.Keys;
+            public ICollection<int> Values => _dictionary.Values;
+            public int Count => _dictionary.Count;
+            public bool IsReadOnly => false;
+            public void Add(string key, int value) => _dictionary.Add(key, value);
+            public void Add(KeyValuePair<string, int> item) => _dictionary.Add(item.Key, item.Value);
+            public void Clear() => _dictionary.Clear();
+            public bool Contains(KeyValuePair<string, int> item) => ((ICollection<KeyValuePair<string, int>>)_dictionary).Contains(item);
+            public bool ContainsKey(string key) => _dictionary.ContainsKey(key);
+            public void CopyTo(KeyValuePair<string, int>[] array, int arrayIndex) => ((ICollection<KeyValuePair<string, int>>)_dictionary).CopyTo(array, arrayIndex);
+            public bool Remove(string key) => _dictionary.Remove(key);
+            public bool Remove(KeyValuePair<string, int> item) => ((ICollection<KeyValuePair<string, int>>)_dictionary).Remove(item);
+            public bool TryGetValue(string key, out int value) => _dictionary.TryGetValue(key, out value);
+            public IEnumerator<KeyValuePair<string, int>> GetEnumerator() => _dictionary.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
+        }
     }
 }
