@@ -18,8 +18,6 @@
          Link="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
     <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
-    <Compile Include="$(CommonPath)Polyfills\BinaryPrimitivesPolyfills.cs" Link="Common\Polyfills\BinaryPrimitivesPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs" Link="Common\Polyfills\DictionaryPolyfills.cs" />
-    <Compile Include="$(CommonPath)Polyfills\StreamSpanPolyfills.cs" Link="Common\Polyfills\StreamSpanPolyfills.cs" />
   </ItemGroup>
 </Project>

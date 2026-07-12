@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-
 namespace System.Collections.Concurrent;
 
 /// <summary>Provides downlevel polyfills for instance methods on <see cref="ConcurrentDictionary{TKey, TValue}"/>.</summary>
@@ -15,8 +13,5 @@ internal static class ConcurrentDictionaryPolyfills
             ArgumentNullException.ThrowIfNull(valueFactory);
             return dictionary.GetOrAdd(key, key => valueFactory(key, factoryArgument));
         }
-
-        public bool TryRemove(KeyValuePair<TKey, TValue> item) =>
-            ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).Remove(item);
     }
 }

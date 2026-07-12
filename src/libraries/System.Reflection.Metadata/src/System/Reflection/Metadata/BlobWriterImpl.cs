@@ -189,7 +189,15 @@ namespace System.Reflection.Metadata
             }
             else if (type == typeof(double))
             {
+#if NET
                 BinaryPrimitives.WriteDoubleLittleEndian(bytes, (double)value);
+#else
+                double v = (double)value;
+                unsafe
+                {
+                    BinaryPrimitives.WriteUInt64LittleEndian(bytes, *(ulong*)(&v));
+                }
+#endif
                 return sizeof(double);
             }
             else if (type == typeof(short))
@@ -209,7 +217,15 @@ namespace System.Reflection.Metadata
             }
             else if (type == typeof(float))
             {
+#if NET
                 BinaryPrimitives.WriteSingleLittleEndian(bytes, (float)value);
+#else
+                float v = (float)value;
+                unsafe
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(bytes, *(uint*)(&v));
+                }
+#endif
                 return sizeof(float);
             }
             else if (type == typeof(ushort))

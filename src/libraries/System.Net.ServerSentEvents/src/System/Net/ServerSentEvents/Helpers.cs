@@ -12,6 +12,7 @@ namespace System.Net.ServerSentEvents
     {
         public static void WriteUtf8Number(this IBufferWriter<byte> writer, long value)
         {
+#if NET
             const int MaxDecimalDigits = 20;
             Span<byte> buffer = writer.GetSpan(MaxDecimalDigits);
             Debug.Assert(MaxDecimalDigits <= buffer.Length);
@@ -19,6 +20,9 @@ namespace System.Net.ServerSentEvents
             bool success = value.TryFormat(buffer, out int bytesWritten, provider: CultureInfo.InvariantCulture);
             Debug.Assert(success);
             writer.Advance(bytesWritten);
+#else
+            writer.WriteUtf8String(value.ToString(CultureInfo.InvariantCulture));
+#endif
         }
 
         public static void WriteUtf8String(this IBufferWriter<byte> writer, ReadOnlySpan<byte> value)

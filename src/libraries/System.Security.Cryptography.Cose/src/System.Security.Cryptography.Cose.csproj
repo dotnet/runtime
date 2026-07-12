@@ -58,7 +58,6 @@
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
     <Compile Include="$(CommonPath)Polyfills\HashCodePolyfills.cs" Link="Common\Polyfills\HashCodePolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
-    <Compile Include="$(CommonPath)Polyfills\StreamSpanPolyfills.cs" Link="Common\Polyfills\StreamSpanPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">

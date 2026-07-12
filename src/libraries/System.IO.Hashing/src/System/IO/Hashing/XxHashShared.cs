@@ -453,7 +453,19 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Multiply64To128(ulong left, ulong right, out ulong lower)
         {
+#if NET
             return Math.BigMul(left, right, out lower);
+#else
+            ulong lowerLow = Multiply32To64((uint)left, (uint)right);
+            ulong higherLow = Multiply32To64((uint)(left >> 32), (uint)right);
+            ulong lowerHigh = Multiply32To64((uint)left, (uint)(right >> 32));
+            ulong higherHigh = Multiply32To64((uint)(left >> 32), (uint)(right >> 32));
+
+            ulong cross = (lowerLow >> 32) + (higherLow & 0xFFFFFFFF) + lowerHigh;
+            ulong upper = (higherLow >> 32) + (cross >> 32) + higherHigh;
+            lower = (cross << 32) | (lowerLow & 0xFFFFFFFF);
+            return upper;
+#endif
         }
 
         /// <summary>Calculates a 64-bit to 128-bit multiply, then XOR folds it.</summary>

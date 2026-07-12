@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -123,32 +124,76 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             8_000;
 #endif
 
+#if !NET
+        byte[] rented = ArrayPool<byte>.Shared.Rent((int)Math.Min(requiredBytes, 256_000));
+#endif
+
         Span<T> valuesToRead = result.AsSpan();
         while (!valuesToRead.IsEmpty)
         {
             int sliceSize = Math.Min(valuesToRead.Length, MaxChunkLength);
 
             Span<byte> resultAsBytes = MemoryMarshal.AsBytes<T>(valuesToRead.Slice(0, sliceSize));
+#if NET
             reader.BaseStream.ReadExactly(resultAsBytes);
+#else
+            while (!resultAsBytes.IsEmpty)
+            {
+                int bytesRead = reader.Read(rented, 0, Math.Min(resultAsBytes.Length, rented.Length));
+                if (bytesRead <= 0)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                    ThrowHelper.ThrowEndOfStreamException();
+                }
+
+                rented.AsSpan(0, bytesRead).CopyTo(resultAsBytes);
+                resultAsBytes = resultAsBytes.Slice(bytesRead);
+            }
+#endif
             valuesToRead = valuesToRead.Slice(sliceSize);
         }
+
+#if !NET
+        ArrayPool<byte>.Shared.Return(rented);
+#endif
 
         if (!BitConverter.IsLittleEndian)
         {
             if (typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
                 Span<short> span = MemoryMarshal.Cast<T, short>(result.AsSpan());
+#if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
+#else
+                for (int i = 0; i < span.Length; i++)
+                {
+                    span[i] = BinaryPrimitives.ReverseEndianness(span[i]);
+                }
+#endif
             }
             else if (typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(float))
             {
                 Span<int> span = MemoryMarshal.Cast<T, int>(result.AsSpan());
+#if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
+#else
+                for (int i = 0; i < span.Length; i++)
+                {
+                    span[i] = BinaryPrimitives.ReverseEndianness(span[i]);
+                }
+#endif
             }
             else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double))
             {
                 Span<long> span = MemoryMarshal.Cast<T, long>(result.AsSpan());
+#if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
+#else
+                for (int i = 0; i < span.Length; i++)
+                {
+                    span[i] = BinaryPrimitives.ReverseEndianness(span[i]);
+                }
+#endif
             }
         }
 
