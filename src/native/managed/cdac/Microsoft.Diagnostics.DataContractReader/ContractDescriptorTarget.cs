@@ -202,7 +202,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             if (descriptor.Config.IsLittleEndian != _config.IsLittleEndian ||
                 descriptor.Config.PointerSize != _config.PointerSize)
             {
-                throw new FormatException("All descriptors must have the same endianness and pointer size.");
+                throw DescriptorMalformed("All descriptors must have the same endianness and pointer size.");
             }
 
             // Read contracts and add to map
@@ -210,7 +210,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             {
                 if (contracts.ContainsKey(name))
                 {
-                    throw new FormatException($"Duplicate contract name '{name}' found in contract descriptor.");
+                    throw DescriptorMalformed($"Duplicate contract name '{name}' found in contract descriptor.");
                 }
                 contracts[name] = version;
             }
@@ -236,7 +236,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
                     if (seenTypeNames.Contains(name))
                     {
-                        throw new FormatException($"Duplicate type name '{name}' found in contract descriptor.");
+                        throw DescriptorMalformed($"Duplicate type name '{name}' found in contract descriptor.");
                     }
                     seenTypeNames.Add(name);
 
@@ -250,14 +250,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 foreach ((string name, ContractDescriptorParser.GlobalDescriptor global) in descriptor.ContractDescriptor.Globals)
                 {
                     if (seenGlobalNames.Contains(name))
-                        throw new FormatException($"Duplicate global name '{name}' found in contract descriptor.");
+                        throw DescriptorMalformed($"Duplicate global name '{name}' found in contract descriptor.");
 
                     seenGlobalNames.Add(name);
 
                     if (global.Indirect)
                     {
                         if (global.NumericValue.Value >= (ulong)descriptor.PointerData.Length)
-                            throw new FormatException($"Invalid pointer data index {global.NumericValue.Value}.");
+                            throw DescriptorMalformed($"Invalid pointer data index {global.NumericValue.Value}.");
 
                         globals[name] = new GlobalValue
                         {
@@ -305,7 +305,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             if (subDescriptor.Value.Indirect)
             {
                 if (subDescriptor.Value.NumericValue.Value >= (ulong)descriptor.PointerData.Length)
-                    throw new FormatException($"Invalid pointer data index {subDescriptor.Value.NumericValue.Value}.");
+                    throw DescriptorMalformed($"Invalid pointer data index {subDescriptor.Value.NumericValue.Value}.");
 
                 yield return descriptor.PointerData[(int)subDescriptor.Value.NumericValue];
             }
@@ -313,6 +313,16 @@ public sealed unsafe class ContractDescriptorTarget : Target
     }
 
     // See docs/design/datacontracts/contract-descriptor.md
+    // Failure constructing a target from its contract descriptor surfaces as a FormatException so
+    // existing callers and tests keep working, but the HResult is set to a cDAC-specific code so
+    // tooling can distinguish "no descriptor / not a cDAC target" from "descriptor present but
+    // corrupt". The boundary entry points propagate Exception.HResult when it is a failure code.
+    private static FormatException DescriptorNotFound(string message) =>
+        new(message) { HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND };
+
+    private static FormatException DescriptorMalformed(string message, System.Exception? innerException = null) =>
+        new(message, innerException) { HResult = CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED };
+
     private static Descriptor ReadContractDescriptor(
         ulong address,
         DataTargetDelegates dataTargetDelegates)
@@ -320,18 +330,18 @@ public sealed unsafe class ContractDescriptorTarget : Target
         // Magic - uint64_t
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
         if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
-            throw new FormatException($"Failed to read contract descriptor header at 0x{address:x8}.");
+            throw DescriptorNotFound($"Failed to read contract descriptor header at 0x{address:x8}.");
 
         address += sizeof(ulong);
         ReadOnlySpan<byte> magicLE = "DNCCDAC\0"u8;
         ReadOnlySpan<byte> magicBE = "\0CADCCND"u8;
         bool isLittleEndian = buffer.SequenceEqual(magicLE);
         if (!isLittleEndian && !buffer.SequenceEqual(magicBE))
-            throw new FormatException("Contract descriptor has an invalid magic value.");
+            throw DescriptorNotFound("Contract descriptor has an invalid magic value.");
 
         // Flags - uint32_t
         if (!TryRead(address, isLittleEndian, dataTargetDelegates, out uint flags))
-            throw new FormatException($"Failed to read contract descriptor flags at 0x{address:x8}.");
+            throw DescriptorMalformed($"Failed to read contract descriptor flags at 0x{address:x8}.");
 
         address += sizeof(uint);
 
@@ -342,19 +352,19 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         // Descriptor size - uint32_t
         if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint descriptorSize))
-            throw new FormatException($"Failed to read contract descriptor size at 0x{address:x8}.");
+            throw DescriptorMalformed($"Failed to read contract descriptor size at 0x{address:x8}.");
 
         address += sizeof(uint);
 
         // Descriptor - char*
         if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer descriptorAddr))
-            throw new FormatException($"Failed to read contract descriptor JSON pointer at 0x{address:x8}.");
+            throw DescriptorMalformed($"Failed to read contract descriptor JSON pointer at 0x{address:x8}.");
 
         address += (uint)pointerSize;
 
         // Pointer data count - uint32_t
         if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint pointerDataCount))
-            throw new FormatException($"Failed to read contract descriptor pointer data count at 0x{address:x8}.");
+            throw DescriptorMalformed($"Failed to read contract descriptor pointer data count at 0x{address:x8}.");
 
         address += sizeof(uint);
 
@@ -363,17 +373,17 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         // Pointer data - uintptr_t*
         if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer pointerDataAddr))
-            throw new FormatException($"Failed to read contract descriptor pointer data pointer at 0x{address:x8}.");
+            throw DescriptorMalformed($"Failed to read contract descriptor pointer data pointer at 0x{address:x8}.");
 
         // Read descriptor
         if (descriptorSize > int.MaxValue)
-            throw new FormatException($"Contract descriptor size {descriptorSize} is too large.");
+            throw DescriptorMalformed($"Contract descriptor size {descriptorSize} is too large.");
 
         Span<byte> descriptorBuffer = descriptorSize <= StackAllocByteThreshold
             ? stackalloc byte[(int)descriptorSize]
             : new byte[(int)descriptorSize];
         if (dataTargetDelegates.ReadFromTarget(descriptorAddr.Value, descriptorBuffer) < 0)
-            throw new FormatException($"Failed to read contract descriptor JSON at 0x{descriptorAddr.Value:x8}.");
+            throw DescriptorMalformed($"Failed to read contract descriptor JSON at 0x{descriptorAddr.Value:x8}.");
 
         ContractDescriptorParser.ContractDescriptor? contractDescriptor;
         try
@@ -382,25 +392,25 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
         catch (JsonException ex)
         {
-            throw new FormatException("Failed to parse contract descriptor JSON.", ex);
+            throw DescriptorMalformed("Failed to parse contract descriptor JSON.", ex);
         }
         catch (InvalidOperationException ex)
         {
-            throw new FormatException("Failed to parse contract descriptor JSON.", ex);
+            throw DescriptorMalformed("Failed to parse contract descriptor JSON.", ex);
         }
         if (contractDescriptor is null)
-            throw new FormatException("Contract descriptor JSON parsed to null.");
+            throw DescriptorMalformed("Contract descriptor JSON parsed to null.");
 
         // Read pointer data
         if (pointerDataCount > int.MaxValue)
-            throw new FormatException($"Contract descriptor pointer data count {pointerDataCount} is too large.");
+            throw DescriptorMalformed($"Contract descriptor pointer data count {pointerDataCount} is too large.");
 
         int pointerDataLength = (int)pointerDataCount;
         TargetPointer[] pointerData = new TargetPointer[pointerDataLength];
         for (int i = 0; i < pointerDataLength; i++)
         {
             if (!TryReadPointer(pointerDataAddr.Value + (uint)(i * pointerSize), config, dataTargetDelegates, out pointerData[i]))
-                throw new FormatException($"Failed to read contract descriptor pointer data entry {i}.");
+                throw DescriptorMalformed($"Failed to read contract descriptor pointer data entry {i}.");
         }
 
         return new Descriptor
