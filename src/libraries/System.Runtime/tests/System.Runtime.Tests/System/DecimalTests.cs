@@ -65,7 +65,7 @@ namespace System.Tests
             yield return new object[] { 123456789.123456f, new int[] { 123456792, 0, 0, 0 } };
             yield return new object[] { 2.0123456789123456f, new int[] { -875096961, 384330476, 109, 1376256 } };
             yield return new object[] { 2E-28f, new int[] { 2, 0, 0, 1835008 } };
-            yield return new object[] { 2E-29f, new int[] { 0, 0, 0, 1835008 } };
+            yield return new object[] { 2E-29f, new int[] { 0, 0, 0, 0 } };
             yield return new object[] { 2E28f, new int[] { 0, 0, 1084202112, 0 } };
             yield return new object[] { 1.5f, new int[] { 15, 0, 0, 65536 } };
             yield return new object[] { 0f, new int[] { 0, 0, 0, 0 } };
@@ -85,7 +85,13 @@ namespace System.Tests
             yield return new object[] { 0.0001f, new int[] { -673569463, 460655912, 54210, 1835008 } };
             yield return new object[] { 0.00001f, new int[] { 1221133243, 46065591, 5421, 1835008 } };
             yield return new object[] { 0.0000000000000000000000000001f, new int[] { 1, 0, 0, 1835008 } };
-            yield return new object[] { 0.00000000000000000000000000001f, new int[] { 0, 0, 0, 1835008 } };
+            yield return new object[] { 0.00000000000000000000000000001f, new int[] { 0, 0, 0, 0 } };
+
+            // Magnitudes that round to zero must produce the canonical Decimal zero (positive, scale 0),
+            // never a signed or scaled zero, regardless of the sign of the input.
+            yield return new object[] { -2E-29f, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { float.Epsilon, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { -float.Epsilon, new int[] { 0, 0, 0, 0 } };
         }
 
         [Theory]
@@ -179,7 +185,7 @@ namespace System.Tests
             yield return new object[] { 123456789.123456, new int[] { 320956445, -521069915, 669260594, 1310720 } };
             yield return new object[] { 2.0123456789123456, new int[] { 984009685, 1865266894, 1090894778, 1835008 } };
             yield return new object[] { 2E-28, new int[] { 2, 0, 0, 1835008 } };
-            yield return new object[] { 2E-29, new int[] { 0, 0, 0, 1835008 } };
+            yield return new object[] { 2E-29, new int[] { 0, 0, 0, 0 } };
             yield return new object[] { 2E28, new int[] { 0, 2085225472, 1084202172, 0 } };
             yield return new object[] { 1.5, new int[] { 15, 0, 0, 65536 } };
             yield return new object[] { 0, new int[] { 0, 0, 0, 0 } };
@@ -207,7 +213,13 @@ namespace System.Tests
             yield return new object[] { 0.0001, new int[] { -1545913784, 466537709, 54210, 1835008 } };
             yield return new object[] { 0.00001, new int[] { -151203247, 46653770, 5421, 1835008 } };
             yield return new object[] { 0.0000000000000000000000000001, new int[] { 1, 0, 0, 1835008 } };
-            yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 1835008 } };
+            yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 0 } };
+
+            // Magnitudes that round to zero must produce the canonical Decimal zero (positive, scale 0),
+            // never a signed or scaled zero, regardless of the sign of the input.
+            yield return new object[] { -2E-29, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { double.Epsilon, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { -double.Epsilon, new int[] { 0, 0, 0, 0 } };
         }
 
         [Theory]

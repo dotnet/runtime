@@ -1664,6 +1664,15 @@ ReturnZero:
                 }
 
                 result = default;
+
+                if (mantissa == UInt128.Zero)
+                {
+                    // A tiny magnitude rounded to zero. Leave the canonical zero (positive, scale 0) that
+                    // 'result = default' already produced rather than stamping a sign or scale, matching the
+                    // historical underflow behavior and avoiding a non-canonical signed or scaled zero.
+                    return;
+                }
+
                 result.uflags = (isNegative ? SignMask : 0) | ((uint)scale << ScaleShift);
                 result.Low64 = (ulong)mantissa;
                 result.High = (uint)(mantissa >> 64);
@@ -1780,6 +1789,7 @@ ReturnZero:
                 // The quotient has either (significandBits + 1) or (significandBits + 2) bits.
                 int quotientBits = 128 - (int)UInt128.LeadingZeroCount(quotient);
                 int drop = quotientBits - significandBits;
+                Debug.Assert(drop is 1 or 2, "The scaling above guarantees one guard bit and at most one extra bit, so the ulong shifts and masks below stay in range.");
 
                 ulong keep = (ulong)(quotient >> drop);
                 ulong roundBits = (ulong)(quotient & ((UInt128.One << drop) - 1));
