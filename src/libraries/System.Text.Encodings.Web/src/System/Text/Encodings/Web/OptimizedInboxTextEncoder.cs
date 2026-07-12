@@ -180,7 +180,7 @@ namespace System.Text.Encodings.Web
 
                 dstIdx = dstIdxTemp;
                 srcIdx++;
-                continue;
+                goto ScalarProcessed;
 
             NotAscii:
 
@@ -229,6 +229,28 @@ namespace System.Text.Encodings.Web
 
                 dstIdx += charsWrittenJustNow;
                 srcIdx += scalarValue.Utf16SequenceLength;
+
+            ScalarProcessed:
+
+#if NET
+                int sourceRemaining = source.Length - srcIdx;
+                int destinationRemaining = destination.Length - dstIdx;
+                int asciiSearchLength = Math.Min(sourceRemaining, destinationRemaining);
+
+                if (asciiSearchLength >= 8)
+                {
+                    int asciiRunLength = source.Slice(srcIdx, asciiSearchLength).IndexOfAnyExcept(_allowedAsciiChars);
+                    if (asciiRunLength < 0)
+                    {
+                        asciiRunLength = asciiSearchLength;
+                    }
+
+                    source.Slice(srcIdx, asciiRunLength).CopyTo(destination.Slice(dstIdx));
+                    srcIdx += asciiRunLength;
+                    dstIdx += asciiRunLength;
+                }
+#endif
+                continue;
             }
 
             // And at this point, we're done!
@@ -276,9 +298,14 @@ namespace System.Text.Encodings.Web
 
                 if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination.Slice(dstIdx), preescapedEntry))
                 {
-                    dstIdx += (int)(preescapedEntry >> 56); // predicted taken
+                    int preescapedBytesWritten = (int)(preescapedEntry >> 56);
+                    dstIdx += preescapedBytesWritten; // predicted taken
                     srcIdx++;
-                    continue;
+                    if (preescapedBytesWritten == 1)
+                    {
+                        continue;
+                    }
+                    goto ScalarProcessed;
                 }
 
                 // We don't have enough space to hold a single QWORD copy, so let's write byte-by-byte
@@ -297,7 +324,7 @@ namespace System.Text.Encodings.Web
 
                 dstIdx = dstIdxTemp;
                 srcIdx++;
-                continue;
+                goto ScalarProcessed;
 
             NotAscii:
 
@@ -336,6 +363,28 @@ namespace System.Text.Encodings.Web
 
                 dstIdx += bytesWrittenJustNow;
                 srcIdx += bytesConsumedJustNow;
+
+            ScalarProcessed:
+
+#if NET
+                int sourceRemaining = source.Length - srcIdx;
+                int destinationRemaining = destination.Length - dstIdx;
+                int asciiSearchLength = Math.Min(sourceRemaining, destinationRemaining);
+
+                if (asciiSearchLength >= 8)
+                {
+                    int asciiRunLength = source.Slice(srcIdx, asciiSearchLength).IndexOfAnyExcept(_allowedAsciiBytes);
+                    if (asciiRunLength < 0)
+                    {
+                        asciiRunLength = asciiSearchLength;
+                    }
+
+                    source.Slice(srcIdx, asciiRunLength).CopyTo(destination.Slice(dstIdx));
+                    srcIdx += asciiRunLength;
+                    dstIdx += asciiRunLength;
+                }
+#endif
+                continue;
             }
 
             // And at this point, we're done!
