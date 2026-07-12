@@ -17,7 +17,7 @@
 
 namespace {
 
-void get_line_column_from_offset(const char* data, uint64_t size, size_t offset, int *line, int *column)
+void get_line_column_from_offset(const char* data, size_t size, size_t offset, int *line, int *column)
 {
     assert(offset <= size);
 
@@ -32,7 +32,7 @@ void get_line_column_from_offset(const char* data, uint64_t size, size_t offset,
             (*line)++;
             *column = 1;
         }
-        else if (data[i] == '\r' && data[i + 1] == '\n')
+        else if (data[i] == '\r' && (i + 1) < offset && data[i + 1] == '\n')
         {
             (*line)++;
             *column = 1;
@@ -44,20 +44,20 @@ void get_line_column_from_offset(const char* data, uint64_t size, size_t offset,
 
 } // empty namespace
 
-bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t& context)
+bool json_parser_t::parse_fully_trusted_raw_data(char* data, size_t size, const pal::string_t& context)
 {
+    // This code assumes that the provided data is fully trusted; that is, that no portion
+    // of it has been provided by a hostile agent.
+
     assert(data != nullptr);
 
     constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag | rapidjson::ParseFlag::kParseCommentsFlag;
-#ifdef _WIN32
-    // Can't use in-situ parsing on Windows, as JSON data is encoded in
-    // UTF-8 and the host expects wide strings.  m_document will store
-    // data in UTF-16 (with pal::char_t as the character type), but it
-    // has to know that data is encoded in UTF-8 to convert during parsing.
-    m_document.Parse<flags, rapidjson::UTF8<>>(data);
-#else // _WIN32
-    m_document.ParseInsitu<flags>(data);
-#endif // _WIN32
+
+    // Can't use in-situ parsing, as RapidJson requires a null-terminated string,
+    // and the provided data may not be null-terminated. The input data is always
+    // expected to be UTF-8 encoded; m_document is initialized with the appropriate
+    // encoding type for the underlying OS (UTF-16 on Windows; UTF-8 elsewhere).
+    m_document.Parse<flags, rapidjson::UTF8<>>(data, size);
 
     if (m_document.HasParseError())
     {
@@ -82,18 +82,19 @@ bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t
     return true;
 }
 
-bool json_parser_t::parse_file(const pal::string_t& path)
+bool json_parser_t::parse_fully_trusted_file(const pal::string_t& path)
 {
     // This code assumes that the caller has checked that the file `path` exists
-    // either within the bundle, or as a real file on disk.
+    // either within the bundle, or as a real file on disk. It also assumes
+    // that the contents of the target file are fully trusted; that is, that no
+    // portion of its contents has been provided by a hostile agent.
+
     assert(m_data == nullptr);
     assert(m_bundle_location == nullptr);
 
     if (bundle::info_t::is_single_file_bundle())
     {
-        // Due to in-situ parsing on Linux,
-        //  * The json file is mapped as copy-on-write.
-        //  * The mapping cannot be immediately released, and will be unmapped by the json_parser destructor.
+        // The mapping cannot be immediately released; it will be unmapped by the json_parser destructor.
         m_data = bundle::info_t::config_t::map(path, m_bundle_location);
 
         if (m_data != nullptr)
@@ -104,14 +105,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 
     if (m_data == nullptr)
     {
-#ifdef _WIN32
-        // We can't use in-situ parsing on Windows, as JSON data is encoded in
-        // UTF-8 and the host expects wide strings.
-        // We do not need copy-on-write, so read-only mapping will be enough.
         m_data = (char*)pal::mmap_read(path, &m_size);
-#else // _WIN32
-        m_data = (char*)pal::mmap_copy_on_write(path, &m_size);
-#endif // _WIN32
 
         if (m_data == nullptr)
         {
@@ -130,7 +124,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
         data += 3;
     }
 
-    return parse_raw_data(data, size, path);
+    return parse_fully_trusted_raw_data(data, size, path);
 }
 
 json_parser_t::~json_parser_t()
