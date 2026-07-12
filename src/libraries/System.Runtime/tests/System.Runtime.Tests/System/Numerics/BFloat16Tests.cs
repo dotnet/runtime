@@ -15,6 +15,43 @@ namespace System.Numerics.Tests
     {
         private static BFloat16 CrossPlatformMachineEpsilon => (BFloat16)3.90625e-03f;
 
+        public static IEnumerable<object[]> ExplicitConversion_FromDecimal_TestData()
+        {
+            // The conversion must be correctly rounded. Several of these values round differently when the
+            // conversion goes through float first (double rounding).
+            yield return new object[] { -1581274941607765457496390303.8m, (ushort)0xECA3 };
+            yield return new object[] { -3826300436344451.456231826282m, (ushort)0xD959 };
+            yield return new object[] { 22615687970.33198252129800241m, (ushort)0x50A9 };
+            yield return new object[] { 6569984.003526253797906448743m, (ushort)0x4AC9 };
+            yield return new object[] { -746.000005337263383695030642m, (ushort)0xC43B };
+            yield return new object[] { 128917739299112.37073918939888m, (ushort)0x56EB };
+            yield return new object[] { 100000000000000000000m, (ushort)0x60AD };
+        }
+
+        [Theory]
+        [MemberData(nameof(ExplicitConversion_FromDecimal_TestData))]
+        public static void ExplicitConversion_FromDecimal(decimal value, ushort expectedBits)
+        {
+            BFloat16 actual = (BFloat16)value;
+            Assert.Equal(expectedBits, BitConverter.BFloat16ToUInt16Bits(actual));
+        }
+
+        [Theory]
+        [InlineData((ushort)0x0000)] // +zero
+        [InlineData((ushort)0x3F80)] // 1
+        [InlineData((ushort)0x3F00)] // 0.5
+        [InlineData((ushort)0x3E00)] // 0.125
+        [InlineData((ushort)0x4000)] // 2
+        [InlineData((ushort)0xC020)] // -2.5
+        [InlineData((ushort)0x42C8)] // 100
+        [InlineData((ushort)0x4380)] // 256
+        public static void ExplicitConversion_ToDecimal_RoundTrips(ushort bits)
+        {
+            // These BFloat16 values are exactly representable as a decimal, so BFloat16 -> decimal -> BFloat16 is lossless.
+            BFloat16 value = BitConverter.UInt16BitsToBFloat16(bits);
+            Assert.Equal(value, (BFloat16)(decimal)value);
+        }
+
         [Fact]
         public static void Epsilon()
         {
