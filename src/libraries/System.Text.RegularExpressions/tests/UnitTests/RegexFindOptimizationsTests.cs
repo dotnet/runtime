@@ -230,8 +230,17 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [InlineData(@"[ab]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "ab")]
-        [InlineData(@"[acegik]", 0, (int)FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight, "acegik")]
-        [InlineData(@"[^acegik]", 0, (int)FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight, "acegik")]
+        // Rare-character sets (low typical-text frequency) are vectorized in the interpreter: the scan
+        // reliably skips large non-matching regions, so IndexOfAny(SearchValues) is a net win.
+        [InlineData(@"[BFGHJK]", 0, (int)FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight, "BFGHJK")]
+        // Non-ASCII sets are always eligible: their characters never appear in the typical-text frequency
+        // table, so they are treated as rare and vectorized.
+        [InlineData("[\u03b1\u03b3\u03b5\u03b7\u03b9\u03ba\u03bc]", 0, (int)FindNextStartingPositionMode.LeadingSet_SearchValues_LeftToRight, "\u03b1\u03b3\u03b5\u03b7\u03b9\u03ba\u03bc")]
+        // High-frequency sets (common letters) are NOT vectorized: IndexOfAny would match too often and the
+        // per-call overhead loses to the scalar CharInClass loop, so the interpreter keeps its scalar path.
+        [InlineData(@"[acegik]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "acegik")]
+        // Negated sets match most characters, so they are inherently high-frequency and stay scalar.
+        [InlineData(@"[^acegik]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "acegik")]
         [InlineData(@"[Aa]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]
         [InlineData(@"a", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]
         [InlineData(@"ab|cd|ef|gh", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "aceg")]
@@ -259,11 +268,21 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void FixedDistanceSet_UsesSearchValues()
         {
-            RegexFindOptimizations opts = ComputeOptimizations(@".[acegik]", RegexOptions.None);
+            RegexFindOptimizations opts = ComputeOptimizations(@".[BFGHJK]", RegexOptions.None);
 
             Assert.Equal(FindNextStartingPositionMode.FixedDistanceSets_SearchValues_LeftToRight, opts.FindMode);
             Assert.Equal(1, opts.FixedDistanceSets[0].Distance);
-            Assert.Equal("acegik", new string(opts.FixedDistanceSets[0].Chars));
+            Assert.Equal("BFGHJK", new string(opts.FixedDistanceSets[0].Chars));
+        }
+
+        [Fact]
+        public void FixedDistanceSet_HighFrequency_StaysScalar()
+        {
+            // The primary set [acegik] is composed of common letters, so the interpreter keeps its scalar
+            // fixed-distance path rather than vectorizing a poor filter.
+            RegexFindOptimizations opts = ComputeOptimizations(@".[acegik]", RegexOptions.None);
+
+            Assert.Equal(FindNextStartingPositionMode.FixedDistanceSets_LeftToRight, opts.FindMode);
         }
 
         [Theory]

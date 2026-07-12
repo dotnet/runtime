@@ -261,10 +261,24 @@ namespace System.Text.RegularExpressions
 
                         // Store the sets, and compute which mode to use.
                         FixedDistanceSets = fixedDistanceSets;
+
+                        // Only the interpreter has a scalar fallback for leading-set searches, so unlike the
+                        // compiled/source-generated engines it can choose *not* to vectorize when doing so would
+                        // be a net loss. A vectorized IndexOfAny(SearchValues) scan pays a fixed per-call setup
+                        // cost and only wins when it can skip long runs of non-matching characters; when the
+                        // leading set is composed of characters that are common in typical text (e.g. [a-zA-Z]),
+                        // it matches so frequently that each call advances only a couple of characters, and the
+                        // per-call overhead makes it slower than the scalar CharInClass loop. Gate on the same
+                        // HasHighFrequencyChars heuristic the compiled engine uses to judge IndexOfAny a poor
+                        // filter: vectorize only when the set has more than a handful of characters that are rare
+                        // enough in typical text for the scan to reliably skip large regions. This keeps the large
+                        // wins on sparse/no-match scans (rare and non-ASCII sets) while guaranteeing the default
+                        // engine never regresses relative to its existing scalar path on common-character sets.
                         bool useSearchValues =
                             interpreter &&
                             LeadingAnchor != RegexNodeKind.Bol &&
-                            fixedDistanceSets[0].Chars is { Length: > 5 };
+                            fixedDistanceSets[0].Chars is { Length: > 5 } &&
+                            !HasHighFrequencyChars(fixedDistanceSets[0]);
                         FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0, useSearchValues) switch
                         {
                             (true, false) => FindNextStartingPositionMode.LeadingSet_LeftToRight,

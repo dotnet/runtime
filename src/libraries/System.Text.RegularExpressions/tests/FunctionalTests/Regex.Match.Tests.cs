@@ -52,13 +52,19 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("ab\uFFFE", "ab\uFFFE", RegexOptions.None, 0, 3, true, "ab\uFFFE");
             yield return ("[\u2028\u2029\uFFFE]", "x\u2029y", RegexOptions.None, 0, 3, true, "\u2029");
 
-            // Leading sets large enough to use SearchValues in find optimizations.
+            // Leading sets in interpreter find optimizations. Rare-character and non-ASCII sets are vectorized
+            // via SearchValues; common-character and negated sets keep the scalar path. All must match identically.
             yield return (@"[acegik]", "xxxxxxxxa", RegexOptions.None, 0, 9, true, "a");
             yield return (@"[acegik]", "xxxxxxxxx", RegexOptions.None, 0, 9, false, string.Empty);
             yield return (@".[acegik]", "xxxxxxxxa", RegexOptions.None, 0, 9, true, "xa");
             yield return (@".[acegik]", "xxxxxxxxx", RegexOptions.None, 0, 9, false, string.Empty);
             yield return (@"[^acegik]", "aaaaaaaax", RegexOptions.None, 0, 9, true, "x");
             yield return (@"[^acegik]", "aaaaaaaaa", RegexOptions.None, 0, 9, false, string.Empty);
+            // Rare-character set (vectorized in the interpreter): exercises the SearchValues scan path.
+            yield return (@"[BFGHJK]", "xxxxxxxxB", RegexOptions.None, 0, 9, true, "B");
+            yield return (@"[BFGHJK]", "xxxxxxxxx", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@".[BFGHJK]", "xxxxxxxxK", RegexOptions.None, 0, 9, true, "xK");
+            // Non-ASCII set (always vectorized): characters fall outside the typical-text frequency table.
             yield return (@"[αγεηικμ]", "ΩΩΩΩΩΩΩΩα", RegexOptions.None, 0, 9, true, "α");
             yield return (@"[acegik]", "xxxxxxxxA", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "A");
             yield return (@"([acegik])", "xxxxxxxxa", RegexOptions.None, 2, 7, true, "a");
@@ -67,6 +73,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 yield return (@"[acegik]", "xxxxxxxxa", RegexOptions.ECMAScript, 0, 9, true, "a");
                 yield return (@"[acegik](?![\s\S])", "axxxxxxxa", RegexOptions.None, 0, 9, true, "a");
+                yield return (@"[BFGHJK](?![\s\S])", "Kxxxxxxxx", RegexOptions.None, 0, 9, false, string.Empty);
             }
 
             // Using long loop prefix
