@@ -10050,6 +10050,117 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 #endif // FEATURE_MULTIREG_RET
 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+//------------------------------------------------------------------------
+// TryLowerBitwiseOpToBitOp: Recognizes the single-bit-manipulation idioms with a variable
+//    (non-constant) bit index and rewrites them in place to the shared GT_BIT_* nodes:
+//
+//        OR (X, LSH(1, Y))       -> BIT_SET    (set bit Y of X)
+//        XOR(X, LSH(1, Y))       -> BIT_INVERT (complement bit Y of X)
+//        AND(X, NOT(LSH(1, Y)))  -> BIT_CLEAR  (reset bit Y of X)
+//
+//    where op1 becomes the value (read-modify-write destination) and op2 becomes the bit index Y.
+//    The `1 << Y` sub-tree may appear on either side of the commutative operation.
+//
+// Arguments:
+//    binOp - a GT_OR, GT_XOR, or GT_AND node of TYP_INT or TYP_LONG
+//
+// Return Value:
+//    The rewritten node (== binOp) on success, or nullptr if the pattern did not match.
+//
+// Notes:
+//    Only the variable-index form is handled. A constant index folds to a constant mask that the
+//    plain `or`/`xor`/`and`-with-immediate form already handles optimally.
+//
+//    The bit index is left as-is; callers are responsible for any target-specific masking of the
+//    index. x86's `bts`/`btr`/`btc` reg,reg form masks the index modulo the operand width (matching
+//    the C# masked-shift semantics of `1 << Y`), whereas RISC-V's `Zbs` ops operate on the full
+//    register and need an explicit `& 31` for 32-bit operands.
+GenTree* Lowering::TryLowerBitwiseOpToBitOp(GenTreeOp* binOp)
+{
+    assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+
+    if (!binOp->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return nullptr;
+    }
+
+    GenTree*& op1 = binOp->gtOp1;
+    GenTree*& op2 = binOp->gtOp2;
+
+    bool isOp1Negated = op1->OperIs(GT_NOT);
+    bool isOp2Negated = op2->OperIs(GT_NOT);
+
+    // For AND/`btr` the `1 << Y` must be negated (`~(1 << Y)`); for OR/XOR it must not be.
+    const bool wantNegated = binOp->OperIs(GT_AND);
+    GenTree*   opp1        = isOp1Negated ? op1->AsUnOp()->gtGetOp1() : op1;
+    GenTree*   opp2        = isOp2Negated ? op2->AsUnOp()->gtGetOp1() : op2;
+
+    bool isOp1SingleBit = (isOp1Negated == wantNegated) && opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1);
+    bool isOp2SingleBit = (isOp2Negated == wantNegated) && opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1);
+
+    if (!isOp1SingleBit && !isOp2SingleBit)
+    {
+        return nullptr;
+    }
+
+    // Canonicalize so the `1 << Y` sub-tree is op2 and the value is op1.
+    if (isOp1SingleBit)
+    {
+        std::swap(op1, op2);
+        std::swap(isOp1Negated, isOp2Negated);
+    }
+
+    GenTree* notNode = isOp2Negated ? op2 : nullptr;
+    GenTree* lshNode = (notNode != nullptr) ? op2->AsUnOp()->gtGetOp1() : op2;
+
+    // The shifted value must match the width of the operation.
+    if (!lshNode->TypeIs(binOp->TypeGet()))
+    {
+        return nullptr;
+    }
+
+    // A constant index folds to a constant mask, which the plain form already handles optimally.
+    GenTree* indexNode = lshNode->gtGetOp2();
+    if (indexNode->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
+    // Subsequent nodes may rely on CPU flags set by these nodes, in which case we cannot remove them.
+    if (((binOp->gtFlags & GTF_SET_FLAGS) != 0) || ((lshNode->gtFlags & GTF_SET_FLAGS) != 0) ||
+        ((notNode != nullptr) && ((notNode->gtFlags & GTF_SET_FLAGS) != 0)))
+    {
+        return nullptr;
+    }
+
+    static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+    constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+    const genTreeOps     newOper          = singleBitOpers[binOp->OperGet() - GT_OR];
+
+    JITDUMP("Lower: optimize %s(X, %s)\n", GenTree::OpName(binOp->OperGet()),
+            (notNode != nullptr) ? "NOT(LSH(1, Y))" : "LSH(1, Y)");
+    DISPNODE(binOp);
+
+    // Rewrite in place: op1 stays the value, op2 becomes the bit index. Drop the `1`, the shift, and
+    // the optional NOT.
+    if (notNode != nullptr)
+    {
+        BlockRange().Remove(notNode);
+    }
+    BlockRange().Remove(lshNode->gtGetOp1());
+    BlockRange().Remove(lshNode);
+
+    op2 = indexNode;
+    binOp->ChangeOper(newOper);
+
+    JITDUMP("to:\n");
+    DISPNODE(binOp);
+
+    return binOp;
+}
+#endif // TARGET_XARCH || TARGET_RISCV64
+
 //------------------------------------------------------------------------
 // TryRemoveCast:
 //   Try to remove a cast node by changing its operand.
