@@ -16,7 +16,6 @@ namespace System.Numerics.Tensors
         /// <param name="min">The tensor of inclusive lower bounds, represented as a span.</param>
         /// <param name="max">The tensor of inclusive upper bounds, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">An element-wise <paramref name="min"/> is greater than <paramref name="max"/>.</exception>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="min" /> and the length of <paramref name="max" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
@@ -24,7 +23,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Clamp(<paramref name="x" />[i], <paramref name="min" />[i], <paramref name="max" />[i])</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />[i]), <paramref name="max" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void Clamp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> min, ReadOnlySpan<T> max, Span<T> destination)
@@ -46,14 +45,13 @@ namespace System.Numerics.Tensors
         /// <param name="min">The tensor of inclusive lower bounds, represented as a span.</param>
         /// <param name="max">The tensor of inclusive upper bounds, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">An element-wise <paramref name="min"/> is greater than <paramref name="max"/>.</exception>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="min" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="min"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Clamp(<paramref name="x" />[i], <paramref name="min" />[i], <paramref name="max" />)</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />[i]), <paramref name="max" />)</c>.
         /// </para>
         /// </remarks>
         public static void Clamp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> min, T max, Span<T> destination)
@@ -75,14 +73,13 @@ namespace System.Numerics.Tensors
         /// <param name="min">The tensor of inclusive lower bounds, represented as a scalar.</param>
         /// <param name="max">The tensor of inclusive upper bounds, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">An element-wise <paramref name="min"/> is greater than <paramref name="max"/>.</exception>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="max" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Clamp(<paramref name="x" />[i], <paramref name="min" />, <paramref name="max" />[i])</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />), <paramref name="max" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void Clamp<T>(ReadOnlySpan<T> x, T min, ReadOnlySpan<T> max, Span<T> destination)
@@ -104,14 +101,13 @@ namespace System.Numerics.Tensors
         /// <param name="min">The tensor of inclusive lower bounds, represented as a span.</param>
         /// <param name="max">The tensor of inclusive upper bounds, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">An element-wise <paramref name="min"/> is greater than <paramref name="max"/>.</exception>
         /// <exception cref="ArgumentException">Length of <paramref name="min" /> must be same as length of <paramref name="max" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="min"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Clamp(<paramref name="x" />, <paramref name="min" />[i], <paramref name="max" />[i])</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />, <paramref name="min" />[i]), <paramref name="max" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void Clamp<T>(T x, ReadOnlySpan<T> min, ReadOnlySpan<T> max, Span<T> destination)
@@ -133,22 +129,16 @@ namespace System.Numerics.Tensors
         /// <param name="min">The tensor of inclusive lower bounds, represented as a scalar.</param>
         /// <param name="max">The tensor of inclusive upper bounds, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException"><paramref name="min"/> is greater than <paramref name="max"/>.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Clamp(<paramref name="x" />[i], <paramref name="min" />, <paramref name="max" />)</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />[i], <paramref name="min" />), <paramref name="max" />)</c>.
         /// </para>
         /// </remarks>
         public static void Clamp<T>(ReadOnlySpan<T> x, T min, T max, Span<T> destination)
             where T : INumber<T>
         {
-            if (min > max)
-            {
-                ThrowHelper.ThrowArgument_MinGreaterThanMax();
-            }
-
             if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, ClampOperatorXMinMax<float>>(x, min, max, destination))
             {
                 return;
@@ -165,12 +155,11 @@ namespace System.Numerics.Tensors
         /// <param name="min">The tensor of inclusive lower bounds, represented as a span.</param>
         /// <param name="max">The tensor of inclusive upper bounds, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">An element-wise <paramref name="min"/> is greater than <paramref name="max"/>.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="min"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Clamp(<paramref name="x" />, <paramref name="min" />[i], <paramref name="max" />)</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />, <paramref name="min" />[i]), <paramref name="max" />)</c>.
         /// </para>
         /// </remarks>
         public static void Clamp<T>(T x, ReadOnlySpan<T> min, T max, Span<T> destination)
@@ -192,12 +181,11 @@ namespace System.Numerics.Tensors
         /// <param name="min">The tensor of inclusive lower bounds, represented as a scalar.</param>
         /// <param name="max">The tensor of inclusive upper bounds, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
-        /// <exception cref="ArgumentException">An element-wise <paramref name="min"/> is greater than <paramref name="max"/>.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="max"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Clamp(<paramref name="x" />, <paramref name="min" />, <paramref name="max" />[i])</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T" />.Min(<typeparamref name="T" />.Max(<paramref name="x" />, <paramref name="min" />), <paramref name="max" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void Clamp<T>(T x, T min, ReadOnlySpan<T> max, Span<T> destination)
@@ -211,40 +199,41 @@ namespace System.Numerics.Tensors
             InvokeSpanScalarScalarIntoSpan<T, ClampOperatorMaxXMin<T>>(max, x, min, destination);
         }
 
-        /// <summary>T.Clamp(x, min, max)</summary>
+        /// <summary>Min(Max(x, min), max)</summary>
         internal readonly struct ClampOperatorXMinMax<T> : ITernaryOperator<T>
             where T : INumber<T>
         {
             public static bool Vectorizable => true;
 
-            public static T Invoke(T x, T min, T max) => T.Clamp(x, min, max);
+            // Follows the same behavior as Vector128/256/512.Clamp, which do not validate that min <= max
+            // and instead compute Min(Max(x, min), max) (matching HLSL) when the bounds are unordered.
+            public static T Invoke(T x, T min, T max) => T.Min(T.Max(x, min), max);
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> min, Vector256<T> max) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> min, Vector512<T> max) => Vector512.Clamp(x, min, max);
         }
 
-        /// <summary>T.Clamp(min, max, x)</summary>
+        /// <summary>Min(Max(x, min), max)</summary>
         internal readonly struct ClampOperatorMinMaxX<T> : ITernaryOperator<T>
             where T : INumber<T>
         {
             public static bool Vectorizable => true;
 
-            public static T Invoke(T min, T max, T x) => T.Clamp(x, min, max);
+            public static T Invoke(T min, T max, T x) => T.Min(T.Max(x, min), max);
 
             public static Vector128<T> Invoke(Vector128<T> min, Vector128<T> max, Vector128<T> x) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> min, Vector256<T> max, Vector256<T> x) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> min, Vector512<T> max, Vector512<T> x) => Vector512.Clamp(x, min, max);
         }
 
-        /// <summary>T.Clamp(max, x, min)</summary>
+        /// <summary>Min(Max(x, min), max)</summary>
         internal readonly struct ClampOperatorMaxXMin<T> : ITernaryOperator<T>
             where T : INumber<T>
         {
             public static bool Vectorizable => true;
 
-            public static T Invoke(T max, T x, T min) => T.Clamp(x, min, max);
-
+            public static T Invoke(T max, T x, T min) => T.Min(T.Max(x, min), max);
 
             public static Vector128<T> Invoke(Vector128<T> max, Vector128<T> x, Vector128<T> min) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> max, Vector256<T> x, Vector256<T> min) => Vector256.Clamp(x, min, max);

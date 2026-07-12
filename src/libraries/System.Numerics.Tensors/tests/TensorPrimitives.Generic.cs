@@ -2753,6 +2753,228 @@ namespace System.Numerics.Tensors.Tests
             Helpers.AssertEqualWithTolerance(expected, actual, tolerance);
         }
 
+        public static IEnumerable<object[]> Clamp_UnorderedBounds_Lengths()
+        {
+            // Small lengths (below the vector width) go through the scalar code path, while larger lengths
+            // (a whole multiple of every supported vector width) go through the vectorized path. Both must
+            // produce identical, non-throwing Min(Max(x, min), max) results even when min > max, matching
+            // the behavior of Vector128/256/512.Clamp (which follow HLSL and do not validate min <= max).
+            foreach (int length in new[] { 1, 2, 3, 8, 128 })
+            {
+                yield return new object[] { length };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Clamp_UnorderedBounds_Lengths))]
+        public void Clamp_UnorderedBoundsMatchScalarSemantics(int length)
+        {
+            static T Reference(T x, T min, T max) => T.Min(T.Max(x, min), max);
+
+            T zero = T.Zero;
+            T one = T.One;
+            T two = one + one;
+
+            T[] x = new T[length];
+            for (int i = 0; i < length; i++)
+            {
+                x[i] = T.CreateTruncating(i % 3);
+            }
+
+            T[] destination = new T[length];
+            T[] expected = new T[length];
+
+            foreach (int offendingIndex in new[] { 0, length - 1 })
+            {
+                // Span x, span min, span max
+                {
+                    T[] min = new T[length];
+                    T[] max = new T[length];
+                    Array.Fill(min, zero);
+                    Array.Fill(max, two);
+                    min[offendingIndex] = two;
+                    max[offendingIndex] = zero;
+
+                    TensorPrimitives.Clamp<T>(x, min, max, destination);
+                    for (int i = 0; i < length; i++)
+                    {
+                        expected[i] = Reference(x[i], min[i], max[i]);
+                    }
+                    AssertEqualsSequences(expected, destination);
+                }
+
+                // Span x, span min, scalar max
+                {
+                    T[] min = new T[length];
+                    Array.Fill(min, zero);
+                    min[offendingIndex] = two;
+
+                    TensorPrimitives.Clamp<T>(x, min, one, destination);
+                    for (int i = 0; i < length; i++)
+                    {
+                        expected[i] = Reference(x[i], min[i], one);
+                    }
+                    AssertEqualsSequences(expected, destination);
+                }
+
+                // Span x, scalar min, span max
+                {
+                    T[] max = new T[length];
+                    Array.Fill(max, two);
+                    max[offendingIndex] = zero;
+
+                    TensorPrimitives.Clamp<T>(x, one, max, destination);
+                    for (int i = 0; i < length; i++)
+                    {
+                        expected[i] = Reference(x[i], one, max[i]);
+                    }
+                    AssertEqualsSequences(expected, destination);
+                }
+
+                // Span x, scalar min, scalar max (min > max)
+                {
+                    TensorPrimitives.Clamp<T>(x, two, zero, destination);
+                    for (int i = 0; i < length; i++)
+                    {
+                        expected[i] = Reference(x[i], two, zero);
+                    }
+                    AssertEqualsSequences(expected, destination);
+                }
+
+                // Scalar x, span min, span max
+                {
+                    T[] min = new T[length];
+                    T[] max = new T[length];
+                    Array.Fill(min, zero);
+                    Array.Fill(max, two);
+                    min[offendingIndex] = two;
+                    max[offendingIndex] = zero;
+
+                    TensorPrimitives.Clamp<T>(one, min, max, destination);
+                    for (int i = 0; i < length; i++)
+                    {
+                        expected[i] = Reference(one, min[i], max[i]);
+                    }
+                    AssertEqualsSequences(expected, destination);
+                }
+
+                // Scalar x, span min, scalar max
+                {
+                    T[] min = new T[length];
+                    Array.Fill(min, zero);
+                    min[offendingIndex] = two;
+
+                    TensorPrimitives.Clamp<T>(one, min, one, destination);
+                    for (int i = 0; i < length; i++)
+                    {
+                        expected[i] = Reference(one, min[i], one);
+                    }
+                    AssertEqualsSequences(expected, destination);
+                }
+
+                // Scalar x, scalar min, span max
+                {
+                    T[] max = new T[length];
+                    Array.Fill(max, two);
+                    max[offendingIndex] = zero;
+
+                    TensorPrimitives.Clamp<T>(one, one, max, destination);
+                    for (int i = 0; i < length; i++)
+                    {
+                        expected[i] = Reference(one, one, max[i]);
+                    }
+                    AssertEqualsSequences(expected, destination);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Clamp_UnorderedBounds_Lengths))]
+        public void Clamp_SpecialValuesMatchScalarSemantics(int length)
+        {
+            // NaN and signed zeros are the exact class of values where a scalar-vs-vector mismatch would
+            // hide, so verify both code paths agree with the scalar Min(Max(x, min), max) formula for them.
+            if (!IsFloatingPoint)
+            {
+                return;
+            }
+
+            static T Reference(T x, T min, T max) => T.Min(T.Max(x, min), max);
+
+            static void AssertMatches(T[] expected, T[] actual)
+            {
+                Assert.Equal(expected.Length, actual.Length);
+                for (int i = 0; i < expected.Length; i++)
+                {
+                    // Assert.Equal treats NaN == NaN as equal but also treats +0.0 == -0.0 as equal, so the
+                    // sign of zero is pinned separately via IsNegative (skipped for NaN, whose sign bit may
+                    // legitimately differ between the paths).
+                    Assert.Equal(expected[i], actual[i]);
+                    if (!T.IsNaN(expected[i]))
+                    {
+                        Assert.Equal(T.IsNegative(expected[i]), T.IsNegative(actual[i]));
+                    }
+                }
+            }
+
+            T nan = T.CreateTruncating(float.NaN);
+            T negativeZero = NegativeZero;
+            T positiveZero = T.Zero;
+            T one = T.One;
+            T negativeOne = -one;
+            T two = one + one;
+
+            T[] pool = { nan, negativeZero, positiveZero, one, negativeOne, two };
+
+            T[] x = new T[length];
+            T[] min = new T[length];
+            T[] max = new T[length];
+            T[] destination = new T[length];
+            T[] expected = new T[length];
+
+            // Tile the pool across x/min/max at different phases so NaN, signed zeros, and unordered
+            // (min > max) bounds all appear in both the scalar and vectorized regions.
+            for (int i = 0; i < length; i++)
+            {
+                x[i] = pool[i % pool.Length];
+                min[i] = pool[(i + 2) % pool.Length];
+                max[i] = pool[(i + 4) % pool.Length];
+            }
+
+            // Span x, span min, span max
+            TensorPrimitives.Clamp<T>(x, min, max, destination);
+            for (int i = 0; i < length; i++)
+            {
+                expected[i] = Reference(x[i], min[i], max[i]);
+            }
+            AssertMatches(expected, destination);
+
+            // Span x, scalar min, scalar max (min > max, both special)
+            TensorPrimitives.Clamp<T>(x, positiveZero, negativeZero, destination);
+            for (int i = 0; i < length; i++)
+            {
+                expected[i] = Reference(x[i], positiveZero, negativeZero);
+            }
+            AssertMatches(expected, destination);
+
+            // Scalar x (NaN), span min, span max
+            TensorPrimitives.Clamp<T>(nan, min, max, destination);
+            for (int i = 0; i < length; i++)
+            {
+                expected[i] = Reference(nan, min[i], max[i]);
+            }
+            AssertMatches(expected, destination);
+        }
+
+        private static void AssertEqualsSequences(T[] expected, T[] actual)
+        {
+            Assert.Equal(expected.Length, actual.Length);
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i], actual[i]);
+            }
+        }
+
         protected override T Cosh(T x) => throw new NotSupportedException();
         protected override void Cosh(ReadOnlySpan<T> x, Span<T> destination) => throw new NotSupportedException();
         protected override T CosineSimilarity(ReadOnlySpan<T> x, ReadOnlySpan<T> y) => throw new NotSupportedException();
