@@ -1624,7 +1624,19 @@ namespace
             AssemblySpec spec;
             spec.Init(assemblyNameString);
 
-            Assembly* pAssembly = spec.LoadAssembly(FILE_LOADED);
+            // Use fThrowOnFileNotFound=FALSE so that a missing assembly (e.g. trimmed away) is
+            // silently skipped rather than crashing the process with FileNotFoundException.
+            Assembly* pAssembly = spec.LoadAssembly(FILE_LOADED, FALSE);
+
+            // If the assembly could not be found, skip it. This can happen when an assembly was
+            // referenced only through a TypeMapAssemblyTargetAttribute string name and was later
+            // trimmed away. The trimmer should have removed the attribute, but if it did not (e.g.
+            // in a non-trimmed scenario or due to a trimmer bug), we treat the missing assembly as
+            // contributing no entries rather than crashing the app.
+            if (pAssembly == NULL)
+            {
+                return TRUE;
+            }
 
             // Only add the assembly if it is unknown.
             if (_toProcess.Lookup(pAssembly) == NULL
