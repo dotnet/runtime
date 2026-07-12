@@ -17,8 +17,8 @@ namespace System.Reflection.Internal
             Span<int> bits = [0, 0, 0, 0];
             decimal.GetBits(value, bits);
 
-            // The return value is a four-element array of 32-bit signed integers.
-            // The first, second, and third elements of the returned array contain the low, middle, and high 32 bits of the 96-bit integer number.
+            // 'bits' is a four-element buffer of 32-bit signed integers.
+            // The first, second, and third elements contain the low, middle, and high 32 bits of the 96-bit integer number.
             low = unchecked((uint)bits[0]);
             mid = unchecked((uint)bits[1]);
             high = unchecked((uint)bits[2]);
