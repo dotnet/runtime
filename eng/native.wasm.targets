@@ -1,5 +1,7 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets"
+          Condition="'$(TargetsWasi)' == 'true' and Exists('$(RepositoryEngineeringDir)AcquireWasiSdk.targets')" />
 
   <!-- These packages provide ICU and timezone data paths for the native build (CMake).
        Skip them during app-level relink (IsBrowserWasmProject) since the runtime pack
@@ -36,6 +38,16 @@
       <NativeCMakeArg Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_PAL_WS=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1&quot;" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
+      <!-- Initial WASI bring-up disables EventPipe / diagnostic-server PAL
+           via FEATURE_PERFTRACING=0 in src/coreclr/CMakeLists.txt; the
+           PERFTRACING_DISABLE_* flags are unused while PERFTRACING is off
+           but kept for symmetry with browser-CoreCLR and for when we
+           re-enable PERFTRACING in a follow-up. -->
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1&quot;" />
   </ItemGroup>

@@ -232,9 +232,6 @@ partial interface IRuntimeTypeSystem : IContract
     // A no metadata method is also a StoredSigMethodDesc
     public virtual bool IsNoMetadataMethod(MethodDescHandle methodDesc, out string methodName);
 
-    // A StoredSigMethodDesc is a MethodDesc for which the signature isn't found in metadata.
-    public virtual bool IsStoredSigMethodDesc(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature);
-
     // Return true for a MethodDesc that describes a method represented by the System.Reflection.Emit.DynamicMethod class
     // A DynamicMethod is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsDynamicMethod(MethodDescHandle methodDesc);
@@ -256,6 +253,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if the method uses the async calling convention.
     // Corresponds to native MethodDesc::IsAsyncMethod().
     public virtual bool IsAsyncMethod(MethodDescHandle methodDesc);
+
+    // Return true and the raw signature bytes for a MethodDesc, or false if no signature could be resolved.
+    public virtual bool TryGetMethodSignature(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature);
 
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
@@ -1332,6 +1332,10 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `cSig` | Count of bytes in the metadata signature |
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
+| `AsyncMethodData` | `Flags` | Async method flags |
+| `AsyncMethodData` | `Signature` | The async variant's signature (see `Signature`) |
+| `Signature` | `SignaturePointer` | Pointer to the raw signature blob |
+| `Signature` | `SignatureLength` | Count of bytes in the raw signature blob |
 | `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
 
 The following data descriptor types are used only for their sizes when computing the total size of a `MethodDesc` instance.
@@ -1595,6 +1599,50 @@ And the various apis are implemented with the following algorithms
         return 0x06000000 | tokenRange | tokenRemainder;
     }
 
+    public bool TryGetMethodSignature(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        // Dynamic, EEImpl and Array methods store their signature directly on the MethodDesc.
+        MethodClassification classification = (MethodClassification)(methodDesc.Flags & MethodDescFlags.ClassificationMask);
+        if (classification is MethodClassification.Dynamic or MethodClassification.EEImpl or MethodClassification.Array)
+        {
+            signature = // StoredSigMethodDesc.Signature blob for methodDesc
+            return true;
+        }
+
+        // Async variant methods carry their signature in the AsyncMethodData.
+        if (HasFlag(methodDesc, MethodDescFlags.HasAsyncMethodData))
+        {
+            AsyncMethodData asyncData = // Read AsyncMethodData for methodDesc
+            if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
+            {
+                signature = // Read asyncData.Signature.SignatureLength bytes from asyncData.Signature.SignaturePointer
+                return true;
+            }
+        }
+
+        // Otherwise resolve the signature from ECMA metadata using the MethodDef token.
+        uint token = GetMethodToken(methodDescHandle);
+        if (EcmaMetadataUtils.GetRowId(token) == 0)
+        {
+            signature = default;
+            return false;
+        }
+
+        MetadataReader? mdReader = // Get metadata reader for the method's module, or null if unavailable
+        if (mdReader is null)
+        {
+            signature = default;
+            return false;
+        }
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        signature = mdReader.GetBlobBytes(methodDef.Signature);
+        return true;
+    }
+
     public uint GetMethodDescSize(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
@@ -1664,30 +1712,6 @@ And the various apis are implemented with the following algorithms
         TargetPointer methodNamePointer = // Read MethodName field from DynamicMethodDesc contract using address methodDescHandle.Address
 
         methodName = // ReadBuffer from target of a utf8 null terminated string, starting at address methodNamePointer
-        return true;
-    }
-
-    public bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
-    {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-
-        switch (methodDesc.Classification)
-        {
-            case MethodDescClassification.Dynamic:
-            case MethodDescClassification.EEImpl:
-            case MethodDescClassification.Array:
-                break; // These have stored sigs
-
-            default:
-                signature = default;
-                return false;
-        }
-
-        TargetPointer Sig = // Read Sig field from StoredSigMethodDesc contract using address methodDescHandle.Address
-        uint cSig = // Read cSig field from StoredSigMethodDesc contract using address methodDescHandle.Address
-
-        TargetPointer methodNamePointer = // Read S field from DynamicMethodDesc contract using address methodDescHandle.Address
-        signature = // Read buffer from target memory starting at address Sig, with cSig bytes in it.
         return true;
     }
 
@@ -2195,7 +2219,7 @@ The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following global
 
 | Global name | Meaning |
 | --- | --- |
-| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc::DWord2` indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
+| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc`'s offset bitfield (`m_dwOffset`, i.e. `DWord2 & OffsetMask`) indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
 | `FieldOffsetNewEnc` | Sentinel value of `FieldDesc`'s offset bitfield indicating the field was added via Edit-and-Continue and does not yet have backing storage. |
 
 The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following data descriptors:
@@ -2258,13 +2282,17 @@ uint GetFieldDescType(TargetPointer fieldDescPointer)
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
-    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
+    // DWord2 packs the 27-bit offset (low bits) with the 5-bit field type (high bits), so the offset
+    // must be masked out before comparing against the big-RVA sentinel. The native runtime compares the
+    // FieldDesc's m_dwOffset bitfield directly (see FieldDesc::GetOffset in src/coreclr/vm/field.h).
+    uint offset = DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    if (offset == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
     {
         if (fieldDef is null)
             throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
         return (uint)fieldDef.Value.GetRelativeVirtualAddress();
     }
-    return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    return offset;
 }
 
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true)
