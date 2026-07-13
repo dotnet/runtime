@@ -1259,21 +1259,6 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
             std::swap(sel->gtOp1, sel->gtOp2);
         }
     }
-    // Also fold an explicit XOR-with-1 negation produced by other lowerings.
-    else if (cond->OperIs(GT_XOR))
-    {
-        GenTree* xorLhs = cond->AsOp()->gtGetOp1();
-        GenTree* xorRhs = cond->AsOp()->gtGetOp2();
-        if (xorRhs->IsIntegralConst(1) && xorLhs->OperIsCompare())
-        {
-            sel->gtCond = xorLhs;
-            std::swap(sel->gtOp1, sel->gtOp2);
-            BlockRange().Remove(xorRhs);
-            BlockRange().Remove(cond);
-            DEBUG_DESTROY_NODE(xorRhs);
-            DEBUG_DESTROY_NODE(cond);
-        }
-    }
 
     // czero.{eqz,nez} take a register source and a register condition, so the only
     // contained form is an integral-zero operand that can be expressed via REG_ZERO.
