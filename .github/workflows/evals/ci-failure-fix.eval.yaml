@@ -8,7 +8,7 @@ defaults:
   timeout: 25m
 
 scoring:
-  threshold: 0.7
+  threshold: 1.0
 
 stimuli:
   - name: live-fix-or-engage-safe-output

@@ -21,8 +21,11 @@ against a live task. The agent discovers real, current data itself and emits the
 safe-output it would produce, which is then graded. Graders mix cheap
 deterministic `file-matches` checks for format with `tool-calls` checks for
 evidence that the agent really engaged live data, and a few `prompt` LLM judges
-for conformance, behavior, and constructiveness. Each spec passes at a 0.7 score
-threshold, so a single grader can miss without failing the run.
+for conformance, behavior, and constructiveness. Every grader must pass.
+
+The workflow preserves the eval specs and installs Vally from the trusted base
+branch before it checks out the PR head. This lets it evaluate PR changes to the
+workflow prompts without allowing the PR to weaken its graders or toolchain.
 
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually
