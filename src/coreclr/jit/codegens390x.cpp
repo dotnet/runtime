@@ -4039,7 +4039,39 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 //
 void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
 {
-    _ASSERTE(!"NYI");
+    assert(varTypeIsIntegral(type));
+    assert(genIsValidIntReg(dstReg));
+    instruction branchIns;
+    switch (condition.GetCode())
+    {
+        case GenCondition::EQ:  branchIns = INS_beq; break;
+        case GenCondition::NE:  branchIns = INS_bne; break;
+        case GenCondition::SLT: branchIns = INS_blt; break;
+        case GenCondition::SLE: branchIns = INS_ble; break;
+        case GenCondition::SGE: branchIns = INS_bge; break;
+        case GenCondition::SGT: branchIns = INS_bgt; break;
+        case GenCondition::ULT: branchIns = INS_blt; break;
+        case GenCondition::ULE: branchIns = INS_ble; break;
+        case GenCondition::UGE: branchIns = INS_bge; break;
+        case GenCondition::UGT: branchIns = INS_bgt; break;
+        case GenCondition::FEQ: branchIns = INS_beq; break;
+        case GenCondition::FNE: branchIns = INS_bne; break;
+        case GenCondition::FLT: branchIns = INS_blt; break;
+        case GenCondition::FLE: branchIns = INS_ble; break;
+        case GenCondition::FGE: branchIns = INS_bge; break;
+        case GenCondition::FGT: branchIns = INS_bgt; break;
+        default: unreached();
+    }
+    // Materialize 0/1:
+    //   lgfi  dstReg, 1       ; assume true
+    //   brcl  <cond>, skip    ; if condition met, skip the "load 0"
+    //   lgfi  dstReg, 0       ; condition not met
+    // skip:
+    GetEmitter()->emitIns_R_I(INS_lgfi, EA_4BYTE, dstReg, 1, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_NONE DEBUGARG(0) DEBUGARG(GTF_EMPTY));
+    GetEmitter()->emitIns_J(branchIns, nullptr, 1);
+    GetEmitter()->emitIns_R_I(INS_lgfi, EA_4BYTE, dstReg, 0, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_NONE DEBUGARG(0) DEBUGARG(GTF_EMPTY));
 /*
     assert(varTypeIsIntegral(type));
     assert(genIsValidIntReg(dstReg));
