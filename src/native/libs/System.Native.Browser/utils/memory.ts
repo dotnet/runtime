@@ -248,7 +248,7 @@ export function copyBytes(srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): void
     heap.copyWithin(dstPtr as any >>> 0, srcPtr as any >>> 0, (srcPtr as any >>> 0) + bytes);
 }
 
-export function arrayBufferNeedsCopy(buffer: any): buffer is SharedArrayBuffer {
+export function arrayBufferNeedsCopy(buffer: any): boolean {
     // BEWARE: In some cases, `instanceof SharedArrayBuffer` returns false even though buffer is an SAB.
     // Patch adapted from https://github.com/emscripten-core/emscripten/pull/16994
     // See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag
