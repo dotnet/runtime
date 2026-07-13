@@ -2370,7 +2370,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 if (isEnumeratorLocal)
                 {
                     JITDUMP("Enumerator V%02u passed to call...\n", lclNum);
-                    if (IsLinqIteratorCloneThisUse(call, tree, lclNum))
+                    if (IsLinqIteratorCloneThisUse(call, tree, lclNum, block))
                     {
                         JITDUMP("... LINQ iterator Clone this does not escape\n");
                         canLclVarEscapeViaParentStack = false;
@@ -3479,7 +3479,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
 //    true if this is the "this" argument to Clone on a conditionally tracked
 //    LINQ iterator allocation.
 //
-bool ObjectAllocator::IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tree, unsigned lclNum)
+bool ObjectAllocator::IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tree, unsigned lclNum, BasicBlock* block)
 {
     unsigned pseudoIndex = BAD_VAR_NUM;
     if (!m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
@@ -3498,7 +3498,38 @@ bool ObjectAllocator::IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tre
         return false;
     }
 
-    return IsLinqIteratorCloneMethod(call->gtCallMethHnd);
+    if (!IsLinqIteratorCloneMethod(call->gtCallMethHnd))
+    {
+        return false;
+    }
+
+    CloneInfo* info = nullptr;
+    if (m_CloneMap.Lookup(pseudoIndex, &info))
+    {
+        if (info->m_linqIteratorCloneBlocks == nullptr)
+        {
+            CompAllocator alloc(m_compiler->getAllocator(CMK_ObjectAllocator));
+            info->m_linqIteratorCloneBlocks = new (alloc) jitstd::vector<BasicBlock*>(alloc);
+        }
+
+        bool alreadyRecorded = false;
+        for (BasicBlock* const existingBlock : *info->m_linqIteratorCloneBlocks)
+        {
+            if (existingBlock == block)
+            {
+                alreadyRecorded = true;
+                break;
+            }
+        }
+
+        if (!alreadyRecorded)
+        {
+            JITDUMP("Recording LINQ iterator Clone block " FMT_BB " for fast-path pruning\n", block->bbNum);
+            info->m_linqIteratorCloneBlocks->push_back(block);
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -3563,6 +3594,63 @@ bool ObjectAllocator::IsLinqIteratorClass(CORINFO_CLASS_HANDLE cls)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+// PruneLinqIteratorClonePath - prune conditional edges into a LINQ iterator
+//    Clone block in the cloned fast path.
+//
+// Arguments:
+//    cloneBlock - block containing the Clone call
+//
+// Notes:
+//    In the cloned fast path, the selected iterator allocation is fresh and is
+//    known to be used as the GetEnumerator receiver. LINQ Iterator<T>.GetEnumerator
+//    therefore returns "this"; the cold Clone arm is unreachable in the fast path.
+//
+void ObjectAllocator::PruneLinqIteratorClonePath(BasicBlock* cloneBlock)
+{
+    CompAllocator             alloc(m_compiler->getAllocator(CMK_ObjectAllocator));
+    jitstd::vector<FlowEdge*> edgesToRemove(alloc);
+
+    for (FlowEdge* predEdge = m_compiler->BlockPredsWithEH(cloneBlock); predEdge != nullptr;
+         predEdge           = predEdge->getNextPredEdge())
+    {
+        BasicBlock* const predBlock = predEdge->getSourceBlock();
+        if (!predBlock->KindIs(BBJ_COND))
+        {
+            continue;
+        }
+
+        FlowEdge* const trueEdge  = predBlock->GetTrueEdge();
+        FlowEdge* const falseEdge = predBlock->GetFalseEdge();
+        if ((trueEdge->getDestinationBlock() == cloneBlock) && (falseEdge->getDestinationBlock() != cloneBlock))
+        {
+            edgesToRemove.push_back(trueEdge);
+        }
+        else if ((falseEdge->getDestinationBlock() == cloneBlock) && (trueEdge->getDestinationBlock() != cloneBlock))
+        {
+            edgesToRemove.push_back(falseEdge);
+        }
+    }
+
+    for (FlowEdge* const removedEdge : edgesToRemove)
+    {
+        BasicBlock* const predBlock    = removedEdge->getSourceBlock();
+        FlowEdge* const   retainedEdge = (removedEdge == predBlock->GetTrueEdge()) ? predBlock->GetFalseEdge()
+                                                                                   : predBlock->GetTrueEdge();
+
+        JITDUMP("Pruning LINQ iterator Clone path from " FMT_BB " to " FMT_BB "; retaining " FMT_BB "\n",
+                predBlock->bbNum, cloneBlock->bbNum, retainedEdge->getDestinationBlock()->bbNum);
+
+        GenTree* const jumpTree = predBlock->lastStmt()->GetRootNode();
+        assert(jumpTree->OperIs(GT_JTRUE));
+
+        m_compiler->fgRemoveRefPred(removedEdge);
+        predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+        predBlock->lastStmt()->SetRootNode(jumpTree->gtGetOp1());
+        m_compiler->fgRepairProfileCondToUncond(predBlock, retainedEdge, removedEdge);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -4806,6 +4894,18 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
         assert(!newBlock->HasInitializedTarget());
         JITDUMP("Updating targets: " FMT_BB " mapped to " FMT_BB "\n", block->bbNum, newBlock->bbNum);
         m_compiler->optSetMappedBlockTargets(block, newBlock, &map);
+    }
+
+    if (info->m_linqIteratorCloneBlocks != nullptr)
+    {
+        for (BasicBlock* const block : *info->m_linqIteratorCloneBlocks)
+        {
+            BasicBlock* newBlock = nullptr;
+            if (map.Lookup(block, &newBlock))
+            {
+                PruneLinqIteratorClonePath(newBlock);
+            }
+        }
     }
 
     // Fix up any enclosing EH extents

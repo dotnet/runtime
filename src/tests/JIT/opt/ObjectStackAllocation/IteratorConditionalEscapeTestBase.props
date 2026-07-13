@@ -5,6 +5,23 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <InterpreterIncompatible>true</InterpreterIncompatible>
+    <BatchCLRTestEnvironmentCompatibilityCheck>
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_JITMinOpts%"=="" IF "%DOTNET_TailcallStress%"=="" goto :IteratorCeaCompatible
+  ECHO SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress) IS SET
+  popd
+  Exit /b 0
+:IteratorCeaCompatible
+    </BatchCLRTestEnvironmentCompatibilityCheck>
+    <BashCLRTestEnvironmentCompatibilityCheck>
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [[ ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]
+then
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress) IS SET"
+  popd
+  exit 0
+fi
+    </BashCLRTestEnvironmentCompatibilityCheck>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="IteratorConditionalEscapeCase.cs" />

@@ -88,6 +88,7 @@ struct CloneInfo : public GuardInfo
     EnumeratorVarMap*         m_appearanceMap   = nullptr;
     unsigned                  m_appearanceCount = 0;
     jitstd::vector<unsigned>* m_allocTemps      = nullptr;
+    jitstd::vector<BasicBlock*>* m_linqIteratorCloneBlocks = nullptr;
 
     // The initial GDV guard block, if any.
     BasicBlock* m_guardBlock = nullptr;
@@ -274,9 +275,10 @@ private:
     // Conditionally escaping allocation support
     //
     void     CheckForGuardedAllocationOrCopy(BasicBlock* block, Statement* stmt, GenTree** use, unsigned lclNum);
-    bool     IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tree, unsigned lclNum);
+    bool     IsLinqIteratorCloneThisUse(GenTreeCall* call, GenTree* tree, unsigned lclNum, BasicBlock* block);
     bool     IsLinqIteratorCloneMethod(CORINFO_METHOD_HANDLE method);
     bool     IsLinqIteratorClass(CORINFO_CLASS_HANDLE cls);
+    void     PruneLinqIteratorClonePath(BasicBlock* cloneBlock);
     bool     CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsigned lclNum);
     bool     CheckForEnumeratorUse(unsigned lclNum, unsigned dstLclNum);
     bool     IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info, bool testOutcome);

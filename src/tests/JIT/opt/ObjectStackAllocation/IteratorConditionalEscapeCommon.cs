@@ -42,6 +42,11 @@ public static class IteratorConditionalEscapeCommon
 
     private static readonly Case[] s_cases =
     [
+        new(nameof(DirectList), DirectList, 190, 8, warmUp: true),
+        new(nameof(DirectArray), DirectArray, 190, 8, warmUp: true),
+        new(nameof(DirectEnumerable), DirectEnumerable, 190, 8, warmUp: true),
+        new(nameof(DirectIReadOnlyList), DirectIReadOnlyList, 190, 96, warmUp: true),
+        new(nameof(DirectIList), DirectIList, 190, 96, warmUp: true),
         new(nameof(WhereList), WhereList, 90, 8, warmUp: true),
         new(nameof(WhereArray), WhereArray, 90, 8, warmUp: true),
         new(nameof(WhereEnumerable), WhereEnumerable, 184, 8, warmUp: true),
@@ -141,6 +146,21 @@ public static class IteratorConditionalEscapeCommon
         Console.WriteLine($"SUCCESS ({testCase.Name}): allocated {bytesPerIteration:F3} bytes/iteration");
         return true;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int DirectList() => SumDirectList(s_list);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int DirectArray() => SumDirectArray(s_array);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int DirectEnumerable() => SumDirectEnumerable(s_enumerable);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int DirectIReadOnlyList() => SumDirectIReadOnlyList(s_list);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int DirectIList() => SumDirectIList(s_list);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int WhereList() => SumWhereList(s_list.Where(s_even));
@@ -277,6 +297,21 @@ public static class IteratorConditionalEscapeCommon
             yield return i;
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SumDirectList(List<int> source) => Sum(source);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SumDirectArray(int[] source) => Sum(source);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SumDirectEnumerable(IEnumerable<int> source) => Sum(source);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SumDirectIReadOnlyList(IReadOnlyList<int> source) => Sum(source);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SumDirectIList(IList<int> source) => Sum(source);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int SumWhereList(IEnumerable<int> source) => Sum(source);

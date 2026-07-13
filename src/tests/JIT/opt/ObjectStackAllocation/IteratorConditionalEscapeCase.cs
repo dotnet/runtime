@@ -6,7 +6,17 @@ using Xunit;
 
 public static class IteratorConditionalEscapeCase
 {
-#if ITERATOR_CEA_WHERE_LIST
+#if ITERATOR_CEA_DIRECT_LIST
+    private const string CaseName = "DirectList";
+#elif ITERATOR_CEA_DIRECT_ARRAY
+    private const string CaseName = "DirectArray";
+#elif ITERATOR_CEA_DIRECT_ENUMERABLE
+    private const string CaseName = "DirectEnumerable";
+#elif ITERATOR_CEA_DIRECT_IREADONLYLIST
+    private const string CaseName = "DirectIReadOnlyList";
+#elif ITERATOR_CEA_DIRECT_ILIST
+    private const string CaseName = "DirectIList";
+#elif ITERATOR_CEA_WHERE_LIST
     private const string CaseName = "WhereList";
 #elif ITERATOR_CEA_WHERE_ARRAY
     private const string CaseName = "WhereArray";
