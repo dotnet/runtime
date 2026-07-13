@@ -36,7 +36,6 @@ internal partial class StackWalk_1 : IStackWalk
         ThreadData ThreadData,
         bool IsResumableFrame = false,
         bool IsActiveFrame = false,
-        uint LastFramelessStackParameterSize = 0,
         bool IsInterrupted = false,
         bool HasFaulted = false) : IStackDataFrameHandle
     { }
@@ -118,7 +117,7 @@ internal partial class StackWalk_1 : IStackWalk
         {
             bool isResumable = IsCurrentFrameResumable();
             bool isActiveFrame = IsFirst && State == StackWalkState.Frameless;
-            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, LastFramelessStackParameterSize, IsInterrupted, HasFaulted);
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, IsInterrupted, HasFaulted);
         }
     }
 
@@ -829,11 +828,6 @@ internal partial class StackWalk_1 : IStackWalk
                 // Native stackwalk.cpp: isInterrupted = false; hasFaulted = false;
                 handle.IsInterrupted = false;
                 handle.HasFaulted = false;
-                TargetCodePointer preUnwindIp = new(handle.Context.InstructionPointer.Value);
-                if (_target.Contracts.ExecutionManager.GetCodeBlockHandle(preUnwindIp) is CodeBlockHandle cbh)
-                {
-                    handle.LastFramelessStackParameterSize = _target.Contracts.ExecutionManager.GetStackParameterSize(cbh);
-                }
 
                 // Check if the current frame is interpreter code -- if so, use
                 // interpreter virtual unwind instead of OS-level unwind.
@@ -1007,7 +1001,7 @@ internal partial class StackWalk_1 : IStackWalk
         return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
     }
 
-    byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle, StackwalkFlag flags)
+    byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return handle.Context.GetBytes();

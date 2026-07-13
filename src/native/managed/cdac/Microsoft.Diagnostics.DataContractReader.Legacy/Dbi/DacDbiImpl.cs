@@ -1997,10 +1997,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private byte[] GetCurrentContextBytes(IStackDataFrameHandle handle)
     {
         IStackWalk sw = _target.Contracts.StackWalk;
-        StackwalkFlag flags = (handle.State == StackWalkState.NativeMarker)
-            ? StackwalkFlag.X86ESPIgnoresCalleePoppedArgs
-            : StackwalkFlag.Default;
-        byte[] context = sw.GetRawContext(handle, flags);
+        byte[] context = sw.GetRawContext(handle);
 
         RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
