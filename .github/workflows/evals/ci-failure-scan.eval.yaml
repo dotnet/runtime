@@ -77,14 +77,14 @@ stimuli:
         name: fetched-real-failing-build
         config:
           required:
-            - name: 'bash'
+            - name: '^bash$'
               command: 'dev\.azure\.com/dnceng-public/public/_apis/build/builds'
 
       - type: tool-calls
         name: searched-existing-kbe
         config:
           required:
-            - name: 'bash'
+            - name: '^bash$'
               command: 'gh (search|issue)'
 
       - type: prompt

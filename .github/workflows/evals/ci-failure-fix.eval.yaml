@@ -42,7 +42,7 @@ stimuli:
       - type: file-matches
         config:
           path: "out/decision.md"
-          pattern: '(?im)^Type:\s*(create-pull-request|add-comment)\b'
+          pattern: '(?i)^Type:\s*(create-pull-request|add-comment)\b'
 
       - type: file-matches
         config:
@@ -52,7 +52,7 @@ stimuli:
       - type: file-not-matches
         config:
           path: "out/decision.md"
-          pattern: '(?i)\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|ExcludeList'
+          pattern: '(?is)^Type:\s*create-pull-request\b.*(?:\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|ExcludeList)'
 
       - type: file-not-matches
         config:
@@ -63,7 +63,7 @@ stimuli:
         name: acted-on-real-kbe
         config:
           required:
-            - name: 'bash'
+            - name: '^bash$'
               command: 'gh (search|issue)'
 
       - type: prompt

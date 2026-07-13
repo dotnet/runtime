@@ -52,14 +52,14 @@ stimuli:
         name: scanned-scan-issues
         config:
           required:
-            - name: 'bash'
+            - name: '^bash$'
               command: 'gh (search|issue).*ci-scan'
 
       - type: tool-calls
         name: scanned-fix-prs
         config:
           required:
-            - name: 'bash'
+            - name: '^bash$'
               command: 'gh (search|pr).*ci-fix'
 
       - type: prompt
