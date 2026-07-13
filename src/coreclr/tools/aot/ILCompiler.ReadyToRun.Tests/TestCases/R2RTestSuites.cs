@@ -459,6 +459,8 @@ public class R2RTestSuites
     /// <summary>
     /// #129813 / PR #129884: crossgen2 --strip-il-bodies must preserve the IL of non-async
     /// Task/ValueTask-returning methods, which is needed to compile the runtime-async variant.
+    /// It must also strip a non-async Task-returning method whose async variant has already been
+    /// compiled, since the IL is no longer needed at runtime.
     /// </summary>
     [Fact]
     public void RuntimeAsyncStripILBodiesPreservesTaskReturningIL()
@@ -508,6 +510,9 @@ public class R2RTestSuites
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncTaskMethod", out diag), diag);
             Assert.True(R2RAssert.HasAsyncVariant(reader, "AsyncValueTaskMethod", out diag), diag);
+
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
         }
     }
 

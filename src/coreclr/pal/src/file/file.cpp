@@ -2405,8 +2405,8 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
 #if defined(TARGET_WASI)
-    // WASI has no dup(); use fileno directly. FILECloseHandle skips fclose
-    // for standard streams.
+    // WASI has no dup(); use fileno directly. FileCleanupRoutine skips
+    // close() for the borrowed standard-stream fds (STDIN/STDOUT/STDERR).
     new_fd = fileno(stream);
 #else
     new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC

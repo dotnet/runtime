@@ -2477,6 +2477,32 @@ namespace System.Tests
             Assert.Equal(double.NegativeInfinity, Math.Round(double.NegativeInfinity, 3, mode));
         }
 
+        public static IEnumerable<object[]> Round_Digits_Decimal_TestData
+        {
+            get
+            {
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToEven};
+                yield return new object[] {3.42156m, 3.422m, 3, MidpointRounding.ToEven};
+                yield return new object[] {-3.42156m, -3.422m, 3, MidpointRounding.ToEven};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {3.42156m, 3.422m, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {-3.42156m, -3.422m, 3, MidpointRounding.AwayFromZero};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToZero};
+                yield return new object[] {3.42156m, 3.421m, 3, MidpointRounding.ToZero};
+                yield return new object[] {-3.42156m, -3.421m, 3, MidpointRounding.ToZero};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {3.42156m, 3.421m, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {-3.42156m, -3.422m, 3, MidpointRounding.ToNegativeInfinity};
+
+                yield return new object[] {0m, 0m, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {3.42156m, 3.422m, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {-3.42156m, -3.421m, 3, MidpointRounding.ToPositiveInfinity};
+              }
+        }
+
         [Theory]
         [MemberData(nameof(Round_Digits_TestData))]
         public static void Round_Double_Digits(double x, double expected, int digits, MidpointRounding mode)
@@ -2485,7 +2511,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Round_Digits_TestData))]
+        [MemberData(nameof(Round_Digits_Decimal_TestData))]
         public static void Round_Decimal_Digits(decimal x, decimal expected, int digits, MidpointRounding mode)
         {
             Assert.Equal(expected, Math.Round(x, digits, mode));

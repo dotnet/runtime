@@ -48,10 +48,5 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             testBuildArgs: /p:InstallV8ForTests=false
-            # Build the runtime tests for browser, but don't send them to Helix to run on V8: the
-            # V8 baked into the helix-webassembly container doesn't support --experimental-wasm-exnref
-            # yet, so the tests abort at startup. Re-enable the run once the new V8 image is
-            # available. See ActiveIssue https://github.com/dotnet/runtime/issues/129849
-            sendToHelix: false
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

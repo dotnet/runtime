@@ -15,8 +15,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include "pal/wasi/pal_wasi_missing.h"
-// RESERVED_SEH_BIT lives in seh.cpp on Unix; redefine here since we don't
-// compile that TU on WASI.
+// RESERVED_SEH_BIT is defined file-locally in seh.cpp (internal linkage) and
+// isn't exposed in a header, so redefine the value here for WASI.
 namespace { const UINT WASI_RESERVED_SEH_BIT = 0x800000; }
 #endif
 
