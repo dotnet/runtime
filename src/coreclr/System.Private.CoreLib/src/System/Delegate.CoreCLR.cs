@@ -151,27 +151,20 @@ namespace System
             else
                 return unchecked((int)((long)_methodPtrAux));
             */
-            int typeHash;
-#if FEATURE_TYPEEQUIVALENCE
             MethodTable* methodTable = RuntimeHelpers.GetMethodTable(this);
+#if FEATURE_TYPEEQUIVALENCE
             // Type-equivalent delegates from different assemblies must have the same hash code
             // when they point to the same method (since Equals returns true for them).
-            // Use the assembly-independent type full name as the hash for type-equivalent delegate types.
+            // Exclude the type from the hash code for type-equivalent delegate types.
             if (methodTable->HasTypeEquivalence)
             {
-                typeHash = GetType().FullName!.GetHashCode();
+                methodTable = null;
             }
-            else
-            {
-                typeHash = ((nuint)methodTable).GetHashCode();
-            }
-#else
-            typeHash = ((nuint)RuntimeHelpers.GetMethodTable(this)).GetHashCode();
 #endif
             if (_methodPtrAux == IntPtr.Zero)
-                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + typeHash;
+                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + ((nuint)methodTable).GetHashCode();
             else
-                return typeHash;
+                return ((nuint)methodTable).GetHashCode();
         }
 
         protected virtual MethodInfo GetMethodImpl()
