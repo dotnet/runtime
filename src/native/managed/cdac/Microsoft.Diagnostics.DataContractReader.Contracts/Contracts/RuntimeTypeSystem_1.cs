@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 using System.Reflection.Metadata;
 using System.Collections.Immutable;
 using System.Reflection;
@@ -2301,6 +2302,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     TypeHandle IRuntimeTypeSystem.GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
+        => GetFieldDescApproxTypeHandleCore(fieldDescPointer, allowOpenGenericFallback: false);
+
+    TypeHandle IRuntimeTypeSystem.GetFieldDescApproxTypeHandleAllowOpenGeneric(TargetPointer fieldDescPointer)
+        => GetFieldDescApproxTypeHandleCore(fieldDescPointer, allowOpenGenericFallback: true);
+
+    private TypeHandle GetFieldDescApproxTypeHandleCore(TargetPointer fieldDescPointer, bool allowOpenGenericFallback)
     {
         try
         {
@@ -2321,7 +2328,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
             FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldDefHandle);
 
-            return _target.Contracts.Signature.DecodeFieldSignature(fieldDef.Signature, moduleHandle, enclosingType);
+            if (!allowOpenGenericFallback)
+                return _target.Contracts.Signature.DecodeFieldSignature(fieldDef.Signature, moduleHandle, enclosingType);
+
+            // Decode with an open-generic fallback so a nested generic value-type field
+            // whose exact closed instantiation isn't loaded still resolves to the (loaded)
+            // open generic MethodTable. Interior/byref/pointer field offsets are
+            // instantiation-independent, so this yields the correct GCRefMap offsets.
+            OpenGenericFallbackSignatureTypeProvider<TypeHandle> provider = new(_target, moduleHandle);
+            BlobReader blobReader = mdReader.GetBlobReader(fieldDef.Signature);
+            RuntimeSignatureDecoder<TypeHandle, TypeHandle> decoder = new(provider, _target, mdReader, enclosingType);
+            return decoder.DecodeFieldSignature(ref blobReader);
         }
         catch
         {

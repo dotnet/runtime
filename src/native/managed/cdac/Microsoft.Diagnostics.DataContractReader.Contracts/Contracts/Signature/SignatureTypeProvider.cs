@@ -34,7 +34,7 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle
     public TypeHandle GetFunctionPointerType(MethodSignature<TypeHandle> signature)
         => GetPrimitiveType(PrimitiveTypeCode.IntPtr);
 
-    public TypeHandle GetGenericInstantiation(TypeHandle genericType, ImmutableArray<TypeHandle> typeArguments)
+    public virtual TypeHandle GetGenericInstantiation(TypeHandle genericType, ImmutableArray<TypeHandle> typeArguments)
         => _runtimeTypeSystem.GetConstructedType(genericType, CorElementType.GenericInst, 0, typeArguments);
 
     public TypeHandle GetGenericMethodParameter(T context, int index)

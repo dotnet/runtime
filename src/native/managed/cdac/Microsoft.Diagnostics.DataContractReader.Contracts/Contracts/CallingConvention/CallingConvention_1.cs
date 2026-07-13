@@ -912,6 +912,16 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 // in ByRefPointerOffsetsReporter).
                 TypeHandle nested = rts.GetFieldDescApproxTypeHandle(fdPtr);
                 if (nested.Address == TargetPointer.Null)
+                {
+                    // The field's exact closed instantiation isn't loaded (common for
+                    // cross-module Span<T> / ReadOnlySpan<T> fields). Fall back to the
+                    // open generic MethodTable, which carries the interior/byref fields
+                    // at the same instantiation-independent offsets. This mirrors the
+                    // top-level OpenGenericType fallback; without it the nested field's
+                    // interior pointer(s) are silently dropped from the GCRefMap.
+                    nested = rts.GetFieldDescApproxTypeHandleAllowOpenGeneric(fdPtr);
+                }
+                if (nested.Address == TargetPointer.Null)
                     continue;
                 bool nestedByRefLike;
                 try { nestedByRefLike = rts.IsByRefLike(nested); }

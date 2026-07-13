@@ -310,6 +310,18 @@ public interface IRuntimeTypeSystem : IContract
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
     TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Like <see cref="GetFieldDescApproxTypeHandle"/>, but when the field's type is a
+    /// generic instantiation whose exact closed MethodTable is not loaded (so the normal
+    /// lookup returns a null handle), returns the field type's open generic MethodTable
+    /// instead. The open generic exposes byref/pointer/interior fields at the same
+    /// instantiation-independent offsets, which is sufficient for GCRefMap/interior-pointer
+    /// computation. Non-generic and resolvable fields behave identically to
+    /// <see cref="GetFieldDescApproxTypeHandle"/>.
+    /// </summary>
+    TypeHandle GetFieldDescApproxTypeHandleAllowOpenGeneric(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
