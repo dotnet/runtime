@@ -677,71 +677,71 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
 #endif
     }
-
-// Use the SELECT as the source of the Then STORE/RETURN.
-m_thenOperation.node->AddAllEffectsFlags(select);
-if (m_mainOper == GT_STORE_LCL_VAR)
-{
-    m_thenOperation.node->AsLclVar()->Data() = select;
-}
-else
-{
-    m_thenOperation.node->AsOp()->SetReturnValue(select);
-}
-m_compiler->gtSetEvalOrder(m_thenOperation.node);
-m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
-
-// Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement.
-m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
-m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
-m_thenOperation.block->SetFirstStmt(nullptr);
-
-BasicBlock* falseBb = m_startBlock->GetFalseTarget();
-BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
-
-// JTRUE block now contains SELECT. Change its kind and make it flow
-// directly into block where flows merge, which is null in case of GT_RETURN.
-bool hasElseBlock = HasElseBlock();
-if (m_mainOper == GT_RETURN)
-{
-    m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
-}
-else
-{
-    FlowEdge* newEdge =
-        hasElseBlock ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
-    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-}
-assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
-
-auto removeBlock = [&](BasicBlock* block) {
-    block->bbWeight = BB_ZERO_WEIGHT;
-    m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
-    m_compiler->fgRemoveBlock(block, true);
-};
-
-removeBlock(falseBb);
-if (m_elseOperation.block != nullptr)
-{
-    if (hasElseBlock)
+    
+    // Use the SELECT as the source of the Then STORE/RETURN.
+    m_thenOperation.node->AddAllEffectsFlags(select);
+    if (m_mainOper == GT_STORE_LCL_VAR)
     {
-        removeBlock(trueBb);
+        m_thenOperation.node->AsLclVar()->Data() = select;
     }
     else
     {
-        m_compiler->fgRemoveStmt(m_startBlock, m_elseOperation.stmt);
+        m_thenOperation.node->AsOp()->SetReturnValue(select);
     }
-}
-
-#ifdef DEBUG
-if (m_compiler->verbose)
-{
-    JITDUMP("\nAfter if conversion\n");
-    IfConvertDump();
-}
-#endif
-
-return true;
+    m_compiler->gtSetEvalOrder(m_thenOperation.node);
+    m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
+    
+    // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement.
+    m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
+    m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
+    m_thenOperation.block->SetFirstStmt(nullptr);
+    
+    BasicBlock* falseBb = m_startBlock->GetFalseTarget();
+    BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
+    
+    // JTRUE block now contains SELECT. Change its kind and make it flow
+    // directly into block where flows merge, which is null in case of GT_RETURN.
+    bool hasElseBlock = HasElseBlock();
+    if (m_mainOper == GT_RETURN)
+    {
+        m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
+    }
+    else
+    {
+        FlowEdge* newEdge =
+            hasElseBlock ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+        m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    }
+    assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
+    
+    auto removeBlock = [&](BasicBlock* block) {
+        block->bbWeight = BB_ZERO_WEIGHT;
+        m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
+        m_compiler->fgRemoveBlock(block, true);
+    };
+    
+    removeBlock(falseBb);
+    if (m_elseOperation.block != nullptr)
+    {
+        if (hasElseBlock)
+        {
+            removeBlock(trueBb);
+        }
+        else
+        {
+            m_compiler->fgRemoveStmt(m_startBlock, m_elseOperation.stmt);
+        }
+    }
+    
+    #ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        JITDUMP("\nAfter if conversion\n");
+        IfConvertDump();
+    }
+    #endif
+    
+    return true;
 }
 
 //-----------------------------------------------------------------------------
