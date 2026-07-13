@@ -17,16 +17,11 @@ namespace System.Globalization
             {
                 Debug.Assert(localeName != null);
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                {
-                    CultureData? cultureData = CultureData.GetUserDefaultCultureData(localeName);
-                    cultureInfo = cultureData is null ? InvariantCulture : new CultureInfo(cultureData, isReadOnly: true);
-                }
-                else
+                CultureData? cultureData = CultureData.GetUserDefaultCultureData(localeName);
+                cultureInfo = cultureData is null ? InvariantCulture : new CultureInfo(cultureData, isReadOnly: true);
+#else
+                cultureInfo = GetCultureByName(localeName);
 #endif
-                {
-                    cultureInfo = GetCultureByName(localeName);
-                }
             }
             else
             {

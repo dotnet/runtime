@@ -14,8 +14,6 @@ namespace System.Globalization
 
         internal static CultureData? GetUserDefaultCultureData(string localeName)
         {
-            Debug.Assert(GlobalizationMode.Hybrid);
-
             if (GlobalizationMode.PredefinedCulturesOnly && !IcuIsEnsurePredefinedLocaleName(localeName))
             {
                 return null;
