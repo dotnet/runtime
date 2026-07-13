@@ -17,18 +17,37 @@ if: |
   github.repository == 'dotnet/runtime'
 
 # ###############################################################
-# Override COPILOT_GITHUB_TOKEN with a random PAT from the pool.
-# This stop-gap will be removed when org billing is available.
-# See: .github/workflows/shared/pat_pool.README.md for more info.
+# Select a PAT from the pool and override COPILOT_GITHUB_TOKEN.
+# Run agentic jobs in an isolated `copilot-pat-pool` environment.
+#
+# When org-level billing is available, this will be removed.
+# See `shared/pat_pool.README.md` for more information.
 # ###############################################################
 imports:
-  - shared/pat_pool.md
+  - uses: shared/pat_pool.md
+    with:
+      environment: copilot-pat-pool
+
+environment: copilot-pat-pool
 
 engine:
   id: copilot
   model: claude-opus-4.8
   env:
-    COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, secrets.COPILOT_GITHUB_TOKEN) }}
+    COPILOT_GITHUB_TOKEN: |
+      ${{ case(
+        needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
+        needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
+        needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
+        needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
+        needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
+        needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
+        needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
+        needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
+        needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
+        needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
+        'NO COPILOT PAT AVAILABLE')
+      }}
 
 concurrency:
   group: "closed-issue-reference-check"
@@ -45,7 +64,7 @@ steps:
     env:
       SCAN_REPO: ${{ github.repository }}
       SCAN_DIRS: "src"
-      SCAN_MAX: "30"
+      SCAN_MAX: "5"
       SCAN_OUT: ${{ github.workspace }}/issue-candidates.json
       GH_TOKEN: ${{ github.token }}
     run: |
@@ -60,27 +79,29 @@ steps:
 
       REPO="${SCAN_REPO:?}"
       DIRS="${SCAN_DIRS:-src}"
-      MAX="${SCAN_MAX:-30}"
+      read -r -a scan_dirs <<< "$DIRS"
+      MAX="${SCAN_MAX:-5}"
       OUT="${SCAN_OUT:-issue-candidates.json}"
       owner="${REPO%/*}"
       name="${REPO#*/}"
 
       refs="$(mktemp)"
       raw="$(mktemp)"
-      grep -rEnI "${owner}/${name}/issues/[0-9]+" $DIRS \
+      grep -rEnI "${owner}/${name}/issues/[0-9]+" "${scan_dirs[@]}" \
         --include=*.cs --include=*.csproj --include=*.proj --include=*.props --include=*.targets 2>/dev/null > "$raw" \
         || { rc=$?; [ "$rc" -eq 1 ] || exit "$rc"; }
       awk -v pat="${owner}/${name}/issues/" '
           {
             split($0, a, ":"); path=a[1]; lineno=a[2];
+            content = $0; sub(/^[^:]*:[0-9]+:/, "", content);
             kind = "reference";
-            if ($0 ~ /ActiveIssue/) kind = "ActiveIssue";
+            if (content ~ /^[ \t]*\[[^]]*ActiveIssue[ \t]*\(/) kind = "ActiveIssue";
             else if ($0 ~ /Skip[ \t]*=/) kind = "Skip";
             else if (path ~ /\.(csproj|proj|props|targets)$/ && $0 ~ /<!--/) kind = "build-exclusion";
             s = $0;
             while (match(s, pat "[0-9]+")) {
               n = substr(s, RSTART, RLENGTH); sub(".*/issues/", "", n);
-              if (n != "") print n "\t" path ":" lineno "\t" kind;
+              if (n ~ /^[1-9][0-9]*$/) print n "\t" path ":" lineno "\t" kind;
               s = substr(s, RSTART + RLENGTH);
             }
           }' "$raw" > "$refs"
@@ -135,8 +156,8 @@ steps:
             | ($g[] | select(.number==$c.number)) as $r
             | select($r != null)
             | { number:$c.number, url:$c.url, title:$c.title,
-                refs:($r.refs[0:15]), _count:$r.count } ]
-        | sort_by(-._count) | map(del(._count))
+                total_count:$r.count, refs:($r.refs[0:15]) } ]
+        | sort_by(-.total_count)
       ' "$states" > "$ranked"
 
       # Drop issues that already carry the advisory marker; keep up to MAX candidates.
@@ -174,12 +195,12 @@ steps:
       rm -f "$refs" "$grouped" "$probe_nums" "$states" "$ranked" "$keptnums"
       count="$(jq 'length' "$OUT")"
       echo "scan: ${count} closed issue(s) still referenced and not yet advised -> ${OUT}"
-      jq -r '.[] | "  #\(.number) (\(.refs|length) refs) \(.title)"' "$OUT" || true
+      jq -r '.[] | "  #\(.number) (\(.total_count) refs) \(.title)"' "$OUT" || true
 
 safe-outputs:
   add-comment:
     target: "*"
-    max: 30
+    max: 5
   noop:
     report-as-issue: false
 
@@ -201,11 +222,11 @@ You only suggest; you never act. The one write you can make is an `add_comment` 
 
 - **Work from `issue-candidates.json` only.** The scan already collected the references and the construct each one sits in, so never grow the candidate set. The issue's own content is not the point — the code around each reference is.
 - **Judge by construct.** An `ActiveIssue` reference to a closed issue is always a finding — flag it regardless of any nearby comment, because the attribute must point at an active issue. For a `Skip` or a `build-exclusion`, read the lines around the reference and flag only where the issue link is the sole explanation; a reference that already carries a clear reason next to it is fine, leave it.
-- **One comment per issue, ever.** Each comment carries the hidden marker `<!-- closed-issue-reference-check:advice -->`. The scan already removed issues that have this marker, so the candidate set is free of already-advised issues; never post a second time on the same issue. Stop after 30 comments in a run.
+- **One comment per issue, ever.** Each comment carries the hidden marker `<!-- closed-issue-reference-check:advice -->`. The scan already removed issues that have this marker, so the candidate set is free of already-advised issues; never post a second time on the same issue. Stop after 5 comments in a run.
 
 ## Steps
 
-**1 — Load candidates.** Read `issue-candidates.json`: a JSON array, most-referenced first, each entry `{number, url, title, refs}` where each ref is `{location: "file:line", kind}` and `kind` is `ActiveIssue`, `Skip`, or `build-exclusion`. If it is missing, empty, or `[]`, skip to *Nothing to do*. Otherwise work through it in order.
+**1 — Load candidates.** Read `issue-candidates.json`: a JSON array, most-referenced first, each entry `{number, url, title, total_count, refs}` where each ref is `{location: "file:line", kind}` and `kind` is `ActiveIssue`, `Skip`, or `build-exclusion`. The `refs` array contains at most the first 15 references. If `total_count` is larger, state that the comment shows only the listed subset. If the file is missing, empty, or `[]`, skip to *Nothing to do*. Otherwise work through it in order.
 
 **2 — Judge each reference by its construct.** For an `ActiveIssue` reference, the finding is automatic: the attribute points at a closed issue, which is wrong no matter what surrounds it, so keep it. For a `Skip` or a `build-exclusion`, open the file and read the few lines around `location`, then ask whether the code states, on its own, why the test is disabled or guarded, or whether the issue link is the only explanation. An exclusion or `Skip` annotated only with the issue link is not self-describing; a nearby comment that states the actual failure or condition is — drop those. Drop an issue only when every one of its references is either such a self-describing `Skip`/`build-exclusion` or is unrelated or stale, with a short `-> skipped: <reason>`. A false advisory is worse than a missed one.
 
