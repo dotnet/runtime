@@ -38,6 +38,7 @@ namespace System.Diagnostics.Metrics
         private const int ExponentGroupShift = 6;
         private const int ExponentGroupSize = 1 << ExponentGroupShift;
         private const int ExponentGroupMask = ExponentGroupSize - 1;
+        private const int ContentionSampleSlots = 64;
         private const int ContentionSampleMask = 0x3F;
         private const int ContentionThreshold = 64;
         private const int MaxStripeCount = 8;
@@ -46,13 +47,16 @@ namespace System.Diagnostics.Metrics
         private const int PositiveIntAndNan = ExponentArraySize / 2 - 1;
         private const int NegativeIntAndNan = ExponentArraySize - 1;
 
+        private static int s_nextContentionSampleSlot;
+
         [ThreadStatic]
-        private static uint t_contentionSample;
+        private static int[]? t_contentionSamples;
 
         [ThreadStatic]
         private static int t_stripeIndex;
 
         private readonly QuantileAggregation _config;
+        private readonly int _contentionSampleSlot;
         private readonly object _singleLock = new object();
         private readonly HistogramStripe[] _stripes;
         private int[]?[]? _singleCounters = new int[ExponentArraySize][];
@@ -164,6 +168,7 @@ namespace System.Diagnostics.Metrics
         public ExponentialHistogramAggregator(QuantileAggregation config)
         {
             _config = config;
+            _contentionSampleSlot = (Interlocked.Increment(ref s_nextContentionSampleSlot) - 1) & (ContentionSampleSlots - 1);
             if (_config.MaxRelativeError < MinRelativeError)
             {
                 // Ensure that we don't create enormous histograms trying to get overly high precision
@@ -430,19 +435,10 @@ namespace System.Diagnostics.Metrics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ShouldSampleContention()
+        private bool ShouldSampleContention()
         {
-            uint sample = t_contentionSample;
-            if (sample == 0)
-            {
-                sample = (uint)Environment.CurrentManagedThreadId;
-            }
-
-            sample ^= sample << 13;
-            sample ^= sample >> 17;
-            sample ^= sample << 5;
-            t_contentionSample = sample;
-            return (sample & ContentionSampleMask) == 0;
+            int[] samples = t_contentionSamples ??= new int[ContentionSampleSlots];
+            return (++samples[_contentionSampleSlot] & ContentionSampleMask) == 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

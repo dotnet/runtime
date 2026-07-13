@@ -537,18 +537,22 @@ namespace System.Diagnostics.Metrics.Tests
         {
             const int AggregatorCount = 4;
             const int Iterations = 10_000;
-            FieldInfo sampleField = typeof(ExponentialHistogramAggregator)
-                .GetField("t_contentionSample", BindingFlags.Static | BindingFlags.NonPublic)!;
+            FieldInfo samplesField = typeof(ExponentialHistogramAggregator)
+                .GetField("t_contentionSamples", BindingFlags.Static | BindingFlags.NonPublic)!;
             MethodInfo shouldSample = typeof(ExponentialHistogramAggregator)
-                .GetMethod("ShouldSampleContention", BindingFlags.Static | BindingFlags.NonPublic)!;
-            sampleField.SetValue(null, 1u);
+                .GetMethod("ShouldSampleContention", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            ExponentialHistogramAggregator[] aggregators = Enumerable.Range(0, AggregatorCount)
+                .Select(_ => new ExponentialHistogramAggregator(new QuantileAggregation(0.5)))
+                .ToArray();
+            samplesField.SetValue(null, null);
             int[] samples = new int[AggregatorCount];
 
             for (int i = 0; i < Iterations; i++)
             {
-                if ((bool)shouldSample.Invoke(null, null)!)
+                int aggregator = i % AggregatorCount;
+                if ((bool)shouldSample.Invoke(aggregators[aggregator], null)!)
                 {
-                    samples[i % AggregatorCount]++;
+                    samples[aggregator]++;
                 }
             }
 
@@ -557,23 +561,14 @@ namespace System.Diagnostics.Metrics.Tests
 
         private static void ForceStripeTransition(ExponentialHistogramAggregator aggregator)
         {
-            FieldInfo sampleField = typeof(ExponentialHistogramAggregator)
-                .GetField("t_contentionSample", BindingFlags.Static | BindingFlags.NonPublic)!;
-            MethodInfo shouldSample = typeof(ExponentialHistogramAggregator)
-                .GetMethod("ShouldSampleContention", BindingFlags.Static | BindingFlags.NonPublic)!;
-            uint sample = 1;
-            while (true)
-            {
-                sampleField.SetValue(null, sample);
-                if ((bool)shouldSample.Invoke(null, null)!)
-                {
-                    break;
-                }
-
-                sample++;
-            }
-
-            sampleField.SetValue(null, sample);
+            int sampleSlot = (int)typeof(ExponentialHistogramAggregator)
+                .GetField("_contentionSampleSlot", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(aggregator)!;
+            int[] samples = new int[64];
+            samples[sampleSlot] = 63;
+            typeof(ExponentialHistogramAggregator)
+                .GetField("t_contentionSamples", BindingFlags.Static | BindingFlags.NonPublic)!
+                .SetValue(null, samples);
             typeof(ExponentialHistogramAggregator)
                 .GetField("_contentionCount", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(aggregator, 63);
