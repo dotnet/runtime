@@ -7349,6 +7349,7 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
+            || methodTable == CoreLibBinder::GetClass(CLASS__GUID)
             || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
             || methodTable->IsEnum()
             || IsBitwiseEquatable(typeHandle, methodTable))
