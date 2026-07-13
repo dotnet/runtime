@@ -6211,6 +6211,11 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    if (op2->gtOverflow())
+    {
+        return nullptr;
+    }
+
     GenTree* addOp2 = op2->gtGetOp2();
     if (!addOp2->IsIntegralConst(expectedConst))
     {
@@ -6439,6 +6444,11 @@ GenTree* Lowering::TryLowerAndOpToZeroHighBits(GenTreeOp* andNode)
         return nullptr;
     }
 
+    if (maskNode->gtOverflow())
+    {
+        return nullptr;
+    }
+
     if (!lshNode->gtGetOp1()->IsIntegralConst(1))
     {
         return nullptr;
@@ -6645,6 +6655,11 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
         expectedConst = 1;
     }
     else
+    {
+        return nullptr;
+    }
+
+    if (op2->gtOverflow())
     {
         return nullptr;
     }
