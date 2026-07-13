@@ -153,6 +153,25 @@ public unsafe class Program
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
+    public static int CallbackViaUnmanagedCalli_Fastcall(int val)
+    {
+        return DoubleImpl(val);
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
+    public static void TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyViaUnmanagedCalli_Fastcall)}...");
+
+        int n = 1234;
+        int expected = DoubleImpl(n);
+        delegate* unmanaged[Fastcall]<int, int> nativeMethod = &CallbackViaUnmanagedCalli_Fastcall;
+        Assert.Equal(expected, nativeMethod(n));
+    }
+
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57362", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]

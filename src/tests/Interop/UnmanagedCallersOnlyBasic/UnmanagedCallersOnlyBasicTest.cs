@@ -28,6 +28,9 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         public static extern int CallManagedProc_Cdecl(delegate* unmanaged[Cdecl]<int, int> callbackProc, int n);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
+        public static extern int CallManagedProc_Fastcall(delegate* unmanaged[Fastcall]<int, int> callbackProc, int n);
+
+        [DllImport(nameof(UnmanagedCallersOnlyDll))]
         public static extern int CallManagedProcMultipleTimes(int m, IntPtr callbackProc, int n);
 
         [DllImport(nameof(UnmanagedCallersOnlyDll))]
@@ -122,6 +125,26 @@ public unsafe class UnmanagedCallersOnlyBasicTest
         int n = 12345;
         int expected = DoubleImpl(n);
         int actual = UnmanagedCallersOnlyDll.CallManagedProc_Cdecl(&ManagedDoubleCallback_Cdecl, n);
+
+        Assert.Equal(expected, actual);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
+    public static int ManagedDoubleCallback_Fastcall(int n)
+    {
+        return DoubleImpl(n);
+    }
+
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+    public static void TestUnmanagedCallersOnlyValid_CallConvFastcall()
+    {
+        Console.WriteLine($"Running {nameof(TestUnmanagedCallersOnlyValid_CallConvFastcall)}...");
+
+        int n = 12345;
+        int expected = DoubleImpl(n);
+        int actual = UnmanagedCallersOnlyDll.CallManagedProc_Fastcall(&ManagedDoubleCallback_Fastcall, n);
 
         Assert.Equal(expected, actual);
     }
