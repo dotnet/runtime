@@ -1259,6 +1259,7 @@ namespace System.Collections.Immutable
                 list = new List<T>(this.Count + addedItems.Length);
                 list.AddRange(this);
             }
+
             list.AddRange(addedItems);
             Debug.Assert(list.Count > 0);
 
