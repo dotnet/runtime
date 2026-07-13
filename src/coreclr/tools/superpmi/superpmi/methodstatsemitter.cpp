@@ -85,7 +85,7 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
 {
     statsTypes = types;
 
-    if (fpStatsFile != INVALID_HANDLE_VALUE)
+    if (fpStatsFile != NULL)
     {
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
             fprintf(fpStatsFile, "HASH,");
