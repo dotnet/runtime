@@ -335,9 +335,6 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- object.c: mono_runtime_exec_main -->
-		<type fullname="System.STAThreadAttribute" />
-
 		<!-- domain.c: mono_defaults.string_class -->
 		<type fullname="System.String">
 			<!-- object-internals.h: struct _MonoString -->
@@ -645,6 +642,13 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
+	</assembly>
+	<!-- STAThreadAttribute is only read by the native runtime (object.c: prepare_thread_to_exec_main)
+	     when launching an entry point via mono_runtime_run_main to set the apartment state. That path is
+	     not reachable on single-threaded runtimes (browser/wasi), where the entry point is invoked directly
+	     and apartment state is meaningless, so the type can be trimmed there. -->
+	<assembly fullname="System.Private.CoreLib" feature="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" featurevalue="true" featuredefault="true">
+		<type fullname="System.STAThreadAttribute" />
 	</assembly>
 	<assembly fullname="System.Private.CoreLib" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" featuredefault="true">
 		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
