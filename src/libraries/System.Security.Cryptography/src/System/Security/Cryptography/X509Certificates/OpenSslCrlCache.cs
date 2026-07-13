@@ -486,6 +486,12 @@ namespace System.Security.Cryptography.X509Certificates
         // on a CRL entry in use.
         private sealed class MruCrlCache : X509MruCache<CachedCrlEntry>
         {
+            // Each CRL is only a SafeHandle to the GC, but represents a non-trivial amount of
+            // native memory, so keep the cache small.
+            internal MruCrlCache() : base(30)
+            {
+            }
+
             internal CachedCrlEntry AddOrUpdateAndUpRef(string key, CachedCrlEntry value)
             {
                 CachedCrlEntry ret;

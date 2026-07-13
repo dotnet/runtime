@@ -150,6 +150,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             internal static RequestCache Instance { get; } = new();
 
+            // Each request can be caching a 100MB response, so limit the cache to 10 requests (1GB).
+            // The expected size of each entry is more likely in the 10s of kB.
+            private RequestCache() : base(10)
+            {
+            }
+
             internal byte[]? Get(string uri, TimeSpan downloadTimeout)
             {
                 if (OpenSslX509ChainEventSource.Log.IsEnabled())

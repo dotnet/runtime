@@ -9,18 +9,28 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal abstract class X509MruCache<T> where T : class
     {
-        // The CRL cache only stores a SafeHandle, but that's backed by a non-trivial amount of native memory.
-        // The HTTP cache might be holding a large response.
-        // Either way, keeping the number of items in the cache small has goodness, but it should be large enough
-        // that common scenarios aren't doing rapid eviction and repopulation of the same value.
-        // Until we see a reason that they need different sizes, use a const instead of a field.
-        private const int MaxItems = 30;
-
         private protected readonly Lock _lock = new();
 
         private int _count = -1;
         private Node? _head;
         private Node? _expire;
+        private int _capacity;
+
+        private protected X509MruCache(int capacity)
+        {
+            // This cache is based on the notion that O(n) is fast enough when n is small.
+            // 30 here represents an arbitrary balance across "linear is fast enough",
+            // "there are enough items to be useful", and "we don't want to hold onto too many items".
+            //
+            // Choosing a higher number should not be done without performance-based justification.
+            Debug.Assert(capacity <= 30);
+
+            // At one, just use a field.  By avoiding a capacity of 1 we can safely assume that
+            // the last node has a previous node, which simplifies the tail-pop.
+            Debug.Assert(capacity > 1);
+
+            _capacity = capacity;
+        }
 
         private protected virtual void Pruned(Node? prunedNode, int countStart, int countEnd)
         {
@@ -109,14 +119,14 @@ namespace System.Security.Cryptography.X509Certificates
                 Node node = new Node(hashCode, key, value);
                 node.Next = _head;
 
-                if (_count < MaxItems)
+                if (_count < _capacity)
                 {
                     _count++;
                     evicted = null;
                 }
                 else
                 {
-                    // Because MaxItems is small, it's better to just iterate from head
+                    // Because our maximum capacity is small, it's better to just iterate from head
                     // instead of using a doubly-linked list.
 
                     Node? previous = null;
