@@ -70,7 +70,9 @@ namespace System.Net
                 return false;
             }
 
-            return uri.AbsolutePath.AsSpan(0, UriPrefixLength).Equals(uriPrefix.AbsolutePath.AsSpan(0, UriPrefixLength), StringComparison.OrdinalIgnoreCase);
+            // The path on the server may be case-sensitive, so compare the path portion of the
+            // prefix case-sensitively (scheme, host, and port are already matched above).
+            return uri.AbsolutePath.AsSpan(0, UriPrefixLength).Equals(uriPrefix.AbsolutePath.AsSpan(0, UriPrefixLength), StringComparison.Ordinal);
         }
 
         public override int GetHashCode() =>
