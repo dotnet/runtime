@@ -734,7 +734,7 @@ Managed types are lowered to WebAssembly value types according to the following 
 | `nint`, `nuint`, pointer, byref, function pointer | `i32` (pointer-sized) |
 | Reference types (class, string, array, szarray, interface) | `i32` (pointer-sized) |
 | Value type (struct) — single primitive field, no padding | Unwrap recursively to the field's wasm type |
-| Value type (struct) — single field with padding, or multiple fields | Passed by reference (`i32` pointer) |
+| Value type (struct) — single field with padding, multiple fields, or SIMD type | Passed by reference (`i32` pointer) |
 | Empty struct (zero instance fields) | Not currently elided; since .NET empty structs have size 1, they are treated as non-unwrappable structs and passed by reference.|
 
 **Struct unwrapping** is recursive: a struct containing a single struct field, where the inner struct
@@ -747,8 +747,9 @@ A struct is **not** unwrapped when:
 - It has exactly one instance field but the field's size differs from the struct's size (i.e., the
   struct has padding due to explicit layout or alignment attributes).
 
-Structs that cannot be unwrapped are passed by reference. The caller allocates space on the linear
-stack and passes a pointer. For return values, the caller provides a hidden return buffer pointer.
+Structs that cannot be unwrapped, including SIMD types for now, are passed by reference. The caller
+allocates space on the linear stack and passes a pointer. For return values, the caller provides a
+hidden return buffer pointer.
 
 ### Prolog
 
@@ -775,16 +776,7 @@ For a main R2R method, the fixed frame begins at `$fp`. If the method does not u
 
 The main method prolog stores the function table entry index at `$fp[0]`. The JIT updates the virtual IP slot at block boundaries that can be observed by GC or EH. For the main method this update is a store to the special virtual-IP local, which is allocated at `$fp + TARGET_POINTER_SIZE`.
 
-Funclets are separate Wasm functions. A funclet is called with the current managed `$sp` and the parent method's `$fp`; catch handlers also receive the exception object. The funclet's `$fp` local is the parent method frame pointer, so the funclet can address locals shared with the main method. If the funclet itself needs an unwindable frame, its prolog allocates a small frame below the incoming `$sp`:
-
-| Offset from funclet `$sp` after prolog | Contents |
-|---:|---|
-| `0` | R2R function table entry index for the funclet |
-| `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
-
-The funclet updates its virtual IP slot by storing through its current `$sp`, not through the parent `$fp`. The stored virtual IP value is still relative to the controlling main method's virtual-IP base; when the frame's function table index names a funclet, the runtime uses the controlling main method's runtime-function entry as the virtual-IP base before adding the stored offset. A frame whose first word is `0` is treated as a transition block and the runtime follows the saved stack pointer in the second word; a frame whose first word is `TERMINATE_R2R_STACK_WALK` terminates R2R stack walking.
-
-Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `localloc` moves `$sp` below `$fp`, the JIT reserves one aligned slot below the allocation and writes `0` at `$sp[0]` and the fixed frame pointer at `$sp[TARGET_POINTER_SIZE]`.
+Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `localloc` moves `$sp` below `$fp`, the JIT reserves one aligned slot below the allocation and writes `0` at `$sp[0]` and the fixed frame pointer at `$sp + TARGET_POINTER_SIZE`.
 
 | Location | Contents |
 |---|---|
@@ -796,6 +788,15 @@ Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `loc
 | `$sp + TARGET_POINTER_SIZE` | saved `$fp` |
 | `$sp` | `0` marker |
 
+Funclets are separate Wasm functions. A funclet is called with the current managed `$sp` and the parent method's `$fp`; catch handlers also receive the exception object. The funclet's `$fp` local is the parent method frame pointer, so the funclet can address locals shared with the main method. If the funclet itself needs an unwindable frame, its prolog allocates a small frame below the incoming `$sp`:
+
+| Offset from funclet `$sp` after prolog | Contents |
+|---:|---|
+| `0` | R2R function table entry index for the funclet |
+| `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
+
+The funclet updates its virtual IP slot by storing through its current `$sp`, not through the parent `$fp`. The stored virtual IP value is still relative to the controlling main method's virtual-IP base; when the frame's function table index names a funclet, the runtime uses the controlling main method's runtime-function entry as the virtual-IP base before adding the stored offset. A frame whose first word is `0` means the current `$sp` is not the R2R frame base, and the next word holds the saved `$fp`. A frame whose first word is `TERMINATE_R2R_STACK_WALK` terminates R2R stack walking.
+
 One step of R2R stack walking is:
 
 ```c
@@ -805,7 +806,7 @@ uint32_t NormalizeFrameBase(uint32_t sp)
     if (sp <= 0x1000)
         return 0;
 
-    // localloc R2R frame
+    // Current SP is not the R2R frame base; follow the saved FP.
     if (read32(sp) == 0)
         sp = read32(sp + TARGET_POINTER_SIZE);
 
