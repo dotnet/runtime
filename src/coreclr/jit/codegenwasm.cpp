@@ -105,15 +105,15 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
-    // SIMD16 (Vector128) parameters are lowered to i32 in the wasm signature, so any
-    // v128 operation performed on them produces an invalid module (e.g. a v128 op with
-    // an i32 operand). Bail such methods to the interpreter until SIMD16 parameters are
+    // SIMD (Vector2/3/4, Vector128) parameters are lowered to i32 in the wasm signature, so any
+    // vector operation performed on them produces an invalid module (e.g. a v128/f64 op with
+    // an i32 operand). Bail such methods to the interpreter until SIMD parameters are
     // properly supported in the wasm calling convention.
     for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
     {
-        if (m_compiler->lvaGetDesc(lclNum)->TypeGet() == TYP_SIMD16)
+        if (varTypeIsSIMD(m_compiler->lvaGetDesc(lclNum)->TypeGet()))
         {
-            NYI_WASM_SIMD("SIMD16 parameter");
+            NYI_WASM_SIMD("SIMD parameter");
         }
     }
 
@@ -291,6 +291,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         assert(segment.IsPassedInRegister());
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+        // Skip homing parameters that are dead at method entry (not live into the first block).
         if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             return;
@@ -2876,6 +2877,24 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             {
                 m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
                 sigInfoCall = &sigInfoLocal;
+                if (callRetType == TYP_REF && sigInfoCall->retType == CORINFO_TYPE_VOID &&
+                    sigInfoCall->callConv == CORINFO_CALLCONV_HASTHIS)
+                {
+                    // String ctors are special. The JIT recognizes them, and rewrites the call to call the function as
+                    // a static function which returns the string instead of calling them with the normal
+                    // allocation/initialization pattern. The signature of the static function is different from the
+                    // instance method, so we need to adjust the signature here to match what the WASM runtime expects.
+                    const unsigned       methodFlags = m_compiler->info.compCompHnd->getMethodAttribs(params.methHnd);
+                    CORINFO_CLASS_HANDLE stringClass = m_compiler->info.compCompHnd->getBuiltinClass(CLASSID_STRING);
+
+                    if ((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0 && (stringClass != NO_CLASS_HANDLE) &&
+                        (m_compiler->info.compCompHnd->getMethodClass(params.methHnd) == stringClass))
+                    {
+                        // Adjust sigInfoCall for string ctor case
+                        sigInfoCall->retType  = CORINFO_TYPE_CLASS;
+                        sigInfoCall->callConv = CORINFO_CALLCONV_DEFAULT;
+                    }
+                }
             }
         }
 

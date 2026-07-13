@@ -214,6 +214,14 @@
                                                    $(LibrariesNativeArtifactsPath)libbrotlicommon.a;
                                                    $(LibrariesNativeArtifactsPath)libbrotlidec.a;
                                                    $(LibrariesNativeArtifactsPath)libbrotlienc.a" />
+
+      <!-- Same situation on WASI with CoreCLR: System.IO.Compression.Native/CMakeLists.txt
+           installs libSystem.IO.Compression.Native.a and libz.a directly into the
+           CoreCLR sharedFramework directory for CLR_CMAKE_TARGET_WASI, where they are
+           picked up by RuntimeFiles. Exclude the libs.native copies to avoid duplicates. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
+                                          Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libz.a" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)*.dll;
@@ -295,7 +303,7 @@
         IsNative="true" />
     </ItemGroup>
 
-    <ItemGroup Label="Wasi" Condition="'$(TargetOS)' == 'wasi'">
+    <ItemGroup Label="Wasi" Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'Mono'">
       <LibrariesRuntimeFiles
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
@@ -316,6 +324,12 @@
         NativeSubDirectory="include\wasm"
         IsNative="true" />
     </ItemGroup>
+
+    <!-- WASI CoreCLR ships only the static runtime libraries (already
+         provided by RuntimeFiles from $(CoreCLRSharedFrameworkDir)) and
+         the libs.native static libs (already provided by the unconditional
+         glob above). corerun.wasm is not part of the runtime pack. -->
+
 
     <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The 'libs' subset must be built before building this project." />
   </Target>

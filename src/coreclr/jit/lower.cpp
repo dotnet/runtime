@@ -5689,8 +5689,17 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
 
+            bool retypeZeroToRegType = false;
 #ifdef FEATURE_SIMD
-            if (varTypeIsSIMD(lclRegType))
+            // A SIMD struct is zero-initialized from a properly-typed SIMD zero.
+            retypeZeroToRegType = varTypeIsSIMD(lclRegType);
+#endif // FEATURE_SIMD
+#ifdef TARGET_WASM
+            // A Wasm struct is zero-initialized from a properly-typed zero.
+            retypeZeroToRegType |= (lclRegType != src->TypeGet());
+#endif // TARGET_WASM
+
+            if (retypeZeroToRegType)
             {
                 GenTree* zeroCon = m_compiler->gtNewZeroConNode(lclRegType);
 
@@ -5700,7 +5709,6 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 src             = zeroCon;
                 lclStore->gtOp1 = src;
             }
-#endif // FEATURE_SIMD
 
             convertToStoreObj = false;
         }
@@ -10326,21 +10334,24 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 #if !defined(JIT32_GCENCODER)
     if (doCpObj && isNotHeap)
     {
-        // No write barriers are needed if the destination is known to be outside of the GC heap.
-        // If the layout contains a byref, then we know it must live on the stack.
-        doCpObj = false;
 #if !defined(TARGET_WASM)
+        // No write barriers are needed for a stack destination, but only take this shortcut when the
+        // copy is small enough to be unrolled into a single non-interruptible region. Otherwise it is
+        // lowered to CORINFO_HELP_MEMCPY (Memmove), a GC-safe point that could observe torn GC pointers
+        // in the partially-written, GC-reported destination; larger copies stay on the CpObj path.
         if (size <= unrollLimit)
         {
-            // If the size is small enough to unroll then we need to mark the block as non-interruptible
-            // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER, so
-            // on that target we keep doCpObj=true above and stay on the GC-aware CpObj path; the lowering
-            // heuristics in TryDecomposeBlockStoreAsIndirs then choose between per-slot decomposition and
-            // the bulk write-barrier helper.
+            doCpObj = false;
+
+            // Mark the block non-interruptible so it can be unrolled: the copy does not report the GC
+            // references held in its temporary register(s).
             blkNode->gtBlkOpGcUnsafe = true;
         }
-#endif
+#else  // TARGET_WASM
+       // WASM lowers this to a single `memory.copy` opcode (not a GC-safe point), so it is safe for
+       // any size.
+        doCpObj = false;
+#endif // TARGET_WASM
     }
 #endif // !JIT32_GCENCODER
 
@@ -10460,7 +10471,13 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
         return;
     }
 
-    if (blkNode->IsZeroingGcPointersOnHeap())
+    // Zeroing a GC-pointer struct must not use the CORINFO_HELP_MEMSET/MEMZERO helper: it is a
+    // GC-safe point that could observe a torn GC pointer in the partially-written, GC-reported
+    // destination. Use the atomic pointer-sized loop for both stack and heap destinations.
+    const bool isZeroingGcPointers =
+        blkNode->OperIs(GT_STORE_BLK) && src->IsIntegralConst(0) && blkNode->ContainsReferences();
+
+    if (isZeroingGcPointers)
     {
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
 #if FEATURE_HAS_ZERO_REG

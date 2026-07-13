@@ -1665,7 +1665,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 
     REGDISPLAY rd = {};
     T_CONTEXT context = {};
-#if (defined(HOST_WINDOWS) && defined(HOST_AMD64)) || defined(TARGET_ARM64)
+#ifndef UNIX_AMD64_ABI
     constexpr BOOL updateFloats = TRUE;
     context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
     RtlCaptureContext(&context);
