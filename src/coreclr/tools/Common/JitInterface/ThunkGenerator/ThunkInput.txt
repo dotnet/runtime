@@ -302,6 +302,7 @@ FUNCTIONS
     void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
+    uint32_t getAddressAlignment(void* address);
     bool isEnumerableAndEnumerator(CORINFO_CLASS_HANDLE cls);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);

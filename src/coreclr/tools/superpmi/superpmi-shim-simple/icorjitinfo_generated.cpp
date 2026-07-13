@@ -914,6 +914,12 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
     return original_ICorJitInfo->getWasmLowering(structHnd);
 }
 
+uint32_t interceptor_ICJI::getAddressAlignment(
+          void* address)
+{
+    return original_ICorJitInfo->getAddressAlignment(address);
+}
+
 bool interceptor_ICJI::isEnumerableAndEnumerator(
           CORINFO_CLASS_HANDLE cls)
 {

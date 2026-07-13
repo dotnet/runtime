@@ -59,6 +59,7 @@ public readonly struct DebugVarInfo
     public uint VarNumber { get; init; }
     public DebugVarLocKind Kind { get; init; }
     public bool IsByRef { get; init; }
+    public bool IsFloatingPoint { get; init; }
 
     /// <summary>Primary register number (Register, RegisterRegister, RegisterStack, StackRegister).</summary>
     public uint Register { get; init; }

@@ -360,7 +360,10 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
 
 #ifdef DEBUG
-    checkRMWRegisters(intrinEmbMask, targetReg);
+    if (isRMW)
+    {
+        checkRMWRegisters(intrinEmbMask, targetReg);
+    }
 #endif
 
     // Setup instruction options and handle special cases.

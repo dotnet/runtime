@@ -1154,7 +1154,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*      val,
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
-//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
+//    call structMightRepresentSIMDType to determine if this api needs to be called.
 //
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
@@ -1163,28 +1163,20 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
     var_types structType = TYP_STRUCT;
 
 #ifdef FEATURE_SIMD
-    const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
-
-    // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+    if (structMightRepresentSIMDType(structHnd))
     {
-        unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
-
-        if (structSizeMightRepresentSIMDType(originalSize))
+        unsigned int sizeBytes;
+        var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+        if (simdBaseType != TYP_UNDEF)
         {
-            unsigned int sizeBytes;
-            var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-            if (simdBaseType != TYP_UNDEF)
+            assert((sizeBytes == info.compCompHnd->getClassSize(structHnd)) || (sizeBytes == SIZE_UNKNOWN));
+            structType = getSIMDTypeForSize(sizeBytes);
+            if (pSimdBaseJitType != nullptr)
             {
-                assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
-                structType = getSIMDTypeForSize(sizeBytes);
-                if (pSimdBaseJitType != nullptr)
-                {
-                    *pSimdBaseJitType = simdBaseType;
-                }
-                // Also indicate that we use floating point registers.
-                compFloatingPointUsed = true;
+                *pSimdBaseJitType = simdBaseType;
             }
+            // Also indicate that we use floating point registers.
+            compFloatingPointUsed = true;
         }
     }
 #endif // FEATURE_SIMD
@@ -11766,7 +11758,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //------------------------------------------------------------------------
 // impWrapTopOfStackInAwait:
 //   Wrap the value on the top of the stack in
-//   AsyncHelpers.TransparentAwaitWithResult.
+//   AsyncHelpers.TransparentAwait.
 //
 // Returns:
 //   True if successful. False if the EE could not create the call (only during
@@ -11778,7 +11770,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //   mistyped; the original IL returns a Task or ValueTask, but the runtime
 //   async version expects to return the unwrapped result. This function
 //   accomplishes the unwrapping by inserting an async call to
-//   AsyncHelpers.TransparentAwaitWithResult around the value on the top of the
+//   AsyncHelpers.TransparentAwait around the value on the top of the
 //   stack.
 //
 bool Compiler::impWrapTopOfStackInAwait()
@@ -11813,14 +11805,9 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     assert(awaitSig.isAsyncCall());
 
-    var_types    callRetType = JITtype2varType(awaitSig.retType);
-    GenTreeCall* awaitCall   = gtNewCallNode(CT_USER_FUNC, awaitMethod, callRetType);
+    var_types callRetType = JITtype2varType(awaitSig.retType);
 
-    // The await-return call is synthesized here and never goes through impImportCall, so give it its
-    // Ready-to-Run entrypoint explicitly (as the other synthesized async calls do). Without this the call is
-    // not marked R2R-relative-indirect, so on arm64 fgMorphCall omits the indirection-cell (x11) argument the
-    // ReadyToRun DelayLoad helpers require, tripping a GetDataRva assert at runtime.
-    SetCallEntrypointForR2R(awaitCall, this, awaitMethod);
+    GenTreeCall* awaitCall = gtNewUserCallNode(awaitMethod, callRetType);
 
     CORINFO_CLASS_HANDLE taskTypeHnd;
     CorInfoType          taskType = strip(info.compCompHnd->getArgType(&awaitSig, awaitSig.args, &taskTypeHnd));
@@ -11925,7 +11912,7 @@ bool Compiler::impWrapTopOfStackInAwait()
 //------------------------------------------------------------------------
 // impFoldAwaitedTopOfStack:
 //   Fold a few patterns where introducing a call to
-//   AsyncHelpers.TransparentAwaitWithResult is unnecessary.
+//   AsyncHelpers.TransparentAwait is unnecessary.
 //
 // Returns:
 //   True if the top of stack was folded and the importer stack was updated
@@ -13937,24 +13924,23 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
-    unsigned ilArgCnt = 0;
+    pInlineInfo->argCnt = pInlineInfo->inlineCandidateInfo->methInfo.args.totalILArgs();
+    unsigned ilArgCnt   = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         InlArgInfo* argInfo;
-        switch (arg.GetWellKnownArg())
+        if (arg.IsUserArg())
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::AsyncContinuation:
-            case WellKnownArg::AsyncExecutionContext:
-            case WellKnownArg::AsyncSynchronizationContext:
-                // These do not appear in the table of inline arg info; do not include them
-                continue;
-            case WellKnownArg::InstParam:
-                pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
-                break;
-            default:
-                argInfo = &inlArgInfo[ilArgCnt++];
-                break;
+            assert(ilArgCnt < pInlineInfo->argCnt);
+            argInfo = &inlArgInfo[ilArgCnt++];
+        }
+        else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
+        {
+            pInlineInfo->inlInstParamArgInfo = argInfo = new (this, CMK_Inlining) InlArgInfo{};
+        }
+        else
+        {
+            continue;
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
@@ -13965,6 +13951,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             return;
         }
     }
+
+    assert(ilArgCnt == pInlineInfo->argCnt);
 
 #ifdef FEATURE_SIMD
     bool foundSIMDType = pInlineInfo->hasSIMDTypeArgLocalOrReturn;

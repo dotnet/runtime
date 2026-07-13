@@ -9,6 +9,15 @@
 
     <_originalTargetOS>$(RuntimeIdentifier.SubString(0, $(RuntimeIdentifier.LastIndexOf('-'))))</_originalTargetOS>
     <_originalTargetOS Condition="'$(_targetsNonPortableSdkRid)' == 'true'">$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_originalTargetOS>
+    <!--
+      A non-portable RID (e.g. 'centos.10-x64') yields a version-qualified OS token ('centos.10')
+      that is not a valid ILC target OS. This happens when the running SDK is portable, so the RID is
+      not the SDK's own RID handled above, yet publishing targets a non-portable RID. Map the
+      version-qualified token to the portable base OS the SDK reports (e.g. 'linux'), mirroring the
+      non-portable SDK RID handling above. The SDK still resolves the host/target packs by the full
+      RID; only the ILC target OS needs normalizing.
+    -->
+    <_originalTargetOS Condition="'$(_targetsNonPortableSdkRid)' != 'true' and $(_originalTargetOS.Contains('.'))">$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_originalTargetOS>
     <_originalTargetOS Condition="$(_originalTargetOS.Contains('.'))">$(_originalTargetOS.SubString(0, $(_originalTargetOS.IndexOf('.'))))</_originalTargetOS>
     <_originalTargetOS Condition="$(_originalTargetOS.StartsWith('win'))">win</_originalTargetOS>
 

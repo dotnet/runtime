@@ -1792,20 +1792,20 @@ enum CorInfoContinuationFlags
     // Otherwise the exact offset of the member is computed as
     //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
 
-    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 3,
+    CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT = 4,
     CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS = 2,
 
-    CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 5,
+    CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 6,
     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS = 2,
 
-    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 7,
+    CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 8,
     CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 3,
 
     // For JIT, the continuation stores space for every possible type of
     // async callee's result. We need to represent the offset to each of
     // these, so we allocate the rest of the bits for this.
-    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 10,
-    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 22,
+    CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 11,
+    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 21,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -3190,6 +3190,15 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    // Returns the guaranteed alignment, in bytes, of the data referenced by 'address'.
+    // 'address' is a relocation target such as a static, RVA, or frozen-data blob. The JIT
+    // uses this to decide whether it can emit an alignment-sensitive relocation against the
+    // target (e.g. the Arm64 LDST64 ':lo12:' page-offset fold, which requires the target to
+    // be 8-byte aligned).
+    virtual uint32_t getAddressAlignment(
+            void* address
+            ) = 0;
 
     // Return true if the given class implements both IEnumerable<T> and IEnumerator<T>
     // for some T. This is a candidate signal only; it does not imply GetEnumerator

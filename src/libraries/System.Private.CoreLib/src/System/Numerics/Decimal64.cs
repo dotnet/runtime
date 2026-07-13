@@ -27,6 +27,8 @@ namespace System.Numerics
         // which stores zero with the biased exponent rather than the minimum exponent.
         private const ulong ZeroValue = 0x31C0_0000_0000_0000;
         private const ulong NegativeZeroValue = 0xB1C0_0000_0000_0000;
+        // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
+        private const ulong OneValue = ZeroValue | 0x1;
         private const ulong QuietNaNValue = 0xFC00_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
@@ -166,7 +168,7 @@ namespace System.Numerics
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
             NumberFormatInfo.ValidateParseStyleDecimal(style);
-            return Number.TryParseDecimalIeee754<char, Decimal64, ulong>(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<char, Decimal64, ulong>(s, style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <summary>
@@ -180,13 +182,7 @@ namespace System.Numerics
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal64 result)
         {
             NumberFormatInfo.ValidateParseStyleDecimal(style);
-
-            if (s == null)
-            {
-                result = default;
-                return false;
-            }
-            return Number.TryParseDecimalIeee754<char, Decimal64, ulong>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimalIeee754<char, Decimal64, ulong>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         /// <inheritdoc cref="IComparable.CompareTo(object?)" />
@@ -257,6 +253,147 @@ namespace System.Numerics
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimalIeee754<Decimal64, ulong>(_value, format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <summary>Computes the unary plus of a value.</summary>
+        /// <param name="value">The value for which to compute the unary plus.</param>
+        /// <returns><paramref name="value" /> unchanged.</returns>
+        public static Decimal64 operator +(Decimal64 value) => value;
+
+        /// <summary>Computes the unary negation of a value.</summary>
+        /// <param name="value">The value for which to compute the unary negation.</param>
+        /// <returns>The unary negation of <paramref name="value" />.</returns>
+        public static Decimal64 operator -(Decimal64 value) => new Decimal64(value._value ^ SignMask);
+
+        /// <summary>Increments a value.</summary>
+        /// <param name="value">The value to increment.</param>
+        /// <returns>The result of incrementing <paramref name="value" /> by one.</returns>
+        public static Decimal64 operator ++(Decimal64 value)
+        {
+            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(value._value, OneValue));
+        }
+
+        /// <summary>Decrements a value.</summary>
+        /// <param name="value">The value to decrement.</param>
+        /// <returns>The result of decrementing <paramref name="value" /> by one.</returns>
+        public static Decimal64 operator --(Decimal64 value)
+        {
+            return new Decimal64(Number.SubtractDecimalIeee754<Decimal64, ulong>(value._value, OneValue));
+        }
+
+        /// <summary>Adds two values together to compute their sum.</summary>
+        /// <param name="left">The value to which <paramref name="right" /> is added.</param>
+        /// <param name="right">The value which is added to <paramref name="left" />.</param>
+        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal64 operator +(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.AddDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+        }
+
+        /// <summary>Subtracts two values to compute their difference.</summary>
+        /// <param name="left">The value from which <paramref name="right" /> is subtracted.</param>
+        /// <param name="right">The value which is subtracted from <paramref name="left" />.</param>
+        /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
+        public static Decimal64 operator -(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.SubtractDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+        }
+
+        /// <summary>Multiplies two values together to compute their product.</summary>
+        /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
+        /// <param name="right">The value which multiplies <paramref name="left" />.</param>
+        /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
+        public static Decimal64 operator *(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.MultiplyDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+        }
+
+        /// <summary>Divides two values together to compute their quotient.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        public static Decimal64 operator /(Decimal64 left, Decimal64 right)
+        {
+            return new Decimal64(Number.DivideDecimalIeee754<Decimal64, ulong>(left._value, right._value));
+        }
+
+        /// <summary>Compares two values to determine equality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator ==(Decimal64 left, Decimal64 right)
+        {
+            return Number.EqualsDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine inequality.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is not equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator !=(Decimal64 left, Decimal64 right)
+        {
+            return !(left == right);
+        }
+
+        /// <summary>Compares two values to determine which is less.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <(Decimal64 left, Decimal64 right)
+        {
+            return Number.LessThanDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine which is greater.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >(Decimal64 left, Decimal64 right)
+        {
+            return Number.GreaterThanDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine which is less or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is less than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator <=(Decimal64 left, Decimal64 right)
+        {
+            return Number.LessThanOrEqualDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        /// <summary>Compares two values to determine which is greater or equal.</summary>
+        /// <param name="left">The value to compare with <paramref name="right" />.</param>
+        /// <param name="right">The value to compare with <paramref name="left" />.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> is greater than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator >=(Decimal64 left, Decimal64 right)
+        {
+            return Number.GreaterThanOrEqualDecimalIeee754<Decimal64, ulong>(left._value, right._value);
+        }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Decimal64 result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimalIeee754<char, Decimal64, ulong>(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Decimal64 result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimalIeee754<char, Decimal64, ulong>(s, style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Decimal64 result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleDecimal(style);
+            return Number.TryParseDecimalIeee754<byte, Decimal64, ulong>(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Precision => Precision;
