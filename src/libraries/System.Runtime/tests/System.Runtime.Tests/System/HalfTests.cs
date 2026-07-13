@@ -26,6 +26,49 @@ namespace System.Tests
         // use CrossPlatformMachineEpsilon * 10.
         private static Half CrossPlatformMachineEpsilon => (Half)3.90625e-03f;
 
+        public static IEnumerable<object[]> ExplicitConversion_FromDecimal_TestData()
+        {
+            // The conversion must be correctly rounded. Several of these values round differently when the
+            // conversion goes through float first (double rounding), since float's 24-bit significand only
+            // just meets the 2 * 11 + 2 bound needed for the second rounding to Half to be innocuous.
+            yield return new object[] { 29.101563197521766818810399014m, (ushort)0x4F47 };
+            yield return new object[] { 31.61718659002636828475762054m, (ushort)0x4FE7 };
+            yield return new object[] { -0.2764892618124898818101803106m, (ushort)0xB46D };
+            yield return new object[] { 2174.9999823571306366729268181m, (ushort)0x683F };
+            yield return new object[] { -11.800781577718180009007584962m, (ushort)0xC9E7 };
+            yield return new object[] { -19752.000968250648361227086248m, (ushort)0xF4D3 };
+
+            // Subnormal, subnormal/normal boundary, and overflow.
+            yield return new object[] { 0.00003m, (ushort)0x01F7 };
+            yield return new object[] { 0.00003051758m, (ushort)0x0200 };
+            yield return new object[] { 100000m, (ushort)0x7C00 };
+            yield return new object[] { -100000m, (ushort)0xFC00 };
+        }
+
+        [Theory]
+        [MemberData(nameof(ExplicitConversion_FromDecimal_TestData))]
+        public static void ExplicitConversion_FromDecimal(decimal value, ushort expectedBits)
+        {
+            Half actual = (Half)value;
+            Assert.Equal(expectedBits, BitConverter.HalfToUInt16Bits(actual));
+        }
+
+        [Theory]
+        [InlineData((ushort)0x0000)] // +zero
+        [InlineData((ushort)0x3C00)] // 1
+        [InlineData((ushort)0x3555)] // ~0.333
+        [InlineData((ushort)0x0001)] // Epsilon (min positive subnormal)
+        [InlineData((ushort)0x03FF)] // max subnormal
+        [InlineData((ushort)0x0400)] // min normal
+        [InlineData((ushort)0x7BFF)] // MaxValue
+        [InlineData((ushort)0xC900)] // -10
+        public static void ExplicitConversion_ToDecimal_RoundTrips(ushort bits)
+        {
+            // Every finite Half value is exactly representable as a decimal, so Half -> decimal -> Half is lossless.
+            Half value = BitConverter.UInt16BitsToHalf(bits);
+            Assert.Equal(value, (Half)(decimal)value);
+        }
+
         [Fact]
         public static void Epsilon()
         {
