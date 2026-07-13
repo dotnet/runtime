@@ -3,7 +3,7 @@
 #
 # The reliable signal is the existence of release branches named
 #   release/<major>.<minor>-preview<N>   (and later -rc<N> / GA release/<major>.<minor>)
-# Once release/<M>.<m>-preview<N> exists, that preview is branched and locked, so a
+# Once release/<M>.<m>-preview<N> exists, that preview has been branched off, so a
 # change merged to main lands in the *next* milestone -- following the standard .NET
 # cadence of $PreviewCount previews, then $RcCount RCs, then GA (so Preview 7 rolls
 # over to RC 1, and RC 2 to GA). Exceptions:
@@ -245,6 +245,65 @@ function Get-EarliestContainingTag {
     return $earliest
 }
 
+# Has major.minor reached GA? True when the exact GA tag vN.M.0 exists (ignoring
+# prerelease tags like vN.M.0-preview/-rc). Used to tell a *pre-GA* release/N.M branch
+# -- which is cut at the RC1 fork, months before GA, and parsed as a GA milestone by
+# name -- apart from a shipped GA/servicing branch.
+function Test-GATagExists {
+    param([string]$repo, [int]$major, [int]$minor)
+
+    $refs = @(gh api "repos/$repo/git/matching-refs/tags/v$major.$minor.0" --jq '.[].ref' 2>$null)
+    if ($LASTEXITCODE -ne 0) { return $false }
+    foreach ($r in $refs) {
+        if (($r -replace '^refs/tags/', '') -eq "v$major.$minor.0") { return $true }
+    }
+    return $false
+}
+
+# Refine a milestone parsed from a bare `release/N.M` branch to the stage it is heading
+# toward. A bare release/N.M branch is cut around the RC1 fork -- months before GA --
+# yet is parsed as a GA milestone by name. A separate `release/N.M-rc<K>` branch exists
+# for each RC that has been taken; the bare branch keeps stabilizing toward the *next* stage.
+# So the highest rc branch number present indicates how far along the bare branch is:
+# if the product has not GA'd (no vN.M.0 tag), map the highest existing rc branch number K to the bare
+# branch's stage:
+#   no rc branch yet -> RC 1 (just forked); rc<K> exists -> RC (K+1); the final RC
+#   (rcCount) branch exists -> heading to GA. Returns the milestone unchanged when it
+#   already GA'd, isn't a GA-kind milestone, or the rc lookup fails.
+function Resolve-ReleaseBranchStage {
+    param([string]$repo, [pscustomobject]$milestone, [int]$rcCount = 2)
+
+    if (-not $milestone -or $milestone.Kind -ne 'ga') { return $milestone }
+    if (Test-GATagExists -repo $repo -major $milestone.Major -minor $milestone.Minor) { return $milestone }
+
+    $rcRefs = @(gh api "repos/$repo/git/matching-refs/heads/release/$($milestone.Major).$($milestone.Minor)-rc" --jq '.[].ref' 2>$null)
+    if ($LASTEXITCODE -ne 0) { return $milestone }
+
+    $highestRc = @(
+        $rcRefs |
+        ForEach-Object { ConvertFrom-ReleaseBranch ($_ -replace '^refs/heads/', '') } |
+        Where-Object { $_ -and $_.Kind -eq 'rc' -and $_.Major -eq $milestone.Major -and $_.Minor -eq $milestone.Minor } |
+        Sort-Object Rank -Descending |
+        Select-Object -First 1
+    )
+
+    $k = if ($highestRc) { $highestRc.Number } else { 0 }
+    if ($k -ge $rcCount) {
+        # The final RC branch already exists -> the bare branch heads to GA (unchanged).
+        return $milestone
+    }
+
+    $next = $k + 1
+    return [pscustomobject]@{
+        Major  = $milestone.Major
+        Minor  = $milestone.Minor
+        Kind   = 'rc'
+        Number = $next
+        Rank   = 2000 + $next
+        Branch = $milestone.Branch
+    }
+}
+
 # Read MajorVersion/MinorVersion from eng/Versions.props at a specific ref.
 # This is the authoritative source for the in-development major.minor on main.
 function Get-DevMajorMinor {
@@ -363,10 +422,12 @@ try {
     }
 
     # Step 2: If the PR merged directly into a release branch, the milestone is that
-    # branch's milestone -- no further estimation needed.
+    # branch's milestone -- no further estimation needed. Refine a bare pre-GA
+    # release/N.M to its current RC stage (see Resolve-ReleaseBranchStage).
     $baseMilestone = if ($BaseRef -match '^release/') { ConvertFrom-ReleaseBranch $BaseRef } else { $null }
 
     if ($baseMilestone) {
+        $baseMilestone = Resolve-ReleaseBranchStage -repo $SourceRepo -milestone $baseMilestone -rcCount $RcCount
         $estimated = Format-Milestone $baseMilestone.Major $baseMilestone.Minor $baseMilestone.Kind $baseMilestone.Number
         @{
             EstimatedVersion = $estimated
@@ -472,7 +533,17 @@ try {
         Select-Object -First 1
 
     if ($tentativeBackport) {
-        $bm = $tentativeBackport.Milestone
+        # RC-precision refinement: the target may be a bare pre-GA release/N.M branch
+        # (GA milestone by name but really heading to an RC stage). Resolve it to the
+        # stage it is heading toward. This only refines the reported backport version;
+        # the main-PR next-milestone prediction below still treats the bare branch as GA
+        # so it can roll over to the next major.
+        $origMilestone = $tentativeBackport.Milestone
+        $bm = Resolve-ReleaseBranchStage -repo $SourceRepo -milestone $origMilestone -rcCount $RcCount
+        $refinedNote = if ($bm.Kind -ne $origMilestone.Kind -or $bm.Number -ne $origMilestone.Number) {
+            " '$($tentativeBackport.TargetBranch)' is a pre-GA branch heading to the $(Format-Milestone $bm.Major $bm.Minor $bm.Kind $bm.Number) stage."
+        } else { "" }
+
         $estimated = Format-Milestone $bm.Major $bm.Minor $bm.Kind $bm.Number
         $stateNote = if ($tentativeBackport.State -eq 'MERGED') {
             "merged into '$($tentativeBackport.TargetBranch)' (may already ship there)"
@@ -488,7 +559,7 @@ try {
         @{
             EstimatedVersion = $estimated
             Tentative        = $true
-            DetectionMethod  = "Potential backport PR #$($tentativeBackport.Number) $stateNote; version is tentative -- confirm the PR is a genuine backport of this change (title/description/diff). If it is NOT, use FallbackVersion instead."
+            DetectionMethod  = "Potential backport PR #$($tentativeBackport.Number) $stateNote;$refinedNote version is tentative -- confirm the PR is a genuine backport of this change (title/description/diff). If it is NOT, use FallbackVersion instead."
             FallbackVersion  = $fallback.Version
             HighestBranch    = $fallback.HighestBranch
             Backports        = $backportInfo
