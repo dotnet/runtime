@@ -122,15 +122,12 @@ namespace System.Runtime.Serialization.Json
             try
             {
                 SupportedEncoding expectedEnc = GetSupportedEncoding(encoding);
-                SupportedEncoding dataEnc;
-                if (count < 2)
-                {
-                    dataEnc = SupportedEncoding.UTF8;
-                }
-                else
-                {
-                    dataEnc = ReadEncoding(buffer[offset], buffer[offset + 1]);
-                }
+                SupportedEncoding dataEnc = DetectEncoding(buffer.AsSpan(offset, count), out int bomLength);
+
+                // Skip past any byte order mark; it is not part of the document.
+                offset += bomLength;
+                count -= bomLength;
+
                 if ((expectedEnc != SupportedEncoding.None) && (expectedEnc != dataEnc))
                 {
                     ThrowExpectedEncodingMismatch(expectedEnc, dataEnc);
@@ -320,6 +317,42 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        // Determines the encoding of a JSON document from its leading bytes. A leading byte order
+        // mark, when present, authoritatively selects the encoding and its length is reported via
+        // bomLength so callers can skip past it. When no BOM is present, the encoding is inferred
+        // from the position of the zero byte in the leading (always ASCII) JSON character. Both the
+        // stream and the buffer code paths funnel through this single method so the detection logic
+        // lives in one place.
+        private static SupportedEncoding DetectEncoding(ReadOnlySpan<byte> data, out int bomLength)
+        {
+            bomLength = 0;
+
+            if (data.Length < 2)
+            {
+                // A single-byte (or empty) JSON document is necessarily UTF-8.
+                return SupportedEncoding.UTF8;
+            }
+
+            if (data[0] == 0xFF && data[1] == 0xFE)
+            {
+                bomLength = 2;
+                return SupportedEncoding.UTF16LE;
+            }
+            if (data[0] == 0xFE && data[1] == 0xFF)
+            {
+                bomLength = 2;
+                return SupportedEncoding.UTF16BE;
+            }
+            if (data.Length >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF)
+            {
+                bomLength = 3;
+                return SupportedEncoding.UTF8;
+            }
+
+            // No byte order mark: infer the encoding from the leading ASCII character.
+            return ReadEncoding(data[0], data[1]);
+        }
+
         private static SupportedEncoding ReadEncoding(byte b1, byte b2)
         {
             if (b1 == 0x00 && b2 != 0x00)
@@ -473,31 +506,19 @@ namespace System.Runtime.Serialization.Json
 
         private SupportedEncoding ReadEncoding()
         {
-            int b1 = _stream.ReadByte();
-            int b2 = _stream.ReadByte();
-
             EnsureByteBuffer();
 
-            SupportedEncoding e;
+            // Read up to the first three bytes so a byte order mark (at most three bytes long) can
+            // be detected. Fewer bytes are read only when the stream ends early.
+            Span<byte> leading = stackalloc byte[3];
+            int read = _stream.ReadAtLeast(leading, leading.Length, throwOnEndOfStream: false);
 
-            if (b1 == -1)
-            {
-                e = SupportedEncoding.UTF8;
-                _byteCount = 0;
-            }
-            else if (b2 == -1)
-            {
-                e = SupportedEncoding.UTF8;
-                _bytes[0] = (byte)b1;
-                _byteCount = 1;
-            }
-            else
-            {
-                e = ReadEncoding((byte)b1, (byte)b2);
-                _bytes[0] = (byte)b1;
-                _bytes[1] = (byte)b2;
-                _byteCount = 2;
-            }
+            SupportedEncoding e = DetectEncoding(leading.Slice(0, read), out int bomLength);
+
+            // Preserve any bytes that follow the byte order mark; they belong to the document.
+            int preserve = read - bomLength;
+            leading.Slice(bomLength, preserve).CopyTo(_bytes);
+            _byteCount = preserve;
 
             return e;
         }
