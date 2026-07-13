@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -779,6 +780,133 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             File.WriteAllText(Path.Combine(rootDir, "appsettings.json"), "{}");
 
             await changed;
+        }
+
+        [Theory]
+        [InlineData(true)]  // Win32Exception -> matched on NativeErrorCode
+        [InlineData(false)] // IOException -> matched on HResult
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_SameErrorRecurs_SecondOccurrenceIsSuppressed(bool win32)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/121475:
+            // On a file system that can't be watched (e.g. a WSL path accessed from Windows), enabling
+            // the FileSystemWatcher keeps raising the same Error, which cancels tokens, which re-creates
+            // tokens and re-enables the watcher, recursing until the stack overflows. The first
+            // occurrence of an error is reported, but an identical recurrence (same type and error code)
+            // with no change delivered in between is suppressed so the loop can't form.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            // First error is reported: it cancels the token created before it.
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 5)));
+            await WhenChanged(first);
+
+            // The same error (same code) recurs: it must NOT cancel the new token.
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 5)));
+            Assert.False(await ChangedWithin(second, WaitTimeForTokenToFire),
+                "A repeated identical error must not cancel tokens.");
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_DifferentErrorCode_IsReported(bool win32)
+        {
+            // Distinct errors (same type, different error code) are not the same persistent failure, so
+            // each is reported.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 5)));
+            await WhenChanged(first);
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 6)));
+            await WhenChanged(second);
+        }
+
+        [Theory]
+        [InlineData(true)]  // InternalBufferOverflowException
+        [InlineData(false)] // DirectoryNotFoundException
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_RecoverableError_IsAlwaysReported(bool bufferOverflow)
+        {
+            // InternalBufferOverflowException (events were dropped, rescan needed) and
+            // DirectoryNotFoundException (the watched directory was deleted/moved) mean the watcher is
+            // still functioning or a real change happened, so every occurrence must be reported even when
+            // it repeats identically.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            Func<Exception> createError = bufferOverflow
+                ? () => new InternalBufferOverflowException()
+                : () => new DirectoryNotFoundException();
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(createError()));
+            await WhenChanged(first);
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(createError()));
+            await WhenChanged(second);
+        }
+
+        private static Exception MakeError(bool win32, int code)
+            => win32 ? new Win32Exception(code) : new IOException("watcher error", code);
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_SameError_AfterDeliveredChange_IsReportedAgain()
+        {
+            // A change delivered between two identical errors proves the watcher works, so the second
+            // error starts over and is reported rather than suppressed as a persistent recurrence.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await WhenChanged(first);
+
+            // A delivered change resets the remembered error.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "unrelated.txt"));
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await WhenChanged(second);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_NullException_IsAlwaysReported()
+        {
+            // An Error with no exception carries no identity to de-duplicate, so every occurrence is
+            // reported rather than suppressed.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(null!));
+            await WhenChanged(first);
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(null!));
+            await WhenChanged(second);
+        }
+
+        private static async Task<bool> ChangedWithin(IChangeToken token, int milliseconds)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using IDisposable registration = token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            return await Task.WhenAny(tcs.Task, Task.Delay(milliseconds)) == tcs.Task;
         }
 
         private class TestPollingChangeToken : IPollingChangeToken
