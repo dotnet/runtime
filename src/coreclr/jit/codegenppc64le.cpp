@@ -959,53 +959,77 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                        getRegName(loReg), varTypeName(hfaType), hfaSlots);
             }
             
-            while (remainingSize >= TARGET_POINTER_SIZE)
+            // For HFA structs on stack, process field by field (floats are 4 bytes, doubles are 8 bytes)
+            // This is different from register passing where each field consumes 8 bytes (GPR slot)
+            if (isHfa)
             {
-                var_types type = layout->GetGCPtrType(nextIndex);
-                instruction loadIns = INS_ld;
-                instruction storeIns = INS_std;
-                emitAttr attr = emitTypeSize(type);
+                unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+                instruction loadIns = (hfaType == TYP_FLOAT) ? INS_lfs : INS_lfd;
+                instruction storeIns = (hfaType == TYP_FLOAT) ? INS_stfs : INS_stfd;
+                emitAttr attr = (hfaType == TYP_FLOAT) ? EA_4BYTE : EA_8BYTE;
                 
-                // Override for HFA structs - use float instructions
-                if (isHfa)
+                while (remainingSize >= fieldSize)
                 {
-                    if (hfaType == TYP_FLOAT)
+                    if (srcLclNode != nullptr)
                     {
-                        loadIns = INS_lfs;
-                        storeIns = INS_stfs;
-                        attr = EA_4BYTE;
+                        // Load from our local source
+                        emit->emitIns_R_S(loadIns, attr, loReg, srcLclNode->GetLclNum(),
+                                          lclOffset + structOffset);
                     }
-                    else // TYP_DOUBLE
+                    else
                     {
-                        loadIns = INS_lfd;
-                        storeIns = INS_stfd;
-                        attr = EA_8BYTE;
+                        // check for case of destroying the addrRegister while we still need it
+                        assert(loReg != addrReg || remainingSize == fieldSize);
+
+                        // Load from our address expression source
+                        emit->emitIns_R_R_I(loadIns, attr, loReg, addrReg, structOffset);
                     }
-                }
 
-                if (srcLclNode != nullptr)
+                    // Emit store instruction to store the field into the outgoing argument area
+                    // On stack, HFA fields are packed at their natural size (4 bytes for float, 8 for double)
+                    emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
+                    argOffsetOut += fieldSize;  // Advance by actual field size on stack
+                    assert(argOffsetOut <= argOffsetMax);
+
+                    remainingSize -= fieldSize;
+                    structOffset += fieldSize;
+                    nextIndex++;
+                }
+            }
+            else
+            {
+                // Non-HFA structs: process in 8-byte chunks
+                while (remainingSize >= TARGET_POINTER_SIZE)
                 {
-                    // Load from our local source
-                    emit->emitIns_R_S(loadIns, attr, loReg, srcLclNode->GetLclNum(),
-                                      lclOffset + structOffset);
+                    var_types type = layout->GetGCPtrType(nextIndex);
+                    instruction loadIns = INS_ld;
+                    instruction storeIns = INS_std;
+                    emitAttr attr = emitTypeSize(type);
+
+                    if (srcLclNode != nullptr)
+                    {
+                        // Load from our local source
+                        emit->emitIns_R_S(loadIns, attr, loReg, srcLclNode->GetLclNum(),
+                                          lclOffset + structOffset);
+                    }
+                    else
+                    {
+                        // check for case of destroying the addrRegister while we still need it
+                        assert(loReg != addrReg || remainingSize == TARGET_POINTER_SIZE);
+
+                        // Load from our address expression source
+                        emit->emitIns_R_R_I(loadIns, attr, loReg, addrReg, structOffset);
+                    }
+
+                    // Emit store instruction to store the register into the outgoing argument area
+                    emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
+                    argOffsetOut += TARGET_POINTER_SIZE;  // We stored 8-bytes of the struct
+                    assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
+
+                    remainingSize -= TARGET_POINTER_SIZE; // We loaded 8-bytes of the struct
+                    structOffset += TARGET_POINTER_SIZE;
+                    nextIndex++;
                 }
-                else
-                {
-                    // check for case of destroying the addrRegister while we still need it
-                    assert(loReg != addrReg || remainingSize == TARGET_POINTER_SIZE);
-
-                    // Load from our address expression source
-                    emit->emitIns_R_R_I(loadIns, attr, loReg, addrReg, structOffset);
-                }
-
-                // Emit store instruction to store the register into the outgoing argument area
-                emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
-                argOffsetOut += TARGET_POINTER_SIZE;  // We stored 8-bytes of the struct
-                assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
-
-                remainingSize -= TARGET_POINTER_SIZE; // We loaded 8-bytes of the struct
-                structOffset += TARGET_POINTER_SIZE;
-                nextIndex++;
             }
 
             // Handle any remaining bytes (less than 8 bytes)
