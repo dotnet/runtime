@@ -423,11 +423,7 @@ namespace System.Numerics
         /// <summary>Determines if a value is finite.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is finite; otherwise, <c>false</c>.</returns>
-        public static bool IsFinite(Decimal128 value)
-        {
-            ulong comb = value._upper & NaNMaskUpper;
-            return (comb != NaNMaskUpper) && (comb != InfinityMaskUpper);
-        }
+        public static bool IsFinite(Decimal128 value) => (value._upper & InfinityMaskUpper) != InfinityMaskUpper;
 
         /// <summary>Determines if a value is infinite.</summary>
         /// <param name="value">The value to be checked.</param>
