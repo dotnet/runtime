@@ -17,7 +17,7 @@ namespace System.Net.Http
     [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class SocketsHttpConnectionEvictionContext
     {
-        private readonly long _creationTickCount;
+        private readonly long _creationTickCount; // milliseconds from Environment.TickCount64, not TimeSpan ticks
 
         internal SocketsHttpConnectionEvictionContext(
             DnsEndPoint dnsEndPoint,

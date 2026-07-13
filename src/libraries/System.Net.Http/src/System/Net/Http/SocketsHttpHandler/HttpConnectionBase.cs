@@ -27,7 +27,7 @@ namespace System.Net.Http
         // avoid decrementing the counter once it's closed in case telemetry was enabled in between.
         private bool _httpTelemetryMarkedConnectionAsOpened;
 
-        private readonly long _creationTickCount = Environment.TickCount64; // milliseconds from Environment.TickCount64, not TimeSpan ticks
+        private readonly long _creationTickCount = Environment.TickCount64;
         private long? _idleSinceTickCount;
 
         /// <summary>
