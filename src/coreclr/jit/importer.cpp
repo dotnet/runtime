@@ -1154,7 +1154,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*      val,
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
-//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
+//    call structMightRepresentSIMDType to determine if this api needs to be called.
 //
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
@@ -1163,28 +1163,20 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
     var_types structType = TYP_STRUCT;
 
 #ifdef FEATURE_SIMD
-    const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
-
-    // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+    if (structMightRepresentSIMDType(structHnd))
     {
-        unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
-
-        if (structSizeMightRepresentSIMDType(originalSize))
+        unsigned int sizeBytes;
+        var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+        if (simdBaseType != TYP_UNDEF)
         {
-            unsigned int sizeBytes;
-            var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-            if (simdBaseType != TYP_UNDEF)
+            assert((sizeBytes == info.compCompHnd->getClassSize(structHnd)) || (sizeBytes == SIZE_UNKNOWN));
+            structType = getSIMDTypeForSize(sizeBytes);
+            if (pSimdBaseJitType != nullptr)
             {
-                assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
-                structType = getSIMDTypeForSize(sizeBytes);
-                if (pSimdBaseJitType != nullptr)
-                {
-                    *pSimdBaseJitType = simdBaseType;
-                }
-                // Also indicate that we use floating point registers.
-                compFloatingPointUsed = true;
+                *pSimdBaseJitType = simdBaseType;
             }
+            // Also indicate that we use floating point registers.
+            compFloatingPointUsed = true;
         }
     }
 #endif // FEATURE_SIMD
