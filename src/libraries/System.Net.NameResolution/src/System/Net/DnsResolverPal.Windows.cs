@@ -733,7 +733,7 @@ namespace System.Net
             buffer.Clear();
 
             ref Interop.Dnsapi.DNS_ADDR_ARRAY arr = ref MemoryMarshal.AsRef<Interop.Dnsapi.DNS_ADDR_ARRAY>(buffer);
-            arr.MaxCount = (uint)count;
+            arr.MaxCount = (uint)totalSize;
             arr.AddrCount = (uint)count;
             arr.Family = (ushort)(family == AddressFamily.InterNetwork ? Interop.Dnsapi.AF_INET : Interop.Dnsapi.AF_INET6);
 
