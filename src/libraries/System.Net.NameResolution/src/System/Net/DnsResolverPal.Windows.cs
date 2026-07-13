@@ -357,11 +357,15 @@ namespace System.Net
         // queried name, using case-insensitive comparison and normalizing trailing dots.
         // Used to filter ADDITIONAL-section records so that glue records for other owner names
         // are not mistakenly returned as answers.
+        // When pName is null, Windows DnsQueryEx did not allocate a separate name string for this
+        // record; this happens for ADDITIONAL-section records whose owner name is identical to the
+        // query name (the caller already has the name, so no allocation is made). Treat null as a
+        // match.
         private static unsafe bool OwnerNameMatchesQuery(char* pName, string queryName)
         {
             if (pName == null)
             {
-                return false;
+                return true;
             }
 
             ReadOnlySpan<char> owner = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pName).TrimEnd('.');
