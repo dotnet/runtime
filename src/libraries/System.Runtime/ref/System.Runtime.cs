@@ -11421,6 +11421,7 @@ namespace System.Numerics
     public readonly partial struct Decimal128 : System.IComparable, System.IComparable<System.Numerics.Decimal128>, System.IEquatable<System.Numerics.Decimal128>, System.IParsable<System.Numerics.Decimal128>, System.ISpanParsable<System.Numerics.Decimal128>, System.Numerics.IMinMaxValue<System.Numerics.Decimal128>
     {
         private readonly int _dummyPrimitive;
+        public static System.Numerics.Decimal128 E { get { throw null; } }
         public static System.Numerics.Decimal128 Epsilon { get { throw null; } }
         public static System.Numerics.Decimal128 MaxValue { get { throw null; } }
         public static System.Numerics.Decimal128 MinValue { get { throw null; } }
@@ -11429,7 +11430,9 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 NegativeOne { get { throw null; } }
         public static System.Numerics.Decimal128 NegativeZero { get { throw null; } }
         public static System.Numerics.Decimal128 One { get { throw null; } }
+        public static System.Numerics.Decimal128 Pi { get { throw null; } }
         public static System.Numerics.Decimal128 PositiveInfinity { get { throw null; } }
+        public static System.Numerics.Decimal128 Tau { get { throw null; } }
         public static System.Numerics.Decimal128 Zero { get { throw null; } }
         public static System.Numerics.Decimal128 Abs(System.Numerics.Decimal128 value) { throw null; }
         public static System.Numerics.Decimal128 Clamp(System.Numerics.Decimal128 value, System.Numerics.Decimal128 min, System.Numerics.Decimal128 max) { throw null; }
@@ -11503,6 +11506,7 @@ namespace System.Numerics
     public readonly partial struct Decimal32 : System.IComparable, System.IComparable<System.Numerics.Decimal32>, System.IEquatable<System.Numerics.Decimal32>, System.IParsable<System.Numerics.Decimal32>, System.ISpanParsable<System.Numerics.Decimal32>, System.Numerics.IMinMaxValue<System.Numerics.Decimal32>
     {
         private readonly int _dummyPrimitive;
+        public static System.Numerics.Decimal32 E { get { throw null; } }
         public static System.Numerics.Decimal32 Epsilon { get { throw null; } }
         public static System.Numerics.Decimal32 MaxValue { get { throw null; } }
         public static System.Numerics.Decimal32 MinValue { get { throw null; } }
@@ -11511,7 +11515,9 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 NegativeOne { get { throw null; } }
         public static System.Numerics.Decimal32 NegativeZero { get { throw null; } }
         public static System.Numerics.Decimal32 One { get { throw null; } }
+        public static System.Numerics.Decimal32 Pi { get { throw null; } }
         public static System.Numerics.Decimal32 PositiveInfinity { get { throw null; } }
+        public static System.Numerics.Decimal32 Tau { get { throw null; } }
         public static System.Numerics.Decimal32 Zero { get { throw null; } }
         public static System.Numerics.Decimal32 Abs(System.Numerics.Decimal32 value) { throw null; }
         public static System.Numerics.Decimal32 Clamp(System.Numerics.Decimal32 value, System.Numerics.Decimal32 min, System.Numerics.Decimal32 max) { throw null; }
@@ -11585,6 +11591,7 @@ namespace System.Numerics
     public readonly partial struct Decimal64 : System.IComparable, System.IComparable<System.Numerics.Decimal64>, System.IEquatable<System.Numerics.Decimal64>, System.IParsable<System.Numerics.Decimal64>, System.ISpanParsable<System.Numerics.Decimal64>, System.Numerics.IMinMaxValue<System.Numerics.Decimal64>
     {
         private readonly int _dummyPrimitive;
+        public static System.Numerics.Decimal64 E { get { throw null; } }
         public static System.Numerics.Decimal64 Epsilon { get { throw null; } }
         public static System.Numerics.Decimal64 MaxValue { get { throw null; } }
         public static System.Numerics.Decimal64 MinValue { get { throw null; } }
@@ -11593,7 +11600,9 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 NegativeOne { get { throw null; } }
         public static System.Numerics.Decimal64 NegativeZero { get { throw null; } }
         public static System.Numerics.Decimal64 One { get { throw null; } }
+        public static System.Numerics.Decimal64 Pi { get { throw null; } }
         public static System.Numerics.Decimal64 PositiveInfinity { get { throw null; } }
+        public static System.Numerics.Decimal64 Tau { get { throw null; } }
         public static System.Numerics.Decimal64 Zero { get { throw null; } }
         public static System.Numerics.Decimal64 Abs(System.Numerics.Decimal64 value) { throw null; }
         public static System.Numerics.Decimal64 Clamp(System.Numerics.Decimal64 value, System.Numerics.Decimal64 min, System.Numerics.Decimal64 max) { throw null; }

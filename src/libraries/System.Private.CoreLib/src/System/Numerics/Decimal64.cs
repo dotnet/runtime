@@ -30,6 +30,10 @@ namespace System.Numerics
         // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
         private const ulong OneValue = ZeroValue | 0x1;
         private const ulong NegativeOneValue = NegativeZeroValue | 0x1;
+        // Mathematical constants correctly rounded to the format's precision (16 significant digits).
+        private const ulong EValue = 0x2FE9_A843_4EC8_E225;   // +2.718281828459045
+        private const ulong PiValue = 0x2FEB_2943_0A25_6D21;  // +3.141592653589793
+        private const ulong TauValue = 0x2FF6_5286_144A_DA42; // +6.283185307179586
         private const ulong QuietNaNValue = 0xFC00_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
@@ -402,6 +406,15 @@ namespace System.Numerics
 
         /// <summary>Gets the value <c>-1</c>.</summary>
         public static Decimal64 NegativeOne => new Decimal64(NegativeOneValue);
+
+        /// <summary>Gets the mathematical constant <c>e</c>.</summary>
+        public static Decimal64 E => new Decimal64(EValue);
+
+        /// <summary>Gets the mathematical constant <c>pi</c>.</summary>
+        public static Decimal64 Pi => new Decimal64(PiValue);
+
+        /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
+        public static Decimal64 Tau => new Decimal64(TauValue);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

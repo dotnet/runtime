@@ -37,6 +37,10 @@ namespace System.Numerics
         // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
         private const uint OneValue = ZeroValue | 0x1;
         private const uint NegativeOneValue = NegativeZeroValue | 0x1;
+        // Mathematical constants correctly rounded to the format's precision (7 significant digits).
+        private const uint EValue = 0x2FA9_7A4A;   // +2.718282
+        private const uint PiValue = 0x2FAF_EFD9;  // +3.141593
+        private const uint TauValue = 0x2FDF_DFB1; // +6.283185
         private const uint QuietNaNValue = 0xFC00_0000;
         private const uint G0G1Mask = 0x6000_0000;
         private const uint SignMask = 0x8000_0000;
@@ -401,6 +405,15 @@ namespace System.Numerics
 
         /// <summary>Gets the value <c>-1</c>.</summary>
         public static Decimal32 NegativeOne => new Decimal32(NegativeOneValue);
+
+        /// <summary>Gets the mathematical constant <c>e</c>.</summary>
+        public static Decimal32 E => new Decimal32(EValue);
+
+        /// <summary>Gets the mathematical constant <c>pi</c>.</summary>
+        public static Decimal32 Pi => new Decimal32(PiValue);
+
+        /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
+        public static Decimal32 Tau => new Decimal32(TauValue);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

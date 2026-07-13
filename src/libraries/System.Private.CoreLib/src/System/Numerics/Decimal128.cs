@@ -36,6 +36,10 @@ namespace System.Numerics
         // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
         private static UInt128 OneValue => new UInt128(0x3040_0000_0000_0000, 1);
         private static UInt128 NegativeOneValue => new UInt128(0xB040_0000_0000_0000, 1);
+        // Mathematical constants correctly rounded to the format's precision (34 significant digits).
+        private static UInt128 EValue => new UInt128(0x2FFE_8605_8A4B_F4DE, 0x4E90_6ACC_B26A_BB56);   // +2.718281828459045235360287471352662
+        private static UInt128 PiValue => new UInt128(0x2FFE_9AE4_7957_96A7, 0xBABE_5564_E6F3_9F8F);  // +3.141592653589793238462643383279503
+        private static UInt128 TauValue => new UInt128(0x2FFF_35C8_F2AF_2D4F, 0x757C_AAC9_CDE7_3F1E); // +6.283185307179586476925286766559006
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
@@ -401,6 +405,15 @@ namespace System.Numerics
 
         /// <summary>Gets the value <c>-1</c>.</summary>
         public static Decimal128 NegativeOne => new Decimal128(NegativeOneValue);
+
+        /// <summary>Gets the mathematical constant <c>e</c>.</summary>
+        public static Decimal128 E => new Decimal128(EValue);
+
+        /// <summary>Gets the mathematical constant <c>pi</c>.</summary>
+        public static Decimal128 Pi => new Decimal128(PiValue);
+
+        /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
+        public static Decimal128 Tau => new Decimal128(TauValue);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

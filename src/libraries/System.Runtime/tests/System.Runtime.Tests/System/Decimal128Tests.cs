@@ -1581,6 +1581,24 @@ namespace System.Tests
             Assert.Equal(new UInt128(0xB040000000000000, 0x0000000000000001), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.NegativeOne));
         }
 
+        [Fact]
+        public static void ETest()
+        {
+            Assert.Equal(new UInt128(0x2FFE86058A4BF4DE, 0x4E906ACCB26ABB56), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.E)); // +2.718281828459045235360287471352662
+        }
+
+        [Fact]
+        public static void PiTest()
+        {
+            Assert.Equal(new UInt128(0x2FFE9AE4795796A7, 0xBABE5564E6F39F8F), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Pi)); // +3.141592653589793238462643383279503
+        }
+
+        [Fact]
+        public static void TauTest()
+        {
+            Assert.Equal(new UInt128(0x2FFF35C8F2AF2D4F, 0x757CAAC9CDE73F1E), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Tau)); // +6.283185307179586476925286766559006
+        }
+
         public static IEnumerable<object[]> Abs_TestData()
         {
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // Abs(NaN)

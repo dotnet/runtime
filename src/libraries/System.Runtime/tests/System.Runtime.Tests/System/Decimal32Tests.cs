@@ -1581,6 +1581,24 @@ namespace System.Tests
             Assert.Equal(0xB2800001U, Unsafe.BitCast<Decimal32, uint>(Decimal32.NegativeOne));
         }
 
+        [Fact]
+        public static void ETest()
+        {
+            Assert.Equal(0x2FA97A4AU, Unsafe.BitCast<Decimal32, uint>(Decimal32.E)); // +2.718282
+        }
+
+        [Fact]
+        public static void PiTest()
+        {
+            Assert.Equal(0x2FAFEFD9U, Unsafe.BitCast<Decimal32, uint>(Decimal32.Pi)); // +3.141593
+        }
+
+        [Fact]
+        public static void TauTest()
+        {
+            Assert.Equal(0x2FDFDFB1U, Unsafe.BitCast<Decimal32, uint>(Decimal32.Tau)); // +6.283185
+        }
+
         public static IEnumerable<object[]> Abs_TestData()
         {
             yield return new object[] { 0x7C000000U, 0x7C000000U }; // Abs(NaN)

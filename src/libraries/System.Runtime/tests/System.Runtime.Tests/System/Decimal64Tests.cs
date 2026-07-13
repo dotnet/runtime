@@ -1587,6 +1587,24 @@ namespace System.Tests
             Assert.Equal(0xB1C0000000000001UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.NegativeOne));
         }
 
+        [Fact]
+        public static void ETest()
+        {
+            Assert.Equal(0x2FE9A8434EC8E225UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.E)); // +2.718281828459045
+        }
+
+        [Fact]
+        public static void PiTest()
+        {
+            Assert.Equal(0x2FEB29430A256D21UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Pi)); // +3.141592653589793
+        }
+
+        [Fact]
+        public static void TauTest()
+        {
+            Assert.Equal(0x2FF65286144ADA42UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.Tau)); // +6.283185307179586
+        }
+
         public static IEnumerable<object[]> Abs_TestData()
         {
             yield return new object[] { 0x7C00000000000000UL, 0x7C00000000000000UL }; // Abs(NaN)
