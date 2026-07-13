@@ -673,6 +673,122 @@ namespace System.Tests
             AssertExtensions.Equal(expected, h);
         }
 
+        public static IEnumerable<object[]> ExplicitConversion_FromInt32_TestData()
+        {
+            (int, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2048, BitConverter.UInt16BitsToHalf(0x6800)), // 2^11 exact
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (2050, BitConverter.UInt16BitsToHalf(0x6801)), // exact
+                (2051, BitConverter.UInt16BitsToHalf(0x6802)), // rounds to even (higher)
+                (4097, BitConverter.UInt16BitsToHalf(0x6C00)), // rounds lower
+                (4098, BitConverter.UInt16BitsToHalf(0x6C00)), // rounds to even
+                (4100, BitConverter.UInt16BitsToHalf(0x6C01)), // exact
+                (65504, BitConverter.UInt16BitsToHalf(0x7BFF)), // largest finite
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (int.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (-2049, BitConverter.UInt16BitsToHalf(0xE800)), // rounds to even (toward zero)
+                (-65520, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+                (int.MinValue, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+            };
+
+            foreach ((int original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt32(int i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt32_TestData()
+        {
+            (uint, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65504, BitConverter.UInt16BitsToHalf(0x7BFF)), // largest finite
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x8000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (uint.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+            };
+
+            foreach ((uint original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt32_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt32(uint i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt64_TestData()
+        {
+            (long, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x1_0000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (long.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (-2049, BitConverter.UInt16BitsToHalf(0xE800)), // rounds to even (toward zero)
+                (long.MinValue, BitConverter.UInt16BitsToHalf(0xFC00)), // overflow to negative infinity
+            };
+
+            foreach ((long original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt64(long i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt64_TestData()
+        {
+            (ulong, Half)[] data =
+            {
+                (0, BitConverter.UInt16BitsToHalf(0x0000)),
+                (2049, BitConverter.UInt16BitsToHalf(0x6800)), // rounds to even (lower)
+                (65519, BitConverter.UInt16BitsToHalf(0x7BFF)), // rounds down to largest finite
+                (65520, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (0x1_0000_0000, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+                (ulong.MaxValue, BitConverter.UInt16BitsToHalf(0x7C00)), // overflow to infinity
+            };
+
+            foreach ((ulong original, Half expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt64(ulong i, Half expected)
+        {
+            Half h = (Half)i;
+            AssertExtensions.Equal(expected, h);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
