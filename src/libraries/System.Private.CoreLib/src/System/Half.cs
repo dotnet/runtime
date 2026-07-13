@@ -564,7 +564,10 @@ namespace System
         /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
-        public static explicit operator Half(decimal value) => (Half)(float)value;
+        // Round through double, not float: decimal -> double is correctly rounded and double (53-bit significand)
+        // -> Half is an innocuous double rounding (53 >= 2 * 11 + 2), so the result is correctly rounded. Going
+        // through float (24-bit significand) is not, because 24 only meets the 2 * 11 + 2 bound with no margin.
+        public static explicit operator Half(decimal value) => (Half)(double)value;
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>

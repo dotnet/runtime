@@ -215,7 +215,7 @@ instructionset     ,ARM64 ,Aes                   ,           ,9  ,Aes           
 instructionset     ,ARM64 ,Crc32                 ,           ,18 ,Crc32                 ,crc
 instructionset     ,ARM64 ,Dp                    ,           ,23 ,Dp                    ,dotprod
 instructionset     ,ARM64 ,Rdm                   ,           ,24 ,Rdm                   ,rdma
-instructionset     ,ARM64 ,                      ,Fp16       ,93 ,Fp16                  ,fp16
+instructionset     ,ARM64 ,                      ,Fp16       ,94 ,Fp16                  ,fp16
 instructionset     ,ARM64 ,Sha1                  ,           ,19 ,Sha1                  ,sha1
 instructionset     ,ARM64 ,Sha256                ,           ,20 ,Sha256                ,sha2
 instructionset     ,ARM64 ,                      ,Atomics    ,21 ,Atomics               ,lse
@@ -233,6 +233,7 @@ instructionset     ,ARM64 ,Sm4                   ,           ,87 ,Sm4           
 instructionset     ,ARM64 ,SveAes                ,           ,88 ,SveAes                ,sve_aes
 instructionset     ,ARM64 ,SveSha3               ,           ,89 ,SveSha3               ,sve_sha3
 instructionset     ,ARM64 ,SveSm4                ,           ,90 ,SveSm4                ,sve_sm4
+instructionset     ,ARM64 ,                      ,Cssc       ,93 ,Cssc                  ,cssc
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd
@@ -302,9 +303,16 @@ instructionsetgroup  ,armv8.3-a                  ,ARM64    ,armv8.2-a rcpc
 instructionsetgroup  ,armv8.4-a                  ,ARM64    ,armv8.3-a dotprod rcpc2
 instructionsetgroup  ,armv8.5-a                  ,ARM64    ,armv8.4-a
 instructionsetgroup  ,armv8.6-a                  ,ARM64    ,armv8.5-a
+instructionsetgroup  ,armv8.7-a                  ,ARM64    ,armv8.6-a
+instructionsetgroup  ,armv8.8-a                  ,ARM64    ,armv8.7-a
+instructionsetgroup  ,armv8.9-a                  ,ARM64    ,armv8.8-a cssc
 
 ; Technically, apple-m1 is v8.5+
 instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.5-a
+instructionsetgroup  ,apple-m2                   ,ARM64    ,armv8.6-a
+instructionsetgroup  ,apple-m3                   ,ARM64    ,armv8.6-a
+instructionsetgroup  ,apple-m4                   ,ARM64    ,armv8.7-a
+instructionsetgroup  ,apple-m5                   ,ARM64    ,armv8.9-a
 
 
 ; Definition of Wasm instruction sets

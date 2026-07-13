@@ -2219,7 +2219,7 @@ The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following global
 
 | Global name | Meaning |
 | --- | --- |
-| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc::DWord2` indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
+| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc`'s offset bitfield (`m_dwOffset`, i.e. `DWord2 & OffsetMask`) indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
 | `FieldOffsetNewEnc` | Sentinel value of `FieldDesc`'s offset bitfield indicating the field was added via Edit-and-Continue and does not yet have backing storage. |
 
 The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following data descriptors:
@@ -2282,13 +2282,17 @@ uint GetFieldDescType(TargetPointer fieldDescPointer)
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
-    if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
+    // DWord2 packs the 27-bit offset (low bits) with the 5-bit field type (high bits), so the offset
+    // must be masked out before comparing against the big-RVA sentinel. The native runtime compares the
+    // FieldDesc's m_dwOffset bitfield directly (see FieldDesc::GetOffset in src/coreclr/vm/field.h).
+    uint offset = DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    if (offset == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
     {
         if (fieldDef is null)
             throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
         return (uint)fieldDef.Value.GetRelativeVirtualAddress();
     }
-    return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    return offset;
 }
 
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true)

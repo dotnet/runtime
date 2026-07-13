@@ -5689,8 +5689,17 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
 
+            bool retypeZeroToRegType = false;
 #ifdef FEATURE_SIMD
-            if (varTypeIsSIMD(lclRegType))
+            // A SIMD struct is zero-initialized from a properly-typed SIMD zero.
+            retypeZeroToRegType = varTypeIsSIMD(lclRegType);
+#endif // FEATURE_SIMD
+#ifdef TARGET_WASM
+            // A Wasm struct is zero-initialized from a properly-typed zero.
+            retypeZeroToRegType |= (lclRegType != src->TypeGet());
+#endif // TARGET_WASM
+
+            if (retypeZeroToRegType)
             {
                 GenTree* zeroCon = m_compiler->gtNewZeroConNode(lclRegType);
 
@@ -5700,7 +5709,6 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 src             = zeroCon;
                 lclStore->gtOp1 = src;
             }
-#endif // FEATURE_SIMD
 
             convertToStoreObj = false;
         }

@@ -217,7 +217,84 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ResolveTypeReference(DacDbiTypeRefData* pTypeRefInfo, DacDbiTypeRefData* pTargetRefInfo)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        bool resolved = false;
+        TargetPointer targetAssembly = TargetPointer.Null;
+        uint targetTypeDef = 0;
+        pTargetRefInfo->vmAssembly = 0;
+        pTargetRefInfo->typeToken = 0;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle referencingModule = loader.GetModuleHandleFromAssemblyPtr(pTypeRefInfo->vmAssembly);
+
+            uint typeToken = pTypeRefInfo->typeToken;
+            uint tokenType = typeToken & EcmaMetadataUtils.TokenTypeMask;
+
+            // It's a TypeDef already
+            if (tokenType == (uint)EcmaMetadataUtils.TokenType.mdtTypeDef)
+            {
+                targetAssembly = loader.GetAssembly(referencingModule);
+                targetTypeDef = typeToken;
+                resolved = true;
+            }
+            else if (tokenType == (uint)EcmaMetadataUtils.TokenType.mdtTypeRef)
+            {
+                Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
+
+                // The TypeRef is already cached in the referencing module's TypeRef->MethodTable map
+                Contracts.ModuleLookupTables tables = loader.GetLookupTables(referencingModule);
+                TargetPointer methodTable = loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, typeToken, out _);
+                if (methodTable != TargetPointer.Null)
+                {
+                    Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                    Contracts.TypeHandle typeHandle = rts.GetTypeHandle(methodTable);
+                    TargetPointer typeDefModulePtr = rts.GetModule(typeHandle);
+                    Contracts.ModuleHandle typeDefModule = loader.GetModuleHandleFromModulePtr(typeDefModulePtr);
+                    targetAssembly = loader.GetAssembly(typeDefModule);
+                    targetTypeDef = rts.GetTypeDefToken(typeHandle);
+                    resolved = true;
+                }
+
+                // Resolve the TypeRef via metadata (resolution scope + type-forwarder chain).
+                else if (EcmaMetadataUtils.TryResolveTypeRef(loader, ecmaMetadata, referencingModule, typeToken, out targetAssembly, out targetTypeDef))
+                {
+                    resolved = true;
+                }
+            }
+
+            if (resolved)
+            {
+                pTargetRefInfo->vmAssembly = targetAssembly.Value;
+                pTargetRefInfo->typeToken = targetTypeDef;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        if (!resolved && hr == HResults.S_OK)
+        {
+            hr = CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED;
+        }
+
+#if DEBUG
+        if (resolved && _legacy is not null)
+        {
+            DacDbiTypeRefData targetLocal = default;
+            int hrLocal = _legacy.ResolveTypeReference(pTypeRefInfo, &targetLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetRefInfo->vmAssembly == targetLocal.vmAssembly, $"cDAC: {pTargetRefInfo->vmAssembly:x}, DAC: {targetLocal.vmAssembly:x}");
+                Debug.Assert(pTargetRefInfo->typeToken == targetLocal.typeToken, $"cDAC: {pTargetRefInfo->typeToken:x}, DAC: {targetLocal.typeToken:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetModulePath(ulong vmModule, nint pStrFilename, Interop.BOOL* pResult)
     {
