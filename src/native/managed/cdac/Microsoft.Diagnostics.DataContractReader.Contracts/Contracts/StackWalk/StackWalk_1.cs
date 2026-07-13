@@ -67,7 +67,6 @@ internal partial class StackWalk_1 : IStackWalk
         // Used by UpdateState to detect exception frames (FRAME_ATTR_EXCEPTION) and
         // set IsInterrupted when transitioning to a managed frame.
         public FrameType? LastProcessedFrameType { get; set; }
-        public uint LastFramelessStackParameterSize { get; set; }
 
         public bool IsCurrentFrameResumable()
         {
@@ -1011,20 +1010,7 @@ internal partial class StackWalk_1 : IStackWalk
     byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle, StackwalkFlag flags)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
-        byte[] bytes = handle.Context.GetBytes();
-
-        if ((flags & StackwalkFlag.X86ESPIgnoresCalleePoppedArgs) != 0
-            && _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86
-            && handle.LastFramelessStackParameterSize > 0)
-        {
-            IPlatformAgnosticContext adjusted = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            adjusted.FillFromBuffer(bytes);
-            adjusted.StackPointer = new TargetPointer(
-                unchecked(adjusted.StackPointer.Value - handle.LastFramelessStackParameterSize));
-            bytes = adjusted.GetBytes();
-        }
-
-        return bytes;
+        return handle.Context.GetBytes();
     }
 
     private IPlatformAgnosticContext RetrieveHijackedContext(IPlatformAgnosticContext ctx, bool isUnhandledException)

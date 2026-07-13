@@ -24,6 +24,8 @@
 #elif defined(__HAIKU__)
 #include <FindDirectory.h>
 #include <StorageDefs.h>
+#elif defined(TARGET_WASI)
+#include <string.h>
 #elif HAVE_GETAUXVAL
 #include <sys/auxv.h>
 #endif
@@ -97,9 +99,30 @@ static inline char* minipal_getexepath(void)
     }
 
     return strdup(path);
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_BROWSER)
     const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
     return strdup(browserVirtualAppBase);
+#elif defined(TARGET_WASI)
+    // WASI has no /proc, no AT_EXECFN, and argv[0] is unreliable (often "/").
+    // corerun.wasm is launched with the CORE_ROOT env var set to the directory
+    // that holds CoreCLR (System.Private.CoreLib.dll and friends). The PAL only
+    // needs a path whose dirname is that directory, so synthesize one here.
+    const char* coreRoot = getenv("CORE_ROOT");
+    if (coreRoot == NULL || coreRoot[0] == '\0')
+    {
+        return strdup("/");
+    }
+    size_t coreRootLen = strlen(coreRoot);
+    const char* suffix = "/corerun";
+    size_t suffixLen = strlen(suffix);
+    char* result = (char*)malloc(coreRootLen + suffixLen + 1);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+    memcpy(result, coreRoot, coreRootLen);
+    memcpy(result + coreRootLen, suffix, suffixLen + 1);
+    return result;
 #else
 #ifdef __linux__
     const char* symlinkEntrypointExecutable = "/proc/self/exe";

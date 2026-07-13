@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -136,6 +137,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
         ILStubTypeMask = 0x000007FF,
+    }
+
+    [Flags]
+    internal enum AsyncMethodFlags : uint
+    {
+        None = 0,
+        AsyncCall = 0x1,
+        IsAsyncVariant = 0x4,
+        Thunk = 16,
     }
 
     [Flags]
@@ -1279,7 +1289,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule;
         if (corElementType == CorElementType.FnPtr)
-            loaderModule = FindFnPtrLoaderModule(typeArguments);
+            loaderModule = ComputeLoaderModule(TargetPointer.Null, typeArguments);
+        else if (corElementType == CorElementType.GenericInst)
+            loaderModule = ComputeLoaderModule(GetModule(typeHandle), typeArguments);
         else
             loaderModule = GetLoaderModule(typeHandle);
 
@@ -1313,52 +1325,75 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return new TypeHandle(TargetPointer.Null);
     }
 
-    // Mirrors the native algorithm
-    // ClassLoader::ComputeLoaderModuleForFunctionPointer: the loader module is the collectible
-    // ret/arg type's loader module with the largest LoaderAllocator creation number, or CoreLib's
-    // loader module if none of the ret/arg types are collectible.
-    private TargetPointer FindFnPtrLoaderModule(ImmutableArray<TypeHandle> retAndArgTypes)
+    // See https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78
+    private TargetPointer ComputeLoaderModule(TargetPointer definitionModule, ImmutableArray<TypeHandle> inst)
     {
         ILoader loaderContract = _target.Contracts.Loader;
-
-        TargetPointer loaderModulePtr = TargetPointer.Null;
+        TargetPointer latestLoaderModule = TargetPointer.Null;
+        // Use the definition module as the loader module by default.
+        TargetPointer loaderModule = definitionModule;
         ulong latestFoundNumber = 0;
-        bool anyCollectible = false;
 
-        foreach (TypeHandle arg in retAndArgTypes)
+        if (TryGetCollectibleLoaderAllocator(definitionModule, out Data.LoaderAllocator? definitionLoaderAllocator))
+        {
+            latestLoaderModule = definitionModule;
+            latestFoundNumber = definitionLoaderAllocator.CreationNumber;
+        }
+
+        bool anyCollectible = false;
+        foreach (TypeHandle arg in inst)
         {
             if (arg.Address == TargetPointer.Null)
                 continue;
 
-            TargetPointer argModulePtr = GetLoaderModule(arg);
-            if (argModulePtr == TargetPointer.Null)
-                continue;
-
-            ModuleHandle argModuleHandle = loaderContract.GetModuleHandleFromModulePtr(argModulePtr);
-            TargetPointer argLoaderAllocator = loaderContract.GetLoaderAllocator(argModuleHandle);
-            if (argLoaderAllocator == TargetPointer.Null)
-                continue;
-
-            Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(argLoaderAllocator);
-            if (!loaderAllocator.IsCollectible)
-                continue;
-
-            if (!anyCollectible || loaderAllocator.CreationNumber > latestFoundNumber)
+            TargetPointer argModule = GetLoaderModule(arg);
+            if (TryGetCollectibleLoaderAllocator(argModule, out Data.LoaderAllocator? argLoaderAllocator) &&
+                argLoaderAllocator.CreationNumber > latestFoundNumber)
             {
                 anyCollectible = true;
-                latestFoundNumber = loaderAllocator.CreationNumber;
-                loaderModulePtr = argModulePtr;
+                latestLoaderModule = argModule;
+                latestFoundNumber = argLoaderAllocator.CreationNumber;
             }
+            if (loaderModule == TargetPointer.Null)
+                loaderModule = argModule;
         }
 
         if (!anyCollectible)
         {
-            TargetPointer systemAssembly = loaderContract.GetSystemAssembly();
-            ModuleHandle coreLibModuleHandle = loaderContract.GetModuleHandleFromAssemblyPtr(systemAssembly);
-            loaderModulePtr = loaderContract.GetModule(coreLibModuleHandle);
+            if (loaderModule == TargetPointer.Null)
+            {
+                TargetPointer systemAssembly = loaderContract.GetSystemAssembly();
+                ModuleHandle coreLibModuleHandle = loaderContract.GetModuleHandleFromAssemblyPtr(systemAssembly);
+                loaderModule = loaderContract.GetModule(coreLibModuleHandle);
+            }
+            return loaderModule;
         }
 
-        return loaderModulePtr;
+        // If nothing was found, then by default we use the definition module.
+        if (latestLoaderModule != TargetPointer.Null)
+            loaderModule = latestLoaderModule;
+
+        return loaderModule;
+    }
+
+    private bool TryGetCollectibleLoaderAllocator(TargetPointer modulePtr, [NotNullWhen(true)] out Data.LoaderAllocator? loaderAllocator)
+    {
+        loaderAllocator = null;
+        if (modulePtr == TargetPointer.Null)
+            return false;
+
+        ILoader loaderContract = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(modulePtr);
+        TargetPointer loaderAllocatorPtr = loaderContract.GetLoaderAllocator(moduleHandle);
+        if (loaderAllocatorPtr == TargetPointer.Null)
+            return false;
+
+        Data.LoaderAllocator candidate = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPtr);
+        if (!candidate.IsCollectible)
+            return false;
+
+        loaderAllocator = candidate;
+        return true;
     }
 
     TypeHandle IRuntimeTypeSystem.GetPrimitiveType(CorElementType typeCode)
@@ -1684,7 +1719,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return true;
     }
 
-    public bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    private bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
@@ -1701,6 +1736,49 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         signature = AsStoredSigMethodDesc(methodDesc).Signature;
+        return true;
+    }
+
+    public bool TryGetMethodSignature(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    {
+        if (IsStoredSigMethodDesc(methodDescHandle, out signature))
+        {
+            return true;
+        }
+
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.HasAsyncMethodData)
+        {
+            Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(methodDesc.GetAddressOfAsyncMethodData());
+            if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
+            {
+                byte[] sig = new byte[asyncData.Signature.SignatureLength];
+                _target.ReadBuffer(asyncData.Signature.SignaturePointer, sig.AsSpan());
+                signature = sig;
+                return true;
+            }
+        }
+
+        uint token = methodDesc.Token;
+        if (EcmaMetadataUtils.GetRowId(token) == 0)
+        {
+            signature = default;
+            return false;
+        }
+
+        TargetPointer modulePtr = GetOrCreateMethodTable(methodDesc).Module;
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+        {
+            signature = default;
+            return false;
+        }
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        signature = mdReader.GetBlobBytes(methodDef.Signature);
         return true;
     }
 
@@ -2257,13 +2335,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     uint IRuntimeTypeSystem.GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
-        if (fieldDesc.DWord2 == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
+        // DWord2 packs the 27-bit offset (low bits) with the 5-bit field type (high bits), so the offset
+        // must be masked out before comparing against the big-RVA sentinel. The native runtime compares the
+        // FieldDesc's m_dwOffset bitfield directly (see FieldDesc::GetOffset in src/coreclr/vm/field.h).
+        uint offset = fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+        if (offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetBigRVA))
         {
             if (fieldDef is null)
                 throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
             return (uint)fieldDef.Value.GetRelativeVirtualAddress();
         }
-        return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+        return offset;
     }
 
     TypeHandle IRuntimeTypeSystem.GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
