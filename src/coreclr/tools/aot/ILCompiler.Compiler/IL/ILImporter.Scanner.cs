@@ -404,6 +404,9 @@ namespace Internal.IL
             stlocNum = -1;
             ILReader tempReader = reader;
 
+            if (!tempReader.HasNext)
+                return false;
+
             ILOpcode opcode = tempReader.ReadILOpcode();
 
             // ConfigureAwait on a ValueTask will start with stloc/ldloca.
@@ -419,6 +422,9 @@ namespace Internal.IL
             {
                 return false;
             }
+
+            if (!tempReader.HasNext)
+                return false;
 
             opcode = tempReader.ReadILOpcode();
             int ldlocaNum = opcode switch
@@ -465,7 +471,7 @@ namespace Internal.IL
             // Look for call; stloc X; ldloca X; call AsTask(); ret
             if (MatchStlocLdloca(ref reader, out _))
             {
-                if (reader.ReadILOpcode() != ILOpcode.call)
+                if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.call)
                 {
                     return false;
                 }
@@ -473,7 +479,7 @@ namespace Internal.IL
                 int callToken = reader.ReadILToken();
 
                 // Verify ret first before we go resolving metadata
-                if (reader.ReadILOpcode() != ILOpcode.ret)
+                if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ret)
                 {
                     return false;
                 }
@@ -493,7 +499,7 @@ namespace Internal.IL
             {
                 int ctorToken = reader.ReadILToken();
 
-                if (reader.ReadILOpcode() != ILOpcode.ret)
+                if (!reader.HasNext || reader.ReadILOpcode() != ILOpcode.ret)
                 {
                     return false;
                 }
