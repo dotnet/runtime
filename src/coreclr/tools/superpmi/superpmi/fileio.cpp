@@ -46,11 +46,8 @@ bool FileWriter::Print(const char* value, size_t numChars)
 
         if (numChars > m_buffer.size())
         {
-            DWORD numWritten;
-            bool result =
-                WriteFile(m_file.Get(), value, static_cast<DWORD>(numChars), &numWritten, nullptr) &&
-                (numWritten == static_cast<DWORD>(numChars));
-            return result;
+            size_t numWritten = fwrite(value, 1, numChars, m_file.Get());
+            return numWritten == numChars;
         }
     }
 
