@@ -3,7 +3,7 @@
 
 import type { JSMarshalerArguments, GCHandle, MarshalerToCs, MarshalerToJs, CSFnHandle } from "./types";
 
-import { dotnetAssert, dotnetInteropJSExports, Module } from "./cross-module";
+import { dotnetApi, dotnetAssert, dotnetBrowserUtilsExports, dotnetInteropJSExports, Module } from "./cross-module";
 import { allocStackFrame, getArg, isArgsException, setArgType, setGcHandle } from "./marshal";
 import { marshalExceptionToCs, marshalStringToCs } from "./marshal-to-cs";
 import { beginMarshalTaskToJs, endMarshalTaskToJs, marshalExceptionToJs, marshalInt32ToJs, marshalStringToJs } from "./marshal-to-js";
@@ -25,6 +25,13 @@ export function getManagedStackTrace(exceptionGCHandle: GCHandle): string {
 
         const res = getArg(args, 1);
         return marshalStringToJs(res)!;
+    } catch (error: any) {
+        // unexpected exception here would be invalid runtime
+        if (!error || typeof error.status !== "number") {
+            dotnetBrowserUtilsExports.abortPosix(1, error, true);
+            dotnetApi.exit(1, error);
+        }
+        throw error;
     } finally {
         if (isRuntimeRunning()) Module.stackRestore(sp);
     }
@@ -43,9 +50,15 @@ export function releaseJsOwnedObjectByGcHandle(gcHandle: GCHandle) {
         // this must stay synchronous for freeGcvHandle sake, to not use-after-free
         // also on JSWebWorker, because the message could arrive after the worker is terminated and the GCHandle of JSProxyContext is already freed
         dotnetInteropJSExports.SystemInteropJS_ReleaseJSOwnedObjectByGCHandle(args);
+    } catch (error: any) {
+        // unexpected exception here would be invalid runtime
+        if (!error || typeof error.status !== "number") {
+            dotnetBrowserUtilsExports.abortPosix(1, error, true);
+            dotnetApi.exit(1, error);
+        }
+        throw error;
     } finally {
         if (isRuntimeRunning()) Module.stackRestore(sp);
-
     }
 }
 
@@ -75,7 +88,16 @@ export function callDelegate(callbackGcHandle: GCHandle, arg1Js: any, arg2Js: an
             arg3Converter(arg4, arg3Js);
         }
 
-        dotnetInteropJSExports.SystemInteropJS_CallDelegate(args);
+        try {
+            dotnetInteropJSExports.SystemInteropJS_CallDelegate(args);
+        } catch (error: any) {
+            // unexpected exception here would be invalid runtime
+            if (!error || typeof error.status !== "number") {
+                dotnetBrowserUtilsExports.abortPosix(1, error, true);
+                dotnetApi.exit(1, error);
+            }
+            throw error;
+        }
         if (isArgsException(args)) {
             const exc = getArg(args, 0);
             throw marshalExceptionToJs(exc);
@@ -114,10 +136,18 @@ export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, 
         if (error) {
             marshalExceptionToCs(arg2, error);
         }
-        dotnetInteropJSExports.SystemInteropJS_CompleteTask(args);
+        try {
+            dotnetInteropJSExports.SystemInteropJS_CompleteTask(args);
+        } catch (error: any) {
+            // unexpected exception here would be invalid runtime
+            if (!error || typeof error.status !== "number") {
+                dotnetBrowserUtilsExports.abortPosix(1, error, true);
+                dotnetApi.exit(1, error);
+            }
+            throw error;
+        }
     } finally {
         if (isRuntimeRunning()) Module.stackRestore(sp);
-
     }
 }
 
@@ -134,7 +164,16 @@ export function bindAssemblyExports(assemblyName: string): Promise<void> {
         // because this is async, we could pre-allocate the promise
         let promise = beginMarshalTaskToJs(res, MarshalerType.TaskPreCreated);
 
-        dotnetInteropJSExports.SystemInteropJS_BindAssemblyExports(args);
+        try {
+            dotnetInteropJSExports.SystemInteropJS_BindAssemblyExports(args);
+        } catch (error: any) {
+            // unexpected exception here would be invalid runtime
+            if (!error || typeof error.status !== "number") {
+                dotnetBrowserUtilsExports.abortPosix(1, error, true);
+                dotnetApi.exit(1, error);
+            }
+            throw error;
+        }
         if (isArgsException(args)) {
             // TODO free pre-created promise
             const exc = getArg(args, 0);
@@ -156,7 +195,16 @@ export function bindAssemblyExports(assemblyName: string): Promise<void> {
 
 export function invokeJSExport(methodHandle: CSFnHandle, args: JSMarshalerArguments): void {
     assertJsInterop();
-    dotnetInteropJSExports.SystemInteropJS_CallJSExport(methodHandle, args);
+    try {
+        dotnetInteropJSExports.SystemInteropJS_CallJSExport(methodHandle, args);
+    } catch (error: any) {
+        // unexpected exception here would be invalid runtime
+        if (!error || typeof error.status !== "number") {
+            dotnetBrowserUtilsExports.abortPosix(1, error, true);
+            dotnetApi.exit(1, error);
+        }
+        throw error;
+    }
     if (isArgsException(args)) {
         const exc = getArg(args, 0);
         throw marshalExceptionToJs(exc);

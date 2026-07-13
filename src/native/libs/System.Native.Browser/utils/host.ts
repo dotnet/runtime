@@ -11,6 +11,10 @@ export function abortPosix(exitCode: number, reason: any, nativeReady: boolean):
     try {
         _ems_.EXITSTATUS = exitCode;
         _ems_.DOTNET.isAborting = true;
+        if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
+            _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+        }
+        _ems_.___funcs_on_exit = () => { };
         if (exitCode === 0 && nativeReady) {
             _ems_._exit(0);
             _ems_.ABORT = true;
