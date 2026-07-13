@@ -173,16 +173,16 @@ public class Async2TaskAdapters
         {
             ThreadPool.UnsafeQueueUserWorkItem(_ =>
             {
-                 SynchronizationContext prevContext = Current;
-                 try
-                 {
-                     SetSynchronizationContext(this);
-                     d(state);
-                 }
-                 finally
-                 {
-                     SetSynchronizationContext(prevContext);
-                 }
+                SynchronizationContext prevContext = Current;
+                try
+                {
+                    SetSynchronizationContext(this);
+                    d(state);
+                }
+                finally
+                {
+                    SetSynchronizationContext(prevContext);
+                }
             }, null);
         }
     }
