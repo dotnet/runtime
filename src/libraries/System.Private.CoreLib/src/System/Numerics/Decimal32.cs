@@ -36,6 +36,7 @@ namespace System.Numerics
         private const uint NegativeZeroValue = 0xB280_0000;
         // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
         private const uint OneValue = ZeroValue | 0x1;
+        private const uint NegativeOneValue = NegativeZeroValue | 0x1;
         private const uint QuietNaNValue = 0xFC00_0000;
         private const uint G0G1Mask = 0x6000_0000;
         private const uint SignMask = 0x8000_0000;
@@ -397,6 +398,9 @@ namespace System.Numerics
 
         /// <summary>Gets the value <c>1</c>.</summary>
         public static Decimal32 One => new Decimal32(OneValue);
+
+        /// <summary>Gets the value <c>-1</c>.</summary>
+        public static Decimal32 NegativeOne => new Decimal32(NegativeOneValue);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

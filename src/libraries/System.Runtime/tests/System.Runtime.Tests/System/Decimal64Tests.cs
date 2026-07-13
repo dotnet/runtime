@@ -1581,6 +1581,12 @@ namespace System.Tests
             Assert.Equal(0x31C0000000000001UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.One));
         }
 
+        [Fact]
+        public static void NegativeOneTest()
+        {
+            Assert.Equal(0xB1C0000000000001UL, Unsafe.BitCast<Decimal64, ulong>(Decimal64.NegativeOne));
+        }
+
         public static IEnumerable<object[]> Abs_TestData()
         {
             yield return new object[] { 0x7C00000000000000UL, 0x7C00000000000000UL }; // Abs(NaN)

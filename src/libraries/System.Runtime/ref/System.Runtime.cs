@@ -11426,6 +11426,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 MinValue { get { throw null; } }
         public static System.Numerics.Decimal128 NaN { get { throw null; } }
         public static System.Numerics.Decimal128 NegativeInfinity { get { throw null; } }
+        public static System.Numerics.Decimal128 NegativeOne { get { throw null; } }
         public static System.Numerics.Decimal128 NegativeZero { get { throw null; } }
         public static System.Numerics.Decimal128 One { get { throw null; } }
         public static System.Numerics.Decimal128 PositiveInfinity { get { throw null; } }
@@ -11507,6 +11508,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 MinValue { get { throw null; } }
         public static System.Numerics.Decimal32 NaN { get { throw null; } }
         public static System.Numerics.Decimal32 NegativeInfinity { get { throw null; } }
+        public static System.Numerics.Decimal32 NegativeOne { get { throw null; } }
         public static System.Numerics.Decimal32 NegativeZero { get { throw null; } }
         public static System.Numerics.Decimal32 One { get { throw null; } }
         public static System.Numerics.Decimal32 PositiveInfinity { get { throw null; } }
@@ -11588,6 +11590,7 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 MinValue { get { throw null; } }
         public static System.Numerics.Decimal64 NaN { get { throw null; } }
         public static System.Numerics.Decimal64 NegativeInfinity { get { throw null; } }
+        public static System.Numerics.Decimal64 NegativeOne { get { throw null; } }
         public static System.Numerics.Decimal64 NegativeZero { get { throw null; } }
         public static System.Numerics.Decimal64 One { get { throw null; } }
         public static System.Numerics.Decimal64 PositiveInfinity { get { throw null; } }

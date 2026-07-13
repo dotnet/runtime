@@ -35,6 +35,7 @@ namespace System.Numerics
         private static UInt128 NegativeZeroValue => new UInt128(0xB040_0000_0000_0000, 0);
         // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
         private static UInt128 OneValue => new UInt128(0x3040_0000_0000_0000, 1);
+        private static UInt128 NegativeOneValue => new UInt128(0xB040_0000_0000_0000, 1);
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
@@ -397,6 +398,9 @@ namespace System.Numerics
 
         /// <summary>Gets the value <c>1</c>.</summary>
         public static Decimal128 One => new Decimal128(OneValue);
+
+        /// <summary>Gets the value <c>-1</c>.</summary>
+        public static Decimal128 NegativeOne => new Decimal128(NegativeOneValue);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>

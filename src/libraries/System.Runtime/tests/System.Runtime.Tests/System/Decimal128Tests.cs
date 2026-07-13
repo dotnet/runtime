@@ -1575,6 +1575,12 @@ namespace System.Tests
             Assert.Equal(new UInt128(0x3040000000000000, 0x0000000000000001), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.One));
         }
 
+        [Fact]
+        public static void NegativeOneTest()
+        {
+            Assert.Equal(new UInt128(0xB040000000000000, 0x0000000000000001), Unsafe.BitCast<Decimal128, UInt128>(Decimal128.NegativeOne));
+        }
+
         public static IEnumerable<object[]> Abs_TestData()
         {
             yield return new object[] { new UInt128(0x7C00000000000000, 0x0000000000000000), new UInt128(0x7C00000000000000, 0x0000000000000000) }; // Abs(NaN)

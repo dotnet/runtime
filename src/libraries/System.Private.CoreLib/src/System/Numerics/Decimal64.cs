@@ -29,6 +29,7 @@ namespace System.Numerics
         private const ulong NegativeZeroValue = 0xB1C0_0000_0000_0000;
         // One (+1 * 10^0) shares the biased exponent of canonical zero with a coefficient of one.
         private const ulong OneValue = ZeroValue | 0x1;
+        private const ulong NegativeOneValue = NegativeZeroValue | 0x1;
         private const ulong QuietNaNValue = 0xFC00_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
@@ -398,6 +399,9 @@ namespace System.Numerics
 
         /// <summary>Gets the value <c>1</c>.</summary>
         public static Decimal64 One => new Decimal64(OneValue);
+
+        /// <summary>Gets the value <c>-1</c>.</summary>
+        public static Decimal64 NegativeOne => new Decimal64(NegativeOneValue);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
