@@ -64,7 +64,9 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
   Each getter resolves the type name against native descriptors and
   managed metadata through the `LayoutSet` cascade on first access,
   reads the field, and memoizes the value. A required field missing from
-  the descriptor throws `VirtualReadException` at read time.
+  the descriptor throws `InvalidOperationException` from the layout
+  lookup at read time; `VirtualReadException` is thrown only if the
+  target read itself fails.
 * A `static {Name} IData<{Name}>.Create(...) => new {Name}(target, address);`
   one-liner.
 * A `private static readonly string[] _typeNames = { ... }` array
