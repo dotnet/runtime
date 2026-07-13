@@ -445,9 +445,10 @@ namespace ILCompiler
                     }
 
                     HashSet<MethodDesc> compiledMethodDefs = null;
-                    if (_nodeFactory.OptimizationFlags.StripILBodies)
+                    HashSet<MethodDesc> methodsWithPerMethodInstructionSetSupportFixup = null;
+                    if (ShouldStripILBodies)
                     {
-                        compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet();
+                        compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet(out methodsWithPerMethodInstructionSetSupportFixup);
                     }
 
                     foreach (string inputFile in _inputFiles)
@@ -459,13 +460,27 @@ namespace ILCompiler
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
-                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
+                        RewriteComponentFile(
+                            inputFile: inputFile,
+                            outputFile: standaloneMsilOutputFile,
+                            ownerExecutableName: ownerExecutableName,
+                            compiledMethodDefs: compiledMethodDefs,
+                            methodsWithPerMethodInstructionSetSupportFixup: methodsWithPerMethodInstructionSetSupportFixup);
                     }
                 }
             }
         }
 
-        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
+        private bool ShouldStripILBodies =>
+            _nodeFactory.OptimizationFlags.StripILBodies &&
+            _nodeFactory.Target.OperatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator);
+
+        private void RewriteComponentFile(
+            string inputFile,
+            string outputFile,
+            string ownerExecutableName,
+            HashSet<MethodDesc> compiledMethodDefs,
+            HashSet<MethodDesc> methodsWithPerMethodInstructionSetSupportFixup)
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
@@ -485,7 +500,13 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
-            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs };
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with
+            {
+                IsComponentModule = true,
+                StripILBodies = ShouldStripILBodies,
+                CompiledMethodDefs = compiledMethodDefs,
+                MethodsWithPerMethodInstructionSetSupportFixup = methodsWithPerMethodInstructionSetSupportFixup,
+            };
 
             if (optimizationFlags.StripILBodies)
             {

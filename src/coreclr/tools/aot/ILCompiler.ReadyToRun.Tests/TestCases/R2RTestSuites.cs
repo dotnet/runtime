@@ -478,6 +478,7 @@ public class R2RTestSuites
 
             Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "GenericIdentity", out diag), diag);
             Assert.True(R2RAssert.MethodILIsPresent(componentFile, "GenericHolder`1", "MethodOnGenericType", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "UsesOpportunisticInstructionSet", out diag), diag);
 
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "ComputeTag", out diag), diag);
@@ -490,6 +491,41 @@ public class R2RTestSuites
 
             Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void AppleMobileStripILBodiesPreservesILForInterpreterFallback()
+    {
+        var stripILBodies = new CompiledAssembly
+        {
+            AssemblyName = nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/StripILBodies.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback),
+            [
+                new(nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback), [new CrossgenAssembly(stripILBodies)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    AdditionalArgs = ["--targetos:ios", "--targetarch:arm64"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string componentFile = Path.Combine(
+                Path.GetDirectoryName(reader.Filename)!,
+                nameof(AppleMobileStripILBodiesPreservesILForInterpreterFallback) + ".dll");
+
+            Assert.True(R2RAssert.MethodILIsPresent(componentFile, "StripILBodies", "PlainStrippableMethod", out string diag), diag);
         }
     }
 

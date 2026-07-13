@@ -6,6 +6,7 @@
 // needed to synthesize the async variant at runtime.
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 
 public static class StripILBodies
@@ -80,6 +81,12 @@ public static class StripILBodies
     public static int PlainStrippableMethod(int a, int b)
     {
         return a + b + ComputeTag();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool UsesOpportunisticInstructionSet()
+    {
+        return Aes.IsSupported;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
