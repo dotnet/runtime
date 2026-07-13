@@ -470,9 +470,9 @@ void emitter::emitIns_Lane(instruction ins, uint8_t laneIdx)
     uint8_t elemSize = CodeGenInterface::instSimdElemSize(ins);
 
     // Add element width as an emit attribute
-    emitAttr attr = EA_ATTR(elemSize);
-    instrDesc* id  = emitNewInstrSC(attr, laneIdx);
-    insFormat  fmt = emitInsFormat(ins);
+    emitAttr   attr = EA_ATTR(elemSize);
+    instrDesc* id   = emitNewInstrSC(attr, laneIdx);
+    insFormat  fmt  = emitInsFormat(ins);
     assert(fmt == IF_LANE);
     assert(isValidVectorIndex(elemSize, laneIdx));
 
