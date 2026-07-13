@@ -11427,13 +11427,33 @@ namespace System.Numerics
         public static System.Numerics.Decimal128 NaN { get { throw null; } }
         public static System.Numerics.Decimal128 NegativeInfinity { get { throw null; } }
         public static System.Numerics.Decimal128 NegativeZero { get { throw null; } }
+        public static System.Numerics.Decimal128 One { get { throw null; } }
         public static System.Numerics.Decimal128 PositiveInfinity { get { throw null; } }
         public static System.Numerics.Decimal128 Zero { get { throw null; } }
+        public static System.Numerics.Decimal128 Abs(System.Numerics.Decimal128 value) { throw null; }
         public int CompareTo(System.Numerics.Decimal128 other) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public bool Equals(System.Numerics.Decimal128 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsEvenInteger(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsFinite(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsInfinity(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsInteger(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsNaN(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsNegative(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsNegativeInfinity(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsNormal(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsOddInteger(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsPositive(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsPositiveInfinity(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsRealNumber(System.Numerics.Decimal128 value) { throw null; }
+        public static bool IsSubnormal(System.Numerics.Decimal128 value) { throw null; }
+        public static System.Numerics.Decimal128 MaxMagnitude(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
+        public static System.Numerics.Decimal128 MaxMagnitudeNumber(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
+        public static System.Numerics.Decimal128 MinMagnitude(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
+        public static System.Numerics.Decimal128 MinMagnitudeNumber(System.Numerics.Decimal128 x, System.Numerics.Decimal128 y) { throw null; }
+        public static System.Numerics.Decimal128 MultiplyAddEstimate(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right, System.Numerics.Decimal128 addend) { throw null; }
         public static System.Numerics.Decimal128 operator +(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
         public static System.Numerics.Decimal128 operator --(System.Numerics.Decimal128 value) { throw null; }
         public static System.Numerics.Decimal128 operator /(System.Numerics.Decimal128 left, System.Numerics.Decimal128 right) { throw null; }
@@ -11478,13 +11498,33 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 NaN { get { throw null; } }
         public static System.Numerics.Decimal32 NegativeInfinity { get { throw null; } }
         public static System.Numerics.Decimal32 NegativeZero { get { throw null; } }
+        public static System.Numerics.Decimal32 One { get { throw null; } }
         public static System.Numerics.Decimal32 PositiveInfinity { get { throw null; } }
         public static System.Numerics.Decimal32 Zero { get { throw null; } }
+        public static System.Numerics.Decimal32 Abs(System.Numerics.Decimal32 value) { throw null; }
         public int CompareTo(System.Numerics.Decimal32 other) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public bool Equals(System.Numerics.Decimal32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsEvenInteger(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsFinite(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsInfinity(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsInteger(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsNaN(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsNegative(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsNegativeInfinity(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsNormal(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsOddInteger(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsPositive(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsPositiveInfinity(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsRealNumber(System.Numerics.Decimal32 value) { throw null; }
+        public static bool IsSubnormal(System.Numerics.Decimal32 value) { throw null; }
+        public static System.Numerics.Decimal32 MaxMagnitude(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
+        public static System.Numerics.Decimal32 MaxMagnitudeNumber(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
+        public static System.Numerics.Decimal32 MinMagnitude(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
+        public static System.Numerics.Decimal32 MinMagnitudeNumber(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
+        public static System.Numerics.Decimal32 MultiplyAddEstimate(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right, System.Numerics.Decimal32 addend) { throw null; }
         public static System.Numerics.Decimal32 operator +(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static System.Numerics.Decimal32 operator --(System.Numerics.Decimal32 value) { throw null; }
         public static System.Numerics.Decimal32 operator /(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
@@ -11529,13 +11569,33 @@ namespace System.Numerics
         public static System.Numerics.Decimal64 NaN { get { throw null; } }
         public static System.Numerics.Decimal64 NegativeInfinity { get { throw null; } }
         public static System.Numerics.Decimal64 NegativeZero { get { throw null; } }
+        public static System.Numerics.Decimal64 One { get { throw null; } }
         public static System.Numerics.Decimal64 PositiveInfinity { get { throw null; } }
         public static System.Numerics.Decimal64 Zero { get { throw null; } }
+        public static System.Numerics.Decimal64 Abs(System.Numerics.Decimal64 value) { throw null; }
         public int CompareTo(System.Numerics.Decimal64 other) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public bool Equals(System.Numerics.Decimal64 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsEvenInteger(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsFinite(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsInfinity(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsInteger(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsNaN(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsNegative(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsNegativeInfinity(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsNormal(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsOddInteger(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsPositive(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsPositiveInfinity(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsRealNumber(System.Numerics.Decimal64 value) { throw null; }
+        public static bool IsSubnormal(System.Numerics.Decimal64 value) { throw null; }
+        public static System.Numerics.Decimal64 MaxMagnitude(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
+        public static System.Numerics.Decimal64 MaxMagnitudeNumber(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
+        public static System.Numerics.Decimal64 MinMagnitude(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
+        public static System.Numerics.Decimal64 MinMagnitudeNumber(System.Numerics.Decimal64 x, System.Numerics.Decimal64 y) { throw null; }
+        public static System.Numerics.Decimal64 MultiplyAddEstimate(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right, System.Numerics.Decimal64 addend) { throw null; }
         public static System.Numerics.Decimal64 operator +(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }
         public static System.Numerics.Decimal64 operator --(System.Numerics.Decimal64 value) { throw null; }
         public static System.Numerics.Decimal64 operator /(System.Numerics.Decimal64 left, System.Numerics.Decimal64 right) { throw null; }

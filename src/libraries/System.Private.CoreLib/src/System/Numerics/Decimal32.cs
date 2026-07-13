@@ -395,6 +395,114 @@ namespace System.Numerics
             return Number.TryParseDecimalIeee754<byte, Decimal32, uint>(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
+        /// <summary>Gets the value <c>1</c>.</summary>
+        public static Decimal32 One => new Decimal32(OneValue);
+
+        /// <summary>Computes the absolute of a value.</summary>
+        /// <param name="value">The value for which to get its absolute.</param>
+        /// <returns>The absolute of <paramref name="value" />.</returns>
+        public static Decimal32 Abs(Decimal32 value) => new Decimal32(Number.AbsDecimalIeee754<Decimal32, uint>(value._value));
+
+        /// <summary>Determines if a value is finite.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is finite; otherwise, <c>false</c>.</returns>
+        public static bool IsFinite(Decimal32 value)
+        {
+            uint comb = value._value & NaNMask;
+            return (comb != NaNMask) && (comb != InfinityMask);
+        }
+
+        /// <summary>Determines if a value is infinite.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is infinite; otherwise, <c>false</c>.</returns>
+        public static bool IsInfinity(Decimal32 value) => (value._value & NaNMask) == InfinityMask;
+
+        /// <summary>Determines if a value is NaN.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is NaN; otherwise, <c>false</c>.</returns>
+        public static bool IsNaN(Decimal32 value) => (value._value & NaNMask) == NaNMask;
+
+        /// <summary>Determines if a value is negative.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
+        public static bool IsNegative(Decimal32 value) => (value._value & SignMask) != 0;
+
+        /// <summary>Determines if a value is negative infinity.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is negative infinity; otherwise, <c>false</c>.</returns>
+        public static bool IsNegativeInfinity(Decimal32 value) => (value._value & (SignMask | NaNMask)) == NegativeInfinityValue;
+
+        /// <summary>Determines if a value is positive.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is positive; otherwise, <c>false</c>.</returns>
+        public static bool IsPositive(Decimal32 value) => (value._value & SignMask) == 0;
+
+        /// <summary>Determines if a value is positive infinity.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is positive infinity; otherwise, <c>false</c>.</returns>
+        public static bool IsPositiveInfinity(Decimal32 value) => (value._value & (SignMask | NaNMask)) == PositiveInfinityValue;
+
+        /// <summary>Determines if a value represents a real number.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is a real number; otherwise, <c>false</c>.</returns>
+        public static bool IsRealNumber(Decimal32 value) => !IsNaN(value);
+
+        /// <summary>Determines if a value represents an integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an integer; otherwise, <c>false</c>.</returns>
+        public static bool IsInteger(Decimal32 value) => Number.IsIntegerDecimalIeee754<Decimal32, uint>(value._value);
+
+        /// <summary>Determines if a value represents an even integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an even integer; otherwise, <c>false</c>.</returns>
+        public static bool IsEvenInteger(Decimal32 value) => Number.IsEvenIntegerDecimalIeee754<Decimal32, uint>(value._value);
+
+        /// <summary>Determines if a value represents an odd integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an odd integer; otherwise, <c>false</c>.</returns>
+        public static bool IsOddInteger(Decimal32 value) => Number.IsOddIntegerDecimalIeee754<Decimal32, uint>(value._value);
+
+        /// <summary>Determines if a value is normal.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is normal; otherwise, <c>false</c>.</returns>
+        public static bool IsNormal(Decimal32 value) => Number.IsNormalDecimalIeee754<Decimal32, uint>(value._value);
+
+        /// <summary>Determines if a value is subnormal.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is subnormal; otherwise, <c>false</c>.</returns>
+        public static bool IsSubnormal(Decimal32 value) => Number.IsSubnormalDecimalIeee754<Decimal32, uint>(value._value);
+
+        /// <summary>Compares two values to compute which has the greater magnitude.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a greater magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MaxMagnitude(Decimal32 x, Decimal32 y) => new Decimal32(Number.MaxMagnitudeDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which has the greater magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a greater magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MaxMagnitudeNumber(Decimal32 x, Decimal32 y) => new Decimal32(Number.MaxMagnitudeNumberDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which has the lesser magnitude.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a lesser magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MinMagnitude(Decimal32 x, Decimal32 y) => new Decimal32(Number.MinMagnitudeDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Compares two values to compute which has the lesser magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a lesser magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal32 MinMagnitudeNumber(Decimal32 x, Decimal32 y) => new Decimal32(Number.MinMagnitudeNumberDecimalIeee754<Decimal32, uint>(x._value, y._value));
+
+        /// <summary>Computes an estimate of <c>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" /></c>.</summary>
+        /// <param name="left">The value to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The value to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The value to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of <c>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" /></c>.</returns>
+        public static Decimal32 MultiplyAddEstimate(Decimal32 left, Decimal32 right, Decimal32 addend) => (left * right) + addend;
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Precision => Precision;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.BufferLength => Number.Decimal32NumberBufferLength;
@@ -456,36 +564,17 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxSignificand => MaxSignificand;
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNaN(uint decimalBits)
-        {
-            return (decimalBits & NaNMask) == NaNMask;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNaN(uint decimalBits) => IsNaN(new Decimal32(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNegative(uint decimalBits)
-        {
-            return (decimalBits & SignMask) != 0;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNegative(uint decimalBits) => IsNegative(new Decimal32(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsFinite(uint decimalBits)
-        {
-            uint comb = decimalBits & NaNMask;
-            return comb != NaNMask && comb != InfinityMask;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsFinite(uint decimalBits) => IsFinite(new Decimal32(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsInfinity(uint decimalBits)
-        {
-            return (decimalBits & NaNMask) == InfinityMask;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsInfinity(uint decimalBits) => IsInfinity(new Decimal32(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsPositiveInfinity(uint decimalBits)
-        {
-            return (decimalBits & (SignMask | NaNMask)) == PositiveInfinityValue;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsPositiveInfinity(uint decimalBits) => IsPositiveInfinity(new Decimal32(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNegativeInfinity(uint decimalBits)
-        {
-            return (decimalBits & (SignMask | NaNMask)) == NegativeInfinityValue;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNegativeInfinity(uint decimalBits) => IsNegativeInfinity(new Decimal32(decimalBits));
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
         {

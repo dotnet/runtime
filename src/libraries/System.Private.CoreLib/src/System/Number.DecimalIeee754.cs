@@ -1374,5 +1374,220 @@ namespace System
             TValue significand = ((leadDigit > 5) || ((leadDigit == 5) && restNonZero)) ? TValue.One : TValue.Zero;
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(sign, significand, TDecimal.MinAdjustedExponent);
         }
+
+        internal static TValue AbsDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return decimalBits & ~TDecimal.SignMask;
+        }
+
+        /// <summary>
+        /// Classifies a value as a non-integer (<c>-1</c>), an even integer (<c>0</c>), or an odd integer (<c>1</c>).
+        /// A finite value is an integer when its significand is evenly divisible by the power of ten implied by a
+        /// negative exponent; parity is that of the resulting integer coefficient.
+        /// </summary>
+        private static int ClassifyIntegerParityDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (!TDecimal.IsFinite(decimalBits))
+            {
+                return -1;
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+            TValue significand = decoded.Significand;
+
+            if (TValue.IsZero(significand))
+            {
+                // Zero is an even integer.
+                return 0;
+            }
+
+            int exponent = decoded.UnbiasedExponent;
+
+            if (exponent >= 1)
+            {
+                // significand * 10^exponent carries a factor of ten and is therefore even.
+                return 0;
+            }
+
+            if (exponent == 0)
+            {
+                return int.CreateTruncating(significand & TValue.One);
+            }
+
+            // A negative exponent is an integer only when the significand is evenly divisible by 10^(-exponent).
+            // The significand has at most Precision digits, so dropping Precision or more digits never divides evenly.
+            int dropCount = -exponent;
+
+            if (dropCount >= TDecimal.Precision)
+            {
+                return -1;
+            }
+
+            (TValue quotient, TValue remainder) = TDecimal.DivRemPow10(significand, dropCount);
+
+            if (!TValue.IsZero(remainder))
+            {
+                return -1;
+            }
+
+            return int.CreateTruncating(quotient & TValue.One);
+        }
+
+        internal static bool IsIntegerDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return ClassifyIntegerParityDecimalIeee754<TDecimal, TValue>(decimalBits) >= 0;
+        }
+
+        internal static bool IsEvenIntegerDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return ClassifyIntegerParityDecimalIeee754<TDecimal, TValue>(decimalBits) == 0;
+        }
+
+        internal static bool IsOddIntegerDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            return ClassifyIntegerParityDecimalIeee754<TDecimal, TValue>(decimalBits) == 1;
+        }
+
+        /// <summary>
+        /// Determines whether a finite non-zero value has an adjusted exponent at or above the minimum normal
+        /// exponent. Zero, infinity, and NaN are never normal.
+        /// </summary>
+        internal static bool IsNormalDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (!TDecimal.IsFinite(decimalBits))
+            {
+                return false;
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+
+            if (TValue.IsZero(decoded.Significand))
+            {
+                return false;
+            }
+
+            int adjustedExponent = decoded.UnbiasedExponent + TDecimal.CountDigits(decoded.Significand) - 1;
+            return adjustedExponent >= TDecimal.MinExponent;
+        }
+
+        /// <summary>
+        /// Determines whether a finite non-zero value has an adjusted exponent below the minimum normal exponent.
+        /// Zero, infinity, and NaN are never subnormal.
+        /// </summary>
+        internal static bool IsSubnormalDecimalIeee754<TDecimal, TValue>(TValue decimalBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (!TDecimal.IsFinite(decimalBits))
+            {
+                return false;
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
+
+            if (TValue.IsZero(decoded.Significand))
+            {
+                return false;
+            }
+
+            int adjustedExponent = decoded.UnbiasedExponent + TDecimal.CountDigits(decoded.Significand) - 1;
+            return adjustedExponent < TDecimal.MinExponent;
+        }
+
+        // The magnitude helpers match the IEEE 754:2019 maximumMagnitude/minimumMagnitude family. The *Number
+        // variants do not propagate NaN; both treat +0 as greater than -0. Comparisons are performed on the
+        // absolute (sign-cleared) bit patterns using the existing ordering helpers.
+
+        internal static TValue MaxMagnitudeDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue ax = AbsDecimalIeee754<TDecimal, TValue>(x);
+            TValue ay = AbsDecimalIeee754<TDecimal, TValue>(y);
+
+            if (GreaterThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ax))
+            {
+                return x;
+            }
+
+            if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
+            {
+                return TDecimal.IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        internal static TValue MinMagnitudeDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue ax = AbsDecimalIeee754<TDecimal, TValue>(x);
+            TValue ay = AbsDecimalIeee754<TDecimal, TValue>(y);
+
+            if (LessThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ax))
+            {
+                return x;
+            }
+
+            if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
+            {
+                return TDecimal.IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        internal static TValue MaxMagnitudeNumberDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue ax = AbsDecimalIeee754<TDecimal, TValue>(x);
+            TValue ay = AbsDecimalIeee754<TDecimal, TValue>(y);
+
+            if (GreaterThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
+            {
+                return TDecimal.IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        internal static TValue MinMagnitudeNumberDecimalIeee754<TDecimal, TValue>(TValue x, TValue y)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue ax = AbsDecimalIeee754<TDecimal, TValue>(x);
+            TValue ay = AbsDecimalIeee754<TDecimal, TValue>(y);
+
+            if (LessThanDecimalIeee754<TDecimal, TValue>(ax, ay) || TDecimal.IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (EqualsDecimalIeee754<TDecimal, TValue>(ax, ay))
+            {
+                return TDecimal.IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
     }
 }

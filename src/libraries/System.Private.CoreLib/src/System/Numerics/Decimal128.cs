@@ -395,6 +395,114 @@ namespace System.Numerics
             return Number.TryParseDecimalIeee754<byte, Decimal128, UInt128>(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
         }
 
+        /// <summary>Gets the value <c>1</c>.</summary>
+        public static Decimal128 One => new Decimal128(OneValue);
+
+        /// <summary>Computes the absolute of a value.</summary>
+        /// <param name="value">The value for which to get its absolute.</param>
+        /// <returns>The absolute of <paramref name="value" />.</returns>
+        public static Decimal128 Abs(Decimal128 value) => new Decimal128(Number.AbsDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower)));
+
+        /// <summary>Determines if a value is finite.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is finite; otherwise, <c>false</c>.</returns>
+        public static bool IsFinite(Decimal128 value)
+        {
+            ulong comb = value._upper & NaNMaskUpper;
+            return (comb != NaNMaskUpper) && (comb != InfinityMaskUpper);
+        }
+
+        /// <summary>Determines if a value is infinite.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is infinite; otherwise, <c>false</c>.</returns>
+        public static bool IsInfinity(Decimal128 value) => (value._upper & NaNMaskUpper) == InfinityMaskUpper;
+
+        /// <summary>Determines if a value is NaN.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is NaN; otherwise, <c>false</c>.</returns>
+        public static bool IsNaN(Decimal128 value) => (value._upper & NaNMaskUpper) == NaNMaskUpper;
+
+        /// <summary>Determines if a value is negative.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
+        public static bool IsNegative(Decimal128 value) => (value._upper & SignMaskUpper) != 0;
+
+        /// <summary>Determines if a value is negative infinity.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is negative infinity; otherwise, <c>false</c>.</returns>
+        public static bool IsNegativeInfinity(Decimal128 value) => (value._upper & (SignMaskUpper | NaNMaskUpper)) == NegativeInfinityValue.Upper;
+
+        /// <summary>Determines if a value is positive.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is positive; otherwise, <c>false</c>.</returns>
+        public static bool IsPositive(Decimal128 value) => (value._upper & SignMaskUpper) == 0;
+
+        /// <summary>Determines if a value is positive infinity.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is positive infinity; otherwise, <c>false</c>.</returns>
+        public static bool IsPositiveInfinity(Decimal128 value) => (value._upper & (SignMaskUpper | NaNMaskUpper)) == PositiveInfinityValue.Upper;
+
+        /// <summary>Determines if a value represents a real number.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is a real number; otherwise, <c>false</c>.</returns>
+        public static bool IsRealNumber(Decimal128 value) => !IsNaN(value);
+
+        /// <summary>Determines if a value represents an integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an integer; otherwise, <c>false</c>.</returns>
+        public static bool IsInteger(Decimal128 value) => Number.IsIntegerDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Determines if a value represents an even integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an even integer; otherwise, <c>false</c>.</returns>
+        public static bool IsEvenInteger(Decimal128 value) => Number.IsEvenIntegerDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Determines if a value represents an odd integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an odd integer; otherwise, <c>false</c>.</returns>
+        public static bool IsOddInteger(Decimal128 value) => Number.IsOddIntegerDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Determines if a value is normal.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is normal; otherwise, <c>false</c>.</returns>
+        public static bool IsNormal(Decimal128 value) => Number.IsNormalDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Determines if a value is subnormal.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is subnormal; otherwise, <c>false</c>.</returns>
+        public static bool IsSubnormal(Decimal128 value) => Number.IsSubnormalDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower));
+
+        /// <summary>Compares two values to compute which has the greater magnitude.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a greater magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MaxMagnitude(Decimal128 x, Decimal128 y) => new Decimal128(Number.MaxMagnitudeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which has the greater magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a greater magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MaxMagnitudeNumber(Decimal128 x, Decimal128 y) => new Decimal128(Number.MaxMagnitudeNumberDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which has the lesser magnitude.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a lesser magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MinMagnitude(Decimal128 x, Decimal128 y) => new Decimal128(Number.MinMagnitudeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Compares two values to compute which has the lesser magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it has a lesser magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        public static Decimal128 MinMagnitudeNumber(Decimal128 x, Decimal128 y) => new Decimal128(Number.MinMagnitudeNumberDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <summary>Computes an estimate of <c>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" /></c>.</summary>
+        /// <param name="left">The value to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The value to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The value to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of <c>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" /></c>.</returns>
+        public static Decimal128 MultiplyAddEstimate(Decimal128 left, Decimal128 right, Decimal128 addend) => (left * right) + addend;
+
         private static readonly UInt128[] UInt128Powers10 =
             [
                 new UInt128(0, 1),
@@ -504,36 +612,17 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxSignificand => new UInt128(upper: 0x0001_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF); // 9_999_999_999_999_999_999_999_999_999_999_999;
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNaN(UInt128 decimalBits)
-        {
-            return (decimalBits.Upper & NaNMaskUpper) == NaNMaskUpper;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNaN(UInt128 decimalBits) => IsNaN(new Decimal128(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNegative(UInt128 decimalBits)
-        {
-            return (decimalBits.Upper & SignMaskUpper) != 0;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNegative(UInt128 decimalBits) => IsNegative(new Decimal128(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsFinite(UInt128 decimalBits)
-        {
-            ulong comb = decimalBits.Upper & NaNMaskUpper;
-            return comb != NaNMaskUpper && comb != InfinityMaskUpper;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsFinite(UInt128 decimalBits) => IsFinite(new Decimal128(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsInfinity(UInt128 decimalBits)
-        {
-            return (decimalBits.Upper & NaNMaskUpper) == InfinityMaskUpper;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsInfinity(UInt128 decimalBits) => IsInfinity(new Decimal128(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsPositiveInfinity(UInt128 decimalBits)
-        {
-            return (decimalBits.Upper & (SignMaskUpper | NaNMaskUpper)) == PositiveInfinityValue.Upper;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsPositiveInfinity(UInt128 decimalBits) => IsPositiveInfinity(new Decimal128(decimalBits));
 
-        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNegativeInfinity(UInt128 decimalBits)
-        {
-            return (decimalBits.Upper & (SignMaskUpper | NaNMaskUpper)) == NegativeInfinityValue.Upper;
-        }
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNegativeInfinity(UInt128 decimalBits) => IsNegativeInfinity(new Decimal128(decimalBits));
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
         {

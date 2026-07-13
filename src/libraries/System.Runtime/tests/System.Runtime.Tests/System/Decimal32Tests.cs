@@ -1568,5 +1568,331 @@ namespace System.Tests
 
             Assert.Equal(expected, result);
         }
+
+        [Fact]
+        public static void OneTest()
+        {
+            Assert.Equal(0x32800001U, Unsafe.BitCast<Decimal32, uint>(Decimal32.One));
+        }
+
+        public static IEnumerable<object[]> Abs_TestData()
+        {
+            yield return new object[] { 0x7C000000U, 0x7C000000U }; // Abs(NaN)
+            yield return new object[] { 0xFC000000U, 0x7C000000U }; // Abs(-NaN)
+            yield return new object[] { 0x78000000U, 0x78000000U }; // Abs(+Inf)
+            yield return new object[] { 0xF8000000U, 0x78000000U }; // Abs(-Inf)
+            yield return new object[] { 0x32800000U, 0x32800000U }; // Abs(0)
+            yield return new object[] { 0xB2800000U, 0x32800000U }; // Abs(-0)
+            yield return new object[] { 0x32800001U, 0x32800001U }; // Abs(1)
+            yield return new object[] { 0xB2800001U, 0x32800001U }; // Abs(-1)
+            yield return new object[] { 0x32800002U, 0x32800002U }; // Abs(2)
+            yield return new object[] { 0xB2800002U, 0x32800002U }; // Abs(-2)
+            yield return new object[] { 0x32800003U, 0x32800003U }; // Abs(3)
+            yield return new object[] { 0xB2800003U, 0x32800003U }; // Abs(-3)
+            yield return new object[] { 0x32800005U, 0x32800005U }; // Abs(5)
+            yield return new object[] { 0xB2800005U, 0x32800005U }; // Abs(-5)
+            yield return new object[] { 0x3280000AU, 0x3280000AU }; // Abs(10)
+            yield return new object[] { 0xB280000AU, 0x3280000AU }; // Abs(-10)
+            yield return new object[] { 0x32000005U, 0x32000005U }; // Abs(0.5)
+            yield return new object[] { 0xB2000005U, 0x32000005U }; // Abs(-0.5)
+            yield return new object[] { 0x32000019U, 0x32000019U }; // Abs(2.5)
+            yield return new object[] { 0x3200000FU, 0x3200000FU }; // Abs(1.5)
+            yield return new object[] { 0x32800064U, 0x32800064U }; // Abs(100)
+            yield return new object[] { 0x328003E8U, 0x328003E8U }; // Abs(1000)
+            yield return new object[] { 0x32000001U, 0x32000001U }; // Abs(0.1)
+            yield return new object[] { 0x32800009U, 0x32800009U }; // Abs(9)
+            yield return new object[] { 0x34000001U, 0x34000001U }; // Abs(1E+3)
+            yield return new object[] { 0x3200000AU, 0x3200000AU }; // Abs(1.0)
+            yield return new object[] { 0x318000C8U, 0x318000C8U }; // Abs(2.00)
+            yield return new object[] { 0x33000002U, 0x33000002U }; // Abs(2E+1)
+            yield return new object[] { 0x00000001U, 0x00000001U }; // Abs(epsilon)
+            yield return new object[] { 0x80000001U, 0x00000001U }; // Abs(-epsilon)
+            yield return new object[] { 0x000F423FU, 0x000F423FU }; // Abs(largest_subnormal)
+            yield return new object[] { 0x800F423FU, 0x000F423FU }; // Abs(-largest_subnormal)
+            yield return new object[] { 0x03000001U, 0x03000001U }; // Abs(smallest_normal)
+            yield return new object[] { 0x83000001U, 0x03000001U }; // Abs(-smallest_normal)
+            yield return new object[] { 0x77F8967FU, 0x77F8967FU }; // Abs(maxvalue)
+            yield return new object[] { 0xF7F8967FU, 0x77F8967FU }; // Abs(-maxvalue)
+        }
+
+        [Theory]
+        [MemberData(nameof(Abs_TestData))]
+        public static void AbsTest(uint value, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Abs(Unsafe.BitCast<uint, Decimal32>(value))));
+        }
+
+        public static IEnumerable<object[]> Classification_TestData()
+        {
+            yield return new object[] { 0x7C000000U, false, false, true, false, true, false, false, false }; // NaN
+            yield return new object[] { 0xFC000000U, false, false, true, true, false, false, false, false }; // -NaN
+            yield return new object[] { 0x78000000U, false, true, false, false, true, false, true, true }; // +Inf
+            yield return new object[] { 0xF8000000U, false, true, false, true, false, true, false, true }; // -Inf
+            yield return new object[] { 0x32800000U, true, false, false, false, true, false, false, true }; // 0
+            yield return new object[] { 0xB2800000U, true, false, false, true, false, false, false, true }; // -0
+            yield return new object[] { 0x32800001U, true, false, false, false, true, false, false, true }; // 1
+            yield return new object[] { 0xB2800001U, true, false, false, true, false, false, false, true }; // -1
+            yield return new object[] { 0x32800002U, true, false, false, false, true, false, false, true }; // 2
+            yield return new object[] { 0xB2800002U, true, false, false, true, false, false, false, true }; // -2
+            yield return new object[] { 0x32800003U, true, false, false, false, true, false, false, true }; // 3
+            yield return new object[] { 0xB2800003U, true, false, false, true, false, false, false, true }; // -3
+            yield return new object[] { 0x32800005U, true, false, false, false, true, false, false, true }; // 5
+            yield return new object[] { 0xB2800005U, true, false, false, true, false, false, false, true }; // -5
+            yield return new object[] { 0x3280000AU, true, false, false, false, true, false, false, true }; // 10
+            yield return new object[] { 0xB280000AU, true, false, false, true, false, false, false, true }; // -10
+            yield return new object[] { 0x32000005U, true, false, false, false, true, false, false, true }; // 0.5
+            yield return new object[] { 0xB2000005U, true, false, false, true, false, false, false, true }; // -0.5
+            yield return new object[] { 0x32000019U, true, false, false, false, true, false, false, true }; // 2.5
+            yield return new object[] { 0x3200000FU, true, false, false, false, true, false, false, true }; // 1.5
+            yield return new object[] { 0x32800064U, true, false, false, false, true, false, false, true }; // 100
+            yield return new object[] { 0x328003E8U, true, false, false, false, true, false, false, true }; // 1000
+            yield return new object[] { 0x32000001U, true, false, false, false, true, false, false, true }; // 0.1
+            yield return new object[] { 0x32800009U, true, false, false, false, true, false, false, true }; // 9
+            yield return new object[] { 0x34000001U, true, false, false, false, true, false, false, true }; // 1E+3
+            yield return new object[] { 0x3200000AU, true, false, false, false, true, false, false, true }; // 1.0
+            yield return new object[] { 0x318000C8U, true, false, false, false, true, false, false, true }; // 2.00
+            yield return new object[] { 0x33000002U, true, false, false, false, true, false, false, true }; // 2E+1
+            yield return new object[] { 0x00000001U, true, false, false, false, true, false, false, true }; // epsilon
+            yield return new object[] { 0x80000001U, true, false, false, true, false, false, false, true }; // -epsilon
+            yield return new object[] { 0x000F423FU, true, false, false, false, true, false, false, true }; // largest_subnormal
+            yield return new object[] { 0x800F423FU, true, false, false, true, false, false, false, true }; // -largest_subnormal
+            yield return new object[] { 0x03000001U, true, false, false, false, true, false, false, true }; // smallest_normal
+            yield return new object[] { 0x83000001U, true, false, false, true, false, false, false, true }; // -smallest_normal
+            yield return new object[] { 0x77F8967FU, true, false, false, false, true, false, false, true }; // maxvalue
+            yield return new object[] { 0xF7F8967FU, true, false, false, true, false, false, false, true }; // -maxvalue
+        }
+
+        [Theory]
+        [MemberData(nameof(Classification_TestData))]
+        public static void ClassificationTest(uint value, bool isFinite, bool isInfinity, bool isNaN, bool isNegative, bool isPositive, bool isNegativeInfinity, bool isPositiveInfinity, bool isRealNumber)
+        {
+            Decimal32 d = Unsafe.BitCast<uint, Decimal32>(value);
+            Assert.Equal(isFinite, Decimal32.IsFinite(d));
+            Assert.Equal(isInfinity, Decimal32.IsInfinity(d));
+            Assert.Equal(isNaN, Decimal32.IsNaN(d));
+            Assert.Equal(isNegative, Decimal32.IsNegative(d));
+            Assert.Equal(isPositive, Decimal32.IsPositive(d));
+            Assert.Equal(isNegativeInfinity, Decimal32.IsNegativeInfinity(d));
+            Assert.Equal(isPositiveInfinity, Decimal32.IsPositiveInfinity(d));
+            Assert.Equal(isRealNumber, Decimal32.IsRealNumber(d));
+        }
+
+        public static IEnumerable<object[]> IsNormalIsSubnormal_TestData()
+        {
+            yield return new object[] { 0x7C000000U, false, false }; // NaN
+            yield return new object[] { 0xFC000000U, false, false }; // -NaN
+            yield return new object[] { 0x78000000U, false, false }; // +Inf
+            yield return new object[] { 0xF8000000U, false, false }; // -Inf
+            yield return new object[] { 0x32800000U, false, false }; // 0
+            yield return new object[] { 0xB2800000U, false, false }; // -0
+            yield return new object[] { 0x32800001U, true, false }; // 1
+            yield return new object[] { 0xB2800001U, true, false }; // -1
+            yield return new object[] { 0x32800002U, true, false }; // 2
+            yield return new object[] { 0xB2800002U, true, false }; // -2
+            yield return new object[] { 0x32800003U, true, false }; // 3
+            yield return new object[] { 0xB2800003U, true, false }; // -3
+            yield return new object[] { 0x32800005U, true, false }; // 5
+            yield return new object[] { 0xB2800005U, true, false }; // -5
+            yield return new object[] { 0x3280000AU, true, false }; // 10
+            yield return new object[] { 0xB280000AU, true, false }; // -10
+            yield return new object[] { 0x32000005U, true, false }; // 0.5
+            yield return new object[] { 0xB2000005U, true, false }; // -0.5
+            yield return new object[] { 0x32000019U, true, false }; // 2.5
+            yield return new object[] { 0x3200000FU, true, false }; // 1.5
+            yield return new object[] { 0x32800064U, true, false }; // 100
+            yield return new object[] { 0x328003E8U, true, false }; // 1000
+            yield return new object[] { 0x32000001U, true, false }; // 0.1
+            yield return new object[] { 0x32800009U, true, false }; // 9
+            yield return new object[] { 0x34000001U, true, false }; // 1E+3
+            yield return new object[] { 0x3200000AU, true, false }; // 1.0
+            yield return new object[] { 0x318000C8U, true, false }; // 2.00
+            yield return new object[] { 0x33000002U, true, false }; // 2E+1
+            yield return new object[] { 0x00000001U, false, true }; // epsilon
+            yield return new object[] { 0x80000001U, false, true }; // -epsilon
+            yield return new object[] { 0x000F423FU, false, true }; // largest_subnormal
+            yield return new object[] { 0x800F423FU, false, true }; // -largest_subnormal
+            yield return new object[] { 0x03000001U, true, false }; // smallest_normal
+            yield return new object[] { 0x83000001U, true, false }; // -smallest_normal
+            yield return new object[] { 0x77F8967FU, true, false }; // maxvalue
+            yield return new object[] { 0xF7F8967FU, true, false }; // -maxvalue
+        }
+
+        [Theory]
+        [MemberData(nameof(IsNormalIsSubnormal_TestData))]
+        public static void IsNormalIsSubnormalTest(uint value, bool isNormal, bool isSubnormal)
+        {
+            Decimal32 d = Unsafe.BitCast<uint, Decimal32>(value);
+            Assert.Equal(isNormal, Decimal32.IsNormal(d));
+            Assert.Equal(isSubnormal, Decimal32.IsSubnormal(d));
+        }
+
+        public static IEnumerable<object[]> IsInteger_TestData()
+        {
+            yield return new object[] { 0x7C000000U, false, false, false }; // NaN
+            yield return new object[] { 0xFC000000U, false, false, false }; // -NaN
+            yield return new object[] { 0x78000000U, false, false, false }; // +Inf
+            yield return new object[] { 0xF8000000U, false, false, false }; // -Inf
+            yield return new object[] { 0x32800000U, true, true, false }; // 0
+            yield return new object[] { 0xB2800000U, true, true, false }; // -0
+            yield return new object[] { 0x32800001U, true, false, true }; // 1
+            yield return new object[] { 0xB2800001U, true, false, true }; // -1
+            yield return new object[] { 0x32800002U, true, true, false }; // 2
+            yield return new object[] { 0xB2800002U, true, true, false }; // -2
+            yield return new object[] { 0x32800003U, true, false, true }; // 3
+            yield return new object[] { 0xB2800003U, true, false, true }; // -3
+            yield return new object[] { 0x32800005U, true, false, true }; // 5
+            yield return new object[] { 0xB2800005U, true, false, true }; // -5
+            yield return new object[] { 0x3280000AU, true, true, false }; // 10
+            yield return new object[] { 0xB280000AU, true, true, false }; // -10
+            yield return new object[] { 0x32000005U, false, false, false }; // 0.5
+            yield return new object[] { 0xB2000005U, false, false, false }; // -0.5
+            yield return new object[] { 0x32000019U, false, false, false }; // 2.5
+            yield return new object[] { 0x3200000FU, false, false, false }; // 1.5
+            yield return new object[] { 0x32800064U, true, true, false }; // 100
+            yield return new object[] { 0x328003E8U, true, true, false }; // 1000
+            yield return new object[] { 0x32000001U, false, false, false }; // 0.1
+            yield return new object[] { 0x32800009U, true, false, true }; // 9
+            yield return new object[] { 0x34000001U, true, true, false }; // 1E+3
+            yield return new object[] { 0x3200000AU, true, false, true }; // 1.0
+            yield return new object[] { 0x318000C8U, true, true, false }; // 2.00
+            yield return new object[] { 0x33000002U, true, true, false }; // 2E+1
+            yield return new object[] { 0x00000001U, false, false, false }; // epsilon
+            yield return new object[] { 0x80000001U, false, false, false }; // -epsilon
+            yield return new object[] { 0x000F423FU, false, false, false }; // largest_subnormal
+            yield return new object[] { 0x800F423FU, false, false, false }; // -largest_subnormal
+            yield return new object[] { 0x03000001U, false, false, false }; // smallest_normal
+            yield return new object[] { 0x83000001U, false, false, false }; // -smallest_normal
+            yield return new object[] { 0x77F8967FU, true, true, false }; // maxvalue
+            yield return new object[] { 0xF7F8967FU, true, true, false }; // -maxvalue
+        }
+
+        [Theory]
+        [MemberData(nameof(IsInteger_TestData))]
+        public static void IsIntegerTest(uint value, bool isInteger, bool isEvenInteger, bool isOddInteger)
+        {
+            Decimal32 d = Unsafe.BitCast<uint, Decimal32>(value);
+            Assert.Equal(isInteger, Decimal32.IsInteger(d));
+            Assert.Equal(isEvenInteger, Decimal32.IsEvenInteger(d));
+            Assert.Equal(isOddInteger, Decimal32.IsOddInteger(d));
+        }
+
+        public static IEnumerable<object[]> MaxMagnitude_TestData()
+        {
+            yield return new object[] { 0x32800003U, 0x32800005U, 0x32800005U };
+            yield return new object[] { 0x32800005U, 0x32800003U, 0x32800005U };
+            yield return new object[] { 0xB2800003U, 0x32800005U, 0x32800005U };
+            yield return new object[] { 0x32800003U, 0xB2800005U, 0xB2800005U };
+            yield return new object[] { 0xB2800003U, 0xB2800005U, 0xB2800005U };
+            yield return new object[] { 0x32800003U, 0xB2800003U, 0x32800003U };
+            yield return new object[] { 0xB2800003U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800003U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800000U, 0xB2800000U, 0x32800000U };
+            yield return new object[] { 0xB2800000U, 0x32800000U, 0x32800000U };
+            yield return new object[] { 0x7C000000U, 0x32800003U, 0x7C000000U };
+            yield return new object[] { 0x32800003U, 0x7C000000U, 0x7C000000U };
+            yield return new object[] { 0x7C000000U, 0xF8000000U, 0x7C000000U };
+            yield return new object[] { 0xB2800005U, 0x78000000U, 0x78000000U };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxMagnitude_TestData))]
+        public static void MaxMagnitudeTest(uint x, uint y, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.MaxMagnitude(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y))));
+        }
+
+        public static IEnumerable<object[]> MinMagnitude_TestData()
+        {
+            yield return new object[] { 0x32800003U, 0x32800005U, 0x32800003U };
+            yield return new object[] { 0x32800005U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0xB2800003U, 0x32800005U, 0xB2800003U };
+            yield return new object[] { 0x32800003U, 0xB2800005U, 0x32800003U };
+            yield return new object[] { 0xB2800003U, 0xB2800005U, 0xB2800003U };
+            yield return new object[] { 0x32800003U, 0xB2800003U, 0xB2800003U };
+            yield return new object[] { 0xB2800003U, 0x32800003U, 0xB2800003U };
+            yield return new object[] { 0x32800003U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800000U, 0xB2800000U, 0xB2800000U };
+            yield return new object[] { 0xB2800000U, 0x32800000U, 0xB2800000U };
+            yield return new object[] { 0x7C000000U, 0x32800003U, 0x7C000000U };
+            yield return new object[] { 0x32800003U, 0x7C000000U, 0x7C000000U };
+            yield return new object[] { 0x7C000000U, 0xF8000000U, 0x7C000000U };
+            yield return new object[] { 0xB2800005U, 0x78000000U, 0xB2800005U };
+        }
+
+        [Theory]
+        [MemberData(nameof(MinMagnitude_TestData))]
+        public static void MinMagnitudeTest(uint x, uint y, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.MinMagnitude(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y))));
+        }
+
+        public static IEnumerable<object[]> MaxMagnitudeNumber_TestData()
+        {
+            yield return new object[] { 0x32800003U, 0x32800005U, 0x32800005U };
+            yield return new object[] { 0x32800005U, 0x32800003U, 0x32800005U };
+            yield return new object[] { 0xB2800003U, 0x32800005U, 0x32800005U };
+            yield return new object[] { 0x32800003U, 0xB2800005U, 0xB2800005U };
+            yield return new object[] { 0xB2800003U, 0xB2800005U, 0xB2800005U };
+            yield return new object[] { 0x32800003U, 0xB2800003U, 0x32800003U };
+            yield return new object[] { 0xB2800003U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800003U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800000U, 0xB2800000U, 0x32800000U };
+            yield return new object[] { 0xB2800000U, 0x32800000U, 0x32800000U };
+            yield return new object[] { 0x7C000000U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800003U, 0x7C000000U, 0x32800003U };
+            yield return new object[] { 0x7C000000U, 0xF8000000U, 0xF8000000U };
+            yield return new object[] { 0xB2800005U, 0x78000000U, 0x78000000U };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxMagnitudeNumber_TestData))]
+        public static void MaxMagnitudeNumberTest(uint x, uint y, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.MaxMagnitudeNumber(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y))));
+        }
+
+        public static IEnumerable<object[]> MinMagnitudeNumber_TestData()
+        {
+            yield return new object[] { 0x32800003U, 0x32800005U, 0x32800003U };
+            yield return new object[] { 0x32800005U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0xB2800003U, 0x32800005U, 0xB2800003U };
+            yield return new object[] { 0x32800003U, 0xB2800005U, 0x32800003U };
+            yield return new object[] { 0xB2800003U, 0xB2800005U, 0xB2800003U };
+            yield return new object[] { 0x32800003U, 0xB2800003U, 0xB2800003U };
+            yield return new object[] { 0xB2800003U, 0x32800003U, 0xB2800003U };
+            yield return new object[] { 0x32800003U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800000U, 0xB2800000U, 0xB2800000U };
+            yield return new object[] { 0xB2800000U, 0x32800000U, 0xB2800000U };
+            yield return new object[] { 0x7C000000U, 0x32800003U, 0x32800003U };
+            yield return new object[] { 0x32800003U, 0x7C000000U, 0x32800003U };
+            yield return new object[] { 0x7C000000U, 0xF8000000U, 0xF8000000U };
+            yield return new object[] { 0xB2800005U, 0x78000000U, 0xB2800005U };
+        }
+
+        [Theory]
+        [MemberData(nameof(MinMagnitudeNumber_TestData))]
+        public static void MinMagnitudeNumberTest(uint x, uint y, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.MinMagnitudeNumber(Unsafe.BitCast<uint, Decimal32>(x), Unsafe.BitCast<uint, Decimal32>(y))));
+        }
+
+        public static IEnumerable<object[]> MultiplyAddEstimate_TestData()
+        {
+            yield return new object[] { 0x32800003U, 0x32800005U, 0x32800002U, 0x32800011U };
+            yield return new object[] { 0xB2800003U, 0x32800005U, 0x32800002U, 0xB280000DU };
+            yield return new object[] { 0x32000001U, 0x32000001U, 0x32800001U, 0x31800065U };
+            yield return new object[] { 0x32800002U, 0x32000019U, 0xB2000005U, 0x3200002DU };
+            yield return new object[] { 0x3280000AU, 0x3280000AU, 0x32800001U, 0x32800065U };
+            yield return new object[] { 0x7C000000U, 0x32800002U, 0x32800003U, 0x7C000000U };
+            yield return new object[] { 0x78000000U, 0x32800000U, 0x32800001U, 0x7C000000U };
+            yield return new object[] { 0x32800002U, 0x32800003U, 0xF8000000U, 0xF8000000U };
+        }
+
+        [Theory]
+        [MemberData(nameof(MultiplyAddEstimate_TestData))]
+        public static void MultiplyAddEstimateTest(uint left, uint right, uint addend, uint expected)
+        {
+            Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.MultiplyAddEstimate(Unsafe.BitCast<uint, Decimal32>(left), Unsafe.BitCast<uint, Decimal32>(right), Unsafe.BitCast<uint, Decimal32>(addend))));
+        }
     }
 }
