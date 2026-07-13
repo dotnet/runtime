@@ -80,6 +80,7 @@ internal sealed class DsesActivitySourceListener : IDisposable
                     LogIgnoredSpecRule(currentActivitySourceSpec.SourceName, currentActivitySourceSpec.ActivityName);
                     continue;
                 }
+
                 allSources.Add(key.activitySourceName);
                 if (key.activityName != null)
                 {
