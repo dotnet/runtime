@@ -1009,22 +1009,38 @@ namespace System.Text.Json
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer;
 #if NET
-            // On most runtimes a vectorized SearchValues-based scan to the first non-whitespace byte
-            // is fastest across the board, so we go straight to it. On Mono/WASM AOT (browser) the
-            // fixed per-call SIMD entry cost is high relative to the short inter-token whitespace runs
-            // typical of indented JSON, and reconstructing the line/byte-position bookkeeping requires
-            // up to two additional vectorized passes (CountNewLines). There a scalar pre-scan handles
-            // the common short runs in a single fused pass and only promotes to the vectorized search
-            // once a run is long enough to amortize that cost. OperatingSystem.IsBrowser() folds to a
-            // constant per target, so the unused branch is eliminated and non-browser codegen is
-            // unchanged from a direct vectorized scan.
+            // A vectorized SearchValues-based scan to the first non-whitespace byte is fastest on most
+            // runtimes, so we go straight to it. On Mono/WASM AOT (browser) the fixed per-call SIMD
+            // entry cost is high relative to the short inter-token whitespace runs typical of JSON,
+            // and reconstructing the line/byte-position bookkeeping needs up to two more vectorized
+            // passes (CountNewLines), so short runs regress there. The browser path therefore uses the
+            // plain scalar loop below instead. OperatingSystem.IsBrowser() folds to a constant per
+            // target, so only one path survives in codegen and non-browser output is unchanged from a
+            // direct vectorized scan.
             if (!OperatingSystem.IsBrowser())
             {
-                SkipWhiteSpaceVectorized(_consumed);
+                ReadOnlySpan<byte> remaining = localBuffer.Slice(_consumed);
+                int idx = remaining.IndexOfFirstNonWhiteSpace();
+                if (idx > 0)
+                {
+                    // Reproduce the scalar loop's line/byte-position bookkeeping for the skipped run.
+                    (int newLines, int lastLineFeedIndex) = JsonReaderHelper.CountNewLines(remaining.Slice(0, idx));
+                    _lineNumber += newLines;
+                    if (lastLineFeedIndex >= 0)
+                    {
+                        // Byte positions on the current line start after the last line feed character.
+                        _bytePositionInLine = idx - lastLineFeedIndex - 1;
+                    }
+                    else
+                    {
+                        _bytePositionInLine += idx;
+                    }
+
+                    _consumed += idx;
+                }
+
                 return;
             }
-
-            int whiteSpaceRun = 0;
 #endif
             for (; _consumed < localBuffer.Length; _consumed++)
             {
@@ -1048,53 +1064,8 @@ namespace System.Text.Json
                 {
                     _bytePositionInLine++;
                 }
-
-#if NET
-                // Browser only: the scalar loop above tracks the length of the current whitespace run.
-                // Once it reaches MaxScalarWhiteSpaceScanLength, the run is long enough that promoting
-                // to the vectorized search pays off, so hand the remainder of the buffer to it. Short
-                // runs (the common case) never reach this point and stay entirely scalar. The check
-                // lives inside the whitespace branch so it is never reached when the next token
-                // immediately follows (e.g. minified JSON).
-                if (++whiteSpaceRun == JsonConstants.MaxScalarWhiteSpaceScanLength)
-                {
-                    SkipWhiteSpaceVectorized(_consumed + 1);
-                    return;
-                }
-#endif
             }
         }
-
-#if NET
-        /// <summary>
-        /// Scans from <paramref name="startIndex"/> to the first non-whitespace byte using a
-        /// vectorized SearchValues-based search, advancing <see cref="_consumed"/> and updating the
-        /// line number and byte-position bookkeeping for the skipped whitespace run.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SkipWhiteSpaceVectorized(int startIndex)
-        {
-            _consumed = startIndex;
-            ReadOnlySpan<byte> remaining = _buffer.Slice(startIndex);
-            int idx = remaining.IndexOfFirstNonWhiteSpace();
-            if (idx > 0)
-            {
-                (int newLines, int lastLineFeedIndex) = JsonReaderHelper.CountNewLines(remaining.Slice(0, idx));
-                _lineNumber += newLines;
-                if (lastLineFeedIndex >= 0)
-                {
-                    // Byte positions on the current line start after the last line feed character.
-                    _bytePositionInLine = idx - lastLineFeedIndex - 1;
-                }
-                else
-                {
-                    _bytePositionInLine += idx;
-                }
-
-                _consumed += idx;
-            }
-        }
-#endif
 
         /// <summary>
         /// This method contains the logic for processing the next value token and determining
