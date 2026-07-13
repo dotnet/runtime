@@ -447,18 +447,18 @@ namespace System.Tests
         {
             byte result;
             int charsConsumed;
-            
-            Assert.True(byte.TryParse(value, style, provider, out result, out charsConsumed));
+
+            Assert.True(NumberBaseHelper<byte>.TryParse(value, style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
-            
-            Assert.True(byte.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+
+            Assert.True(NumberBaseHelper<byte>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(expectedValue, result);
             Assert.Equal(expectedCharsConsumed, charsConsumed);
-            
+
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.True(byte.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.True(NumberBaseHelper<byte>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(expectedValue, result);
             if (value.All(c => c < 128))
             {
@@ -490,17 +490,17 @@ namespace System.Tests
             byte result;
             int charsConsumed;
 
-            Assert.False(byte.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<byte>.TryParse(value, style, provider, out result, out charsConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, charsConsumed);
 
-            Assert.False(byte.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.False(NumberBaseHelper<byte>.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, charsConsumed);
 
             byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
             int bytesConsumed;
-            Assert.False(byte.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.False(NumberBaseHelper<byte>.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
             Assert.Equal(0, result);
             Assert.Equal(0, bytesConsumed);
         }
