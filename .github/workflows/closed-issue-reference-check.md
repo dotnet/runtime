@@ -88,16 +88,19 @@ steps:
       refs="$(mktemp)"
       raw="$(mktemp)"
       grep -rEnI "${owner}/${name}/issues/[0-9]+" "${scan_dirs[@]}" \
-        --include=*.cs --include=*.csproj --include=*.proj --include=*.props --include=*.targets 2>/dev/null > "$raw" \
+        --include=*.cs --include=*.proj --include=*.props --include=*.targets 2>/dev/null > "$raw" \
         || { rc=$?; [ "$rc" -eq 1 ] || exit "$rc"; }
       awk -v pat="${owner}/${name}/issues/" '
           {
             split($0, a, ":"); path=a[1]; lineno=a[2];
             content = $0; sub(/^[^:]*:[0-9]+:/, "", content);
-            kind = "reference";
+            kind = "";
             if (content ~ /^[ \t]*\[[^]]*ActiveIssue[ \t]*\(/) kind = "ActiveIssue";
             else if ($0 ~ /Skip[ \t]*=/) kind = "Skip";
-            else if (path ~ /\.(csproj|proj|props|targets)$/ && $0 ~ /<!--/) kind = "build-exclusion";
+            else if (path ~ /\.(proj|props|targets)$/ &&
+                     content ~ /<!--/ &&
+                     content ~ /([Aa]ctive[Ii]ssue|[Dd]isabl|[Ee]xclud|[Ss]kip|[Ii]ncompatib|[Nn]ot supported|[Uu]nsupported|[Oo]pt[- ]out|[Ff]ail|[Bb]locked|[Tt]imeout|[Oo][Oo][Mm]|[Cc]rash)/) kind = "build-exclusion";
+            if (kind == "") next;
             s = $0;
             while (match(s, pat "[0-9]+")) {
               n = substr(s, RSTART, RLENGTH); sub(".*/issues/", "", n);
