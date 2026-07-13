@@ -508,10 +508,16 @@ namespace System.Runtime.Serialization.Json
         {
             EnsureByteBuffer();
 
-            // Read up to the first three bytes so a byte order mark (at most three bytes long) can
-            // be detected. Fewer bytes are read only when the stream ends early.
+            // Read whatever bytes are immediately available, up to the three occupied by the longest
+            // byte order mark. A single Read is used deliberately instead of ReadAtLeast: Read performs
+            // one underlying read and returns however many bytes were available, whereas ReadAtLeast
+            // loops until it has accumulated the requested count. That loop would block a consumer
+            // waiting for bytes an untrusted producer may never send (for example, one that transmits a
+            // single byte and then stalls without closing the stream). Detecting from however many bytes
+            // arrive - and defaulting to UTF-8 when there are too few - avoids that hang while still
+            // recognizing every mark whenever the leading bytes are present.
             Span<byte> leading = stackalloc byte[3];
-            int read = _stream.ReadAtLeast(leading, leading.Length, throwOnEndOfStream: false);
+            int read = _stream.Read(leading);
 
             SupportedEncoding e = DetectEncoding(leading.Slice(0, read), out int bomLength);
 
