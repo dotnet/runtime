@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -244,7 +243,7 @@ public static class EcmaMetadataUtils
         BlobReader blobReader = reader.GetBlobReader(signature);
         SignatureHeader header = blobReader.ReadSignatureHeader();
         if (header.Kind != SignatureKind.Field)
-            throw new BadImageFormatException();
+            throw new System.BadImageFormatException();
 
         // Skip any custom modifiers (each is followed by a TypeDefOrRef token) to reach the underlying type.
         CorElementType typeCode;
