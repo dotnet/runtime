@@ -646,7 +646,6 @@ namespace System.Text.Json.Serialization.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ThrowingMembers_PropagateOriginalException_WithReflectionMemberAccessor()
         {
-#if NET
             // Disabling dynamic code support routes serialization through the reflection-based member
             // accessor (as happens on WASM, iOS and the Mono interpreter) instead of the Reflection.Emit
             // accessor. Exceptions thrown by user getters, setters and constructors must still propagate
@@ -664,7 +663,6 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
                 AssertThrowingMembersPropagateOriginalException();
             }, options).Dispose();
-#endif
         }
 
         private static void AssertThrowingMembersPropagateOriginalException()
