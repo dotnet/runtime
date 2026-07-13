@@ -94,7 +94,6 @@ buffer_manager_free_buffer_and_release_budget (
 	EventPipeBuffer *buffer,
 	uint32_t budget_size);
 
-#ifndef PERFTRACING_DISABLE_THREADS
 static
 bool
 buffer_manager_try_reserve_buffer_fair (
@@ -115,7 +114,6 @@ buffer_manager_wait_queue_push_back (
 static
 void
 buffer_manager_wait_queue_pop_front (EventPipeBufferManager *buffer_manager);
-#endif // !PERFTRACING_DISABLE_THREADS
 
 // An iterator that can enumerate all the events which have been written into this buffer manager.
 // Initially the iterator starts uninitialized and get_current_event () returns NULL. The iterator
@@ -553,7 +551,6 @@ buffer_manager_allocate_buffer_for_thread (
 	// free capacity and a parked rundown writer would block forever. It takes the plain reserve and drops on
 	// failure, exactly as Drop mode does.
 	EP_ASSERT(buffer_size > 0);
-#ifndef PERFTRACING_DISABLE_THREADS
 	EventPipeThread *writer_thread = ep_thread_session_state_get_thread (thread_session_state);
 	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK && !ep_thread_is_rundown_thread (writer_thread)) {
 		if (!buffer_manager_try_reserve_buffer_fair (buffer_manager, writer_thread, buffer_size)) {
@@ -564,7 +561,6 @@ buffer_manager_allocate_buffer_for_thread (
 			return NULL;
 		}
 	} else
-#endif // !PERFTRACING_DISABLE_THREADS
 	{
 		ep_return_null_if_nok(buffer_manager_try_reserve_buffer (buffer_manager, buffer_size));
 	}
@@ -630,10 +626,8 @@ buffer_manager_deallocate_buffer (
 		buffer_manager->num_buffers_allocated--;
 #endif
 
-#ifndef PERFTRACING_DISABLE_THREADS
 		if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK)
 			buffer_manager_signal_front_waiter (buffer_manager);
-#endif // !PERFTRACING_DISABLE_THREADS
 	}
 }
 
@@ -938,10 +932,8 @@ ep_buffer_manager_alloc (
 
 	instance->buffering_mode = buffering_mode;
 	instance->aborting = 0;
-#ifndef PERFTRACING_DISABLE_THREADS
 	instance->wait_queue_head_thread = NULL;
 	instance->wait_queue_tail_thread = NULL;
-#endif // !PERFTRACING_DISABLE_THREADS
 
 	instance->thread_session_state_list_snapshot = dn_list_alloc ();
 	ep_raise_error_if_nok (instance->thread_session_state_list_snapshot != NULL);
@@ -1001,16 +993,12 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 
 	ep_rt_wait_event_free (&buffer_manager->rt_wait_event);
 
-#ifndef PERFTRACING_DISABLE_THREADS
 	EP_ASSERT (buffer_manager->wait_queue_head_thread == NULL);
-#endif // !PERFTRACING_DISABLE_THREADS
 
 	ep_rt_spin_lock_free (&buffer_manager->rt_lock);
 
 	ep_rt_object_free (buffer_manager);
 }
-
-#ifndef PERFTRACING_DISABLE_THREADS
 
 static
 void
@@ -1160,15 +1148,15 @@ void
 ep_buffer_manager_abort_blocked_writers (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
+	ep_requires_lock_held ();
 
 	if (buffer_manager->buffering_mode != EP_BUFFERING_MODE_BLOCK)
 		return;
 
-	// Called from disable while holding the EP lock but not rt_lock. Raise the abort flag so a producer that
-	// has not parked yet gives up, and none newly enqueue (buffer_manager_try_reserve_buffer_fair re-checks
-	// this flag under rt_lock before joining the queue). Then wake and remove every already-parked producer
-	// so each observes the abort, gives up, and clears its session index. ep_session_wait_for_inflight_thread_ops
-	// then only has to wait those indices out.
+	// Raise the abort flag so a producer that has not parked yet gives up, and none newly enqueue
+	// (buffer_manager_try_reserve_buffer_fair re-checks this flag under rt_lock before joining the queue).
+	// Then wake and remove every already-parked producer so each observes the abort, gives up, and clears
+	// its session index. ep_session_wait_for_inflight_thread_ops then only has to wait those indices out.
 	ep_rt_volatile_store_uint32_t (&buffer_manager->aborting, 1);
 
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
@@ -1188,7 +1176,6 @@ ep_on_exit:
 ep_on_error:
 	ep_exit_error_handler ();
 }
-#endif // !PERFTRACING_DISABLE_THREADS
 
 #ifdef EP_CHECKED_BUILD
 void
@@ -1267,7 +1254,6 @@ ep_buffer_manager_write_event (
 	EP_ASSERT ((ep_thread_get_session_use_in_progress (current_thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 	session_state = ep_thread_get_volatile_session_state (current_thread, session);
 	if (session_state == NULL) {
-#ifndef PERFTRACING_DISABLE_THREADS
 		// Block mode parks a producer on its own per-thread event when buffer budget is exhausted. Allocate
 		// that event now - once per thread, when the thread first gets a Block-mode session state - so the
 		// write/park path never allocates and can assume it exists. Any failure folds into the same drop path
@@ -1279,7 +1265,6 @@ ep_buffer_manager_write_event (
 				ep_raise_error_if_nok (ep_rt_wait_event_is_valid (wait_event));
 			}
 		}
-#endif // !PERFTRACING_DISABLE_THREADS
 		// slow path should only happen once per thread per session
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 			// No need to re-check session_state inside the lock, this thread is the only one allowed to create it.
@@ -1328,7 +1313,6 @@ ep_buffer_manager_write_event (
 		bool should_block = false;
 		buffer = buffer_manager_allocate_buffer_for_thread (buffer_manager, session_state, request_size, &should_block);
 		if (!buffer) {
-#ifndef PERFTRACING_DISABLE_THREADS
 			// Park only when the pool was full and the fair-reserve path enqueued this writer (should_block),
 			// and teardown is not aborting - a reader will wake it when capacity frees. Every other allocation
 			// failure (e.g. OOM allocating the buffer bytes) has no wakeup, so it drops: Block is non-lossy up
@@ -1336,7 +1320,6 @@ ep_buffer_manager_write_event (
 			if (should_block && !ep_rt_volatile_load_uint32_t (&buffer_manager->aborting)) {
 				result = EP_WRITE_EVENT_RESULT_BLOCKED;
 			} else
-#endif // !PERFTRACING_DISABLE_THREADS
 			{
 				ep_thread_session_state_increment_sequence_number (session_state);
 			}

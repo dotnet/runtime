@@ -983,6 +983,9 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 		// runs mono_thread_internal_detach -> mono_gc_finalize_notify, which aborts when a session is started and
 		// stopped during diagnostic-port startup suspension, before the finalizer thread exists.
 		mono_thread_info_attach ();
+		// Flag it NO_GC (never scanned or suspended for GC) and NO_SAMPLE (never sampled by the profiler),
+		// matching mono_threads_attach_tools_thread: the drain loop touches no managed heap and must not be probed.
+		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 	} else if (thread_type == EP_THREAD_TYPE_SAMPLING) {
 		// The sample profiler thread walks managed stacks, so it takes a full managed attach.
 		ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_type);

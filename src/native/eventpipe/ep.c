@@ -711,11 +711,9 @@ disable_holding_lock (
 		// Phase 1 - undo enable. An enabled session has its allow_write bit set; a published-but-still-inert
 		// one (session_init done, not yet started) does not, and skips straight to reclaim in session_fini.
 		if ((ep_volatile_load_allow_write () & ep_session_get_mask (session)) != 0) {
-#ifndef PERFTRACING_DISABLE_THREADS
 			EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
 			if (buffer_manager != NULL)
 				ep_buffer_manager_abort_blocked_writers (buffer_manager);
-#endif // !PERFTRACING_DISABLE_THREADS
 
 			if (session_requested_sampling (session)) {
 				// Disable the profiler.
@@ -930,9 +928,7 @@ write_event_2 (
 				// single ep_session_write_event call in this loop.
 				EventPipeSession *write_session = ep_volatile_load_session (i);
 				EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
-#ifndef PERFTRACING_DISABLE_THREADS
 				EventPipeBufferManager *buffer_manager = NULL;
-#endif // !PERFTRACING_DISABLE_THREADS
 				while (write_session != NULL) {
 					write_result = ep_session_write_event (
 						write_session,
@@ -946,13 +942,6 @@ write_event_2 (
 					if (write_result != EP_WRITE_EVENT_RESULT_BLOCKED)
 						break;
 
-#ifdef PERFTRACING_DISABLE_THREADS
-					// Single-threaded build: Block parking is unavailable (a single thread cannot block and
-					// still run the cooperative drain), so the Block write-path is compiled out and
-					// ep_session_write_event never returns BLOCKED - a full buffer just drops, exactly like
-					// Drop mode, and this loop makes a single write.
-					EP_UNREACHABLE ("EP_WRITE_EVENT_RESULT_BLOCKED is unreachable when PERFTRACING_DISABLE_THREADS is defined.");
-#else
 					// Block (non-lossy) mode: buffers full but the session is live, so park and retry instead
 					// of dropping. While parked we clear WRITE_BUFFER_IN_USE (keeping the index) so the reader
 					// can drain our full buffer; the retained index pins the buffer manager so teardown waits
@@ -975,9 +964,7 @@ write_event_2 (
 					// Retry: re-publish the write-buffer bit and re-load the session before looping.
 					ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
 					write_session = ep_volatile_load_session (i);
-#endif // !PERFTRACING_DISABLE_THREADS
 				}
-#ifndef PERFTRACING_DISABLE_THREADS
 				// If we gave up on a BLOCKED event during teardown (the session started aborting), it will never
 				// be written. Account it as a drop by bumping the thread's sequence number so it stays visible to
 				// sequence-number based drop detection, matching the buffer manager's terminal drop paths.
@@ -986,7 +973,6 @@ write_event_2 (
 					if (blocked_session_state != NULL)
 						ep_thread_session_state_increment_sequence_number (blocked_session_state);
 				}
-#endif // !PERFTRACING_DISABLE_THREADS
 			}
 			// Do not reference session past this point; we are signaling the teardown path that it is safe to
 			// delete it.

@@ -317,12 +317,20 @@ ep_session_alloc (
 		sequence_point_alloc_budget = 10 * 1024 * 1024;
 	}
 
+#ifndef PERFTRACING_DISABLE_THREADS
 	// Block buffering parks a producer until the drain thread frees buffer capacity, so it only works for
 	// session types that have a continuous drain - the ones with a streaming thread (IPCSTREAM, FILESTREAM).
 	// FILE and LISTENER have a buffer manager but no streaming thread (FILE flushes only at disable; LISTENER
 	// is pumped by an in-proc managed poll), so a parked producer would stall until teardown. Reject the
 	// unsupported combination rather than silently changing the caller's requested configuration.
 	ep_raise_error_if_nok (buffering_mode != EP_BUFFERING_MODE_BLOCK || ep_session_type_uses_streaming_thread (session_type));
+#else
+	// Single-threaded builds have no drain thread to free buffer capacity and wake parked producers (the drain
+	// runs as a cooperative in-proc poll), so a Block-mode producer would park forever. Reject Block here, at the
+	// single point a session adopts a buffering mode, aligning with failing other unsupported buffering-mode
+	// configurations rather than silently downgrading.
+	ep_raise_error_if_nok (buffering_mode != EP_BUFFERING_MODE_BLOCK);
+#endif // PERFTRACING_DISABLE_THREADS
 
 	if (ep_session_type_uses_buffer_manager (session_type)) {
 		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget, buffering_mode);
