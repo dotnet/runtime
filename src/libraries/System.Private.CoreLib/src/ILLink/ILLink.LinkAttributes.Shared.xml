@@ -97,4 +97,14 @@
     </type>
   </assembly>
 
+  <!-- The apartment state attributes are only necessary when multithreading is supported -->
+  <assembly fullname="System.Private.CoreLib" feature="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" featurevalue="false">
+    <type fullname="System.STAThreadAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.MTAThreadAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
 </linker>
