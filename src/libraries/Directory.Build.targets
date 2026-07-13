@@ -198,7 +198,7 @@
                         '$(IsTestSupportProject)' != 'true' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\ExceptionPolyfills.cs" Link="System\ExceptionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\ExceptionPolyfills.cs" Link="Common\Polyfills\ExceptionPolyfills.cs" />
   </ItemGroup>
 
   <!-- Adds polyfills for Span-related functionality on non-.NETCoreApp builds -->

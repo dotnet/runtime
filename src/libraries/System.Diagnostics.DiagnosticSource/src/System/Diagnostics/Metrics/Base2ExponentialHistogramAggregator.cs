@@ -7,7 +7,6 @@
 // Copyright The OpenTelemetry Authors
 
 using System.Numerics;
-using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
@@ -253,7 +252,7 @@ namespace System.Diagnostics.Metrics
 
                 if (exp == 0)
                 {
-                    exp -= LeadingZero64(fraction - 1) - 12 /* 64 - fraction width */;
+                    exp -= BitOperations.LeadingZeroCount((ulong)(fraction - 1)) - 12 /* 64 - fraction width */;
                 }
                 else if (fraction == 0)
                 {
@@ -263,9 +262,5 @@ namespace System.Diagnostics.Metrics
                 return (exp - 1023 /* exponent bias */) >> -Scale;
             }
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LeadingZero64(long value) =>
-            BitOperations.LeadingZeroCount((ulong)value);
     }
 }
