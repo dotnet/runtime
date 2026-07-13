@@ -97,11 +97,14 @@ if (-not [string]::IsNullOrWhiteSpace($CcMentions)) {
 }
 
 # When the body isn't pre-filled in the URL it is embedded in the comment for
-# copy-paste, wrapped in a fenced code block so the raw markdown copies verbatim. A
-# four-backtick fence is used because the body itself contains three-backtick code
-# fences. (Built from a single-quoted variable so PowerShell's backtick escaping
-# doesn't collapse it.)
-$fence = '````'
+# copy-paste, wrapped in a fenced code block so the raw markdown copies verbatim. Use a
+# fence one backtick longer than the longest backtick run in the body (minimum 3), so an
+# embedded code fence of any length can't prematurely close the block.
+$longestBacktickRun = 0
+foreach ($m in [regex]::Matches($issueBody, '`+')) {
+    if ($m.Length -gt $longestBacktickRun) { $longestBacktickRun = $m.Length }
+}
+$fence = '`' * [Math]::Max(3, $longestBacktickRun + 1)
 
 # Assemble the comment. $bodyText is what goes inside the copy-paste fence; when
 # $truncated is set, a note points the reader at the complete issue-draft.md artifact
